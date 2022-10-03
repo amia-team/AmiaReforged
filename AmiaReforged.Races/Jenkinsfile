@@ -1,0 +1,31 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building..'
+                 script {
+                    sh "dotnet build"
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying....'
+                dir('./Amia.Racial') {
+                    sh 'sudo chmod +x deploy-test.sh'
+                    sh './deploy-test.sh'
+                }
+            }
+        }
+    }
+    post {
+        always {
+            discordSend description: "Builder for plugin Amia.Racial finished.", footer: "Build results for the Amia Race service", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: "https://discord.com/api/webhooks/957814431704842270/2A6zZ4x7fsWULXnfrLLyRvgqexcnAvreXr6fbym8IoHdAHGpEoQgXjLn1XKry75uN_Zg"
+        }
+        success {
+            echo 'Build success'
+        }
+    }
+}
