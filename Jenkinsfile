@@ -14,8 +14,6 @@ pipeline{
         stage('Deploy') {
             steps {
                 echo 'Deploying....'
-                sh 'sudo chmod +x deploy-test.sh'
-                
                 dir('./AmiaReforged.Classes') {
                     sh 'sudo chmod +x deploy-test.sh'
                     sh './deploy-test.sh'
