@@ -12,7 +12,6 @@ pipeline{
             }
         }
         stage('Deploy') {
-            echo 'ree'
             steps {
                 echo 'Deploying....'
                 sh 'sudo chmod +x deploy-test.sh'
