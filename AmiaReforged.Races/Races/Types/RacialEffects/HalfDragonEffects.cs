@@ -1,24 +1,37 @@
 ﻿using AmiaReforged.Races.Races.Script.Types;
-using NWN.Core;
+using NLog;
+using NLog.Fluent;
+using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Races.Races.Types.RacialEffects
 {
     public class HalfDragonEffects : IEffectCollector
     {
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
         private const int Heritage = 1238;
         private bool _hasHeritageFeat;
-        private uint _oid = NWScript.OBJECT_INVALID;
+        private uint _oid = OBJECT_INVALID;
 
         public List<IntPtr> GatherEffectsForObject(uint objectId)
         {
+            Log.Info("------------------------JES LOOK HERE!!!!------------------------");
+            Log.Info("------------------------JES LOOK HERE!!!!------------------------");
+            Log.Info("------------------------JES LOOK HERE!!!!------------------------");
+            Log.Info("------------------------JES LOOK HERE!!!!------------------------");
+            Log.Info($"{GetName(objectId)} is a draconic race.");
+            Log.Info($"Gathering effects for object {GetName(objectId)}."); 
+            
             _oid = objectId;
             _hasHeritageFeat = HasHeritageFeat();
-
+            WriteTimestampedLogEntry($"Has heritage feat: {_hasHeritageFeat}");
+            
             int spellResistance = GetSpellResistanceBasedOnFeat();
-
-            List<IntPtr>? effectsForObject = new List<IntPtr>
+            Log.Info($"SpellResistance: {spellResistance}");
+            
+            List<IntPtr> effectsForObject = new()
             {
-                NWScript.EffectSpellResistanceIncrease(spellResistance)
+                EffectSpellResistanceIncrease(spellResistance)
             };
 
             AddHeritageEffectsIfObjectHasFeat(effectsForObject);
@@ -27,13 +40,12 @@ namespace AmiaReforged.Races.Races.Types.RacialEffects
 
         private bool HasHeritageFeat()
         {
-            return NWScript.GetHasFeat(Heritage, _oid) == 1;
+            return GetHasFeat(Heritage, _oid) == 1;
         }
 
         private int GetSpellResistanceBasedOnFeat()
         {
-            int hitDice = NWScript.GetHitDice(_oid);
-
+            int hitDice = GetHitDice(_oid);
             return _hasHeritageFeat
                 ? SpellResistanceWithFeat(hitDice)
                 : SpellResistanceWithoutFeat(hitDice);
@@ -54,8 +66,9 @@ namespace AmiaReforged.Races.Races.Types.RacialEffects
         {
             if (!_hasHeritageFeat) return;
 
-            effectsForObject.Add(NWScript.EffectAttackDecrease(1));
-            effectsForObject.Add(NWScript.EffectSavingThrowDecrease(NWScript.SAVING_THROW_ALL, 1));
+            Log.Info("Adding heritage effects.");
+            effectsForObject.Add(EffectAttackDecrease(1));
+            effectsForObject.Add(EffectSavingThrowDecrease(SAVING_THROW_ALL, 1));
         }
     }
 }
