@@ -1,4 +1,4 @@
-pipeline {
+﻿pipeline {
     agent any
 
     stages {
@@ -14,7 +14,17 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying....'
-                dir('./Amia.Warlock') {
+                sh 'sudo chmod +x deploy-test.sh'
+                
+                dir('./AmiaReforged.Classes') {
+                    sh 'sudo chmod +x deploy-test.sh'
+                    sh './deploy-test.sh'
+                }
+                dir('./AmiaReforged.Races') {
+                    sh 'sudo chmod +x deploy-test.sh'
+                    sh './deploy-test.sh'
+                }
+                dir('./AmiaReforged.System') {
                     sh 'sudo chmod +x deploy-test.sh'
                     sh './deploy-test.sh'
                 }
