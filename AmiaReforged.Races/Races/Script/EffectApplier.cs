@@ -1,6 +1,6 @@
 ﻿using NWN.Core;
 
-namespace Amia.Racial.Races.Script
+namespace AmiaReforged.Races.Races.Script
 {
     public static class EffectApplier
     {

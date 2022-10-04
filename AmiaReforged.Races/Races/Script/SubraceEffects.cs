@@ -1,8 +1,7 @@
-﻿using Amia.Racial.Races.Types.RacialEffects;
-using NWN.Amia.Main.Managed.Feats;
+﻿using AmiaReforged.Races.Races.Types.RacialEffects;
 using NWN.Core;
 
-namespace Amia.Racial.Races.Script
+namespace AmiaReforged.Races.Races.Script
 {
     public static class SubraceEffects 
     {

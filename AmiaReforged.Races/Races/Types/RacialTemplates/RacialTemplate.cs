@@ -1,11 +1,10 @@
-﻿using Amia.Racial.Races.Utils;
+﻿using AmiaReforged.Races.Races.Utils;
 using JetBrains.Annotations;
 using NLog;
-using NWN.Amia.Main.Managed.Races.Utils;
 using NWN.Core;
 using NWN.Core.NWNX;
 
-namespace Amia.Racial.Races.Types.RacialTemplates
+namespace AmiaReforged.Races.Races.Types.RacialTemplates
 {
     public class RacialTemplate : ICharacterTemplate
     {

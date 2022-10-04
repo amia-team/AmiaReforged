@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-using Amia.Racial.Races.Types.HeritageAbilities;
-using Amia.Racial.Races.Types.RacialEffects;
-using NWN.Amia.Main.Managed.Feats.Types;
+﻿using AmiaReforged.Races.Races.Script.Types;
+using AmiaReforged.Races.Races.Types.HeritageAbilities;
+using AmiaReforged.Races.Races.Types.RacialEffects;
 
-namespace NWN.Amia.Main.Managed.Races
+namespace AmiaReforged.Races.Races
 {
     public static class ManagedRaces
     {

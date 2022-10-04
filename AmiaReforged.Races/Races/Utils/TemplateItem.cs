@@ -1,6 +1,6 @@
 ﻿using static NWN.Core.NWScript;
 
-namespace Amia.Racial.Races.Utils
+namespace AmiaReforged.Races.Races.Utils
 {
     public static class TemplateItem
     {

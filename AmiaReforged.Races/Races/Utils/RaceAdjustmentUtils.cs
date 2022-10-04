@@ -1,7 +1,6 @@
-﻿using System.Collections.Generic;
-using Amia.Racial.Races.Types.RacialTemplates;
+﻿using AmiaReforged.Races.Races.Types.RacialTemplates;
 
-namespace NWN.Amia.Main.Managed.Races.Utils
+namespace AmiaReforged.Races.Races.Utils
 {
     public static class RaceAdjustmentUtils
     {

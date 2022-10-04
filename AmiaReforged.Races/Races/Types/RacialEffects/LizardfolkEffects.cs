@@ -1,7 +1,7 @@
-﻿using NWN.Amia.Main.Managed.Feats.Types;
+﻿using AmiaReforged.Races.Races.Script.Types;
 using NWN.Core;
 
-namespace Amia.Racial.Races.Types.RacialEffects
+namespace AmiaReforged.Races.Races.Types.RacialEffects
 {
     public class LizardfolkEffects : IEffectCollector
     {

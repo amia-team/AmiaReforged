@@ -1,10 +1,9 @@
 ﻿using Anvil.API;
 using JetBrains.Annotations;
 using NLog;
-using NWN.Amia.Main.Managed.Races;
 using NWN.Core;
 
-namespace Amia.Racial.Races.Script
+namespace AmiaReforged.Races.Races.Script
 {
     [UsedImplicitly]
     public static class HeritageFeatSetup

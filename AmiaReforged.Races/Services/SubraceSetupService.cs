@@ -1,17 +1,17 @@
-﻿using System.Diagnostics;
-using Amia.Racial.Races.Script.SubraceTemplates;
-using Amia.Racial.Races.Utils;
+﻿using AmiaReforged.Races.Races.Script.SubraceTemplates;
+using AmiaReforged.Races.Races.Utils;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core;
 
-namespace Amia.Racial.Services;
+namespace AmiaReforged.Races.Services;
 
 [ServiceBinding(typeof(SubraceSetupService))]
 public class SubraceSetupService
 {
+    private const string EntryGateTag = "ds_entrygate";
+
     private static readonly Dictionary<string, ISubraceApplier> Subraces = new()
     {
         { "aasimar", new AasimarOption() },
@@ -41,7 +41,7 @@ public class SubraceSetupService
 
     public SubraceSetupService()
     {
-        NwPlaceable? entryGate = NwObject.FindObjectsWithTag<NwPlaceable>("ds_entrygate").FirstOrDefault();
+        NwPlaceable? entryGate = NwObject.FindObjectsWithTag<NwPlaceable>(EntryGateTag).FirstOrDefault();
 
         if (entryGate == null)
         {

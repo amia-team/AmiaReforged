@@ -1,8 +1,8 @@
-﻿using Amia.Racial.Races.Utils;
+﻿using AmiaReforged.Races.Races.Utils;
 using NWN.Core;
 using NWN.Core.NWNX;
 
-namespace Amia.Racial.Races.Script.SubraceTemplates
+namespace AmiaReforged.Races.Races.Script.SubraceTemplates
 {
     public class TieflingOption : ISubraceApplier
     {

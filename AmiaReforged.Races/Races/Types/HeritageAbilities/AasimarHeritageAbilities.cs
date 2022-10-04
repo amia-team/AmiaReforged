@@ -2,7 +2,7 @@
 using NWN.Core;
 using NWN.Core.NWNX;
 
-namespace Amia.Racial.Races.Types.HeritageAbilities
+namespace AmiaReforged.Races.Races.Types.HeritageAbilities
 {
     public class AasimarHeritageAbilities : IHeritageAbilities
     {

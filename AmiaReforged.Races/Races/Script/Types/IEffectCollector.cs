@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using NWN.Core;
-
-namespace NWN.Amia.Main.Managed.Feats.Types
+﻿namespace AmiaReforged.Races.Races.Script.Types
 {
     public interface IEffectCollector
     {

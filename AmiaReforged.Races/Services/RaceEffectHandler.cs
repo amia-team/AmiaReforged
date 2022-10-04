@@ -1,9 +1,9 @@
-﻿using Amia.Racial.Races.Script;
+﻿using AmiaReforged.Races.Races.Script;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
 
-namespace Amia.Racial.Services;
+namespace AmiaReforged.Races.Services;
 
 [ServiceBinding(typeof(RaceEffectHandler))]
 public class RaceEffectHandler

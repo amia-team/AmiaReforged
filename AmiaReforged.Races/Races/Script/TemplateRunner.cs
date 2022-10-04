@@ -1,8 +1,8 @@
-﻿using Amia.Racial.Races.Types.RacialTemplates;
-using Amia.Racial.Races.Utils;
+﻿using AmiaReforged.Races.Races.Types.RacialTemplates;
+using AmiaReforged.Races.Races.Utils;
 using NWN.Core;
 
-namespace Amia.Racial.Races.Script
+namespace AmiaReforged.Races.Races.Script
 {
     public class TemplateRunner 
     {

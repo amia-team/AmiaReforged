@@ -1,4 +1,4 @@
-namespace Amia.Racial.Races.Script.SubraceTemplates;
+namespace AmiaReforged.Races.Races.Script.SubraceTemplates;
 
 public interface ISubraceApplier
 {

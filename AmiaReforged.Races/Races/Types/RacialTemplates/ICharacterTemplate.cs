@@ -1,4 +1,4 @@
-﻿namespace Amia.Racial.Races.Types.RacialTemplates
+﻿namespace AmiaReforged.Races.Races.Types.RacialTemplates
 {
     public interface ICharacterTemplate
     {

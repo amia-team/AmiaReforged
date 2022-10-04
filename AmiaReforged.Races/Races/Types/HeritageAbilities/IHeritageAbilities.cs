@@ -1,6 +1,6 @@
 ﻿using Anvil.API;
 
-namespace Amia.Racial.Races.Types.HeritageAbilities
+namespace AmiaReforged.Races.Races.Types.HeritageAbilities
 {
     public interface IHeritageAbilities
     {
