@@ -1,22 +1,34 @@
 ﻿using AmiaReforged.Races.Races.Types.RacialEffects;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.Races.Races.Script
 {
     public static class SubraceEffects 
     {
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
         public static void Apply(uint nwnObjectId)
         {
+            Log.Info("Applying subrace effects");
             List<IntPtr> listOfSubraceEffects = ResolveEffectsForObject(nwnObjectId);
 
-            if (!listOfSubraceEffects.Any()) return;
+            if (!listOfSubraceEffects.Any())
+            {
+                Log.Info("No subrace effects found");
+                return;
+            }
 
             EffectApplier.Apply(nwnObjectId, listOfSubraceEffects);
+            Log.Info("Subrace effects applied");
         }
 
         private static List<IntPtr> ResolveEffectsForObject(uint nwnObjectId)
         {
-            return NWScript.GetSubRace(nwnObjectId).ToLower() switch
+            Log.Info("Resolving subrace effects");
+            string lower = NWScript.GetSubRace(nwnObjectId).ToLower();
+            Log.Info(lower);
+            return lower switch
             {
                 "aasimar" => new AasimarEffects().GatherEffectsForObject(nwnObjectId),
                 "tiefling" => new TieflingEffects().GatherEffectsForObject(nwnObjectId),
