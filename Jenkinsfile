@@ -28,7 +28,7 @@ pipeline{
                 }
                 
                 sh 'sudo chmod +x restart-test.sh'
-                sh './restart-test.sh'
+                sh 'bash restart-test.sh'
             }
         }
     }
