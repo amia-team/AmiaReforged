@@ -1,11 +1,10 @@
 using System;
 using TechTalk.SpecFlow;
 
-namespace AmiaReforged.Core.Specs.Hooks
+namespace Amia.Core.Specs.Hooks
 {
     [Binding]
     public class Hooks
     {
-        
     }
 }

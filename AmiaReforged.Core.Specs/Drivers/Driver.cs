@@ -1,9 +1,8 @@
 using System;
 
-namespace AmiaReforged.Core.Specs.Drivers
+namespace Amia.Core.Specs.Drivers
 {
     public class Driver
     {
-
     }
 }
