@@ -20,4 +20,8 @@
         <PackageReference Include="FluentAssertions" Version="6.2.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj" />
+    </ItemGroup>
+
 </Project>
