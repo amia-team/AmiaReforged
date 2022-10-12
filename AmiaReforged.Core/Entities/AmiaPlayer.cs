@@ -1,29 +1,26 @@
-﻿namespace AmiaReforged.Core.Entities;
+﻿using AmiaReforged.Core.Types;
+
+namespace AmiaReforged.Core.Entities;
 
 public class AmiaPlayer
 {
-    private readonly ICharacterRepository _characterRepository;
+    private readonly ICharacterAccessor _characterService;
     public string PublicCdKey { get; }
-    public IEnumerable<AmiaCharacter> Characters => GetCharacters();
+    public IReadOnlyList<AmiaCharacter> Characters => GetCharacters();
 
-    public AmiaPlayer(string publicCdKey, ICharacterRepository characterRepository)
+    public AmiaPlayer(string publicCdKey, ICharacterAccessor characterService)
     {
         PublicCdKey = publicCdKey;
-        _characterRepository = characterRepository;
+        _characterService = characterService;
     }
 
-    private IEnumerable<AmiaCharacter> GetCharacters()
+    private IReadOnlyList<AmiaCharacter> GetCharacters()
     {
-        return _characterRepository.GetCharacters(PublicCdKey);
+        return _characterService.GetCharacters(PublicCdKey);
     }
 
     public void AddCharacter(AmiaCharacter character)
     {
-        Characters.ToList().Add(character);
+        _characterService.AddCharacter(PublicCdKey, character);
     }
-}
-
-public interface ICharacterRepository
-{
-    IEnumerable<AmiaCharacter> GetCharacters(string publicCdKey);
 }
