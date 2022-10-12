@@ -51,7 +51,7 @@ public class CharacterStepDefinitions
     public void ThenAnEntryIsMadeForTheCharacter()
     {
         Assert.That(_player.Characters.Count, Is.EqualTo(1));
-        Assert.That(_player.Characters.ToList()[0].Name, Is.EqualTo(_characterName));
+        Assert.That(_player.Characters[0].Name, Is.EqualTo(_characterName));
     }
 }
 
