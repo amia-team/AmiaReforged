@@ -5,6 +5,7 @@ using NLog;
 
 namespace AmiaReforged.System.Services;
 
+[ServiceBinding(typeof(CharacterService))]
 public class CharacterService {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
