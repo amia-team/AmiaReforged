@@ -8,9 +8,14 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
+      <PackageReference Include="Moq" Version="4.18.2" />
       <PackageReference Include="NUnit" Version="3.13.3" />
       <PackageReference Include="NWN.Anvil" Version="8193.34.19" />
       <PackageReference Include="NWN.Core" Version="8193.34.7" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Tests\Services" />
     </ItemGroup>
 
 </Project>
