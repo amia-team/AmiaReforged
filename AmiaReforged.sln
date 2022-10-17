@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.Classes", "Ami
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.Races", "AmiaReforged.Races\AmiaReforged.Races.csproj", "{F4247B27-C7D2-4470-AF0B-C46E953926D4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.Core.Specs", "AmiaReforged.Core.Specs\AmiaReforged.Core.Specs.csproj", "{5D9599EA-95FC-410D-9376-5FECB0A17874}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.Core", "AmiaReforged.Core\AmiaReforged.Core.csproj", "{CD726DFB-1A76-47CF-9BA6-655EDF6F3263}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.Core.Test", "AmiaReforged.Core.Test\AmiaReforged.Core.Test.csproj", "{855CD480-0E68-44C9-8DD0-2E7FAE589500}"
@@ -31,10 +29,6 @@ Global
 		{F4247B27-C7D2-4470-AF0B-C46E953926D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F4247B27-C7D2-4470-AF0B-C46E953926D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F4247B27-C7D2-4470-AF0B-C46E953926D4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5D9599EA-95FC-410D-9376-5FECB0A17874}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5D9599EA-95FC-410D-9376-5FECB0A17874}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5D9599EA-95FC-410D-9376-5FECB0A17874}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5D9599EA-95FC-410D-9376-5FECB0A17874}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CD726DFB-1A76-47CF-9BA6-655EDF6F3263}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CD726DFB-1A76-47CF-9BA6-655EDF6F3263}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CD726DFB-1A76-47CF-9BA6-655EDF6F3263}.Release|Any CPU.ActiveCfg = Release|Any CPU
