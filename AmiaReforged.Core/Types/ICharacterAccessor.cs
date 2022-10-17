@@ -1,4 +1,4 @@
-﻿using AmiaReforged.Core.Entities;
+﻿using AmiaReforged.Core.Models;
 
 namespace AmiaReforged.Core.Types;
 

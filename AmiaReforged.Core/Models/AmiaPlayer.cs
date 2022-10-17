@@ -1,6 +1,6 @@
 ﻿using AmiaReforged.Core.Types;
 
-namespace AmiaReforged.Core.Entities;
+namespace AmiaReforged.Core.Models;
 
 public class AmiaPlayer
 {
