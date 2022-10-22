@@ -102,14 +102,4 @@ public class WarlockAbilityHandler
         FiendishResilience script = new();
         script.Run(info.ObjectSelf);
     }
-
-    //
-    // [ScriptHandler("wlk_mobility")]
-    // public void OnWarlockMobility(CallInfo info)
-    // {
-    //     if (!info.ObjectSelf.IsPlayerControlled(out NwPlayer player)) return;
-    //
-    //     IMobilityStrategy script = MobilityStrategyFactory.CreateMobilityStrategy(NWScript.GetSpellId());
-    //     script.Move(player.LoginCreature, NWScript.GetSpellTargetLocation());
-    // }
 }

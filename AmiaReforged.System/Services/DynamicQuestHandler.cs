@@ -15,7 +15,7 @@ public class DynamicQuestHandler
     }
 
     [ScriptHandler("jes_miniquest")]
-    public static void HandleMiniQuest(CallInfo callInfo)
+    public void HandleMiniQuest(CallInfo callInfo)
     {
         Log.Info("Miniquest started.");
     }
