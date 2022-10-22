@@ -1,6 +1,8 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.System.Dynamic.Quest;
+using Anvil.API;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
@@ -19,6 +21,11 @@ public class DynamicQuestHandler
     [ScriptHandler("jes_miniquest")]
     public void OnMiniQuest(CallInfo info)
     {
-        Log.Info($"Miniquest started by {info.ObjectSelf.Name}.");
+        NwCreature? questGiver = info.ObjectSelf as NwCreature;
+        NwCreature? lastSpeaker = NWScript.GetLastSpeaker().ToNwObject<NwCreature>();
+        
+        if(!lastSpeaker.IsPlayerControlled(out NwPlayer? player)) return;
+        MiniQuest quest = new(questGiver, player);
+        quest.Reward();
     }
 }

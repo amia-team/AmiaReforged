@@ -15,7 +15,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Dynamic" />
       <Folder Include="Tests\Services" />
     </ItemGroup>
 
