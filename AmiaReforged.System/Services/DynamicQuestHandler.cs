@@ -1,4 +1,4 @@
-﻿using System.Dynamic;
+﻿using Anvil.API;
 using Anvil.Services;
 using NLog;
 
@@ -19,6 +19,6 @@ public class DynamicQuestHandler
     [ScriptHandler("jes_miniquest")]
     public void OnMiniQuest(CallInfo info)
     {
-        Log.Info("Miniquest started.");
+        Log.Info($"Miniquest started by {info.ObjectSelf.Name}.");
     }
 }
