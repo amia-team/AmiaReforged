@@ -14,8 +14,10 @@ public class DynamicQuestHandler
         Log.Info("DynamicQuestHandler initialized.");
     }
 
+    
+    
     [ScriptHandler("jes_miniquest")]
-    public void HandleMiniQuest(CallInfo callInfo)
+    public void OnMiniQuest(CallInfo info)
     {
         Log.Info("Miniquest started.");
     }
