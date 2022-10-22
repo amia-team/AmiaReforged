@@ -18,5 +18,6 @@ public class MiniQuest
     public void Reward()
     {
         _questGiver?.SpeakString("Jes is amazing!");
+        _player?.LoginCreature?.SpeakString("I agree!");
     }
 }
