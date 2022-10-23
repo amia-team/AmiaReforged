@@ -1,5 +1,4 @@
 ﻿using Anvil.API;
-using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.System.Dynamic.Quest;
@@ -38,21 +37,32 @@ public class MiniQuest
     {
         foreach (NwItem item in questItems)
         {
-            DoExperienceReward(_player!);
-            DoGoldReward(_player!);
+            DoExperienceReward();
+            DoGoldReward();
+            DoItemReward();
             item.Destroy();
         }
     }
 
-    private void DoExperienceReward(NwPlayer nwPlayer)
+    private void DoExperienceReward()
     {
         int xpReward = NWScript.GetLocalInt(_questGiver, DynamicQuestLocals.MiniQuest.XpReward);
-        nwPlayer.GiveXp(xpReward);
+        _player!.GiveXp(xpReward);
     }
 
-    private void DoGoldReward(NwPlayer nwPlayer)
+    private void DoGoldReward()
     {
         int goldReward = NWScript.GetLocalInt(_questGiver, DynamicQuestLocals.MiniQuest.GoldReward);
-        nwPlayer.LoginCreature!.GiveGold(goldReward);
+        _player!.LoginCreature!.GiveGold(goldReward);
+    }
+
+    private void DoItemReward()
+    {
+        string itemReward = NWScript.GetLocalString(_questGiver, DynamicQuestLocals.MiniQuest.ItemReward);
+        if (itemReward != string.Empty)
+        { 
+            NwItem.Create(itemReward, _player!.LoginCreature); 
+        }
+        
     }
 }
