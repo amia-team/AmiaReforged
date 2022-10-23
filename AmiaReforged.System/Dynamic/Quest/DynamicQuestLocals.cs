@@ -8,10 +8,10 @@ public static class DynamicQuestLocals
 {
     public static class MiniQuest
     {
-        public static string QuestItem => "questitem";
-        public static string GoldReward => "questgold";
-        public static string XpReward => "questxp";
-        public static string QuestDoneLine => "questdone";
-        public static string QuestFailedLine => "questfail";
+        public static string QuestItem => "questItem";
+        public static string GoldReward => "goldReward";
+        public static string XpReward => "xpReward";
+        public static string QuestDoneLine => "questDone";
+        public static string QuestFailedLine => "questFail";
     }
 }
