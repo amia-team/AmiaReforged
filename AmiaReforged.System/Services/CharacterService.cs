@@ -10,10 +10,10 @@ public class CharacterService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    /**
-    * Class CharacterService
-    * Once the character is created, create a reference 
-    */
+
+    // Take a store
+    // When a character hasn't been added to the store, add them to the store and make sure that they can be referenced by their PC key. Make sure they have their player's public cd key referenced in the data as well.
+
     public CharacterService()
     {
         NwPlaceable? entryStatue = NwObject.FindObjectsWithTag<NwPlaceable>("ds_entrygate").FirstOrDefault();
@@ -30,6 +30,14 @@ public class CharacterService
 
     private void StoreCharacter(PlaceableEvents.OnUsed obj)
     {
-        string characterName = obj.UsedBy.Name;
+        if(!obj.UsedBy.IsPlayerControlled(out NwPlayer? player))
+        {
+            return;
+        }
+
+        if (player.LoginCreature == null) return;
+        
+        // Check if the player has a character already stored.
+
     }
 }
