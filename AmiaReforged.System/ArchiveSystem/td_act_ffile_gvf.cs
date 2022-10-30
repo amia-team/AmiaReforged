@@ -16,7 +16,7 @@ namespace AmiaReforged.System.ArchiveSystem
         [ScriptHandler("td_act_ffile_gvf")]
         public void FPlusGetArchiveFile(CallInfo cinfo)
         {
-            NwObject oPC = cinfo.ObjectSelf;
+            NwObject oPC = cinfo.ObjectSelf!;
             string cdkey = cinfo.ScriptParams[CARG_1];
             int index = Int32.Parse(cinfo.ScriptParams[CARG_2]);
 

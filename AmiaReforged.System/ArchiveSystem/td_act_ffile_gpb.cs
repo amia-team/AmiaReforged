@@ -14,7 +14,7 @@ namespace AmiaReforged.System.ArchiveSystem
         [ScriptHandler("td_act_ffile_gpb")]
         public void FPlusGetArchiveFile(NwPlayer caller)
         {
-            NwObject oPC = caller.LoginCreature;
+            NwObject oPC = caller.LoginCreature!;
             string bic = caller.BicFileName;
          
             if (DEBUG)

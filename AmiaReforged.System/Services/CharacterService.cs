@@ -1,5 +1,6 @@
+﻿using AmiaReforged.Core;
+using AmiaReforged.Core.Entities;
 using Anvil.API;
-using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 
@@ -8,36 +9,53 @@ namespace AmiaReforged.System.Services;
 [ServiceBinding(typeof(CharacterService))]
 public class CharacterService
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
-
-    // Take a store
-    // When a character hasn't been added to the store, add them to the store and make sure that they can be referenced by their PC key. Make sure they have their player's public cd key referenced in the data as well.
+    private readonly AmiaContext _ctx;
+    private readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public CharacterService()
     {
-        NwPlaceable? entryStatue = NwObject.FindObjectsWithTag<NwPlaceable>("ds_entrygate").FirstOrDefault();
-        // Check that the entry statue is not "null".
-        if (entryStatue == null)
+        _ctx = new AmiaContext();
+    }
+    
+    public async void AddCharacter(AmiaCharacter character)
+    {
+        try
         {
-            Log.Error("Something is very wrong, entry gate could not be found");
-            return;
+            await _ctx.Characters.AddAsync(character);
+            await _ctx.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error saving character");
         }
 
-        entryStatue.OnUsed += StoreCharacter;
-        Log.Info("Character Service initialized.");
+        await NwTask.SwitchToMainThread();
+    }
+    public AmiaCharacter? GetCharacter(Guid pcKey) => _ctx.Characters.FirstOrDefault(c => c!.PcId == pcKey);
+
+    public void UpdateCharacter(AmiaCharacter? character)
+    {
+        try
+        {
+            _ctx.Characters.Update(character);
+            _ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error updating character");
+        }
     }
 
-    private void StoreCharacter(PlaceableEvents.OnUsed obj)
+    public void DeleteCharacter(AmiaCharacter? character)
     {
-        if(!obj.UsedBy.IsPlayerControlled(out NwPlayer? player))
+        try
         {
-            return;
+            _ctx.Characters.Remove(character);
+            _ctx.SaveChanges();
         }
-
-        if (player.LoginCreature == null) return;
-        
-        // Check if the player has a character already stored.
-
+        catch (Exception e)
+        {
+            Log.Error(e, "Error deleting character");
+        }
     }
 }

@@ -7,12 +7,12 @@ public class Td_act_file_ex
     private const int PAGE_SIZE = 10;
     public Boolean MoveFile(string target, string destination, string fname)
     {
-        if (!global::System.IO.Directory.Exists(destination)) {
-            global::System.IO.Directory.CreateDirectory(destination);
+        if (!Directory.Exists(destination)) {
+            Directory.CreateDirectory(destination);
         }
         try {
-            global::System.IO.File.Move(target + fname, destination + fname);
-        } catch (Exception e) {
+            File.Move(target + fname, destination + fname);
+        } catch (Exception) {
             return false;
         }
         return true;
@@ -40,7 +40,7 @@ public class Td_act_file_ex
         string target = VAULT_DIR + cdkey + ARCHIVE_DIR + fname;
         string destination = VAULT_DIR + cdkey + ARCHIVE_DIR + newname;
         try {
-            global::System.IO.File.Move(target, destination);
+            File.Move(target, destination);
         } catch (Exception e) {
             return false;
         }
@@ -50,22 +50,22 @@ public class Td_act_file_ex
         string target = VAULT_DIR + cdkey + "/" + fname;
         string destination = VAULT_DIR + cdkey + "/" + newname;
         try {
-            global::System.IO.File.Move(target, destination);
+            File.Move(target, destination);
         } catch (Exception e) {
             return false;
         }
         return true;
     }
     public string[] GetVaultFiles(string cdkey) {
-        string[] files = global::System.IO.Directory.GetFiles(VAULT_DIR + cdkey + "/");
+        string[] files = Directory.GetFiles(VAULT_DIR + cdkey + "/");
         return files;
     }
     public int GetVaultSize(string cdkey) {
-        string[] files = global::System.IO.Directory.GetFiles(VAULT_DIR + cdkey + "/");
+        string[] files = Directory.GetFiles(VAULT_DIR + cdkey + "/");
         return files.Length;
     }
     public string GetVaultFile(string cdkey, int index) {
-        string[] files = global::System.IO.Directory.GetFiles(VAULT_DIR + cdkey + "/");
+        string[] files = Directory.GetFiles(VAULT_DIR + cdkey + "/");
         string file = Path.GetFileName(files[index]);
         return file;
     }
@@ -83,15 +83,15 @@ public class Td_act_file_ex
         return listpage;
     }
     public string[] GetArchiveFiles(string cdkey) {
-        string[] files = global::System.IO.Directory.GetFiles(VAULT_DIR + cdkey + ARCHIVE_DIR);
+        string[] files = Directory.GetFiles(VAULT_DIR + cdkey + ARCHIVE_DIR);
         return files;
     }
     public int GetArchiveSize(string cdkey) { 
-        string[] files = global::System.IO.Directory.GetFiles(VAULT_DIR + cdkey + ARCHIVE_DIR);
+        string[] files = Directory.GetFiles(VAULT_DIR + cdkey + ARCHIVE_DIR);
         return files.Length;
     }
     public string GetArchiveFile(string cdkey, int index) {
-        string[] files = global::System.IO.Directory.GetFiles(VAULT_DIR + cdkey + ARCHIVE_DIR);
+        string[] files = Directory.GetFiles(VAULT_DIR + cdkey + ARCHIVE_DIR);
         string file = Path.GetFileName(files[index]);
         return file;
     }
@@ -123,7 +123,7 @@ public class Td_act_file_ex
             string target = VAULT_DIR + cdkey + "/" + fname;
             string destination = VAULT_DIR + cdkey + "/" + newname;
             try {
-                global::System.IO.File.Move(target, destination);
+                File.Move(target, destination);
             } catch (Exception e) {
                 return false;
             }
@@ -134,7 +134,7 @@ public class Td_act_file_ex
             string destination = VAULT_DIR + cdkey + ARCHIVE_DIR + newname;
             try
             {
-                global::System.IO.File.Move(target, destination);
+                File.Move(target, destination);
             }
             catch (Exception e)
             {

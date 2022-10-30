@@ -18,13 +18,13 @@ public class EncounterService
         foreach (NwTrigger nwTrigger in triggers)
         {
             Log.Info($"Spawn trigger found in {nwTrigger.Area.Name}");
-            nwTrigger.OnEnter += OnTriggerEnter;
+            nwTrigger.OnEnter += SpawnTriggerOnEnter;
         }
 
         Log.Info("Encounter service initialized.");
     }
 
-    private static void OnTriggerEnter(TriggerEvents.OnEnter obj)
+    private static void SpawnTriggerOnEnter(TriggerEvents.OnEnter obj)
     {
         if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer player)) return;
         if (player.IsDM || player.IsPlayerDM) return;

@@ -13,7 +13,7 @@ namespace AmiaReforged.System.ArchiveSystem
         [ScriptHandler("td_act_ffile_gas")]
         public void FPlusGetArchiveSize(CallInfo cinfo)
         {
-            NwObject oPC = cinfo.ObjectSelf;
+            NwObject oPC = cinfo.ObjectSelf!;
             string cdkey = cinfo.ScriptParams[CARG_1];
 
             Td_act_file_ex archivesys = new Td_act_file_ex();

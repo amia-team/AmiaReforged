@@ -1,13 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AmiaReforged.Core.Models;
+namespace AmiaReforged.Core.Entities;
 
 public class AmiaCharacter
 {
-    
     [Key]
-    public string PcKey { get; set; }
-    
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
+    public Guid PcId { get; set; }
+    public string CdKey { get; set; } = null!;
+    public string FirstName { get; set; } = null!;
+    public string LastName { get; set; } = null!;
 }
