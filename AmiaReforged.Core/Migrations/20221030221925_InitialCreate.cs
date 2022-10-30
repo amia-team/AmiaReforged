@@ -28,7 +28,8 @@ namespace AmiaReforged.Core.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     cd_key = table.Column<string>(type: "text", nullable: false),
                     first_name = table.Column<string>(type: "text", nullable: false),
-                    last_name = table.Column<string>(type: "text", nullable: false)
+                    last_name = table.Column<string>(type: "text", nullable: false),
+                    is_player_character = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {

@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AmiaReforged.Core.Migrations
 {
     [DbContext(typeof(AmiaContext))]
-    [Migration("20221030145039_InitialCreate")]
+    [Migration("20221030221925_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -116,6 +116,10 @@ namespace AmiaReforged.Core.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("first_name");
+
+                    b.Property<bool>("IsPlayerCharacter")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_player_character");
 
                     b.Property<string>("LastName")
                         .IsRequired()

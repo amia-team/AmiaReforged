@@ -78,10 +78,10 @@ public class CharacterLoaderService
             PcId = Guid.Parse(dbToken),
             CdKey = player.CDKey,
             FirstName = player.LoginCreature.OriginalFirstName,
-            LastName = player.LoginCreature.OriginalLastName
+            LastName = player.LoginCreature.OriginalLastName,
+            IsPlayerCharacter = true
         };
         
-
         _characterService.AddCharacter(amiaCharacter);
     }
 }

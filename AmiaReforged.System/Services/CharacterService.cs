@@ -2,6 +2,7 @@
 using AmiaReforged.Core.Entities;
 using Anvil.API;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.System.Services;
@@ -16,8 +17,8 @@ public class CharacterService
     {
         _ctx = new AmiaContext();
     }
-    
-    public async void AddCharacter(AmiaCharacter character)
+
+    public async Task AddCharacter(AmiaCharacter character)
     {
         try
         {
@@ -29,33 +30,57 @@ public class CharacterService
             Log.Error(e, "Error saving character");
         }
 
-        await NwTask.SwitchToMainThread();
+        await TrySwitchToMainThread();
     }
-    public AmiaCharacter? GetCharacter(Guid pcKey) => _ctx.Characters.FirstOrDefault(c => c!.PcId == pcKey);
 
-    public void UpdateCharacter(AmiaCharacter? character)
+    public async Task<AmiaCharacter?> GetCharacterByGuid(Guid guid)
+    {
+
+        AmiaCharacter? character = await _ctx.Characters.FindAsync(guid);
+        await TrySwitchToMainThread();
+        
+        return character;
+    }
+
+    public async Task UpdateCharacter(AmiaCharacter character)
     {
         try
         {
             _ctx.Characters.Update(character);
-            _ctx.SaveChanges();
+            await _ctx.SaveChangesAsync();
         }
         catch (Exception e)
         {
             Log.Error(e, "Error updating character");
         }
+
+        await TrySwitchToMainThread();
     }
 
-    public void DeleteCharacter(AmiaCharacter? character)
+    public async Task DeleteCharacter(AmiaCharacter character)
     {
         try
         {
             _ctx.Characters.Remove(character);
-            _ctx.SaveChanges();
+            await _ctx.SaveChangesAsync();
         }
         catch (Exception e)
         {
             Log.Error(e, "Error deleting character");
+        }
+
+        await TrySwitchToMainThread();
+    }
+
+    private async Task TrySwitchToMainThread()
+    {
+        try
+        {
+            await NwTask.SwitchToMainThread();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error switching to main thread");
         }
     }
 }

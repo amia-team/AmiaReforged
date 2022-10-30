@@ -157,6 +157,9 @@ namespace AmiaReforged.Core
 
                 entity.Property(e => e.CdKey)
                     .HasColumnName("cd_key");
+
+                entity.Property(e => e.IsPlayerCharacter)
+                    .HasColumnName("is_player_character");
             });
         }
     }

@@ -115,6 +115,10 @@ namespace AmiaReforged.Core.Migrations
                         .HasColumnType("text")
                         .HasColumnName("first_name");
 
+                    b.Property<bool>("IsPlayerCharacter")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_player_character");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("text")

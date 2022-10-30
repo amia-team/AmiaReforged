@@ -63,6 +63,5 @@ public class MiniQuest
         { 
             NwItem.Create(itemReward, _player!.LoginCreature); 
         }
-        
     }
 }
