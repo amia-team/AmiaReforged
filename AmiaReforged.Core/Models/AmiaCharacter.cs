@@ -4,7 +4,7 @@ namespace AmiaReforged.Core.Entities;
 
 public class AmiaCharacter
 {
-    [Key] public Guid PcId { get; set; }
+    [Key] public Guid Id { get; set; }
     public string CdKey { get; set; } = null!;
     public string FirstName { get; set; } = null!;
     public string LastName { get; set; } = null!;

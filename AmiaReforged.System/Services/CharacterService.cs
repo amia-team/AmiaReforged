@@ -1,8 +1,7 @@
 ﻿using AmiaReforged.Core;
 using AmiaReforged.Core.Entities;
-using Anvil.API;
+using AmiaReforged.System.Helpers;
 using Anvil.Services;
-using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.System.Services;
@@ -12,10 +11,12 @@ public class CharacterService
 {
     private readonly AmiaContext _ctx;
     private readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly NwTaskHelper _nwTaskHelper;
 
     public CharacterService()
     {
         _ctx = new AmiaContext();
+        _nwTaskHelper = new NwTaskHelper();
     }
 
     public async Task AddCharacter(AmiaCharacter character)
@@ -30,15 +31,14 @@ public class CharacterService
             Log.Error(e, "Error saving character");
         }
 
-        await TrySwitchToMainThread();
+        await _nwTaskHelper.TrySwitchToMainThread();
     }
 
     public async Task<AmiaCharacter?> GetCharacterByGuid(Guid guid)
     {
-
         AmiaCharacter? character = await _ctx.Characters.FindAsync(guid);
-        await TrySwitchToMainThread();
-        
+        await _nwTaskHelper.TrySwitchToMainThread();
+
         return character;
     }
 
@@ -54,7 +54,7 @@ public class CharacterService
             Log.Error(e, "Error updating character");
         }
 
-        await TrySwitchToMainThread();
+        await _nwTaskHelper.TrySwitchToMainThread();
     }
 
     public async Task DeleteCharacter(AmiaCharacter character)
@@ -69,18 +69,6 @@ public class CharacterService
             Log.Error(e, "Error deleting character");
         }
 
-        await TrySwitchToMainThread();
-    }
-
-    private async Task TrySwitchToMainThread()
-    {
-        try
-        {
-            await NwTask.SwitchToMainThread();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error switching to main thread");
-        }
+        await _nwTaskHelper.TrySwitchToMainThread();
     }
 }

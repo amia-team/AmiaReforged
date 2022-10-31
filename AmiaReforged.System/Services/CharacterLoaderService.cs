@@ -75,7 +75,7 @@ public class CharacterLoaderService
 
         AmiaCharacter amiaCharacter = new()
         {
-            PcId = Guid.Parse(dbToken),
+            Id = Guid.Parse(dbToken),
             CdKey = player.CDKey,
             FirstName = player.LoginCreature.OriginalFirstName,
             LastName = player.LoginCreature.OriginalLastName,
