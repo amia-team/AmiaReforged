@@ -149,9 +149,10 @@ public class FactionServiceTest : IDisposable
 
         IEnumerable<Faction> actual = await _factionService.GetAllFactions();
 
-        actual.ToList().Count.Should().Be(2, "There should be 2 factions");
+        actual.ToList().ToList().Should().Contain(factionOne, "Faction one should be in list").And
+            .Contain(factionTwo, "Faction two should be in list");
     }
-    
+
 
     public void Dispose()
     {

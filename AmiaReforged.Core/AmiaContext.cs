@@ -33,6 +33,7 @@ public class AmiaContext : DbContext
     public virtual DbSet<Player> Players { get; set; } = null!;
     public virtual DbSet<AmiaCharacter> Characters { get; set; } = null!;
     public DbSet<Faction> Factions { get; set; } = null!;
+    public DbSet<FactionRelation> FactionRelations { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
