@@ -1,4 +1,5 @@
-﻿using AmiaReforged.System.Webhooks;
+﻿using AmiaReforged.System.Helpers;
+using AmiaReforged.System.Webhooks;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -35,5 +36,7 @@ public class JoinWebhookService
 
         string players = NwModule.Instance.Players.Where(player => player.LoginCreature != null).Aggregate("Players online: \n", (current, player) => current + $"\t\t{player.PlayerName} - {player.LoginCreature.Name}\n");
         await _webhookSender.SendMessage(Username, players, Avatar);
+        NwTaskHelper taskHelper = new();
+        await taskHelper.TrySwitchToMainThread();
     }
 }
