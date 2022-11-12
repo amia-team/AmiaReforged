@@ -2,6 +2,7 @@
 using AmiaReforged.Core.Entities;
 using AmiaReforged.System.Helpers;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.System.Services;
@@ -70,5 +71,67 @@ public class CharacterService
         }
 
         await _nwTaskHelper.TrySwitchToMainThread();
+    }
+
+    public async Task<List<AmiaCharacter>> GetAllCharacters()
+    {
+        List<AmiaCharacter> characters = new List<AmiaCharacter>();
+        try
+        {
+            characters = await _ctx.Characters.ToListAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting all characters");
+        }
+
+        await _nwTaskHelper.TrySwitchToMainThread();
+        return characters;
+    }
+
+    public async Task<List<AmiaCharacter>> GetAllPlayerCharacters()
+    {
+        List<AmiaCharacter> characters = new();
+        try
+        {
+            characters = await _ctx.Characters.Where(c => c.IsPlayerCharacter).ToListAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting all player characters");
+        }
+
+        await _nwTaskHelper.TrySwitchToMainThread();
+        return characters;
+    }
+
+    public async Task<bool> CharacterExists(Guid amiaCharacterId)
+    {
+        bool exists = false;
+        try
+        {
+            exists = await _ctx.Characters.AnyAsync(c => c.Id == amiaCharacterId);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error checking if character exists");
+        }
+
+        return exists;
+    }
+
+    public async Task<AmiaCharacter?> GetCharacterById(Guid amiaCharacterId)
+    { 
+        AmiaCharacter? character = null;
+        try
+        {
+            character = await _ctx.Characters.FindAsync(amiaCharacterId);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting character by id");
+        }
+
+        return character;
     }
 }
