@@ -6,17 +6,17 @@ using NLog;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(ResetChatService))]
-public class ResetChatService
+[ServiceBinding(typeof(ChatCommandService))]
+public class ChatCommandService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly List<IChatCommand> _commands;
 
-    public ResetChatService(IEnumerable<IChatCommand> commands)
+    public ChatCommandService(IEnumerable<IChatCommand> commands)
     {
         _commands = commands.ToList();
         NwModule.Instance.OnPlayerChat += HandleChatCommand;
-        Log.Info("Reset Control Panel Service initialized.");
+        Log.Info("Chat Command Service initialized.");
     }
 
     private void HandleChatCommand(ModuleEvents.OnPlayerChat eventInfo)
