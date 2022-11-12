@@ -7,6 +7,7 @@ using AmiaReforged.System.Services;
 using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
+using CharacterService = AmiaReforged.System.Services.CharacterService;
 
 namespace AmiaReforged.Core.Test.Integration;
 
@@ -25,7 +26,7 @@ public class FactionServiceTest : IDisposable
     public FactionServiceTest(ITestOutputHelper output)
     {
         _output = output;
-        _factionService = new FactionService();
+        _factionService = new FactionService(new CharacterService());
     }
 
     [Fact]
@@ -118,6 +119,12 @@ public class FactionServiceTest : IDisposable
             IsPlayerCharacter = true
         };
 
+        CharacterService characterService = new();
+
+        await characterService.AddCharacter(one);
+        await characterService.AddCharacter(two);
+        await characterService.AddCharacter(three);
+
         await _factionService.AddFaction(_faction);
         await _factionService.AddToRoster(_faction, one.Id);
         await _factionService.AddToRoster(_faction, new List<Guid> { two.Id, three.Id });
@@ -126,6 +133,77 @@ public class FactionServiceTest : IDisposable
 
         actual.Should().NotBeNull("Faction should be added");
         actual!.Members.Should().HaveCount(3, "Faction should have 3 characters in roster");
+    }
+
+    [Fact]
+    public async void ShouldAddFactionWithPrepopulatedRoster()
+    {
+        AmiaCharacter one = new()
+        {
+            FirstName = "PrepopulatedOne",
+            LastName = "PrepopulatedOne",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = true
+        };
+        AmiaCharacter two = new()
+        {
+            FirstName = "PrepopulatedTwo",
+            LastName = "PrepopulatedTwo",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = true
+        };
+        AmiaCharacter three = new()
+        {
+            FirstName = "PrepopulatedThree",
+            LastName = "PrepopulatedThree",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = true
+        };
+        
+        CharacterService characterService = new();
+        
+        await characterService.AddCharacter(one);
+        await characterService.AddCharacter(two);
+        await characterService.AddCharacter(three);
+        
+        Faction f = new()
+        {
+            Name = "Prepopulated Faction",
+            Description = "Prepopulated Description",
+            Members = new List<Guid> { one.Id, two.Id, three.Id }
+        };
+        
+        await _factionService.AddFaction(f);
+        
+        Faction? actual = await _factionService.GetFactionByName(f.Name);
+        
+        actual.Should().NotBeNull("Faction should be added");
+        actual!.Members.Should().HaveCount(3, "Faction should have 3 characters in roster");
+    }
+    [Fact]
+    public async void ShouldNotAcceptNonExistentCharacters()
+    {
+        AmiaCharacter fakeCharacter = new()
+        {
+            FirstName = "Fake",
+            LastName = "Fake",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = true
+        };
+        
+        Faction factionWithFake = new Faction
+        {
+            Name = "Faction with fake",
+            Description = "Faction with fake",
+            Members = new List<Guid> { fakeCharacter.Id }
+        };
+        
+        await _factionService.AddFaction(factionWithFake);
+        
+        Faction? actual = await _factionService.GetFactionByName(factionWithFake.Name);
+        
+        actual.Should().NotBeNull("Faction should be added");
+        actual!.Members.Should().HaveCount(0, "Faction should not be created with nonexistent characters");
     }
 
     [Fact]
@@ -151,6 +229,140 @@ public class FactionServiceTest : IDisposable
 
         actual.ToList().ToList().Should().Contain(factionOne, "Faction one should be in list").And
             .Contain(factionTwo, "Faction two should be in list");
+    }
+    
+    
+    [Fact]
+    public async void ShouldRemoveCharacterFromRoster()
+    {
+        AmiaCharacter one = new()
+        {
+            FirstName = "RemoveOne",
+            LastName = "RemoveOne",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = true
+        };
+        AmiaCharacter two = new()
+        {
+            FirstName = "RemoveTwo",
+            LastName = "RemoveTwo",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = true
+        };
+        AmiaCharacter three = new()
+        {
+            FirstName = "RemoveThree",
+            LastName = "RemoveThree",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = true
+        };
+        
+        CharacterService characterService = new();
+        
+        await characterService.AddCharacter(one);
+        await characterService.AddCharacter(two);
+        await characterService.AddCharacter(three);
+        
+        Faction f = new()
+        {
+            Name = "Remove from roster",
+            Description = "Remove from roster",
+            Members = new List<Guid> { one.Id, two.Id, three.Id }
+        };
+        
+        await _factionService.AddFaction(f);
+        
+        Faction? actual = await _factionService.GetFactionByName(f.Name);
+        
+        actual.Should().NotBeNull("Faction should be added");
+        actual!.Members.Should().HaveCount(3, "Faction should have 3 characters in roster");
+        
+        
+        await _factionService.RemoveFromRoster(f, two.Id);
+        
+        actual = await _factionService.GetFactionByName(f.Name);
+        
+        actual.Should().NotBeNull("Faction should be added");
+        actual!.Members.Should().HaveCount(2, "Faction should have 2 characters in roster");
+    }
+
+
+    [Fact]
+    public async void ShouldGetAllPlayerCharactersInRoster()
+    {
+        AmiaCharacter pc = new()
+        {
+            CdKey = "asdfkjnesruq",
+            FirstName = "PC",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = true,
+            LastName = "PC"
+        };
+        AmiaCharacter npc = new()
+        {
+            FirstName = "NPC",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = false,
+            LastName = "NPC"
+        };
+        
+        CharacterService characterService = new();
+        
+        await characterService.AddCharacter(pc);
+        await characterService.AddCharacter(npc);
+        
+        Faction f = new()
+        {
+            Name = "Get all player characters",
+            Description = "Get all player characters",
+            Members = new List<Guid> { pc.Id, npc.Id }
+        };
+        
+        await _factionService.AddFaction(f);
+        
+        List<AmiaCharacter> actual = await _factionService.GetAllPlayerCharactersFrom(f);
+        
+        actual.Should().HaveCount(1, "Faction should have 1 player character in roster");
+        actual.Should().OnlyContain(c => c.FirstName == pc.FirstName, "Faction should have only PC in roster");
+    }
+
+    [Fact]
+    public async void ShouldGetAllNonPlayerCharactersFromFaction()
+    {
+        AmiaCharacter pc = new()
+        {
+            CdKey = "asdfkjnesruq",
+            FirstName = "PC",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = true,
+            LastName = "PC"
+        };
+        AmiaCharacter npc = new()
+        {
+            FirstName = "NPC",
+            Id = Guid.NewGuid(),
+            IsPlayerCharacter = false,
+            LastName = "NPC"
+        };
+        
+        CharacterService characterService = new();
+        
+        await characterService.AddCharacter(pc);
+        await characterService.AddCharacter(npc);
+        
+        Faction f = new()
+        {
+            Name = "Get all player characters",
+            Description = "Get all player characters",
+            Members = new List<Guid> { pc.Id, npc.Id }
+        };
+        
+        await _factionService.AddFaction(f);
+        
+        List<AmiaCharacter> actual = await _factionService.GetAllNonPlayerCharactersFrom(f);
+        
+        actual.Should().HaveCount(1, "Faction should have 1 player character in roster");
+        actual.Should().OnlyContain(c => c.FirstName == npc.FirstName, "Faction should have only NPC in roster");
     }
 
 
