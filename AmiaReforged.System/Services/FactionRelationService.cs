@@ -6,7 +6,7 @@ using NLog;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(FactionRelation))]
+// [ServiceBinding(typeof(FactionRelation))]
 public class FactionRelationService
 {
     private readonly FactionService _factionService;
