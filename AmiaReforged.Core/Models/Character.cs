@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AmiaReforged.Core.Entities;
 
-public class AmiaCharacter
+public class Character
 {
     [Key] public Guid Id { get; set; }
     public string? CdKey { get; set; } 

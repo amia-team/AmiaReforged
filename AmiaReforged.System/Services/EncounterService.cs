@@ -17,7 +17,6 @@ public class EncounterService
 
         foreach (NwTrigger nwTrigger in triggers)
         {
-            Log.Info($"Spawn trigger found in {nwTrigger.Area.Name}");
             nwTrigger.OnEnter += SpawnTriggerOnEnter;
         }
 

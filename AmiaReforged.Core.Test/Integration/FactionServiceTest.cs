@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using AmiaReforged.Core.Entities;
 using AmiaReforged.Core.Models;
+using AmiaReforged.Core.Services;
 using AmiaReforged.System.Services;
 using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
-using CharacterService = AmiaReforged.System.Services.CharacterService;
+using CharacterService = AmiaReforged.Core.Services.CharacterService;
 
 namespace AmiaReforged.Core.Test.Integration;
 
@@ -97,21 +98,21 @@ public class FactionServiceTest : IDisposable
     [Fact]
     public async void ShouldAddCharactersToRoster()
     {
-        AmiaCharacter one = new()
+        Character one = new()
         {
             FirstName = "One",
             LastName = "One",
             Id = Guid.NewGuid(),
             IsPlayerCharacter = true
         };
-        AmiaCharacter two = new()
+        Character two = new()
         {
             FirstName = "Two",
             LastName = "Two",
             Id = Guid.NewGuid(),
             IsPlayerCharacter = true
         };
-        AmiaCharacter three = new()
+        Character three = new()
         {
             FirstName = "Three",
             LastName = "Three",
@@ -138,21 +139,21 @@ public class FactionServiceTest : IDisposable
     [Fact]
     public async void ShouldAddFactionWithPrepopulatedRoster()
     {
-        AmiaCharacter one = new()
+        Character one = new()
         {
             FirstName = "PrepopulatedOne",
             LastName = "PrepopulatedOne",
             Id = Guid.NewGuid(),
             IsPlayerCharacter = true
         };
-        AmiaCharacter two = new()
+        Character two = new()
         {
             FirstName = "PrepopulatedTwo",
             LastName = "PrepopulatedTwo",
             Id = Guid.NewGuid(),
             IsPlayerCharacter = true
         };
-        AmiaCharacter three = new()
+        Character three = new()
         {
             FirstName = "PrepopulatedThree",
             LastName = "PrepopulatedThree",
@@ -183,7 +184,7 @@ public class FactionServiceTest : IDisposable
     [Fact]
     public async void ShouldNotAcceptNonExistentCharacters()
     {
-        AmiaCharacter fakeCharacter = new()
+        Character fakeCharacter = new()
         {
             FirstName = "Fake",
             LastName = "Fake",
@@ -235,21 +236,21 @@ public class FactionServiceTest : IDisposable
     [Fact]
     public async void ShouldRemoveCharacterFromRoster()
     {
-        AmiaCharacter one = new()
+        Character one = new()
         {
             FirstName = "RemoveOne",
             LastName = "RemoveOne",
             Id = Guid.NewGuid(),
             IsPlayerCharacter = true
         };
-        AmiaCharacter two = new()
+        Character two = new()
         {
             FirstName = "RemoveTwo",
             LastName = "RemoveTwo",
             Id = Guid.NewGuid(),
             IsPlayerCharacter = true
         };
-        AmiaCharacter three = new()
+        Character three = new()
         {
             FirstName = "RemoveThree",
             LastName = "RemoveThree",
@@ -290,7 +291,7 @@ public class FactionServiceTest : IDisposable
     [Fact]
     public async void ShouldGetAllPlayerCharactersInRoster()
     {
-        AmiaCharacter pc = new()
+        Character pc = new()
         {
             CdKey = "asdfkjnesruq",
             FirstName = "PC",
@@ -298,7 +299,7 @@ public class FactionServiceTest : IDisposable
             IsPlayerCharacter = true,
             LastName = "PC"
         };
-        AmiaCharacter npc = new()
+        Character npc = new()
         {
             FirstName = "NPC",
             Id = Guid.NewGuid(),
@@ -320,7 +321,7 @@ public class FactionServiceTest : IDisposable
         
         await _factionService.AddFaction(f);
         
-        List<AmiaCharacter> actual = await _factionService.GetAllPlayerCharactersFrom(f);
+        List<Character> actual = await _factionService.GetAllPlayerCharactersFrom(f);
         
         actual.Should().HaveCount(1, "Faction should have 1 player character in roster");
         actual.Should().OnlyContain(c => c.FirstName == pc.FirstName, "Faction should have only PC in roster");
@@ -329,7 +330,7 @@ public class FactionServiceTest : IDisposable
     [Fact]
     public async void ShouldGetAllNonPlayerCharactersFromFaction()
     {
-        AmiaCharacter pc = new()
+        Character pc = new()
         {
             CdKey = "asdfkjnesruq",
             FirstName = "PC",
@@ -337,7 +338,7 @@ public class FactionServiceTest : IDisposable
             IsPlayerCharacter = true,
             LastName = "PC"
         };
-        AmiaCharacter npc = new()
+        Character npc = new()
         {
             FirstName = "NPC",
             Id = Guid.NewGuid(),
@@ -359,7 +360,7 @@ public class FactionServiceTest : IDisposable
         
         await _factionService.AddFaction(f);
         
-        List<AmiaCharacter> actual = await _factionService.GetAllNonPlayerCharactersFrom(f);
+        List<Character> actual = await _factionService.GetAllNonPlayerCharactersFrom(f);
         
         actual.Should().HaveCount(1, "Faction should have 1 player character in roster");
         actual.Should().OnlyContain(c => c.FirstName == npc.FirstName, "Faction should have only NPC in roster");

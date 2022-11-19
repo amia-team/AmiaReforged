@@ -1,26 +1,25 @@
-﻿using AmiaReforged.Core;
-using AmiaReforged.Core.Entities;
+﻿using AmiaReforged.Core.Entities;
 using AmiaReforged.System.Helpers;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 
-namespace AmiaReforged.System.Services;
+namespace AmiaReforged.Core.Services;
 
-// [ServiceBinding(typeof(CharacterService))]
+[ServiceBinding(typeof(CharacterService))]
 public class CharacterService
 {
     private readonly AmiaContext _ctx;
-    private readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly NwTaskHelper _nwTaskHelper;
 
-    public CharacterService()
+    public CharacterService(AmiaContext ctx, NwTaskHelper nwTaskHelper)
     {
-        _ctx = new AmiaContext();
-        _nwTaskHelper = new NwTaskHelper();
+        _ctx = ctx;
+        _nwTaskHelper = nwTaskHelper;
     }
 
-    public async Task AddCharacter(AmiaCharacter character)
+    public async Task AddCharacter(Character character)
     {
         try
         {
@@ -35,15 +34,15 @@ public class CharacterService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task<AmiaCharacter?> GetCharacterByGuid(Guid guid)
+    public async Task<Character?> GetCharacterByGuid(Guid guid)
     {
-        AmiaCharacter? character = await _ctx.Characters.FindAsync(guid);
+        Character? character = await _ctx.Characters.FindAsync(guid);
         await _nwTaskHelper.TrySwitchToMainThread();
 
         return character;
     }
 
-    public async Task UpdateCharacter(AmiaCharacter character)
+    public async Task UpdateCharacter(Character character)
     {
         try
         {
@@ -58,7 +57,7 @@ public class CharacterService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task DeleteCharacter(AmiaCharacter character)
+    public async Task DeleteCharacter(Character character)
     {
         try
         {
@@ -73,9 +72,9 @@ public class CharacterService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task<List<AmiaCharacter>> GetAllCharacters()
+    public async Task<List<Character>> GetAllCharacters()
     {
-        List<AmiaCharacter> characters = new List<AmiaCharacter>();
+        List<Character> characters = new();
         try
         {
             characters = await _ctx.Characters.ToListAsync();
@@ -89,20 +88,20 @@ public class CharacterService
         return characters;
     }
 
-    public async Task<List<AmiaCharacter>> GetAllPlayerCharacters()
+    public async Task<List<Character>> GetAllPlayerCharacters()
     {
-        List<AmiaCharacter> characters = new();
-        try
-        {
-            characters = await _ctx.Characters.Where(c => c.IsPlayerCharacter).ToListAsync();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error getting all player characters");
-        }
+        List<Character> characters = await GetAllCharacters();
 
         await _nwTaskHelper.TrySwitchToMainThread();
-        return characters;
+        return characters.Where(character => character.IsPlayerCharacter).ToList();
+    }
+
+    public async Task<List<Character>> GetAllNonPlayerCharacters()
+    {
+        List<Character> characters = await GetAllCharacters();
+
+        await _nwTaskHelper.TrySwitchToMainThread();
+        return characters.Where(character => !character.IsPlayerCharacter).ToList();
     }
 
     public async Task<bool> CharacterExists(Guid amiaCharacterId)
@@ -120,9 +119,9 @@ public class CharacterService
         return exists;
     }
 
-    public async Task<AmiaCharacter?> GetCharacterById(Guid amiaCharacterId)
+    public async Task<Character?> GetCharacterById(Guid amiaCharacterId)
     { 
-        AmiaCharacter? character = null;
+        Character? character = null;
         try
         {
             character = await _ctx.Characters.FindAsync(amiaCharacterId);
@@ -133,5 +132,35 @@ public class CharacterService
         }
 
         return character;
+    }
+
+    public async Task AddCharacters(IEnumerable<Character> characters)
+    { 
+        try
+        {
+            await _ctx.Characters.AddRangeAsync(characters);
+            await _ctx.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error adding characters");
+        }
+
+        await _nwTaskHelper.TrySwitchToMainThread();
+    }
+
+    public async Task DeleteCharacters(IEnumerable<Character> characters)
+    {
+        try
+        {
+            _ctx.Characters.RemoveRange(characters);
+            await _ctx.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error deleting characters");
+        }
+
+        await _nwTaskHelper.TrySwitchToMainThread();
     }
 }

@@ -1,7 +1,11 @@
-﻿namespace AmiaReforged.System.Webhooks;
+﻿using AmiaReforged.System.Helpers;
+using NLog;
+
+namespace AmiaReforged.System.Webhooks;
 
 public class WebhookSender
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly string _webhookUri;
 
     public WebhookSender(string webhookUri)
@@ -11,15 +15,22 @@ public class WebhookSender
 
     public async Task SendMessage(string username, string message, string avatar = "")
     {
-        using HttpClient httpClient = new();
-        Dictionary<string, string> postParams = new()
+        try
         {
-            ["username"] = username,
-            ["content"] = message,
-            ["avatar_url"] = avatar
-        };
+            using HttpClient httpClient = new();
+            Dictionary<string, string> postParams = new()
+            {
+                ["username"] = username,
+                ["content"] = message,
+                ["avatar_url"] = avatar
+            };
 
-        using FormUrlEncodedContent postContent = new(postParams);
-        await httpClient.PostAsync(_webhookUri, postContent);
+            using FormUrlEncodedContent postContent = new(postParams);
+            await httpClient.PostAsync(_webhookUri, postContent);
+            await new NwTaskHelper().TrySwitchToMainThread();
+        }catch(Exception ex)
+        {
+            Log.Error(ex, "Error sending webhook message");
+        }
     }
 }

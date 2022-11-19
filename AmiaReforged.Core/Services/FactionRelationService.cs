@@ -1,12 +1,11 @@
-﻿using AmiaReforged.Core;
-using AmiaReforged.Core.Models;
+﻿using AmiaReforged.Core.Models;
 using AmiaReforged.System.Helpers;
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.System.Services;
+namespace AmiaReforged.Core.Services;
 
-// [ServiceBinding(typeof(FactionRelation))]
+[ServiceBinding(typeof(FactionRelationService))]
 public class FactionRelationService
 {
     private readonly FactionService _factionService;
@@ -14,11 +13,11 @@ public class FactionRelationService
     private readonly AmiaContext _ctx;
     private readonly NwTaskHelper _taskHelper;
 
-    public FactionRelationService(FactionService factionService)
+    public FactionRelationService(FactionService factionService, AmiaContext ctx, NwTaskHelper taskHelper)
     {
         _factionService = factionService;
-        _ctx = new AmiaContext();
-        _taskHelper = new NwTaskHelper();
+        _ctx = ctx;
+        _taskHelper = taskHelper;
     }
 
     public async Task AddFactionRelation(FactionRelation relation)

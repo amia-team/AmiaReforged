@@ -1,13 +1,14 @@
 ﻿using System.Collections;
-using AmiaReforged.Core;
 using AmiaReforged.Core.Entities;
 using AmiaReforged.Core.Models;
 using AmiaReforged.System.Helpers;
+using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 
-namespace AmiaReforged.System.Services;
+namespace AmiaReforged.Core.Services;
 
+[ServiceBinding(typeof(FactionService))]
 public class FactionService
 {
     private readonly CharacterService _characterService;
@@ -15,20 +16,18 @@ public class FactionService
     private readonly AmiaContext _ctx;
     private readonly NwTaskHelper _nwTaskHelper;
 
-    public FactionService(CharacterService characterService)
+    public FactionService(CharacterService characterService, AmiaContext ctx, NwTaskHelper nwTaskHelper)
     {
         _characterService = characterService;
-        _ctx = new AmiaContext();
-        _nwTaskHelper = new NwTaskHelper();
+        _ctx = ctx;
+        _nwTaskHelper = nwTaskHelper;
     }
 
     public async Task AddFaction(Faction faction)
     {
         try
         {
-            List<AmiaCharacter> characters = await _ctx.Characters.ToListAsync();
-
-            RemoveNonExistentMembers(faction);
+            await RemoveNonExistentMembers(faction);
 
             await _ctx.Factions.AddAsync(faction);
             await _ctx.SaveChangesAsync();
@@ -41,8 +40,10 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    private async void RemoveNonExistentMembers(Faction f)
+    private async Task RemoveNonExistentMembers(Faction f)
     {
+        if(f is { Members: null }) return;
+        
         foreach (Guid member in f.Members)
         {
             if (await _characterService.CharacterExists(member)) continue;
@@ -151,14 +152,14 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task<List<AmiaCharacter>> GetAllCharacters(Faction f)
+    public async Task<List<Character>> GetAllCharacters(Faction f)
     {
-        List<AmiaCharacter> characters = new();
+        List<Character> characters = new();
         try
         {
             foreach (Guid id in f.Members)
             {
-                AmiaCharacter? character = await _characterService.GetCharacterById(id);
+                Character? character = await _characterService.GetCharacterById(id);
                 if(character is null) continue;
                 characters.Add(character);
             }
@@ -171,15 +172,30 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
         return characters;
     }
-    public async Task<List<AmiaCharacter>> GetAllPlayerCharactersFrom(Faction faction)
+    public async Task<List<Character>> GetAllPlayerCharactersFrom(Faction faction)
     {
-        List<AmiaCharacter> characters = await GetAllCharacters(faction);
+        List<Character> characters = await GetAllCharacters(faction);
         return characters.Where(c => c.IsPlayerCharacter).ToList();
     }
 
-    public async Task<List<AmiaCharacter>> GetAllNonPlayerCharactersFrom(Faction faction)
+    public async Task<List<Character>> GetAllNonPlayerCharactersFrom(Faction faction)
     {
-        List<AmiaCharacter> characters = await GetAllCharacters(faction);
+        List<Character> characters = await GetAllCharacters(faction);
         return characters.Where(c => !c.IsPlayerCharacter).ToList();
+    }
+
+    public async Task DeleteFactions(List<Faction> faction)
+    { 
+        try
+        {
+            _ctx.Factions.RemoveRange(faction);
+            await _ctx.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error deleting factions");
+        }
+
+        await _nwTaskHelper.TrySwitchToMainThread();
     }
 }

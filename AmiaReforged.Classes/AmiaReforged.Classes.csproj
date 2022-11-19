@@ -8,7 +8,7 @@
 
     <ItemGroup>
       <PackageReference Include="NUnit" Version="3.13.3" />
-      <PackageReference Include="NWN.Anvil" Version="8193.34.21" />
+      <PackageReference Include="NWN.Anvil" Version="8193.34.22" />
       <PackageReference Include="NWN.Core" Version="8193.34.7" />
     </ItemGroup>
 

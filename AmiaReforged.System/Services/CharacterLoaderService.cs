@@ -1,5 +1,6 @@
 using AmiaReforged.Core;
 using AmiaReforged.Core.Entities;
+using AmiaReforged.Core.Services;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -73,7 +74,7 @@ public class CharacterLoaderService
     {
         string dbToken = player.LoginCreature!.Inventory.Items.Where(i => i.Tag == "db_token").First().Name;
 
-        AmiaCharacter amiaCharacter = new()
+        Character character = new()
         {
             Id = Guid.Parse(dbToken),
             CdKey = player.CDKey,
@@ -82,6 +83,6 @@ public class CharacterLoaderService
             IsPlayerCharacter = true
         };
         
-        _characterService.AddCharacter(amiaCharacter);
+        _characterService.AddCharacter(character);
     }
 }

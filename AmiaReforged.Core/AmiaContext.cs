@@ -6,6 +6,7 @@ using Npgsql;
 
 namespace AmiaReforged.Core;
 
+[ServiceBinding(typeof(AmiaContext))]
 public class AmiaContext : DbContext
 {
     private readonly string _connectionString;
@@ -15,25 +16,15 @@ public class AmiaContext : DbContext
         _connectionString = ConnectionString();
     }
 
-    public AmiaContext(string connectionString)
-    {
-        _connectionString = connectionString;
-    }
-
-    public AmiaContext(DbContextOptions<AmiaContext> options, string connectionString)
-        : base(options)
-    {
-        _connectionString = connectionString;
-    }
-
     public virtual DbSet<Ban> Bans { get; set; } = null!;
     public virtual DbSet<Dm> Dms { get; set; } = null!;
     public virtual DbSet<DmLogin> DmLogins { get; set; } = null!;
     public virtual DbSet<DreamcoinRecord> DreamcoinRecords { get; set; } = null!;
     public virtual DbSet<Player> Players { get; set; } = null!;
-    public virtual DbSet<AmiaCharacter> Characters { get; set; } = null!;
+    public virtual DbSet<Character> Characters { get; set; } = null!;
     public DbSet<Faction> Factions { get; set; } = null!;
     public DbSet<FactionRelation> FactionRelations { get; set; } = null!;
+    public DbSet<FactionCharacterRelation> FactionCharacterRelations { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -139,46 +130,5 @@ public class AmiaContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("cd_key");
         });
-    //
-    //
-    //     modelBuilder.Entity<AmiaCharacter>(entity =>
-    //     {
-    //         entity.HasKey(e => e.Id)
-    //             .HasName("character_id");
-    //
-    //         entity.ToTable("characters");
-    //
-    //
-    //         entity.Property(e => e.Id)
-    //             .HasColumnName("id");
-    //
-    //         entity.Property(e => e.FirstName)
-    //             .HasColumnName("first_name");
-    //
-    //         entity.Property(e => e.LastName)
-    //             .HasColumnName("last_name");
-    //
-    //         entity.Property(e => e.CdKey)
-    //             .HasColumnName("cd_key");
-    //
-    //         entity.Property(e => e.IsPlayerCharacter)
-    //             .HasColumnName("is_player_character");
-    //     });
-    //
-    //     modelBuilder.Entity<Faction>(entity =>
-    //     {
-    //         entity.HasKey(e => e.Name)
-    //             .HasName("faction_name");
-    //
-    //         entity.ToTable("factions");
-    //
-    //         entity.Property(e => e.Name)
-    //             .HasColumnName("name");
-    //
-    //         entity.Property(e => e.Description)
-    //             .HasColumnName("description");
-    //
-    //         entity.Property(e => e.Members).HasColumnName("members");
-    //     });
     }
 }

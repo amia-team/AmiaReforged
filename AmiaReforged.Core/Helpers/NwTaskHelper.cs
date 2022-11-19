@@ -4,6 +4,7 @@ using NLog;
 
 namespace AmiaReforged.System.Helpers;
 
+[ServiceBinding(typeof(NwTaskHelper))]
 public class NwTaskHelper
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
