@@ -1,9 +1,7 @@
-using AmiaReforged.Core;
 using AmiaReforged.Core.Entities;
 using AmiaReforged.Core.Services;
 using Anvil.API;
 using Anvil.API.Events;
-using Anvil.Services;
 using NLog;
 
 namespace AmiaReforged.System.Services;
@@ -53,7 +51,7 @@ public class CharacterLoaderService
 
         await AddTokenToCharacter(player);
         NwTask.SwitchToMainThread();
-        AddCharacterToDatabase(player);
+        await AddCharacterToDatabase(player);
     }
 
     private static async Task AddTokenToCharacter(NwPlayer player)
@@ -70,7 +68,7 @@ public class CharacterLoaderService
         item.Name = Guid.NewGuid().ToString();
     }
 
-    private void AddCharacterToDatabase(NwPlayer player)
+    private async Task AddCharacterToDatabase(NwPlayer player)
     {
         string dbToken = player.LoginCreature!.Inventory.Items.Where(i => i.Tag == "db_token").First().Name;
 
@@ -83,6 +81,6 @@ public class CharacterLoaderService
             IsPlayerCharacter = true
         };
         
-        _characterService.AddCharacter(character);
+        await _characterService.AddCharacter(character);
     }
 }

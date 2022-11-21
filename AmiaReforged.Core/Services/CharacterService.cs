@@ -34,14 +34,6 @@ public class CharacterService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task<Character?> GetCharacterByGuid(Guid guid)
-    {
-        Character? character = await _ctx.Characters.FindAsync(guid);
-        await _nwTaskHelper.TrySwitchToMainThread();
-
-        return character;
-    }
-
     public async Task UpdateCharacter(Character character)
     {
         try
@@ -119,7 +111,7 @@ public class CharacterService
         return exists;
     }
 
-    public async Task<Character?> GetCharacterById(Guid amiaCharacterId)
+    public async Task<Character?> GetCharacterByGuid(Guid amiaCharacterId)
     { 
         Character? character = null;
         try

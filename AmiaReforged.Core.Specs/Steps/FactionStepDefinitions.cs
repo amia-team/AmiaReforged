@@ -7,7 +7,7 @@ using BoDi;
 using FluentAssertions;
 using NUnit.Framework;
 
-namespace SpecFlowProject1.Steps;
+namespace AmiaReforged.Core.Specs;
 
 [Binding]
 public class FactionStepDefinitions
@@ -202,6 +202,102 @@ public class FactionStepDefinitions
             });
         }
 
-        _objectContainer.RegisterInstanceAs(factions);
+        _objectContainer.RegisterInstanceAs(factions, "Factions");
+    }
+
+    [When(@"a request is made to persist the Factions")]
+    public async Task WhenARequestIsMadeToPersistTheFactions()
+    {
+        List<Faction> factions = _objectContainer.Resolve<List<Faction>>("Factions");
+        
+        FactionService? factionService = _objectContainer.Resolve<FactionService>();
+        
+        await factionService.AddFactions(factions);
+    }
+
+    [When(@"a request is made to retrieve all Factions")]
+    public async Task WhenARequestIsMadeToRetrieveAllFactions()
+    {
+        FactionService? factionService = _objectContainer.Resolve<FactionService>();
+        
+        IEnumerable<Faction> actualFactions = await factionService.GetAllFactions();
+
+        _objectContainer.RegisterInstanceAs(actualFactions, "FoundFactions");
+    }
+
+    [Then(@"the Factions should be retrieved")]
+    public void ThenTheFactionsShouldBeRetrieved()
+    {
+        IEnumerable<Faction> actualFactions = _objectContainer.Resolve<IEnumerable<Faction>>("FoundFactions");
+        List<Faction> expectedFactions = _objectContainer.Resolve<List<Faction>>("Factions");
+
+        expectedFactions.Should().BeSubsetOf(actualFactions, "because all the factions should be retrieved");
+    }
+
+    [When(@"a request is made to remove the character from the faction")]
+    public async Task WhenARequestIsMadeToRemoveTheCharacterFromTheFaction()
+    {
+        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        CharacterService? characterService = _objectContainer.Resolve<CharacterService>();
+        Character? firstCharacter = await characterService.GetCharacterByGuid(faction.Members.First());
+        _objectContainer.RegisterInstanceAs(firstCharacter, "CharacterToRemove");
+        
+        faction.Members.RemoveAt(0);
+        
+        FactionService? factionService = _objectContainer.Resolve<FactionService>();
+        
+        await factionService.UpdateFaction(faction);
+    }
+
+    [Then(@"the character should be removed from the faction roster")]
+    public async Task ThenTheCharacterShouldBeRemovedFromTheFactionRoster()
+    {
+        FactionService factionService = _objectContainer.Resolve<FactionService>();
+        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? persistedFaction = await factionService.GetFactionByName(faction.Name);
+        Character? characterToRemove = _objectContainer.Resolve<Character>("CharacterToRemove");
+
+        persistedFaction.Should().NotBeNull("because the faction should have been persisted");
+        persistedFaction?.Members.Should().NotContain(characterToRemove.Id, "because the character should have been removed from the faction");
+    }
+
+    [Then(@"the player characters should be retrieved from the faction roster upon request")]
+    public async Task ThenThePlayerCharactersShouldBeRetrievedFromTheFactionRosterUponRequest()
+    {
+        FactionService factionService = _objectContainer.Resolve<FactionService>();
+        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        List<Character> characters = _objectContainer.Resolve<List<Character>>("testCharacters");
+        int playerCount = characters.Count(c => c.IsPlayerCharacter);
+        IEnumerable<Character> playerCharacters = await factionService.GetAllPlayerCharactersFrom(faction);
+
+        playerCharacters.Should().HaveCount(playerCount, "because two player characters should have been retrieved from the faction roster");
+    }
+
+    [Then(@"the NPCs should be retrieved from the faction roster upon request")]
+    public async Task ThenTheNpCsShouldBeRetrievedFromTheFactionRosterUponRequest()
+    {
+        FactionService factionService = _objectContainer.Resolve<FactionService>();
+        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        List<Character> characters = _objectContainer.Resolve<List<Character>>("testCharacters");
+        int npcCount = characters.Count(c => !c.IsPlayerCharacter);
+        IEnumerable<Character> playerCharacters = await factionService.GetAllNonPlayerCharactersFrom(faction);
+
+        playerCharacters.Should().HaveCount(npcCount, "because two player characters should have been retrieved from the faction roster");
+    }
+
+    [Given(@"a pair of Factions named ""(.*)"" and ""(.*)""")]
+    public void GivenAPairOfFactionsNamedAnd(string p0, string p1)
+    {
+        Faction factionOne = new Faction();
+        factionOne.Name = p0;
+        factionOne.Description = Guid.NewGuid().ToString();
+        
+        Faction factionTwo = new Faction();
+        factionTwo.Name = p1;
+        factionTwo.Description = Guid.NewGuid().ToString();
+        
+        Tuple<Faction, Faction> factions = new(factionOne, factionTwo);
+        
+        _objectContainer.RegisterInstanceAs(factions, "FactionPair");
     }
 }

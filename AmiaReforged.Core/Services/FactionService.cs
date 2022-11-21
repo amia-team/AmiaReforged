@@ -159,7 +159,7 @@ public class FactionService
         {
             foreach (Guid id in f.Members)
             {
-                Character? character = await _characterService.GetCharacterById(id);
+                Character? character = await _characterService.GetCharacterByGuid(id);
                 if(character is null) continue;
                 characters.Add(character);
             }
@@ -194,6 +194,21 @@ public class FactionService
         catch (Exception e)
         {
             Log.Error(e, "Error deleting factions");
+        }
+
+        await _nwTaskHelper.TrySwitchToMainThread();
+    }
+
+    public async Task AddFactions(List<Faction> factions)
+    {
+        try
+        {
+            await _ctx.Factions.AddRangeAsync(factions);
+            await _ctx.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error adding factions");
         }
 
         await _nwTaskHelper.TrySwitchToMainThread();

@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.Core.Models;
 using AmiaReforged.System.Helpers;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.Core.Services;
@@ -82,5 +83,13 @@ public class FactionRelationService
         }
 
         await _taskHelper.TrySwitchToMainThread();
+    }
+
+    public async Task<FactionRelation?> GetFactionRelationAsync(Faction factionA, Faction factionB)
+    {
+        FactionRelation? relation = await _ctx.FactionRelations
+            .FirstOrDefaultAsync(f => f.FactionName == factionA.Name && f.TargetFactionName == factionB.Name);
+        await _taskHelper.TrySwitchToMainThread();
+        return relation;
     }
 }

@@ -1,7 +1,7 @@
 ﻿Feature: Faction
-As a user
-My character can be a member of one or more factions
-So that I can be associated with a group of characters and/or locations
+As a Faction
+I need to be able to add and remove members from my roster
+So that I can remain organized and keep track of who is in my faction
 
     @mytag
     Scenario: A faction is added
@@ -46,9 +46,40 @@ So that I can be associated with a group of characters and/or locations
         And the roster contains a character that does not exist
         When a request is made to persist the Faction
         Then the Faction should be persisted with the list of members
-        
-      Scenario: All factions are requested
+
+    Scenario: All factions are requested
         Given multiple factions with random names
         When a request is made to persist the Factions
         And a request is made to retrieve all Factions
         Then the Factions should be retrieved
+
+    Scenario: A character is removed from the roster
+        Given a Faction named "The Knights of The Round Table"
+        And with the description "An order of knights dedicated to protecting the realm"
+        And a list of Characters
+        And a Character named 'Arthur' and last name 'Pendragon' is added to the list
+        And a Character named 'Lancelot' and last name 'Du Lac' is added to the list
+        When a request is made to add the characters to the faction
+        And a request is made to remove the character from the faction
+        Then the character should be removed from the faction roster
+        
+    Scenario: All player characters are retrieved from the roster
+        Given a Faction named "The Imperium of Man"
+        And with the description "Loyal servants of the Emperor of Mankind"
+        And a list of Characters
+        And a Character named 'Arthur' and last name 'Pendragon' is added to the list
+        And a Character named 'Lancelot' and last name 'Du Lac' is added to the list
+        And the most recently added Character is a player character
+        When a request is made to add the characters to the faction
+        Then the player characters should be retrieved from the faction roster upon request
+
+    Scenario: All NPCs are retrieved from the roster
+        Given a Faction named "The Imperium of Man"
+        And with the description "Loyal servants of the Emperor of Mankind"
+        And a list of Characters
+        And a Character named 'Arthur' and last name 'Pendragon' is added to the list
+        And a Character named 'Sir' and last name 'Gawain' is added to the list
+        And a Character named 'Lancelot' and last name 'Du Lac' is added to the list
+        And the most recently added Character is a player character
+        When a request is made to add the characters to the faction
+        Then the NPCs should be retrieved from the faction roster upon request
