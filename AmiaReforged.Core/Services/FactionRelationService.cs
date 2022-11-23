@@ -62,14 +62,6 @@ public class FactionRelationService
         }
     }
 
-    public async Task<IEnumerable<FactionRelation>> GetRelationsForFaction(Faction faction)
-    {
-        IEnumerable<FactionRelation> relation =
-            _ctx.FactionRelations.Where(f1 => f1.FactionName == faction.Name).AsEnumerable();
-        await _taskHelper.TrySwitchToMainThread();
-        return relation;
-    }
-
     public async Task UpdateFactionRelation(FactionRelation newRelation)
     {
         try
@@ -87,8 +79,29 @@ public class FactionRelationService
 
     public async Task<FactionRelation?> GetFactionRelationAsync(Faction factionA, Faction factionB)
     {
-        FactionRelation? relation = await _ctx.FactionRelations
-            .FirstOrDefaultAsync(f => f.FactionName == factionA.Name && f.TargetFactionName == factionB.Name);
+        FactionRelation? relation = null;
+        try
+        {
+            relation = await _ctx.FactionRelations
+                .FirstOrDefaultAsync(f => f.FactionName == factionA.Name && f.TargetFactionName == factionB.Name);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error while getting faction relation");
+        }
+
+        if (relation is null)
+        {
+            relation = new FactionRelation
+            {
+                FactionName = factionA.Name,
+                TargetFactionName = factionB.Name,
+                Relation = 0
+            };
+
+            await AddFactionRelation(relation);
+        }
+
         await _taskHelper.TrySwitchToMainThread();
         return relation;
     }

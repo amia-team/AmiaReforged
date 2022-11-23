@@ -163,9 +163,9 @@ public class FactionStepDefinitions
 
         Faction? faction = _objectContainer.Resolve<Faction>("Faction");
         faction.Members.AddRange(new List<Guid> { memberOne.Id, memberTwo.Id, memberThree.Id });
-        
+
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        
+
         await factionService.UpdateFaction(faction);
     }
 
@@ -209,9 +209,9 @@ public class FactionStepDefinitions
     public async Task WhenARequestIsMadeToPersistTheFactions()
     {
         List<Faction> factions = _objectContainer.Resolve<List<Faction>>("Factions");
-        
+
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        
+
         await factionService.AddFactions(factions);
     }
 
@@ -219,7 +219,7 @@ public class FactionStepDefinitions
     public async Task WhenARequestIsMadeToRetrieveAllFactions()
     {
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        
+
         IEnumerable<Faction> actualFactions = await factionService.GetAllFactions();
 
         _objectContainer.RegisterInstanceAs(actualFactions, "FoundFactions");
@@ -241,11 +241,11 @@ public class FactionStepDefinitions
         CharacterService? characterService = _objectContainer.Resolve<CharacterService>();
         Character? firstCharacter = await characterService.GetCharacterByGuid(faction.Members.First());
         _objectContainer.RegisterInstanceAs(firstCharacter, "CharacterToRemove");
-        
+
         faction.Members.RemoveAt(0);
-        
+
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        
+
         await factionService.UpdateFaction(faction);
     }
 
@@ -258,7 +258,8 @@ public class FactionStepDefinitions
         Character? characterToRemove = _objectContainer.Resolve<Character>("CharacterToRemove");
 
         persistedFaction.Should().NotBeNull("because the faction should have been persisted");
-        persistedFaction?.Members.Should().NotContain(characterToRemove.Id, "because the character should have been removed from the faction");
+        persistedFaction?.Members.Should().NotContain(characterToRemove.Id,
+            "because the character should have been removed from the faction");
     }
 
     [Then(@"the player characters should be retrieved from the faction roster upon request")]
@@ -270,7 +271,8 @@ public class FactionStepDefinitions
         int playerCount = characters.Count(c => c.IsPlayerCharacter);
         IEnumerable<Character> playerCharacters = await factionService.GetAllPlayerCharactersFrom(faction);
 
-        playerCharacters.Should().HaveCount(playerCount, "because two player characters should have been retrieved from the faction roster");
+        playerCharacters.Should().HaveCount(playerCount,
+            "because two player characters should have been retrieved from the faction roster");
     }
 
     [Then(@"the NPCs should be retrieved from the faction roster upon request")]
@@ -282,7 +284,8 @@ public class FactionStepDefinitions
         int npcCount = characters.Count(c => !c.IsPlayerCharacter);
         IEnumerable<Character> playerCharacters = await factionService.GetAllNonPlayerCharactersFrom(faction);
 
-        playerCharacters.Should().HaveCount(npcCount, "because two player characters should have been retrieved from the faction roster");
+        playerCharacters.Should().HaveCount(npcCount,
+            "because two player characters should have been retrieved from the faction roster");
     }
 
     [Given(@"a pair of Factions named ""(.*)"" and ""(.*)""")]
@@ -291,13 +294,41 @@ public class FactionStepDefinitions
         Faction factionOne = new Faction();
         factionOne.Name = p0;
         factionOne.Description = Guid.NewGuid().ToString();
-        
+
         Faction factionTwo = new Faction();
         factionTwo.Name = p1;
         factionTwo.Description = Guid.NewGuid().ToString();
-        
+
         Tuple<Faction, Faction> factions = new(factionOne, factionTwo);
-        
+
         _objectContainer.RegisterInstanceAs(factions, "FactionPair");
+    }
+
+    [Given(@"a list of Factions with random names and descriptions")]
+    public void GivenAListOfFactionsWithRandomNamesAndDescriptions()
+    {
+        List<Faction> factions = new();
+
+        for (int i = 0; i < 10; i++)
+        {
+            factions.Add(new Faction()
+            {
+                Name = Guid.NewGuid().ToString(),
+                Description = Guid.NewGuid().ToString(),
+                Members = new List<Guid>()
+            });
+        }
+
+        _objectContainer.RegisterInstanceAs(factions, "RandomFactions");
+    }
+
+    [Given(@"the list of Factions is persisted")]
+    public async Task GivenTheListOfFactionsIsPersisted()
+    {
+        List<Faction> factions = _objectContainer.Resolve<List<Faction>>("RandomFactions");
+
+        FactionService? factionService = _objectContainer.Resolve<FactionService>();
+
+        await factionService.AddFactions(factions);
     }
 }

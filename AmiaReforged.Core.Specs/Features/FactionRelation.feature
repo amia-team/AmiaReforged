@@ -4,7 +4,15 @@ I need to be able to have a relation with another faction
 So that I know who my friends and enemies are
 
     @mytag
+    Scenario: A newly added faction should have a neutral relationship with every faction
+        Given a list of Factions with random names and descriptions
+        And the list of Factions is persisted
+        And a Faction named "Factioneers"
+        And with the description "People who just make factions for no reason"
+        When a request is made to persist the Faction
+        Then the Faction should have a neutral relationship with every other Faction
+        
     Scenario: A faction has a neutral relation with another faction
         Given a pair of Factions named "Faction A" and "Faction B"
         When I check the relation between the pair of Factions
-        Then the relation is 0
+        Then the relation should be 0
