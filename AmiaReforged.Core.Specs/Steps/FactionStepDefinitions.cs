@@ -291,11 +291,11 @@ public class FactionStepDefinitions
     [Given(@"a pair of Factions named ""(.*)"" and ""(.*)""")]
     public void GivenAPairOfFactionsNamedAnd(string p0, string p1)
     {
-        Faction factionOne = new Faction();
+        Faction factionOne = new();
         factionOne.Name = p0;
         factionOne.Description = Guid.NewGuid().ToString();
 
-        Faction factionTwo = new Faction();
+        Faction factionTwo = new();
         factionTwo.Name = p1;
         factionTwo.Description = Guid.NewGuid().ToString();
 

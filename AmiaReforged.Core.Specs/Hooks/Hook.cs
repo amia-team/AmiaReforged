@@ -38,7 +38,6 @@ namespace SpecFlowProject1.Hooks
         public async Task AfterScenario()
         {
             await DoDatabaseCleanup();
-
             _objectContainer.Dispose();
         }
 

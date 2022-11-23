@@ -59,4 +59,44 @@ public class FactionRelationStepDefinitions
             relation?.Relation.Should().Be(0);
         }
     }
+
+    [When(@"I set the relation of Faction A with Faction B to (.*)")]
+    public async Task WhenISetTheRelationOfFactionAForFactionBTo(int value)
+    {
+        FactionRelationService factionRelationService = _objectContainer.Resolve<FactionRelationService>();
+        Tuple<Faction, Faction> factions = _objectContainer.Resolve<Tuple<Faction, Faction>>("FactionPair");
+
+        FactionRelation? relation =
+            await factionRelationService.GetFactionRelationAsync(factions.Item1, factions.Item2);
+        relation.Should().NotBeNull();
+        relation!.Relation = value;
+
+        await factionRelationService.UpdateFactionRelation(relation);
+    }
+
+    [Then(@"the relation of Faction B for Faction A should be (.*)")]
+    public async Task ThenTheRelationOfFactionBForFactionAShouldBe(int expected)
+    {
+        FactionRelationService factionRelationService = _objectContainer.Resolve<FactionRelationService>();
+        Tuple<Faction, Faction> factions = _objectContainer.Resolve<Tuple<Faction, Faction>>("FactionPair");
+
+        FactionRelation? relation =
+            await factionRelationService.GetFactionRelationAsync(factions.Item2, factions.Item1);
+
+        relation.Should().NotBeNull();
+        relation!.Relation.Should().Be(expected);
+    }
+
+    [Then(@"the relation of Faction A for Faction B should be (.*)")]
+    public async Task ThenTheRelationOfFactionAForFactionBShouldBe(int expected)
+    {
+        FactionRelationService factionRelationService = _objectContainer.Resolve<FactionRelationService>();
+        Tuple<Faction, Faction> factions = _objectContainer.Resolve<Tuple<Faction, Faction>>("FactionPair");
+        
+        FactionRelation? relation =
+            await factionRelationService.GetFactionRelationAsync(factions.Item1, factions.Item2);
+        
+        relation.Should().NotBeNull();
+        relation!.Relation.Should().Be(expected);
+    }
 }
