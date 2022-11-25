@@ -11,14 +11,14 @@ namespace AmiaReforged.Core.Services;
 [ServiceBinding(typeof(FactionService))]
 public class FactionService
 {
-    private readonly CharacterService _characterService;
+    public CharacterService CharacterService { get; }
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly AmiaContext _ctx;
     private readonly NwTaskHelper _nwTaskHelper;
 
     public FactionService(CharacterService characterService, AmiaContext ctx, NwTaskHelper nwTaskHelper)
     {
-        _characterService = characterService;
+        CharacterService = characterService;
         _ctx = ctx;
         _nwTaskHelper = nwTaskHelper;
     }
@@ -42,11 +42,11 @@ public class FactionService
 
     private async Task RemoveNonExistentMembers(Faction f)
     {
-        if(f is { Members: null }) return;
-        
+        if (f is { Members: null }) return;
+
         foreach (Guid member in f.Members)
         {
-            if (await _characterService.CharacterExists(member)) continue;
+            if (await CharacterService.CharacterExists(member)) continue;
             Log.Warn($"Removing non-existent character from faction: {member}");
             f.Members.Remove(member);
         }
@@ -159,8 +159,8 @@ public class FactionService
         {
             foreach (Guid id in f.Members)
             {
-                Character? character = await _characterService.GetCharacterByGuid(id);
-                if(character is null) continue;
+                Character? character = await CharacterService.GetCharacterByGuid(id);
+                if (character is null) continue;
                 characters.Add(character);
             }
         }
@@ -172,6 +172,7 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
         return characters;
     }
+
     public async Task<List<Character>> GetAllPlayerCharactersFrom(Faction faction)
     {
         List<Character> characters = await GetAllCharacters(faction);
@@ -185,7 +186,7 @@ public class FactionService
     }
 
     public async Task DeleteFactions(List<Faction> faction)
-    { 
+    {
         try
         {
             _ctx.Factions.RemoveRange(faction);
@@ -212,5 +213,21 @@ public class FactionService
         }
 
         await _nwTaskHelper.TrySwitchToMainThread();
+    }
+
+    public async Task<bool> DoesFactionExist(string relationFactionName)
+    {
+        bool found = false;
+        try
+        {
+            found = await _ctx.Factions.AnyAsync(f => f.Name == relationFactionName);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error checking if faction exists");
+        }
+
+        await _nwTaskHelper.TrySwitchToMainThread();
+        return found;
     }
 }

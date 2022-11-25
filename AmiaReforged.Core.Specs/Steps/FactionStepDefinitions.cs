@@ -2,6 +2,7 @@
 using AmiaReforged.Core.Entities;
 using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Services;
+using AmiaReforged.Core.Specs.Steps;
 using AmiaReforged.System.Helpers;
 using BoDi;
 using FluentAssertions;
@@ -22,7 +23,7 @@ public class FactionStepDefinitions
     [BeforeScenario]
     public void BeforeScenario()
     {
-        _objectContainer.RegisterInstanceAs(new Faction() { Members = new List<Guid>() }, "Faction");
+        _objectContainer.RegisterInstanceAs(new Faction { Members = new List<Guid>() }, ObjectContainerKeys.Faction);
         _objectContainer.RegisterTypeAs<NwTaskHelper, NwTaskHelper>();
         _objectContainer.RegisterTypeAs<AmiaContext, AmiaContext>();
         _objectContainer.RegisterTypeAs<CharacterService, CharacterService>();
@@ -32,14 +33,14 @@ public class FactionStepDefinitions
     [Given(@"a Faction named ""(.*)""")]
     public void GivenAFactionNamed(string name)
     {
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         faction.Name = name;
     }
 
     [Given(@"with the description ""(.*)""")]
     public void GivenWithTheDescription(string description)
     {
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         faction.Description = description;
     }
 
@@ -47,7 +48,7 @@ public class FactionStepDefinitions
     public async Task WhenARequestIsMadeToPersistTheFaction()
     {
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         await factionService.AddFaction(faction);
     }
 
@@ -55,7 +56,7 @@ public class FactionStepDefinitions
     public async Task ThenTheFactionShouldBePersisted()
     {
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         Faction? persistedFaction = await factionService.GetFactionByName(faction.Name);
 
         persistedFaction.Should().NotBeNull();
@@ -66,7 +67,7 @@ public class FactionStepDefinitions
     [When(@"a request is made to update the Faction with the name ""(.*)"" and the description ""(.*)""")]
     public async Task WhenARequestIsMadeToUpdateTheFactionWithTheNameAndTheDescription(string name, string description)
     {
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         faction.Name = name;
         faction.Description = description;
 
@@ -78,7 +79,7 @@ public class FactionStepDefinitions
     public void ThenTheFactionShouldBeUpdated()
     {
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         Faction? persistedFaction = factionService.GetFactionByName(faction.Name).Result;
 
         persistedFaction.Should().NotBeNull("The faction should have been persisted");
@@ -90,7 +91,7 @@ public class FactionStepDefinitions
     public async Task WhenARequestIsMadeToDeleteTheFaction()
     {
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         await factionService.DeleteFaction(faction);
     }
 
@@ -98,7 +99,7 @@ public class FactionStepDefinitions
     public async Task ThenTheFactionShouldBeDeleted()
     {
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         Faction? persistedFaction = await factionService.GetFactionByName(faction.Name);
 
         persistedFaction.Should().BeNull("because the faction should have been deleted");
@@ -107,12 +108,12 @@ public class FactionStepDefinitions
     [When(@"a request is made to add the characters to the faction")]
     public async Task WhenARequestIsMadeToAddTheCharactersToTheFaction()
     {
-        List<Character> characters = _objectContainer.Resolve<List<Character>>("testCharacters");
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
 
         CharacterService characterService = _objectContainer.Resolve<CharacterService>();
         await characterService.AddCharacters(characters);
 
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
 
         characters.ForEach(character => faction.Members.Add(character.Id));
 
@@ -125,7 +126,7 @@ public class FactionStepDefinitions
     public async Task ThenTheCharactersShouldBeAddedToTheFactionRoster()
     {
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         Faction? persistedFaction = await factionService.GetFactionByName(faction.Name);
 
         persistedFaction.Should().NotBeNull("because the faction should have been persisted");
@@ -159,9 +160,9 @@ public class FactionStepDefinitions
         };
 
         CharacterService characterService = _objectContainer.Resolve<CharacterService>();
-        await characterService.AddCharacters(new List<Character>() { memberOne, memberTwo, memberThree });
+        await characterService.AddCharacters(new List<Character> { memberOne, memberTwo, memberThree });
 
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         faction.Members.AddRange(new List<Guid> { memberOne.Id, memberTwo.Id, memberThree.Id });
 
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
@@ -173,7 +174,7 @@ public class FactionStepDefinitions
     public async Task ThenTheFactionShouldBePersistedWithTheListOfMembers()
     {
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         Faction? persistedFaction = await factionService.GetFactionByName(faction.Name);
 
         persistedFaction.Should().NotBeNull("because the faction should have been persisted");
@@ -183,7 +184,7 @@ public class FactionStepDefinitions
     [Given(@"the roster contains a character that does not exist")]
     public void GivenTheRosterContainsACharacterThatDoesNotExist()
     {
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         faction.Members.Add(Guid.NewGuid());
     }
 
@@ -194,7 +195,7 @@ public class FactionStepDefinitions
 
         for (int i = 0; i < 10; i++)
         {
-            factions.Add(new Faction()
+            factions.Add(new Faction
             {
                 Name = Guid.NewGuid().ToString(),
                 Description = Guid.NewGuid().ToString(),
@@ -202,13 +203,13 @@ public class FactionStepDefinitions
             });
         }
 
-        _objectContainer.RegisterInstanceAs(factions, "Factions");
+        _objectContainer.RegisterInstanceAs(factions, ObjectContainerKeys.Factions);
     }
 
     [When(@"a request is made to persist the Factions")]
     public async Task WhenARequestIsMadeToPersistTheFactions()
     {
-        List<Faction> factions = _objectContainer.Resolve<List<Faction>>("Factions");
+        List<Faction> factions = _objectContainer.Resolve<List<Faction>>(ObjectContainerKeys.Factions);
 
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
 
@@ -222,14 +223,14 @@ public class FactionStepDefinitions
 
         IEnumerable<Faction> actualFactions = await factionService.GetAllFactions();
 
-        _objectContainer.RegisterInstanceAs(actualFactions, "FoundFactions");
+        _objectContainer.RegisterInstanceAs(actualFactions, ObjectContainerKeys.FoundFactions);
     }
 
     [Then(@"the Factions should be retrieved")]
     public void ThenTheFactionsShouldBeRetrieved()
     {
-        IEnumerable<Faction> actualFactions = _objectContainer.Resolve<IEnumerable<Faction>>("FoundFactions");
-        List<Faction> expectedFactions = _objectContainer.Resolve<List<Faction>>("Factions");
+        IEnumerable<Faction> actualFactions = _objectContainer.Resolve<IEnumerable<Faction>>(ObjectContainerKeys.FoundFactions);
+        List<Faction> expectedFactions = _objectContainer.Resolve<List<Faction>>(ObjectContainerKeys.Factions);
 
         expectedFactions.Should().BeSubsetOf(actualFactions, "because all the factions should be retrieved");
     }
@@ -237,10 +238,10 @@ public class FactionStepDefinitions
     [When(@"a request is made to remove the character from the faction")]
     public async Task WhenARequestIsMadeToRemoveTheCharacterFromTheFaction()
     {
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         CharacterService? characterService = _objectContainer.Resolve<CharacterService>();
         Character? firstCharacter = await characterService.GetCharacterByGuid(faction.Members.First());
-        _objectContainer.RegisterInstanceAs(firstCharacter, "CharacterToRemove");
+        _objectContainer.RegisterInstanceAs(firstCharacter, ObjectContainerKeys.CharacterToRemove);
 
         faction.Members.RemoveAt(0);
 
@@ -253,9 +254,9 @@ public class FactionStepDefinitions
     public async Task ThenTheCharacterShouldBeRemovedFromTheFactionRoster()
     {
         FactionService factionService = _objectContainer.Resolve<FactionService>();
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         Faction? persistedFaction = await factionService.GetFactionByName(faction.Name);
-        Character? characterToRemove = _objectContainer.Resolve<Character>("CharacterToRemove");
+        Character? characterToRemove = _objectContainer.Resolve<Character>(ObjectContainerKeys.CharacterToRemove);
 
         persistedFaction.Should().NotBeNull("because the faction should have been persisted");
         persistedFaction?.Members.Should().NotContain(characterToRemove.Id,
@@ -266,8 +267,8 @@ public class FactionStepDefinitions
     public async Task ThenThePlayerCharactersShouldBeRetrievedFromTheFactionRosterUponRequest()
     {
         FactionService factionService = _objectContainer.Resolve<FactionService>();
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
-        List<Character> characters = _objectContainer.Resolve<List<Character>>("testCharacters");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
         int playerCount = characters.Count(c => c.IsPlayerCharacter);
         IEnumerable<Character> playerCharacters = await factionService.GetAllPlayerCharactersFrom(faction);
 
@@ -279,8 +280,8 @@ public class FactionStepDefinitions
     public async Task ThenTheNpCsShouldBeRetrievedFromTheFactionRosterUponRequest()
     {
         FactionService factionService = _objectContainer.Resolve<FactionService>();
-        Faction? faction = _objectContainer.Resolve<Faction>("Faction");
-        List<Character> characters = _objectContainer.Resolve<List<Character>>("testCharacters");
+        Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
         int npcCount = characters.Count(c => !c.IsPlayerCharacter);
         IEnumerable<Character> playerCharacters = await factionService.GetAllNonPlayerCharactersFrom(faction);
 
@@ -291,17 +292,21 @@ public class FactionStepDefinitions
     [Given(@"a pair of Factions named ""(.*)"" and ""(.*)""")]
     public void GivenAPairOfFactionsNamedAnd(string p0, string p1)
     {
-        Faction factionOne = new();
-        factionOne.Name = p0;
-        factionOne.Description = Guid.NewGuid().ToString();
+        Faction factionOne = new()
+        {
+            Name = p0,
+            Description = Guid.NewGuid().ToString()
+        };
 
-        Faction factionTwo = new();
-        factionTwo.Name = p1;
-        factionTwo.Description = Guid.NewGuid().ToString();
+        Faction factionTwo = new()
+        {
+            Name = p1,
+            Description = Guid.NewGuid().ToString()
+        };
 
         Tuple<Faction, Faction> factions = new(factionOne, factionTwo);
 
-        _objectContainer.RegisterInstanceAs(factions, "FactionPair");
+        _objectContainer.RegisterInstanceAs(factions, ObjectContainerKeys.FactionPair);
     }
 
     [Given(@"a list of Factions with random names and descriptions")]
@@ -311,7 +316,7 @@ public class FactionStepDefinitions
 
         for (int i = 0; i < 10; i++)
         {
-            factions.Add(new Faction()
+            factions.Add(new Faction
             {
                 Name = Guid.NewGuid().ToString(),
                 Description = Guid.NewGuid().ToString(),
@@ -319,13 +324,13 @@ public class FactionStepDefinitions
             });
         }
 
-        _objectContainer.RegisterInstanceAs(factions, "RandomFactions");
+        _objectContainer.RegisterInstanceAs(factions, ObjectContainerKeys.RandomFactions);
     }
 
     [Given(@"the list of Factions is persisted")]
     public async Task GivenTheListOfFactionsIsPersisted()
     {
-        List<Faction> factions = _objectContainer.Resolve<List<Faction>>("RandomFactions");
+        List<Faction> factions = _objectContainer.Resolve<List<Faction>>(ObjectContainerKeys.RandomFactions);
 
         FactionService? factionService = _objectContainer.Resolve<FactionService>();
 

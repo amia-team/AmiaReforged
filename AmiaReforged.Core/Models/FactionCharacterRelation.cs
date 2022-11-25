@@ -1,12 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using AmiaReforged.Core.Entities;
 
 namespace AmiaReforged.Core.Models;
 
 public class FactionCharacterRelation
 {
-    [Key] public int Id { get; set; }
+    [ForeignKey("Character")]
     public Guid CharacterId { get; set; }
-    public string FactionName { get; set; } = null!;
+    [ForeignKey("Faction")] public string FactionName { get; set; } = null!;
     [Range(-100, 100)] public int Relation { get; set; }
 }

@@ -3,8 +3,10 @@ using AmiaReforged.Core;
 using AmiaReforged.Core.Entities;
 using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Services;
+using AmiaReforged.Core.Specs.Steps;
 using AmiaReforged.System.Helpers;
 using BoDi;
+using Microsoft.EntityFrameworkCore;
 using TechTalk.SpecFlow;
 
 namespace SpecFlowProject1.Hooks
@@ -20,18 +22,27 @@ namespace SpecFlowProject1.Hooks
         }
 
         [BeforeScenario]
-        public void BeforeScenario()
+        public async Task BeforeScenario()
         {
             Character character = new()
             {
                 Id = Guid.NewGuid()
             };
 
-            _objectContainer.RegisterInstanceAs(character, "testCharacter");
-            _objectContainer.RegisterTypeAs<NwTaskHelper, NwTaskHelper>("nwTaskHelper");
-            _objectContainer.RegisterTypeAs<AmiaContext, AmiaContext>("amiaContext");
-            _objectContainer.RegisterTypeAs<CharacterService, CharacterService>("testCharacterService");
+            _objectContainer.RegisterInstanceAs(character, ObjectContainerKeys.Character);
+            _objectContainer.RegisterTypeAs<NwTaskHelper, NwTaskHelper>(ObjectContainerKeys.NwTaskHelper);
+            _objectContainer.RegisterTypeAs<AmiaContext, AmiaContext>(ObjectContainerKeys.AmiaContext);
+            _objectContainer.RegisterTypeAs<CharacterService, CharacterService>(ObjectContainerKeys.CharacterService);
             _objectContainer.RegisterTypeAs<FactionService, FactionService>();
+            
+            await DoDatabaseSetup();
+        }
+
+        private async Task DoDatabaseSetup()
+        {
+            AmiaContext amiaContext = _objectContainer.Resolve<AmiaContext>("amiaContext");
+            
+            await amiaContext.Database.MigrateAsync();
         }
 
         [AfterScenario]
@@ -43,13 +54,8 @@ namespace SpecFlowProject1.Hooks
 
         private async Task DoDatabaseCleanup()
         {
-            CharacterService characterService = _objectContainer.Resolve<CharacterService>("testCharacterService");
-            FactionService factionService = _objectContainer.Resolve<FactionService>();
-            
-            List<Character> character = _objectContainer.ResolveAll<Character>().ToList();
-            List<Faction> faction = _objectContainer.ResolveAll<Faction>().ToList();
-            await characterService.DeleteCharacters(character);
-            await factionService.DeleteFactions(faction);
+            AmiaContext amiaContext = _objectContainer.Resolve<AmiaContext>("amiaContext");
+            await amiaContext.Database.EnsureDeletedAsync();
         }
     }
 }

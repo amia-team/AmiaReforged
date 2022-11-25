@@ -21,18 +21,6 @@ public class FactionRelationService
         _taskHelper = taskHelper;
     }
 
-    public async Task AddFactionRelation(FactionRelation relation)
-    {
-        Faction? faction = await _factionService.GetFactionByName(relation.FactionName);
-        Faction? targetFaction = await _factionService.GetFactionByName(relation.TargetFactionName);
-
-        ReportNonExistentFactions(relation, faction, targetFaction);
-
-        await AddAsyncOnlyIfFactionsExist(relation, faction, targetFaction);
-
-        await _taskHelper.TrySwitchToMainThread();
-    }
-
     private static void ReportNonExistentFactions(FactionRelation relation, Faction? faction, Faction? targetFaction)
     {
         if (faction is null)
@@ -60,6 +48,18 @@ public class FactionRelationService
                 Log.Error(e, "Error while adding faction relation");
             }
         }
+    }
+
+    private async Task AddFactionRelation(FactionRelation relation)
+    {
+        Faction? faction = await _factionService.GetFactionByName(relation.FactionName);
+        Faction? targetFaction = await _factionService.GetFactionByName(relation.TargetFactionName);
+
+        ReportNonExistentFactions(relation, faction, targetFaction);
+
+        await AddAsyncOnlyIfFactionsExist(relation, faction, targetFaction);
+
+        await _taskHelper.TrySwitchToMainThread();
     }
 
     public async Task UpdateFactionRelation(FactionRelation newRelation)
@@ -104,5 +104,78 @@ public class FactionRelationService
 
         await _taskHelper.TrySwitchToMainThread();
         return relation;
+    }
+
+    public async Task AddFactionCharacterRelation(FactionCharacterRelation relation)
+    {
+        // Add if relation does not exist (find by index)
+        bool notExists =
+            await _ctx.FactionCharacterRelations.FindAsync(relation.CharacterId, relation.FactionName) is null;
+        if (notExists)
+        {
+            await TryAddFactionCharacterRelation(relation);
+            await _taskHelper.TrySwitchToMainThread();
+        }
+    }
+
+    private async Task TryAddFactionCharacterRelation(FactionCharacterRelation relation)
+    {
+        try
+        {
+            await _ctx.FactionCharacterRelations.AddAsync(relation);
+            await _ctx.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error while adding faction character relation");
+        }
+    }
+
+    private async Task TryUpdateFactionCharacterRelation(FactionCharacterRelation relation)
+    {
+        FactionCharacterRelation? existingRelation =
+            await _ctx.FactionCharacterRelations.FindAsync(relation.CharacterId, relation.FactionName);
+
+        if (existingRelation is not null)
+            existingRelation.Relation = relation.Relation;
+
+        await _ctx.SaveChangesAsync();
+    }
+
+    public async Task<FactionCharacterRelation?> GetFactionCharacterRelation(string factionName, Guid characterId)
+    {
+        FactionCharacterRelation? relation = null;
+
+        try
+        {
+            relation = await _ctx.FactionCharacterRelations
+                .FirstOrDefaultAsync(f => f.FactionName == factionName && f.CharacterId == characterId);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error while getting faction character relation");
+        }
+
+        // if relation does not exist, create it
+        if (relation is null)
+        {
+            relation = new FactionCharacterRelation
+            {
+                FactionName = factionName,
+                CharacterId = characterId,
+                Relation = 0
+            };
+
+            await AddFactionCharacterRelation(relation);
+        }
+
+        await _taskHelper.TrySwitchToMainThread();
+        return relation;
+    }
+
+    public async Task UpdateFactionCharacterRelation(FactionCharacterRelation relation)
+    {
+        await TryUpdateFactionCharacterRelation(relation);
+        await _taskHelper.TrySwitchToMainThread();
     }
 }

@@ -31,6 +31,7 @@ public class AmiaContext : DbContext
         if (!optionsBuilder.IsConfigured)
         {
             optionsBuilder.UseNpgsql(_connectionString);
+            optionsBuilder.EnableSensitiveDataLogging(true);
         }
     }
 
@@ -52,83 +53,93 @@ public class AmiaContext : DbContext
         modelBuilder.Entity<Ban>(entity =>
         {
             entity.HasKey(e => e.CdKey);
-    
+
             entity.ToTable("bans");
-    
+
             entity.HasIndex(e => e.CdKey, "bans_cd_key_key")
                 .IsUnique();
-    
+
             entity.Property(e => e.CdKey).HasColumnName("cd_key");
         });
-    
+
         modelBuilder.Entity<Dm>(entity =>
         {
             entity.HasNoKey();
-    
+
             entity.ToTable("dms");
-    
+
             entity.HasIndex(e => e.CdKey, "dms_cd_key_key")
                 .IsUnique();
-    
+
             entity.Property(e => e.CdKey).HasColumnName("cd_key");
         });
-    
+
         modelBuilder.Entity<DmLogin>(entity =>
         {
             entity.HasKey(e => e.LoginNumber)
                 .HasName("dm_logins_pkey");
-    
+
             entity.ToTable("dm_logins");
-    
+
             entity.Property(e => e.LoginNumber).HasColumnName("login_number");
-    
+
             entity.Property(e => e.CdKey)
                 .HasMaxLength(10)
                 .HasColumnName("cd_key");
-    
+
             entity.Property(e => e.LoginName)
                 .HasMaxLength(255)
                 .HasColumnName("login_name");
-    
+
             entity.Property(e => e.SessionEnd)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("session_end");
-    
+
             entity.Property(e => e.SessionStart)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("session_start");
         });
-    
+
         modelBuilder.Entity<DreamcoinRecord>(entity =>
         {
             entity.HasKey(e => e.CdKey)
                 .HasName("dreamcoin_records_pkey");
-    
+
             entity.ToTable("dreamcoin_records");
-    
+
             entity.Property(e => e.CdKey)
                 .HasColumnType("character varying")
                 .HasColumnName("cd_key");
-    
+
             entity.Property(e => e.Amount).HasColumnName("amount");
-    
+
             entity.HasOne(d => d.CdKeyNavigation)
                 .WithOne(p => p.DreamcoinRecord)
                 .HasForeignKey<DreamcoinRecord>(d => d.CdKey)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("dreamcoin_records_cd_key_fkey");
         });
-    
+
         modelBuilder.Entity<Player>(entity =>
         {
             entity.HasKey(e => e.CdKey)
                 .HasName("players_pkey");
-    
+
             entity.ToTable("players");
-    
+
             entity.Property(e => e.CdKey)
                 .HasColumnType("character varying")
                 .HasColumnName("cd_key");
+        });
+        
+        modelBuilder.Entity<FactionCharacterRelation>(e =>
+        {
+            e.HasKey(k => new {k.CharacterId, k.FactionName});
+        });
+        
+        modelBuilder.Entity<FactionRelation>(e =>
+        {
+            e.HasIndex(i => new { i.FactionName, i.TargetFactionName }).IsUnique();
         });
     }
 }
