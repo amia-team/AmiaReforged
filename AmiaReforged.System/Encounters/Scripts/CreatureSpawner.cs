@@ -33,7 +33,8 @@ namespace AmiaReforged.System.Encounters.Scripts
             IEnumerable<NwPlayer> partymembers = _player.PartyMembers;
             int size = 0;
             foreach (NwPlayer partymember in partymembers) {
-                if (partymember.LoginCreature?.Area == _player.LoginCreature?.Area) {
+                if (NWScript.GetArea(partymember.LoginCreature) == NWScript.GetArea(_player.LoginCreature))
+                //if (partymember.LoginCreature?.Area == _player.LoginCreature?.Area) {
                     size++;
                 }
             }
