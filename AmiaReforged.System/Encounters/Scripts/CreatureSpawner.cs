@@ -29,18 +29,11 @@ namespace AmiaReforged.System.Encounters.Scripts
             }
 
             DayNightEncounterSpawner spawner = new(_trigger);
-            
-            IEnumerable<NwPlayer> partymembers = _player.PartyMembers;
-            int size = 0;
-            foreach (NwPlayer partymember in partymembers) {
-                if (NWScript.GetArea(partymember.LoginCreature) == NWScript.GetArea(_player.LoginCreature))
-                //if (partymember.LoginCreature?.Area == _player.LoginCreature?.Area) {
-                    size++;
-                }
-            }
 
-            if (size > 6) spawner.IsDoubleSpawn = true;
-            //if (_player.PartyMembers.Count() > 6) spawner.IsDoubleSpawn = true;
+            IEnumerable<NwPlayer> partyMembers = _player.PartyMembers;
+
+            if (partyMembers.Count(partyMember =>
+                    NWScript.GetArea(partyMember.LoginCreature) == NWScript.GetArea(_player.LoginCreature)) > 6) spawner.IsDoubleSpawn = true;
 
             spawner.SpawnEncounters();
 

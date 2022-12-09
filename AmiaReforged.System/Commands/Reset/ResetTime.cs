@@ -9,8 +9,9 @@ public class ResetTime : IChatCommand
 {
     public string Command => "./uptime";
 
-    public void ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string message)
     {
         caller.SendServerMessage($"Uptime: {(int) ResetTimeKeeperSingleton.Instance.Uptime() / 3600} hours.");
+        return Task.CompletedTask;
     }
 }

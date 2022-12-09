@@ -5,7 +5,7 @@ using NLog;
 
 namespace AmiaReforged.Core.Services;
 
-[ServiceBinding(typeof(FactionCharacterRelationService))]
+// [ServiceBinding(typeof(FactionCharacterRelationService))]
 public class FactionCharacterRelationService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

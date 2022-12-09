@@ -8,7 +8,7 @@ using NLog;
 
 namespace AmiaReforged.Core.Services;
 
-[ServiceBinding(typeof(FactionService))]
+// [ServiceBinding(typeof(FactionService))]
 public class FactionService
 {
     public CharacterService CharacterService { get; }

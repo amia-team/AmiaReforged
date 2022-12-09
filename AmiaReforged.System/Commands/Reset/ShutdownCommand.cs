@@ -18,7 +18,7 @@ public class Shutdown : IChatCommand
         _schedulerService = schedulerService;
     }
 
-    public void ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string message)
     {
         if (!caller.IsDM || !caller.IsPlayerDM)
         {
@@ -27,10 +27,12 @@ public class Shutdown : IChatCommand
             caller.SendServerMessage(
                 "You must be a DM to use this command. This incident has been logged for posterity's sake.");
             Log.Warn($"{caller.PlayerName} tried shutting down the server and is not a DM.");
-            return;
+            return Task.CompletedTask;
         }
 
         ShutdownManager shutdownManager = new(_schedulerService);
         shutdownManager.InitiateShutdown();
+        
+        return Task.CompletedTask;
     }
 }

@@ -13,7 +13,7 @@ public class ResetMinutesCommand : IChatCommand
 
     public string Command => "./resetminutes";
 
-    public void ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string message)
     {
         if (!caller.IsDM)
         {
@@ -22,14 +22,14 @@ public class ResetMinutesCommand : IChatCommand
             caller.SendServerMessage(
                 "You must be a DM to use this command. This incident has been logged for posterity's sake.");
             Log.Warn($"{caller.PlayerName} tried changing the reset time of the server and is not a DM.");
-            return;
+            return Task.CompletedTask;
         }
 
         if (message.Split(' ').Length <= 1)
         {
             caller.SendServerMessage(
                 "./resetminutes usage: \"./resetminutes <number>\" for example, \"./resetminutes 30\"");
-            return;
+            return Task.CompletedTask;
         }
 
         float newReset = float.Parse(message.Split(' ')[1]);
@@ -37,5 +37,6 @@ public class ResetMinutesCommand : IChatCommand
         ResetTimeKeeperSingleton.Instance.ResetStartTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds();
         
         NwModule.Instance.SendMessageToAllDMs($"Amia reset timer has been changed to {newReset} minutes");
+        return Task.CompletedTask;
     }
 }

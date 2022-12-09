@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.System.Commands;
+using AmiaReforged.System.Helpers;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -29,12 +30,14 @@ public class ChatCommandService
         ResolveCommandFromChatMessage(eventInfo, message);
     }
 
-    private void ResolveCommandFromChatMessage(ModuleEvents.OnPlayerChat eventInfo, string message)
+    private async void ResolveCommandFromChatMessage(ModuleEvents.OnPlayerChat eventInfo, string message)
     {
         foreach (IChatCommand command in _commands.Where(command => command.Command.Equals(message.Split(' ')[0])))
         {
-            command.ExecuteCommand(eventInfo.Sender, message);
+            await command.ExecuteCommand(eventInfo.Sender, message);
             return;
         }
+
+        await new NwTaskHelper().TrySwitchToMainThread();
     }
 }

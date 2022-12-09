@@ -6,7 +6,7 @@ using NLog;
 
 namespace AmiaReforged.Core.Services;
 
-[ServiceBinding(typeof(CharacterService))]
+// [ServiceBinding(typeof(CharacterService))]
 public class CharacterService
 {
     private readonly AmiaContext _ctx;
