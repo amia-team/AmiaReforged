@@ -1,4 +1,4 @@
-﻿using AmiaReforged.System.Helpers;
+﻿using AmiaReforged.Core.Helpers;
 using NLog;
 
 namespace AmiaReforged.System.Webhooks;

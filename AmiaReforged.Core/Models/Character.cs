@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AmiaReforged.Core.Entities;
+namespace AmiaReforged.Core.Models;
 
 public class Character
 {

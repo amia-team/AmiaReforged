@@ -1,4 +1,4 @@
-using AmiaReforged.Core.Entities;
+using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Services;
 using Anvil.API;
 using Anvil.API.Events;

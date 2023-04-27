@@ -1,5 +1,4 @@
-﻿using AmiaReforged.Core.Entities;
-using AmiaReforged.Core.Models;
+﻿using AmiaReforged.Core.Models;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;

@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using AmiaReforged.Core.Entities;
 
 namespace AmiaReforged.Core.Models;
 

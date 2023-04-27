@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using AmiaReforged.Core.Entities;
 
 namespace AmiaReforged.Core.Models;
 

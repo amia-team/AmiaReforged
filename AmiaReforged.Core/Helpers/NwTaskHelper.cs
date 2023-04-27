@@ -2,7 +2,7 @@ using Anvil.API;
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.System.Helpers;
+namespace AmiaReforged.Core.Helpers;
 
 [ServiceBinding(typeof(NwTaskHelper))]
 public class NwTaskHelper

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace AmiaReforged.Core
+﻿namespace AmiaReforged.Core.Models
 {
     public partial class Dm
     {
