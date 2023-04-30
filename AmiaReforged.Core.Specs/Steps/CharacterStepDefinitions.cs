@@ -1,0 +1,255 @@
+﻿using AmiaReforged.Core.Helpers;
+using AmiaReforged.Core.Models;
+using AmiaReforged.Core.Services;
+using BoDi;
+using FluentAssertions;
+using TechTalk.SpecFlow.Infrastructure;
+using Testcontainers.PostgreSql;
+
+namespace AmiaReforged.Core.Specs.Steps;
+
+[Binding]
+public class CharacterStepDefinitions
+{
+    private readonly IObjectContainer _objectContainer;
+
+    public CharacterStepDefinitions(IObjectContainer objectContainer)
+    {
+        _objectContainer = objectContainer;
+    }
+
+    [BeforeScenario]
+    public async void BeforeScenario()
+    {
+        Character character = new()
+        {
+            Id = Guid.NewGuid()
+        };
+        
+        _objectContainer.RegisterInstanceAs(character, ObjectContainerKeys.Character);
+    }
+
+
+    [Given(@"a player with the CDKey '(.*)'")]
+    public void GivenAPlayerWithTheCdKey(string cdKey)
+    {
+        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        character.CdKey = cdKey;
+        character.IsPlayerCharacter = true;
+    }
+
+    [Given(@"a Character with the first name '(.*)' and last name '(.*)'")]
+    public void GivenACharacterWithTheFirstNameAndLastName(string firstName, string lastName)
+    {
+        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        character.FirstName = firstName;
+        character.LastName = lastName;
+    }
+
+
+    [When(@"a request is made to persist the Character")]
+    public async Task WhenARequestIsMadeToPersistTheCharacter()
+    {
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        await characterService.AddCharacter(character);
+    }
+
+    [Then(@"the Character should be persisted")]
+    public async Task ThenTheCharacterShouldBePersisted()
+    {
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        Character? persistedCharacter = await characterService.GetCharacterByGuid(character.Id);
+
+        persistedCharacter.Should().NotBeNull("the character should be persisted");
+        persistedCharacter!.FirstName.Should().Be(character.FirstName, "the first name should be persisted");
+        persistedCharacter.LastName.Should().Be(character.LastName, "the last name should be persisted");
+        persistedCharacter.CdKey.Should().Be(character.CdKey, "the cd key should be persisted");
+        persistedCharacter.IsPlayerCharacter.Should()
+            .Be(character.IsPlayerCharacter, "the player character flag should be set");
+    }
+
+    [When(@"a request is made to update the Character with the first name '(.*)' and last name '(.*)'")]
+    public async Task WhenARequestIsMadeToUpdateTheCharacterWithTheFirstNameAndLastName(string updated, string test)
+    {
+        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        character.FirstName = updated;
+        character.LastName = test;
+
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+
+        await characterService.UpdateCharacter(character);
+    }
+
+
+    [Then(@"the Character's name should be updated")]
+    public async Task ThenTheCharactersNameShouldBeUpdated()
+    {
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        Character? persistedCharacter = await characterService.GetCharacterByGuid(character.Id);
+
+        persistedCharacter.Should().NotBeNull("the character should be persisted");
+        persistedCharacter!.FirstName.Should().Be(character.FirstName, "the first name should be persisted");
+        persistedCharacter.LastName.Should().Be(character.LastName, "the last name should be persisted");
+    }
+
+    [When(@"a request is made to delete the Character")]
+    public async Task WhenARequestIsMadeToDeleteTheCharacter()
+    {
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        await characterService.DeleteCharacter(character);
+    }
+
+    [Then(@"the Character should be deleted")]
+    public async Task ThenTheCharacterShouldBeDeleted()
+    {
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        Character? persistedCharacter = await characterService.GetCharacterByGuid(character.Id);
+
+        persistedCharacter.Should().BeNull("the character should be deleted");
+    }
+
+    [Given(@"a list of Characters")]
+    public void GivenAListOfCharacters()
+    {
+        List<Character> characters = new();
+        _objectContainer.RegisterInstanceAs(characters, ObjectContainerKeys.TestCharacters);
+    }
+
+    [Given(@"a Character named '(.*)' and last name '(.*)' is added to the list")]
+    public void GivenACharacterNamedAndLastNameIsAddedToTheList(string first, string last)
+    {
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        characters.Add(new Character
+        {
+            FirstName = first,
+            LastName = last,
+            Id = Guid.NewGuid()
+        });
+    }
+
+    [When(@"all of the Characters are added to the database")]
+    public async Task WhenAllOfTheCharactersAreAddedToTheDatabase()
+    {
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+        await characterService.AddCharacters(characters);
+        
+    }
+
+    [Then(@"the list of all Characters should be retrievable")]
+    public async Task ThenTheListOfCharactersShouldBeReturned()
+    {
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+
+        List<Character> persistedCharacters = await characterService.GetAllCharacters();
+
+        persistedCharacters.Should().NotBeEmpty("the list of characters should have been persisted");
+
+        foreach (Character character in characters)
+        {
+            persistedCharacters.Should()
+                .ContainEquivalentOf(character, "the list of characters should contain the character");
+        }
+    }
+
+    [When(@"a request is made to delete all Characters in the list")]
+    public async Task WhenARequestIsMadeToDeleteAllCharactersInTheList()
+    {
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+
+        await characterService.DeleteCharacters(characters);
+    }
+
+    [Then(@"the list of Characters should be deleted")]
+    public async Task ThenTheListOfCharactersShouldBeDeleted()
+    {
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+
+        List<Character> persistedCharacters = await characterService.GetAllCharacters();
+
+        characters.ForEach(character =>
+            persistedCharacters.Should()
+                .NotContainEquivalentOf(character, "the list of characters should not contain the character"));
+    }
+
+    [Given(@"all Characters in the list are Player Characters")]
+    public void GivenAllCharactersInTheListArePlayerCharacters()
+    {
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        characters.ForEach(c => c.IsPlayerCharacter = true);
+    }
+
+    [Then(@"the list of all player Characters should be retrievable")]
+    public async Task ThenTheListOfAllPlayerCharactersShouldBeRetrievable()
+    {
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+
+        List<Character> persistedCharacters = await characterService.GetAllPlayerCharacters();
+
+        persistedCharacters.Should().NotBeEmpty("the list of characters should not be empty");
+
+        characters.ForEach(character => persistedCharacters.Should()
+            .ContainEquivalentOf(character, "the list of characters should contain the character"));
+    }
+
+    [Given(@"all Characters in the list are Non-Player Characters")]
+    public void GivenAllCharactersInTheListAreNonPlayerCharacters()
+    {
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        characters.ForEach(c => c.IsPlayerCharacter = false);
+    }
+
+    [Then(@"the list of all non-player Characters should be retrievable")]
+    public async Task ThenTheListOfAllNonPlayerCharactersShouldBeRetrievable()
+    {
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+
+        List<Character> persistedCharacters = await characterService.GetAllNonPlayerCharacters();
+
+        persistedCharacters.Should().NotBeEmpty("the list of characters should not be empty");
+
+        characters.ForEach(character => persistedCharacters.Should()
+            .ContainEquivalentOf(character, "the list of characters should contain the character"));
+    }
+
+    [Then(@"a request to determine if the Character exists should be '(.*)'")]
+    public async Task ThenARequestToDetermineIfTheCharacterExistsShouldBe(bool exists)
+    {
+        CharacterService characterService =
+            _objectContainer.Resolve<CharacterService>(ObjectContainerKeys.CharacterService);
+        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+
+        bool doesCharacterExist = await characterService.CharacterExists(character.Id);
+        doesCharacterExist.Should().Be(exists);
+    }
+
+
+    [Given(@"the most recently added Character is a player character")]
+    public void GivenTheMostRecentlyAddedCharacterIsAPlayerCharacter()
+    {
+        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        characters.Last().IsPlayerCharacter = true;
+    }
+}

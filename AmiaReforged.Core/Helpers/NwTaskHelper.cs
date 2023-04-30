@@ -9,7 +9,7 @@ public class NwTaskHelper
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public  async Task TrySwitchToMainThread()
+    public async Task TrySwitchToMainThread()
     {
         try
         {

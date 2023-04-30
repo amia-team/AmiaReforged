@@ -6,7 +6,7 @@ namespace AmiaReforged.Core;
 public static class PostgresConfig
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    public static string Host => GetHost();
+    public static string Host { get; set; } = GetHost();
 
     private static string GetHost()
     {
@@ -18,7 +18,7 @@ public static class PostgresConfig
         return host;
     }
 
-    public static int Port { get; } = GetPort();
+    public static int Port { get; set; } = GetPort();
 
     private static int GetPort()
     {

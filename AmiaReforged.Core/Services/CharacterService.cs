@@ -116,7 +116,7 @@ public class CharacterService
         Character? character = null;
         try
         {
-            character = await _ctx.Characters.FindAsync(amiaCharacterId);
+            character = await _ctx.Characters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == amiaCharacterId);
         }
         catch (Exception e)
         {
