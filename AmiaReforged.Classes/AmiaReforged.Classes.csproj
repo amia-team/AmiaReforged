@@ -1,15 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <LangVersion>11</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="NUnit" Version="3.13.3" />
-      <PackageReference Include="NWN.Anvil" Version="8193.34.28" />
-      <PackageReference Include="NWN.Core" Version="8193.35.4" />
+      <PackageReference Include="NWN.Anvil" Version="8193.35.1" />
+      <PackageReference Include="NWN.Core" Version="8193.35.6" />
     </ItemGroup>
 
     <ItemGroup>
