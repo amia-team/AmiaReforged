@@ -5,12 +5,12 @@ using Npgsql;
 
 namespace AmiaReforged.Core;
 
-[ServiceBinding(typeof(AmiaContext))]
-public class AmiaContext : DbContext
+[ServiceBinding(typeof(AmiaDbContext))]
+public class AmiaDbContext : DbContext
 {
     private readonly string _connectionString;
 
-    public AmiaContext()
+    public AmiaDbContext()
     {
         _connectionString = ConnectionString();
     }

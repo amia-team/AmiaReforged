@@ -44,7 +44,7 @@ namespace AmiaReforged.Core.Specs.Hooks
 
             _objectContainer.RegisterInstanceAs(character, ObjectContainerKeys.Character);
             _objectContainer.RegisterTypeAs<NwTaskHelper, NwTaskHelper>(ObjectContainerKeys.NwTaskHelper);
-            _objectContainer.RegisterTypeAs<AmiaContext, AmiaContext>(ObjectContainerKeys.AmiaContext);
+            _objectContainer.RegisterTypeAs<AmiaDbContext, AmiaDbContext>(ObjectContainerKeys.AmiaContext);
             _objectContainer.RegisterTypeAs<CharacterService, CharacterService>(ObjectContainerKeys.CharacterService);
             _objectContainer.RegisterTypeAs<FactionService, FactionService>();
 
@@ -54,15 +54,15 @@ namespace AmiaReforged.Core.Specs.Hooks
         private async Task DoDatabaseSetup()
         {
             _outputHelper.WriteLine("Doing database setup");
-            AmiaContext amiaContext = _objectContainer.Resolve<AmiaContext>("amiaContext");
+            AmiaDbContext amiaDbContext = _objectContainer.Resolve<AmiaDbContext>("amiaContext");
 
-            bool canConnectAsync = await amiaContext.Database.CanConnectAsync();
+            bool canConnectAsync = await amiaDbContext.Database.CanConnectAsync();
             if (!canConnectAsync)
             {
                 _outputHelper.WriteLine("Can't connect to database");
             }
 
-            await amiaContext.Database.MigrateAsync();
+            await amiaDbContext.Database.MigrateAsync();
         }
 
         [AfterScenario]

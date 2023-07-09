@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace AmiaReforged.Core.Migrations
 {
-    [DbContext(typeof(AmiaContext))]
+    [DbContext(typeof(AmiaDbContext))]
     partial class AmiaContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

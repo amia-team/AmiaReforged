@@ -12,10 +12,10 @@ public class FactionService
 {
     public CharacterService CharacterService { get; }
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly AmiaContext _ctx;
+    private readonly AmiaDbContext _ctx;
     private readonly NwTaskHelper _nwTaskHelper;
 
-    public FactionService(CharacterService characterService, AmiaContext ctx, NwTaskHelper nwTaskHelper)
+    public FactionService(CharacterService characterService, AmiaDbContext ctx, NwTaskHelper nwTaskHelper)
     {
         CharacterService = characterService;
         _ctx = ctx;

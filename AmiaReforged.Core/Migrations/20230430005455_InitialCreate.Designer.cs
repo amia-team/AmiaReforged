@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace AmiaReforged.Core.Migrations
 {
-    [DbContext(typeof(AmiaContext))]
+    [DbContext(typeof(AmiaDbContext))]
     [Migration("20230430005455_InitialCreate")]
     partial class InitialCreate
     {

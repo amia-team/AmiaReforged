@@ -21,7 +21,7 @@ public class FactionStepDefinitions
     {
         _objectContainer.RegisterInstanceAs(new Faction { Members = new List<Guid>() }, ObjectContainerKeys.Faction);
         _objectContainer.RegisterTypeAs<NwTaskHelper, NwTaskHelper>();
-        _objectContainer.RegisterTypeAs<AmiaContext, AmiaContext>();
+        _objectContainer.RegisterTypeAs<AmiaDbContext, AmiaDbContext>();
         _objectContainer.RegisterTypeAs<CharacterService, CharacterService>();
         _objectContainer.RegisterTypeAs<FactionService, FactionService>();
     }

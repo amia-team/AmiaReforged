@@ -9,11 +9,11 @@ namespace AmiaReforged.Core.Services;
 // [ServiceBinding(typeof(CharacterService))]
 public class CharacterService
 {
-    private readonly AmiaContext _ctx;
+    private readonly AmiaDbContext _ctx;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly NwTaskHelper _nwTaskHelper;
 
-    public CharacterService(AmiaContext ctx, NwTaskHelper nwTaskHelper)
+    public CharacterService(AmiaDbContext ctx, NwTaskHelper nwTaskHelper)
     {
         _ctx = ctx;
         _nwTaskHelper = nwTaskHelper;

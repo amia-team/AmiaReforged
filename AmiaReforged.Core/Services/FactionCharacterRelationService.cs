@@ -9,11 +9,11 @@ namespace AmiaReforged.Core.Services;
 public class FactionCharacterRelationService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly AmiaContext _ctx;
+    private readonly AmiaDbContext _ctx;
     private readonly NwTaskHelper _nwTaskHelper;
     private readonly CharacterService _characterService;
 
-    public FactionCharacterRelationService(AmiaContext ctx, NwTaskHelper nwTaskHelper,
+    public FactionCharacterRelationService(AmiaDbContext ctx, NwTaskHelper nwTaskHelper,
         CharacterService characterService)
     {
         _ctx = ctx;
