@@ -1,6 +1,6 @@
 ﻿namespace AmiaReforged.Core.Models
 {
-    public partial class DmLogin
+    public class DmLogin
     {
         public int LoginNumber { get; set; }
         public string? CdKey { get; set; }
