@@ -5,4 +5,4 @@ if [ ! -d "/home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.System/
     sudo mkdir /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.System/
 fi
 sudo cp -r bin/Debug/net6.0/* /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.System/
-sudo chown -R jenkins.jenkins bin/Debug/net6.0/
+sudo chown -R jenkins.jenkins bin/Debug/net7.0/
