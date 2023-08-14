@@ -7,11 +7,13 @@ public class MiniQuest
 {
     private readonly NwCreature? _questGiver;
     private readonly NwPlayer? _player;
+    private readonly MiniQuestReward _miniQuestReward;
 
     public MiniQuest(NwCreature? questGiver, NwPlayer? player)
     {
         _questGiver = questGiver;
         _player = player;
+        _miniQuestReward = new MiniQuestReward();
     }
 
     public void ProcessReward()
@@ -28,40 +30,8 @@ public class MiniQuest
             ? NWScript.GetLocalString(_questGiver, DynamicQuestLocals.MiniQuest.QuestFailedLine)
             : NWScript.GetLocalString(_questGiver, DynamicQuestLocals.MiniQuest.QuestDoneLine);
 
-        DoRewardForEachItem(questItems);
+        _miniQuestReward.DoRewardForEachItem(questItems, _questGiver, _player);
 
         _questGiver.SpeakString(speakString);
-    }
-
-    private void DoRewardForEachItem(List<NwItem> questItems)
-    {
-        foreach (NwItem item in questItems)
-        {
-            DoExperienceReward();
-            DoGoldReward();
-            DoItemReward();
-            item.Destroy();
-        }
-    }
-
-    private void DoExperienceReward()
-    {
-        int xpReward = NWScript.GetLocalInt(_questGiver, DynamicQuestLocals.MiniQuest.XpReward);
-        _player!.GiveXp(xpReward);
-    }
-
-    private void DoGoldReward()
-    {
-        int goldReward = NWScript.GetLocalInt(_questGiver, DynamicQuestLocals.MiniQuest.GoldReward);
-        _player!.LoginCreature!.GiveGold(goldReward);
-    }
-
-    private void DoItemReward()
-    {
-        string itemReward = NWScript.GetLocalString(_questGiver, DynamicQuestLocals.MiniQuest.ItemReward);
-        if (itemReward != string.Empty)
-        { 
-            NwItem.Create(itemReward, _player!.LoginCreature); 
-        }
     }
 }

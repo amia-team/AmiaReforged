@@ -14,5 +14,7 @@ public static class DynamicQuestLocals
         public static string QuestDoneLine => "questDone";
         public static string QuestFailedLine => "questFail";
         public static string ItemReward => "itemReward";
+
+        public static string TakeMax => "takeMax";
     }
 }
