@@ -16,7 +16,7 @@ public class MiniQuestReward : IMiniQuestRewardStrategy
         int maxItemTaken = NWScript.GetLocalInt(questGiver, DynamicQuestLocals.MiniQuest.TakeMax);
         for (int i = 0; i < questItems.Count; i++)
         {
-            if (i > maxItemTaken) break;
+            if (i > maxItemTaken && maxItemTaken > 0) break;
             DoExperienceReward();
             DoGoldReward();
             DoItemReward();
