@@ -13,11 +13,12 @@ namespace AmiaReforged.Core.Specs.Hooks
     {
         private readonly SpecFlowOutputHelper _outputHelper;
         private readonly IObjectContainer _objectContainer;
-        private PostgreSqlContainer _postgresContainer;
+        private static PostgreSqlContainer? _postgresContainer;
+        private static bool _isMigrationDone = false;
+
 
         public Hooks(IObjectContainer objectContainer, SpecFlowOutputHelper outputHelper)
         {
-            
             _objectContainer = objectContainer;
             _outputHelper = outputHelper;
         }
@@ -30,17 +31,19 @@ namespace AmiaReforged.Core.Specs.Hooks
                 Id = Guid.NewGuid()
             };
             
-            _postgresContainer = new PostgreSqlBuilder()
-                .WithPassword(PostgresConfig.Password)
-                .WithUsername(PostgresConfig.Username)
-                .WithDatabase(PostgresConfig.Database)
-                .Build();
-            
-            await _postgresContainer.StartAsync();
+            if (_postgresContainer == null)
+            {
+                _postgresContainer = new PostgreSqlBuilder()
+                    .WithPassword(PostgresConfig.Password)
+                    .WithUsername(PostgresConfig.Username)
+                    .WithDatabase(PostgresConfig.Database)
+                    .Build();
+                
+                await _postgresContainer.StartAsync();
 
-            PostgresConfig.Host = _postgresContainer.Hostname;
-            PostgresConfig.Port = _postgresContainer.GetMappedPublicPort(5432);
-            
+                PostgresConfig.Host = _postgresContainer.Hostname;
+                PostgresConfig.Port = _postgresContainer.GetMappedPublicPort(5432);
+            }
 
             _objectContainer.RegisterInstanceAs(character, ObjectContainerKeys.Character);
             _objectContainer.RegisterTypeAs<NwTaskHelper, NwTaskHelper>(ObjectContainerKeys.NwTaskHelper);
@@ -57,12 +60,17 @@ namespace AmiaReforged.Core.Specs.Hooks
             AmiaDbContext amiaDbContext = _objectContainer.Resolve<AmiaDbContext>("amiaContext");
 
             bool canConnectAsync = await amiaDbContext.Database.CanConnectAsync();
+
             if (!canConnectAsync)
             {
                 _outputHelper.WriteLine("Can't connect to database");
             }
 
-            await amiaDbContext.Database.MigrateAsync();
+            if (!_isMigrationDone)
+            {
+                await amiaDbContext.Database.MigrateAsync();
+                _isMigrationDone = true;
+            }
         }
 
         [AfterScenario]
@@ -74,7 +82,19 @@ namespace AmiaReforged.Core.Specs.Hooks
 
         private async Task DoDatabaseCleanup()
         {
-            await _postgresContainer.StopAsync();
+            // Wipe the database without stopping the container
+            AmiaDbContext amiaDbContext = _objectContainer.Resolve<AmiaDbContext>("amiaContext");
+            await amiaDbContext.Database.EnsureDeletedAsync();
+            await amiaDbContext.Database.EnsureCreatedAsync();
+        }
+        
+        [AfterTestRun]
+        public static async Task AfterTestRun()
+        {
+            if (_postgresContainer != null)
+            {
+                await _postgresContainer.StopAsync();
+            }
         }
     }
 }
