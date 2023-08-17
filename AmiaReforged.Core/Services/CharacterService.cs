@@ -1,4 +1,5 @@
-﻿using AmiaReforged.Core.Helpers;
+﻿using System.Linq.Expressions;
+using AmiaReforged.Core.Helpers;
 using AmiaReforged.Core.Models;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
@@ -80,20 +81,33 @@ public class CharacterService
         return characters;
     }
 
-    public async Task<List<Character>> GetAllPlayerCharacters()
+    private async Task<List<Character>> GetCertainCharacters(Expression<Func<Character, bool>> predicate)
     {
-        List<Character> characters = await GetAllCharacters();
+        List<Character> characters = new();
+
+        try
+        {
+            characters = await _ctx.Characters
+                .Where(predicate)
+                .ToListAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting certain characters");
+        }
 
         await _nwTaskHelper.TrySwitchToMainThread();
-        return characters.Where(character => character.IsPlayerCharacter).ToList();
+        return characters;
     }
 
-    public async Task<List<Character>> GetAllNonPlayerCharacters()
+    public Task<List<Character>> GetAllPlayerCharacters()
     {
-        List<Character> characters = await GetAllCharacters();
+        return GetCertainCharacters(character => character.IsPlayerCharacter);
+    }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
-        return characters.Where(character => !character.IsPlayerCharacter).ToList();
+    public Task<List<Character>> GetAllNonPlayerCharacters()
+    {
+        return GetCertainCharacters(character => !character.IsPlayerCharacter);
     }
 
     public async Task<bool> CharacterExists(Guid amiaCharacterId)
@@ -112,7 +126,7 @@ public class CharacterService
     }
 
     public async Task<Character?> GetCharacterByGuid(Guid amiaCharacterId)
-    { 
+    {
         Character? character = null;
         try
         {
@@ -127,7 +141,7 @@ public class CharacterService
     }
 
     public async Task AddCharacters(IEnumerable<Character> characters)
-    { 
+    {
         try
         {
             await _ctx.Characters.AddRangeAsync(characters);
