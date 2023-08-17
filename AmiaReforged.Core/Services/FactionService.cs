@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Linq.Expressions;
 using AmiaReforged.Core.Helpers;
 using AmiaReforged.Core.Models;
 using Anvil.Services;
@@ -151,38 +152,35 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task<List<Character>> GetAllCharacters(Faction f)
+    private async Task<List<Character>> GetCharactersByCriteria(Faction f, Expression<Func<Character, bool>> criteria)
     {
         List<Character> characters = new();
-        try
+
+        foreach (Guid id in f.Members)
         {
-            foreach (Guid id in f.Members)
+            IQueryable<Character> query = _ctx.Characters.Where(c => c.Id == id);
+
+            if (criteria != null)
             {
-                Character? character = await CharacterService.GetCharacterByGuid(id);
-                if (character is null) continue;
+                query = query.Where(criteria);
+            }
+
+            Character? character = await query.SingleOrDefaultAsync();
+
+            if (character is not null)
+            {
                 characters.Add(character);
             }
         }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error getting all characters in roster");
-        }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
         return characters;
     }
 
-    public async Task<List<Character>> GetAllPlayerCharactersFrom(Faction faction)
-    {
-        List<Character> characters = await GetAllCharacters(faction);
-        return characters.Where(c => c.IsPlayerCharacter).ToList();
-    }
+    public async Task<List<Character>> GetAllPlayerCharactersFrom(Faction faction) =>
+        await GetCharactersByCriteria(faction, c => c.IsPlayerCharacter);
 
-    public async Task<List<Character>> GetAllNonPlayerCharactersFrom(Faction faction)
-    {
-        List<Character> characters = await GetAllCharacters(faction);
-        return characters.Where(c => !c.IsPlayerCharacter).ToList();
-    }
+    public async Task<List<Character>> GetAllNonPlayerCharactersFrom(Faction faction) =>
+        await GetCharactersByCriteria(faction, c => !c.IsPlayerCharacter);
 
     public async Task DeleteFactions(List<Faction> faction)
     {
