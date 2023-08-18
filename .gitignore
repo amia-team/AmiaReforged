@@ -415,6 +415,9 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+# Ignore feature.cs files
+*.feature.cs
+
 # content below from: https://github.com/github/gitignore/blob/master/Global/Windows.gitignore
 # Windows thumbnail cache files
 Thumbs.db
