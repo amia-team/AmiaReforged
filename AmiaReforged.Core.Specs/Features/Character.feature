@@ -3,7 +3,7 @@ As a user
 My Character's identity should be persisted
 So that I can interact with the dynamic world engine
 
-    @mytag
+
     Scenario: A Character is added
         Given a player with the CDKey 'T3ST3D420'
         And a Character with the first name 'Test' and last name 'Testerson'
