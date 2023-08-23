@@ -3,7 +3,6 @@ As a Faction
 I need to be able to have a relation with another faction
 So that I know who my friends and enemies are
 
-    @mytag
     Scenario: A newly added faction should have a neutral relationship with every faction
         Given a list of Factions with random names and descriptions
         And the list of Factions is persisted
