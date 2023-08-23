@@ -3,7 +3,7 @@ As a Faction
 I need to be able to add and remove members from my roster
 So that I can remain organized and keep track of who is in my faction
 
-    @mytag
+
     Scenario: A faction is added
         Given a Faction named "The Order of the Phoenix"
         And with the description "A secret society dedicated to fighting the Dark Lord"
