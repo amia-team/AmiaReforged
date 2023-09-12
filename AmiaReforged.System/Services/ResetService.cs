@@ -51,31 +51,31 @@ public class ResetService
 
     private static void SavePCs()
     {
-		float resetAtMinutes = NWScript.GetLocalFloat(NwModule.Instance, "minutesToReset");
-		float uptime = (float)ResetTimeKeeperSingleton.Instance.Uptime() / 60;
+        foreach (NwPlayer instancePlayer in (IEnumerable<NwPlayer>)NwModule.Instance.Players)
+        {
+			
+			float resetAtMinutes = NWScript.GetLocalFloat(NwModule.Instance, "minutesToReset");
+			float uptime = (float)ResetTimeKeeperSingleton.Instance.Uptime() / 60;
+			
+			float estimatedReset = resetAtMinutes - uptime;
+			obj.Player.SendServerMessage($"Estimated reset time: {(int) estimatedReset}", Color.FromRGBA("#5be9ffcc"));	
+            
+			if (instancePlayer.IsDM)
+            {
+                instancePlayer.SendServerMessage("-- DMs can't be saved. --");
+                continue;
+            }
 
-		float estimatedReset = resetAtMinutes - uptime;
-		obj.Player.SendServerMessage($"Estimated reset time: {(int) estimatedReset}", Color.FromRGBA("#5be9ffcc"));
-				
-			foreach (NwPlayer instancePlayer in (IEnumerable<NwPlayer>)NwModule.Instance.Players)
-			{
-				
-				if (instancePlayer.IsDM)
-				{
-					instancePlayer.SendServerMessage("-- DMs can't be saved. --");
-					continue;
-				}
+            if (instancePlayer.LoginCreature.ActiveEffects.Any(e => e.EffectType == EffectType.Polymorph))
+            {
+                instancePlayer.SendServerMessage(
+                    "-- Polymorphed PCs can't be saved. Please unpolymorph to save your PC. --");
+                continue;
+            }
 
-				if (instancePlayer.LoginCreature.ActiveEffects.Any(e => e.EffectType == EffectType.Polymorph))
-				{
-					instancePlayer.SendServerMessage(
-						"-- Polymorphed PCs can't be saved. Please unpolymorph to save your PC. --");
-					continue;
-				}
-
-				instancePlayer.SendServerMessage("-- Saving your PC now. --");
-				NWScript.ExportSingleCharacter(instancePlayer.LoginCreature);
-			}
+            instancePlayer.SendServerMessage("-- Saving your PC now. --");
+            NWScript.ExportSingleCharacter(instancePlayer.LoginCreature);
+        }
     }
 
     private void CheckShutdown()
