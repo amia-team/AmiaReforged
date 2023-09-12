@@ -53,14 +53,7 @@ public class ResetService
     {
         foreach (NwPlayer instancePlayer in (IEnumerable<NwPlayer>)NwModule.Instance.Players)
         {
-			
-			float resetAtMinutes = NWScript.GetLocalFloat(NwModule.Instance, "minutesToReset");
-			float uptime = (float)ResetTimeKeeperSingleton.Instance.Uptime() / 60;
-			
-			float estimatedReset = resetAtMinutes - uptime;
-			obj.Player.SendServerMessage($"Estimated reset time: {(int) estimatedReset}", Color.FromRGBA("#5be9ffcc"));	
-            
-			if (instancePlayer.IsDM)
+            if (instancePlayer.IsDM)
             {
                 instancePlayer.SendServerMessage("-- DMs can't be saved. --");
                 continue;
