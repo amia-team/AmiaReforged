@@ -27,6 +27,7 @@ public class ResetService
     private void ScheduleAutosaveAndReset()
     {
         _schedulerService.ScheduleRepeating(SavePCs, TimeSpan.FromMinutes(30));
+		_schedulerService.ScheduleRepeating(DisplayResetTimer2, TimeSpan.FromMinutes(15));
         _schedulerService.ScheduleRepeating(CheckShutdown, TimeSpan.FromMinutes(1));
     }
 
@@ -42,6 +43,15 @@ public class ResetService
     {
         if (obj.RestEventType != RestEventType.Cancelled) return;
 
+        float resetAtMinutes = NWScript.GetLocalFloat(NwModule.Instance, "minutesToReset");
+        float uptime = (float)ResetTimeKeeperSingleton.Instance.Uptime() / 60;
+
+        float estimatedReset = resetAtMinutes - uptime;
+        obj.Player.SendServerMessage($"Estimated reset time: {(int) estimatedReset}", Color.FromRGBA("#5be9ffcc"));
+    }
+	
+	private void DisplayResetTimer2()
+    {
         float resetAtMinutes = NWScript.GetLocalFloat(NwModule.Instance, "minutesToReset");
         float uptime = (float)ResetTimeKeeperSingleton.Instance.Uptime() / 60;
 
