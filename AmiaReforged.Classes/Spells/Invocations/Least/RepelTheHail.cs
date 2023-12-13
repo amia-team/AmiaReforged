@@ -5,18 +5,20 @@ namespace AmiaReforged.Classes.Spells.Invocations.Least;
 
 public class RepelTheHail
 {
-    public int Run(uint nwnObjectId)
+    public int CastRepelTheHail(uint nwnObjectId)
     {
+        int warlockLevels = GetLevelByClass(57, nwnObjectId);
+        int concealment = 25 + warlockLevels;
+
         IntPtr repelHailEffect = NwEffects.LinkEffectList(new List<IntPtr>
         {
             EffectSkillIncrease(SKILL_MOVE_SILENTLY, 4),
             EffectSkillIncrease(SKILL_HIDE, 4),
             EffectVisualEffect(VFX_DUR_GLOBE_MINOR),
-            EffectConcealment(20, MISS_CHANCE_TYPE_VS_RANGED)
+            EffectConcealment(concealment, MISS_CHANCE_TYPE_VS_RANGED)
         });
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, repelHailEffect, nwnObjectId,
-            TurnsToSeconds(GetCasterLevel(nwnObjectId)));
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, repelHailEffect, nwnObjectId, TurnsToSeconds(warlockLevels));
 
         return 0;
     }

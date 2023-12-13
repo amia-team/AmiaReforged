@@ -18,43 +18,35 @@ public class WarlockLeastInvocationHandler
     [ScriptHandler("wlk_boundluck")]
     public void OnBoundLuck(CallInfo info)
     {
-        if(!info.ObjectSelf.IsPlayerControlled(out NwPlayer player)) return;
-        
-        if (player.LoginCreature.Classes.Any(c => c.Class.Name.ToString() == "Blackguard"))
-        {
-            player.SendServerMessage("You can't stack Bound One's Own luck with Dark Blessing.");
-            return;
-        }
-        
         BoundOnesLuck script = new();
-        script.Run(info.ObjectSelf);
+        script.CastBoundOnesLuck(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_leapsbounds")]
     public void OnLeapsAndBounds(CallInfo info)
     {
         LeapsAndBounds script = new();
-        script.Run(info.ObjectSelf);
+        script.CastLeapsAndBounds(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_othrwrldwhis")]
     public void OnOtherworldyWhispers(CallInfo info)
     {
         OtherworldlyWhispers script = new();
-        script.Run(info.ObjectSelf);
+        script.CastOtherworldlyWhispers(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_repelhail")]
-    public void OnRepelHail(CallInfo info)
+    public void OnRepelTheHail(CallInfo info)
     {
         RepelTheHail script = new();
-        script.Run(info.ObjectSelf);
+        script.CastRepelTheHail(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_see_unseen")]
-    public void OnSeeUnseen(CallInfo info)
+    public void OnSeeTheUnseen(CallInfo info)
     {
         SeeTheUnseen script = new();
-        script.Run(info.ObjectSelf);
+        script.CastSeeTheUnseen(info.ObjectSelf);
     }
 }

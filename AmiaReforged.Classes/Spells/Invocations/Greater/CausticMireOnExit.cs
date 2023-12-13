@@ -4,7 +4,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 
 public class CausticMireOnExit
 {
-    public int Run(uint nwnObjectId)
+    public void CausticMireExitEffects(uint nwnObjectId)
     {
         uint exitingObject = GetExitingObject();
         IntPtr effect = GetFirstEffect(exitingObject);
@@ -17,7 +17,5 @@ public class CausticMireOnExit
 
             effect = GetNextEffect(exitingObject);
         }
-
-        return 0;
     }
 }

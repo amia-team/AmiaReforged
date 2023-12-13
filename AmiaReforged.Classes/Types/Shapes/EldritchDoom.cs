@@ -1,52 +1,45 @@
 ﻿using AmiaReforged.Classes.Types.EssenceEffects;
+using AmiaReforged.Classes.EffectUtils;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Types.Shapes;
 
 public static class EldritchDoom
 {
-    public static void CastEldritchDoom(uint caster, IntPtr location, EssenceVisuals essenceVisuals)
+    public static void CastEldritchDoom(uint caster, IntPtr location, EssenceType essence)
     {
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, essenceVisuals.DoomVfx, location);
-        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_HUGE, location, TRUE);
-        EssenceType essenceType =
-            (EssenceType)GetLocalInt(GetItemPossessedBy(caster, "ds_pckey"), "warlock_essence");
+        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EssenceVfX.Doom(essence), location);
+        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location, TRUE);
+
         while (GetIsObjectValid(currentTarget) == TRUE)
         {
-            EssenceEffectApplier effectApplier =
-                EssenceEffectFactory.CreateEssenceEffect(essenceType, currentTarget, caster);
-            if (currentTarget == caster || GetIsFriend(currentTarget, caster) == TRUE || GetIsNeutral(currentTarget, caster) == TRUE)
+            if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
             {
-                currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_HUGE, location, TRUE);
-                continue;
+                EssenceEffectApplier effectApplier =
+                EssenceEffectFactory.CreateEssenceEffect(essence, currentTarget, caster);
+
+                SignalEvent(currentTarget, EventSpellCastAt(caster, 1003));
+
+                bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
+                bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
+                bool passedSave = ReflexSave(currentTarget, NwEffects.CalculateDC(caster), 0, caster) == TRUE;
+
+                if (passedSave)
+                {
+                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REFLEX_SAVE_THROW_USE), currentTarget);
+                    if (hasEvasion || hasImpEvasion)
+                    {
+                        currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location, TRUE);
+                        continue;
+                    }
+                }
+
+                int damage = EldritchDamage.CalculateDamageAmount(caster);
+                damage = passedSave || hasImpEvasion ? damage / 2 : damage;
+                effectApplier.ApplyEffects(damage);
             }
 
-            SignalEvent(currentTarget, EventSpellCastAt(caster, 1003));
-
-            bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
-            bool passedSave = ReflexSave(currentTarget, CalculateDc(caster)) == TRUE;
-
-            if (passedSave && hasEvasion)
-            {
-                currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_HUGE, location, TRUE);
-                continue;
-            }
-
-            if (!passedSave && GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE)
-            {
-                currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_HUGE, location, TRUE);
-                continue;
-            }
-
-            int calculatedDamage = GetHasFeat(FEAT_IMPROVED_EVASION) == TRUE
-                ? EldritchDamage.CalculateDamageAmount(caster) / 2
-                : EldritchDamage.CalculateDamageAmount(caster);
-            int finalDamage = passedSave ? calculatedDamage / 2 : calculatedDamage;
-            effectApplier.ApplyEffects(finalDamage);
             currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location, TRUE);
         }
     }
-
-    private static int CalculateDc(uint caster) =>
-        GetLevelByClass(57, caster) / 2 + GetAbilityModifier(ABILITY_CHARISMA) + 10;
 }

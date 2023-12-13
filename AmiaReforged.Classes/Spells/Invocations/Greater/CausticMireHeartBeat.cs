@@ -3,37 +3,32 @@ using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 
-public class CausticMireHeartBeat
+public class CausticMireHeartbeat
 {
-    public void Run(uint nwnObjectId)
+    public void CausticMireHeartbeatEffects(uint nwnObjectId)
     {
-        uint current = GetFirstInPersistentObject(nwnObjectId);
-        uint areaOfEffectCreator = GetAreaOfEffectCreator(nwnObjectId);
-        int casterChaMod = GetAbilityModifier(ABILITY_CHARISMA, areaOfEffectCreator);
-        int spellId = GetSpellId();
+        uint currentTarget = GetFirstInPersistentObject(nwnObjectId);
+        uint caster = GetAreaOfEffectCreator(nwnObjectId);
+        int casterChaMod = GetAbilityModifier(ABILITY_CHARISMA, caster);
 
-        while (GetIsObjectValid(current) == TRUE)
+        while (GetIsObjectValid(currentTarget) == TRUE)
         {
-            bool notValidTarget = current == areaOfEffectCreator ||
-                                  GetIsFriend(current, areaOfEffectCreator) == TRUE;
-            if (notValidTarget)
+            if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
             {
-                current = GetNextInPersistentObject(nwnObjectId);
-                continue;
+                SignalEvent(currentTarget, EventSpellCastAt(nwnObjectId, GetSpellId()));
+
+                if (NwEffects.ResistSpell(caster, currentTarget))
+                {
+                    currentTarget = GetNextInPersistentObject(nwnObjectId);
+                    continue;
+                }
+
+                int damage = casterChaMod > 10 ? d6() + 10 : d6() + casterChaMod;
+
+                ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_ACID), currentTarget);
             }
 
-            if (NwEffects.ResistSpell(areaOfEffectCreator, current))
-            {
-                current = GetNextInPersistentObject(nwnObjectId);
-                continue;
-            }
-
-            SignalEvent(current, EventSpellCastAt(nwnObjectId, spellId));
-            int damage = casterChaMod > 10 ? d6() + 10 : d6() + casterChaMod;
-
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_ACID), current);
-
-            current = GetNextInPersistentObject(nwnObjectId);
+            currentTarget = GetNextInPersistentObject(nwnObjectId);
         }
     }
 }

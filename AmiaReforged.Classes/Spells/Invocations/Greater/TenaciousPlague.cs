@@ -4,7 +4,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 
 public class TenaciousPlague
 {
-    public int Run(uint nwnObjectId)
+    public int CastTenaciousPlague(uint nwnObjectId)
     {
         IntPtr areaOfEffect = EffectAreaOfEffect(50);
 

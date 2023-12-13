@@ -5,21 +5,18 @@ namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 
 public class WallOfPerilousFlameOnEnter
 {
-    public void Run(uint nwnObjectId)
+    public void WallOfFlameEnterEffects(uint nwnObjectId)
     {
         uint enteringObject = GetEnteringObject();
         uint caster = GetAreaOfEffectCreator(nwnObjectId);
 
         int casterChaMod = GetAbilityModifier(ABILITY_CHARISMA, caster);
 
-        bool notValidTarget = enteringObject == caster ||
-                              GetIsFriend(enteringObject, caster) == TRUE;
+        if (!NwEffects.IsValidSpellTarget(enteringObject, 2, caster)) return;
 
-        if (notValidTarget) return;
+        SignalEvent(enteringObject, EventSpellCastAt(nwnObjectId, GetSpellId()));
+
         if (NwEffects.ResistSpell(caster, enteringObject)) return;
-
-        int spellId = GetSpellId();
-        SignalEvent(enteringObject, EventSpellCastAt(nwnObjectId, spellId));
 
         int damage = d12() + casterChaMod;
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_FIRE),
