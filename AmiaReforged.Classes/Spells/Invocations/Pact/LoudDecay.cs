@@ -18,7 +18,7 @@ public class LoudDecay
             EffectDamage(damage, DAMAGE_TYPE_SONIC),
             EffectVisualEffect(VFX_IMP_SONIC)
         });
-        IntPtr loudVFX = EffectVisualEffect(2124); // VFX_FNF_LOUD_DECAY
+        IntPtr loudVFX = EffectVisualEffect(2133); // VFX_FNF_LOUD_DECAY
 
         // Declaring variables for the summon part of the spell
         uint summon = GetObjectByTag("wlkAberrant");
