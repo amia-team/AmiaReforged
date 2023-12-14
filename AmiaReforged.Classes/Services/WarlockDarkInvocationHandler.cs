@@ -1,10 +1,7 @@
 ﻿using AmiaReforged.Classes.Spells.Invocations.Dark;
 using Anvil.API;
-using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core.NWNX;
-using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Services;
 
@@ -22,27 +19,20 @@ public class WarlockDarkInvocationHandler
     public void OnDarkForesight(CallInfo info)
     {
         DarkForesight script = new();
-        script.CastDarkForesight(info.ObjectSelf);
-    }
-
-    [ScriptHandler("wlk_devourmagic")]
-    public void OnDevourMagic(CallInfo info)
-    {
-        DevourMagic script = new();
-        script.CastDevourMagic(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_retinvis")]
     public void OnShadowShape(CallInfo info)
     {
         ShadowShape script = new();
-        script.CastShadowShape(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_wordchange")]
     public void OnWordOfChanging(CallInfo info)
     {
         WordOfChanging script = new();
-        script.CastWordOfChanging(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 }

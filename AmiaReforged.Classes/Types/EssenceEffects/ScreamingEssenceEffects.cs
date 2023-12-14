@@ -22,26 +22,12 @@ public class ScreamingEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_SONIC), Target);
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_SONIC), Target);
 
-        bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_SONIC, Caster) == TRUE;
+        if (FortitudeSave(Target, CalculateDc(), SAVING_THROW_TYPE_SPELL) == TRUE) return;
 
-        if (passedFortSave)
-        {
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), Target);
-            return;
-        }
-        if (!passedFortSave)
-        {
-            int warlockLevels = GetLevelByClass(57, Caster);
-            float essenceDuration = warlockLevels < 5 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 5);
-            IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
-            {
-                EffectDeaf(),
-                EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE)
-            });
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_SILENCE), Target);
-        }
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectDeaf(), Target,
+            RoundsToSeconds(2));
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY,
+            EffectSkillDecrease(SKILL_LISTEN, 50), Target, RoundsToSeconds(2));
     }
 }

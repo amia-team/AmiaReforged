@@ -6,6 +6,8 @@ namespace AmiaReforged.Classes.Types.EssenceEffects;
 
 public class BeshadowedEssenceEffects : EssenceEffectApplier
 {
+    private const int OneRound = 1;
+
     public BeshadowedEssenceEffects(uint target, uint caster) : base(target, caster)
     {
     }
@@ -22,22 +24,11 @@ public class BeshadowedEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), Target);
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_FNF_GAS_EXPLOSION_GREASE), GetLocation(Target));
 
-        bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_SPELL, Caster) == TRUE;
+        bool targetMakesSave = FortitudeSave(Target, CalculateDc()) == TRUE;
+        if (targetMakesSave) return;
 
-        if (passedFortSave) ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), Target);
-        if (!passedFortSave)
-        {
-            int warlockLevels = GetLevelByClass(57, Caster);
-            float essenceDuration = warlockLevels < 10 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 10);
-            IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
-            {
-                EffectBlindness(),
-                EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE)
-            });
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_BLIND_DEAF_M), Target);
-        }
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectBlindness(), Target,
+            RoundsToSeconds(OneRound));
     }
 }

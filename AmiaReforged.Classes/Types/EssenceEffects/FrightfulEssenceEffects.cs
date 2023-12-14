@@ -22,25 +22,9 @@ public class FrightfulEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), Target);
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_MAGBLUE), Target);
 
-        bool passedWillSave = WillSave(Target, CalculateDC(), SAVING_THROW_TYPE_MIND_SPELLS, Caster) == TRUE;
-
-        if (passedWillSave)
-        {
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), Target);
-            return;
-        }
-        if (!passedWillSave)
-        {
-            int warlockLevels = GetLevelByClass(57, Caster);
-            float essenceDuration = warlockLevels < 10 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 10);
-            IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
-            {
-                EffectFrightened(),
-                EffectVisualEffect(VFX_DUR_PDK_FEAR)
-            });
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
-        }
+        if (WillSave(Target, CalculateDc(), SAVING_THROW_TYPE_MIND_SPELLS) == TRUE) return;
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectFrightened(), Target, RoundsToSeconds(2));
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_DUR_PDK_FEAR), Target, RoundsToSeconds(2));
     }
 }

@@ -10,9 +10,8 @@ public static class EldritchDamage
 {
     public static int CalculateDamageAmount(uint caster)
     {
-        int warlockLevels = GetLevelByClass(57, caster);
-        int damageDice = d2(warlockLevels) + (warlockLevels / 2) + d6(ExtraDieFromFeats(caster));
-        int extraDamageFromEldritchMaster = GetHasFeat(1298, caster) == TRUE ? (int) (damageDice * 0.25) : 0;
+        int damageDice = d6((int)(GetLevelByClass(57, caster) / 2 + ExtraDieFromFeats(caster)));
+        int extraDamageFromEldritchMaster = GetHasFeat(1298, caster) == TRUE ? (int)(damageDice * 0.5) : 0;
         return damageDice + extraDamageFromEldritchMaster;
     }
 
@@ -20,7 +19,7 @@ public static class EldritchDamage
     {
         int highestLevel = CreaturePlugin.GetHighestLevelOfFeat(caster, 1300);
 
-        return highestLevel switch
+        int extraDie = highestLevel switch
         {
             1300 => 1,
             1301 => 2,
@@ -31,5 +30,7 @@ public static class EldritchDamage
             1306 => 7,
             _ => 0
         };
+
+        return extraDie;
     }
 }

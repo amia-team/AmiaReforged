@@ -5,24 +5,26 @@ namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
 
 public class DreadSeizure
 {
-    public void CastDreadSeizure(uint nwnObjectId)
+    public void Run(uint nwnObjectId)
     {
-        int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        float duration = RoundsToSeconds(warlockLevels);
+        uint target = GetSpellTargetObject();
 
-        // Remove aura to prevent stacking
-        IntPtr aura = GetFirstEffect(nwnObjectId);
-        while (GetIsEffectValid(aura) == TRUE){
-            if (GetEffectSpellId(aura) == 987)
-            RemoveEffect(nwnObjectId, aura);
-            aura = GetNextEffect(nwnObjectId);
-        }
+        int spellId = GetSpellId();
+        SignalEvent(target, EventSpellCastAt(nwnObjectId, spellId));
 
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_FNF_PWKILL), GetLocation(nwnObjectId));
-        IntPtr aoe = EffectAreaOfEffect(AOE_MOB_CIRCEVIL, "wlk_dreadenter", "****", "wlk_dreadexit");
+        IntPtr seizvfx = EffectVisualEffect(VFX_IMP_CHARM);
+        IntPtr slow = EffectMovementSpeedDecrease(30);
+        IntPtr attack = EffectLinkEffects(EffectAttackDecrease(3), slow);
 
-        // Apply the VFX impact and effects.
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_IMP_AURA_NEGATIVE_ENERGY), nwnObjectId, duration);
-        DelayCommand(0.1f, () => ApplyEffectToObject(DURATION_TYPE_TEMPORARY, aoe, nwnObjectId, duration));
+        if (GetIsFriend(target) == TRUE) return;
+
+        if (NwEffects.ResistSpell(nwnObjectId, target)) return;
+        if (FortitudeSave(target, GetSpellSaveDC(), SAVING_THROW_FORT,
+                OBJECT_SELF) == TRUE)
+            return;
+
+        AssignCommand(target, () => PlayAnimation(ANIMATION_FIREFORGET_SPASM, 1.5f, 0.5f));
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, attack, target, 18.0f);
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, seizvfx, target);
     }
 }

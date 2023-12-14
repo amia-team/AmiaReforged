@@ -20,8 +20,5 @@ public static class WarlockSpells
         const int fourthCircle = 4;
         CreaturePlugin.SetRemainingSpellSlots(caster, Warlock, fourthCircle,
             CreaturePlugin.GetMaxSpellSlots(caster, Warlock, fourthCircle));
-        const int fifthCircle = 5;
-        CreaturePlugin.SetRemainingSpellSlots(caster, Warlock, fifthCircle,
-            CreaturePlugin.GetMaxSpellSlots(caster, Warlock, fifthCircle));
     }
 }

@@ -4,7 +4,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
 
 public class WalkUnseen
 {
-    public int CastWalkUnseen(uint nwnObjectId)
+    public int Run(uint nwnObjectId)
     {
         float duration = TurnsToSeconds(GetCasterLevel(nwnObjectId));
 

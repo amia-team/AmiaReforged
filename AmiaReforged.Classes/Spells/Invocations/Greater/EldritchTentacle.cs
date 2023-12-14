@@ -1,5 +1,4 @@
-﻿using AmiaReforged.Classes.EffectUtils;
-using static NWN.Core.NWScript;
+﻿using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 
@@ -8,7 +7,6 @@ public static class EldritchTentacle
     public static void StrikeTargetWithTentacle(uint target, uint caster)
     {
         if (target == caster) return;
-        
         int nTentacles = d4();
         int nHits;
         int targetOpposeCheck = GetBaseAttackBonus(target) + GetAbilityModifier(ABILITY_STRENGTH, target);
@@ -48,7 +46,7 @@ public static class EldritchTentacle
             ApplyEffectToObject(DURATION_TYPE_INSTANT,
                 EffectDamage(d6() + 4, DAMAGE_TYPE_BLUDGEONING), target);
 
-            if (FortitudeSave(target, NwEffects.CalculateDC(caster), SAVING_THROW_TYPE_SPELL, caster) == TRUE) return;
+            if (FortitudeSave(target, GetSpellSaveDC()) == TRUE) return;
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectParalyze(), target, RoundsToSeconds(1));
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_DUR_PARALYZED), target,
                 RoundsToSeconds(1));

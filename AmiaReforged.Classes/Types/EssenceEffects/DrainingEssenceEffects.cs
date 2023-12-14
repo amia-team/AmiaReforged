@@ -22,26 +22,10 @@ public class DrainingEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), Target);
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_MAGBLUE), Target);
 
-        bool passedWillSave = WillSave(Target, CalculateDC(), SAVING_THROW_TYPE_SPELL, Caster) == TRUE;
+        if (WillSave(Target, CalculateDc(), SAVING_THROW_TYPE_SPELL) == TRUE) return;
 
-        if (passedWillSave)
-        {
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), Target);
-            return;
-        }
-        if (!passedWillSave)
-        {
-            int warlockLevels = GetLevelByClass(57, Caster);
-            float essenceDuration = warlockLevels < 10 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 10);
-            IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
-            {
-                EffectSlow(),
-                EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE)
-            });
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_SLOW), Target);
-        }
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectSlow(), Target,
+            RoundsToSeconds(2));
     }
 }

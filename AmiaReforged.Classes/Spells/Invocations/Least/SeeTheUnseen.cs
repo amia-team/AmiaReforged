@@ -5,7 +5,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Least;
 
 public class SeeTheUnseen
 {
-    public int CastSeeTheUnseen(uint nwnObjectId)
+    public int Run(uint nwnObjectId)
     {
         IntPtr seeUnseenEffects = NwEffects.LinkEffectList(new List<IntPtr>
         {
@@ -14,7 +14,8 @@ public class SeeTheUnseen
             EffectUltravision()
         });
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, seeUnseenEffects, nwnObjectId, HoursToSeconds(GetCasterLevel(nwnObjectId)));
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, seeUnseenEffects, nwnObjectId,
+            HoursToSeconds(GetCasterLevel(nwnObjectId)));
         return 0;
     }
 }

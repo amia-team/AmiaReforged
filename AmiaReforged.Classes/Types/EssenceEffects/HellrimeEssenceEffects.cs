@@ -22,25 +22,12 @@ public class HellrimeEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_COLD), Target);
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FROST_L, 0, 0.5f), Target);
 
-        bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_COLD, Caster) == TRUE;
+        if (FortitudeSave(Target, CalculateDc(), SAVING_THROW_TYPE_COLD) == TRUE) return;
 
-        if (passedFortSave)
-        {
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), Target);
-            return;
-        }
-        if (!passedFortSave)
-        {
-            int warlockLevels = GetLevelByClass(57, Caster);
-            float essenceDuration = warlockLevels < 5 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 5);
-            IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
-            {
-                EffectVisualEffect(VFX_DUR_ICESKIN),
-                EffectAbilityDecrease(ABILITY_DEXTERITY, 4)
-            });
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
-        }
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY,
+            EffectVisualEffect(VFX_DUR_ICESKIN), Target, TurnsToSeconds(10));
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY,
+            EffectAbilityDecrease(ABILITY_DEXTERITY, 4), Target, TurnsToSeconds(10));
     }
 }

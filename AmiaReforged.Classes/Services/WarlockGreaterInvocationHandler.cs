@@ -19,118 +19,139 @@ public class WarlockGreaterInvocationHandler
     public void OnCausticMire(CallInfo info)
     {
         CausticMire script = new();
-        script.CastCausticMire(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_mireent")]
     public void OnCausticMireEnter(CallInfo info)
     {
         CausticMireOnEnter script = new();
-        script.CausticMireEnterEffects(info.ObjectSelf);
+        script.ApplyOnEnterEffects(info.ObjectSelf);
     }
-
+    
     [ScriptHandler("wlk_mirehbea")]
     public void OnCausticMireHeartbeat(CallInfo info)
     {
-        CausticMireHeartbeat script = new();
-        script.CausticMireHeartbeatEffects(info.ObjectSelf);
+        CausticMireHeartBeat script = new();
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_mireexit")]
     public void OnCausticMireExit(CallInfo info)
     {
         CausticMireOnExit script = new();
-        script.CausticMireExitEffects(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_chilltentac")]
     public void OnChillingTentacles(CallInfo info)
     {
         ChillingTentacles script = new();
-        script.CastChillingTentacles(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_tentent")]
     public void OnChillingTentaclesEnter(CallInfo info)
     {
         ChillingTentaclesEnter script = new();
-        script.ChillingTentaclesEnterEffects(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_tenthbea")]
     public void OnChillingTentaclesHeartbeat(CallInfo info)
     {
         ChillingTentaclesHeartbeat script = new();
-        script.ChillingTentaclesHeartbeatEffects(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_tenplague")]
     public void OnTenaciousPlague(CallInfo info)
     {
         TenaciousPlague script = new();
-        script.CastTenaciousPlague(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_swarment")]
     public void OnTenaciousPlagueEnter(CallInfo info)
     {
         TenaciousPlagueEnter script = new();
-        script.TenaciousPlagueEnterEffects(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_swarmexit")]
     public void OnTenaciousPlagueExit(CallInfo info)
     {
         TenaciousPlagueExit script = new();
-        script.TenaciousPlagueExitEffects(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_swarmhbea")]
     public void OnTenaciousPlagueHeartbeat(CallInfo info)
     {
         TenaciousPlagueHeartbeat script = new();
-        script.TenaciousPlagueHeartbeatEffects(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_flamewall")]
     public void OnWallOfFlame(CallInfo info)
     {
         WallOfPerilousFlame script = new();
-        script.CastWallOfFlame(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_flamewalhbea")]
     public void OnWallOfFlameHeartbeat(CallInfo info)
     {
         WallOfPerilousFlameHeartbeat script = new();
-        script.WallOfFlameHeartbeatEffects(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_flamewallent")]
     public void OnWallOfFlameEnter(CallInfo info)
     {
         WallOfPerilousFlameOnEnter script = new();
-        script.WallOfFlameEnterEffects(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_insid_shadws")]
     public void OnWrithingDark(CallInfo info)
     {
         WrithingDark script = new();
-        script.CastWrithingDark(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_darkent")]
     public void OnWrithingDarkEnter(CallInfo info)
     {
         WrithingDarkEnter script = new();
-        script.WrithingDarkEnterEffects(info.ObjectSelf);
+        script.Run(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_darkhbea")]
     public void OnWrithingDarkHeartbeat(CallInfo info)
     {
         WrithingDarkHeartbeat script = new();
-        script.WrithingDarkHeartbeatEffects(info.ObjectSelf);
+        script.Heartbeat(info.ObjectSelf);
+    }
+
+    [ScriptHandler("wlk_incanent")]
+    public void OnIncandescentEnter(CallInfo info)
+    {
+        IncandescentOnEnter script = new();
+        script.ApplyOnEnterEffects(info.ObjectSelf);
+    }
+
+    [ScriptHandler("wlk_incanexit")]
+    public void OnIncandescentExit(CallInfo info)
+    {
+        IncandescentOnExit script = new();
+        script.RemoveIncandescentEffects();
+    }
+
+    [ScriptHandler("wlk_incanhbea")]
+    public void OnIncandescentHeartbeat(CallInfo info)
+    {
+        IncandescentHeartbeat script = new();
+        script.Heartbeat(info.ObjectSelf);
     }
 }

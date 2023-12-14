@@ -5,29 +5,35 @@ namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 
 public class WallOfPerilousFlameHeartbeat
 {
-    public void WallOfFlameHeartbeatEffects(uint nwnObjectId)
+    public void Run(uint nwnObjectId)
     {
         uint current = GetFirstInPersistentObject(nwnObjectId);
-        uint caster = GetAreaOfEffectCreator(nwnObjectId);
-        int casterChaMod = GetAbilityModifier(ABILITY_CHARISMA, caster);
+        uint areaOfEffectCreator = GetAreaOfEffectCreator(nwnObjectId);
+        int casterChaMod = GetAbilityModifier(ABILITY_CHARISMA, areaOfEffectCreator);
+        int spellId = GetSpellId();
 
         while (GetIsObjectValid(current) == TRUE)
         {
-            if (NwEffects.IsValidSpellTarget(current, 2, caster))
+            bool notValidTarget = current == areaOfEffectCreator ||
+                                  GetIsFriend(current, areaOfEffectCreator) == TRUE;
+            if (notValidTarget)
             {
-                SignalEvent(current, EventSpellCastAt(nwnObjectId, GetSpellId()));
-
-                if (NwEffects.ResistSpell(caster, current))
-                {
-                    current = GetNextInPersistentObject(nwnObjectId);
-                    continue;
-                }
-
-                int damage = d12() + casterChaMod;
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_FIRE),
-                    current);
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), current);
+                current = GetNextInPersistentObject(nwnObjectId);
+                continue;
             }
+
+            if (NwEffects.ResistSpell(areaOfEffectCreator, current))
+            {
+                current = GetNextInPersistentObject(nwnObjectId);
+                continue;
+            }
+
+            SignalEvent(current, EventSpellCastAt(nwnObjectId, spellId));
+
+            int damage = d12() + casterChaMod;
+            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_FIRE),
+                current);
+            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), current);
 
             current = GetNextInPersistentObject(nwnObjectId);
         }

@@ -22,26 +22,9 @@ public class UtterdarkEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_NEGATIVE), Target);
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_NEGATIVE_ENERGY), Target);
 
-        bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_NEGATIVE, Caster) == TRUE;
-
-        if (passedFortSave)
-        {
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), Target);
-            return;
-        }
-        if (!passedFortSave)
-        {
-            int warlockLevels = GetLevelByClass(57, Caster);
-            float essenceDuration = warlockLevels < 5 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 5);
-            IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
-            {
-                SupernaturalEffect(EffectNegativeLevel(2)),
-                EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE)
-            });
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REDUCE_ABILITY_SCORE), Target);
-        }
+        if (FortitudeSave(Target, CalculateDc(), SAVING_THROW_TYPE_NEGATIVE) == TRUE) return;
+        IntPtr levelDrain = SupernaturalEffect(EffectNegativeLevel(2));
+        ApplyEffectToObject(DURATION_TYPE_PERMANENT, levelDrain, Target);
     }
 }
