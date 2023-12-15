@@ -1,4 +1,5 @@
-﻿using static NWN.Core.NWScript;
+﻿using AmiaReforged.Classes.EffectUtils;
+using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells;
 
@@ -16,8 +17,15 @@ public class FiendishResilience
             >= 18 => 5,
             _ => 1
         };
+        
+        IntPtr fiendishResilience = NwEffects.LinkEffectList(new List<IntPtr>
+        {
+            EffectVisualEffect( VFX_DUR_AURA_PULSE_ORANGE_WHITE),
+            EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE)
+        });
 
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, SupernaturalEffect(EffectRegenerate(regenAmount, 6.0f)),
             nwnObjectId, duration);
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, fiendishResilience, nwnObjectId, duration);
     }
 }
