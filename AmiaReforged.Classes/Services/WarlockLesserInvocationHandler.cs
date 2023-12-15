@@ -10,7 +10,6 @@ public class WarlockLesserInvocationHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-
     public WarlockLesserInvocationHandler()
     {
         Log.Info("Warlock Lesser Invocation Script Handler initialized.");
@@ -20,20 +19,41 @@ public class WarlockLesserInvocationHandler
     public void OnWalkUnseen(CallInfo info)
     {
         WalkUnseen script = new();
-        script.Run(info.ObjectSelf);
+        script.CastWalkUnseen(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_dreadseizure")]
     public void OnDreadSeizure(CallInfo info)
     {
         DreadSeizure script = new();
-        script.Run(info.ObjectSelf);
+        script.CastDreadSeizure(info.ObjectSelf);
+    }
+
+    [ScriptHandler("wlk_dreadenter")]
+    public void OnDreadSeizureEnter(CallInfo info)
+    {
+        DreadSeizureEnter script = new();
+        script.DreadSeizureEnterEffects(info.ObjectSelf);
+    }
+
+    [ScriptHandler("wlk_dreadexit")]
+    public void OnDreadSeizureExit(CallInfo info)
+    {
+        DreadSeizureExit script = new();
+        script.DreadSeizureExitEffects(info.ObjectSelf);
     }
 
     [ScriptHandler("wlk_curse")]
     public void OnCurseOfDespair(CallInfo info)
     {
         CurseOfDespair script = new();
-        script.Run(info.ObjectSelf);
+        script.CastCurseOfDespair(info.ObjectSelf);
+    }
+
+    [ScriptHandler("wlk_fleethescene")]
+    public void OnFleeTheScene(CallInfo info)
+    {
+        FleeTheScene script = new();
+        script.CastFleeTheScene(info.ObjectSelf);
     }
 }

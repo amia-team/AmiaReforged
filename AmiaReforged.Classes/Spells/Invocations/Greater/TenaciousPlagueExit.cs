@@ -4,7 +4,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 
 public class TenaciousPlagueExit
 {
-    public int Run(uint nwnObjectId)
+    public void TenaciousPlagueExitEffects(uint nwnObjectId)
     {
         uint exitingObject = GetExitingObject();
         IntPtr effect = GetFirstEffect(exitingObject);
@@ -15,7 +15,5 @@ public class TenaciousPlagueExit
 
             effect = GetNextEffect(exitingObject);
         }
-
-        return 0;
     }
 }

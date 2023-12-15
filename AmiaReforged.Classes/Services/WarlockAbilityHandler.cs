@@ -15,52 +15,58 @@ public class WarlockAbilityHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private static readonly ConcurrentDictionary<ushort, EssenceType> Essences = new()
+    private static readonly ConcurrentDictionary<ushort, EssenceType> RemoveEssence = new()
     {
-        [1278] = EssenceType.Frightful,
-        [1279] = EssenceType.Vitriolic,
-        [1280] = EssenceType.Brimstone,
-        [1281] = EssenceType.Utterdark,
-        [1282] = EssenceType.Draining,
-        [1292] = EssenceType.Hellrime,
-        [1293] = EssenceType.Beshadowed,
-        [1294] = EssenceType.Binding,
-        [1295] = EssenceType.Bewitching,
-        [1296] = EssenceType.Hindering,
-        [1299] = EssenceType.NoEssence
+        [1299] = EssenceType.RemoveEssence
     };
 
-    private static readonly List<ushort> MobilityFeats = new()
+    private static readonly ConcurrentDictionary<int, EssenceType> Essences = new()
     {
-        1318
+        [1015] = EssenceType.Beshadowed,
+        [1016] = EssenceType.Bewitching,
+        [1017] = EssenceType.Binding,
+        [1018] = EssenceType.Brimstone,
+        [1019] = EssenceType.Draining,
+        [1020] = EssenceType.Frightful,
+        [1021] = EssenceType.Hellrime,
+        [1022] = EssenceType.Screaming,
+        [1023] = EssenceType.Utterdark,
+        [1024] = EssenceType.Vitriolic,
     };
 
     public WarlockAbilityHandler()
     {
-        NwModule.Instance.OnUseFeat += OnEldritchEssence;
+        NwModule.Instance.OnUseFeat += OnRemoveEldritchEssence;
+        NwModule.Instance.OnSpellAction += OnEldritchEssence;
         NwModule.Instance.OnSpellCast += OnInvocationCast;
         NwModule.Instance.OnSpellAction += OnInvocationCastAction;
         NwModule.Instance.OnSpellInterrupt += OnInvocationInterrupt;
-        NwModule.Instance.OnClientEnter += GivePactFeats;
+        // NwModule.Instance.OnClientEnter += GivePactFeats;
         Log.Info("Warlock Ability Script Handler initialized.");
     }
 
-    private void GivePactFeats(ModuleEvents.OnClientEnter obj)
-    {
-        if (obj.Player.LoginCreature.Feats.Any(f => f.Id == 1310))
-            obj.Player.LoginCreature.AddFeat(NwFeat.FromFeatId(1314), 1);
-    }
-
-    private void OnEldritchEssence(OnUseFeat obj)
+    private void OnRemoveEldritchEssence(OnUseFeat obj)
     {
         ushort featId = obj.Feat.Id;
-        if (!Essences.ContainsKey(featId)) return;
+        if (!RemoveEssence.ContainsKey(featId)) return;
 
         NwItem item = obj.Creature.Inventory.Items.First(i => i.Tag == "ds_pckey");
-        NWScript.SetLocalInt(item, "warlock_essence", (int)Essences[featId]);
+        NWScript.SetLocalInt(item, "warlock_essence", (ushort)RemoveEssence[featId]);
 
-        if (obj.Creature.IsPlayerControlled(out NwPlayer player))
-            player.SendServerMessage($"Essence type set to {Essences[featId].ToString()}");
+        if (obj.Creature.IsPlayerControlled(out NwPlayer player)) player.SendServerMessage(NwEffects.WarlockString("Eldritch Essence removed."));
+    }
+    private void OnEldritchEssence(OnSpellAction obj)
+    {
+        int spellId = obj.Spell.Id;
+        if (!Essences.ContainsKey(spellId)) return;
+
+        obj.PreventSpellCast = true;
+
+        NwItem item = obj.Caster.Inventory.Items.First(i => i.Tag == "ds_pckey");
+        NWScript.SetLocalInt(item, "warlock_essence", (int)Essences[spellId]);
+
+        if (obj.Caster.IsPlayerControlled(out NwPlayer player))
+        player.SendServerMessage(NwEffects.WarlockString($"Essence type set to {Essences[spellId].ToString()}."));
     }
 
     private void OnInvocationCast(OnSpellCast obj)
@@ -90,16 +96,9 @@ public class WarlockAbilityHandler
     }
 
     [ScriptHandler("wlk_el_blst")]
-    public void OnEldritchAttack(CallInfo info)
+    public void OnEldritchBlasts(CallInfo info)
     {
-        EldritchAttack attack = new();
-        attack.Run(info.ObjectSelf);
-    }
-
-    [ScriptHandler("wlk_fiendresil")]
-    public void OnFiendResil(CallInfo info)
-    {
-        FiendishResilience script = new();
-        script.Run(info.ObjectSelf);
+        EldritchBlasts attack = new();
+        attack.CastEldritchBlasts(info.ObjectSelf);
     }
 }

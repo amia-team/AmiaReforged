@@ -5,33 +5,41 @@ namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 
 public class WrithingDarkHeartbeat
 {
-    public void Heartbeat(uint nwnObjectId)
+    public void WrithingDarkHeartbeatEffects(uint nwnObjectId)
     {
         uint current = GetFirstInPersistentObject(nwnObjectId);
-        uint areaOfEffectCreator = GetAreaOfEffectCreator(nwnObjectId);
-        int casterChaMod = GetAbilityModifier(ABILITY_CHARISMA, areaOfEffectCreator);
-        int spellId = GetSpellId();
+        uint caster = GetAreaOfEffectCreator(nwnObjectId);
+        int casterChaMod = GetAbilityModifier(ABILITY_CHARISMA, caster);
+        int damage = casterChaMod > 10 ? d6() + 10 : d6() + casterChaMod;
 
         while (GetIsObjectValid(current) == TRUE)
         {
-            bool notValidTarget = current == areaOfEffectCreator ||
-                                  GetIsFriend(current, areaOfEffectCreator) == TRUE;
-            if (notValidTarget)
+            if (NwEffects.IsValidSpellTarget(current, 2, caster))
             {
-                current = GetNextInPersistentObject(nwnObjectId);
-                continue;
+                SignalEvent(current, EventSpellCastAt(nwnObjectId, 998));
+
+                if (NwEffects.ResistSpell(caster, current))
+                {
+                    current = GetNextInPersistentObject(nwnObjectId);
+                    continue;
+                }
+
+                ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), current);
+
+                bool passedWillSave = WillSave(current, NwEffects.CalculateDC(caster), 0, caster) == TRUE;
+
+                if (passedWillSave)
+                {
+                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), current);
+                    current = GetNextInPersistentObject(nwnObjectId);
+                    continue;
+                }
+                if (!passedWillSave)
+                {
+                    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectBlindness(), current, 6f);
+                    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_DUR_BLIND), current, 6f);
+                }
             }
-
-            if (NwEffects.ResistSpell(areaOfEffectCreator, current))
-            {
-                current = GetNextInPersistentObject(nwnObjectId);
-                continue;
-            }
-
-            SignalEvent(current, EventSpellCastAt(nwnObjectId, spellId));
-            int damage = casterChaMod > 10 ? d6() + 10 : d6() + casterChaMod;
-
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), current);
 
             current = GetNextInPersistentObject(nwnObjectId);
         }

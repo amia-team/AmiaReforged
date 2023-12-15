@@ -1,17 +1,28 @@
-﻿using NWN.Core;
+﻿using AmiaReforged.Classes.EffectUtils;
+using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
 
 public class BoundOnesLuck
 {
-    public int Run(uint nwnObjectId)
+    public void CastBoundOnesLuck(uint nwnObjectId)
     {
-        int chmod = NWScript.GetAbilityModifier(NWScript.ABILITY_CHARISMA, nwnObjectId);
+        if (GetHasFeat(FEAT_PRESTIGE_DARK_BLESSING, nwnObjectId) == TRUE){
+            SendMessageToPC(nwnObjectId, NwEffects.WarlockString("You already have Dark Blessing."));
+            return;
+        }
 
-        NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_TEMPORARY,
-            NWScript.EffectSavingThrowIncrease(NWScript.SAVING_THROW_ALL, chmod), nwnObjectId,
-            NWScript.HoursToSeconds(NWScript.GetCasterLevel(nwnObjectId)));
+        int warlockLevels = GetLevelByClass(57, nwnObjectId);
+        int chaMod = GetAbilityModifier(ABILITY_CHARISMA, nwnObjectId);
+        int savesBonus = chaMod > warlockLevels ? warlockLevels : chaMod;
 
-        return 0;
+        IntPtr luck = NwEffects.LinkEffectList(new List<IntPtr>
+        {
+            EffectSavingThrowIncrease(SAVING_THROW_ALL, savesBonus),
+            EffectVisualEffect(VFX_DUR_CESSATE_POSITIVE)
+        });
+
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, luck, nwnObjectId, HoursToSeconds(warlockLevels));
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_HEAD_ODD), nwnObjectId);
     }
 }

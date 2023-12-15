@@ -1,18 +1,24 @@
-﻿using NWN.Core;
+﻿using AmiaReforged.Classes.EffectUtils;
+using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
 
 public class OtherworldlyWhispers
 {
-    public int Run(uint nwnObjectId)
+    public int CastOtherworldlyWhispers(uint nwnObjectId)
     {
+        int warlockLevels = GetLevelByClass(57, nwnObjectId);
         const int bonus = 10;
-        IntPtr loreup = NWScript.EffectSkillIncrease(NWScript.SKILL_LORE, bonus);
-        IntPtr spellcup =
-            NWScript.EffectLinkEffects(NWScript.EffectSkillIncrease(NWScript.SKILL_SPELLCRAFT, bonus), loreup);
 
-        NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_TEMPORARY, spellcup, nwnObjectId,
-            NWScript.HoursToSeconds(NWScript.GetCasterLevel(nwnObjectId)));
+        IntPtr whispers = NwEffects.LinkEffectList(new List<IntPtr>
+        {
+            EffectSkillIncrease(SKILL_LORE, bonus),
+            EffectSkillIncrease(SKILL_SPELLCRAFT, bonus),
+            EffectVisualEffect(VFX_DUR_CESSATE_POSITIVE)
+        });
+
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, whispers, nwnObjectId, HoursToSeconds(warlockLevels));
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_NIGHTMARE_HEAD_HIT), nwnObjectId);
 
         return 0;
     }

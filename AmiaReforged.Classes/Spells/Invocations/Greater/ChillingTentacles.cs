@@ -5,15 +5,17 @@ namespace AmiaReforged.Classes.Spells.Invocations.Greater;
 
 public class ChillingTentacles
 {
-    public int Run(uint nwnObjectId)
+    public void CastChillingTentacles(uint nwnObjectId)
     {
-        IntPtr tentacles = EffectAreaOfEffect(51);
+        IntPtr chilling = EffectAreaOfEffect(51);
+        IntPtr tentacles = EffectAreaOfEffect(AOE_PER_EVARDS_BLACK_TENTACLES, "wlk_tentent", "wlk_tenthbea", "****");
 
         IntPtr location = GetSpellTargetLocation();
         float duration = RoundsToSeconds(GetCasterLevel(nwnObjectId));
 
-        NwEffects.RemoveAoeWithTag(location, GetLastSpellCaster(), "VFX_PER_WLK_TENTACLES", 20.0f);
+        NwEffects.RemoveAoeWithTag(location, nwnObjectId, "VFX_PER_WLK_CHILLING", RADIUS_SIZE_COLOSSAL);
+        NwEffects.RemoveAoeWithTag(location, nwnObjectId, "VFX_PER_EVARDS_BLACK_TENTACLES", RADIUS_SIZE_COLOSSAL);
+        ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, chilling, location, duration);
         ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, tentacles, location, duration);
-        return 0;
     }
 }

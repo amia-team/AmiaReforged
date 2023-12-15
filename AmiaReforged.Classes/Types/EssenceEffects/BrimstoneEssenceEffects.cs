@@ -6,8 +6,6 @@ namespace AmiaReforged.Classes.Types.EssenceEffects;
 
 public class BrimstoneEssenceEffects : EssenceEffectApplier
 {
-    private const string IsBrimstoned = "is_brimstone";
-
     public BrimstoneEssenceEffects(uint target, uint caster) : base(target, caster)
     {
     }
@@ -24,26 +22,37 @@ public class BrimstoneEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_FIRE), Target);
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FLAME_S), Target);
 
-        if (ReflexSave(Target, CalculateDc(), SAVING_THROW_TYPE_FIRE) == TRUE) return;
+        if (NwEffects.GetHasEffectByTag("wlk_brimstone", Target) == TRUE) return;
 
-        if (GetLocalInt(Target, IsBrimstoned) == TRUE) return;
+        bool passedReflexSave = ReflexSave(Target, CalculateDC(), SAVING_THROW_TYPE_FIRE, Caster) == TRUE;
 
-        int duration = GetCasterLevel(Caster) / 5;
-        float delay = 6.0f;
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY,
-            SupernaturalEffect(EffectVisualEffect(VFX_DUR_INFERNO)), Target,
-            RoundsToSeconds(duration));
-
-        for (int i = 0; i < duration; i++)
+        if (passedReflexSave)
         {
-            DelayCommand(delay,
-                () => ApplyEffectToObject(DURATION_TYPE_INSTANT,
-                    EffectDamage(d6(2), DAMAGE_TYPE_FIRE), Target));
-            delay += 6.0f;
+            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REFLEX_SAVE_THROW_USE), Target);
+            return;
         }
+        if (!passedReflexSave)
+        {
+            int warlockLevels = GetLevelByClass(57, Caster);
+            int essenceRounds = warlockLevels / 5;
+            float essenceDuration = warlockLevels < 5 ? RoundsToSeconds(1) : RoundsToSeconds(essenceRounds);
+            IntPtr burning = TagEffect(EffectVisualEffect(VFX_DUR_INFERNO_CHEST), "is_brimstone");
 
-        SetLocalInt(Target, IsBrimstoned, TRUE);
-        DelayCommand(duration, () => DeleteLocalInt(Target, IsBrimstoned));
+            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, burning, Target, essenceDuration);
+            Burn(essenceRounds);
+        }
+    }
+    private void Burn(int essenceRounds)
+    {
+        float delay = 6f;
+        for (int i = 0; i < essenceRounds; i++)
+            {
+                DelayCommand(delay,
+                    () => ApplyEffectToObject(DURATION_TYPE_INSTANT,
+                        EffectDamage(d6(2), DAMAGE_TYPE_FIRE), Target));
+                delay += 6.0f;
+            }
     }
 }

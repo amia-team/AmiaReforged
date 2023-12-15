@@ -4,9 +4,9 @@ using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Types.EssenceEffects;
 
-public class NoEssenceEffects : EssenceEffectApplier
+public class RemoveEssenceEffects : EssenceEffectApplier
 {
-    public NoEssenceEffects(uint target, uint caster) : base(target, caster)
+    public RemoveEssenceEffects(uint target, uint caster) : base(target, caster)
     {
     }
 
@@ -22,5 +22,6 @@ public class NoEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), Target);
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_MAGBLUE), Target);
     }
 }

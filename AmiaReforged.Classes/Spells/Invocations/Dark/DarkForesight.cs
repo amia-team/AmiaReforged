@@ -5,10 +5,10 @@ namespace AmiaReforged.Classes.Spells.Invocations.Dark;
 
 public class DarkForesight
 {
-    public int Run(uint nwnObjectId)
+    public int CastDarkForesight(uint nwnObjectId)
     {
-        int casterLevel = GetCasterLevel(nwnObjectId);
-        float duration = RoundsToSeconds(casterLevel);
+        int casterLevel = GetCasterLevel(nwnObjectId) > 15 ? 15 : GetCasterLevel(nwnObjectId);
+        float duration = TurnsToSeconds(GetCasterLevel(nwnObjectId));
 
         IntPtr darkForesight = NwEffects.LinkEffectList(new List<IntPtr>
         {

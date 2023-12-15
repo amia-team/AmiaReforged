@@ -1,16 +1,23 @@
-﻿using NWN.Core;
+﻿using AmiaReforged.Classes.EffectUtils;
+using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
 
 public class LeapsAndBounds
 {
-    public int Run(uint nwnObjectId)
+    public int CastLeapsAndBounds(uint nwnObjectId)
     {
-        IntPtr dexup = NWScript.EffectAbilityIncrease(NWScript.ABILITY_DEXTERITY, 4);
-        IntPtr tumup = NWScript.EffectLinkEffects(NWScript.EffectSkillIncrease(NWScript.SKILL_TUMBLE, 4), dexup);
+        int warlockLevels = GetLevelByClass(57, nwnObjectId);
 
-        NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_TEMPORARY, tumup, nwnObjectId,
-            NWScript.HoursToSeconds(NWScript.GetCasterLevel(nwnObjectId)));
+        IntPtr leaps = NwEffects.LinkEffectList(new List<IntPtr>
+        {
+            EffectAbilityIncrease(ABILITY_DEXTERITY, 4),
+            EffectSkillIncrease(SKILL_TUMBLE, 8),
+            EffectVisualEffect(VFX_DUR_CESSATE_POSITIVE)
+        });
+
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, leaps, nwnObjectId, HoursToSeconds(warlockLevels));
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_IMPROVE_ABILITY_SCORE), nwnObjectId);
 
         return 0;
     }

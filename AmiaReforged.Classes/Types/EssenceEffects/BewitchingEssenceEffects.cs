@@ -22,9 +22,25 @@ public class BewitchingEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), Target);
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_CHARM), Target);
 
-        if (WillSave(Target, CalculateDc(), SAVING_THROW_TYPE_MIND_SPELLS) == TRUE) return;
+        bool passedWillSave = WillSave(Target, CalculateDC(), SAVING_THROW_TYPE_MIND_SPELLS, Caster) == TRUE;
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectConfused(), Target, RoundsToSeconds(2));
+        if (passedWillSave)
+        {
+            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), Target);
+            return;
+        }
+        if (!passedWillSave)
+        {
+            int warlockLevels = GetLevelByClass(57, Caster);
+            float essenceDuration = warlockLevels < 10 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 10);
+            IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
+            {
+                EffectVisualEffect(VFX_DUR_MIND_AFFECTING_DISABLED),
+                EffectConfused()
+            });
+            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
+        }
     }
 }

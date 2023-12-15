@@ -4,11 +4,11 @@
 // opaque to determine which essence has been activated.
 public enum EssenceType
 {
-    NoEssence = 0,
+    RemoveEssence = 0,
     Frightful = 1,
     Draining = 2,
     Vitriolic = 3,
-    Hindering = 4,
+    Screaming = 4,
     Hellrime = 5,
     Utterdark = 6,
     Brimstone = 7,
