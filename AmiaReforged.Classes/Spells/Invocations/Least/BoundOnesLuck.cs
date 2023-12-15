@@ -13,8 +13,10 @@ public class BoundOnesLuck
         }
 
         int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        int chaMod = GetAbilityModifier(ABILITY_CHARISMA, nwnObjectId);
-        int savesBonus = chaMod > warlockLevels ? warlockLevels : chaMod;
+        int savesBonus = (warlockLevels / 7);
+
+        if (warlockLevels == 30)
+            savesBonus = 5;
 
         IntPtr luck = NwEffects.LinkEffectList(new List<IntPtr>
         {

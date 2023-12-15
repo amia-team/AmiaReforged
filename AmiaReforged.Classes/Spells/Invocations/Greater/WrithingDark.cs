@@ -7,6 +7,11 @@ public class WrithingDark
 {
     public void CastWrithingDark(uint nwnObjectId)
     {
+        string darknessProhibited = "NO_DARKNESS";
+        
+        if (GetLocalInt(GetArea(nwnObjectId), darknessProhibited) == TRUE)
+            SendMessageToPC(nwnObjectId, "The spell fizzles in this location!");
+        
         IntPtr aoe = NwEffects.LinkEffectList(new List<IntPtr>
             {
                 EffectAreaOfEffect(AOE_PER_DARKNESS, "****", "****", "****"),

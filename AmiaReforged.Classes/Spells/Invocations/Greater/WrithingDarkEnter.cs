@@ -18,7 +18,9 @@ public class WrithingDarkEnter
         SignalEvent(enteringObject, EventSpellCastAt(caster, 998));
 
         if (NwEffects.ResistSpell(caster, enteringObject)) return;
-
+        if (GetHasSpellEffect(EFFECT_TYPE_ULTRAVISION, enteringObject) == TRUE ||
+            (GetHasSpellEffect(EFFECT_TYPE_TRUESEEING) == TRUE)) return;
+        
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), enteringObject);
 
         bool passedWillSave = WillSave(enteringObject, NwEffects.CalculateDC(caster), 0, caster) == TRUE;
