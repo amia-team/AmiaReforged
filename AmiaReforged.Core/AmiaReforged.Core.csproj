@@ -17,7 +17,7 @@
       <PackageReference Include="NLog" Version="5.2.7" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.7" />
       <PackageReference Include="NWN.Anvil" Version="8193.35.3" />
-      <PackageReference Include="NWN.Core" Version="8193.36.0" />
+      <PackageReference Include="NWN.Core" Version="8193.35.21" />
     </ItemGroup>
 
     <ItemGroup>
