@@ -105,7 +105,6 @@ public class LightsCalling
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectSummonCreature("wlkCelestial", -1, delay, 1), location, summonDuration);
             // Apply effects
             DelayCommand(delay + 0.1f, () => MakePretty());
-            DelayCommand(delay + 2.5f, () => SetPhenoType(9, GetAssociate(ASSOCIATE_TYPE_SUMMONED, caster)));
         }
     }
     private void MakePretty()
