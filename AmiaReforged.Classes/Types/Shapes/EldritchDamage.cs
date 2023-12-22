@@ -11,10 +11,16 @@ public static class EldritchDamage
     public static int CalculateDamageAmount(uint caster)
     {
         int warlockLevels = GetLevelByClass(57, caster);
-        int damageDice = d2(warlockLevels) + (warlockLevels / 2) + d6(ExtraDieFromFeats(caster));
-        int extraDamageFromEldritchMaster = GetHasFeat(1298, caster) == TRUE ? (int) (damageDice * 0.25) : 0;
-        return damageDice + extraDamageFromEldritchMaster;
-    }
+        int chaMod = GetAbilityModifier(5, caster);
+        int damageBonus = chaMod;
+        if (((warlockLevels / 2) < chaMod) && (warlockLevels < 30))
+        {
+            damageBonus = (warlockLevels / 2);
+        }
+        int damageDice = d2(warlockLevels) + damageBonus + d6(ExtraDieFromFeats(caster));
+        int extraDamageFromEldritchMaster = GetHasFeat(1298, caster) == TRUE ? (int)(damageDice * 0.25) : 0;
+    return damageDice + extraDamageFromEldritchMaster;
+    }          
 
     private static int ExtraDieFromFeats(uint caster)
     {

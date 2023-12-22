@@ -53,7 +53,7 @@ public class FrogDrop
             DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(NwEffects.WarlockString("Hatched Slaad can be summoned again."), caster, 0));
 
             // Summon new
-            DelayCommand(3f, () => ApplyEffectToObject(DURATION_TYPE_TEMPORARY, slaadSwarm, caster, summonDuration));
+            DelayCommand(3f, () => ApplyEffectToObject(DURATION_TYPE_TEMPORARY, slaadSwarm, target, summonDuration));
         }
 
         //---------------------------
