@@ -104,39 +104,7 @@ public class LightsCalling
             float delay = NwEffects.RandomFloat(1, 2);
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectSummonCreature("wlkCelestial", -1, delay, 1), location, summonDuration);
             // Apply effects
-            DelayCommand(delay + 0.1f, () => MakePretty());
+            DelayCommand(delay + 2.5f, () => SetPhenoType(19, GetAssociate(ASSOCIATE_TYPE_SUMMONED, caster)));
         }
-    }
-    private void MakePretty()
-    {
-        uint summon = GetAssociate(ASSOCIATE_TYPE_SUMMONED, OBJECT_SELF);
-
-        int arrowsSticking = d6(1);
-        for (int i = 0; i < arrowsSticking; i++)
-        {
-            ApplyEffectToObject(DURATION_TYPE_PERMANENT, EffectVisualEffect(ArrowsSticking()), summon);
-        }
-    }
-    private int ArrowsSticking()
-    {
-        int arrowVFX = Random(7) + 1;
-        switch (arrowVFX)
-        {
-            case 1: arrowVFX = VFX_DUR_ARROW_IN_BACK;
-            break;
-            case 2: arrowVFX = VFX_DUR_ARROW_IN_CHEST_LEFT;
-            break;
-            case 3: arrowVFX = VFX_DUR_ARROW_IN_CHEST_RIGHT;
-            break;
-            case 4: arrowVFX = VFX_DUR_ARROW_IN_FACE;
-            break;
-            case 5: arrowVFX = VFX_DUR_ARROW_IN_HEAD;
-            break;
-            case 6: arrowVFX = VFX_DUR_ARROW_IN_STERNUM;
-            break;
-            case 7: arrowVFX = VFX_DUR_ARROW_IN_TEMPLES;
-            break;
-        }
-        return arrowVFX;
     }
 }
