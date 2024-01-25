@@ -8,12 +8,7 @@ namespace AmiaReforged.Core;
 [ServiceBinding(typeof(AmiaDbContext))]
 public class AmiaDbContext : DbContext
 {
-    private readonly string _connectionString;
-
-    public AmiaDbContext()
-    {
-        _connectionString = ConnectionString();
-    }
+    private readonly string _connectionString = ConnectionString();
 
     public virtual DbSet<Ban> Bans { get; set; } = null!;
     public virtual DbSet<Dm> Dms { get; set; } = null!;
