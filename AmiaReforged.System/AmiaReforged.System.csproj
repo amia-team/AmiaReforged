@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj" ExcludeAssets="runtime" PrivateAssets="all" />
+      <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj" PrivateAssets="all" />
     </ItemGroup>
 
 </Project>

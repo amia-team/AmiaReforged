@@ -26,7 +26,7 @@ namespace AmiaReforged.Core.Specs.Hooks
         [BeforeScenario]
         public async Task BeforeScenario()
         {
-            Character character = new()
+            PlayerCharacter playerCharacter = new()
             {
                 Id = Guid.NewGuid()
             };
@@ -45,7 +45,7 @@ namespace AmiaReforged.Core.Specs.Hooks
                 PostgresConfig.Port = _postgresContainer.GetMappedPublicPort(5432);
             }
 
-            _objectContainer.RegisterInstanceAs(character, ObjectContainerKeys.Character);
+            _objectContainer.RegisterInstanceAs(playerCharacter, ObjectContainerKeys.Character);
             _objectContainer.RegisterTypeAs<NwTaskHelper, NwTaskHelper>(ObjectContainerKeys.NwTaskHelper);
             _objectContainer.RegisterTypeAs<AmiaDbContext, AmiaDbContext>(ObjectContainerKeys.AmiaContext);
             _objectContainer.RegisterTypeAs<CharacterService, CharacterService>(ObjectContainerKeys.CharacterService);

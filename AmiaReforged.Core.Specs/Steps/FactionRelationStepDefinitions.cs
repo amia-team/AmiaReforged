@@ -110,10 +110,10 @@ public class FactionRelationStepDefinitions
     {
         FactionRelationService factionRelationService = _objectContainer.Resolve<FactionRelationService>(ObjectContainerKeys.FactionRelationService);
         Faction faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
-        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        PlayerCharacter playerCharacter = _objectContainer.Resolve<PlayerCharacter>(ObjectContainerKeys.Character);
         FactionCharacterRelation relation = new()
         {
-            CharacterId = character.Id,
+            CharacterId = playerCharacter.Id,
             FactionName = faction.Name,
             Relation = value
         };
@@ -127,15 +127,15 @@ public class FactionRelationStepDefinitions
     {
         FactionRelationService factionRelationService = _objectContainer.Resolve<FactionRelationService>(ObjectContainerKeys.FactionRelationService);
         Faction faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
-        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        PlayerCharacter playerCharacter = _objectContainer.Resolve<PlayerCharacter>(ObjectContainerKeys.Character);
         FactionCharacterRelation relation = new()
         {
-            CharacterId = character.Id,
+            CharacterId = playerCharacter.Id,
             FactionName = faction.Name,
             Relation = value
         };
 
-        _outputHelper.WriteLine($"Updating relation of {faction.Name} with {character.FirstName} to {value}");
+        _outputHelper.WriteLine($"Updating relation of {faction.Name} with {playerCharacter.FirstName} to {value}");
         await factionRelationService.UpdateFactionCharacterRelation(relation);
     }
 
@@ -144,9 +144,9 @@ public class FactionRelationStepDefinitions
     {
         FactionRelationService factionRelationService = _objectContainer.Resolve<FactionRelationService>(ObjectContainerKeys.FactionRelationService);
         Faction faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
-        Character character = _objectContainer.Resolve<Character>(ObjectContainerKeys.Character);
+        PlayerCharacter playerCharacter = _objectContainer.Resolve<PlayerCharacter>(ObjectContainerKeys.Character);
         
-        FactionCharacterRelation? relation = await factionRelationService.GetFactionCharacterRelation(faction.Name, character.Id);
+        FactionCharacterRelation? relation = await factionRelationService.GetFactionCharacterRelation(faction.Name, playerCharacter.Id);
         
         relation.Should().NotBeNull("the relation should exist");
         relation!.Relation.Should().Be(expectedValue, "the relation should be the expected value");

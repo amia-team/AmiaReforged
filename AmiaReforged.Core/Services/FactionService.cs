@@ -152,20 +152,20 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    private async Task<List<Character>> GetCharactersByCriteria(Faction f, Expression<Func<Character, bool>> criteria)
+    private async Task<List<PlayerCharacter>> GetCharactersByCriteria(Faction f, Expression<Func<PlayerCharacter, bool>> criteria)
     {
-        List<Character> characters = new();
+        List<PlayerCharacter> characters = new();
 
         foreach (Guid id in f.Members)
         {
-            IQueryable<Character> query = _ctx.Characters.Where(c => c.Id == id);
+            IQueryable<PlayerCharacter> query = _ctx.Characters.Where(c => c.Id == id);
 
             if (criteria != null)
             {
                 query = query.Where(criteria);
             }
 
-            Character? character = await query.SingleOrDefaultAsync();
+            PlayerCharacter? character = await query.SingleOrDefaultAsync();
 
             if (character is not null)
             {
@@ -175,12 +175,6 @@ public class FactionService
 
         return characters;
     }
-
-    public async Task<List<Character>> GetAllPlayerCharactersFrom(Faction faction) =>
-        await GetCharactersByCriteria(faction, c => c.IsPlayerCharacter);
-
-    public async Task<List<Character>> GetAllNonPlayerCharactersFrom(Faction faction) =>
-        await GetCharactersByCriteria(faction, c => !c.IsPlayerCharacter);
 
     public async Task DeleteFactions(List<Faction> faction)
     {

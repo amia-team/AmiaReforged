@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.Core.Models;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
+using NLog;
 using Npgsql;
 
 namespace AmiaReforged.Core;
@@ -8,6 +9,12 @@ namespace AmiaReforged.Core;
 [ServiceBinding(typeof(AmiaDbContext))]
 public class AmiaDbContext : DbContext
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
+    public AmiaDbContext()
+    {
+        Log.Info("AmiaDbContext initialized.");
+    }
     private readonly string _connectionString = ConnectionString();
 
     public virtual DbSet<Ban> Bans { get; set; } = null!;
@@ -15,10 +22,11 @@ public class AmiaDbContext : DbContext
     public virtual DbSet<DmLogin> DmLogins { get; set; } = null!;
     public virtual DbSet<DreamcoinRecord> DreamcoinRecords { get; set; } = null!;
     public virtual DbSet<Player> Players { get; set; } = null!;
-    public virtual DbSet<Character> Characters { get; set; } = null!;
+    public virtual DbSet<PlayerCharacter> Characters { get; set; } = null!;
     public DbSet<Faction> Factions { get; set; } = null!;
     public DbSet<FactionRelation> FactionRelations { get; set; } = null!;
     public DbSet<FactionCharacterRelation> FactionCharacterRelations { get; set; } = null!;
+    public DbSet<StoredItem> PlayerItems { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -125,8 +133,25 @@ public class AmiaDbContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("cd_key");
         });
-        
-        modelBuilder.Entity<FactionCharacterRelation>(e =>
+
+        modelBuilder.Entity<PlayerCharacter>(entity =>
+        {
+            entity.HasKey(e => e.CdKey)
+                .HasName("players_pkey");
+            
+            entity.ToTable("player_characters");
+            //TODO: Investigate, may be wrong.
+            entity.HasOne(d => d.CdKeyNavigation)
+                .WithMany(p => p.PlayerCharacters)
+                .HasForeignKey(pc => pc.CdKey);
+        });
+
+        modelBuilder.Entity<StoredItem>(entity =>
+        {
+            
+        });
+
+    modelBuilder.Entity<FactionCharacterRelation>(e =>
         {
             e.HasKey(k => new {k.CharacterId, k.FactionName});
         });

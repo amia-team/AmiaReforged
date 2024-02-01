@@ -1,13 +1,14 @@
 ﻿using System.Linq.Expressions;
 using AmiaReforged.Core.Helpers;
 using AmiaReforged.Core.Models;
+using Anvil.API;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.Core.Services;
 
-// [ServiceBinding(typeof(CharacterService))]
+[ServiceBinding(typeof(CharacterService))]
 public class CharacterService
 {
     private readonly AmiaDbContext _ctx;
@@ -18,13 +19,14 @@ public class CharacterService
     {
         _ctx = ctx;
         _nwTaskHelper = nwTaskHelper;
+        Log.Info("NOPE");
     }
 
-    public async Task AddCharacter(Character character)
+    public async Task AddCharacter(PlayerCharacter playerCharacter)
     {
         try
         {
-            await _ctx.Characters.AddAsync(character);
+            await _ctx.Characters.AddAsync(playerCharacter);
             await _ctx.SaveChangesAsync();
         }
         catch (Exception e)
@@ -35,11 +37,11 @@ public class CharacterService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task UpdateCharacter(Character character)
+    public async Task UpdateCharacter(PlayerCharacter playerCharacter)
     {
         try
         {
-            _ctx.Characters.Update(character);
+            _ctx.Characters.Update(playerCharacter);
             await _ctx.SaveChangesAsync();
         }
         catch (Exception e)
@@ -50,11 +52,11 @@ public class CharacterService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task DeleteCharacter(Character character)
+    public async Task DeleteCharacter(PlayerCharacter playerCharacter)
     {
         try
         {
-            _ctx.Characters.Remove(character);
+            _ctx.Characters.Remove(playerCharacter);
             await _ctx.SaveChangesAsync();
         }
         catch (Exception e)
@@ -65,9 +67,9 @@ public class CharacterService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task<List<Character>> GetAllCharacters()
+    public async Task<List<PlayerCharacter>> GetAllCharacters()
     {
-        List<Character> characters = new();
+        List<PlayerCharacter> characters = new();
         try
         {
             characters = await _ctx.Characters.ToListAsync();
@@ -81,9 +83,9 @@ public class CharacterService
         return characters;
     }
 
-    private async Task<List<Character>> GetCertainCharacters(Expression<Func<Character, bool>> predicate)
+    private async Task<List<PlayerCharacter>> GetCertainCharacters(Expression<Func<PlayerCharacter, bool>> predicate)
     {
-        List<Character> characters = new();
+        List<PlayerCharacter> characters = new();
 
         try
         {
@@ -98,16 +100,6 @@ public class CharacterService
 
         await _nwTaskHelper.TrySwitchToMainThread();
         return characters;
-    }
-
-    public Task<List<Character>> GetAllPlayerCharacters()
-    {
-        return GetCertainCharacters(character => character.IsPlayerCharacter);
-    }
-
-    public Task<List<Character>> GetAllNonPlayerCharacters()
-    {
-        return GetCertainCharacters(character => !character.IsPlayerCharacter);
     }
 
     public async Task<bool> CharacterExists(Guid amiaCharacterId)
@@ -125,9 +117,9 @@ public class CharacterService
         return exists;
     }
 
-    public async Task<Character?> GetCharacterByGuid(Guid amiaCharacterId)
+    public async Task<PlayerCharacter?> GetCharacterByGuid(Guid amiaCharacterId)
     {
-        Character? character = null;
+        PlayerCharacter? character = null;
         try
         {
             character = await _ctx.Characters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == amiaCharacterId);
@@ -140,7 +132,24 @@ public class CharacterService
         return character;
     }
 
-    public async Task AddCharacters(IEnumerable<Character> characters)
+    public async Task<PlayerCharacter?> GetCharacterFromPcKey(NwItem pcKey)
+    {
+        PlayerCharacter? character = null;
+        if (pcKey.Tag != "ds_pckey")
+        {
+            return character;
+        }
+        
+        Guid charId = PcKeyToGuid(pcKey);
+
+        character = await GetCharacterByGuid(charId);
+
+        return character;
+    }
+
+    private Guid PcKeyToGuid(NwItem pcKey) => Guid.Parse(pcKey.Name.Split("_")[1]);
+
+    public async Task AddCharacters(IEnumerable<PlayerCharacter> characters)
     {
         try
         {
@@ -155,7 +164,7 @@ public class CharacterService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task DeleteCharacters(IEnumerable<Character> characters)
+    public async Task DeleteCharacters(IEnumerable<PlayerCharacter> characters)
     {
         try
         {

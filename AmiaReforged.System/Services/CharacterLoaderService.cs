@@ -2,16 +2,16 @@ using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Services;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 using NLog;
 
 namespace AmiaReforged.System.Services;
 
-// [ServiceBinding(typeof(CharacterLoaderService))]
+[ServiceBinding(typeof(CharacterLoaderService))]
 public class CharacterLoaderService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private const string DatabaseToken = "db_token";
     private readonly CharacterService _characterService;
 
     public CharacterLoaderService(CharacterService characterService)
@@ -36,7 +36,6 @@ public class CharacterLoaderService
             return true;
         }
 
-
         entryStatue.OnUsed += StoreCharacter;
         return false;
     }
@@ -45,42 +44,27 @@ public class CharacterLoaderService
     {
         if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
         if (player.LoginCreature is null) return;
-
-        bool playerHasDatabaseToken = player.LoginCreature!.Inventory.Items.Any(i => i.Tag == DatabaseToken);
-        if (playerHasDatabaseToken) return;
-
-        await AddTokenToCharacter(player);
+        
+        string dbToken = player.LoginCreature!.Inventory.Items.Where(i => i.Tag == "ds_pckey").First().ToString().Split("_")[1];
+        bool characterExists = await _characterService.CharacterExists(Guid.Parse(dbToken));
+        
+        if(characterExists) return;
+        
         NwTask.SwitchToMainThread();
         await AddCharacterToDatabase(player);
     }
-
-    private static async Task AddTokenToCharacter(NwPlayer player)
-    {
-        NwItem? item = await NwItem.Create(DatabaseToken, player.LoginCreature);
-        NwTask.SwitchToMainThread();
-        if (item is null)
-        {
-            Log.Error($"Could not create database token for {player.LoginCreature?.Name}.");
-            player.SendServerMessage(
-                "Well, this is embarrassing. We couldn't create your database token.");
-            return;
-        }
-        item.Name = Guid.NewGuid().ToString();
-    }
-
     private async Task AddCharacterToDatabase(NwPlayer player)
     {
-        string dbToken = player.LoginCreature!.Inventory.Items.Where(i => i.Tag == "db_token").First().Name;
+        string dbToken = player.LoginCreature!.Inventory.Items.Where(i => i.Tag == "ds_pckey").First().ToString().Split("_")[1];
 
-        Character character = new()
+        PlayerCharacter playerCharacter = new()
         {
             Id = Guid.Parse(dbToken),
             CdKey = player.CDKey,
             FirstName = player.LoginCreature.OriginalFirstName,
             LastName = player.LoginCreature.OriginalLastName,
-            IsPlayerCharacter = true
         };
         
-        await _characterService.AddCharacter(character);
+        await _characterService.AddCharacter(playerCharacter);
     }
 }

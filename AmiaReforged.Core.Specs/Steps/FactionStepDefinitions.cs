@@ -104,7 +104,7 @@ public class FactionStepDefinitions
     [When(@"a request is made to add the characters to the faction")]
     public async Task WhenARequestIsMadeToAddTheCharactersToTheFaction()
     {
-        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        List<PlayerCharacter> characters = _objectContainer.Resolve<List<PlayerCharacter>>(ObjectContainerKeys.TestCharacters);
 
         CharacterService characterService = _objectContainer.Resolve<CharacterService>();
         await characterService.AddCharacters(characters);
@@ -132,7 +132,7 @@ public class FactionStepDefinitions
     [Given(@"the faction already has a list of members")]
     public async Task GivenTheFactionAlreadyHasAListOfMembers()
     {
-        Character memberOne = new()
+        PlayerCharacter memberOne = new()
         {
             FirstName = "Test1",
             LastName = "Test1",
@@ -140,7 +140,7 @@ public class FactionStepDefinitions
             IsPlayerCharacter = true
         };
 
-        Character memberTwo = new()
+        PlayerCharacter memberTwo = new()
         {
             FirstName = "Test2",
             LastName = "Test2",
@@ -148,7 +148,7 @@ public class FactionStepDefinitions
             IsPlayerCharacter = true
         };
 
-        Character memberThree = new()
+        PlayerCharacter memberThree = new()
         {
             FirstName = "Test3",
             LastName = "Test3",
@@ -156,7 +156,7 @@ public class FactionStepDefinitions
         };
 
         CharacterService characterService = _objectContainer.Resolve<CharacterService>();
-        await characterService.AddCharacters(new List<Character> { memberOne, memberTwo, memberThree });
+        await characterService.AddCharacters(new List<PlayerCharacter> { memberOne, memberTwo, memberThree });
 
         Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         faction.Members.AddRange(new List<Guid> { memberOne.Id, memberTwo.Id, memberThree.Id });
@@ -236,7 +236,7 @@ public class FactionStepDefinitions
     {
         Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         CharacterService? characterService = _objectContainer.Resolve<CharacterService>();
-        Character? firstCharacter = await characterService.GetCharacterByGuid(faction.Members.First());
+        PlayerCharacter? firstCharacter = await characterService.GetCharacterByGuid(faction.Members.First());
         _objectContainer.RegisterInstanceAs(firstCharacter, ObjectContainerKeys.CharacterToRemove);
 
         faction.Members.RemoveAt(0);
@@ -252,7 +252,7 @@ public class FactionStepDefinitions
         FactionService factionService = _objectContainer.Resolve<FactionService>();
         Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
         Faction? persistedFaction = await factionService.GetFactionByName(faction.Name);
-        Character? characterToRemove = _objectContainer.Resolve<Character>(ObjectContainerKeys.CharacterToRemove);
+        PlayerCharacter? characterToRemove = _objectContainer.Resolve<PlayerCharacter>(ObjectContainerKeys.CharacterToRemove);
 
         persistedFaction.Should().NotBeNull("because the faction should have been persisted");
         persistedFaction?.Members.Should().NotContain(characterToRemove.Id,
@@ -264,9 +264,9 @@ public class FactionStepDefinitions
     {
         FactionService factionService = _objectContainer.Resolve<FactionService>();
         Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
-        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        List<PlayerCharacter> characters = _objectContainer.Resolve<List<PlayerCharacter>>(ObjectContainerKeys.TestCharacters);
         int playerCount = characters.Count(c => c.IsPlayerCharacter);
-        IEnumerable<Character> playerCharacters = await factionService.GetAllPlayerCharactersFrom(faction);
+        IEnumerable<PlayerCharacter> playerCharacters = await factionService.GetAllPlayerCharactersFrom(faction);
 
         playerCharacters.Should().HaveCount(playerCount,
             "because two player characters should have been retrieved from the faction roster");
@@ -277,9 +277,9 @@ public class FactionStepDefinitions
     {
         FactionService factionService = _objectContainer.Resolve<FactionService>();
         Faction? faction = _objectContainer.Resolve<Faction>(ObjectContainerKeys.Faction);
-        List<Character> characters = _objectContainer.Resolve<List<Character>>(ObjectContainerKeys.TestCharacters);
+        List<PlayerCharacter> characters = _objectContainer.Resolve<List<PlayerCharacter>>(ObjectContainerKeys.TestCharacters);
         int npcCount = characters.Count(c => !c.IsPlayerCharacter);
-        IEnumerable<Character> playerCharacters = await factionService.GetAllNonPlayerCharactersFrom(faction);
+        IEnumerable<PlayerCharacter> playerCharacters = await factionService.GetAllNonPlayerCharactersFrom(faction);
 
         playerCharacters.Should().HaveCount(npcCount,
             "because two player characters should have been retrieved from the faction roster");
