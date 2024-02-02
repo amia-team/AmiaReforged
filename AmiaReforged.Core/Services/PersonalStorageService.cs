@@ -80,7 +80,7 @@ public class PersonalStorageService
         newItem.Character = (await _characterService.GetCharacterFromPcKey(pcKey!))!;
         await _nwTaskHelper.TrySwitchToMainThread();
         Log.Info($"ownername: {chestOwnerCreature?.Name}");
-            newItem.PlayerCharacterId = characterId;
+        newItem.PlayerCharacterId = characterId;
         try
         {
             await _ctx.AddAsync(newItem);
@@ -101,7 +101,7 @@ public class PersonalStorageService
 
         NWScript.GiveGoldToCreature(chestOwner, goldAmount);
         NWScript.SendMessageToPC(chestOwner, "You cannot store gold in your chest.");
-        NWScript.DestroyObject(obj.Item);
+        obj.Item.Destroy();
     }
 
     private async void RemoveStoredItem(OnInventoryItemRemove obj)
@@ -143,10 +143,11 @@ public class PersonalStorageService
     {
         NwPlaceable? chest = info.ObjectSelf?.ObjectId.ToNwObject<NwPlaceable>();
         if (chest == null) return;
-        
+
         chest.OnUsed += PopulateChest;
         chest.OnInventoryItemAdd += AddStoredItem;
         chest.OnInventoryItemRemove += RemoveStoredItem;
+        chest.OnClose += close => close.Placeable.Inventory.Items.ToList().ForEach(x => x.Destroy());
 
         //TODO: Remove when done debugging.
         Log.Info("!! Storage chest Heartbeat. !!");

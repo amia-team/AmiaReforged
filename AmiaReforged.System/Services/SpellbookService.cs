@@ -1,11 +1,14 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using Castle.Components.DictionaryAdapter;
 
 namespace AmiaReforged.System.Services;
 
 public class SpellbookService
 {
+    private NuiWindowToken _token;
+    private NuiWindow _window;
     private List<string> ButtonIds { get; set; } = new();
 
     public SpellbookService()
@@ -23,7 +26,6 @@ public class SpellbookService
         CreatureClassInfo? classInfo =
             obj.Player.LoginCreature?.Classes.Where(c => c.Class.Name.ToString() == className).First();
 
-        IReadOnlyList<MemorizedSpellSlot>? preparedSpells3 = classInfo?.GetMemorizedSpellSlots(3);
 
         Dictionary<byte, IReadOnlyList<MemorizedSpellSlot>> preparedSpells = new();
 
@@ -33,20 +35,32 @@ public class SpellbookService
             
             preparedSpells.TryAdd(i, classInfo.GetMemorizedSpellSlots(i));
         }
-
-        foreach (KeyValuePair<byte, IReadOnlyList<MemorizedSpellSlot>> spellLevel in preparedSpells)
-        {
-            foreach (MemorizedSpellSlot spell in spellLevel.Value)
-            {
-                obj.Player.SendServerMessage(
-                    $"Spell level: {spellLevel.Key} Spell name: {spell.Spell.Name} Spell meta: {spell.MetaMagic}",
-                    Color.FromRGBA("#FF0000"));
-            }
-        }
+        
+        /*
+         * Need a layout like this:
+         * __________________________  ______________________________
+         * | Spellbook Class Name   | | Spellbook Selection Dropdown |
+         * |________________________| |______________________________|
+         * spacer 
+         * spellLevel0Icon | memorizedSpellIcon1 | memorizedSpellIcon2 | memorizedSpellIcon3 | memorizedSpellIcon4 | ... |
+         * spellLevel1Icon | memorizedSpellIcon1 | memorizedSpellIcon2 | memorizedSpellIcon3 | memorizedSpellIcon4 | ... |
+         * spellLevel2Icon | memorizedSpellIcon1 | memorizedSpellIcon2 | memorizedSpellIcon3 | memorizedSpellIcon4 | ... |
+         * spellLevel3Icon | memorizedSpellIcon1 | memorizedSpellIcon2 | memorizedSpellIcon3 | memorizedSpellIcon4 | ... |
+         * spellLevel4Icon | memorizedSpellIcon1 | memorizedSpellIcon2 | memorizedSpellIcon3 | memorizedSpellIcon4 | ... |
+         * spellLevel5Icon | memorizedSpellIcon1 | memorizedSpellIcon2 | memorizedSpellIcon3 | memorizedSpellIcon4 | ... |
+         * spellLevel6Icon | memorizedSpellIcon1 | memorizedSpellIcon2 | memorizedSpellIcon3 | memorizedSpellIcon4 | ... |
+         * spellLevel7Icon | memorizedSpellIcon1 | memorizedSpellIcon2 | memorizedSpellIcon3 | memorizedSpellIcon4 | ... |
+         * spellLevel8Icon | memorizedSpellIcon1 | memorizedSpellIcon2 | memorizedSpellIcon3 | memorizedSpellIcon4 | ... |
+         * spellLevel9Icon | memorizedSpellIcon1 | memorizedSpellIcon2 | memorizedSpellIcon3 | memorizedSpellIcon4 | ... |
+         * __________________________
+         *
+         * Save Spell Book Button   |  Delete Spell Book Button (disabled if spellbook not selected)
+         * 
+         */
 
         List<NuiImage> spellLevelIcons = new List<NuiImage>()
         {
-            new("ir_level0"),
+            new("ir_level789"),
             new("ir_level1"),
             new("ir_level2"),
             new("ir_level3"),
@@ -58,7 +72,82 @@ public class SpellbookService
             new("ir_level789")
         };
         
+        Dictionary<int, List<NuiImage>> spellRow = new Dictionary<int, List<NuiImage>>();
+        List<NuiRow> spellRows = new List<NuiRow>();
+        for(byte f = 0; f < 9; f++)
+        {
+            if(!preparedSpells.ContainsKey(f)) break;   
+            spellRow.TryAdd(f, new List<NuiImage>());
+            spellRow[f].Add(spellLevelIcons[f]);
+            foreach (MemorizedSpellSlot s in preparedSpells[f])
+            {
+                string? spellIconResRef = s.Spell.IconResRef;
+                if (spellIconResRef == null) continue;
+                
+                NuiImage prep = new NuiImage(spellIconResRef)
+                {
+                    Tooltip = s.Spell.Name.ToString()
+                };
+
+                spellRow[f].Add(prep);
+            }
+            
+            spellRows.Add(new NuiRow()
+            {
+                Children = new List<NuiElement>(spellRow[f])
+            });
+        }
         
+        
+        NuiRow spellBookName = new NuiRow()
+        {
+            Children = new List<NuiElement>()
+            {
+                new NuiLabel(className)
+            }
+        };
+
+        NuiCombo spellBookDropdown = new NuiCombo()
+        {
+        };
+
+        NuiColumn column = new NuiColumn()
+        {
+            Children = new EditableList<NuiElement>()
+            {
+                spellBookName,
+                spellBookDropdown,
+                new NuiSpacer(),
+                spellRows[0],
+                spellRows[1],
+                spellRows[2],
+                new NuiRow()
+                {
+                    Children = new List<NuiElement>()
+                    {
+                        new NuiButton("Save Spell Book")
+                        {
+                            Enabled = false
+                        },
+                        new NuiButton("Delete Spell Book")
+                        {
+                            Enabled = false
+                        }
+                    }
+                }
+            }
+        };
+        
+        NuiWindow window = new(column, "Spellbooks")
+        {
+            Closable = true,
+            Geometry = new NuiRect(500f, 100f, 300f, 400f)
+        };
+        _token.Close();
+        
+        obj.Player.TryCreateNuiWindow(window, out NuiWindowToken token);
+        
+        _token = token;
     }
 
     public void OpenSpellbookWindow(ModuleEvents.OnNuiEvent obj)
@@ -117,6 +206,8 @@ public class SpellbookService
         window.Id = "spellbookWindow";
 
         obj.Player.TryCreateNuiWindow(window, out NuiWindowToken token);
+        
+        _token = token;
 
     }
 }
