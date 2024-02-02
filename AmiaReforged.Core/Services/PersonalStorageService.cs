@@ -3,7 +3,6 @@ using AmiaReforged.Core.Models;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using Newtonsoft.Json.Linq;
 using NLog;
 using NWN.Core;
 
@@ -24,7 +23,7 @@ public class PersonalStorageService
         _characterService = characterService;
         _nwTaskHelper = nwTaskHelper;
     }
-    
+
     private async void PopulateChest(PlaceableEvents.OnUsed obj)
     {
         if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
@@ -32,29 +31,30 @@ public class PersonalStorageService
         //Check if it has an owner variable. If UsedBy does not equal owner, return.
         NwPlaceable chest = obj.Placeable;
         NwCreature chestOwner = obj.UsedBy;
-        string ownerPCKey = NWScript.GetName(NWScript.GetItemPossessedBy(chestOwner, "ds_pckey"));
-        string ownerID = NWScript.GetLocalString(obj.Placeable.Area, "pc_home_id");
-        if (ownerID != "")
+        string ownerPcKey = NWScript.GetName(NWScript.GetItemPossessedBy(chestOwner, "ds_pckey"));
+        string ownerId = NWScript.GetLocalString(obj.Placeable.Area, "pc_home_id");
+        if (ownerId != "")
         {
-            NWScript.SetLocalString(chest, "chest_owner", ownerPCKey);
-            if (player.LoginCreature.Inventory.Items.Where(x => x.Tag == ownerID).ToList().Count == 1)
+            NWScript.SetLocalString(chest, "chest_owner", ownerPcKey);
+            if (player.LoginCreature.Inventory.Items.Where(x => x.Tag == ownerId).ToList().Count == 1)
             {
                 IEnumerable<StoredItem> dbItems = await GetStoredItems(player);
-                
-                foreach (var item in dbItems)
+
+                foreach (StoredItem item in dbItems)
                 {
                     NwItem? parsed = Json.Parse(item.ItemJson).ToNwObject<NwItem>(chest.Location, chest);
                     NWScript.SetLocalString(parsed, "db_guid", item.Id.ToString());
                 }
             }
+
             NWScript.SendMessageToPC(player.LoginCreature, "You do not have a key to this storage.");
         }
 
-        if (ownerID == "")
+        if (ownerId == "")
         {
-            NWScript.SetLocalString(chest, "chest_owner", ownerPCKey);
+            NWScript.SetLocalString(chest, "chest_owner", ownerPcKey);
             IEnumerable<StoredItem> dbItems = await GetStoredItems(player);
-                
+
             foreach (var item in dbItems)
             {
                 Json.Parse(item.ItemJson).ToNwObject<NwItem>(chest.Location, chest);
@@ -66,7 +66,6 @@ public class PersonalStorageService
 
     private async void AddStoredItem(OnInventoryItemAdd obj)
     {
-        string ownerCheck = NWScript.GetLocalString(obj.AcquiredBy, "chest_owner");
         uint chestOwner = NWScript.GetLastUsedBy();
         NwItem? pcKey = NWScript.GetItemPossessedBy(chestOwner, "ds_pckey").ToNwObject<NwItem>();
         ReturnGoldToUser(obj, chestOwner);
@@ -77,7 +76,15 @@ public class PersonalStorageService
         newItem.ItemJson = itemJson.Dump();
         newItem.Id = Guid.NewGuid();
         newItem.Character = (await _characterService.GetCharacterFromPcKey(pcKey!))!;
-        newItem.PlayerCharacterId = Guid.Parse(pcKey.Name.Split("_")[1]);
+        if (pcKey != null)
+        {
+            newItem.PlayerCharacterId = Guid.Parse(pcKey.Name.Split("_")[1]);
+        }
+        else
+        {
+            Log.Error("Storage chest error: Could not find PC Key.");
+            return;
+        }
 
         try
         {
@@ -94,32 +101,36 @@ public class PersonalStorageService
     private static void ReturnGoldToUser(OnInventoryItemAdd obj, uint chestOwner)
     {
         if (obj.Item.ResRef != "nw_it_gold001") return;
-        
-        int GoldAmount = NWScript.GetItemStackSize(obj.Item);
-        
-        NWScript.GiveGoldToCreature(chestOwner, GoldAmount);
+
+        int goldAmount = NWScript.GetItemStackSize(obj.Item);
+
+        NWScript.GiveGoldToCreature(chestOwner, goldAmount);
         NWScript.SendMessageToPC(chestOwner, "You cannot store gold in your chest.");
         NWScript.DestroyObject(obj.Item);
     }
 
     private async void RemoveStoredItem(OnInventoryItemRemove obj)
     {
-        var guid = NWScript.GetLocalString(obj.RemovedFrom, "db_guid");
-        if(guid is "") return;
-        Guid itemID = Guid.NewGuid();
-        
+        string guid = NWScript.GetLocalString(obj.RemovedFrom, "db_guid");
+        if (guid is "") return;
+        Guid itemId;
+
         try
         {
-            itemID = Guid.Parse(guid);
+            itemId = Guid.Parse(guid);
         }
         catch
         {
             Log.Error("Storage chest error: Could not parse item GUID.");
             return;
         }
-        
-        StoredItem? s = await _ctx.PlayerItems.FindAsync(itemID);
-        if (s != null) _ctx.PlayerItems.Remove(s);
+
+        StoredItem? s = await _ctx.PlayerItems.FindAsync(itemId);
+        if (s != null)
+        {
+            _ctx.PlayerItems.Remove(s);
+            await _ctx.SaveChangesAsync();
+        }
 
         await _nwTaskHelper.TrySwitchToMainThread();
     }
@@ -131,14 +142,17 @@ public class PersonalStorageService
         await _nwTaskHelper.TrySwitchToMainThread();
         return character?.Items ?? new List<StoredItem>();
     }
+
     [ScriptHandler("storage_pc")]
     public void HandleHeartbeat(CallInfo info)
     {
-        NwPlaceable chest = info.ObjectSelf.ObjectId.ToNwObject<NwPlaceable>();
+        NwPlaceable? chest = info.ObjectSelf?.ObjectId.ToNwObject<NwPlaceable>();
+        if (chest == null) return;
+        
         chest.OnUsed += PopulateChest;
         chest.OnInventoryItemAdd += AddStoredItem;
         chest.OnInventoryItemRemove += RemoveStoredItem;
-        
+
         //TODO: Remove when done debugging.
         Log.Info("!! Storage chest Heartbeat. !!");
         NWScript.SetEventScript(chest, 9004, "");

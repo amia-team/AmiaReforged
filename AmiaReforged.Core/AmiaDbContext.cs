@@ -15,6 +15,7 @@ public class AmiaDbContext : DbContext
     {
         Log.Info("AmiaDbContext initialized.");
     }
+
     private readonly string _connectionString = ConnectionString();
 
     public virtual DbSet<Ban> Bans { get; set; } = null!;
@@ -134,28 +135,8 @@ public class AmiaDbContext : DbContext
                 .HasColumnName("cd_key");
         });
 
-        modelBuilder.Entity<PlayerCharacter>(entity =>
-        {
-            entity.HasKey(e => e.CdKey)
-                .HasName("players_pkey");
-            
-            entity.ToTable("player_characters");
-            //TODO: Investigate, may be wrong.
-            entity.HasOne(d => d.CdKeyNavigation)
-                .WithMany(p => p.PlayerCharacters)
-                .HasForeignKey(pc => pc.CdKey);
-        });
+        modelBuilder.Entity<FactionCharacterRelation>(e => { e.HasKey(k => new { k.CharacterId, k.FactionName }); });
 
-        modelBuilder.Entity<StoredItem>(entity =>
-        {
-            
-        });
-
-    modelBuilder.Entity<FactionCharacterRelation>(e =>
-        {
-            e.HasKey(k => new {k.CharacterId, k.FactionName});
-        });
-        
         modelBuilder.Entity<FactionRelation>(e =>
         {
             e.HasIndex(i => new { i.FactionName, i.TargetFactionName }).IsUnique();

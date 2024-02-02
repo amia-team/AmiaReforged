@@ -104,6 +104,7 @@ public class CharacterService
 
     public async Task<bool> CharacterExists(Guid amiaCharacterId)
     {
+        Log.Info("Checking if character exists");
         bool exists = false;
         try
         {
@@ -114,6 +115,9 @@ public class CharacterService
             Log.Error(e, "Error checking if character exists");
         }
 
+        await _nwTaskHelper.TrySwitchToMainThread();
+        
+        Log.Info($"Character exists? {exists}");
         return exists;
     }
 
@@ -122,7 +126,9 @@ public class CharacterService
         PlayerCharacter? character = null;
         try
         {
-            character = await _ctx.Characters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == amiaCharacterId);
+            character = await _ctx.Characters
+            .Include(c => c.Items) // Eager load StoredItems
+            .FirstOrDefaultAsync(c => c.Id == amiaCharacterId);
         }
         catch (Exception e)
         {

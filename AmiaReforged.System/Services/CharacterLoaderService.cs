@@ -10,6 +10,7 @@ namespace AmiaReforged.System.Services;
 [ServiceBinding(typeof(CharacterLoaderService))]
 public class CharacterLoaderService
 {
+    private const string TravelAgencyTag = "core_travelroom";
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly CharacterService _characterService;
@@ -18,7 +19,7 @@ public class CharacterLoaderService
     {
         _characterService = characterService;
 
-        if (RegisterToEntryStatue())
+        if (RegisterToTravelAgency())
         {
             Log.Error("CharacterLoaderService initalization failed.");
             return;
@@ -27,44 +28,57 @@ public class CharacterLoaderService
         Log.Info("Character Service initialized.");
     }
 
-    private bool RegisterToEntryStatue()
+    private bool RegisterToTravelAgency()
     {
-        NwPlaceable? entryStatue = NwObject.FindObjectsWithTag<NwPlaceable>("ds_entrygate").FirstOrDefault();
-        if (entryStatue is null)
+        NwArea? travelAgency = NwObject.FindObjectsWithTag<NwArea>(TravelAgencyTag).FirstOrDefault();
+        if (travelAgency is null)
         {
             Log.Error("Something is very wrong, entry gate could not be found");
             return true;
         }
 
-        entryStatue.OnUsed += StoreCharacter;
+        travelAgency.OnEnter += StoreCharacter;
         return false;
     }
 
-    private async void StoreCharacter(PlaceableEvents.OnUsed obj)
+    private async void StoreCharacter(AreaEvents.OnEnter obj)
     {
-        if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
-        if (player.LoginCreature is null) return;
+        if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
+        Log.Info($"Storing character: {player.LoginCreature?.Name}");
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        if (pcKey is null) return;
         
-        string dbToken = player.LoginCreature!.Inventory.Items.Where(i => i.Tag == "ds_pckey").First().ToString().Split("_")[1];
-        bool characterExists = await _characterService.CharacterExists(Guid.Parse(dbToken));
-        
-        if(characterExists) return;
-        
-        NwTask.SwitchToMainThread();
-        await AddCharacterToDatabase(player);
-    }
-    private async Task AddCharacterToDatabase(NwPlayer player)
-    {
-        string dbToken = player.LoginCreature!.Inventory.Items.Where(i => i.Tag == "ds_pckey").First().ToString().Split("_")[1];
+        Log.Info("PCKey not null");
 
+        string dbToken = pcKey.Name.Split("_")[1];
+        Guid pcKeyGuid = Guid.Parse(dbToken);
+        
+        Log.Info($"Parsed GUID from PC Key: {pcKeyGuid.ToString()}");
+
+        
+        bool characterExists = await _characterService.CharacterExists(pcKeyGuid);
+
+        NwTask.SwitchToMainThread();
+        player.SendServerMessage($"Character exists? {characterExists}");   
+
+        if (characterExists) return;
+        
+        string? playerFirstName = player.LoginCreature?.OriginalFirstName;
+        string? playerLastName = player.LoginCreature?.OriginalLastName;
+        string cdKey =  pcKey.Name.Split("_")[0];
+        
         PlayerCharacter playerCharacter = new()
         {
-            Id = Guid.Parse(dbToken),
-            CdKey = player.CDKey,
-            FirstName = player.LoginCreature.OriginalFirstName,
-            LastName = player.LoginCreature.OriginalLastName,
+            Id = pcKeyGuid,
+            PlayerId = cdKey,
+            FirstName = playerFirstName,
+            LastName = playerLastName,
         };
         
+        Log.Info($"Adding character: {playerCharacter.FirstName} {playerCharacter.LastName} ({playerCharacter.PlayerId}) with GUID: {playerCharacter.Id.ToString()}");
+        
         await _characterService.AddCharacter(playerCharacter);
+        
+        await NwTask.SwitchToMainThread();
     }
 }
