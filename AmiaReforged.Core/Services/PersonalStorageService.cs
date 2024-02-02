@@ -67,8 +67,10 @@ public class PersonalStorageService
     private async void AddStoredItem(OnInventoryItemAdd obj)
     {
         uint chestOwner = NWScript.GetLastUsedBy();
-        NwItem? pcKey = NWScript.GetItemPossessedBy(chestOwner, "ds_pckey").ToNwObject<NwItem>();
+        NwCreature? chestOwnerCreature = chestOwner.ToNwObject<NwCreature>();
+        NwItem? pcKey = chestOwnerCreature?.FindItemWithTag("ds_pckey");
         ReturnGoldToUser(obj, chestOwner);
+        Guid characterId = Guid.Parse(pcKey.Name.Split("_")[1]);
 
         StoredItem newItem = new StoredItem();
 
@@ -76,16 +78,9 @@ public class PersonalStorageService
         newItem.ItemJson = itemJson.Dump();
         newItem.Id = Guid.NewGuid();
         newItem.Character = (await _characterService.GetCharacterFromPcKey(pcKey!))!;
-        if (pcKey != null)
-        {
-            newItem.PlayerCharacterId = Guid.Parse(pcKey.Name.Split("_")[1]);
-        }
-        else
-        {
-            Log.Error("Storage chest error: Could not find PC Key.");
-            return;
-        }
-
+        await _nwTaskHelper.TrySwitchToMainThread();
+        Log.Info($"ownername: {chestOwnerCreature?.Name}");
+            newItem.PlayerCharacterId = characterId;
         try
         {
             await _ctx.AddAsync(newItem);
