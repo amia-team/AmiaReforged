@@ -158,14 +158,24 @@ public class PersonalStorageService
         chest.OnInventoryItemRemove += RemoveStoredItem;
         chest.OnClose += close =>
         {
+            DoesChestHaveOwnerId(close.Placeable, out bool hasOwnerId);
+            string ownerId = NWScript.GetLocalString(close.Placeable.Area, "pc_home_id");
             NWScript.SetLocalInt(close.Placeable, "clearingChest", 1);
             close.Placeable.Locked = true;
             close.Placeable.LockKeyRequired = true;
-            
+            if(hasOwnerId) NWScript.SetLockKeyTag(close.Placeable, "");
+
             close.Placeable.Inventory.Items.ToList().ForEach(x => x.Destroy());
 
-            NWScript.DelayCommand(6.0f, () => close.Placeable.Locked = false);
-            NWScript.DelayCommand(6.0f, ()=> NWScript.SetLocalInt(close.Placeable, "clearingChest", 0));
+            if (!hasOwnerId)
+            {
+                NWScript.DelayCommand(6.0f, () => close.Placeable.Locked = false);
+            }
+            else
+            {
+                NWScript.SetLockKeyTag(close.Placeable, ownerId);
+            }
+            NWScript.DelayCommand(6.0f, () => NWScript.SetLocalInt(close.Placeable, "clearingChest", 0));
         };
 
         //TODO: Remove when done debugging.
@@ -183,9 +193,8 @@ public class PersonalStorageService
         NwPlayer? player = obj.OpenedBy.ControllingPlayer;
         NwItem? pcKey = player?.LoginCreature?.FindItemWithTag("ds_pckey");
         
-        string ownerId = NWScript.GetLocalString(obj.Placeable.Area, "pc_home_id");
-        bool hasOwnerId = ownerId != "";
-        
+        string ownerId = DoesChestHaveOwnerId(obj.Placeable, out bool hasOwnerId);
+
         Log.Info($"OnOpen info\n\townerId: {ownerId}\n\tplayerKey: {pcKey?.Name}\n\thasOwnerId: {hasOwnerId}");
         
         switch (hasOwnerId)
@@ -223,5 +232,12 @@ public class PersonalStorageService
         await _nwTaskHelper.TrySwitchToMainThread();
         
         NWScript.SetLocalInt(chest, "populatingChest", 0);
+    }
+
+    private static string DoesChestHaveOwnerId(NwPlaceable obj, out bool hasOwnerId)
+    {
+        string ownerId = NWScript.GetLocalString(obj.Area, "pc_home_id");
+        hasOwnerId = ownerId != "";
+        return ownerId;
     }
 }
