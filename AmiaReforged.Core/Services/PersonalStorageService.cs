@@ -22,7 +22,34 @@ public class PersonalStorageService
         _factory = factory;
         _characterService = characterService;
         _nwTaskHelper = nwTaskHelper;
-        
+        List<NwPlaceable> chests = NwObject.FindObjectsWithTag<NwPlaceable>("db_pcstorage").ToList();
+        foreach (var chest in chests)
+        {
+            chest.OnOpen += PopulateChest;
+            chest.OnInventoryItemAdd += AddStoredItem;
+            chest.OnInventoryItemRemove += RemoveStoredItem;
+            chest.OnClose += close =>
+            {
+                DoesChestHaveOwnerId(close.Placeable, out bool hasOwnerId);
+                string ownerId = NWScript.GetLocalString(close.Placeable, "pc_home_id");
+                NWScript.SetLocalInt(close.Placeable, "clearingChest", 1);
+                close.Placeable.Locked = true;
+                close.Placeable.LockKeyRequired = true;
+                if(hasOwnerId) NWScript.SetLockKeyTag(close.Placeable, "nostoragekey");
+
+                close.Placeable.Inventory.Items.ToList().ForEach(x => x.Destroy());
+
+                if (!hasOwnerId)
+                {
+                    NWScript.DelayCommand(6.0f, () => close.Placeable.Locked = false);
+                }
+                else
+                {
+                    NWScript.DelayCommand(6.0f, () => NWScript.SetLockKeyTag(close.Placeable, ownerId));
+                }
+                NWScript.DelayCommand(6.0f, () => NWScript.SetLocalInt(close.Placeable, "clearingChest", 0));
+            };
+        }
     }
 
     private async Task HandleHomeStorage(NwItem? key, NwPlayer player, NwPlaceable chest)
@@ -147,42 +174,6 @@ public class PersonalStorageService
         return character?.Items ?? new List<StoredItem>();
     }
 
-    [ScriptHandler("storage_pc")]
-    public void HandleOnClick(CallInfo info)
-    {
-        NwPlaceable? chest = info.ObjectSelf?.ObjectId.ToNwObject<NwPlaceable>();
-        if (chest == null) return;
-
-        chest.OnOpen += PopulateChest;
-        chest.OnInventoryItemAdd += AddStoredItem;
-        chest.OnInventoryItemRemove += RemoveStoredItem;
-        chest.OnClose += close =>
-        {
-            DoesChestHaveOwnerId(close.Placeable, out bool hasOwnerId);
-            string ownerId = NWScript.GetLocalString(close.Placeable.Area, "pc_home_id");
-            NWScript.SetLocalInt(close.Placeable, "clearingChest", 1);
-            close.Placeable.Locked = true;
-            close.Placeable.LockKeyRequired = true;
-            if(hasOwnerId) NWScript.SetLockKeyTag(close.Placeable, "");
-
-            close.Placeable.Inventory.Items.ToList().ForEach(x => x.Destroy());
-
-            if (!hasOwnerId)
-            {
-                NWScript.DelayCommand(6.0f, () => close.Placeable.Locked = false);
-            }
-            else
-            {
-                NWScript.DelayCommand(6.0f, () => NWScript.SetLockKeyTag(close.Placeable, ownerId));
-            }
-            NWScript.DelayCommand(6.0f, () => NWScript.SetLocalInt(close.Placeable, "clearingChest", 0));
-        };
-
-        //TODO: Remove when done debugging.
-        Log.Info("!! Storage on clicked handling !!");
-        NWScript.SetEventScript(chest, NWScript.EVENT_SCRIPT_PLACEABLE_ON_USED, "");
-    }
-
     private async void PopulateChest(PlaceableEvents.OnOpen obj)
     { 
         if(obj.OpenedBy == null) return;
@@ -236,7 +227,7 @@ public class PersonalStorageService
 
     private static string DoesChestHaveOwnerId(NwPlaceable obj, out bool hasOwnerId)
     {
-        string ownerId = NWScript.GetLocalString(obj.Area, "pc_home_id");
+        string ownerId = NWScript.GetLocalString(obj, "pc_home_id");
         hasOwnerId = ownerId != "";
         return ownerId;
     }
