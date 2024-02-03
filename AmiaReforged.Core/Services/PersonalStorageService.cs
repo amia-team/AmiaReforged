@@ -173,7 +173,7 @@ public class PersonalStorageService
             }
             else
             {
-                NWScript.SetLockKeyTag(close.Placeable, ownerId);
+                NWScript.DelayCommand(6.0f, () => NWScript.SetLockKeyTag(close.Placeable, ownerId));
             }
             NWScript.DelayCommand(6.0f, () => NWScript.SetLocalInt(close.Placeable, "clearingChest", 0));
         };
