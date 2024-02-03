@@ -12,7 +12,7 @@ namespace AmiaReforged.Core.Services;
 [ServiceBinding(typeof(PlayerDataService))]
 public class PlayerDataService
 {
-    private readonly AmiaDbContext _ctx;
+    private readonly DatabaseContextFactory _factory;
     private readonly NwTaskHelper _taskHelper;
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -23,9 +23,9 @@ public class PlayerDataService
     /// </summary>
     /// <param name="dbContext"> The database context. </param>
     /// <param name="taskHelper"> Awaitable TaskHelper that can be mocked for testing. </param>
-    public PlayerDataService(AmiaDbContext dbContext, NwTaskHelper taskHelper)
+    public PlayerDataService(DatabaseContextFactory dbContext, NwTaskHelper taskHelper)
     {
-        _ctx = dbContext;
+        _factory = dbContext;
         _taskHelper = taskHelper;
         Log.Info("PlayerDataService initialized.");
     }
@@ -33,10 +33,10 @@ public class PlayerDataService
     public async Task<IEnumerable<PlayerCharacter>> GetPlayerCharacters(string cdkey)
     {
         IEnumerable<PlayerCharacter> characters = new List<PlayerCharacter>();
-
+        AmiaDbContext amiaDbContext = _factory.CreateDbContext();
         try
         {
-            Player? player = await _ctx.Players
+            Player? player = await amiaDbContext.Players
                 .Include(p => p.PlayerCharacters) // Eager load PlayerCharacters
                 .FirstOrDefaultAsync(p => p.CdKey == cdkey);
             characters = player?.PlayerCharacters ?? new List<PlayerCharacter>();
@@ -50,26 +50,4 @@ public class PlayerDataService
 
         return characters;
     }
-    //
-    // public async Task<PlayerCharacter> GetPlayerCharacter(string cdkey, Guid characterId)
-    // {
-    //     PlayerCharacter character = new PlayerCharacter();
-    //
-    //     try
-    //     {
-    //         Player? player = await _ctx.Players
-    //             .Include(p => p.PlayerCharacters)
-    //             .ThenInclude(pc => pc.Items)// Eager load PlayerCharacters
-    //             .FirstOrDefaultAsync(p => p.CdKey == cdkey);
-    //         character = player?.PlayerCharacters.FirstOrDefault(c => c.Id == characterId) ?? new PlayerCharacter();
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         Log.Error($"Error getting player character from database for player {cdkey}: {e.Message}");
-    //     }
-    //
-    //     await _taskHelper.TrySwitchToMainThread();
-    //
-    //     return character;
-    // }
 }

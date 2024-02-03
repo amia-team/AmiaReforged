@@ -6,16 +6,8 @@ using Npgsql;
 
 namespace AmiaReforged.Core;
 
-[ServiceBinding(typeof(AmiaDbContext))]
 public class AmiaDbContext : DbContext
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
-    public AmiaDbContext()
-    {
-        Log.Info("AmiaDbContext initialized.");
-    }
-
     private readonly string _connectionString = ConnectionString();
 
     public virtual DbSet<Ban> Bans { get; set; } = null!;

@@ -11,23 +11,24 @@ namespace AmiaReforged.Core.Services;
 [ServiceBinding(typeof(CharacterService))]
 public class CharacterService
 {
-    private readonly AmiaDbContext _ctx;
+    private readonly DatabaseContextFactory _ctxFactory;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly NwTaskHelper _nwTaskHelper;
 
-    public CharacterService(AmiaDbContext ctx, NwTaskHelper nwTaskHelper)
+    public CharacterService(DatabaseContextFactory ctxFactory, NwTaskHelper nwTaskHelper)
     {
-        _ctx = ctx;
+        _ctxFactory = ctxFactory;
         _nwTaskHelper = nwTaskHelper;
         Log.Info("NOPE");
     }
 
     public async Task AddCharacter(PlayerCharacter playerCharacter)
     {
+        AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
         try
         {
-            await _ctx.Characters.AddAsync(playerCharacter);
-            await _ctx.SaveChangesAsync();
+            await amiaDbContext.Characters.AddAsync(playerCharacter);
+            await amiaDbContext.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -39,10 +40,12 @@ public class CharacterService
 
     public async Task UpdateCharacter(PlayerCharacter playerCharacter)
     {
+        AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
+
         try
         {
-            _ctx.Characters.Update(playerCharacter);
-            await _ctx.SaveChangesAsync();
+            amiaDbContext.Characters.Update(playerCharacter);
+            await amiaDbContext.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -54,10 +57,12 @@ public class CharacterService
 
     public async Task DeleteCharacter(PlayerCharacter playerCharacter)
     {
+        AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
+
         try
         {
-            _ctx.Characters.Remove(playerCharacter);
-            await _ctx.SaveChangesAsync();
+            amiaDbContext.Characters.Remove(playerCharacter);
+            await amiaDbContext.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -69,10 +74,12 @@ public class CharacterService
 
     public async Task<List<PlayerCharacter>> GetAllCharacters()
     {
+        AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
+
         List<PlayerCharacter> characters = new();
         try
         {
-            characters = await _ctx.Characters.ToListAsync();
+            characters = await amiaDbContext.Characters.ToListAsync();
         }
         catch (Exception e)
         {
@@ -85,11 +92,12 @@ public class CharacterService
 
     private async Task<List<PlayerCharacter>> GetCertainCharacters(Expression<Func<PlayerCharacter, bool>> predicate)
     {
-        List<PlayerCharacter> characters = new();
+        AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
 
+        List<PlayerCharacter> characters = new();
         try
         {
-            characters = await _ctx.Characters
+            characters = await amiaDbContext.Characters
                 .Where(predicate)
                 .ToListAsync();
         }
@@ -104,11 +112,13 @@ public class CharacterService
 
     public async Task<bool> CharacterExists(Guid amiaCharacterId)
     {
+        AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
+
         Log.Info("Checking if character exists");
         bool exists = false;
         try
         {
-            exists = await _ctx.Characters.AnyAsync(c => c.Id == amiaCharacterId);
+            exists = await amiaDbContext.Characters.AnyAsync(c => c.Id == amiaCharacterId);
         }
         catch (Exception e)
         {
@@ -123,10 +133,12 @@ public class CharacterService
 
     public async Task<PlayerCharacter?> GetCharacterByGuid(Guid amiaCharacterId)
     {
+        AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
+
         PlayerCharacter? character = null;
         try
         {
-            character = await _ctx.Characters
+            character = await amiaDbContext.Characters
             .Include(c => c.Items) // Eager load StoredItems
             .FirstOrDefaultAsync(c => c.Id == amiaCharacterId);
         }
@@ -138,7 +150,7 @@ public class CharacterService
         return character;
     }
 
-    public async Task<PlayerCharacter?> GetCharacterFromPcKey(NwItem pcKey)
+    public async Task<PlayerCharacter?> GetCharacterFromPcKey(NwItem? pcKey)
     {
         PlayerCharacter? character = null;
         if (pcKey.Tag != "ds_pckey")
@@ -153,14 +165,16 @@ public class CharacterService
         return character;
     }
 
-    private Guid PcKeyToGuid(NwItem pcKey) => Guid.Parse(pcKey.Name.Split("_")[1]);
+    private Guid PcKeyToGuid(NwItem? pcKey) => Guid.Parse(pcKey.Name.Split("_")[1]);
 
     public async Task AddCharacters(IEnumerable<PlayerCharacter> characters)
     {
+        AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
+
         try
         {
-            await _ctx.Characters.AddRangeAsync(characters);
-            await _ctx.SaveChangesAsync();
+            await amiaDbContext.Characters.AddRangeAsync(characters);
+            await amiaDbContext.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -172,10 +186,12 @@ public class CharacterService
 
     public async Task DeleteCharacters(IEnumerable<PlayerCharacter> characters)
     {
+        AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
+
         try
         {
-            _ctx.Characters.RemoveRange(characters);
-            await _ctx.SaveChangesAsync();
+            amiaDbContext.Characters.RemoveRange(characters);
+            await amiaDbContext.SaveChangesAsync();
         }
         catch (Exception e)
         {
