@@ -4,5 +4,7 @@ sudo chown -R amia.amia bin/Debug/net7.0/
 if [ ! -d "/home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Races/" ]; then
     sudo mkdir /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Races/
 fi
-sudo cp -r bin/Debug/net7.0/* /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Races/
+
+sudo dotnet publish AmiaReforged.Races --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Races/
+
 sudo chown -R jenkins.jenkins bin/Debug/net7.0/

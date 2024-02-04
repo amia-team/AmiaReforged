@@ -4,5 +4,7 @@ sudo chown -R amia.amia bin/Debug/net7.0/
 if [ ! -d "/home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Classes/" ]; then
     sudo mkdir /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Classes/
 fi
-sudo cp -r bin/Debug/net7.0/* /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Classes/
+
+sudo dotnet publish AmiaReforged.Classes --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Classes/
+
 sudo chown -R jenkins.jenkins bin/Debug/net7.0/ 
