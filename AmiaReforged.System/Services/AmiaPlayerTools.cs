@@ -8,7 +8,7 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(AmiaPlayerTools))]
+// [ServiceBinding(typeof(AmiaPlayerTools))]
 public class AmiaPlayerTools
 {
     private readonly PlayerToolLayout _playerToolLayout;
