@@ -31,7 +31,7 @@ public class PersonalStorageService
         foreach (NwPlaceable chest in chests)
         {
             chest.OnOpen += PopulateChest;
-            chest.OnUsed += HandleChestUse;
+            chest.OnLeftClick += HandleChestUse;
             chest.OnInventoryItemAdd += AddStoredItem;
             chest.OnInventoryItemRemove += RemoveStoredItem;
             chest.OnClose += close =>
@@ -60,15 +60,14 @@ public class PersonalStorageService
         }
     }
 
-    private void HandleChestUse(PlaceableEvents.OnUsed obj)
+    private void HandleChestUse(PlaceableEvents.OnLeftClick obj)
     {
         NwPlaceable chest = obj.Placeable;
         
         if (NWScript.GetLocalInt(chest, ChestInUse) == NWScript.TRUE)
         {
-            NWScript.SendMessageToPC(obj.UsedBy, "This chest is already in use.");
-            NWScript.AssignCommand(obj.UsedBy, () => NWScript.ActionMoveAwayFromObject(obj.UsedBy, NWScript.TRUE));
-            return;
+            NWScript.SendMessageToPC(obj.ClickedBy.ControlledCreature, "This chest is already in use.");
+            NWScript.AssignCommand(obj.ClickedBy.ControlledCreature, () => NWScript.ActionMoveAwayFromObject(obj.ClickedBy.ControlledCreature, NWScript.TRUE));
         }
     }
 
