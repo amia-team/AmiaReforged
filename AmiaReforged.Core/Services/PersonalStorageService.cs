@@ -11,19 +11,24 @@ namespace AmiaReforged.Core.Services;
 [ServiceBinding(typeof(PersonalStorageService))]
 public class PersonalStorageService
 {
+    private const string StorageCap = "storage_cap";
+    private const string DsPckey = "ds_pckey";
+    private const int InitialBankCapacity = 20;
+    private const string ChestInUse = "in_use";
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly DatabaseContextFactory _factory;
     private readonly CharacterService _characterService;
     private readonly NwTaskHelper _nwTaskHelper;
 
-    public PersonalStorageService(DatabaseContextFactory factory, CharacterService characterService, NwTaskHelper nwTaskHelper)
+    public PersonalStorageService(DatabaseContextFactory factory, CharacterService characterService,
+        NwTaskHelper nwTaskHelper)
     {
         _factory = factory;
         _characterService = characterService;
         _nwTaskHelper = nwTaskHelper;
         List<NwPlaceable> chests = NwObject.FindObjectsWithTag<NwPlaceable>("db_pcstorage").ToList();
-        foreach (var chest in chests)
+        foreach (NwPlaceable chest in chests)
         {
             chest.OnOpen += PopulateChest;
             chest.OnInventoryItemAdd += AddStoredItem;
@@ -35,7 +40,7 @@ public class PersonalStorageService
                 NWScript.SetLocalInt(close.Placeable, "clearingChest", 1);
                 close.Placeable.Locked = true;
                 close.Placeable.LockKeyRequired = true;
-                if(hasOwnerId) NWScript.SetLockKeyTag(close.Placeable, "nostoragekey");
+                if (hasOwnerId) NWScript.SetLockKeyTag(close.Placeable, "nostoragekey");
 
                 close.Placeable.Inventory.Items.ToList().ForEach(x => x.Destroy());
 
@@ -47,6 +52,8 @@ public class PersonalStorageService
                 {
                     NWScript.DelayCommand(6.0f, () => NWScript.SetLockKeyTag(close.Placeable, ownerId));
                 }
+
+                NWScript.DelayCommand(6.0f, () => NWScript.SetLocalInt(close.Placeable, ChestInUse, 0));
                 NWScript.DelayCommand(6.0f, () => NWScript.SetLocalInt(close.Placeable, "clearingChest", 0));
             };
         }
@@ -68,21 +75,35 @@ public class PersonalStorageService
         {
             NWScript.SendMessageToPC(player.LoginCreature, "You do not have a key to this storage.");
         }
-        
+
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
     private async void AddStoredItem(OnInventoryItemAdd obj)
     {
-        if(NWScript.GetLocalInt(obj.AcquiredBy, "populatingChest") == 1) return;
-        Log.Info("!! Storage on add handling !!");
+        if (NWScript.GetLocalInt(obj.AcquiredBy, "populatingChest") == 1) return;
         uint chestOwner = NWScript.GetLastUsedBy();
+
         NwCreature? chestOwnerCreature = chestOwner.ToNwObject<NwCreature>();
-        NWScript.SendMessageToPC(chestOwnerCreature, "Adding item to storage.");
-        NwItem? pcKey = chestOwnerCreature?.FindItemWithTag("ds_pckey");
+        NwPlaceable chest = (NwPlaceable)obj.AcquiredBy;
+        NwItem? pcKey = chestOwnerCreature?.FindItemWithTag(DsPckey);
+
+        int storageCap = NWScript.GetLocalInt(pcKey, StorageCap);
+
         bool wasGold = ReturnGoldToUser(obj, chestOwner);
-        if(wasGold) return;
-        Guid characterId = Guid.Parse(pcKey.Name.Split("_")[1]);
+        if (wasGold) return;
+
+        if (chest.Inventory.Items.Count() + 1 > storageCap)
+        {
+            NWScript.CopyItem(obj.Item, chestOwner, NWScript.TRUE);
+            obj.Item.Destroy();
+            chestOwnerCreature?.ControllingPlayer?.SendServerMessage(
+                $"You have have reached the maximum amount of items you can store. ({storageCap})");
+
+            return;
+        }
+
+        Guid characterId = Guid.Parse(pcKey!.Name.Split("_")[1]);
 
         StoredItem newItem = new StoredItem();
 
@@ -91,10 +112,9 @@ public class PersonalStorageService
         newItem.Id = Guid.NewGuid();
         newItem.PlayerCharacterId = characterId;
 
-        Log.Info($"ownername: {chestOwnerCreature?.Name}");
 
         bool success = true;
-        
+
         AmiaDbContext amiaDbContext = _factory.CreateDbContext();
         try
         {
@@ -104,11 +124,12 @@ public class PersonalStorageService
         catch (Exception e)
         {
             success = false;
-            Log.Error($"Storage chest error: Could not add item. Exception: {e.Message} \n \n{e.InnerException}\n\n{e.StackTrace}");
+            Log.Error(
+                $"Storage chest error: Could not add item. Exception: {e.Message} \n \n{e.InnerException}\n\n{e.StackTrace}");
         }
 
         await _nwTaskHelper.TrySwitchToMainThread();
-        
+
         if (!success)
         {
             NWScript.SendMessageToPC(chestOwner, "There was an error storing your item.");
@@ -119,7 +140,6 @@ public class PersonalStorageService
         {
             NWScript.SetLocalString(obj.Item, "db_guid", newItem.Id.ToString());
         }
-
     }
 
     private static bool ReturnGoldToUser(OnInventoryItemAdd obj, uint chestOwner)
@@ -136,9 +156,8 @@ public class PersonalStorageService
 
     private async void RemoveStoredItem(OnInventoryItemRemove obj)
     {
-        if(NWScript.GetLocalInt(obj.RemovedFrom, "clearingChest") == 1) return;
-        Log.Info("!! Storage on remove handling !!");
-        
+        if (NWScript.GetLocalInt(obj.RemovedFrom, "clearingChest") == 1) return;
+
         string guid = NWScript.GetLocalString(obj.Item, "db_guid");
         if (guid is "") return;
         Guid itemId;
@@ -164,10 +183,9 @@ public class PersonalStorageService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task<IEnumerable<StoredItem>> GetStoredItems(NwPlayer player)
+    private async Task<IEnumerable<StoredItem>> GetStoredItems(NwPlayer player)
     {
-        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
-        Log.Info($"Getting Stored Items. . .\n\tPlayer: {player.LoginCreature?.Name}\n\tPlayerKey: {pcKey?.Name}");
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag(DsPckey);
         player.SendServerMessage($"pcKey: {pcKey?.Name}");
         PlayerCharacter? character = await _characterService.GetCharacterFromPcKey(pcKey);
         await _nwTaskHelper.TrySwitchToMainThread();
@@ -175,33 +193,39 @@ public class PersonalStorageService
     }
 
     private async void PopulateChest(PlaceableEvents.OnOpen obj)
-    { 
-        if(obj.OpenedBy == null) return;
-        
+    {
+        if (obj.OpenedBy == null) return;
         NwPlaceable chest = obj.Placeable;
-        NWScript.SetLocalInt(chest, "populatingChest", 1);
         
+        if (NWScript.GetLocalInt(chest, ChestInUse) == NWScript.TRUE)
+        {
+            obj.OpenedBy.ControllingPlayer?.SendServerMessage("This chest is already in use.");
+            obj.OpenedBy?.ActionMoveAwayFrom(obj.Placeable.Location, true, 30);
+            return;
+        }
+        
+        NWScript.SetLocalInt(chest, "populatingChest", NWScript.TRUE);
+        NWScript.SetLocalInt(chest, ChestInUse, NWScript.TRUE);
+
         NwPlayer? player = obj.OpenedBy.ControllingPlayer;
-        NwItem? pcKey = player?.LoginCreature?.FindItemWithTag("ds_pckey");
-        
+        NwItem? pcKey = player?.LoginCreature?.FindItemWithTag(DsPckey);
+
+        InitIfNewBankMember(pcKey);
+
         string ownerId = DoesChestHaveOwnerId(obj.Placeable, out bool hasOwnerId);
 
-        Log.Info($"OnOpen info\n\townerId: {ownerId}\n\tplayerKey: {pcKey?.Name}\n\thasOwnerId: {hasOwnerId}");
-        
         switch (hasOwnerId)
         {
             case true:
             {
-                Log.Info("\tHas owner ID. Checking for key.");
                 if (pcKey != null) NWScript.SetLocalString(chest, "chest_owner", pcKey.Name);
                 NwItem? key = player?.LoginCreature?.FindItemWithTag(ownerId);
-            
+
                 await HandleHomeStorage(key, player!, chest);
                 break;
             }
             case false when pcKey != null:
             {
-                Log.Info("\tNo owner ID. Checking for key.");
                 NWScript.SetLocalString(chest, "chest_owner", pcKey.Name);
 
                 if (player != null)
@@ -209,8 +233,6 @@ public class PersonalStorageService
                     IEnumerable<StoredItem> dbItems = await GetStoredItems(player);
                     foreach (StoredItem item in dbItems)
                     {
-                        Log.Info($"{item.Character.FirstName} has {item.Id} in their storage.");
-
                         NwObject? itemParsed = Json.Parse(item.ItemJson).ToNwObject<NwItem>(chest.Location, chest);
                         NWScript.SetLocalString(itemParsed, "db_guid", item.Id.ToString());
                     }
@@ -219,10 +241,21 @@ public class PersonalStorageService
                 break;
             }
         }
-        
+
         await _nwTaskHelper.TrySwitchToMainThread();
-        
+
         NWScript.SetLocalInt(chest, "populatingChest", 0);
+    }
+
+    private static void InitIfNewBankMember(NwItem? pcKey)
+    {
+        int storageCapacity = NWScript.GetLocalInt(pcKey, StorageCap);
+
+        if (storageCapacity == 0)
+        {
+            // Initialize new bank members with an initial capacity.
+            NWScript.SetLocalInt(pcKey, StorageCap, InitialBankCapacity);
+        }
     }
 
     private static string DoesChestHaveOwnerId(NwPlaceable obj, out bool hasOwnerId)
