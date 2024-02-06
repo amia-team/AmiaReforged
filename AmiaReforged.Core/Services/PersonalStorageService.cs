@@ -197,13 +197,13 @@ public class PersonalStorageService
         if (obj.OpenedBy == null) return;
         NwPlaceable chest = obj.Placeable;
         
+        
         if (NWScript.GetLocalInt(chest, ChestInUse) == NWScript.TRUE)
         {
-            obj.OpenedBy.ControllingPlayer?.SendServerMessage("This chest is already in use.");
-            obj.OpenedBy?.ActionMoveAwayFrom(obj.Placeable.Location, true, 30);
+            NWScript.SendMessageToPC(obj.OpenedBy, "This chest is already in use.");
+            NWScript.AssignCommand(obj.OpenedBy, () => NWScript.ActionMoveAwayFromObject(obj.OpenedBy, NWScript.TRUE));
             return;
         }
-        
         NWScript.SetLocalInt(chest, "populatingChest", NWScript.TRUE);
         NWScript.SetLocalInt(chest, ChestInUse, NWScript.TRUE);
 
