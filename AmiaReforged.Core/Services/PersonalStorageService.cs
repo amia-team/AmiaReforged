@@ -31,6 +31,7 @@ public class PersonalStorageService
         foreach (NwPlaceable chest in chests)
         {
             chest.OnOpen += PopulateChest;
+            chest.OnUsed += HandleChestUse;
             chest.OnInventoryItemAdd += AddStoredItem;
             chest.OnInventoryItemRemove += RemoveStoredItem;
             chest.OnClose += close =>
@@ -56,6 +57,18 @@ public class PersonalStorageService
                 NWScript.DelayCommand(6.0f, () => NWScript.SetLocalInt(close.Placeable, ChestInUse, 0));
                 NWScript.DelayCommand(6.0f, () => NWScript.SetLocalInt(close.Placeable, "clearingChest", 0));
             };
+        }
+    }
+
+    private void HandleChestUse(PlaceableEvents.OnUsed obj)
+    {
+        NwPlaceable chest = obj.Placeable;
+        
+        if (NWScript.GetLocalInt(chest, ChestInUse) == NWScript.TRUE)
+        {
+            NWScript.SendMessageToPC(obj.UsedBy, "This chest is already in use.");
+            NWScript.AssignCommand(obj.UsedBy, () => NWScript.ActionMoveAwayFromObject(obj.UsedBy, NWScript.TRUE));
+            return;
         }
     }
 
@@ -196,14 +209,7 @@ public class PersonalStorageService
     {
         if (obj.OpenedBy == null) return;
         NwPlaceable chest = obj.Placeable;
-        
-        
-        if (NWScript.GetLocalInt(chest, ChestInUse) == NWScript.TRUE)
-        {
-            NWScript.SendMessageToPC(obj.OpenedBy, "This chest is already in use.");
-            NWScript.AssignCommand(obj.OpenedBy, () => NWScript.ActionMoveAwayFromObject(obj.OpenedBy, NWScript.TRUE));
-            return;
-        }
+    
         NWScript.SetLocalInt(chest, "populatingChest", NWScript.TRUE);
         NWScript.SetLocalInt(chest, ChestInUse, NWScript.TRUE);
 
