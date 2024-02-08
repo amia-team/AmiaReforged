@@ -7,7 +7,7 @@ public class DarkForesight
 {
     public int CastDarkForesight(uint nwnObjectId)
     {
-        int casterLevel = GetCasterLevel(nwnObjectId) > 15 ? 15 : GetCasterLevel(nwnObjectId);
+        int casterLevel = GetCasterLevel(nwnObjectId) > 15 ? 150 : GetCasterLevel(nwnObjectId);
         float duration = TurnsToSeconds(GetCasterLevel(nwnObjectId));
 
         IntPtr darkForesight = NwEffects.LinkEffectList(new List<IntPtr>
