@@ -19,7 +19,6 @@ public class CharacterService
     {
         _ctxFactory = ctxFactory;
         _nwTaskHelper = nwTaskHelper;
-        Log.Info("NOPE");
     }
 
     public async Task AddCharacter(PlayerCharacter playerCharacter)
@@ -114,7 +113,6 @@ public class CharacterService
     {
         AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
 
-        Log.Info("Checking if character exists");
         bool exists = false;
         try
         {
@@ -127,7 +125,6 @@ public class CharacterService
 
         await _nwTaskHelper.TrySwitchToMainThread();
         
-        Log.Info($"Character exists? {exists}");
         return exists;
     }
 

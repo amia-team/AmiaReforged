@@ -59,7 +59,6 @@ public class CharacterLoaderService
         bool characterExists = await _characterService.CharacterExists(pcKeyGuid);
 
         NwTask.SwitchToMainThread();
-        player.SendServerMessage($"Character exists? {characterExists}");   
 
         if (characterExists) return;
         
