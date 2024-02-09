@@ -152,6 +152,8 @@ public class PersonalStorageService
         {
             NWScript.SetLocalString(obj.Item, "db_guid", newItem.Id.ToString());
         }
+        NWScript.ExportSingleCharacter(chestOwner);
+        NWScript.SendMessageToPC(chestOwner, "Your character has been saved.");
     }
 
     private static bool ReturnGoldToUser(OnInventoryItemAdd obj, uint chestOwner)
@@ -193,6 +195,9 @@ public class PersonalStorageService
         }
 
         await _nwTaskHelper.TrySwitchToMainThread();
+        uint chestOwner = NWScript.GetLastUsedBy();
+        NWScript.ExportSingleCharacter(chestOwner);
+        NWScript.SendMessageToPC(chestOwner, "Your character has been saved.");
     }
 
     private async Task<IEnumerable<StoredItem>> GetStoredItems(NwPlayer player)
