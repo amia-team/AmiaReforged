@@ -59,7 +59,6 @@ public class LoudDecay
             if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
             {
                 SignalEvent(currentTarget, EventSpellCastAt(caster, 1008));
-                SetLocalInt(caster, "wlk_spellhit", TRUE);
 
                 if (NwEffects.ResistSpell(caster, currentTarget))
                 {
@@ -82,12 +81,11 @@ public class LoudDecay
         //---------------------------
 
         // If summonCooldown is off and spell has hit a valid target, summon; else don't summon
-        if (NwEffects.GetHasEffectByTag("wlk_summon_cd", caster) == FALSE && GetLocalInt(caster, "wlk_spellhit") == TRUE)
+        if (NwEffects.GetHasEffectByTag("wlk_summon_cd", caster) == FALSE)
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
             DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(NwEffects.WarlockString("Violet Fungi can be summoned again."), caster, 0));
-            DeleteLocalInt(caster, "wlk_spellhit");
             // Summon new
             SummonEffects.SummonMany(caster, summonDuration, summonCount, "wlkaberrant", location, 1f, 9f, 3f, 4f, VFX_FNF_GAS_EXPLOSION_NATURE, 5.5f);
             DelayCommand(4.1f, () => SummonEffects.SetSummonsFacing(summonCount, location));

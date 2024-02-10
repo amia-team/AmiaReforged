@@ -77,7 +77,6 @@ public class PrimordialGust
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
 
                 SignalEvent(currentTarget, EventSpellCastAt(caster, 1012));
-                SetLocalInt(caster, "wlk_spellhit", TRUE);
 
                 if (passedReflexSave)
                 {
@@ -102,12 +101,11 @@ public class PrimordialGust
         //---------------------------
 
         // If summonCooldown is off and spell has hit a valid target, summon; else don't summon
-        if (NwEffects.GetHasEffectByTag("wlk_summon_cd", caster) == FALSE && GetLocalInt(caster, "wlk_spellhit") == TRUE)
+        if (NwEffects.GetHasEffectByTag("wlk_summon_cd", caster) == FALSE)
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
             DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(NwEffects.WarlockString("Mephits can be summoned again."), caster, 0));
-            DeleteLocalInt(caster, "wlk_spellhit");
             SummonEffects.SummonMany(caster, summonDuration, summonCount, "wlkelemental", location, 0.5f, 2f, 0.5f, 1.5f, VFX_IMP_ELEMENTAL_PROTECTION, 0.6f);
             DelayCommand(1.6f, () => SummonEffects.SetSummonsFacing(summonCount, location));
         }
