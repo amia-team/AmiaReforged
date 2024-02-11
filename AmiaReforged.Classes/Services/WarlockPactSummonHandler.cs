@@ -191,14 +191,14 @@ public class WarlockPactSummonHandler
                     {
                         element = DamageType.Fire;
                         summon.Appearance = NwGameTables.AppearanceTable.GetRow(109);
-                        summon.Name = "Fire Mephit";
+                        summon.Name = "Summoned Fire Mephit";
                     }
                     if (summon.Tag.Contains('2'))
                     {
                         element = DamageType.Cold;
                         summon.Appearance = NwGameTables.AppearanceTable.GetRow(115);
                         summon.PortraitResRef = "po_mepwater_";
-                        summon.Name = "Water Mephit";
+                        summon.Name = "Summoned Water Mephit";
                     }
                     if (summon.Tag.Contains('3'))
                     {
@@ -208,7 +208,7 @@ public class WarlockPactSummonHandler
                         summon.ApplyEffect(EffectDuration.Permanent, coldElement);
                         summon.Appearance = NwGameTables.AppearanceTable.GetRow(113);
                         summon.PortraitResRef = "po_mepsteam_";
-                        summon.Name = "Steam Mephit";
+                        summon.Name = "Summoned Steam Mephit";
                     }
                     Effect elementalEffect = Effect.LinkEffects(Effect.DamageIncrease(1, element), Effect.DamageImmunityIncrease(element, 100));
                     elementalEffect.SubType = EffectSubType.Supernatural;
