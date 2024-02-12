@@ -15,22 +15,10 @@ pipeline{
             steps {
                 echo 'Deploying....'
                    
-                dir('./AmiaReforged.Core') {
-                    sh 'sudo chmod +x deploy-test.sh'
-                    sh './deploy-test.sh'
-                }
-                dir('./AmiaReforged.Classes') {
-                    sh 'sudo chmod +x deploy-test.sh'
-                    sh './deploy-test.sh'
-                }
-                dir('./AmiaReforged.Races') {
-                    sh 'sudo chmod +x deploy-test.sh'
-                    sh './deploy-test.sh'
-                }
-                dir('./AmiaReforged.System') {
-                    sh 'sudo chmod +x deploy-test.sh'
-                    sh './deploy-test.sh'
-                }
+                sudo 'dotnet publish AmiaReforged.Classes --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Core/'
+                sudo 'dotnet publish AmiaReforged.Classes --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.System/'
+                sudo 'dotnet publish AmiaReforged.Classes --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Classes/'
+                sudo 'dotnet publish AmiaReforged.Classes --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Races/'
                 
                 sh 'sudo chmod +x restart-test.sh'
                 sh 'bash restart-test.sh'
