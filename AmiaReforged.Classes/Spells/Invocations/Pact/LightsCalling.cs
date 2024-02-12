@@ -40,7 +40,6 @@ public class LightsCalling
             if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
             {
                 SignalEvent(currentTarget, EventSpellCastAt(caster, 1009));
-                SetLocalInt(caster, "wlk_spellhit", TRUE);
 
                 if (GetHasSpellEffect(SPELL_PROTECTION_FROM_GOOD | SPELL_UNHOLY_AURA, currentTarget) == TRUE)
                 {
@@ -94,12 +93,11 @@ public class LightsCalling
         //---------------------------
 
         // If summonCooldown is off and spell has hit a valid target, summon; else don't summon
-        if (NwEffects.GetHasEffectByTag("wlk_summon_cd", caster) == FALSE && GetLocalInt(caster, "wlk_spellhit") == TRUE)
+        if (NwEffects.GetHasEffectByTag("wlk_summon_cd", caster) == FALSE)
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
             DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(NwEffects.WarlockString("Shattered Guardian can be summoned again."), caster, 0));
-            DeleteLocalInt(caster, "wlk_spellhit");
             // Summon
             float delay = NwEffects.RandomFloat(1, 2);
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectSummonCreature("wlkCelestial", -1, delay, 1), location, summonDuration);
