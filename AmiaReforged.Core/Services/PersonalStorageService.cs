@@ -105,12 +105,16 @@ public class PersonalStorageService
         bool wasGold = ReturnGoldToUser(obj, chestOwner);
         if (wasGold) return;
 
+
+        Json backup = obj.Item.SerializeToJson(true);
         if (chest.Inventory.Items.Count() + 1 > storageCap)
         {
-            NWScript.CopyItem(obj.Item, chestOwner, NWScript.TRUE);
+            backup.ToNwObject<NwItem>(chestOwnerCreature.Location, chestOwnerCreature);
             obj.Item.Destroy();
+
             chestOwnerCreature?.ControllingPlayer?.SendServerMessage(
                 $"You have have reached the maximum amount of items you can store. ({storageCap})");
+
 
             return;
         }
