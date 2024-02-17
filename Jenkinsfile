@@ -7,6 +7,8 @@ pipeline{
                 echo 'Building..'
                  script {
                     sh "sudo chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
+                    sh 'sudo chmod +x stop-test.sh'
+                    sh 'bash stop-test.sh'
                 }
             }
         }
@@ -19,8 +21,6 @@ pipeline{
                 sh 'sudo dotnet publish AmiaReforged.Classes --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Classes/'
                 sh 'sudo dotnet publish AmiaReforged.Races --output /home/amia/amia_server/test_server/anvil/Plugins/AmiaReforged.Races/'
                 
-                sh 'sudo chmod +x restart-test.sh'
-                sh 'bash restart-test.sh'
             }
         }
     }
@@ -28,6 +28,8 @@ pipeline{
         always {
             discordSend description: "Builder for plugin AmiaReforged finished.", footer: "Build results for AmiaReforged", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: "https://discord.com/api/webhooks/957814431704842270/2A6zZ4x7fsWULXnfrLLyRvgqexcnAvreXr6fbym8IoHdAHGpEoQgXjLn1XKry75uN_Zg"
             sh "sudo chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
+            sh 'sudo chmod +x start-test.sh'
+            sh 'bash start-test.sh'
         }
         success {
             echo 'Build success'
