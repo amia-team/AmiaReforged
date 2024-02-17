@@ -7,7 +7,6 @@ pipeline{
                 echo 'Building..'
                  script {
                     sh "sudo chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
-                    sh "sudo dotnet build -c Debug"
                 }
             }
         }
