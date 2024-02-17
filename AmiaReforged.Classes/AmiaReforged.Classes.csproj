@@ -17,4 +17,8 @@
       <None Remove="Jenkinsfile" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Spells\Arcane\" />
+    </ItemGroup>
+
 </Project>
