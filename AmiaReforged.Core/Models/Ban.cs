@@ -1,7 +1,6 @@
-﻿namespace AmiaReforged.Core.Models
+﻿namespace AmiaReforged.Core.Models;
+
+public partial class Ban
 {
-    public partial class Ban
-    {
-        public string CdKey { get; set; } = null!;
-    }
+    public string CdKey { get; set; } = null!;
 }

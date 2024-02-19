@@ -8,14 +8,11 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.System.Services;
 
-// [ServiceBinding(typeof(AmiaPlayerTools))]
+[ServiceBinding(typeof(AmiaPlayerTools))]
 public class AmiaPlayerTools
 {
     private readonly PlayerToolLayout _playerToolLayout;
-
-    private readonly List<string> spellbookClasses = new List<string>()
-        { "Wizard", "Cleric", "Druid", "Paladin", "Ranger", "Blackguard" };
-
+    
     private readonly SpellbookService _spellbookService;
     private readonly CharacterListLayout _characterListLayout;
 

@@ -1,17 +1,16 @@
 ﻿using AmiaReforged.Races.Races.Script.Types;
 using NWN.Core;
 
-namespace AmiaReforged.Races.Races.Types.RacialEffects
+namespace AmiaReforged.Races.Races.Types.RacialEffects;
+
+public class FfolkEffects : IEffectCollector
 {
-    public class FfolkEffects : IEffectCollector
+    public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        public List<IntPtr> GatherEffectsForObject(uint objectId)
+        return new()
         {
-            return new()
-            {
-                NWScript.EffectSkillIncrease(NWScript.SKILL_ANIMAL_EMPATHY, 2),
-                NWScript.EffectSkillIncrease(NWScript.SKILL_LORE, 2)
-            };
-        }
+            NWScript.EffectSkillIncrease(NWScript.SKILL_ANIMAL_EMPATHY, 2),
+            NWScript.EffectSkillIncrease(NWScript.SKILL_LORE, 2)
+        };
     }
 }

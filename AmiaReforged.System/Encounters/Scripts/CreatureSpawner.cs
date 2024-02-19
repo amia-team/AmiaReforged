@@ -1,62 +1,61 @@
 ﻿using Anvil.API;
 using NWN.Core;
 
-namespace AmiaReforged.System.Encounters.Scripts
+namespace AmiaReforged.System.Encounters.Scripts;
+
+public class CreatureSpawner
 {
-    public class CreatureSpawner
+    private const string LocalVarNoSpawn = "no_spawn";
+    private const int FifteenMinutesSeconds = 900;
+    private readonly NwPlayer _player;
+    private readonly NwTrigger _trigger;
+
+    public CreatureSpawner(NwTrigger trigger, NwPlayer player)
     {
-        private const string LocalVarNoSpawn = "no_spawn";
-        private const int FifteenMinutesSeconds = 900;
-        private readonly NwPlayer _player;
-        private readonly NwTrigger _trigger;
+        _trigger = trigger;
+        _player = player;
+    }
 
-        public CreatureSpawner(NwTrigger trigger, NwPlayer player)
+    public void SpawnCreaturesForTrigger()
+    {
+        if (NWScript.GetLocalInt(_trigger.Area, LocalVarNoSpawn) == NWScript.TRUE)
+            // Return, here. No spawns is enabled, so don't spawn anything.
+            return;
+
+        if (TriggerStillOnCooldown() && NWScript.GetLocalInt(_trigger, "on_cooldown") == NWScript.TRUE)
         {
-            _trigger = trigger;
-            _player = player;
+            _player.SendServerMessage("You see signs of recent fighting here.");
+            return;
         }
 
-        public void SpawnCreaturesForTrigger()
-        {
-            if (NWScript.GetLocalInt(_trigger.Area, LocalVarNoSpawn) == NWScript.TRUE)
-                // Return, here. No spawns is enabled, so don't spawn anything.
-                return;
+        DayNightEncounterSpawner spawner = new(_trigger);
 
-            if (TriggerStillOnCooldown() && NWScript.GetLocalInt(_trigger, "on_cooldown") == NWScript.TRUE)
-            {
-                _player.SendServerMessage("You see signs of recent fighting here.");
-                return;
-            }
+        IEnumerable<NwPlayer> partyMembers = _player.PartyMembers;
 
-            DayNightEncounterSpawner spawner = new(_trigger);
+        if (partyMembers.Count(partyMember =>
+                NWScript.GetArea(partyMember.LoginCreature) == NWScript.GetArea(_player.LoginCreature)) > 6) spawner.IsDoubleSpawn = true;
 
-            IEnumerable<NwPlayer> partyMembers = _player.PartyMembers;
+        spawner.SpawnEncounters();
 
-            if (partyMembers.Count(partyMember =>
-                    NWScript.GetArea(partyMember.LoginCreature) == NWScript.GetArea(_player.LoginCreature)) > 6) spawner.IsDoubleSpawn = true;
+        InitTriggerCooldown();
+        NWScript.SetLocalInt(_trigger, "on_cooldown", NWScript.TRUE);
+        NWScript.DelayCommand(FifteenMinutesSeconds,
+            () => NWScript.SetLocalInt(_trigger, "on_cooldown", NWScript.FALSE));
+    }
 
-            spawner.SpawnEncounters();
+    private bool TriggerStillOnCooldown()
+    {
+        return (int)DateTimeOffset.Now.ToUnixTimeSeconds() - GetTriggerCoolDownStart() <= FifteenMinutesSeconds;
+    }
 
-            InitTriggerCooldown();
-            NWScript.SetLocalInt(_trigger, "on_cooldown", NWScript.TRUE);
-            NWScript.DelayCommand(FifteenMinutesSeconds,
-                () => NWScript.SetLocalInt(_trigger, "on_cooldown", NWScript.FALSE));
-        }
+    private int GetTriggerCoolDownStart()
+    {
+        return NWScript.GetLocalInt(_trigger, "cooldown_start");
+    }
 
-        private bool TriggerStillOnCooldown()
-        {
-            return (int)DateTimeOffset.Now.ToUnixTimeSeconds() - GetTriggerCoolDownStart() <= FifteenMinutesSeconds;
-        }
-
-        private int GetTriggerCoolDownStart()
-        {
-            return NWScript.GetLocalInt(_trigger, "cooldown_start");
-        }
-
-        private void InitTriggerCooldown()
-        {
-            NWScript.SetLocalInt(_trigger, "cooldown_start", (int)DateTimeOffset.Now.ToUnixTimeSeconds());
-            NWScript.WriteTimestampedLogEntry($"{NWScript.GetLocalInt(_trigger, "cooldown_start")}");
-        }
+    private void InitTriggerCooldown()
+    {
+        NWScript.SetLocalInt(_trigger, "cooldown_start", (int)DateTimeOffset.Now.ToUnixTimeSeconds());
+        NWScript.WriteTimestampedLogEntry($"{NWScript.GetLocalInt(_trigger, "cooldown_start")}");
     }
 }

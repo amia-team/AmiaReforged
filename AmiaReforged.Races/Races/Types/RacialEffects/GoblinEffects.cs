@@ -1,17 +1,16 @@
 ﻿using AmiaReforged.Races.Races.Script.Types;
 using NWN.Core;
 
-namespace AmiaReforged.Races.Races.Types.RacialEffects
+namespace AmiaReforged.Races.Races.Types.RacialEffects;
+
+public class GoblinEffects : IEffectCollector
 {
-    public class GoblinEffects : IEffectCollector
+    public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        public List<IntPtr> GatherEffectsForObject(uint objectId)
+        return new()
         {
-            return new()
-            {
-                NWScript.EffectSkillIncrease(NWScript.SKILL_MOVE_SILENTLY, 2),
-                NWScript.EffectSkillIncrease(NWScript.SKILL_DISCIPLINE, 2)
-            };
-        }
+            NWScript.EffectSkillIncrease(NWScript.SKILL_MOVE_SILENTLY, 2),
+            NWScript.EffectSkillIncrease(NWScript.SKILL_DISCIPLINE, 2)
+        };
     }
 }

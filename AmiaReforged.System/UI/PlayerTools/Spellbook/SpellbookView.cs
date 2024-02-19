@@ -3,15 +3,13 @@ using Anvil.API;
 
 namespace AmiaReforged.System.UI.PlayerTools.Spellbook;
 
-public class SpellbookView : BaseView
+public sealed class SpellbookView : WindowView<SpellbookView>
 {
-    public override NuiLayout GetViewLayout()
+    public override string Id => "spellbook";
+    public override string Title => "Spellbooks";
+    public override NuiWindow? WindowTemplate { get; }
+    public override IWindowController? CreateDefaultController(NwPlayer player)
     {
-        throw new NotImplementedException();
-    }
-
-    public override void Update()
-    {
-        throw new NotImplementedException();
+        return CreateController<SpellbookController>(player);
     }
 }

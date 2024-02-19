@@ -1,16 +1,15 @@
 ﻿using AmiaReforged.Races.Races.Script.Types;
 using NWN.Core;
 
-namespace AmiaReforged.Races.Races.Types.RacialEffects
+namespace AmiaReforged.Races.Races.Types.RacialEffects;
+
+public class FeyriEffects : IEffectCollector
 {
-    public class FeyriEffects : IEffectCollector
+    public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        public List<IntPtr> GatherEffectsForObject(uint objectId)
+        return new()
         {
-            return new()
-            {
-                NWScript.EffectDamageResistance(NWScript.DAMAGE_TYPE_FIRE, 10)
-            };
-        }
+            NWScript.EffectDamageResistance(NWScript.DAMAGE_TYPE_FIRE, 10)
+        };
     }
 }

@@ -1,61 +1,60 @@
 ﻿using AmiaReforged.Races.Races.Script.Types;
 using NWN.Core;
 
-namespace AmiaReforged.Races.Races.Types.RacialEffects
+namespace AmiaReforged.Races.Races.Types.RacialEffects;
+
+public class SvirfneblinEffects : IEffectCollector
 {
-    public class SvirfneblinEffects : IEffectCollector
+    private const int Heritage = 1238;
+    private bool _hasHeritageFeat;
+    private uint _oid = NWScript.OBJECT_INVALID;
+
+    public List<IntPtr> GatherEffectsForObject(uint oid)
     {
-        private const int Heritage = 1238;
-        private bool _hasHeritageFeat;
-        private uint _oid = NWScript.OBJECT_INVALID;
+        _oid = oid;
+        _hasHeritageFeat = HasHeritageFeat();
 
-        public List<IntPtr> GatherEffectsForObject(uint oid)
+
+        int spellResistance = GetSpellResistanceBasedOnFeat();
+
+        List<IntPtr>? effectsForObject = new List<IntPtr>
         {
-            _oid = oid;
-            _hasHeritageFeat = HasHeritageFeat();
+            NWScript.EffectSpellResistanceIncrease(spellResistance)
+        };
 
+        AddHeritageEffectsIfObjectHasFeat(effectsForObject);
 
-            int spellResistance = GetSpellResistanceBasedOnFeat();
+        return effectsForObject;
+    }
 
-            List<IntPtr>? effectsForObject = new List<IntPtr>
-            {
-                NWScript.EffectSpellResistanceIncrease(spellResistance)
-            };
+    private bool HasHeritageFeat()
+    {
+        return NWScript.GetHasFeat(Heritage, _oid) == 1;
+    }
 
-            AddHeritageEffectsIfObjectHasFeat(effectsForObject);
+    private int GetSpellResistanceBasedOnFeat()
+    {
+        int hitDice = NWScript.GetHitDice(_oid);
 
-            return effectsForObject;
-        }
+        return _hasHeritageFeat
+            ? SpellResistanceWithFeat(hitDice)
+            : SpellResistanceWithoutFeat(hitDice);
+    }
 
-        private bool HasHeritageFeat()
-        {
-            return NWScript.GetHasFeat(Heritage, _oid) == 1;
-        }
+    private static int SpellResistanceWithFeat(int hitDice)
+    {
+        return hitDice + 4;
+    }
 
-        private int GetSpellResistanceBasedOnFeat()
-        {
-            int hitDice = NWScript.GetHitDice(_oid);
+    private static int SpellResistanceWithoutFeat(in int hitDice)
+    {
+        return hitDice - 2;
+    }
 
-            return _hasHeritageFeat
-                ? SpellResistanceWithFeat(hitDice)
-                : SpellResistanceWithoutFeat(hitDice);
-        }
-
-        private static int SpellResistanceWithFeat(int hitDice)
-        {
-            return hitDice + 4;
-        }
-
-        private static int SpellResistanceWithoutFeat(in int hitDice)
-        {
-            return hitDice - 2;
-        }
-
-        private void AddHeritageEffectsIfObjectHasFeat(ICollection<IntPtr> effectsForObject)
-        {
-            if (!_hasHeritageFeat) return;
-            effectsForObject.Add(NWScript.EffectAttackDecrease(1));
-            effectsForObject.Add(NWScript.EffectSavingThrowDecrease(NWScript.SAVING_THROW_ALL, 1));
-        }
+    private void AddHeritageEffectsIfObjectHasFeat(ICollection<IntPtr> effectsForObject)
+    {
+        if (!_hasHeritageFeat) return;
+        effectsForObject.Add(NWScript.EffectAttackDecrease(1));
+        effectsForObject.Add(NWScript.EffectSavingThrowDecrease(NWScript.SAVING_THROW_ALL, 1));
     }
 }

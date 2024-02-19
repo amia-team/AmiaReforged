@@ -1,24 +1,23 @@
 ﻿using AmiaReforged.Races.Races.Script.Types;
 using NWN.Core;
 
-namespace AmiaReforged.Races.Races.Types.RacialEffects
+namespace AmiaReforged.Races.Races.Types.RacialEffects;
+
+public class CentaurEffects : IEffectCollector
 {
-    public class CentaurEffects : IEffectCollector
+    private uint _oid = NWScript.OBJECT_INVALID;
+
+    public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        private uint _oid = NWScript.OBJECT_INVALID;
+        _oid = objectId;
 
-        public List<IntPtr> GatherEffectsForObject(uint objectId)
+        List<IntPtr>? effects = new List<IntPtr>
         {
-            _oid = objectId;
-
-            List<IntPtr>? effects = new List<IntPtr>
-            {
-                NWScript.EffectSkillIncrease(NWScript.SKILL_MOVE_SILENTLY, 2),
-            };
+            NWScript.EffectSkillIncrease(NWScript.SKILL_MOVE_SILENTLY, 2),
+        };
 
 
-            return effects;
-        }
-
+        return effects;
     }
+
 }

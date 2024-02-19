@@ -1,9 +1,8 @@
 ﻿using Anvil.API;
 
-namespace AmiaReforged.Races.Races.Types.HeritageAbilities
+namespace AmiaReforged.Races.Races.Types.HeritageAbilities;
+
+public interface IHeritageAbilities
 {
-    public interface IHeritageAbilities
-    {
-        public void SetupStats(NwPlayer player);
-    }
+    public void SetupStats(NwPlayer player);
 }

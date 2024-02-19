@@ -1,38 +1,37 @@
 ﻿using AmiaReforged.Races.Races.Script.Types;
 using NWN.Core;
 
-namespace AmiaReforged.Races.Races.Types.RacialEffects
+namespace AmiaReforged.Races.Races.Types.RacialEffects;
+
+public class FeytouchedEffects : IEffectCollector
 {
-    public class FeytouchedEffects : IEffectCollector
+    private const int Heritage = 1238;
+    private bool _hasHeritageFeat;
+    private uint _oid = NWScript.OBJECT_INVALID;
+
+    public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        private const int Heritage = 1238;
-        private bool _hasHeritageFeat;
-        private uint _oid = NWScript.OBJECT_INVALID;
+        _oid = objectId;
+        _hasHeritageFeat = HasHeritageFeat();
 
-        public List<IntPtr> GatherEffectsForObject(uint objectId)
-        {
-            _oid = objectId;
-            _hasHeritageFeat = HasHeritageFeat();
+        List<IntPtr>? effectsForObject = new List<IntPtr>();
 
-            List<IntPtr>? effectsForObject = new List<IntPtr>();
+        AddHeritageEffectsIfObjectHasFeat(effectsForObject);
 
-            AddHeritageEffectsIfObjectHasFeat(effectsForObject);
+        return effectsForObject;
+    }
 
-            return effectsForObject;
-        }
+    private bool HasHeritageFeat()
+    {
+        return NWScript.GetHasFeat(Heritage, _oid) == 1;
+    }
 
-        private bool HasHeritageFeat()
-        {
-            return NWScript.GetHasFeat(Heritage, _oid) == 1;
-        }
+    private void AddHeritageEffectsIfObjectHasFeat(List<IntPtr> effectsForObject)
+    {
+        if (!_hasHeritageFeat) return;
 
-        private void AddHeritageEffectsIfObjectHasFeat(List<IntPtr> effectsForObject)
-        {
-            if (!_hasHeritageFeat) return;
-
-            effectsForObject.Add(NWScript.EffectSavingThrowIncrease(NWScript.SAVING_THROW_WILL, 1));
-            effectsForObject.Add(NWScript.EffectSavingThrowDecrease(NWScript.SAVING_THROW_FORT, 1));
-            effectsForObject.Add(NWScript.EffectSavingThrowDecrease(NWScript.SAVING_THROW_REFLEX, 1));
-        }
+        effectsForObject.Add(NWScript.EffectSavingThrowIncrease(NWScript.SAVING_THROW_WILL, 1));
+        effectsForObject.Add(NWScript.EffectSavingThrowDecrease(NWScript.SAVING_THROW_FORT, 1));
+        effectsForObject.Add(NWScript.EffectSavingThrowDecrease(NWScript.SAVING_THROW_REFLEX, 1));
     }
 }

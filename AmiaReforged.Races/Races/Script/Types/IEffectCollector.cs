@@ -1,7 +1,6 @@
-﻿namespace AmiaReforged.Races.Races.Script.Types
+﻿namespace AmiaReforged.Races.Races.Script.Types;
+
+public interface IEffectCollector
 {
-    public interface IEffectCollector
-    {
-        List<IntPtr> GatherEffectsForObject(uint objectId);
-    }
+    List<IntPtr> GatherEffectsForObject(uint objectId);
 }

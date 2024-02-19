@@ -1,7 +1,6 @@
-﻿namespace AmiaReforged.Races.Races.Types.RacialTemplates
+﻿namespace AmiaReforged.Races.Races.Types.RacialTemplates;
+
+public interface ICharacterTemplate
 {
-    public interface ICharacterTemplate
-    {
-        void Apply();
-    }
+    void Apply();
 }

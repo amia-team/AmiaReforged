@@ -30,7 +30,6 @@ public class CharacterPolymorphService
 
     private void OnSpellCast(OnSpellCast obj)
     {
-        Log.Info("Spell Cast Event");
         if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
         if (obj.Spell?.MasterSpell is null) return;
 

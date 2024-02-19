@@ -1,7 +1,6 @@
-﻿namespace AmiaReforged.System.Encounters.Types
+﻿namespace AmiaReforged.System.Encounters.Types;
+
+public interface IEncounterSpawner
 {
-    public interface IEncounterSpawner
-    {
-        void SpawnEncounters();
-    }
+    void SpawnEncounters();
 }

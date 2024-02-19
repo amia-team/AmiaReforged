@@ -1,16 +1,15 @@
 ﻿using AmiaReforged.Races.Races.Script.Types;
 using NWN.Core;
 
-namespace AmiaReforged.Races.Races.Types.RacialEffects
+namespace AmiaReforged.Races.Races.Types.RacialEffects;
+
+public class ChultanEffects : IEffectCollector
 {
-    public class ChultanEffects : IEffectCollector
+    public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        public List<IntPtr> GatherEffectsForObject(uint objectId)
+        return new()
         {
-            return new()
-            {
-                NWScript.EffectSavingThrowDecrease(NWScript.SAVING_THROW_WILL, 1)
-            };
-        }
+            NWScript.EffectSavingThrowDecrease(NWScript.SAVING_THROW_WILL, 1)
+        };
     }
 }
