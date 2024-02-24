@@ -9,6 +9,8 @@ public class PlayerCharacter
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public ICollection<StoredItem> Items { get; set; }
+    
+    public ICollection<SavedSpellbook> Spellbooks { get; set; }
     public string PlayerId { get; set; }
 
     [ForeignKey("PlayerId")] public Player Player { get; set; }

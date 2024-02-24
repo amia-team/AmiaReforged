@@ -13,7 +13,7 @@ public abstract class WindowView<TView> : IWindowView
 
   public abstract NuiWindow? WindowTemplate { get; }
 
-  public virtual bool ListInToolbox => true;
+  public virtual bool ListInPlayerTools => true;
 
   public abstract IWindowController? CreateDefaultController(NwPlayer player);
 

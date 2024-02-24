@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.Core.UserInterface;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
@@ -211,22 +212,4 @@ public class CharacterPolymorphService
             memorized.IsReady = spellSlots[j].IsReady;
         }
     }
-}
-
-public class ClassPreparedSpells
-{
-    public string Class { get; set; }
-
-    public bool IsInnate { get; set; }
-    public Dictionary<byte, IReadOnlyList<PreparedSpellModel>> Spells { get; } = new();
-
-    public Dictionary<byte, byte> InnateSpellUses { get; init; } = new();
-}
-
-public class PreparedSpellModel
-{
-    public int SpellId { get; set; }
-    public bool IsReady { get; set; }
-    public bool IsDomainSpell { get; set; }
-    public MetaMagic MetaMagic { get; set; }
 }

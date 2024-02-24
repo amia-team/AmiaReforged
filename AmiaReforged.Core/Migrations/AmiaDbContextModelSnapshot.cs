@@ -195,6 +195,33 @@ namespace AmiaReforged.Core.Migrations
                     b.ToTable("Characters");
                 });
 
+            modelBuilder.Entity("AmiaReforged.Core.Models.SavedSpellbook", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ClassId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("PlayerCharacterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SpellbookJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SpellbookName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerCharacterId");
+
+                    b.ToTable("SavedSpellbooks");
+                });
+
             modelBuilder.Entity("AmiaReforged.Core.Models.StoredItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -237,6 +264,17 @@ namespace AmiaReforged.Core.Migrations
                     b.Navigation("Player");
                 });
 
+            modelBuilder.Entity("AmiaReforged.Core.Models.SavedSpellbook", b =>
+                {
+                    b.HasOne("AmiaReforged.Core.Models.PlayerCharacter", "PlayerCharacter")
+                        .WithMany("Spellbooks")
+                        .HasForeignKey("PlayerCharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PlayerCharacter");
+                });
+
             modelBuilder.Entity("AmiaReforged.Core.Models.StoredItem", b =>
                 {
                     b.HasOne("AmiaReforged.Core.Models.PlayerCharacter", "Character")
@@ -258,6 +296,8 @@ namespace AmiaReforged.Core.Migrations
             modelBuilder.Entity("AmiaReforged.Core.Models.PlayerCharacter", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("Spellbooks");
                 });
 #pragma warning restore 612, 618
         }

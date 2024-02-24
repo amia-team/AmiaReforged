@@ -11,7 +11,7 @@ public interface IWindowView
 
   public string Title { get; }
 
-  public bool ListInToolbox { get; }
+  public bool ListInPlayerTools { get; }
 
   public IWindowController? CreateDefaultController(NwPlayer player);
 }
