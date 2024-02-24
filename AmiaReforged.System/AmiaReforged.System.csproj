@@ -18,7 +18,6 @@
     <ItemGroup>
       <Folder Include="Models\" />
       <Folder Include="Tests\Services" />
-      <Folder Include="UI\PlayerTools\CharacterBiography\" />
     </ItemGroup>
 
     <ItemGroup>
