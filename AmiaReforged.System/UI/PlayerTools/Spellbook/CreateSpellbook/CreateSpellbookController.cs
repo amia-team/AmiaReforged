@@ -58,7 +58,7 @@ public class CreateSpellbookController : WindowController<CreateSpellbookView>
                 Token.Player.SendServerMessage("You must enter a name for the spellbook.", ColorConstants.Red);
                 return;
             }
-            
+
             await SaveSpellbookToDb();
             await NwTask.SwitchToMainThread();
 
@@ -127,6 +127,8 @@ public class CreateSpellbookController : WindowController<CreateSpellbookView>
                         else
                         {
                             preparedSpell.IsPopulated = false;
+                            preparedSpell.IconResRef = "ir_tmp_spawn";
+                            preparedSpell.SpellName = "Empty Slot";
                         }
 
                         preparedSpellsForLevel.Add(preparedSpell);

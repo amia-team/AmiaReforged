@@ -26,6 +26,12 @@ public class SpellbookListController : WindowController<SpellbookListView>
 
     public override void Init()
     {
+        if (!Token.Player.LoginCreature.Classes.Any(c => c.Class is { IsSpellCaster: true, HasMemorizedSpells: true }))
+        {
+            Token.Player.SendServerMessage("You don't have any classes that memorize spells, so you don't have any spellbooks.");
+            Token.Close();
+            return;
+        }
         string idString = NWScript.GetLocalString(Token.Player.LoginCreature, "pc_guid");
         Guid characterId = Guid.Parse(idString);
 

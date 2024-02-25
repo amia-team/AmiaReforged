@@ -181,12 +181,8 @@ public class OpenSpellbookController : WindowController<OpenSpellbookView>
 
             foreach (PreparedSpellModel s in preparedSpells[f])
             {
-                string spellIconResRef = s.IconResRef;
-                if (spellIconResRef == string.Empty)
-                {
-                    Log.Info($"Spell {s.SpellName} has no icon.");
-                    continue;
-                }
+                string spellIconResRef = s.IconResRef == "" ? "ir_tmp_spawn" : s.IconResRef;
+                
 
                 Log.Info($"Processing spell {s.SpellName} with icon {spellIconResRef}");
 
@@ -219,19 +215,29 @@ public class OpenSpellbookController : WindowController<OpenSpellbookView>
         switch (eventData.EventType)
         {
             case NuiEventType.Click:
-                if (eventData.ElementId == View.CloseSpellbookButton.Id)
-                {
-                    Token.Close();
-                }
-                else if (eventData.ElementId == View.LoadSpellbookButton.Id)
-                {
-                    SpellbookMemorizer memorizer = new(_spellbook, Token.Player);
-                    memorizer.MemorizeSpellsToPlayer();
-                    Token.Close();
-                }
-
+                HandleButtonClick(eventData);
                 break;
         }
+    }
+
+    private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
+    {
+        if (eventData.ElementId == View.CloseSpellbookButton.Id)
+        {
+            Token.Close();
+        }
+        else if (eventData.ElementId == View.LoadSpellbookButton.Id)
+        {
+            SpellbookMemorizer memorizer = new(_spellbook, Token.Player);
+            memorizer.MemorizeSpellsToPlayer();
+            Token.Close();
+        }
+        else if (eventData.ElementId == View.CloseSpellbookButton.Id)
+        {
+            Token.Close();
+        }
+
+        return;
     }
 
     protected override void OnClose()
@@ -245,6 +251,7 @@ public sealed class SpellbookMemorizer
     private readonly SpellbookViewModel _spellbook;
     private readonly NwPlayer _player;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     public SpellbookMemorizer(SpellbookViewModel spellbook, NwPlayer player)
     {
         _spellbook = spellbook;
@@ -271,15 +278,15 @@ public sealed class SpellbookMemorizer
             {
                 spellSlot.ClearMemorizedSpell();
             }
-            Log.Info("Cleared spell slots.");
 
+            Log.Info("Cleared spell slots.");
         }
 
         for (byte spellLevel = 0; spellLevel <= 9; spellLevel++)
         {
             Log.Info($"Memorizing spells for level {(int)spellLevel}");
             IReadOnlyList<PreparedSpellModel> spells = _spellbook.SpellBook[spellLevel];
-            
+
             for (int spellSlot = 0; spellSlot < classInfo.GetMemorizedSpellSlots(spellLevel).Count; spellSlot++)
             {
                 if (spellSlot > spells.Count)
@@ -287,6 +294,7 @@ public sealed class SpellbookMemorizer
                     Log.Info("No more spells to memorize.");
                     break;
                 }
+
                 PreparedSpellModel spell = spells[spellSlot];
                 MemorizedSpellSlot memorized = classInfo.GetMemorizedSpellSlots(spellLevel)[spellSlot];
                 if (!spell.IsPopulated) continue;

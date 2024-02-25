@@ -26,15 +26,13 @@ public sealed class CharacterBiographyView : WindowView<CharacterBiographyView>
     {
         NuiColumn root = new NuiColumn
         {
-            Width = 600f,
-            Height = 600f,
             Children = new List<NuiElement>
             {
                 new NuiTextEdit("Edit Bio", CharacterBiography, 10000, true)
                 {
                     WordWrap = true,
-                    Height = 600f,
-                    Width = 600f
+                    Height = 400f,
+                    Width = 400f,
                 },
                 new NuiRow
                 {
@@ -44,7 +42,7 @@ public sealed class CharacterBiographyView : WindowView<CharacterBiographyView>
                         {
                             Id = "save",
                         }.Assign(out SaveButton),
-                        new NuiButton("Discard")
+                        new NuiButton("Discard Changes")
                         {
                             Id = "discard",
                         }.Assign(out DiscardButton),
@@ -55,7 +53,8 @@ public sealed class CharacterBiographyView : WindowView<CharacterBiographyView>
 
         WindowTemplate = new NuiWindow(root, Title)
         {
-            Geometry = new NuiRect(500f, 100f, 600f, 720f),
+            Geometry = new NuiRect(500f, 100f, 470, 560f),
+            Resizable = false
         };
     }
 }

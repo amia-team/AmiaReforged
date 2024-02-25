@@ -45,10 +45,7 @@ public class SpellbookViewModel
             foreach (KeyValuePair<byte, List<PreparedSpellModel>> keyValuePair in SpellBook)
             {
                 spellbookDictString += $"Level {keyValuePair.Key}:\n";
-                foreach (PreparedSpellModel preparedSpellModel in keyValuePair.Value)
-                {
-                    spellbookDictString += $"{preparedSpellModel}\n";
-                }
+                spellbookDictString = keyValuePair.Value.Aggregate(spellbookDictString, (current, preparedSpellModel) => current + $"{preparedSpellModel}\n");
             }
         }
         
