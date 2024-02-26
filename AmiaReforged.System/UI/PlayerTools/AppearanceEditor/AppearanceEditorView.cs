@@ -8,12 +8,21 @@ public class AppearanceEditorView : WindowView<AppearanceEditorView>
 {
     public override string Id => "playertools.appearanceoverview";
     public override string Title => "Appearance Editor";
+    
+    public override bool ListInPlayerTools => false;
     public override IWindowController? CreateDefaultController(NwPlayer player)
     {
         return CreateController<AppearanceEditorController>(player);
     }
 
+    
     public override NuiWindow? WindowTemplate { get; }
+
+    public AppearanceEditorView()
+    {
+        
+        
+    }
 }
 
 public class AppearanceEditorController : WindowController<AppearanceEditorView>
