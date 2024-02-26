@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.Core.UserInterface;
 using Anvil.API;
 using Anvil.Services;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.System.UI.PlayerTools;
 
@@ -12,6 +13,9 @@ public class PlayerToolButtonInitializer : IInitializable
     
     public void Init()
     {
+        bool disabled = UtilPlugin.GetEnvironmentVariable("DISABLE_PLAYER_TOOL_BUTTONS") == "true";
+        if (disabled) return;
+        
         NwModule.Instance.OnClientEnter += eventData => TryOpenWindow(eventData.Player);
         
         foreach (NwPlayer player in NwModule.Instance.Players)
