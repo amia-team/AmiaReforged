@@ -10,17 +10,17 @@ public static class EldritchSpear
     {
         EssenceType essenceType = (EssenceType)GetLocalInt(GetItemPossessedBy(caster, "ds_pckey"), "warlock_essence");
 
-        int touchAttackRanged = TouchAttackRanged(targetObject);
+        int touchAttackRanged = Warlock.RangedTouch(targetObject);
         IntPtr location = GetLocation(targetObject);
 
         int damage = EldritchDamage.CalculateDamageAmount(caster);
 
-        if (touchAttackRanged == 0) return;
+        if (touchAttackRanged == FALSE) return;
         effectApplier.ApplyEffects(damage * touchAttackRanged);
 
         SignalEvent(targetObject, EventSpellCastAt(caster, 982));
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfX.Beam(essence, caster), targetObject, 1.1f);
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfx.Beam(essence, caster), targetObject, 1.1f);
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectBeam(VFX_BEAM_SILENT_LIGHTNING, caster, BODY_NODE_HAND), targetObject, 1.1f);
 
         uint currentTarget = GetFirstObjectInShape(SHAPE_SPELLCYLINDER, 40f, location, TRUE, OBJECT_TYPE_CREATURE, GetPosition(caster));
@@ -35,7 +35,7 @@ public static class EldritchSpear
 
                 bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
-                bool passedSave = ReflexSave(currentTarget, NwEffects.CalculateDC(caster), 0, caster) == TRUE;
+                bool passedSave = ReflexSave(currentTarget, Warlock.CalculateDC(caster), 0, caster) == TRUE;
 
                 if (passedSave)
                 {

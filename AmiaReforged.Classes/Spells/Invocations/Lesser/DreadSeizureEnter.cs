@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Types;
 using Anvil.API;
 using static NWN.Core.NWScript;
 
@@ -19,7 +20,7 @@ public class DreadSeizureEnter
         });
         debuffs = TagEffect(debuffs, "dreadseizure");
 
-        bool passedFortSave = FortitudeSave(enteringObject, NwEffects.CalculateDC(caster), 0, caster) == TRUE;
+        bool passedFortSave = FortitudeSave(enteringObject, Warlock.CalculateDC(caster), 0, caster) == TRUE;
 
         // Apply if creature is hostile to the warlock.
         if(NwEffects.IsValidSpellTarget(enteringObject, 3, caster))

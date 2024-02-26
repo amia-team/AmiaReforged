@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Types;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
@@ -17,7 +18,7 @@ public class FleeTheScene
             });
         IntPtr sanctuary = NwEffects.LinkEffectList(new List<IntPtr>
             {
-                EffectSanctuary(NwEffects.CalculateDC(nwnObjectId)),
+                EffectSanctuary(Warlock.CalculateDC(nwnObjectId)),
                 EffectVisualEffect(VFX_DUR_SANCTUARY)
             });
 

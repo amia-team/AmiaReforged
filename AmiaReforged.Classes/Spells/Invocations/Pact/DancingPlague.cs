@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Types;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
@@ -18,7 +19,7 @@ public class DancingPlague
         IntPtr location = GetSpellTargetLocation();
 
         // Declaring variables for the summon part of the spell
-        float summonDuration = RoundsToSeconds(5 + warlockLevels / 2);
+        float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
         IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)), "wlk_summon_cd");
 
@@ -39,12 +40,12 @@ public class DancingPlague
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(NwEffects.WarlockString("Dancing Partner can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Dancing Partner can be summoned again."), caster, 0));
             // Summon new
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_FNF_SMOKE_PUFF), location, 2f);
-            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectSummonCreature("wlkFey", -1, 1), location, summonDuration);
+            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectSummonCreature("wlkfey", -1, 1), location, summonDuration);
             // Apply effects
-            DelayCommand(1.1f, () => SummonEffects.SetSummonsFacing(1, location));
+            DelayCommand(1.1f, () => SummonUtility.SetSummonsFacing(1, location));
             DelayCommand(1.1f, () => MakePretty(target));
         }
 
@@ -60,7 +61,7 @@ public class DancingPlague
             return;
         }
 
-        bool passedFortSave = FortitudeSave(target, NwEffects.CalculateDC(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
+        bool passedFortSave = FortitudeSave(target, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
 
         if (passedFortSave)
         {
@@ -91,7 +92,7 @@ public class DancingPlague
                     continue;
                 }
 
-                bool passedFortSave = FortitudeSave(currentTarget, NwEffects.CalculateDC(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
+                bool passedFortSave = FortitudeSave(currentTarget, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
 
                 if (passedFortSave)
                 {

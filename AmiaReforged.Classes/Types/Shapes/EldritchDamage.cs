@@ -15,7 +15,7 @@ public static class EldritchDamage
         int damageBonus = chaMod;
         if (((warlockLevels / 2) < chaMod) && (warlockLevels < 30))
         {
-            damageBonus = (warlockLevels / 2);
+            damageBonus = warlockLevels / 2;
         }
         int damageDice = d2(warlockLevels) + damageBonus + d6(ExtraDieFromFeats(caster));
         int extraDamageFromEldritchMaster = GetHasFeat(1298, caster) == TRUE ? (int)(damageDice * 0.25) : 0;

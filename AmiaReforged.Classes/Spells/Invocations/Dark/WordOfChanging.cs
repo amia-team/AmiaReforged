@@ -22,7 +22,6 @@ public class WordOfChanging
             EffectAbilityIncrease(ABILITY_STRENGTH, d4()),
             EffectAbilityIncrease(ABILITY_CONSTITUTION, d4()),
             EffectAbilityIncrease(ABILITY_DEXTERITY, d4()),
-            EffectTemporaryHitpoints(d6(casterLevel)),
             EffectSpellFailure()
         });
 
@@ -31,5 +30,6 @@ public class WordOfChanging
             EffectLinkEffects(EffectVisualEffect(VFX_DUR_AURA_MAGENTA), wordOfChanging);
 
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, wordOfChanging, nwnObjectId, duration);
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectTemporaryHitpoints(d6(casterLevel)), nwnObjectId, duration);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Types;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
@@ -29,7 +30,7 @@ public class CurseOfDespair
                     continue;
                 }
 
-                bool passedWillSave = WillSave(currentTarget, NwEffects.CalculateDC(caster), 0, caster) == TRUE;
+                bool passedWillSave = WillSave(currentTarget, Warlock.CalculateDC(caster), 0, caster) == TRUE;
 
                 if (passedWillSave || NwEffects.GetHasEffectType(EFFECT_TYPE_CURSE, currentTarget) == TRUE ||
                 GetIsImmune(currentTarget, IMMUNITY_TYPE_ABILITY_DECREASE | IMMUNITY_TYPE_CURSED) == TRUE)

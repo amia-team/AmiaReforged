@@ -1,7 +1,7 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Spells.Invocations.Greater;
+namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
 
 public class WrithingDark
 {

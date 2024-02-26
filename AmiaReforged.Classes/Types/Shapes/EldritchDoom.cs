@@ -8,7 +8,7 @@ public static class EldritchDoom
 {
     public static void CastEldritchDoom(uint caster, IntPtr location, EssenceType essence)
     {
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EssenceVfX.Doom(essence), location);
+        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EssenceVfx.Doom(essence), location);
         uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location, TRUE);
 
         while (GetIsObjectValid(currentTarget) == TRUE)
@@ -22,7 +22,7 @@ public static class EldritchDoom
 
                 bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
-                bool passedSave = ReflexSave(currentTarget, NwEffects.CalculateDC(caster), 0, caster) == TRUE;
+                bool passedSave = ReflexSave(currentTarget, Warlock.CalculateDC(caster), 0, caster) == TRUE;
 
                 if (passedSave)
                 {

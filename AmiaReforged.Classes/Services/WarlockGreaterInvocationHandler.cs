@@ -112,25 +112,4 @@ public class WarlockGreaterInvocationHandler
         WallOfPerilousFlameOnEnter script = new();
         script.WallOfFlameEnterEffects(info.ObjectSelf);
     }
-
-    [ScriptHandler("wlk_insid_shadws")]
-    public void OnWrithingDark(CallInfo info)
-    {
-        WrithingDark script = new();
-        script.CastWrithingDark(info.ObjectSelf);
-    }
-
-    [ScriptHandler("wlk_darkent")]
-    public void OnWrithingDarkEnter(CallInfo info)
-    {
-        WrithingDarkEnter script = new();
-        script.WrithingDarkEnterEffects(info.ObjectSelf);
-    }
-
-    [ScriptHandler("wlk_darkhbea")]
-    public void OnWrithingDarkHeartbeat(CallInfo info)
-    {
-        WrithingDarkHeartbeat script = new();
-        script.WrithingDarkHeartbeatEffects(info.ObjectSelf);
-    }
 }

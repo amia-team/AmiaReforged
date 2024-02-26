@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Types;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
@@ -20,15 +21,6 @@ public class PrimordialGust
                  EffectVisualEffect(VFX_COM_HIT_FIRE)
         });
 
-        // Damage variable
-        int damage = d4(warlockLevels/3);
-        IntPtr primordialDamage = NwEffects.LinkEffectList(new List<IntPtr>
-        {
-                 EffectDamage(damage, DAMAGE_TYPE_COLD),
-                 EffectDamage(damage, DAMAGE_TYPE_ELECTRICAL),
-                 EffectDamage(damage, DAMAGE_TYPE_FIRE)
-        });
-
         // Declaring variables for the summon part of the spell
         int summonCount = warlockLevels switch
         {
@@ -37,7 +29,7 @@ public class PrimordialGust
             >= 30 => 3,
             _ => 0
         };
-        float summonDuration = RoundsToSeconds(5 + warlockLevels / 2);
+        float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
         IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)), "wlk_summon_cd");
 
@@ -55,6 +47,15 @@ public class PrimordialGust
 
         while (GetIsObjectValid(currentTarget) == TRUE)
         {
+            // Damage variable
+            int damage = d4(warlockLevels/3);
+            IntPtr primordialDamage = NwEffects.LinkEffectList(new List<IntPtr>
+            {
+                    EffectDamage(damage, DAMAGE_TYPE_COLD),
+                    EffectDamage(damage, DAMAGE_TYPE_ELECTRICAL),
+                    EffectDamage(damage, DAMAGE_TYPE_FIRE)
+            });
+            
             if (GetObjectType(currentTarget) == OBJECT_TYPE_DOOR || GetObjectType(currentTarget) == OBJECT_TYPE_PLACEABLE)
             {
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialDamage, currentTarget);
@@ -71,7 +72,7 @@ public class PrimordialGust
             }
             if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
             {
-                bool passedReflexSave = ReflexSave(currentTarget, NwEffects.CalculateDC(caster),
+                bool passedReflexSave = ReflexSave(currentTarget, Warlock.CalculateDC(caster),
                 SAVING_THROW_TYPE_FIRE | SAVING_THROW_TYPE_COLD | SAVING_THROW_TYPE_ELECTRICITY, caster) == TRUE;
                 bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
@@ -90,9 +91,15 @@ public class PrimordialGust
                 }
                 damage = d4(warlockLevels/3);
                 damage = passedReflexSave || hasImpEvasion ? damage / 2 : damage;
+                primordialDamage = NwEffects.LinkEffectList(new List<IntPtr>
+                {
+                        EffectDamage(damage, DAMAGE_TYPE_COLD),
+                        EffectDamage(damage, DAMAGE_TYPE_ELECTRICAL),
+                        EffectDamage(damage, DAMAGE_TYPE_FIRE)
+                });
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialDamage, currentTarget);
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialVFX, currentTarget);
-                }
+            }
             currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, validObjectTypes);
         }
 
@@ -105,9 +112,9 @@ public class PrimordialGust
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(NwEffects.WarlockString("Mephits can be summoned again."), caster, 0));
-            SummonEffects.SummonMany(caster, summonDuration, summonCount, "wlkelemental", location, 0.5f, 2f, 0.5f, 1.5f, VFX_IMP_ELEMENTAL_PROTECTION, 0.6f);
-            DelayCommand(1.6f, () => SummonEffects.SetSummonsFacing(summonCount, location));
+            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Mephits can be summoned again."), caster, 0));
+            SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkelemental", location, 0.5f, 2f, 0.5f, 1.5f, VFX_IMP_ELEMENTAL_PROTECTION, 0.6f);
+            DelayCommand(1.6f, () => SummonUtility.SetSummonsFacing(summonCount, location));
         }
     }
 }

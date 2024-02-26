@@ -1,10 +1,7 @@
 ﻿using AmiaReforged.Classes.Spells.Invocations.Dark;
 using Anvil.API;
-using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core.NWNX;
-using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Services;
 

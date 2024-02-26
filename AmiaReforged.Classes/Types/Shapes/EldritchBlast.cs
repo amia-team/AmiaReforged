@@ -11,11 +11,11 @@ public static class EldritchBlast
 
         SignalEvent(targetObject, EventSpellCastAt(nwnObjectId, 981));
         int damage = EldritchDamage.CalculateDamageAmount(nwnObjectId);
-        int touchAttackRanged = TouchAttackRanged(targetObject);
+        int touchAttackRanged = Warlock.RangedTouch(targetObject);
 
-        if (touchAttackRanged == 0) return;
+        if (touchAttackRanged == FALSE) return;
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfX.Beam(essenceType, nwnObjectId), targetObject, 1.1f);
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfx.Beam(essenceType, nwnObjectId), targetObject, 1.1f);
         effectApplier.ApplyEffects(damage * touchAttackRanged);
     }
     private static int SpellFailure(uint nwnObjectId)

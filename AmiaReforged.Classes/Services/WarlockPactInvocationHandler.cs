@@ -1,8 +1,6 @@
 using AmiaReforged.Classes.Spells.Invocations.Pact;
 using Anvil.API;
 using Anvil.Services;
-using Anvil.API.Events;
-using NWN.Core;
 using NLog;
 
 namespace AmiaReforged.Classes.Services;

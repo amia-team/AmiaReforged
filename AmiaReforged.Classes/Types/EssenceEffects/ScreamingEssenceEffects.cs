@@ -17,7 +17,7 @@ public class ScreamingEssenceEffects : EssenceEffectApplier
         if (NwEffects.HasMantle(Target) && !resistSpell)
         {
             ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_SPELL_MANTLE_USE), Target);
-            ObjectPlugin.DoSpellLevelAbsorption(Target, Caster);
+            ObjectPlugin.DoSpellLevelAbsorption(Target, Caster, -1, 9, 0);
             return;
         }
 

@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Types;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
@@ -7,13 +8,14 @@ public class BoundOnesLuck
 {
     public void CastBoundOnesLuck(uint nwnObjectId)
     {
-        if (GetHasFeat(FEAT_PRESTIGE_DARK_BLESSING, nwnObjectId) == TRUE){
-            SendMessageToPC(nwnObjectId, NwEffects.WarlockString("You already have Dark Blessing."));
+        if (GetHasFeat(FEAT_PRESTIGE_DARK_BLESSING, nwnObjectId) == TRUE)
+        {
+            SendMessageToPC(nwnObjectId, Warlock.String("You already have Dark Blessing."));
             return;
         }
 
         int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        int savesBonus = (warlockLevels / 7);
+        int savesBonus = warlockLevels / 7;
 
         if (warlockLevels == 30)
             savesBonus = 5;

@@ -13,8 +13,8 @@ public static class EldritchPulse
         if (NwEffects.IsValidSpellTarget(targetObject, 3, caster))
         {
             // Single target effect
-            int touchAttackRanged = TouchAttackRanged(targetObject);
-            if (touchAttackRanged == 0) return;
+            int touchAttackRanged = Warlock.RangedTouch(targetObject);
+            if (touchAttackRanged == FALSE) return;
             effectApplier.ApplyEffects(damage * touchAttackRanged);
             SignalEvent(targetObject, EventSpellCastAt(caster, 1004));
         }
@@ -25,7 +25,7 @@ public static class EldritchPulse
     {
         IntPtr location = GetLocation(targetObject);
         uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_MEDIUM, location, TRUE);
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EssenceVfX.Pulse(essence), location);
+        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EssenceVfx.Pulse(essence), location);
 
         while (GetIsObjectValid(currentTarget) == TRUE)
         {
@@ -40,7 +40,7 @@ public static class EldritchPulse
 
                 EssenceEffectApplier aoeApplier = EssenceEffectFactory.CreateEssenceEffect(essence, currentTarget, caster);
 
-                bool passedFortSave = FortitudeSave(currentTarget, NwEffects.CalculateDC(caster), 0, caster) == TRUE;
+                bool passedFortSave = FortitudeSave(currentTarget, Warlock.CalculateDC(caster), 0, caster) == TRUE;
                 if (passedFortSave) ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), currentTarget);
 
                 int aoeDamage = EldritchDamage.CalculateDamageAmount(caster);

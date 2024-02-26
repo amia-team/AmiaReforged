@@ -44,9 +44,8 @@ public class EldritchBlasts
 
         if (hasEldritchMastery)
         {
-            IntPtr masteryVfx = EssenceVfX.Mastery(essence, nwnObjectId);
-            IntPtr masteryEffect = EffectLinkEffects(masteryVfx, EffectAttackIncrease(3));
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, SupernaturalEffect(masteryEffect), nwnObjectId, 6.0f);
+            IntPtr masteryEffect = EffectLinkEffects(EssenceVfx.Mastery(essence, nwnObjectId), EffectAttackIncrease(3));
+            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, SupernaturalEffect(masteryEffect), nwnObjectId, 3f);
         }
     }
 }

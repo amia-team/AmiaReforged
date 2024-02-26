@@ -1,7 +1,8 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Types;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Spells.Invocations.Greater;
+namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
 
 public class WrithingDarkHeartbeat
 {
@@ -18,7 +19,8 @@ public class WrithingDarkHeartbeat
             {
                 SignalEvent(current, EventSpellCastAt(nwnObjectId, 998));
 
-                if ((NwEffects.ResistSpell(caster, current)) || (GetHasSpellEffect(EFFECT_TYPE_ULTRAVISION, current) == TRUE) || (GetHasSpellEffect(EFFECT_TYPE_TRUESEEING, current)) == TRUE)
+                if (NwEffects.ResistSpell(caster, current) || GetHasSpellEffect(EFFECT_TYPE_ULTRAVISION, current) == TRUE || 
+                    GetHasSpellEffect(EFFECT_TYPE_TRUESEEING, current) == TRUE)
                 {
                     current = GetNextInPersistentObject(nwnObjectId);
                     continue;
@@ -26,7 +28,7 @@ public class WrithingDarkHeartbeat
 
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), current);
 
-                bool passedWillSave = WillSave(current, NwEffects.CalculateDC(caster), 0, caster) == TRUE;
+                bool passedWillSave = WillSave(current, Warlock.CalculateDC(caster), 0, caster) == TRUE;
 
                 if (passedWillSave)
                 {

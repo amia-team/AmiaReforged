@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Types;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
@@ -25,7 +26,7 @@ public class LightsCalling
         });
 
         // Declaring variables for the summon part of the spell
-        float summonDuration = RoundsToSeconds(5 + warlockLevels / 2);
+        float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
         IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)), "wlk_summon_cd");
 
@@ -53,7 +54,7 @@ public class LightsCalling
                 }
                 if (GetRacialType(currentTarget) == RACIAL_TYPE_UNDEAD && NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
                 {
-                    bool passedWillSave = FortitudeSave(currentTarget, NwEffects.CalculateDC(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
+                    bool passedWillSave = FortitudeSave(currentTarget, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
 
                     if (passedWillSave)
                     {
@@ -71,7 +72,7 @@ public class LightsCalling
                     continue;
                 }
 
-                bool passedFortSave = FortitudeSave(currentTarget, NwEffects.CalculateDC(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
+                bool passedFortSave = FortitudeSave(currentTarget, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
 
                 if (passedFortSave)
                 {
@@ -97,7 +98,7 @@ public class LightsCalling
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(NwEffects.WarlockString("Shattered Guardian can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Shattered Guardian can be summoned again."), caster, 0));
             // Summon
             float delay = NwEffects.RandomFloat(1, 2);
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectSummonCreature("wlkCelestial", -1, delay, 1), location, summonDuration);

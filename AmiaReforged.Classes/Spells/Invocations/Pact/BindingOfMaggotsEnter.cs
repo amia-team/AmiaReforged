@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Types;
 using Anvil.API;
 using static NWN.Core.NWScript;
 
@@ -21,7 +22,7 @@ public class BindingOfMaggotsEnter
 
         // Declaring variables for the summon part of the spell
         int summonCount = warlockLevels < 5 ? 1 : 1 + warlockLevels / 5;
-        float summonDuration = RoundsToSeconds(5 + warlockLevels / 2);
+        float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
         IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)), "wlk_summon_cd");
         IntPtr location = GetLocation(enteringObject);
@@ -40,10 +41,9 @@ public class BindingOfMaggotsEnter
         {
             // Apply summonCooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(NwEffects.WarlockString("Soul Larvae can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Soul Larvae can be summoned again."), caster, 0));
             // Summon new
-            SummonEffects.SummonMany(caster, summonDuration, summonCount, "wlkfiend", location, 0.3f, 2f, 1f, 3f, VFX_FNF_SUMMON_EPIC_UNDEAD, 0.1f);
-            DelayCommand(3.1f, () =>  SummonEffects.SetSummonsFacing(summonCount, location));
+            SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkfiend", location, 0.3f, 2f, 1f, 3f, VFX_FNF_SUMMON_EPIC_UNDEAD, 0.1f);
         }
 
         //---------------------------
@@ -59,7 +59,7 @@ public class BindingOfMaggotsEnter
             return;
         }
 
-        bool passedWillSave = WillSave(enteringObject, NwEffects.CalculateDC(caster), SAVING_THROW_TYPE_EVIL, caster) == TRUE;
+        bool passedWillSave = WillSave(enteringObject, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_EVIL, caster) == TRUE;
 
         if (passedWillSave)
         {

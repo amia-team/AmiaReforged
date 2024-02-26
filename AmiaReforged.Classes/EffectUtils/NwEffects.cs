@@ -3,7 +3,7 @@ using static NWN.Core.NWScript;
 namespace AmiaReforged.Classes.EffectUtils;
 
 public static class NwEffects
-{
+{    
     /// <summary>
     ///     Links all effects in a provided list.
     /// </summary>
@@ -212,11 +212,11 @@ public static class NwEffects
 
     public static bool IsValidSpellTarget(uint  target, int  targetType, uint caster)
     {
-        // * if dead, not a valid  target
-        if (GetIsDead(target) == TRUE)
-        {
-            return false;
-        }
+        // if dead, not a valid target
+        if (GetIsDead(target) == TRUE) return false;
+
+        // if DM, not a valid target
+        if (GetIsDM(target) == TRUE) return false;
 
         bool returnBool = false;
 
@@ -261,7 +261,7 @@ public static class NwEffects
                     {
                         isSelfTarget = TRUE;
                     }
-                    if (master == caster && SummonEffects.IsPactSummon(target))
+                    if (master == caster && SummonUtility.IsPactSummon(target))
                     {
                         isSelfTarget = FALSE;
                     }
@@ -338,11 +338,6 @@ public static class NwEffects
         GetSubString(colorCodes, StringToInt(GetSubString(rgb, 2, 1)), 1) + // blue
         ">" +   // End the color token
         message + "</c>";
-    }
-
-    public static string WarlockString(string message)
-    {
-        return ColorString(message, "207");
     }
 
     /// <summary>

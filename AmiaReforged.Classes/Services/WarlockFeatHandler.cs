@@ -20,12 +20,13 @@ public class WarlockFeatHandler
         NwModule.Instance.OnCreatureDamage += OnDamagedApplyResilience;
         NwModule.Instance.OnHeal += OnHealRemoveResilience;
         NwModule.Instance.OnPlayerLevelUp += OnLevelUpGiveEnergyResist;
+        NwModule.Instance.OnClientEnter += OnLoginGiveEnerygyResist;
         Log.Info("Warlock Feat Handler initialized.");
     }
 
     private static ItemProperty _armoredCaster = ItemProperty.ArcaneSpellFailure(IPArcaneSpellFailure.Minus20Pct);
 
-    private void AddArmoredCasterOnEquip(OnItemEquip obj)
+    private async void AddArmoredCasterOnEquip(OnItemEquip obj)
     {
         if (NWScript.GetLevelByClass(57, obj.EquippedBy) < NWScript.GetHitDice(obj.EquippedBy)/2) return;
         if (obj.Item.HasItemProperty(ItemPropertyType.ArcaneSpellFailure)) return;
@@ -35,23 +36,26 @@ public class WarlockFeatHandler
 
         if (!isLightArmor) return;
 
-        IPArcaneSpellFailure ipAsfReduction = 0;
-
-        if (item.BaseACValue == 1) ipAsfReduction = IPArcaneSpellFailure.Minus5Pct;
-        if (item.BaseACValue == 2) ipAsfReduction = IPArcaneSpellFailure.Minus10Pct;
-        if (item.BaseACValue == 3) ipAsfReduction = IPArcaneSpellFailure.Minus20Pct;
+        IPArcaneSpellFailure ipAsfReduction = item.BaseACValue switch
+        {
+            1 => IPArcaneSpellFailure.Plus5Pct,
+            2 => IPArcaneSpellFailure.Minus10Pct,
+            3 => IPArcaneSpellFailure.Minus20Pct,
+            _ => IPArcaneSpellFailure.Plus5Pct
+        };
 
         _armoredCaster = ItemProperty.ArcaneSpellFailure(ipAsfReduction);
         _armoredCaster.Tag = "armored_caster";
 
+        await NwTask.Delay(TimeSpan.FromSeconds(1));
         item.AddItemProperty(_armoredCaster, EffectDuration.Temporary, TimeSpan.FromHours(8));
     }
 
     private void AddArmoredCasterOnRest(ModuleEvents.OnPlayerRest obj)
     {
         if (obj.RestEventType != RestEventType.Finished) return;
-        NwCreature warlock = obj.Player.ControlledCreature;
-        NwItem item = warlock.GetItemInSlot(InventorySlot.Chest);
+        NwCreature? warlock = obj.Player.ControlledCreature;
+        NwItem? item = warlock.GetItemInSlot(InventorySlot.Chest);
 
         if (item == null) return;
         if (item.HasItemProperty(ItemPropertyType.ArcaneSpellFailure)) return;
@@ -61,11 +65,13 @@ public class WarlockFeatHandler
 
         if (!isLightArmor) return;
 
-        IPArcaneSpellFailure ipAsfReduction = 0;
-
-        if (item.BaseACValue == 1) ipAsfReduction = IPArcaneSpellFailure.Minus5Pct;
-        if (item.BaseACValue == 2) ipAsfReduction = IPArcaneSpellFailure.Minus10Pct;
-        if (item.BaseACValue == 3) ipAsfReduction = IPArcaneSpellFailure.Minus20Pct;
+        IPArcaneSpellFailure ipAsfReduction = item.BaseACValue switch
+        {
+            1 => IPArcaneSpellFailure.Plus5Pct,
+            2 => IPArcaneSpellFailure.Minus10Pct,
+            3 => IPArcaneSpellFailure.Minus20Pct,
+            _ => IPArcaneSpellFailure.Plus5Pct
+        };
 
         _armoredCaster = ItemProperty.ArcaneSpellFailure(ipAsfReduction);
         _armoredCaster.Tag = "armored_caster";
@@ -113,7 +119,7 @@ public class WarlockFeatHandler
         {
             if (effect.Tag == "warlock_damagereduction")
             {
-            warlock.RemoveEffect(effect);
+                warlock.RemoveEffect(effect);
             }
         }
         Effect damageReduction = Effect.DamageReduction(5, (DamagePower)power);
@@ -210,29 +216,177 @@ public class WarlockFeatHandler
 
         Effect resistFeat = Effect.BonusFeat(Feat.ResistEnergyAcid);
 
-        if (hasResistAcid) resistFeat = Effect.BonusFeat(Feat.ResistEnergyAcid);
-        if (hasResistCold) resistFeat = Effect.BonusFeat(Feat.ResistEnergyCold);
-        if (hasResistElectric) resistFeat = Effect.BonusFeat(Feat.ResistEnergyElectrical);
-        if (hasResistFire) resistFeat = Effect.BonusFeat(Feat.ResistEnergyFire);
-        if (hasResistSonic) resistFeat = Effect.BonusFeat(Feat.ResistEnergySonic);
-
-        resistFeat.SubType = EffectSubType.Unyielding;
-        resistFeat.Tag = "warlock_resistfeat";
-        warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+        if (hasResistAcid) 
+        {
+            resistFeat = Effect.BonusFeat(Feat.ResistEnergyAcid);
+            warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+            resistFeat.SubType = EffectSubType.Unyielding;
+            resistFeat.Tag = "warlock_resistfeat";
+        }
+        if (hasResistCold)
+        {
+            resistFeat = Effect.BonusFeat(Feat.ResistEnergyCold);
+            warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+            resistFeat.SubType = EffectSubType.Unyielding;
+            resistFeat.Tag = "warlock_resistfeat";
+        }
+        if (hasResistElectric)
+        {
+            resistFeat = Effect.BonusFeat(Feat.ResistEnergyElectrical);
+            warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+            resistFeat.SubType = EffectSubType.Unyielding;
+            resistFeat.Tag = "warlock_resistfeat";
+        }
+        if (hasResistFire)
+        {
+            resistFeat = Effect.BonusFeat(Feat.ResistEnergyFire);
+            warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+            resistFeat.SubType = EffectSubType.Unyielding;
+            resistFeat.Tag = "warlock_resistfeat";
+        }
+        if (hasResistSonic)
+        {
+            resistFeat = Effect.BonusFeat(Feat.ResistEnergySonic);
+            warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+            resistFeat.SubType = EffectSubType.Unyielding;
+            resistFeat.Tag = "warlock_resistfeat";
+        }
 
         if (warlockLevels >= 20)
         {
             Effect epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceAcid1);
 
-            if (hasResistAcid) epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceAcid1);
-            if (hasResistCold) epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceCold1);
-            if (hasResistElectric) epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceElectrical1);
-            if (hasResistFire) epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceFire1);
-            if (hasResistSonic) epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceSonic1);
-
-            epicResistFeat.SubType = EffectSubType.Unyielding;
-            epicResistFeat.Tag = "warlock_epicresistfeat";
-            warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            if (hasResistAcid)
+            {
+                epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceAcid1);
+                epicResistFeat.SubType = EffectSubType.Unyielding;
+                epicResistFeat.Tag = "warlock_epicresistfeat";
+                warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            }
+            if (hasResistCold)
+            {
+                epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceCold1);
+                epicResistFeat.SubType = EffectSubType.Unyielding;
+                epicResistFeat.Tag = "warlock_epicresistfeat";
+                warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            }
+            if (hasResistElectric)
+            {
+                epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceElectrical1);
+                epicResistFeat.SubType = EffectSubType.Unyielding;
+                epicResistFeat.Tag = "warlock_epicresistfeat";
+                warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            }
+            if (hasResistFire)
+            {
+                epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceFire1);
+                epicResistFeat.SubType = EffectSubType.Unyielding;
+                epicResistFeat.Tag = "warlock_epicresistfeat";
+                warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            }
+            if (hasResistSonic)
+            {
+                epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceSonic1);
+                epicResistFeat.SubType = EffectSubType.Unyielding;
+                epicResistFeat.Tag = "warlock_epicresistfeat";
+                warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            }
         }
+    }
+    
+    private void OnLoginGiveEnerygyResist(ModuleEvents.OnClientEnter obj)
+    {
+        NwCreature warlock = obj.Player.LoginCreature;
+        int warlockLevels = NWScript.GetLevelByClass(57, warlock);
+        if (warlockLevels < 10) return;
+        if (warlock.ActiveEffects.Count(effect => effect.Tag == "warlock_resistfeat") == 2 ||
+            warlock.ActiveEffects.Count(effect => effect.Tag == "warlock_epicresistfeat") == 2)
+            return;
+
+        bool hasResistAcid = warlock.KnowsFeat(NwFeat.FromFeatId(1309));
+        bool hasResistCold = warlock.KnowsFeat(NwFeat.FromFeatId(1310));
+        bool hasResistElectric = warlock.KnowsFeat(NwFeat.FromFeatId(1311));
+        bool hasResistFire = warlock.KnowsFeat(NwFeat.FromFeatId(1312));
+        bool hasResistSonic = warlock.KnowsFeat(NwFeat.FromFeatId(1313));
+
+        Effect resistFeat = Effect.BonusFeat(Feat.ResistEnergyAcid);
+
+        if (hasResistAcid) 
+        {
+            resistFeat = Effect.BonusFeat(Feat.ResistEnergyAcid);
+            resistFeat.SubType = EffectSubType.Unyielding;
+            resistFeat.Tag = "warlock_resistfeat";
+            warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+        }
+        if (hasResistCold)
+        {
+            resistFeat = Effect.BonusFeat(Feat.ResistEnergyCold);
+            resistFeat.SubType = EffectSubType.Unyielding;
+            resistFeat.Tag = "warlock_resistfeat";
+            warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+        }
+        if (hasResistElectric)
+        {
+            resistFeat = Effect.BonusFeat(Feat.ResistEnergyElectrical);
+            resistFeat.SubType = EffectSubType.Unyielding;
+            resistFeat.Tag = "warlock_resistfeat";
+            warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+        }
+        if (hasResistFire)
+        {
+            resistFeat = Effect.BonusFeat(Feat.ResistEnergyFire);
+            resistFeat.SubType = EffectSubType.Unyielding;
+            resistFeat.Tag = "warlock_resistfeat";
+            warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+        }
+        if (hasResistSonic)
+        {
+            resistFeat = Effect.BonusFeat(Feat.ResistEnergySonic);
+            resistFeat.SubType = EffectSubType.Unyielding;
+            resistFeat.Tag = "warlock_resistfeat";
+            warlock.ApplyEffect(EffectDuration.Permanent, resistFeat);
+        }
+
+        if (warlockLevels >= 20)
+        {
+            Effect epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceAcid1);
+
+            if (hasResistAcid)
+            {
+                epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceAcid1);
+                epicResistFeat.SubType = EffectSubType.Unyielding;
+                epicResistFeat.Tag = "warlock_epicresistfeat";
+                warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            }
+            if (hasResistCold)
+            {
+                epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceCold1);
+                epicResistFeat.SubType = EffectSubType.Unyielding;
+                epicResistFeat.Tag = "warlock_epicresistfeat";
+                warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            }
+            if (hasResistElectric)
+            {
+                epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceElectrical1);
+                epicResistFeat.SubType = EffectSubType.Unyielding;
+                epicResistFeat.Tag = "warlock_epicresistfeat";
+                warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            }
+            if (hasResistFire)
+            {
+                epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceFire1);
+                epicResistFeat.SubType = EffectSubType.Unyielding;
+                epicResistFeat.Tag = "warlock_epicresistfeat";
+                warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            }
+            if (hasResistSonic)
+            {
+                epicResistFeat = Effect.BonusFeat(Feat.EpicEnergyResistanceSonic1);
+                epicResistFeat.SubType = EffectSubType.Unyielding;
+                epicResistFeat.Tag = "warlock_epicresistfeat";
+                warlock.ApplyEffect(EffectDuration.Permanent, epicResistFeat);
+            }
+        }
+        obj.Player.SendServerMessage("Warlock resistance feats should be fixed now!");
     }
 }

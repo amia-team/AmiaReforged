@@ -12,12 +12,8 @@ public static class EldritchChain
 
     public static void CastEldritchChain(uint caster, uint targetObject, EssenceType essence, EssenceEffectApplier effectApplier)
     {
-        int touchAttackRanged = TouchAttackRanged(targetObject);
+        int touchAttackRanged = Warlock.RangedTouch(targetObject);
         if (touchAttackRanged == FALSE) return;
-        if ((GetIsImmune(targetObject, IMMUNITY_TYPE_CRITICAL_HIT) == TRUE) && (touchAttackRanged == 2)) 
-            touchAttackRanged = 1;
-        if ((GetRacialType(targetObject) == RACIAL_TYPE_CONSTRUCT) || (GetRacialType(targetObject) == RACIAL_TYPE_UNDEAD) || (GetRacialType(targetObject) == RACIAL_TYPE_ELEMENTAL) && (touchAttackRanged == 2)) 
-            touchAttackRanged = 1;
 
         _applier = effectApplier;
         _essenceType = (EssenceType)GetLocalInt(GetItemPossessedBy(caster, "ds_pckey"), "warlock_essence");
@@ -26,7 +22,7 @@ public static class EldritchChain
 
         _damageAmount = EldritchDamage.CalculateDamageAmount(caster) * touchAttackRanged;
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfX.Beam(essence, caster), targetObject, 1.1f);
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfx.Beam(essence, caster), targetObject, 1.1f);
         _applier.ApplyEffects(_damageAmount);
 
         int chainLimit = GetCasterLevel(caster) / 5;
@@ -47,7 +43,7 @@ public static class EldritchChain
 
             if (NwEffects.IsValidSpellTarget(current, 3, caster))
             {
-                ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfX.Beam(essence, source), current, 1.1f);
+                ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfx.Beam(essence, source), current, 1.1f);
                 
                 _damageAmount = EldritchDamage.CalculateDamageAmount(caster) * touchAttackRanged;
                 _applier = EssenceEffectFactory.CreateEssenceEffect(_essenceType, current, caster);
