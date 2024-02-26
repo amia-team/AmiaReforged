@@ -44,6 +44,9 @@ public class CharacterLoaderService
     private async void StoreCharacter(AreaEvents.OnEnter obj)
     {
         if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
+        if (player.IsDM) return;
+        if (player.IsPlayerDM) return;
+        
         Log.Info($"Storing character: {player.LoginCreature?.Name}");
         NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
         if (pcKey is null) return;
@@ -51,7 +54,7 @@ public class CharacterLoaderService
         Log.Info("PCKey not null");
 
         string dbToken = pcKey.Name.Split("_")[1];
-        Guid pcKeyGuid = Guid.Parse(dbToken);
+        if(!Guid.TryParse(dbToken, out Guid pcKeyGuid)) return;
         
         Log.Info($"Parsed GUID from PC Key: {pcKeyGuid.ToString()}");
 
