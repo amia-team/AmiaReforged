@@ -294,8 +294,9 @@ public class WarlockFeatHandler
         }
     }
     
-    private void OnLoginGiveEnerygyResist(ModuleEvents.OnClientEnter obj)
+    private async void OnLoginGiveEnerygyResist(ModuleEvents.OnClientEnter obj)
     {
+        await NwTask.Delay(TimeSpan.FromSeconds(6));
         NwCreature warlock = obj.Player.LoginCreature;
         int warlockLevels = NWScript.GetLevelByClass(57, warlock);
         if (warlockLevels < 10) return;
