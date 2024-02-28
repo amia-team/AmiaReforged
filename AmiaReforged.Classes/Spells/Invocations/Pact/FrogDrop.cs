@@ -15,7 +15,6 @@ public class FrogDrop
 
         // Declaring variables for the damage part of the spell
         uint caster = nwnObjectId;
-        uint target = GetSpellTargetObject();
         int warlockLevels = GetLevelByClass(57, caster);
         float effectDuration = warlockLevels < 10 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 10);
         IntPtr location = GetSpellTargetLocation();
@@ -42,8 +41,6 @@ public class FrogDrop
         float summonCooldown = TurnsToSeconds(1);
         IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)), "wlk_summon_cd");
         IntPtr slaadSummon = EffectSummonCreature(slaadTier, VFX_IMP_POLYMORPH);
-
-        SignalEvent(target, EventSpellCastAt(caster, 1010));
         
         //---------------------------
         // * HOSTILE SPELL EFFECT
@@ -52,9 +49,9 @@ public class FrogDrop
         uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location, FALSE, OBJECT_TYPE_CREATURE);
         while (GetIsObjectValid(currentTarget) == TRUE)
         {
-            if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
+            if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
             {
-                SignalEvent(currentTarget, EventSpellCastAt(caster, 1009));
+                SignalEvent(currentTarget, EventSpellCastAt(caster, 1010));
 
                 if (GetHasSpellEffect(SPELL_PROTECTION__FROM_CHAOS, currentTarget) == TRUE)
                 {
@@ -69,7 +66,7 @@ public class FrogDrop
                     continue;
                 }
 
-                bool passedReflexSave = ReflexSave(target, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_CHAOS, caster) == TRUE;
+                bool passedReflexSave = ReflexSave(currentTarget, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_CHAOS, caster) == TRUE;
 
                 if (passedReflexSave)
                 {
@@ -78,7 +75,7 @@ public class FrogDrop
                     continue;
                 }
 
-                if (!passedReflexSave) ApplyEffectToObject(DURATION_TYPE_TEMPORARY, frogDrop, target, effectDuration);
+                if (!passedReflexSave) ApplyEffectToObject(DURATION_TYPE_TEMPORARY, frogDrop, currentTarget, effectDuration);
             }
             currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location, FALSE, OBJECT_TYPE_CREATURE);
         }

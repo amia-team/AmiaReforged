@@ -3,6 +3,8 @@ using Anvil.Services;
 using Anvil.API.Events;
 using NWN.Core;
 using NLog;
+using System.Buffers;
+using NUnit.Framework.Constraints;
 
 namespace AmiaReforged.Classes.Services;
 
@@ -181,20 +183,20 @@ public class WarlockSummonUtilHandler
         if (!obj.Owner.IsPlayerControlled) return;
         if (NWScript.GetLevelByClass(57, obj.Owner) <= 0) return;
         if (obj.Associate.AssociateType != AssociateType.Henchman) return;
-
-        bool isAberration = obj.Associate.ResRef == "wlkaberrant";
-        bool isElemental = obj.Associate.ResRef == "wlkelemental";
-        bool isFiend = obj.Associate.ResRef == "wlkfiend";
-        bool isPactSummon = isAberration || isElemental || isFiend;
-
-        if (!isPactSummon) return;
+        if (!obj.Associate.ResRef.Contains("wlk")) return;
 
         NwCreature summon = obj.Associate;
-        Effect desummonVfx = Effect.VisualEffect(VfxType.FnfSummonMonster1);
-        if (isAberration) desummonVfx = Effect.VisualEffect(VfxType.ComChunkYellowMedium);
-        if (isFiend) desummonVfx = Effect.VisualEffect(VfxType.ComChunkRedSmall);
-        summon.Location.ApplyEffect(EffectDuration.Instant, desummonVfx);
-        obj.Owner.LoginPlayer.SendServerMessage("Unsummoning "+summon.Name+".");
+        Location summonLocation = summon.Location;
+
+        Effect desummonVfx = summon.ResRef switch
+        {
+            "wlkaberrant" => Effect.VisualEffect(VfxType.FnfImplosion, false, 0.3f),
+            "wlkelemental" => Effect.VisualEffect(VfxType.FnfSummonMonster1),
+            "wlkfiend" => Effect.VisualEffect(VfxType.ImpDestruction),
+            _ => Effect.VisualEffect(VfxType.ImpUnsummon)
+        };
+        summonLocation.ApplyEffect(EffectDuration.Instant, desummonVfx);
         summon.Destroy();
+        obj.Owner.LoginPlayer.SendServerMessage("Unsummoning "+summon.Name+".");
     }
 }

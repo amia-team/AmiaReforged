@@ -77,7 +77,7 @@ public static class SummonUtility
             DelayCommand(delay, () => CreateObject(OBJECT_TYPE_CREATURE, summonResRef, summonLocation, 0, newTag));
             DelayCommand(delay, () => ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(summonVfx, 0, summonVfxFloat), summonLocation));
             DelayCommand(newDelay, () => AddHenchman(caster, GetObjectByTag(newTag)));
-            DelayCommand(newDelay, () => DestroyObject(GetObjectByTag(newTag), summonDuration));
+            DelayCommand(newDelay, () => DelayCommand(summonDuration, () => RemoveHenchman(caster, GetObjectByTag(newTag))));
         }
     }
 
