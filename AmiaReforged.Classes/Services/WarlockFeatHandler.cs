@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -30,24 +31,30 @@ public class WarlockFeatHandler
     {
         if (NWScript.GetLevelByClass(57, obj.EquippedBy) < NWScript.GetHitDice(obj.EquippedBy)/2) return;
         if (obj.Item.HasItemProperty(ItemPropertyType.ArcaneSpellFailure)) return;
+        if (!obj.EquippedBy.IsPlayerControlled) return;
 
         NwItem item = obj.Item;
-        bool isLightArmor = item.BaseACValue >= 1 && item.BaseACValue <= 3;
+        bool isLightArmor = item.BaseACValue >= 1 && item.BaseACValue <= 3 && 
+            item.BaseItem == NwBaseItem.FromItemType(BaseItemType.Armor);
+        bool isSmallShield = item.BaseItem == NwBaseItem.FromItemType(BaseItemType.SmallShield);
 
-        if (!isLightArmor) return;
+        if(!(isLightArmor || isSmallShield)) return;
 
-        IPArcaneSpellFailure ipAsfReduction = item.BaseACValue switch
-        {
-            1 => IPArcaneSpellFailure.Plus5Pct,
-            2 => IPArcaneSpellFailure.Minus10Pct,
-            3 => IPArcaneSpellFailure.Minus20Pct,
-            _ => IPArcaneSpellFailure.Plus5Pct
-        };
-
+        IPArcaneSpellFailure ipAsfReduction = IPArcaneSpellFailure.Minus5Pct;
+        
+        if (isLightArmor)
+            ipAsfReduction = item.BaseACValue switch
+            {
+                1 => IPArcaneSpellFailure.Minus5Pct,
+                2 => IPArcaneSpellFailure.Minus10Pct,
+                3 => IPArcaneSpellFailure.Minus20Pct,
+                _ => IPArcaneSpellFailure.Minus5Pct
+            };
+        
         _armoredCaster = ItemProperty.ArcaneSpellFailure(ipAsfReduction);
         _armoredCaster.Tag = "armored_caster";
 
-        await NwTask.Delay(TimeSpan.FromSeconds(1));
+        await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         item.AddItemProperty(_armoredCaster, EffectDuration.Temporary, TimeSpan.FromHours(8));
     }
 
@@ -55,38 +62,49 @@ public class WarlockFeatHandler
     {
         if (obj.RestEventType != RestEventType.Finished) return;
         NwCreature? warlock = obj.Player.ControlledCreature;
-        NwItem? item = warlock.GetItemInSlot(InventorySlot.Chest);
+        NwItem? armor = warlock.GetItemInSlot(InventorySlot.Chest);
+        NwItem? shield = warlock.GetItemInSlot(InventorySlot.LeftHand);
 
-        if (item == null) return;
-        if (item.HasItemProperty(ItemPropertyType.ArcaneSpellFailure)) return;
+        if (armor == null && shield == null) return;
         if (NWScript.GetLevelByClass(57, warlock) < NWScript.GetHitDice(warlock)/2) return;
 
-        bool isLightArmor = item.BaseACValue >= 1 && item.BaseACValue <= 3;
+        bool isLightArmor = armor.BaseACValue >= 1 && armor.BaseACValue <= 3;
+        bool isSmallShield = shield.BaseItem == NwBaseItem.FromItemType(BaseItemType.SmallShield);
 
-        if (!isLightArmor) return;
-
-        IPArcaneSpellFailure ipAsfReduction = item.BaseACValue switch
+        if(isLightArmor && !armor.HasItemProperty(ItemPropertyType.ArcaneSpellFailure))
         {
-            1 => IPArcaneSpellFailure.Plus5Pct,
-            2 => IPArcaneSpellFailure.Minus10Pct,
-            3 => IPArcaneSpellFailure.Minus20Pct,
-            _ => IPArcaneSpellFailure.Plus5Pct
-        };
+            IPArcaneSpellFailure ipAsfReduction = armor.BaseACValue switch
+            {
+                1 => IPArcaneSpellFailure.Plus5Pct,
+                2 => IPArcaneSpellFailure.Minus10Pct,
+                3 => IPArcaneSpellFailure.Minus20Pct,
+                _ => IPArcaneSpellFailure.Plus5Pct
+            };
 
-        _armoredCaster = ItemProperty.ArcaneSpellFailure(ipAsfReduction);
-        _armoredCaster.Tag = "armored_caster";
+            _armoredCaster = ItemProperty.ArcaneSpellFailure(ipAsfReduction);
+            _armoredCaster.Tag = "armored_caster";
 
-        item.AddItemProperty(_armoredCaster, EffectDuration.Temporary, TimeSpan.FromHours(8));
+            armor.AddItemProperty(_armoredCaster, EffectDuration.Temporary, TimeSpan.FromHours(8));
+        }
+        if (isSmallShield && !shield.HasItemProperty(ItemPropertyType.ArcaneSpellFailure))
+        {
+            _armoredCaster = ItemProperty.ArcaneSpellFailure(IPArcaneSpellFailure.Minus5Pct);
+            _armoredCaster.Tag = "armored_caster";
+
+            shield.AddItemProperty(_armoredCaster, EffectDuration.Temporary, TimeSpan.FromHours(8));
+        }
     }
 
     private void RemoveArmoredCasterOnUnequip(OnItemUnequip obj)
     {
         if (NWScript.GetLevelByClass(57, obj.Creature) <= 0) return;
+        if (!obj.Creature.IsPlayerControlled) return;
 
         NwItem item = obj.Item;
         bool isLightArmor = item.BaseACValue >= 1 && item.BaseACValue <= 3;
+        bool isSmallShield = item.BaseItem == NwBaseItem.FromItemType(BaseItemType.SmallShield);
 
-        if (!isLightArmor) return;
+        if(!(isLightArmor || isSmallShield)) return;
 
         foreach (ItemProperty itemProperty in item.ItemProperties)
         {

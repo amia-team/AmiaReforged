@@ -53,7 +53,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
                 summon.MaxHP = 60;
                 summon.HP = 60;
-                summon.BaseAC = 5;
+                summon.BaseAC = 6;
                 summon.SetsRawAbilityScore(Ability.Strength, 16);
                 summon.SetSkillRank(Skill.Discipline, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
@@ -65,7 +65,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
                 summon.MaxHP = 90;
                 summon.HP = 90;
-                summon.BaseAC = 10;
+                summon.BaseAC = 12;
                 summon.SetsRawAbilityScore(Ability.Strength, 24);
                 summon.SetSkillRank(Skill.Discipline, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
@@ -77,7 +77,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
                 summon.MaxHP = 90;
                 summon.HP = 90;
-                summon.BaseAC = 10;
+                summon.BaseAC = 12;
                 summon.SetsRawAbilityScore(Ability.Strength, 32);
                 summon.SetSkillRank(Skill.Discipline, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
@@ -89,7 +89,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
                 summon.MaxHP = 120;
                 summon.HP = 120;
-                summon.BaseAC = 15;
+                summon.BaseAC = 18;
                 summon.SetsRawAbilityScore(Ability.Strength, 40);
                 summon.SetSkillRank(Skill.Discipline, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
@@ -101,7 +101,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
                 summon.MaxHP = 150;
                 summon.HP = 150;
-                summon.BaseAC = 20;
+                summon.BaseAC = 24;
                 summon.SetsRawAbilityScore(Ability.Strength, 48);
                 summon.SetSkillRank(Skill.Discipline, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
@@ -113,7 +113,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
                 summon.MaxHP = 150;
                 summon.HP = 150;
-                summon.BaseAC = 20;
+                summon.BaseAC = 24;
                 summon.SetsRawAbilityScore(Ability.Strength, 56);
                 summon.SetSkillRank(Skill.Discipline, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
@@ -169,7 +169,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
                 summon.MaxHP = 60;
                 summon.HP = 60;
-                summon.BaseAC = 5;
+                summon.BaseAC = 6;
                 summon.SetsRawAbilityScore(Ability.Strength, 16);
                 summon.SetSkillRank(Skill.Discipline, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
@@ -183,7 +183,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
                 summon.MaxHP = 90;
                 summon.HP = 90;
-                summon.BaseAC = 10;
+                summon.BaseAC = 12;
                 summon.SetsRawAbilityScore(Ability.Strength, 24);
                 summon.SetSkillRank(Skill.Discipline, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
@@ -197,7 +197,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
                 summon.MaxHP = 120;
                 summon.HP = 120;
-                summon.BaseAC = 15;
+                summon.BaseAC = 18;
                 summon.SetsRawAbilityScore(Ability.Strength, 32);
                 summon.SetSkillRank(Skill.Discipline, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
@@ -211,7 +211,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
                 summon.MaxHP = 150;
                 summon.HP = 150;
-                summon.BaseAC = 20;
+                summon.BaseAC = 24;
                 summon.SetsRawAbilityScore(Ability.Strength, 40);
                 summon.SetSkillRank(Skill.Discipline, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
@@ -225,7 +225,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
                 summon.MaxHP = 180;
                 summon.HP = 180;
-                summon.BaseAC = 25;
+                summon.BaseAC = 30;
                 summon.SetsRawAbilityScore(Ability.Strength, 48);
                 summon.SetSkillRank(Skill.Discipline, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
@@ -239,7 +239,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
                 summon.MaxHP = 210;
                 summon.HP = 210;
-                summon.BaseAC = 30;
+                summon.BaseAC = 36;
                 summon.SetsRawAbilityScore(Ability.Strength, 56);
                 summon.SetSkillRank(Skill.Discipline, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
@@ -293,7 +293,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
                 summon.MaxHP = 60;
                 summon.HP = 60;
-                summon.BaseAC = 5;
+                summon.BaseAC = 6;
                 summon.SetsRawAbilityScore(Ability.Strength, 16);
                 summon.SetSkillRank(Skill.Discipline, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
@@ -305,7 +305,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
                 summon.MaxHP = 90;
                 summon.HP = 90;
-                summon.BaseAC = 10;
+                summon.BaseAC = 12;
                 summon.SetsRawAbilityScore(Ability.Strength, 24);
                 summon.SetSkillRank(Skill.Discipline, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
@@ -317,7 +317,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
                 summon.MaxHP = 90;
                 summon.HP = 90;
-                summon.BaseAC = 10;
+                summon.BaseAC = 12;
                 summon.SetsRawAbilityScore(Ability.Strength, 32);
                 summon.SetSkillRank(Skill.Discipline, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
@@ -329,7 +329,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
                 summon.MaxHP = 120;
                 summon.HP = 120;
-                summon.BaseAC = 15;
+                summon.BaseAC = 18;
                 summon.SetsRawAbilityScore(Ability.Strength, 40);
                 summon.SetSkillRank(Skill.Discipline, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
@@ -341,7 +341,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
                 summon.MaxHP = 150;
                 summon.HP = 150;
-                summon.BaseAC = 20;
+                summon.BaseAC = 24;
                 summon.SetsRawAbilityScore(Ability.Strength, 48);
                 summon.SetSkillRank(Skill.Discipline, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
@@ -353,7 +353,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
                 summon.MaxHP = 150;
                 summon.HP = 150;
-                summon.BaseAC = 20;
+                summon.BaseAC = 24;
                 summon.SetsRawAbilityScore(Ability.Strength, 56);
                 summon.SetSkillRank(Skill.Discipline, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
@@ -436,7 +436,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
                 summon.MaxHP = 60;
                 summon.HP = 60;
-                summon.BaseAC = 5;
+                summon.BaseAC = 6;
                 summon.SetsRawAbilityScore(Ability.Strength, 16);
                 summon.SetSkillRank(Skill.Discipline, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
@@ -450,7 +450,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
                 summon.MaxHP = 90;
                 summon.HP = 90;
-                summon.BaseAC = 10;
+                summon.BaseAC = 12;
                 summon.SetsRawAbilityScore(Ability.Strength, 24);
                 summon.SetSkillRank(Skill.Discipline, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
@@ -464,7 +464,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
                 summon.MaxHP = 120;
                 summon.HP = 120;
-                summon.BaseAC = 15;
+                summon.BaseAC = 18;
                 summon.SetsRawAbilityScore(Ability.Strength, 32);
                 summon.SetSkillRank(Skill.Discipline, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
@@ -478,7 +478,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
                 summon.MaxHP = 150;
                 summon.HP = 150;
-                summon.BaseAC = 20;
+                summon.BaseAC = 24;
                 summon.SetsRawAbilityScore(Ability.Strength, 40);
                 summon.SetSkillRank(Skill.Discipline, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
@@ -492,7 +492,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
                 summon.MaxHP = 180;
                 summon.HP = 180;
-                summon.BaseAC = 25;
+                summon.BaseAC = 30;
                 summon.SetsRawAbilityScore(Ability.Strength, 48);
                 summon.SetSkillRank(Skill.Discipline, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
@@ -506,7 +506,7 @@ public class WarlockSummonStatsHandler
                 for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
                 summon.MaxHP = 210;
                 summon.HP = 210;
-                summon.BaseAC = 30;
+                summon.BaseAC = 36;
                 summon.SetsRawAbilityScore(Ability.Strength, 56);
                 summon.SetSkillRank(Skill.Discipline, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
@@ -547,6 +547,9 @@ public class WarlockSummonStatsHandler
         {
             case 1:
                 for (int i = 1; i < 1; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                summon.MaxHP = 30;
+                summon.HP = 30;
+                summon.BaseAC = 0;
                 summon.SetSkillRank(Skill.Discipline, 4);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 4);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 4);
@@ -555,6 +558,9 @@ public class WarlockSummonStatsHandler
 
             case 2:
                 for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                summon.MaxHP = 35;
+                summon.HP = 35;
+                summon.BaseAC = 2;
                 summon.SetsRawAbilityScore(Ability.Strength, 16);
                 summon.SetSkillRank(Skill.Discipline, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
@@ -564,6 +570,9 @@ public class WarlockSummonStatsHandler
 
             case 3:
                 for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                summon.MaxHP = 40;
+                summon.HP = 40;
+                summon.BaseAC = 4;
                 summon.SetsRawAbilityScore(Ability.Strength, 24);
                 summon.SetSkillRank(Skill.Discipline, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
@@ -573,6 +582,9 @@ public class WarlockSummonStatsHandler
 
             case 4:
                 for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                summon.MaxHP = 45;
+                summon.HP = 45;
+                summon.BaseAC = 6;
                 summon.SetsRawAbilityScore(Ability.Strength, 32);
                 summon.SetSkillRank(Skill.Discipline, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
@@ -582,6 +594,9 @@ public class WarlockSummonStatsHandler
 
             case 5:
                 for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                summon.MaxHP = 50;
+                summon.HP = 50;
+                summon.BaseAC = 8;
                 summon.SetsRawAbilityScore(Ability.Strength, 40);
                 summon.SetSkillRank(Skill.Discipline, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
@@ -591,6 +606,9 @@ public class WarlockSummonStatsHandler
 
             case 6:
                 for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                summon.MaxHP = 55;
+                summon.HP = 55;
+                summon.BaseAC = 10;
                 summon.SetsRawAbilityScore(Ability.Strength, 48);
                 summon.SetSkillRank(Skill.Discipline, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
@@ -600,6 +618,9 @@ public class WarlockSummonStatsHandler
 
             case 7:
                 for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                summon.MaxHP = 60;
+                summon.HP = 60;
+                summon.BaseAC = 12;
                 summon.SetsRawAbilityScore(Ability.Strength, 56);
                 summon.SetSkillRank(Skill.Discipline, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
@@ -608,13 +629,9 @@ public class WarlockSummonStatsHandler
             break;
         }
 
-        summon.MaxHP = 30;
-        summon.HP = 30;
-        summon.BaseAC = 0;
         summon.BaseAttackBonus = 0;
         summon.BaseAttackCount = 1;
         summon.Size = CreatureSize.Medium;
-        
 
         Effect mindImmunity = Effect.Immunity(ImmunityType.MindSpells);
         mindImmunity.SubType = EffectSubType.Supernatural;
@@ -647,7 +664,6 @@ public class WarlockSummonStatsHandler
             summon.MaxHP = 30;
             summon.HP = 30;
             summon.BaseAC = 0;
-            
             summon.SetSkillRank(Skill.Discipline, 4);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 4);
             summon.SetBaseSavingThrow(SavingThrow.Reflex, 4);
@@ -660,7 +676,7 @@ public class WarlockSummonStatsHandler
             for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
             summon.MaxHP = 60;
             summon.HP = 60;
-            summon.BaseAC = 5;
+            summon.BaseAC = 6;
             summon.SetsRawAbilityScore(Ability.Strength, 16);
             summon.SetSkillRank(Skill.Discipline, 8);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
@@ -674,7 +690,7 @@ public class WarlockSummonStatsHandler
             for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
             summon.MaxHP = 90;
             summon.HP = 90;
-            summon.BaseAC = 10;
+            summon.BaseAC = 12;
             summon.SetsRawAbilityScore(Ability.Strength, 24);
             summon.SetSkillRank(Skill.Discipline, 12);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
@@ -688,7 +704,7 @@ public class WarlockSummonStatsHandler
             for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
             summon.MaxHP = 120;
             summon.HP = 120;
-            summon.BaseAC = 15;
+            summon.BaseAC = 18;
             summon.SetsRawAbilityScore(Ability.Strength, 32);
             summon.SetSkillRank(Skill.Discipline, 16);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
@@ -702,7 +718,7 @@ public class WarlockSummonStatsHandler
             for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
             summon.MaxHP = 150;
             summon.HP = 150;
-            summon.BaseAC = 20;
+            summon.BaseAC = 24;
             summon.SetsRawAbilityScore(Ability.Strength, 40);
             summon.SetSkillRank(Skill.Discipline, 20);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
@@ -716,7 +732,7 @@ public class WarlockSummonStatsHandler
             for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
             summon.MaxHP = 180;
             summon.HP = 180;
-            summon.BaseAC = 25;
+            summon.BaseAC = 30;
             summon.SetsRawAbilityScore(Ability.Strength, 48);
             summon.SetSkillRank(Skill.Discipline, 24);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
@@ -730,7 +746,7 @@ public class WarlockSummonStatsHandler
             for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
             summon.MaxHP = 210;
             summon.HP = 210;
-            summon.BaseAC = 30;
+            summon.BaseAC = 36;
             summon.SetsRawAbilityScore(Ability.Strength, 56);
             summon.SetSkillRank(Skill.Discipline, 28);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
