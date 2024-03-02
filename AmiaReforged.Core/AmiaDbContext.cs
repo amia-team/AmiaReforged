@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Core.Models;
+using AmiaReforged.Core.Models.Faction;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -16,7 +17,7 @@ public class AmiaDbContext : DbContext
     public virtual DbSet<DreamcoinRecord> DreamcoinRecords { get; set; } = null!;
     public virtual DbSet<Player> Players { get; set; } = null!;
     public virtual DbSet<PlayerCharacter> Characters { get; set; } = null!;
-    public DbSet<Faction> Factions { get; set; } = null!;
+    public DbSet<FactionEntity> Factions { get; set; } = null!;
     public DbSet<FactionRelation> FactionRelations { get; set; } = null!;
     public DbSet<FactionCharacterRelation> FactionCharacterRelations { get; set; } = null!;
     public DbSet<StoredItem> PlayerItems { get; set; } = null!;
