@@ -43,7 +43,7 @@ public class BindingOfMaggotsEnter
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
             DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Soul Larvae can be summoned again."), caster, 0));
             // Summon new
-            SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkfiend", location, 0.3f, 2f, 1f, 3f, VFX_FNF_SUMMON_EPIC_UNDEAD, 0.1f);
+            SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkfiend", location, 0.3f, 2f, 1f, 3f);
         }
 
         //---------------------------

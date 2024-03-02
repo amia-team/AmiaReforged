@@ -113,7 +113,7 @@ public class PrimordialGust
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
             DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Mephits can be summoned again."), caster, 0));
-            SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkelemental", location, 0.5f, 2f, 0.5f, 1.5f, VFX_IMP_ELEMENTAL_PROTECTION, 0.6f);
+            SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkelemental", location, 0.5f, 2f, 0.5f, 1.5f);
             DelayCommand(1.6f, () => SummonUtility.SetSummonsFacing(summonCount, location));
         }
     }

@@ -91,7 +91,7 @@ public class LoudDecay
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
             DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Violet Fungi can be summoned again."), caster, 0));
             // Summon new
-            SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkaberrant", location, 1f, 9f, 3f, 4f, VFX_FNF_GAS_EXPLOSION_NATURE, 5.5f);
+            SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkaberrant", location, 1f, 9f, 3f, 4f);
             DelayCommand(4.1f, () => SummonUtility.SetSummonsFacing(summonCount, location));
         }
     }

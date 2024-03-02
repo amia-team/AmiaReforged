@@ -20,6 +20,7 @@ public class WarlockSummonUtilHandler
         NwModule.Instance.OnPlayerDeath += UnsummonOnDeath;
         NwModule.Instance.OnPlayerRest += UnsummonOnRest;
         NwModule.Instance.OnAssociateRemove += UnsummonOnRemove;
+        NwModule.Instance.OnAssociateAdd += ApplySummonVfx;
         Log.Info("Warlock Summon Util Handler initialized.");
     }
 
@@ -29,7 +30,6 @@ public class WarlockSummonUtilHandler
         if (callInfo.TryGetEvent(out CreatureEvents.OnSpawn obj))
         {
         if (!obj.Creature.ResRef.Contains("wlk")) return;
-        if (obj.Creature.AssociateType != AssociateType.Henchman) return;
 
         NwCreature summon = obj.Creature;
         summon.SetIsDestroyable(true, false, false);
@@ -99,12 +99,11 @@ public class WarlockSummonUtilHandler
 
         NwCreature warlock = obj.Player.ControlledCreature;
 
-        foreach (NwCreature summon in warlock.Associates)
+        foreach (NwCreature hench in warlock.Henchmen)
         {
-            if (summon.ResRef == "wlkaberrant" || summon.ResRef == "wlkelemental" || summon.ResRef == "wlkfiend")
+            if (hench.ResRef.Contains("wlk"))
             {
-                summon.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpUnsummon));
-                summon.Destroy();
+                NWScript.RemoveHenchman(warlock, hench);
             }
         }
     }
@@ -115,21 +114,21 @@ public class WarlockSummonUtilHandler
 
         if (obj.AssociateType == AssociateType.Summoned)
         {
-            foreach (NwCreature summon in obj.Owner.Henchmen)
+            foreach (NwCreature hench in obj.Owner.Henchmen)
             {
-                if (NWScript.GetLocalInt(summon, "wlk_unsummonable") == 1)
+                if (hench.GetObjectVariable<LocalVariableInt>("wlk_unsummonable").Value == 1)
                 {
-                    NWScript.RemoveHenchman(obj.Owner, summon);
+                    NWScript.RemoveHenchman(obj.Owner, hench);
                 }
             }
         }
-        if (obj.Associate.ResRef == "wlkaberrant" || obj.Associate.ResRef == "wlkelemental" || obj.Associate.ResRef == "wlkfiend")
+        if (obj.Associate.ResRef.Contains("wlk") && obj.AssociateType == AssociateType.Henchman)
         {
-            foreach (NwCreature summon in obj.Owner.Henchmen)
+            foreach (NwCreature hench in obj.Owner.Henchmen)
             {
-                if (NWScript.GetLocalInt(summon, "wlk_unsummonable") == 1)
+                if (hench.GetObjectVariable<LocalVariableInt>("wlk_unsummonable").Value == 1)
                 {
-                    NWScript.RemoveHenchman(obj.Owner, summon);
+                    NWScript.RemoveHenchman(obj.Owner, hench);
                 }
             }
             foreach (NwCreature summon in obj.Owner.Associates)
@@ -152,11 +151,11 @@ public class WarlockSummonUtilHandler
 
         NwCreature warlock = obj.DeadPlayer.ControlledCreature;
 
-        foreach (NwCreature summon in warlock.Associates)
+        foreach (NwCreature hench in warlock.Henchmen)
         {
-            if (summon.ResRef == "wlkaberrant" || summon.ResRef == "wlkelemental" || summon.ResRef == "wlkfiend")
+            if (hench.ResRef.Contains("wlk"))
             {
-                NWScript.RemoveHenchman(warlock, summon);
+                NWScript.RemoveHenchman(warlock, hench);
             }
         }
     }
@@ -169,18 +168,17 @@ public class WarlockSummonUtilHandler
         if (warlock.GetAssociate(AssociateType.Henchman) == null) return;
         if (NWScript.GetLocalInt(warlock, "AR_RestChoice") == 0) return;
 
-        foreach (NwCreature summon in warlock.Associates)
+        foreach (NwCreature hench in warlock.Henchmen)
         {
-            if (summon.ResRef == "wlkaberrant" || summon.ResRef == "wlkelemental" || summon.ResRef == "wlkfiend")
+            if (hench.ResRef.Contains("wlk"))
             {
-                NWScript.RemoveHenchman(warlock, summon);
+                NWScript.RemoveHenchman(warlock, hench);
             }
         }
     }
 
     private void UnsummonOnRemove(OnAssociateRemove obj)
     {
-        if (!obj.Owner.IsPlayerControlled) return;
         if (NWScript.GetLevelByClass(57, obj.Owner) <= 0) return;
         if (obj.Associate.AssociateType != AssociateType.Henchman) return;
         if (!obj.Associate.ResRef.Contains("wlk")) return;
@@ -198,5 +196,25 @@ public class WarlockSummonUtilHandler
         summonLocation.ApplyEffect(EffectDuration.Instant, desummonVfx);
         summon.Destroy();
         obj.Owner.LoginPlayer.SendServerMessage("Unsummoning "+summon.Name+".");
+    }
+
+    private void ApplySummonVfx(OnAssociateAdd obj)
+    {
+        if (NWScript.GetLevelByClass(57, obj.Owner) <= 0) return;
+        if (obj.AssociateType != AssociateType.Henchman) return;
+        if (!obj.Associate.ResRef.Contains("wlk")) return;
+
+        NwCreature summon = obj.Associate;
+        Location summonLocation = summon.Location;
+
+        Effect summonVfx = summon.ResRef switch
+        {
+            "wlkaberrant" => Effect.VisualEffect(VfxType.FnfGasExplosionNature, false, 5.3f),
+            "wlkelemental" => Effect.VisualEffect(VfxType.ImpElementalProtection, false, 0.6f),
+            "wlkfiend" => Effect.VisualEffect(VfxType.FnfSummonEpicUndead, false, 0.1f),
+            _ => Effect.VisualEffect(VfxType.ImpUnsummon)
+        };
+
+        summonLocation.ApplyEffect(EffectDuration.Instant, summonVfx);
     }
 }
