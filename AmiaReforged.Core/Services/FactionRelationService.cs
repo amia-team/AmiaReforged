@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.Core.Helpers;
 using AmiaReforged.Core.Models;
+using AmiaReforged.Core.Models.Faction;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -21,7 +22,7 @@ public class FactionRelationService
         _taskHelper = taskHelper;
     }
 
-    private static void ReportNonExistentFactions(FactionRelation relation, Faction? faction, Faction? targetFaction)
+    private static void ReportNonExistentFactions(FactionRelation relation, FactionEntity? faction, FactionEntity? targetFaction)
     {
         if (faction is null)
         {
@@ -34,7 +35,7 @@ public class FactionRelationService
         }
     }
 
-    private async Task AddAsyncOnlyIfFactionsExist(FactionRelation relation, Faction? faction, Faction? targetFaction)
+    private async Task AddAsyncOnlyIfFactionsExist(FactionRelation relation, FactionEntity? faction, FactionEntity? targetFaction)
     {
         if (faction is not null && targetFaction is not null)
         {
@@ -52,8 +53,8 @@ public class FactionRelationService
 
     private async Task AddFactionRelation(FactionRelation relation)
     {
-        Faction? faction = await _factionService.GetFactionByName(relation.FactionName);
-        Faction? targetFaction = await _factionService.GetFactionByName(relation.TargetFactionName);
+        FactionEntity? faction = await _factionService.GetFactionByName(relation.FactionName);
+        FactionEntity? targetFaction = await _factionService.GetFactionByName(relation.TargetFactionName);
 
         ReportNonExistentFactions(relation, faction, targetFaction);
 
@@ -77,13 +78,13 @@ public class FactionRelationService
         await _taskHelper.TrySwitchToMainThread();
     }
 
-    public async Task<FactionRelation?> GetFactionRelationAsync(Faction factionA, Faction factionB)
+    public async Task<FactionRelation?> GetFactionRelationAsync(FactionEntity factionEntityA, FactionEntity factionEntityB)
     {
         FactionRelation? relation = null;
         try
         {
             relation = await _ctx.FactionRelations
-                .FirstOrDefaultAsync(f => f.FactionName == factionA.Name && f.TargetFactionName == factionB.Name);
+                .FirstOrDefaultAsync(f => f.FactionName == factionEntityA.Name && f.TargetFactionName == factionEntityB.Name);
         }
         catch (Exception e)
         {
@@ -94,8 +95,8 @@ public class FactionRelationService
         {
             relation = new FactionRelation
             {
-                FactionName = factionA.Name,
-                TargetFactionName = factionB.Name,
+                FactionName = factionEntityA.Name,
+                TargetFactionName = factionEntityB.Name,
                 Relation = 0
             };
 

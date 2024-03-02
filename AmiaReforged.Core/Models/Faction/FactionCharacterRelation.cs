@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace AmiaReforged.Core.Models;
+namespace AmiaReforged.Core.Models.Faction;
 
 public class FactionCharacterRelation
 {

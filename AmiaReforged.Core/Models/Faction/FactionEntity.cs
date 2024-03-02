@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace AmiaReforged.Core.Models;
+namespace AmiaReforged.Core.Models.Faction;
 
-public class Faction
+public class FactionEntity
 {
     [Key]
     public string Name { get; set; } = null!;

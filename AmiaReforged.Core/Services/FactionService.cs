@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using AmiaReforged.Core.Helpers;
 using AmiaReforged.Core.Models;
+using AmiaReforged.Core.Models.Faction;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -23,13 +24,13 @@ public class FactionService
         _nwTaskHelper = nwTaskHelper;
     }
 
-    public async Task AddFaction(Faction faction)
+    public async Task AddFaction(FactionEntity factionEntity)
     {
         try
         {
-            await RemoveNonExistentMembers(faction);
+            await RemoveNonExistentMembers(factionEntity);
 
-            await _ctx.Factions.AddAsync(faction);
+            await _ctx.Factions.AddAsync(factionEntity);
             await _ctx.SaveChangesAsync();
         }
         catch (Exception e)
@@ -40,7 +41,7 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    private async Task RemoveNonExistentMembers(Faction f)
+    private async Task RemoveNonExistentMembers(FactionEntity f)
     {
         if (f is { Members: null }) return;
 
@@ -52,20 +53,20 @@ public class FactionService
         }
     }
 
-    public async Task<Faction?> GetFactionByName(string factionName)
+    public async Task<FactionEntity?> GetFactionByName(string factionName)
     {
-        Faction? faction = await _ctx.Factions.FindAsync(factionName);
+        FactionEntity? faction = await _ctx.Factions.FindAsync(factionName);
 
         await _nwTaskHelper.TrySwitchToMainThread();
 
         return faction;
     }
 
-    public async Task DeleteFaction(Faction faction)
+    public async Task DeleteFaction(FactionEntity factionEntity)
     {
         try
         {
-            _ctx.Factions.Remove(faction);
+            _ctx.Factions.Remove(factionEntity);
             await _ctx.SaveChangesAsync();
         }
         catch (Exception e)
@@ -76,7 +77,7 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task UpdateFaction(Faction f)
+    public async Task UpdateFaction(FactionEntity f)
     {
         try
         {
@@ -92,12 +93,12 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task AddToRoster(Faction faction, Guid id)
+    public async Task AddToRoster(FactionEntity factionEntity, Guid id)
     {
         try
         {
-            ((IList)faction.Members).Add(id);
-            _ctx.Factions.Update(faction);
+            ((IList)factionEntity.Members).Add(id);
+            _ctx.Factions.Update(factionEntity);
             await _ctx.SaveChangesAsync();
         }
         catch (Exception e)
@@ -108,13 +109,13 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task AddToRoster(Faction faction, IEnumerable<Guid> characters)
+    public async Task AddToRoster(FactionEntity factionEntity, IEnumerable<Guid> characters)
     {
         try
         {
             foreach (Guid id in characters)
             {
-                faction.Members.Add(id);
+                factionEntity.Members.Add(id);
             }
 
             await _ctx.SaveChangesAsync();
@@ -127,21 +128,21 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task<IEnumerable<Faction>> GetAllFactions()
+    public async Task<IEnumerable<FactionEntity>> GetAllFactions()
     {
-        IEnumerable<Faction> factions = await _ctx.Factions.ToListAsync();
+        IEnumerable<FactionEntity> factions = await _ctx.Factions.ToListAsync();
 
         await _nwTaskHelper.TrySwitchToMainThread();
 
         return factions;
     }
 
-    public async Task RemoveFromRoster(Faction faction, Guid characterId)
+    public async Task RemoveFromRoster(FactionEntity factionEntity, Guid characterId)
     {
         try
         {
-            faction.Members.Remove(characterId);
-            _ctx.Factions.Update(faction);
+            factionEntity.Members.Remove(characterId);
+            _ctx.Factions.Update(factionEntity);
             await _ctx.SaveChangesAsync();
         }
         catch (Exception e)
@@ -152,7 +153,7 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    private async Task<List<PlayerCharacter>> GetCharactersByCriteria(Faction f, Expression<Func<PlayerCharacter, bool>> criteria)
+    private async Task<List<PlayerCharacter>> GetCharactersByCriteria(FactionEntity f, Expression<Func<PlayerCharacter, bool>> criteria)
     {
         List<PlayerCharacter> characters = new();
 
@@ -176,7 +177,7 @@ public class FactionService
         return characters;
     }
 
-    public async Task DeleteFactions(List<Faction> faction)
+    public async Task DeleteFactions(List<FactionEntity> faction)
     {
         try
         {
@@ -191,7 +192,7 @@ public class FactionService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task AddFactions(List<Faction> factions)
+    public async Task AddFactions(List<FactionEntity> factions)
     {
         try
         {
