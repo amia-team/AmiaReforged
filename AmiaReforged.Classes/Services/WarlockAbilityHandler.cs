@@ -95,6 +95,8 @@ public class WarlockAbilityHandler
     {
         if (NWScript.GetLevelByClass(57, obj.Caster) <= 0) return;
         if (NWScript.GetLocalInt(NWScript.GetArea(obj.Caster), "NoCasting") == 0) return;
+        if (!(obj.Spell.UserType == SpellUserType.Spells || 
+            obj.Spell.UserType == SpellUserType.CreaturePower)) return;
         
         obj.PreventSpellCast = true;
 
