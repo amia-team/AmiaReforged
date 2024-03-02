@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Core.Models;
+using AmiaReforged.Core.Models.Faction;
 using AmiaReforged.Core.Services;
 using Anvil.API;
 using Anvil.Services;
@@ -46,7 +47,7 @@ public class OpenFactionListCommand : IChatCommand
 
     private async Task<List<NuiElement>> FactionListToNuiElements()
     {
-        IEnumerable<Faction> factions = await _factionService.GetAllFactions();
+        IEnumerable<FactionEntity> factions = await _factionService.GetAllFactions();
 
         List<NuiElement> elements = factions.Select(faction => new NuiRow
         {
