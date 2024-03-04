@@ -51,6 +51,6 @@ public class PlayerToolButtonController : WindowController<PlayerToolButtonView>
 
     protected override void OnClose()
     {
-        // Do nothing
+        Token.Player.SendServerMessage("You can re-open this window by typing ./playertools into the talk channel.");
     }
 }
