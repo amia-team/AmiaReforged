@@ -40,7 +40,6 @@ public class PlayerToolButtonView : WindowView<PlayerToolButtonView>
         {
             Geometry = ButtonGeometry,
             Border = false,
-            Closable = false,
             Transparent = true,
             Resizable = false,
             Collapsed = false,
