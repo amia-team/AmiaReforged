@@ -14,6 +14,8 @@ public class OpenPlayerToolsCommand : IChatCommand
     {
         if(caller.IsDM) return Task.CompletedTask;
         
+        caller.SendServerMessage("Opening Player Tools.");
+        
         WindowManager.OpenWindow<PlayerToolButtonView>(caller);
         return Task.CompletedTask;
     }
