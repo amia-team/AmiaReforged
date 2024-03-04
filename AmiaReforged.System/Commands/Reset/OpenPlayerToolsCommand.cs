@@ -5,6 +5,7 @@ using Anvil.Services;
 
 namespace AmiaReforged.System.Commands.Reset;
 
+[ServiceBinding(typeof(IChatCommand))]
 public class OpenPlayerToolsCommand : IChatCommand
 {
     [Inject] private WindowManager WindowManager { get; set; }
