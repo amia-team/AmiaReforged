@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 namespace AmiaReforged.Classes.EffectUtils;
 
@@ -66,7 +65,7 @@ public static class SummonUtility
     }
 
     public static void SummonMany(uint caster, float summonDuration, int summonCount, string summonResRef, IntPtr location,
-        float minLoc, float maxLoc, float minDelay, float maxDelay, int summonVfx = 0, float summonVfxFloat = 1)
+        float minLoc, float maxLoc, float minDelay, float maxDelay)
     {
         for (int i = 1; i <= summonCount; i++)
         {
@@ -75,7 +74,6 @@ public static class SummonUtility
             float newDelay = delay + 0.1f;
             string newTag = summonResRef + IntToString(i) + GetSubString(GetName(caster), 0, 2);
             DelayCommand(delay, () => CreateObject(OBJECT_TYPE_CREATURE, summonResRef, summonLocation, 0, newTag));
-            DelayCommand(delay, () => ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(summonVfx, 0, summonVfxFloat), summonLocation));
             DelayCommand(newDelay, () => AddHenchman(caster, GetObjectByTag(newTag)));
             DelayCommand(newDelay, () => DelayCommand(summonDuration, () => RemoveHenchman(caster, GetObjectByTag(newTag))));
         }

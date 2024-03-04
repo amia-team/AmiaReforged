@@ -35,6 +35,7 @@ public class WarlockSummonStatsHandler
         NwCreature summon = obj.Associate;
 
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
+        Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
 
         switch(summonTier)
         {
@@ -54,7 +55,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 60;
                 summon.HP = 60;
                 summon.BaseAC = 6;
-                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.SetsRawAbilityScore(Ability.Strength, 12);
+                summon.BaseAttackBonus = 3;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d4, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
@@ -66,7 +69,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
-                summon.SetsRawAbilityScore(Ability.Strength, 24);
+                summon.SetsRawAbilityScore(Ability.Strength, 14);
+                summon.BaseAttackBonus = 6;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d6, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
@@ -78,7 +83,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
-                summon.SetsRawAbilityScore(Ability.Strength, 32);
+                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.BaseAttackBonus = 9;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d6, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
@@ -90,7 +97,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 120;
                 summon.HP = 120;
                 summon.BaseAC = 18;
-                summon.SetsRawAbilityScore(Ability.Strength, 40);
+                summon.SetsRawAbilityScore(Ability.Strength, 18);
+                summon.BaseAttackBonus = 12;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d8, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
@@ -102,7 +111,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
-                summon.SetsRawAbilityScore(Ability.Strength, 48);
+                summon.SetsRawAbilityScore(Ability.Strength, 20);
+                summon.BaseAttackBonus = 15;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d10, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
@@ -114,15 +125,16 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
-                summon.SetsRawAbilityScore(Ability.Strength, 56);
+                summon.SetsRawAbilityScore(Ability.Strength, 22);
+                summon.BaseAttackBonus = 18;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d12, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 28);
             break;
         }
-
-        summon.BaseAttackBonus = 0;
+        
         summon.BaseAttackCount = 1;
         summon.Size = CreatureSize.Medium;
         summon.MovementRate = MovementRate.Normal;
@@ -131,6 +143,9 @@ public class WarlockSummonStatsHandler
         aberrationEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, aberrationEffects);
 
+        damageIncrease.SubType = EffectSubType.Supernatural;
+        summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
+        
         foreach (NwFeat feat in summon.Feats) 
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
@@ -148,6 +163,7 @@ public class WarlockSummonStatsHandler
         NwCreature summon = obj.Associate;
 
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
+        Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
         int concealment = default;
 
         switch(summonTier)
@@ -170,7 +186,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 60;
                 summon.HP = 60;
                 summon.BaseAC = 6;
-                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.SetsRawAbilityScore(Ability.Strength, 12);
+                summon.BaseAttackBonus = 3;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d4, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
@@ -184,7 +202,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
-                summon.SetsRawAbilityScore(Ability.Strength, 24);
+                summon.SetsRawAbilityScore(Ability.Strength, 14);
+                summon.BaseAttackBonus = 6;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d6, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
@@ -198,7 +218,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 120;
                 summon.HP = 120;
                 summon.BaseAC = 18;
-                summon.SetsRawAbilityScore(Ability.Strength, 32);
+                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.BaseAttackBonus = 9;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d6, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
@@ -212,7 +234,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
-                summon.SetsRawAbilityScore(Ability.Strength, 40);
+                summon.SetsRawAbilityScore(Ability.Strength, 18);
+                summon.BaseAttackBonus = 12;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d8, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
@@ -226,7 +250,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 180;
                 summon.HP = 180;
                 summon.BaseAC = 30;
-                summon.SetsRawAbilityScore(Ability.Strength, 48);
+                summon.SetsRawAbilityScore(Ability.Strength, 20);
+                summon.BaseAttackBonus = 15;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d10, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
@@ -240,7 +266,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 210;
                 summon.HP = 210;
                 summon.BaseAC = 36;
-                summon.SetsRawAbilityScore(Ability.Strength, 56);
+                summon.SetsRawAbilityScore(Ability.Strength, 22);
+                summon.BaseAttackBonus = 18;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d12, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 28);
@@ -250,14 +278,17 @@ public class WarlockSummonStatsHandler
             break;
         }
 
-        summon.BaseAttackBonus = 0;
         summon.Size = CreatureSize.Medium;
-        
 
+        Effect damage = Effect.DamageIncrease((int)DamageBonus.Plus1d4, DamageType.BaseWeapon);
         Effect celestialEffects = SummonConstants.CelestialEffects(concealment);
         celestialEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, celestialEffects);
+        summon.ApplyEffect(EffectDuration.Permanent, damage);
 
+        damageIncrease.SubType = EffectSubType.Supernatural;
+        summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
+        
         foreach (NwFeat feat in summon.Feats) 
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
@@ -275,6 +306,7 @@ public class WarlockSummonStatsHandler
         NwCreature summon = obj.Associate;
 
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
+        Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
 
         switch(summonTier)
         {
@@ -294,7 +326,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 60;
                 summon.HP = 60;
                 summon.BaseAC = 6;
-                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.SetsRawAbilityScore(Ability.Strength, 12);
+                summon.BaseAttackBonus = 3;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d4, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
@@ -306,7 +340,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
-                summon.SetsRawAbilityScore(Ability.Strength, 24);
+                summon.SetsRawAbilityScore(Ability.Strength, 14);
+                summon.BaseAttackBonus = 6;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d6, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
@@ -318,7 +354,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
-                summon.SetsRawAbilityScore(Ability.Strength, 32);
+                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.BaseAttackBonus = 9;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d6, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
@@ -330,7 +368,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 120;
                 summon.HP = 120;
                 summon.BaseAC = 18;
-                summon.SetsRawAbilityScore(Ability.Strength, 40);
+                summon.SetsRawAbilityScore(Ability.Strength, 18);
+                summon.BaseAttackBonus = 12;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d8, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
@@ -342,7 +382,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
-                summon.SetsRawAbilityScore(Ability.Strength, 48);
+                summon.SetsRawAbilityScore(Ability.Strength, 20);
+                summon.BaseAttackBonus = 15;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d10, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
@@ -354,7 +396,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
-                summon.SetsRawAbilityScore(Ability.Strength, 56);
+                summon.SetsRawAbilityScore(Ability.Strength, 22);
+                summon.BaseAttackBonus = 18;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d12, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 28);
@@ -362,10 +406,8 @@ public class WarlockSummonStatsHandler
             break;
         }
 
-        summon.BaseAttackBonus = 0;
         summon.BaseAttackCount = 1;
         summon.Size = CreatureSize.Medium;
-        
 
         DamageType element = default;
 
@@ -397,6 +439,9 @@ public class WarlockSummonStatsHandler
         elementalEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, elementalEffects);
         
+        damageIncrease.SubType = EffectSubType.Supernatural;
+        summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
+        
         foreach (NwFeat feat in summon.Feats) 
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
@@ -415,6 +460,7 @@ public class WarlockSummonStatsHandler
         NwCreature summon = obj.Associate;
 
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
+        Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
         int concealment = default;
 
         switch(summonTier)
@@ -437,7 +483,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 60;
                 summon.HP = 60;
                 summon.BaseAC = 6;
-                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.SetsRawAbilityScore(Ability.Strength, 12);
+                summon.BaseAttackBonus = 3;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d4, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
@@ -451,7 +499,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
-                summon.SetsRawAbilityScore(Ability.Strength, 24);
+                summon.SetsRawAbilityScore(Ability.Strength, 14);
+                summon.BaseAttackBonus = 6;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d6, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
@@ -465,7 +515,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 120;
                 summon.HP = 120;
                 summon.BaseAC = 18;
-                summon.SetsRawAbilityScore(Ability.Strength, 32);
+                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.BaseAttackBonus = 9;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d6, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
@@ -479,7 +531,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
-                summon.SetsRawAbilityScore(Ability.Strength, 40);
+                summon.SetsRawAbilityScore(Ability.Strength, 18);
+                summon.BaseAttackBonus = 12;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d8, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
@@ -493,7 +547,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 180;
                 summon.HP = 180;
                 summon.BaseAC = 30;
-                summon.SetsRawAbilityScore(Ability.Strength, 48);
+                summon.SetsRawAbilityScore(Ability.Strength, 20);
+                summon.BaseAttackBonus = 15;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d10, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
@@ -507,7 +563,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 210;
                 summon.HP = 210;
                 summon.BaseAC = 36;
-                summon.SetsRawAbilityScore(Ability.Strength, 56);
+                summon.SetsRawAbilityScore(Ability.Strength, 22);
+                summon.BaseAttackBonus = 18;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d12, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 28);
@@ -516,15 +574,16 @@ public class WarlockSummonStatsHandler
                 concealment = 50;
             break;
         }
-
-        summon.BaseAttackBonus = 0;
-        summon.Size = CreatureSize.Medium;
         
+        summon.Size = CreatureSize.Medium;
 
         Effect feyEffects = SummonConstants.FeyEffects(concealment);
         feyEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, feyEffects);
 
+        damageIncrease.SubType = EffectSubType.Supernatural;
+        summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
+        
         foreach (NwFeat feat in summon.Feats) 
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
@@ -542,6 +601,7 @@ public class WarlockSummonStatsHandler
         NwCreature summon = obj.Associate;
 
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
+        Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
 
         switch(summonTier)
         {
@@ -561,7 +621,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 35;
                 summon.HP = 35;
                 summon.BaseAC = 2;
-                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.SetsRawAbilityScore(Ability.Strength, 12);
+                summon.BaseAttackBonus = 3;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d4, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
@@ -573,7 +635,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 40;
                 summon.HP = 40;
                 summon.BaseAC = 4;
-                summon.SetsRawAbilityScore(Ability.Strength, 24);
+                summon.SetsRawAbilityScore(Ability.Strength, 14);
+                summon.BaseAttackBonus = 6;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d6, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
@@ -585,7 +649,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 45;
                 summon.HP = 45;
                 summon.BaseAC = 6;
-                summon.SetsRawAbilityScore(Ability.Strength, 32);
+                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.BaseAttackBonus = 9;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d6, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
@@ -597,7 +663,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 50;
                 summon.HP = 50;
                 summon.BaseAC = 8;
-                summon.SetsRawAbilityScore(Ability.Strength, 40);
+                summon.SetsRawAbilityScore(Ability.Strength, 18);
+                summon.BaseAttackBonus = 12;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d8, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
@@ -609,7 +677,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 55;
                 summon.HP = 55;
                 summon.BaseAC = 10;
-                summon.SetsRawAbilityScore(Ability.Strength, 48);
+                summon.SetsRawAbilityScore(Ability.Strength, 20);
+                summon.BaseAttackBonus = 15;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d10, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
@@ -621,7 +691,9 @@ public class WarlockSummonStatsHandler
                 summon.MaxHP = 60;
                 summon.HP = 60;
                 summon.BaseAC = 12;
-                summon.SetsRawAbilityScore(Ability.Strength, 56);
+                summon.SetsRawAbilityScore(Ability.Strength, 22);
+                summon.BaseAttackBonus = 18;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d12, DamageType.BaseWeapon);
                 summon.SetSkillRank(Skill.Discipline, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 28);
@@ -629,7 +701,6 @@ public class WarlockSummonStatsHandler
             break;
         }
 
-        summon.BaseAttackBonus = 0;
         summon.BaseAttackCount = 1;
         summon.Size = CreatureSize.Medium;
 
@@ -637,6 +708,9 @@ public class WarlockSummonStatsHandler
         mindImmunity.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, mindImmunity);
 
+        damageIncrease.SubType = EffectSubType.Supernatural;
+        summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
+        
         foreach (NwFeat feat in summon.Feats) 
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
@@ -656,6 +730,7 @@ public class WarlockSummonStatsHandler
         NwCreature warlock = obj.Owner;
         
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
+        Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
         string slaadTier = summon.ResRef;
 
         if (summonTier == 1 && slaadTier == "wlkslaadred")
@@ -677,7 +752,9 @@ public class WarlockSummonStatsHandler
             summon.MaxHP = 60;
             summon.HP = 60;
             summon.BaseAC = 6;
-            summon.SetsRawAbilityScore(Ability.Strength, 16);
+            summon.SetsRawAbilityScore(Ability.Strength, 12);
+            summon.BaseAttackBonus = 3;
+            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d4, DamageType.BaseWeapon);
             summon.SetSkillRank(Skill.Discipline, 8);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
             summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
@@ -691,7 +768,9 @@ public class WarlockSummonStatsHandler
             summon.MaxHP = 90;
             summon.HP = 90;
             summon.BaseAC = 12;
-            summon.SetsRawAbilityScore(Ability.Strength, 24);
+            summon.SetsRawAbilityScore(Ability.Strength, 14);
+            summon.BaseAttackBonus = 6;
+            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d6, DamageType.BaseWeapon);
             summon.SetSkillRank(Skill.Discipline, 12);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
             summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
@@ -705,7 +784,9 @@ public class WarlockSummonStatsHandler
             summon.MaxHP = 120;
             summon.HP = 120;
             summon.BaseAC = 18;
-            summon.SetsRawAbilityScore(Ability.Strength, 32);
+            summon.SetsRawAbilityScore(Ability.Strength, 16);
+            summon.BaseAttackBonus = 9;
+            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d6, DamageType.BaseWeapon);
             summon.SetSkillRank(Skill.Discipline, 16);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
             summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
@@ -719,7 +800,9 @@ public class WarlockSummonStatsHandler
             summon.MaxHP = 150;
             summon.HP = 150;
             summon.BaseAC = 24;
-            summon.SetsRawAbilityScore(Ability.Strength, 40);
+            summon.SetsRawAbilityScore(Ability.Strength, 18);
+            summon.BaseAttackBonus = 12;
+            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d8, DamageType.BaseWeapon);
             summon.SetSkillRank(Skill.Discipline, 20);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
             summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
@@ -733,7 +816,9 @@ public class WarlockSummonStatsHandler
             summon.MaxHP = 180;
             summon.HP = 180;
             summon.BaseAC = 30;
-            summon.SetsRawAbilityScore(Ability.Strength, 48);
+            summon.SetsRawAbilityScore(Ability.Strength, 20);
+            summon.BaseAttackBonus = 15;
+            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d10, DamageType.BaseWeapon);
             summon.SetSkillRank(Skill.Discipline, 24);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
             summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
@@ -747,15 +832,16 @@ public class WarlockSummonStatsHandler
             summon.MaxHP = 210;
             summon.HP = 210;
             summon.BaseAC = 36;
-            summon.SetsRawAbilityScore(Ability.Strength, 56);
+            summon.SetsRawAbilityScore(Ability.Strength, 22);
+            summon.BaseAttackBonus = 18;
+            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d12, DamageType.BaseWeapon);
             summon.SetSkillRank(Skill.Discipline, 28);
             summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
             summon.SetBaseSavingThrow(SavingThrow.Reflex, 28);
             summon.SetBaseSavingThrow(SavingThrow.Will, 28);
             summon.BaseAttackCount = 3;
         }
-
-        summon.BaseAttackBonus = 0;
+        
         summon.Size = CreatureSize.Medium;
         
         int regen = slaadTier switch
@@ -771,6 +857,9 @@ public class WarlockSummonStatsHandler
         slaadEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, slaadEffects);
 
+        damageIncrease.SubType = EffectSubType.Supernatural;
+        summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
+        
         foreach (NwFeat feat in summon.Feats) 
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
