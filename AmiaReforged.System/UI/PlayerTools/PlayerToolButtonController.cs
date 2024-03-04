@@ -15,7 +15,7 @@ public class PlayerToolButtonController : WindowController<PlayerToolButtonView>
     {
         Vector2 windowPosition = new Vector2(725f, 0f);
 
-        Token.SetBindValue(View.ButtonGeometry, new NuiRect(windowPosition.X, windowPosition.Y, 160f, 60f));
+        Token.SetBindValue(View.ButtonGeometry, new NuiRect(windowPosition.X, windowPosition.Y, 260f, 120f));
     }
 
 
