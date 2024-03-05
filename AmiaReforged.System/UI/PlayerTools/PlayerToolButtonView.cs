@@ -6,7 +6,7 @@ namespace AmiaReforged.System.UI.PlayerTools;
 public class PlayerToolButtonView : WindowView<PlayerToolButtonView>
 {
     public override string Id => "playertools.button";
-    public override string Title => "Player Tools";
+    public override string Title => "Player Dashboard";
 
     public override bool ListInPlayerTools => false;
 
@@ -36,7 +36,7 @@ public class PlayerToolButtonView : WindowView<PlayerToolButtonView>
             }
         };
 
-        WindowTemplate = new NuiWindow(root, string.Empty)
+        WindowTemplate = new NuiWindow(root, Title)
         {
             Geometry = ButtonGeometry,
             Border = false,

@@ -13,7 +13,7 @@ public sealed class DiceRollWindowView : WindowView<DiceRollWindowView>
         return CreateController<DiceRollWindowController>(player);
     }
 
-    
+
     public readonly NuiBind<List<NuiComboEntry>> ButtonGroupEntries = new("roll_button_group");
     public readonly NuiBind<int> Selection = new("selected_roll_button");
 
@@ -34,16 +34,29 @@ public sealed class DiceRollWindowView : WindowView<DiceRollWindowView>
     {
         RollGroup = new NuiGroup()
         {
-            Element = new NuiRow()
+            Element = new NuiColumn()
             {
                 Children = new List<NuiElement>
                 {
-                    new NuiCombo()
+                    new NuiRow
                     {
-                        Id = "roll_button_group",
-                        Selected = Selection,
-                        Entries = ButtonGroupEntries
-                    }.Assign<>(out GoButton)
+                        Children = new List<NuiElement>
+                        {
+                            new NuiCombo
+                            {
+                                Id = "roll_button_group",
+                                Selected = Selection,
+                                Entries = ButtonGroupEntries
+                            }
+                        }
+                    },
+                    new NuiRow
+                    {
+                        Children = new List<NuiElement>
+                        {
+                            new NuiButton("GoSDAS") { Id = "go_button" }.Assign(out GoButton)
+                        },
+                    }
                 }
             }
         };
@@ -53,50 +66,70 @@ public sealed class DiceRollWindowView : WindowView<DiceRollWindowView>
             {
                 new NuiGroup()
                 {
-                    Element = new NuiRow()
+                    Element = new NuiColumn()
                     {
                         Children = new List<NuiElement>
                         {
-                            new NuiButton("Numbered Die")
+                            new NuiRow()
                             {
-                                Id = "numbered_die",
-                                Width = 112f,
-                                Height = 37f
-                            }.Assign(out NumberRollButton),
-                            new NuiButton("Save Throw")
+                                Children = new List<NuiElement>
+                                {
+                                    new NuiButton("Numbered Die")
+                                    {
+                                        Id = "numbered_die",
+                                        Width = 114f,
+                                        Height = 37f
+                                    }.Assign(out NumberRollButton),
+                                    new NuiButton("Saving Throw")
+                                    {
+                                        Id = "save_throw",
+                                        Width = 114f,
+                                        Height = 37f
+                                    }.Assign(out SavingThrowRollButton),
+                                }
+                            },
+                            new NuiRow
                             {
-                                Id = "save_throw",
-                                Width = 112f,
-                                Height = 37f
-                            }.Assign(out SavingThrowRollButton),
-                            new NuiButton("Ability Check")
+                                Children = new List<NuiElement>
+                                {
+                                    new NuiButton("Skill Check")
+                                    {
+                                        Id = "skill_check",
+                                        Width = 114f,
+                                        Height = 37f
+                                    }.Assign(out SkillRollButton),
+                                    new NuiButton("Ability Check")
+                                    {
+                                        Id = "ability_check",
+                                        Width = 114f,
+                                        Height = 37f
+                                    }.Assign(out AbilityRollButton),
+                                }
+                            },
+                            new NuiRow
                             {
-                                Id = "ability_check",
-                                Width = 112f,
-                                Height = 37f
-                            }.Assign(out AbilityRollButton),
-                            new NuiButton("Skill Check")
-                            {
-                                Id = "skill_check",
-                                Width = 112f,
-                                Height = 37f
-                            }.Assign(out SkillRollButton),
-                            new NuiButton("Special Die Roll")
-                            {
-                                Id = "special_roll",
-                                Width = 112f,
-                                Height = 37f
-                            }.Assign(out SpecialRollButton),
+                                Children = new List<NuiElement>
+                                {
+                                    new NuiButton("Special Roll")
+                                    {
+                                        Id = "special_roll",
+                                        Width = 114f,
+                                        Height = 37f
+                                    }.Assign(out SpecialRollButton),
+                                }
+                            }
                         }
-                    }
+                    },
+                    Height = 170f,
+                    Width = 251f
                 },
                 RollGroup!, // Will never be null because it is initialized by the controller.
             }
         };
 
-        WindowTemplate = new NuiWindow(root, string.Empty)
+        WindowTemplate = new NuiWindow(root, Title)
         {
-            Geometry = new NuiRect(0f, 100f, 400f, 600f),
+            Geometry = new NuiRect(0f, 100f, 271f, 400f),
             Resizable = false
         };
     }

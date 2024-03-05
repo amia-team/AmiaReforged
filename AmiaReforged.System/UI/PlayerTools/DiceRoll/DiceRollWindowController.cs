@@ -16,6 +16,8 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
 
     public override void Init()
     {
+        SetDiceRollMode(DiceRollMode.SpecialRoll);
+        Token.SetBindValue(View.Selection, 0);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -46,12 +48,13 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
 
         if (buttonIds.Contains(eventData.ElementId))
         {
-            Token.SetBindValue<>(View.ButtonGroupEntries, SetDiceRollMode(ModeFromButtonId(eventData.ElementId)));
+            Token.SetBindValue<List<NuiComboEntry>>(View.ButtonGroupEntries, SetDiceRollMode(ModeFromButtonId(eventData.ElementId)));
         }
 
         if (eventData.ElementId == View.GoButton.Id)
         {
             int selectedRoll = Token.GetBindValue(View.Selection);
+            Token.Player.SendServerMessage($"Selected roll: {RollButtonIds[selectedRoll]}");
 
             DiceRollType rollType = DiceRollTypeChooser.FromString(RollButtonIds[selectedRoll]);
 
