@@ -54,7 +54,7 @@ public sealed class DiceRollWindowView : WindowView<DiceRollWindowView>
                     {
                         Children = new List<NuiElement>
                         {
-                            new NuiButton("GoSDAS") { Id = "go_button" }.Assign(out GoButton)
+                            new NuiButton("Go!") { Id = "go_button" }.Assign(out GoButton)
                         },
                     }
                 }
