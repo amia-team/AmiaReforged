@@ -16,7 +16,7 @@ public class ParrySkillCheckHandler : IRollHandler
         
         int result = roll + parryMod;
         
-        string message = $"<c � >[?] <c f�>Parry Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Parry Modifier ( <c�  >{parryMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Parry Skill Check = D20: {roll} + Parry Modifier ( {parryMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

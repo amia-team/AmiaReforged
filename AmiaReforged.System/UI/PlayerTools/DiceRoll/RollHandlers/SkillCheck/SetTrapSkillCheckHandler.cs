@@ -16,7 +16,7 @@ public class SetTrapSkillCheckHandler : IRollHandler
         
         int result = roll + setTrapMod;
         
-        string message = $"<c � >[?] <c f�>Set Trap Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Set Trap Modifier ( <c�  >{setTrapMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Set Trap Skill Check = D20: {roll} + Set Trap Modifier ( {setTrapMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

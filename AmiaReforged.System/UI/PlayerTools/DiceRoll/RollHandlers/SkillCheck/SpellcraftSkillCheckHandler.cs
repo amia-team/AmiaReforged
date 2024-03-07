@@ -16,7 +16,7 @@ public class SpellcraftSkillCheckHandler : IRollHandler
         
         int result = roll + spellcraftMod;
         
-        string message = $"<c � >[?] <c f�>Spellcraft Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Spellcraft Modifier ( <c�  >{spellcraftMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Spellcraft Skill Check = D20: {roll} + Spellcraft Modifier ( {spellcraftMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

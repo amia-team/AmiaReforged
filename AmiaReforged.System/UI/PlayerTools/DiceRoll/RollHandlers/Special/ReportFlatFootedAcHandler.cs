@@ -20,6 +20,6 @@ public class ReportFlatFootedAcHandler : IRollHandler
             ? NWScript.GetAC(playerCreature)
             : NWScript.GetAC(playerCreature) - playerCreature.GetAbilityModifier(Ability.Dexterity);
 
-        playerCreature.SpeakString($"<c � >[?] My Flat-footed AC is: </c><c�  >{flatFootedAc}</c><c � > [?]</c>");
+        playerCreature.SpeakString($"[?] My Flat-footed AC is: {flatFootedAc} [?]");
     }
 }

@@ -16,7 +16,7 @@ public class TumbleSkillCheckHandler : IRollHandler
         
         int result = roll + tumbleMod;
         
-        string message = $"<c � >[?] <c f�>Tumble Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Tumble Modifier ( <c�  >{tumbleMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Tumble Skill Check = D20: {roll} + Tumble Modifier ( {tumbleMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

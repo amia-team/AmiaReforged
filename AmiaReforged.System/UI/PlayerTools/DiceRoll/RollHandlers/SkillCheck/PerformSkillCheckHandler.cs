@@ -16,7 +16,7 @@ public class PerformSkillCheckHandler : IRollHandler
         
         int result = roll + performMod;
         
-        string message = $"<c � >[?] <c f�>Perform Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Perform Modifier ( <c�  >{performMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Perform Skill Check = D20: {roll} + Perform Modifier ( {performMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

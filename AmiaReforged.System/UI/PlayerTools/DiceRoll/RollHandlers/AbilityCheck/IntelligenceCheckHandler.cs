@@ -16,7 +16,7 @@ public class IntelligenceCheckHandler : IRollHandler
         
         int result = roll + intMod;
         
-        string message = $"<c � >[?] <c f�>Intelligence Check</c> = D20: </c><c�  >{roll}</c><c � > + Intelligence Modifier ( <c�  >{intMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Intelligence Check = D20: {roll} + Intelligence Modifier ( {intMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

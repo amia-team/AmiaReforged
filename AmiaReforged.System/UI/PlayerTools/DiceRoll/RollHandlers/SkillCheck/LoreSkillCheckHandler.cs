@@ -16,7 +16,7 @@ public class LoreSkillCheckHandler : IRollHandler
         
         int result = roll + loreMod;
         
-        string message = $"<c � >[?] <c f�>Lore Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Lore Modifier ( <c�  >{loreMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Lore Skill Check = D20: {roll} + Lore Modifier ( {loreMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

@@ -16,7 +16,7 @@ public class DexterityCheckHandler : IRollHandler
         
         int result = roll + dexMod;
         
-        string message = $"<c � >[?] <c f�>Dexterity Check</c> = D20: </c><c�  >{roll}</c><c � > + Dexterity Modifier ( <c�  >{dexMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Dexterity Check = D20: {roll} + Dexterity Modifier ( {dexMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

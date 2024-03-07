@@ -16,7 +16,7 @@ public class IntimidateSkillCheckHandler : IRollHandler
         
         int result = roll + intimidateMod;
         
-        string message = $"<c � >[?] <c f�>Intimidate Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Intimidate Modifier ( <c�  >{intimidateMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Intimidate Skill Check = D20: {roll} + Intimidate Modifier ( {intimidateMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

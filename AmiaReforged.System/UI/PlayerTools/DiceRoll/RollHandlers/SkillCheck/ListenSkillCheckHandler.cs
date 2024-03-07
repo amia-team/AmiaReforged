@@ -16,7 +16,7 @@ public class ListenSkillCheckHandler : IRollHandler
         
         int result = roll + listenMod;
         
-        string message = $"<c � >[?] <c f�>Listen Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Listen Modifier ( <c�  >{listenMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Listen Skill Check = D20: {roll} + Listen Modifier ( {listenMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

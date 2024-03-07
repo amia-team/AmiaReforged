@@ -16,7 +16,7 @@ public class StrengthCheckHandler : IRollHandler
         
         int result = roll + strMod;
         
-        string message = $"<c � >[?] <c f�>Strength Check</c> = D20: </c><c�  >{roll}</c><c � > + Strength Modifier ( <c�  >{strMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Strength Check = D20: {roll} + Strength Modifier ( {strMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

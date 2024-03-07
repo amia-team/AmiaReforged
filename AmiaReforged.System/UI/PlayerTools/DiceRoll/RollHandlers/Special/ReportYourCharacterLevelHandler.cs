@@ -10,6 +10,6 @@ public class ReportYourCharacterLevelHandler : IRollHandler
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
         
-        playerCreature.SpeakString($"<c � >[?] My character level is: </c><c�  >{playerCreature.Level}</c><c � > [?]</c>");
+        playerCreature.SpeakString($"[?] My character level is: {playerCreature.Level} [?]");
     }
 }

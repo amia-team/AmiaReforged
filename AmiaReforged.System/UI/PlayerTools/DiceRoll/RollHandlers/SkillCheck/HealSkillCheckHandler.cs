@@ -16,7 +16,7 @@ public class HealSkillCheckHandler : IRollHandler
         
         int result = roll + healMod;
         
-        string message = $"<c � >[?] <c f�>Heal Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Heal Modifier ( <c�  >{healMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Heal Skill Check = D20: {roll} + Heal Modifier ( {healMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

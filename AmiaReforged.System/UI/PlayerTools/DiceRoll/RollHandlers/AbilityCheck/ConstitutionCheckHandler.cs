@@ -16,7 +16,7 @@ public class ConstitutionCheckHandler : IRollHandler
         
         int result = roll + conMod;
         
-        string message = $"<c � >[?] <c f�>Constitution Check</c> = D20: </c><c�  >{roll}</c><c � > + Constitution Modifier ( <c�  >{conMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Constitution Check = D20: {roll} + Constitution Modifier ( {conMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

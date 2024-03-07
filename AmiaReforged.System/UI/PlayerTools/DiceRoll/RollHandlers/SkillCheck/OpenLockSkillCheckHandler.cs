@@ -16,7 +16,7 @@ public class OpenLockSkillCheckHandler : IRollHandler
         
         int result = roll + openLockMod;
         
-        string message = $"<c � >[?] <c f�>Open Lock Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Open Lock Modifier ( <c�  >{openLockMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Open Lock Skill Check = D20: {roll} + Open Lock Modifier ( {openLockMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

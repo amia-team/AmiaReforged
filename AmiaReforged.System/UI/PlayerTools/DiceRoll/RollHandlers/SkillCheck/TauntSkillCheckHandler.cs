@@ -16,7 +16,7 @@ public class TauntSkillCheckHandler : IRollHandler
         
         int result = roll + tauntMod;
         
-        string message = $"<c � >[?] <c f�>Taunt Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Taunt Modifier ( <c�  >{tauntMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Taunt Skill Check = D20: {roll} + Taunt Modifier ( {tauntMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

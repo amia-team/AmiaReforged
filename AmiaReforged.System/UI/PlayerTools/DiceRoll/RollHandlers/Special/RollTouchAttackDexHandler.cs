@@ -18,7 +18,7 @@ public class RollTouchAttackDexHandler : IRollHandler
         
         int result = roll + dexMod + sizeMod + baseAttackBonus;
         
-        string message = $"<c � >[?] <c f�>Dexterity Touch Attack</c> = D20: </c><c�  >{roll}</c><c � > + Dexterity Modifier ( <c�  >{dexMod}</c><c � > ) + Size Modifier ( <c�  >{sizeMod}</c><c � > ) + Base Attack Bonus ( <c�  >{baseAttackBonus}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Dexterity Touch Attack = D20: {roll} + Dexterity Modifier ( {dexMod} ) + Size Modifier ( {sizeMod} ) + Base Attack Bonus ( {baseAttackBonus} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

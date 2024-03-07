@@ -13,6 +13,6 @@ public class D3RollHandler : IRollHandler
         
         int roll = NWScript.d3();
         
-        playerCreature.SpeakString($"<c � >[?] D3 Roll: </c><c�  >{roll}</c><c � > [?]</c>");
+        playerCreature.SpeakString($"[?] D3 Roll: {roll} [?]");
     }
 }

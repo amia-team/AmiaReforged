@@ -11,11 +11,11 @@ public class CounterBluffListenHandler : IRollHandler
         int roll = NWScript.d20();
         int modifier = player.LoginCreature.GetSkillRank(NwSkill.FromSkillType(Skill.Listen)!);
         
-        string charListen = $"<c þ >[?] </c><c fþ>Counter Bluff Listen Skill Check = D20:</c> <cþ  >{roll}</c>";
-        string listenMod = $"<c þ > + Listen Modifier:</c> <cþ  >{modifier}</c>";
+        string charListen = $"[?] Counter Bluff Listen Skill Check = D20: {roll}";
+        string listenMod = $" + Listen Modifier: {modifier}";
         
         if(player.LoginCreature == null) return;
         
-        player.LoginCreature.SpeakString($"{charListen} {listenMod}<c þ > = </c><cþ  >{roll + modifier}</c><c þ > [?]</c>");
+        player.LoginCreature.SpeakString($"{charListen} {listenMod} = {roll + modifier} [?]");
     }
 }

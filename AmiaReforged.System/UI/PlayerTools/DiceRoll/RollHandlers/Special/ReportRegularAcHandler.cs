@@ -11,7 +11,7 @@ public class ReportRegularAcHandler : IRollHandler
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
         
-        playerCreature.SpeakString($"<c � >[?] My AC is: </c><c�  >{NWScript.GetAC(playerCreature)}</c><c � > [?]</c>");
+        playerCreature.SpeakString($"[?] My AC is: {NWScript.GetAC(playerCreature)} [?]");
 
     }
 }

@@ -16,7 +16,7 @@ public class ConcentrationSkillCheckHandler : IRollHandler
         
         int result = roll + concentrationMod;
         
-        string message = $"<c � >[?] <c f�>Concentration Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Concentration Modifier ( <c�  >{concentrationMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Concentration Skill Check = D20: {roll} + Concentration Modifier ( {concentrationMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

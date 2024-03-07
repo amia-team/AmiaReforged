@@ -11,11 +11,11 @@ public class CounterBluffSpotHandler : IRollHandler
         int roll = NWScript.d20();
         int modifier = player.LoginCreature.GetSkillRank(NwSkill.FromSkillType(Skill.Spot)!);
 
-        string charSpot = $"<c þ >[?] </c><c fþ>Counter Bluff Spot Skill Check = D20:</c> <cþ  >{roll}</c>";
-        string spotMod = $"<c þ > + Spot Modifier:</c> <cþ  >{modifier}</c>";
+        string charSpot = $"[?] Counter Bluff Spot Skill Check = D20: {roll}";
+        string spotMod = $" + Spot Modifier: {modifier}";
 
         if (player.LoginCreature == null) return;
 
-        player.LoginCreature.SpeakString($"{charSpot} {spotMod}<c þ > = </c><cþ  >{roll + modifier}</c><c þ > [?]</c>");
+        player.LoginCreature.SpeakString($"{charSpot} {spotMod} = {roll + modifier} [?]");
     }
 }

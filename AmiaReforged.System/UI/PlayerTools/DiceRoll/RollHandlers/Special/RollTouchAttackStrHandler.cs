@@ -19,6 +19,6 @@ public class RollTouchAttackStrHandler : IRollHandler
         int result = diceRoll + baseAttackBonus + strMod + sizeMod;
 
         playerCreature.SpeakString(
-            $"<c � >[?] <c f�>Strength Touch Attack</c> = D20: </c><c�  >{diceRoll}</c><c � > + Base Attack Bonus ( <c�  >{baseAttackBonus}</c><c � > ) + Strength Modifier ( <c�  >{strMod}</c><c � > ) + Size Modifier ( <c�  >{sizeMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>");
+            $"[?] Strength Touch Attack = D20: {diceRoll} + Base Attack Bonus ( {baseAttackBonus} ) + Strength Modifier ( {strMod} ) + Size Modifier ( {sizeMod} ) = {result} [?]");
     }
 }

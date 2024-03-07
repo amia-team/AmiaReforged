@@ -16,7 +16,7 @@ public class AnimalEmpathySkillCheckHandler : IRollHandler
         
         int result = roll + appraiseMod;
         
-        string message = $"<c � >[?] <c f�>Animal Empathy Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Animal Empathy Modifier ( <c�  >{appraiseMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Animal Empathy Skill Check = D20: {roll} + Animal Empathy Modifier ( {appraiseMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

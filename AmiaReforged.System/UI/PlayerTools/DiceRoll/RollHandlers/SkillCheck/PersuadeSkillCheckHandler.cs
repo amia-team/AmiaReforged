@@ -16,7 +16,7 @@ public class PersuadeSkillCheckHandler : IRollHandler
         
         int result = roll + persuadeMod;
         
-        string message = $"<c � >[?] <c f�>Persuade Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Persuade Modifier ( <c�  >{persuadeMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Persuade Skill Check = D20: {roll} + Persuade Modifier ( {persuadeMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

@@ -19,7 +19,7 @@ public class RollGrappleCheckHandler : IRollHandler
         int result = diceRoll + baseAttackBonus + strMod + sizeMod;
 
         string grapple =
-            $"<c � >[?] <c f�>Grapple Check</c> = D20: </c><c�  >{diceRoll}</c><c � > + Base Attack Bonus ( <c�  >{baseAttackBonus}</c><c � > ) + Strength Modifier ( <c�  >{strMod}</c><c � > ) + Size Modifier ( <c�  >{sizeMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+            $"[?] Grapple Check = D20: {diceRoll} + Base Attack Bonus ( {baseAttackBonus} ) + Strength Modifier ( {strMod} ) + Size Modifier ( {sizeMod} ) = {result} [?]";
 
         playerCreature.SpeakString(grapple);
     }

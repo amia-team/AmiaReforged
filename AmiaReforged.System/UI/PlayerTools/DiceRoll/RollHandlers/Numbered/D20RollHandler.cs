@@ -13,6 +13,6 @@ public class D20RollHandler : IRollHandler
         
         int roll = NWScript.d20();
         
-        playerCreature.SpeakString($"<c � >[?] D20 Roll: </c><c�  >{roll}</c><c � > [?]</c>");
+        playerCreature.SpeakString($"[?] D20 Roll: {roll} [?]");
     }
 }

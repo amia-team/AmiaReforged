@@ -16,7 +16,7 @@ public class CharismaCheckHandler : IRollHandler
         
         int result = roll + chaMod;
         
-        string message = $"<c � >[?] <c f�>Charisma Check</c> = D20: </c><c�  >{roll}</c><c � > + Charisma Modifier ( <c�  >{chaMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Charisma Check = D20: {roll} + Charisma Modifier ( {chaMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

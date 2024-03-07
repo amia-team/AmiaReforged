@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using System.Text;
+using Anvil.API;
 using NWN.Core;
 
 namespace AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers.Special;
@@ -15,7 +16,9 @@ public class RollInitiativeHandler : IRollHandler
         int dexMod = playerCreature.GetAbilityModifier(Ability.Dexterity);
         int result = roll + dexMod;
         
-        string message = $"<c � >[?] <c f�>Initiative Roll</c> = D20: </c><c�  >{roll}</c><c � > + Dexterity Modifier ( <c�  >{dexMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        StringBuilder builder = new StringBuilder();
+        
+        string message = $"[?] Initiative Roll = D20: {roll} + Dexterity Modifier ( {dexMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
         

@@ -21,6 +21,6 @@ public class ReportTouchAttackAcHandler : IRollHandler
         int addedAc = armorAc + neckAc + shieldAc;
         int touchAc = NWScript.GetAC(playerCreature) - addedAc;
 
-        playerCreature.SpeakString($"<c � >[?] My Touch AC is: </c><c�  >{touchAc}</c><c � > [?]</c>");
+        playerCreature.SpeakString($"[?] My Touch AC is: {touchAc} [?]");
     }
 }

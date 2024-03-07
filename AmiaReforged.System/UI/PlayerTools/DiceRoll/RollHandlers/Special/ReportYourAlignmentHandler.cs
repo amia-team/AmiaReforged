@@ -12,7 +12,7 @@ public class ReportYourAlignmentHandler : IRollHandler
         if (playerCreature is null) return;
         
         string alignment = playerCreature.LawChaosAlignment + " " + playerCreature.GoodEvilAlignment;
-        string message = $"<c \ufffd >[?] My alignment is: </c><c\ufffd  >{alignment}</c><c \ufffd > [?]</c>";
+        string message = $"[?] My alignment is: {alignment} [?]";
         
         playerCreature.SpeakString(message);
     }

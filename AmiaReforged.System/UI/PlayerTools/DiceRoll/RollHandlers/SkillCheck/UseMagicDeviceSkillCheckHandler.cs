@@ -16,7 +16,7 @@ public class UseMagicDeviceSkillCheckHandler : IRollHandler
         
         int result = roll + useMagicDeviceMod;
         
-        string message = $"<c � >[?] <c f�>Use Magic Device Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Use Magic Device Modifier ( <c�  >{useMagicDeviceMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Use Magic Device Skill Check = D20: {roll} + Use Magic Device Modifier ( {useMagicDeviceMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

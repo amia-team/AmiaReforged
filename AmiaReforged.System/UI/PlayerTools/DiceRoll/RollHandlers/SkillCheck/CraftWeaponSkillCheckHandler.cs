@@ -16,7 +16,7 @@ public class CraftWeaponSkillCheckHandler : IRollHandler
         
         int result = roll + craftWeaponMod;
         
-        string message = $"<c � >[?] <c f�>Craft Weapon Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Craft Weapon Modifier ( <c�  >{craftWeaponMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Craft Weapon Skill Check = D20: {roll} + Craft Weapon Modifier ( {craftWeaponMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

@@ -16,7 +16,7 @@ public class WisdomCheckHandler : IRollHandler
         
         int result = roll + wisMod;
         
-        string message = $"<c � >[?] <c f�>Wisdom Check</c> = D20: </c><c�  >{roll}</c><c � > + Wisdom Modifier ( <c�  >{wisMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Wisdom Check = D20: {roll} + Wisdom Modifier ( {wisMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }

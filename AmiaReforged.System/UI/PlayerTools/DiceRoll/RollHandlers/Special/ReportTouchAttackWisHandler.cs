@@ -19,6 +19,6 @@ public class ReportTouchAttackWisHandler : IRollHandler
         int result = diceRoll + baseAttackBonus + wisMod + sizeMod;
 
         playerCreature.SpeakString(
-            $"<c \ufffd >[?] <c f\ufffd>Wisdom Touch Attack</c> = D20: </c><c\ufffd  >{diceRoll}</c><c \ufffd > + Base Attack Bonus ( <c\ufffd  >{baseAttackBonus}</c><c \ufffd > ) + Wisdom Modifier ( <c\ufffd  >{wisMod}</c><c \ufffd > ) + Size Modifier ( <c\ufffd  >{sizeMod}</c><c \ufffd > ) = <c\ufffd  >{result}</c><c \ufffd > [?]</c>");
+            $"[?] Wisdom Touch Attack = D20: {diceRoll} + Base Attack Bonus ( {baseAttackBonus} ) + Wisdom Modifier ( {wisMod} ) + Size Modifier ( {sizeMod} ) = {result} [?]");
     }
 }

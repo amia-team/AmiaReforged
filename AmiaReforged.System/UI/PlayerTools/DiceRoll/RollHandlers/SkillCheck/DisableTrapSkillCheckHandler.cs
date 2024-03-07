@@ -16,7 +16,7 @@ public class DisableTrapSkillCheckHandler : IRollHandler
         
         int result = roll + disableTrapMod;
         
-        string message = $"<c � >[?] <c f�>Disable Trap Skill Check</c> = D20: </c><c�  >{roll}</c><c � > + Disable Trap Modifier ( <c�  >{disableTrapMod}</c><c � > ) = <c�  >{result}</c><c � > [?]</c>";
+        string message = $"[?] Disable Trap Skill Check = D20: {roll} + Disable Trap Modifier ( {disableTrapMod} ) = {result} [?]";
         
         playerCreature.SpeakString(message);
     }
