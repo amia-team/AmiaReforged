@@ -7,6 +7,9 @@ public class ReportYourCharacterLevelHandler : IRollHandler
 {
     public void RollDice(NwPlayer player)
     {
-        player.SendServerMessage("You rolled a 20!");
+        NwCreature? playerCreature = player.LoginCreature;
+        if (playerCreature is null) return;
+        
+        playerCreature.SpeakString($"<c � >[?] My character level is: </c><c�  >{playerCreature.Level}</c><c � > [?]</c>");
     }
 }

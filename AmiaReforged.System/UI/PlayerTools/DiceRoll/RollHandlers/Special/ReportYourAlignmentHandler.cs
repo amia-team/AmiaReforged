@@ -1,4 +1,5 @@
 ﻿using Anvil.API;
+using NWN.Core;
 
 namespace AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers;
 
@@ -7,6 +8,12 @@ public class ReportYourAlignmentHandler : IRollHandler
 {
     public void RollDice(NwPlayer player)
     {
-        player.SendServerMessage("You rolled a 20!");
+        NwCreature? playerCreature = player.LoginCreature;
+        if (playerCreature is null) return;
+        
+        string alignment = playerCreature.LawChaosAlignment + " " + playerCreature.GoodEvilAlignment;
+        string message = $"<c \ufffd >[?] My alignment is: </c><c\ufffd  >{alignment}</c><c \ufffd > [?]</c>";
+        
+        playerCreature.SpeakString(message);
     }
 }

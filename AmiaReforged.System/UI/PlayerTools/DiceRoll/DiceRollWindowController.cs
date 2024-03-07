@@ -48,7 +48,8 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
 
         if (buttonIds.Contains(eventData.ElementId))
         {
-            Token.SetBindValue<List<NuiComboEntry>>(View.ButtonGroupEntries, SetDiceRollMode(ModeFromButtonId(eventData.ElementId)));
+            Token.SetBindValue<List<NuiComboEntry>>(View.ButtonGroupEntries,
+                SetDiceRollMode(ModeFromButtonId(eventData.ElementId)));
         }
 
         if (eventData.ElementId == View.GoButton.Id)
@@ -271,45 +272,4 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
 
         return diceOptions;
     }
-}
-
-internal static class DiceRollTypeChooser
-{
-    public static DiceRollType FromString(string rollButtonId)
-    {
-        return rollButtonId switch
-        {
-            DiceRollStringConstants.CounterBluffListen => DiceRollType.CounterBluffListen,
-            DiceRollStringConstants.CounterBluffSpot => DiceRollType.CounterBluffSpot,
-            DiceRollStringConstants.CounterIntimidate => DiceRollType.CounterIntimidate,
-            DiceRollStringConstants.RollInitiative => DiceRollType.RollInitiative,
-            DiceRollStringConstants.RollTouchAttackStr => DiceRollType.RollTouchAttackStr,
-            DiceRollStringConstants.RollTouchAttackDex => DiceRollType.RollTouchAttackDex,
-            DiceRollStringConstants.ReportTouchAttackWis => DiceRollType.ReportTouchAttackWis,
-            DiceRollStringConstants.ReportTouchAttackAc => DiceRollType.ReportTouchAttackAc,
-            DiceRollStringConstants.ReportGrappleCheck => DiceRollType.RollGrappleCheck,
-            DiceRollStringConstants.ReportFlatFootedAc => DiceRollType.ReportFlatFootedAc,
-            DiceRollStringConstants.ReportRegularAc => DiceRollType.ReportRegularAc,
-            DiceRollStringConstants.ReportAlignment => DiceRollType.ReportYourAlignment,
-            DiceRollStringConstants.ReportCharacterLevel => DiceRollType.ReportYourCharacterLevel,
-            _ => throw new NotImplementedException()
-        };
-    }
-}
-
-public enum DiceRollType
-{
-    CounterBluffListen,
-    CounterBluffSpot,
-    CounterIntimidate,
-    RollInitiative,
-    RollTouchAttackStr,
-    RollTouchAttackDex,
-    ReportTouchAttackWis,
-    ReportTouchAttackAc,
-    RollGrappleCheck,
-    ReportFlatFootedAc,
-    ReportRegularAc,
-    ReportYourAlignment,
-    ReportYourCharacterLevel
 }
