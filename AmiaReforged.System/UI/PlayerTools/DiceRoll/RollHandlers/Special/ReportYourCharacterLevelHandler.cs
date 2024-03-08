@@ -1,4 +1,5 @@
 ﻿using Anvil.API;
+using static AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers.AmiaColors;
 
 namespace AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers;
 
@@ -8,8 +9,8 @@ public class ReportYourCharacterLevelHandler : IRollHandler
     public void RollDice(NwPlayer player)
     {
         NwCreature? playerCreature = player.LoginCreature;
-        if (playerCreature is null) return;
-        
-        playerCreature.SpeakString($"[?] My character level is: {playerCreature.Level} [?]");
+
+        playerCreature?.SpeakString(
+            $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> My character level is:</c> {playerCreature.Level} <c{AmiaLime.ToColorToken()}>[?]</c>");
     }
 }

@@ -1,5 +1,7 @@
 ﻿using Anvil.API;
 using NWN.Core;
+using static AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers.AmiaColors;
+using static Anvil.API.ColorConstants;
 
 namespace AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers;
 
@@ -19,6 +21,6 @@ public class ReportTouchAttackWisHandler : IRollHandler
         int result = diceRoll + baseAttackBonus + wisMod + sizeMod;
 
         playerCreature.SpeakString(
-            $"[?] Wisdom Touch Attack = D20: {diceRoll} + Base Attack Bonus ( {baseAttackBonus} ) + Wisdom Modifier ( {wisMod} ) + Size Modifier ( {sizeMod} ) = {result} [?]");
+            $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> Wisdom Touch Attack = D20: </c>{diceRoll}<c{LightBlue.ToColorToken()}> + Base Attack Bonus ( </c><c{Yellow.ToColorToken()}>{baseAttackBonus}</c><c{LightBlue.ToColorToken()}> ) + Wisdom Modifier (</c> <c{Yellow.ToColorToken()}>{wisMod}</c><c{LightBlue.ToColorToken()}> ) + Size Modifier (</c> <c{Yellow.ToColorToken()}>{sizeMod}</c><c{LightBlue.ToColorToken()}> ) = </c>{result} <c{AmiaLime.ToColorToken()}>[?]</c>");
     }
 }

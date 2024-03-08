@@ -19,5 +19,5 @@ public class SkillCheckString
     }
 
     public string GetRollResult() =>
-        $"<c{LimeGreen.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> {_skillName} Skill Check = D20:</c> {_roll}<c{LightBlue.ToColorToken()}> + {_skillName} Modifier (</c><c{ColorConstants.Yellow.ToColorToken()}> {_modifier}</c><c{LightBlue.ToColorToken()}> ) = </c>{_result} <c{LimeGreen.ToColorToken()}>[?]</c>";
+        $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> {_skillName} Skill Check = D20:</c> {_roll}<c{LightBlue.ToColorToken()}> + {_skillName} Modifier (</c><c{ColorConstants.Yellow.ToColorToken()}> {_modifier}</c><c{LightBlue.ToColorToken()}> ) = </c>{_result} <c{AmiaLime.ToColorToken()}>[?]</c>";
 }

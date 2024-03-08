@@ -1,5 +1,6 @@
 ﻿using Anvil.API;
 using NWN.Core;
+using static AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers.AmiaColors;
 
 namespace AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers;
 
@@ -21,6 +22,6 @@ public class ReportTouchAttackAcHandler : IRollHandler
         int addedAc = armorAc + neckAc + shieldAc;
         int touchAc = NWScript.GetAC(playerCreature) - addedAc;
 
-        playerCreature.SpeakString($"[?] My Touch AC is: {touchAc} [?]");
+        playerCreature.SpeakString($"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> My Touch AC is:</c> {touchAc} <c{AmiaLime.ToColorToken()}>[?]</c>");
     }
 }

@@ -19,6 +19,6 @@ public class NumericDieString
     public string GetRollResult()
     {
         return
-            $"<c{LimeGreen.ToColorToken()}>[?] </c><c{LightBlue.ToColorToken()}>{_rollType} =</c> {_rollResult} <c{LimeGreen.ToColorToken()}> [?]</c>";
+            $"<c{AmiaLime.ToColorToken()}>[?] </c><c{LightBlue.ToColorToken()}>{_rollType} =</c> {_rollResult} <c{AmiaLime.ToColorToken()}> [?]</c>";
     }
 }

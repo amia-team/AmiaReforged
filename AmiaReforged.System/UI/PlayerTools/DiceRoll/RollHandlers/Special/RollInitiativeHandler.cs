@@ -1,6 +1,8 @@
 ﻿using System.Text;
 using Anvil.API;
 using NWN.Core;
+using static AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers.AmiaColors;
+using static Anvil.API.ColorConstants;
 
 namespace AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers.Special;
 
@@ -18,7 +20,7 @@ public class RollInitiativeHandler : IRollHandler
         
         StringBuilder builder = new StringBuilder();
         
-        string message = $"[?] Initiative Roll = D20: {roll} + Dexterity Modifier ( {dexMod} ) = {result} [?]";
+        string message = $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> Initiative Roll = D20:</c> {roll}<c{LightBlue.ToColorToken()}> + Dexterity Modifier (</c> <c{Yellow.ToColorToken()}>{dexMod}</c><c{LightBlue.ToColorToken()}> ) =</c> {result} <c{AmiaLime.ToColorToken()}>[?]</c>";
         
         playerCreature.SpeakString(message);
         
