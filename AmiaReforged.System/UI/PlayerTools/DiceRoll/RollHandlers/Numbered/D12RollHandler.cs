@@ -13,6 +13,6 @@ public class D12RollHandler : IRollHandler
         
         int roll = NWScript.d12();
         
-        playerCreature.SpeakString($"[?] D12 Roll: {roll} [?]");
+        playerCreature.SpeakString(new NumericDieString("D12", roll).GetRollResult());
     }
 }

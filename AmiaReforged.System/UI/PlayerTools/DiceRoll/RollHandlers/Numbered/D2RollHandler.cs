@@ -10,9 +10,8 @@ public class D2RollHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d2();
-        
-        playerCreature.SpeakString($"[?] D2 Roll: {roll} [?]");
+        playerCreature.SpeakString(new NumericDieString("D2", roll).GetRollResult());
     }
 }
