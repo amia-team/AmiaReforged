@@ -14,10 +14,6 @@ public class WisdomCheckHandler : IRollHandler
         int roll = NWScript.d20();
         int wisMod = playerCreature.GetAbilityModifier(Ability.Wisdom);
         
-        int result = roll + wisMod;
-        
-        string message = $"[?] Wisdom Check = D20: {roll} + Wisdom Modifier ( {wisMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new AbilityCheckString("Wisdom", roll, wisMod).GetAbilityCheckString());
     }
 }

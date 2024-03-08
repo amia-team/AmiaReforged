@@ -14,10 +14,6 @@ public class ConstitutionCheckHandler : IRollHandler
         int roll = NWScript.d20();
         int conMod = playerCreature.GetAbilityModifier(Ability.Constitution);
         
-        int result = roll + conMod;
-        
-        string message = $"[?] Constitution Check = D20: {roll} + Constitution Modifier ( {conMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new AbilityCheckString("Constitution", roll, conMod).GetAbilityCheckString());
     }
 }

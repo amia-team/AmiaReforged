@@ -14,10 +14,6 @@ public class StrengthCheckHandler : IRollHandler
         int roll = NWScript.d20();
         int strMod = playerCreature.GetAbilityModifier(Ability.Strength);
         
-        int result = roll + strMod;
-        
-        string message = $"[?] Strength Check = D20: {roll} + Strength Modifier ( {strMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new AbilityCheckString("Strength", roll, strMod).GetAbilityCheckString());
     }
 }

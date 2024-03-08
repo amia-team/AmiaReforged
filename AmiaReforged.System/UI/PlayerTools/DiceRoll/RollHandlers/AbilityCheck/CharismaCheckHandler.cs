@@ -14,10 +14,6 @@ public class CharismaCheckHandler : IRollHandler
         int roll = NWScript.d20();
         int chaMod = playerCreature.GetAbilityModifier(Ability.Charisma);
         
-        int result = roll + chaMod;
-        
-        string message = $"[?] Charisma Check = D20: {roll} + Charisma Modifier ( {chaMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new AbilityCheckString("Charisma", roll, chaMod).GetAbilityCheckString());
     }
 }

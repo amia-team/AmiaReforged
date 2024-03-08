@@ -14,10 +14,6 @@ public class DexterityCheckHandler : IRollHandler
         int roll = NWScript.d20();
         int dexMod = playerCreature.GetAbilityModifier(Ability.Dexterity);
         
-        int result = roll + dexMod;
-        
-        string message = $"[?] Dexterity Check = D20: {roll} + Dexterity Modifier ( {dexMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new AbilityCheckString("Dexterity", roll, dexMod).GetAbilityCheckString());
     }
 }

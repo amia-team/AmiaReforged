@@ -14,10 +14,6 @@ public class IntelligenceCheckHandler : IRollHandler
         int roll = NWScript.d20();
         int intMod = playerCreature.GetAbilityModifier(Ability.Intelligence);
         
-        int result = roll + intMod;
-        
-        string message = $"[?] Intelligence Check = D20: {roll} + Intelligence Modifier ( {intMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new AbilityCheckString("Intelligence", roll, intMod).GetAbilityCheckString());
     }
 }
