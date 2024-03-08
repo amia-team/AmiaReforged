@@ -1,4 +1,5 @@
-﻿using static AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers.AmiaColors;
+﻿using Anvil.API;
+using static AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers.AmiaColors;
 
 namespace AmiaReforged.System.UI.PlayerTools.DiceRoll.RollHandlers.SkillCheck;
 
@@ -18,5 +19,5 @@ public class SkillCheckString
     }
 
     public string GetRollResult() =>
-        $"<c{LimeGreen.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> {_skillName} Skill Check = D20:</c> {_roll}<c{LightBlue.ToColorToken()}> + {_skillName} Modifier ( {_modifier} ) = </c>{_result} <c{LimeGreen.ToColorToken()}>[?]</c>";
+        $"<c{LimeGreen.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> {_skillName} Skill Check = D20:</c> {_roll}<c{LightBlue.ToColorToken()}> + {_skillName} Modifier (</c><c{ColorConstants.Yellow.ToColorToken()}> {_modifier}</c><c{LightBlue.ToColorToken()}> ) = </c>{_result} <c{LimeGreen.ToColorToken()}>[?]</c>";
 }
