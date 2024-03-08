@@ -16,8 +16,6 @@ public class BluffSkillCheckHandler : IRollHandler
         
         int result = roll + bluffMod;
         
-        string message = $"[?] Bluff Skill Check = D20: {roll} + Bluff Modifier ( {bluffMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Bluff", roll, bluffMod, result).GetRollResult());
     }
 }

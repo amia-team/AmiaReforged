@@ -16,8 +16,6 @@ public class DisciplineSkillCheckHandler : IRollHandler
         
         int result = roll + disciplineMod;
         
-        string message = $"[?] Discipline Skill Check = D20: {roll} + Discipline Modifier ( {disciplineMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Discipline", roll, disciplineMod, result).GetRollResult());
     }
 }

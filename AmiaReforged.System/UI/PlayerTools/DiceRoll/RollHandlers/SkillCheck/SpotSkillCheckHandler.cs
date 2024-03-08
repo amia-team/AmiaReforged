@@ -16,8 +16,6 @@ public class SpotSkillCheckHandler : IRollHandler
         
         int result = roll + spotMod;
         
-        string message = $"[?] Spot Skill Check = D20: {roll} + Spot Modifier ( {spotMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Spot", roll, spotMod, result).GetRollResult());
     }
 }

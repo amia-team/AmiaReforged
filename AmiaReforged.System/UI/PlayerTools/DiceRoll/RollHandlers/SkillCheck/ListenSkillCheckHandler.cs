@@ -16,8 +16,6 @@ public class ListenSkillCheckHandler : IRollHandler
         
         int result = roll + listenMod;
         
-        string message = $"[?] Listen Skill Check = D20: {roll} + Listen Modifier ( {listenMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Listen", roll, listenMod, result).GetRollResult());
     }
 }

@@ -16,8 +16,6 @@ public class LoreSkillCheckHandler : IRollHandler
         
         int result = roll + loreMod;
         
-        string message = $"[?] Lore Skill Check = D20: {roll} + Lore Modifier ( {loreMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Lore", roll, loreMod, result).GetRollResult());
     }
 }

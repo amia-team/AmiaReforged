@@ -16,8 +16,6 @@ public class PerformSkillCheckHandler : IRollHandler
         
         int result = roll + performMod;
         
-        string message = $"[?] Perform Skill Check = D20: {roll} + Perform Modifier ( {performMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Perform", roll, performMod, result).GetRollResult());
     }
 }

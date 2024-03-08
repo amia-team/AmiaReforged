@@ -16,8 +16,6 @@ public class MoveSilentlySkillCheckHandler : IRollHandler
         
         int result = roll + moveSilentlyMod;
         
-        string message = $"[?] Move Silently Skill Check = D20: {roll} + Move Silently Modifier ( {moveSilentlyMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Move Silently", roll, moveSilentlyMod, result).GetRollResult());
     }
 }

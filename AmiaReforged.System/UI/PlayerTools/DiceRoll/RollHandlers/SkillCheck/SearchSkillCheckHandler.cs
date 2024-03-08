@@ -16,8 +16,6 @@ public class SearchSkillCheckHandler : IRollHandler
         
         int result = roll + searchMod;
         
-        string message = $"[?] Search Skill Check = D20: {roll} + Search Modifier ( {searchMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Search", roll, searchMod, result).GetRollResult());
     }
 }

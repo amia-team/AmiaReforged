@@ -16,8 +16,6 @@ public class AppraiseSkillCheckHandler : IRollHandler
         
         int result = roll + appraiseMod;
         
-        string message = $"[?] Appraise Skill Check = D20: {roll} + Appraise Modifier ( {appraiseMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Appraise", roll, appraiseMod, result).GetRollResult());
     }
 }

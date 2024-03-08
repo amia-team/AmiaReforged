@@ -16,8 +16,6 @@ public class HideSkillCheckHandler : IRollHandler
         
         int result = roll + hideMod;
         
-        string message = $"[?] Hide Skill Check = D20: {roll} + Hide Modifier ( {hideMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Hide", roll, hideMod, result).GetRollResult());
     }
 }

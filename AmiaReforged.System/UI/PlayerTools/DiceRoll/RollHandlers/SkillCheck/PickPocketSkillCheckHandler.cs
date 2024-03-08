@@ -16,8 +16,6 @@ public class PickPocketSkillCheckHandler : IRollHandler
         
         int result = roll + pickPocketMod;
         
-        string message = $"[?] Pick Pocket Skill Check = D20: {roll} + Pick Pocket Modifier ( {pickPocketMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Pick Pocket", roll, pickPocketMod, result).GetRollResult());
     }
 }

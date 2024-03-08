@@ -16,8 +16,6 @@ public class IntimidateSkillCheckHandler : IRollHandler
         
         int result = roll + intimidateMod;
         
-        string message = $"[?] Intimidate Skill Check = D20: {roll} + Intimidate Modifier ( {intimidateMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Intimidate", roll, intimidateMod, result).GetRollResult());
     }
 }

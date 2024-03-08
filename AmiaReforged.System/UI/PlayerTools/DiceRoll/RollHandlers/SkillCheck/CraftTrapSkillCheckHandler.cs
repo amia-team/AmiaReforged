@@ -16,8 +16,6 @@ public class CraftTrapSkillCheckHandler : IRollHandler
         
         int result = roll + craftTrapMod;
         
-        string message = $"[?] Craft Trap Skill Check = D20: {roll} + Craft Trap Modifier ( {craftTrapMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Craft Trap", roll, craftTrapMod, result).GetRollResult());
     }
 }

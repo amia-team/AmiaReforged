@@ -10,14 +10,12 @@ public class CraftArmorSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int craftArmorMod = playerCreature.GetSkillRank(Skill.CraftArmor!);
-        
+
         int result = roll + craftArmorMod;
         
-        string message = $"[?] Craft Armor Skill Check = D20: {roll} + Craft Armor Modifier ( {craftArmorMod} ) = {result} [?]";
-        
-        playerCreature.SpeakString(message);
+        playerCreature.SpeakString(new SkillCheckString("Craft Armor", roll, craftArmorMod, result).GetRollResult());
     }
 }
