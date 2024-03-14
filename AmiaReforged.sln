@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EconomyService", "EconomySe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.Tests", "AmiaReforged.Tests\AmiaReforged.Tests.csproj", "{9AB351F1-F67D-48D2-A904-0984BC972149}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.PluginTests", "AmiaReforged.PluginTests\AmiaReforged.PluginTests.csproj", "{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,5 +57,9 @@ Global
 		{9AB351F1-F67D-48D2-A904-0984BC972149}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9AB351F1-F67D-48D2-A904-0984BC972149}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9AB351F1-F67D-48D2-A904-0984BC972149}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
