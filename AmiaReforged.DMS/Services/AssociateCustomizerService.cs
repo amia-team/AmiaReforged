@@ -3,7 +3,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.Classes.Services;
+namespace AmiaReforged.DMS.Services;
 
 [ServiceBinding(typeof(AssociateCustomizerService))]
 public class AssociateCustomizerService
