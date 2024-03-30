@@ -43,7 +43,7 @@ public class JoinWebhookService
     
     private async void LaunchDiscordMessage(string messageSent)
     {
-       await _webhookSenderGeneric.SendMessage("",messageSent,""); 
+       await _webhookSenderGeneric.SendMessage(Username,messageSent,Avatar); 
     }
 }
 
