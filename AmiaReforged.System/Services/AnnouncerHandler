@@ -16,6 +16,10 @@ public class AnnouncerHandler
 public void DiscordAnnouncer(CallInfo info)
 {
     string message = NWScript.GetLocalString(NWScript.GetModule(),"announcerMessage");
+    if(string.equals(message,""))
+    {
+        message = "Empty Variable";
+    }
     var instance = new JoinWebhookService();
     global::System.Object discordMessage = instance.LaunchDiscordMessage(message);
 }
