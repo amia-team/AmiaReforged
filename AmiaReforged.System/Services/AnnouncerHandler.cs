@@ -4,7 +4,7 @@ using Anvil.Services;
 using NLog;
 using NWN.Core.NWNX;
 using JoinWebhookService;
-using NWN.Core.NWScript; 
+using NWN.Core; 
 
 namespace AmiaReforged.System.Services;
 [ServiceBinding(typeof(AnnouncerHandler))]
