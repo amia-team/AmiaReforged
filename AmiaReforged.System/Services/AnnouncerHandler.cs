@@ -18,5 +18,6 @@ public void DiscordAnnouncer(CallInfo info)
     }
     var instance = new JoinWebhookService();
     _ = instance.LaunchDiscordMessage(message);
+    _ = instance.LaunchDiscordMessage("TESTFIRE");
 }
 }
