@@ -25,6 +25,10 @@ public class JoinWebhookService
         Log.Info("JoinWebhook Service Initialized.");
     }
 
+    public JoinWebhookService()
+    {
+    }
+
     private async void ListPlayers()
     {
         bool noPlayers = !NwModule.Instance.Players.Any();
@@ -41,7 +45,7 @@ public class JoinWebhookService
         await _webhookSender.SendMessage(Username, players, Avatar);
     }
     
-    private async void LaunchDiscordMessage(string messageSent)
+    public async Task LaunchDiscordMessage(string messageSent)
     {
        await _webhookSenderGeneric.SendMessage(Username,messageSent,Avatar); 
     }
