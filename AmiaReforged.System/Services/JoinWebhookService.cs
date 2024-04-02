@@ -21,12 +21,13 @@ public class JoinWebhookService
         _schedulerService = schedulerService;
         _schedulerService.ScheduleRepeating(ListPlayers, TimeSpan.FromMinutes(30));
         _webhookSender = new WebhookSender(UtilPlugin.GetEnvironmentVariable("SERVER_NOTIFICATION_WEBHOOK"));
-        _webhookSenderGeneric = new WebhookSender(UtilPlugin.GetEnvironmentVariable("SERVER_NOTIFICATION_GENERIC"));
         Log.Info("JoinWebhook Service Initialized.");
     }
 
     public JoinWebhookService()
     {
+        _webhookSenderGeneric = new WebhookSender(UtilPlugin.GetEnvironmentVariable("SERVER_NOTIFICATION_GENERIC"));
+        Log.Info("JoinWebhook Service Initialized.");
     }
 
     private async void ListPlayers()
