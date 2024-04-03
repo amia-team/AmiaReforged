@@ -27,8 +27,12 @@ public class ElyonBossSpawner
     }
 
     private void LaunchBoss()
-    {
+    { 
+        if(NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0))
+        {
         NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner FIRED! Should be between 1 to 320 minutes after Test Launch text.");
+        NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
+        }
     }
 }
