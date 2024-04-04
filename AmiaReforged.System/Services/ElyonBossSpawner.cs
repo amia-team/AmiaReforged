@@ -16,12 +16,12 @@ public class ElyonBossSpawner
     public ElyonBossSpawner(SchedulerService schedulerService)
     {
         int SpawnCheck = GenerateSpawnChance();
+        _schedulerService = schedulerService;
         NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner Initial Launch!");
         NWScript.ExecuteScript("webhook_announce");
 
         if((1 <= SpawnCheck) && (SpawnCheck <= 33))
         {
-        _schedulerService = schedulerService;
         _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(GenerateSpawnTime()));
         NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner --will-- fire this RESET!");
         NWScript.ExecuteScript("webhook_announce");
