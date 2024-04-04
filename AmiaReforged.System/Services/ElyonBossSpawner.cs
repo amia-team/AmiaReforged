@@ -21,6 +21,8 @@ public class ElyonBossSpawner
         {
         _schedulerService = schedulerService;
         _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(GenerateSpawnTime()));
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner --will-- fire this RESET!");
+        NWScript.ExecuteScript("webhook_announce");
         }
         else
         {
