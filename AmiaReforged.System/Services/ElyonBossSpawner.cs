@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using Anvil.API;
 using Anvil.Services;
 using NWN.Core;
@@ -14,8 +15,27 @@ public class ElyonBossSpawner
 
     public ElyonBossSpawner(SchedulerService schedulerService)
     {
+        int SpawnCheck = GenerateSpawnChance();
+
+        if((1 <= SpawnCheck) && (SpawnCheck <= 33))
+        {
         _schedulerService = schedulerService;
         _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(GenerateSpawnTime()));
+        }
+        else
+        {
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner will NOT fire this RESET!");
+        NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
+        NWScript.ExecuteScript("webhook_announce");
+        }
+
+    }
+
+    private int GenerateSpawnChance()
+    {
+     Random random = new Random();
+     int Chance = random.Next(1, 100);
+     return Chance;  
     }
 
     private int GenerateSpawnTime()
