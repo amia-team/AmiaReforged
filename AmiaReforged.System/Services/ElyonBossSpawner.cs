@@ -15,24 +15,10 @@ public class ElyonBossSpawner
 
     public ElyonBossSpawner(SchedulerService schedulerService)
     {
-        int SpawnCheck = GenerateSpawnChance();
         _schedulerService = schedulerService;
+        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(GenerateSpawnTime()));
         NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner Initial Launch!");
         NWScript.ExecuteScript("webhook_announce");
-
-        if((1 <= SpawnCheck) && (SpawnCheck <= 33))
-        {
-        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(GenerateSpawnTime()));
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner --will-- fire this RESET!");
-        NWScript.ExecuteScript("webhook_announce");
-        }
-        else
-        {
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner will NOT fire this RESET!");
-        NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
-        NWScript.ExecuteScript("webhook_announce");
-        }
-
     }
 
     private int GenerateSpawnChance()
@@ -52,9 +38,17 @@ public class ElyonBossSpawner
 
     private void LaunchBoss()
     { 
-        if(NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0))
+        int SpawnCheck = GenerateSpawnChance();
+
+        if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 33)))
         {
         NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner FIRED! Should be between 1 to 320 minutes after Test Launch text.");
+        NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
+        NWScript.ExecuteScript("webhook_announce");
+        }
+        else
+        {
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner will NOT fire this RESET!");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         }
