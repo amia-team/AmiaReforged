@@ -48,7 +48,7 @@ public class JoinWebhookService
     
     public async Task LaunchDiscordMessage(string messageSent)
     {
-       await _webhookSenderGeneric.SendMessage(Username,messageSent,Avatar); 
+       await _webhookSenderGeneric.SendMessage("Tiamat",messageSent,Avatar); 
     }
 }
 
