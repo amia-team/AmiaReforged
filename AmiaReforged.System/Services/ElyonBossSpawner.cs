@@ -16,6 +16,8 @@ public class ElyonBossSpawner
     public ElyonBossSpawner(SchedulerService schedulerService)
     {
         int SpawnCheck = GenerateSpawnChance();
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner Initial Launch!");
+        NWScript.ExecuteScript("webhook_announce");
 
         if((1 <= SpawnCheck) && (SpawnCheck <= 33))
         {
