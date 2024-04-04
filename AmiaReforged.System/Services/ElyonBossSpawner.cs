@@ -15,10 +15,8 @@ public class ElyonBossSpawner
 
     public ElyonBossSpawner(SchedulerService schedulerService)
     {
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner Initial Launch!");
-        NWScript.ExecuteScript("webhook_announce");
         _schedulerService = schedulerService; 
-        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(1)); //GenerateSpawnTime()
+        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(GenerateSpawnTime())); 
     }
 
     private int GenerateSpawnChance()
