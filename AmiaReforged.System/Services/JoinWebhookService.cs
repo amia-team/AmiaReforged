@@ -11,6 +11,8 @@ public class JoinWebhookService
 {
     private const string Avatar = "https://i.imgur.com/UmHQ3fG.png";
     private const string Username = "Savras";
+    private const string GenericAvatar = "https://imgur.com/ScFFxch.png";
+    private const string GenericUsername = "Timat";
     private readonly SchedulerService _schedulerService;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly WebhookSender _webhookSender;
@@ -48,7 +50,7 @@ public class JoinWebhookService
     
     public async Task LaunchDiscordMessage(string messageSent)
     {
-       await _webhookSenderGeneric.SendMessage("Tiamat",messageSent,Avatar); 
+       await _webhookSenderGeneric.SendMessage(GenericUsername,messageSent,GenericAvatar); 
     }
 }
 
