@@ -38,7 +38,7 @@ public class ElyonBossSpawner
     { 
         int SpawnCheck = GenerateSpawnChance();
 
-        if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 33)))
+        if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 25)))
         {
         NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner FIRED! Should be between 1 to 320 minutes after Test Launch text.");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
@@ -46,7 +46,7 @@ public class ElyonBossSpawner
         }
         else
         {
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner will NOT fire this RESET!");
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner will NOT fire!");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         }
