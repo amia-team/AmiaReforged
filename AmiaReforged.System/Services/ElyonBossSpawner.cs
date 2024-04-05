@@ -44,7 +44,7 @@ public class ElyonBossSpawner
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         }
-        else
+        else if(NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0))
         {
         NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner will NOT fire!");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
