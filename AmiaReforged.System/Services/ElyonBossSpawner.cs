@@ -47,7 +47,7 @@ public class ElyonBossSpawner
         int SpawnCheck = 10; //GenerateSpawnChance()
         int RandomWaypoint = GenerateRandomWaypont(); 
 
-        uint Waypoint = NWScript.GetWaypointByTag("GlobalBosssSpawn" + Convert.ToString(RandomWaypoint));
+        uint Waypoint = NWScript.GetWaypointByTag("GlobalBossSpawn" + Convert.ToString(RandomWaypoint)); 
         uint WaypointArea = NWScript.GetArea(Waypoint);
 
         if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 25)))
