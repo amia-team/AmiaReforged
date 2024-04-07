@@ -96,7 +96,7 @@ public class ElyonBossSpawner
         }
         else if(NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0))
         {
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","``` *All is quiet on Amia and its sister isles* ```");
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","``` *All is quiet on Amia and her sister isles* ```");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         }
