@@ -49,10 +49,13 @@ public class ElyonBossSpawner
 
         uint Waypoint = NWScript.GetWaypointByTag("GlobalBossSpawn" + Convert.ToString(RandomWaypoint)); 
         uint WaypointArea = NWScript.GetArea(Waypoint);
+        string ResRef = NWScript.GetLocalString(Waypoint,"resRef");
+        string CreatureName = NWScript.GetLocalString(Waypoint,"creatureName");
+        string AreaName = NWScript.GetName(WaypointArea);
 
         if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 25)))
         {
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner FIRED! This waypoint's resref is: " + NWScript.GetLocalString(Waypoint,"resRef") + " The creature name is: " + NWScript.GetLocalString(Waypoint,"creatureName") + "And the area name is: " + NWScript.GetName(WaypointArea));
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","-- *All adventurers recieve an urgent bombardment of sendings from the Guild!* WARNING! Extremely dangerous " + CreatureName + " is rampaging in " + AreaName + ". WARNING! --");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         }
