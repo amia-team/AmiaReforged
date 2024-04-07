@@ -16,7 +16,7 @@ public class ElyonBossSpawner
     public ElyonBossSpawner(SchedulerService schedulerService)
     {
         _schedulerService = schedulerService; 
-        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(2));  //GenerateSpawnTime()
+        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(GenerateSpawnTime()));  
     }
 
     private int GenerateSpawnChance()
@@ -52,14 +52,34 @@ public class ElyonBossSpawner
     int Loot = 15; // Loot drops
     Random random = new Random();
     int LootDropNumber = random.Next(1, Loot);
+    string LootDropResRef = "None";
 
-    uint LootDrop = NWScript.CreateItemOnObject("elyon_epiclt_" + Convert.ToString(LootDropNumber),Boss);
+    switch(LootDropNumber)
+    {
+        case 1: LootDropResRef = "Test"; break;
+        case 2: LootDropResRef = "Test"; break;
+        case 3: LootDropResRef = "Test"; break;
+        case 4: LootDropResRef = "Test"; break;
+        case 5: LootDropResRef = "Test"; break;
+        case 6: LootDropResRef = "Test"; break;
+        case 7: LootDropResRef = "Test"; break;
+        case 8: LootDropResRef = "Test"; break;
+        case 9: LootDropResRef = "Test"; break;
+        case 10: LootDropResRef = "Test"; break;
+        case 11: LootDropResRef = "Test"; break;
+        case 12: LootDropResRef = "Test"; break;
+        case 13: LootDropResRef = "Test"; break;
+        case 14: LootDropResRef = "Test"; break;
+        case 15: LootDropResRef = "Test"; break;
+    }
+
+    uint LootDrop = NWScript.CreateItemOnObject(LootDropResRef,Boss);
     NWScript.SetDroppableFlag(LootDrop,1);
     }
 
     private void LaunchBoss()
     { 
-        int SpawnCheck = 10; // GenerateSpawnChance()
+        int SpawnCheck = GenerateSpawnChance(); 
         int RandomWaypoint = GenerateRandomWaypont(); 
 
         uint Waypoint = NWScript.GetWaypointByTag("GlobalBossSpawn" + Convert.ToString(RandomWaypoint)); 
@@ -76,7 +96,7 @@ public class ElyonBossSpawner
         }
         else if(NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0))
         {
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner will NOT fire!");
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","``` *All is quiet on Amia and its sister isles* ```");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         }
