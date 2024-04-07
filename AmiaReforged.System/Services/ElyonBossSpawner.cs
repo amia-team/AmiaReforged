@@ -16,7 +16,7 @@ public class ElyonBossSpawner
     public ElyonBossSpawner(SchedulerService schedulerService)
     {
         _schedulerService = schedulerService; 
-        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(5)); // GenerateSpawnTime()
+        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(2)); // GenerateSpawnTime()
     }
 
     private int GenerateSpawnChance()
@@ -36,7 +36,7 @@ public class ElyonBossSpawner
 
     private int GenerateRandomWaypont()
     {
-    int MaxWP = 5; // Waypoints
+    int MaxWP = 4; // Waypoints
     Random random = new Random();
     int WP = random.Next(1, MaxWP);
     return WP;
@@ -46,7 +46,8 @@ public class ElyonBossSpawner
     { 
         int SpawnCheck = 10; //GenerateSpawnChance()
         int RandomWaypoint = GenerateRandomWaypont(); 
-        uint Waypoint = NWScript.GetWaypointByTag("GlobalBosssSpawn" + NWScript.IntToString(RandomWaypoint));
+
+        uint Waypoint = NWScript.GetWaypointByTag("GlobalBosssSpawn" + Convert.ToString(RandomWaypoint));
         uint WaypointArea = NWScript.GetArea(Waypoint);
 
         if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 25)))
