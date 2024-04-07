@@ -70,7 +70,7 @@ public class ElyonBossSpawner
 
         if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 25)))
         {
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","*All adventurers recieve an urgent bombardment of sendings from the Guild!* WARNING! Extremely dangerous " + CreatureName + " is rampaging in " + AreaName + "! BE CAUTIOUS!");
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","``` *All adventurers recieve an urgent bombardment of messages from the Guild and murmurs from the locals!* WARNING! Extremely dangerous " + CreatureName + " is rampaging in " + AreaName + "! BE CAUTIOUS! ```");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         }
