@@ -16,7 +16,7 @@ public class ElyonBossSpawner
     public ElyonBossSpawner(SchedulerService schedulerService)
     {
         _schedulerService = schedulerService; 
-        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(2)); // GenerateSpawnTime()
+        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(GenerateSpawnTime()));  
     }
 
     private int GenerateSpawnChance()
@@ -42,9 +42,24 @@ public class ElyonBossSpawner
     return WP;
     }
 
+    public void SummonElyonBoss(uint Waypoint)
+    {
+    uint WaypointArea = NWScript.GetArea(Waypoint);
+    string ResRef = NWScript.GetLocalString(Waypoint,"resRef");
+    IntPtr location = NWScript.GetLocation(Waypoint);
+    uint Boss = NWScript.CreateObject(1, ResRef, location);
+
+    int Loot = 15; // Loot drops
+    Random random = new Random();
+    int LootDropNumber = random.Next(1, Loot);
+
+    uint LootDrop = NWScript.CreateItemOnObject("elyon_epiclt_" + Convert.ToString(LootDropNumber),Boss);
+    NWScript.SetDroppableFlag(LootDrop,1);
+    }
+
     private void LaunchBoss()
     { 
-        int SpawnCheck = 10; //GenerateSpawnChance()
+        int SpawnCheck = GenerateSpawnChance(); 
         int RandomWaypoint = GenerateRandomWaypont(); 
 
         uint Waypoint = NWScript.GetWaypointByTag("GlobalBossSpawn" + Convert.ToString(RandomWaypoint)); 
@@ -55,7 +70,7 @@ public class ElyonBossSpawner
 
         if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 25)))
         {
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","-- *All adventurers recieve an urgent bombardment of sendings from the Guild!* WARNING! Extremely dangerous " + CreatureName + " is rampaging in " + AreaName + ". WARNING! --");
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","*All adventurers recieve an urgent bombardment of sendings from the Guild!* WARNING! Extremely dangerous " + CreatureName + " is rampaging in " + AreaName + "! BE CAUTIOUS!");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         }
