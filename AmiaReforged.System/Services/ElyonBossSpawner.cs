@@ -34,13 +34,24 @@ public class ElyonBossSpawner
     return Time;
     }
 
+    private int GenerateRandomWaypont()
+    {
+    int MaxWP = 5; // Waypoints
+    Random random = new Random();
+    int WP = random.Next(1, MaxWP);
+    return WP;
+    }
+
     private void LaunchBoss()
     { 
         int SpawnCheck = GenerateSpawnChance();
+        int RandomWaypoint = GenerateRandomWaypont(); 
+        uint Waypoint = NWScript.GetWaypointByTag("GlobalBosssSpawn" + NWScript.IntToString(RandomWaypoint));
+        uint WaypointArea = NWScript.GetArea(Waypoint);
 
         if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 25)))
         {
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner FIRED! Should be between 1 to 320 minutes after Test Launch text.");
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","ElyonBossSpawner FIRED! This waypoint's resref is: " + NWScript.GetLocalString(Waypoint,"resRef") + " The creature name is: " + NWScript.GetLocalString(Waypoint,"creatureName") + "And the area name is: " + NWScript.GetName(WaypointArea));
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         }
