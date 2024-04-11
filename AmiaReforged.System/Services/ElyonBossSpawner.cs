@@ -88,7 +88,7 @@ public class ElyonBossSpawner
         string CreatureName = NWScript.GetLocalString(Waypoint,"creatureName");
         string AreaName = NWScript.GetName(WaypointArea);
 
-        if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 25)))
+        if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 30)))
         {
         NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","``` All adventurers begin to hear murmurs and rumors from locals about a terrifying creature loose on the isles. You quickly recieve a message from the Guilds to confirm this fact. The message is simple: WARNING! Extremely dangerous " + CreatureName + " is rampaging in " + AreaName + "! Avoid at all costs! ```");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
