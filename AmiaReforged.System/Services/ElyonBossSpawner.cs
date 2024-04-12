@@ -90,7 +90,7 @@ public class ElyonBossSpawner
 
         if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 30)))
         {
-        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","``` All adventurers begin to hear murmurs and rumors from locals about a terrifying creature loose on the isles. You quickly recieve a message from the Guilds to confirm this fact. The message is simple: WARNING! Extremely dangerous " + CreatureName + " is rampaging in " + AreaName + "! Avoid at all costs! ```");
+        NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","``` All adventurers begin to hear murmurs and rumors from locals about a terrifying creature loose on the isles. You quickly receive a message from the Guilds to confirm this fact. The message is simple: WARNING! Extremely dangerous " + CreatureName + " is rampaging in " + AreaName + "! We recommend engaging only with a group of skilled adventurers! ```");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         }
