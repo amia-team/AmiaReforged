@@ -42,19 +42,23 @@ public class ElyonBossSpawner
     return WP;
     }
 
+    private int GenerateRandomLoot()
+    {
+    int MaxLoot = 15; // Loot Count
+    Random random = new Random();
+    int WP = random.Next(1, MaxLoot);
+    return MaxLoot;
+    }
+
     public void SummonElyonBoss(uint Waypoint)
     {
-    uint WaypointArea = NWScript.GetArea(Waypoint);
     string ResRef = NWScript.GetLocalString(Waypoint,"resRef");
     IntPtr location = NWScript.GetLocation(Waypoint);
     uint Boss = NWScript.CreateObject(1, ResRef, location);
 
-    int Loot = 15; // Loot drops
-    Random random = new Random();
-    int LootDropNumber = random.Next(1, Loot);
     string LootDropResRef = "invasionreward"; 
 
-    switch(LootDropNumber)
+    switch(GenerateRandomLoot())
     {
         case 1: LootDropResRef = "invasionreward"; break;
         case 2: LootDropResRef = "elyon_loot_1"; break;
