@@ -16,7 +16,7 @@ public class ElyonBossSpawner
     public ElyonBossSpawner(SchedulerService schedulerService)
     {
         _schedulerService = schedulerService; 
-        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(GenerateSpawnTime()));  
+        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(10)); // GenerateSpawnTime()
     }
 
     private int GenerateSpawnChance()
@@ -36,7 +36,7 @@ public class ElyonBossSpawner
 
     private int GenerateRandomWaypont()
     {
-    int MaxWP = 4; // Waypoints
+    int MaxWP = 30; // Waypoints
     Random random = new Random();
     int WP = random.Next(1, MaxWP);
     return WP;
@@ -88,11 +88,12 @@ public class ElyonBossSpawner
         string CreatureName = NWScript.GetLocalString(Waypoint,"creatureName");
         string AreaName = NWScript.GetName(WaypointArea);
 
-        if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 30)))
+        if((NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0)) && ((1 <= SpawnCheck) && (SpawnCheck <= 100)))
         {
         NWScript.SetLocalString(NWScript.GetModule(),"announcerMessage","``` All adventurers begin to hear murmurs and rumors from locals about a terrifying creature loose on the isles. You quickly receive a message from the Guilds to confirm this fact. The message is simple: WARNING! Extremely dangerous " + CreatureName + " is rampaging in " + AreaName + "! We recommend engaging only with a group of skilled adventurers! ```");
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
+        SummonElyonBoss(Waypoint);
         }
         else if(NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0))
         {
