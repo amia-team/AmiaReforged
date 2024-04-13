@@ -70,7 +70,7 @@ public class ElyonBossSpawner
         case 12: LootDropResRef = "Test"; break;
         case 13: LootDropResRef = "Test"; break;
         case 14: LootDropResRef = "Test"; break;
-        case 15: LootDropResRef = "Test"; break;
+        case 15: LootDropResRef = "Test "; break;
     }
 
     uint LootDrop = NWScript.CreateItemOnObject(LootDropResRef,Boss);
