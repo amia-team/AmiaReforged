@@ -56,25 +56,47 @@ public class ElyonBossSpawner
 
     switch(LootDropNumber)
     {
-        case 1: LootDropResRef = "Test"; break;
-        case 2: LootDropResRef = "Test"; break;
-        case 3: LootDropResRef = "Test"; break;
-        case 4: LootDropResRef = "Test"; break;
-        case 5: LootDropResRef = "Test"; break;
-        case 6: LootDropResRef = "Test"; break;
-        case 7: LootDropResRef = "Test"; break;
-        case 8: LootDropResRef = "Test"; break;
-        case 9: LootDropResRef = "Test"; break;
-        case 10: LootDropResRef = "Test"; break;
-        case 11: LootDropResRef = "Test"; break;
-        case 12: LootDropResRef = "Test"; break;
-        case 13: LootDropResRef = "Test"; break;
-        case 14: LootDropResRef = "Test"; break;
-        case 15: LootDropResRef = "Test"; break;
+        case 1: LootDropResRef = "invasionreward"; break;
+        case 2: LootDropResRef = "elyon_loot_1"; break;
+        case 3: LootDropResRef = "elyon_loot_2"; break;
+        case 4: LootDropResRef = "elyon_loot_3"; break;
+        case 5: LootDropResRef = "elyon_loot_4"; break;
+        case 6: LootDropResRef = "elyon_loot_5"; break;
+        case 7: LootDropResRef = "elyon_loot_6"; break;
+        case 8: LootDropResRef = "elyon_loot_7"; break;
+        case 9: LootDropResRef = "elyon_loot_8"; break;
+        case 10: LootDropResRef = "elyon_loot_9"; break;
+        case 11: LootDropResRef = "elyon_loot_10"; break;
+        case 12: LootDropResRef = "elyon_loot_11"; break;
+        case 13: LootDropResRef = "elyon_loot_12"; break;
+        case 14: LootDropResRef = "elyon_loot_13"; break;
+        case 15: LootDropResRef = "elyon_loot_14"; break;
     }
 
     uint LootDrop = NWScript.CreateItemOnObject(LootDropResRef,Boss);
     NWScript.SetDroppableFlag(LootDrop,1);
+    }
+
+    private void MassWhisper(uint Waypoint)
+    {
+        uint WaypointArea = NWScript.GetArea(Waypoint);
+        string CreatureName = NWScript.GetLocalString(Waypoint,"creatureName");
+        string AreaName = NWScript.GetName(WaypointArea);
+
+        uint oPC = NWScript.GetFirstPC();
+
+        while(NWScript.GetIsObjectValid(oPC) == 1)
+        {
+            NWScript.SendMessageToPC(oPC,"-----");
+            NWScript.SendMessageToPC(oPC,"-----");
+            NWScript.SendMessageToPC(oPC," All adventurers begin to hear murmurs and rumors from locals about a terrifying creature loose on the isles. You quickly receive a message from the Guilds to confirm this fact. The message is simple: WARNING! Extremely dangerous " + CreatureName + " is rampaging in " + AreaName + "! We recommend engaging only with a group of skilled adventurers! ");
+            NWScript.SendMessageToPC(oPC,"-----");
+            NWScript.SendMessageToPC(oPC,"-----");
+
+            oPC = NWScript.GetNextPC();
+        }
+
+
     }
 
     private void LaunchBoss()
@@ -84,7 +106,6 @@ public class ElyonBossSpawner
 
         uint Waypoint = NWScript.GetWaypointByTag("GlobalBossSpawn" + Convert.ToString(RandomWaypoint)); 
         uint WaypointArea = NWScript.GetArea(Waypoint);
-        string ResRef = NWScript.GetLocalString(Waypoint,"resRef");
         string CreatureName = NWScript.GetLocalString(Waypoint,"creatureName");
         string AreaName = NWScript.GetName(WaypointArea);
 
@@ -94,6 +115,7 @@ public class ElyonBossSpawner
         NWScript.SetLocalInt(NWScript.GetModule(),"ElyonBossFired",1);
         NWScript.ExecuteScript("webhook_announce");
         SummonElyonBoss(Waypoint);
+        MassWhisper(Waypoint);
         }
         else if(NWScript.GetLocalInt(NWScript.GetModule(),"ElyonBossFired").Equals(0))
         {
