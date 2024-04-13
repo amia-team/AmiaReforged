@@ -16,7 +16,7 @@ public class ElyonBossSpawner
     public ElyonBossSpawner(SchedulerService schedulerService)
     {
         _schedulerService = schedulerService; 
-        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(10)); // GenerateSpawnTime()
+        _schedulerService.ScheduleRepeating(LaunchBoss, TimeSpan.FromMinutes(5)); // GenerateSpawnTime()
     }
 
     private int GenerateSpawnChance()
@@ -55,6 +55,7 @@ public class ElyonBossSpawner
     string ResRef = NWScript.GetLocalString(Waypoint,"resRef");
     IntPtr location = NWScript.GetLocation(Waypoint);
     uint Boss = NWScript.CreateObject(1, ResRef, location);
+    
 
     string LootDropResRef = "invasionreward"; 
 
@@ -78,6 +79,7 @@ public class ElyonBossSpawner
     }
 
     uint LootDrop = NWScript.CreateItemOnObject(LootDropResRef,Boss);
+    uint LootDropTest = NWScript.CreateItemOnObject("invasionreward",Boss);
     NWScript.SetDroppableFlag(LootDrop,1);
     }
 
