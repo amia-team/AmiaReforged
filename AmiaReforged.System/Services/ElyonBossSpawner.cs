@@ -52,7 +52,7 @@ public class ElyonBossSpawner
     int Loot = 15; // Loot drops
     Random random = new Random();
     int LootDropNumber = random.Next(1, Loot);
-    string LootDropResRef = "None";
+    string LootDropResRef = "invasionreward";
 
     switch(LootDropNumber)
     {
