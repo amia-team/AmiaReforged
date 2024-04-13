@@ -42,45 +42,11 @@ public class ElyonBossSpawner
     return WP;
     }
 
-    private int GenerateRandomLoot()
-    {
-    int MaxLoot = 15; // Loot Count
-    Random random = new Random();
-    int WP = random.Next(1, MaxLoot);
-    return MaxLoot;
-    }
-
     public void SummonElyonBoss(uint Waypoint)
     {
     string ResRef = NWScript.GetLocalString(Waypoint,"resRef");
     IntPtr location = NWScript.GetLocation(Waypoint);
-    uint Boss = NWScript.CreateObject(1, ResRef, location);
-    
-
-    string LootDropResRef = "invasionreward"; 
-
-    switch(GenerateRandomLoot())
-    {
-        case 1: LootDropResRef = "invasionreward"; break;
-        case 2: LootDropResRef = "elyon_loot_1"; break;
-        case 3: LootDropResRef = "elyon_loot_2"; break;
-        case 4: LootDropResRef = "elyon_loot_3"; break;
-        case 5: LootDropResRef = "elyon_loot_4"; break;
-        case 6: LootDropResRef = "elyon_loot_5"; break;
-        case 7: LootDropResRef = "elyon_loot_6"; break;
-        case 8: LootDropResRef = "elyon_loot_7"; break;
-        case 9: LootDropResRef = "elyon_loot_8"; break;
-        case 10: LootDropResRef = "elyon_loot_9"; break;
-        case 11: LootDropResRef = "elyon_loot_10"; break;
-        case 12: LootDropResRef = "elyon_loot_11"; break;
-        case 13: LootDropResRef = "elyon_loot_12"; break;
-        case 14: LootDropResRef = "elyon_loot_13"; break;
-        case 15: LootDropResRef = "elyon_loot_14"; break;
-    }
-
-    uint LootDrop = NWScript.CreateItemOnObject(LootDropResRef,Boss);
-    uint LootDropTest = NWScript.CreateItemOnObject("invasionreward",Boss);
-    NWScript.SetDroppableFlag(LootDrop,1);
+    uint Boss = NWScript.CreateObject(1, ResRef, location); 
     }
 
     private void MassWhisper(uint Waypoint)
