@@ -1,4 +1,5 @@
-﻿using Anvil.Services;
+﻿using Anvil.API;
+using Anvil.Services;
 
 namespace AmiaReforged.System.Services;
 
@@ -11,11 +12,11 @@ public class DmLoginService
     {
         _session = session;
         
-        // Register for OnLogin event for DMs
-        
-        // R
+        // Register for OnClientEnter event for DMs
+        // e.g.: NwModule.Instance.OnClientEnter += StartDmSession;
+        // Register for OnClientDisconnect event for DMs
+        // e.g.: NwModule.Instance.OnClientEnter += EndDmSession;
     }
-    
 }
 
 [ServiceBinding(typeof(SessionHandler))]
