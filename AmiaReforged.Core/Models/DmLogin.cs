@@ -11,5 +11,5 @@ public class DmLogin
     public DateTime SessionStart { get; set; }
     public DateTime? SessionEnd { get; set; }
     
-    [ForeignKey("PcKey")] public Dm Dm { get; set; }
+    [ForeignKey("CdKey")] public Dm Dm { get; set; }
 }
