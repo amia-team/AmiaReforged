@@ -10,6 +10,6 @@ public class DmLogin
     public string? LoginName { get; set; }
     public DateTime SessionStart { get; set; }
     public DateTime? SessionEnd { get; set; }
-    
+    public int PlayTime { get; set; }
     [ForeignKey("CdKey")] public Dm Dm { get; set; }
 }
