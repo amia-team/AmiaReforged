@@ -55,33 +55,27 @@ namespace AmiaReforged.Core.Migrations
                 {
                     b.Property<int>("LoginNumber")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("login_number");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("LoginNumber"));
 
                     b.Property<string>("CdKey")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("cd_key");
+                        .HasColumnType("text");
 
                     b.Property<string>("LoginName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("login_name");
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("SessionEnd")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("session_end");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("SessionStart")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("session_start");
+                        .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("LoginNumber")
-                        .HasName("dm_logins_pkey");
+                    b.HasKey("LoginNumber");
 
-                    b.ToTable("dm_logins", (string)null);
+                    b.HasIndex("CdKey");
+
+                    b.ToTable("DmLogins");
                 });
 
             modelBuilder.Entity("AmiaReforged.Core.Models.DreamcoinRecord", b =>
@@ -241,6 +235,15 @@ namespace AmiaReforged.Core.Migrations
                     b.HasIndex("PlayerCharacterId");
 
                     b.ToTable("PlayerItems");
+                });
+
+            modelBuilder.Entity("AmiaReforged.Core.Models.DmLogin", b =>
+                {
+                    b.HasOne("AmiaReforged.Core.Models.Dm", "Dm")
+                        .WithMany()
+                        .HasForeignKey("CdKey");
+
+                    b.Navigation("Dm");
                 });
 
             modelBuilder.Entity("AmiaReforged.Core.Models.DreamcoinRecord", b =>
