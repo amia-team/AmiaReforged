@@ -1,7 +1,9 @@
-﻿namespace AmiaReforged.Core.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AmiaReforged.Core.Models;
 
 public class Dm
 {
-    public string CdKey { get; set; } = null!;
+    [Key] public string CdKey { get; set; } = null!;
     public string LoginName { get; set; }
 }

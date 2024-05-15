@@ -60,18 +60,6 @@ public class AmiaDbContext : DbContext
             entity.Property(e => e.CdKey).HasColumnName("cd_key");
         });
 
-        modelBuilder.Entity<Dm>(entity =>
-        {
-            entity.HasNoKey();
-
-            entity.ToTable("dms");
-
-            entity.HasIndex(e => e.CdKey, "dms_cd_key_key")
-                .IsUnique();
-
-            entity.Property(e => e.CdKey).HasColumnName("cd_key");
-        });
-
         modelBuilder.Entity<DmLogin>(entity =>
         {
             entity.HasKey(e => e.LoginNumber)
