@@ -60,32 +60,6 @@ public class AmiaDbContext : DbContext
             entity.Property(e => e.CdKey).HasColumnName("cd_key");
         });
 
-        modelBuilder.Entity<DmLogin>(entity =>
-        {
-            entity.HasKey(e => e.LoginNumber)
-                .HasName("dm_logins_pkey");
-
-            entity.ToTable("dm_logins");
-
-            entity.Property(e => e.LoginNumber).HasColumnName("login_number");
-
-            entity.Property(e => e.CdKey)
-                .HasMaxLength(10)
-                .HasColumnName("cd_key");
-
-            entity.Property(e => e.LoginName)
-                .HasMaxLength(255)
-                .HasColumnName("login_name");
-
-            entity.Property(e => e.SessionEnd)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("session_end");
-
-            entity.Property(e => e.SessionStart)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("session_start");
-        });
-
         modelBuilder.Entity<DreamcoinRecord>(entity =>
         {
             entity.HasKey(e => e.CdKey)
