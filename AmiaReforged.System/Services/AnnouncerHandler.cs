@@ -3,20 +3,20 @@ using Anvil.Services;
 using NWN.Core;
 
 namespace AmiaReforged.System.Services;
-[ServiceBinding(typeof(AnnouncerHandler))]
 
+[ServiceBinding(typeof(AnnouncerHandler))]
 public class AnnouncerHandler
 {
-
-[ScriptHandler("webhook_announce")]
-public void DiscordAnnouncer(CallInfo info)
-{
-    string message = NWScript.GetLocalString(NWScript.GetModule(),"announcerMessage");
-    if (string.Equals(message, ""))
+    [ScriptHandler("webhook_announce")]
+    public void DiscordAnnouncer(CallInfo info)
     {
-        message = "Empty Variable";
+        string message = NWScript.GetLocalString(NWScript.GetModule(), "announcerMessage");
+        if (string.Equals(message, ""))
+        {
+            message = "Empty Variable";
+        }
+
+        var instance = new JoinWebhookService();
+        _ = instance.LaunchDiscordMessage(message);
     }
-    var instance = new JoinWebhookService();
-    _ = instance.LaunchDiscordMessage(message);
-}
 }
