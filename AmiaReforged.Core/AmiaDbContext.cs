@@ -13,7 +13,7 @@ public class AmiaDbContext : DbContext
 
     public virtual DbSet<Ban> Bans { get; set; } = null!;
     public virtual DbSet<Dm> Dms { get; set; } = null!;
-    public virtual DbSet<DmLogin> DmLogins { get; set; } = null!;
+    public virtual DbSet<DmLogin?> DmLogins { get; set; } = null!;
     public virtual DbSet<DreamcoinRecord> DreamcoinRecords { get; set; } = null!;
     public virtual DbSet<Player> Players { get; set; } = null!;
     public virtual DbSet<PlayerCharacter> Characters { get; set; } = null!;
