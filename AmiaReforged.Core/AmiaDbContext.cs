@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Models.Faction;
+using AmiaReforged.Core.Models.Settlement;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -13,7 +14,7 @@ public class AmiaDbContext : DbContext
 
     public virtual DbSet<Ban> Bans { get; set; } = null!;
     public virtual DbSet<Dm> Dms { get; set; } = null!;
-    public virtual DbSet<DmLogin?> DmLogins { get; set; } = null!;
+    public virtual DbSet<DmLogin> DmLogins { get; set; } = null!;
     public virtual DbSet<DreamcoinRecord> DreamcoinRecords { get; set; } = null!;
     public virtual DbSet<Player> Players { get; set; } = null!;
     public virtual DbSet<PlayerCharacter> Characters { get; set; } = null!;
@@ -21,7 +22,12 @@ public class AmiaDbContext : DbContext
     public DbSet<FactionRelation> FactionRelations { get; set; } = null!;
     public DbSet<FactionCharacterRelation> FactionCharacterRelations { get; set; } = null!;
     public DbSet<StoredItem> PlayerItems { get; set; } = null!;
-
+    public DbSet<Settlement> Settlements { get; set; } = null!;
+    public DbSet<EconomyItem> EconomyItems { get; set; } = null!;
+    public DbSet<Material> Materials { get; set; } = null!;
+    public DbSet<Quality> Qualities { get; set; } = null!;
+    public DbSet<Stockpile> Stockpiles { get; set; } = null!;
+    public DbSet<StockpiledItem> StockpiledItems { get; set; } = null!;
     public DbSet<SavedSpellbook> SavedSpellbooks { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

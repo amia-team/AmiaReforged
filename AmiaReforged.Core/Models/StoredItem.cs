@@ -9,5 +9,6 @@ public class StoredItem
     [Key] public Guid Id { get; set; }
     public Guid PlayerCharacterId { get; set; }
     public string ItemJson { get; set; }
+    
     [ForeignKey("PlayerCharacterId")] public PlayerCharacter Character { get; set; }
 }

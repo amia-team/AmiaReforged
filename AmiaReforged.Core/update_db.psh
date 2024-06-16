@@ -1,0 +1,1 @@
+﻿dotnet ef database update --connection "Server=localhost:5432;Database=amia;Username=amia;Password=@mi@db;"
