@@ -1,15 +1,11 @@
-﻿using AmiaReforged.Core;
-using AmiaReforged.Core.Models;
-using AmiaReforged.Core.Services;
+﻿using AmiaReforged.Core.Models;
 using Anvil.API;
-using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NLog.Fluent;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
-namespace AmiaReforged.System.Models;
+namespace AmiaReforged.Core.Services.PlaySessionLogging;
 
 public class PlaySession : IDisposable
 {
@@ -25,7 +21,7 @@ public class PlaySession : IDisposable
     private DatabaseContextFactory DbFactory { get; set; }
     
     private bool Active => SessionEnd == default;
-
+    public ScheduledTask SavePlayTimeCallback { get; set; }
 
     public PlaySession(NwPlayer player, SchedulerService scheduler)
     {
@@ -35,25 +31,7 @@ public class PlaySession : IDisposable
         Scheduler = scheduler;
 
         StartSession();
-        NwModule.Instance.OnHeartbeat += SavePlayTime;
-    }
-
-    private void SavePlayTime(ModuleEvents.OnHeartbeat obj)
-    {
-        if (!Player.IsDM) return;
-        if(!Active) return;
-        
-        Log.Info($"Saving playtime for {Player.PlayerName} with login id {LoginId}");
-
-        AmiaDbContext context = DbFactory.CreateDbContext();
-
-        int playTimeInMinutes = PlayTimeInMinutes();
-
-        DmLogin? login = context.DmLogins.Find(LoginId);
-
-        login.PlayTime = playTimeInMinutes;
-
-        context.SaveChanges();
+        SavePlayTimeCallback = Scheduler.ScheduleRepeating(SavePlayTime, TimeSpan.FromMinutes(OneMinute));
     }
 
     private void StartSession()
@@ -76,6 +54,24 @@ public class PlaySession : IDisposable
             .LoginNumber;
     }
 
+    private void SavePlayTime()
+    {
+        if (!Player.IsDM) return;
+        if(!Active) return;
+        
+        Log.Info($"Saving playtime for {Player.PlayerName} with login id {LoginId}");
+
+        AmiaDbContext context = DbFactory.CreateDbContext();
+
+        int playTimeInMinutes = PlayTimeInMinutes();
+
+        DmLogin? login = context.DmLogins.Find(LoginId);
+
+        login.PlayTime = playTimeInMinutes;
+
+        context.SaveChanges();
+    }
+
     private int PlayTimeInMinutes() => (int)Math.Ceiling((DateTime.UtcNow - SessionStart).TotalMinutes);
 
     public void EndSession()
@@ -94,6 +90,6 @@ public class PlaySession : IDisposable
 
     public void Dispose()
     {
-        ((IDisposable)Scheduler).Dispose();
+        SavePlayTimeCallback.Dispose();
     }
 }
