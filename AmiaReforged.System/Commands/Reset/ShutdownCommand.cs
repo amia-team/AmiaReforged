@@ -20,7 +20,7 @@ public class Shutdown : IChatCommand
 
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
-        if (!caller.IsDM || !caller.IsPlayerDM)
+        if (!caller.IsDM)
         {
             NWScript.SendMessageToAllDMs(
                 $"{caller.PlayerName} tried shutting down the server and is not a DM.");
