@@ -8,7 +8,7 @@ namespace AmiaReforged.Core.Services.PlaySessionLogging;
 public class PlaySessionHandler
 {
     private readonly Dictionary<string, PlaySession?> _sessions = new();
-    private SchedulerService _scheduler;
+    private readonly SchedulerService _scheduler;
 
     public PlaySessionHandler(SchedulerService schedulerService)
     {

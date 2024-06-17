@@ -2,6 +2,7 @@
 using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Services;
 using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NLog.Fluent;
@@ -34,7 +35,25 @@ public class PlaySession : IDisposable
         Scheduler = scheduler;
 
         StartSession();
-        Scheduler.ScheduleRepeating(SavePlayTime, TimeSpan.FromMinutes(OneMinute));
+        NwModule.Instance.OnHeartbeat += SavePlayTime;
+    }
+
+    private void SavePlayTime(ModuleEvents.OnHeartbeat obj)
+    {
+        if (!Player.IsDM) return;
+        if(!Active) return;
+        
+        Log.Info($"Saving playtime for {Player.PlayerName} with login id {LoginId}");
+
+        AmiaDbContext context = DbFactory.CreateDbContext();
+
+        int playTimeInMinutes = PlayTimeInMinutes();
+
+        DmLogin? login = context.DmLogins.Find(LoginId);
+
+        login.PlayTime = playTimeInMinutes;
+
+        context.SaveChanges();
     }
 
     private void StartSession()
@@ -55,24 +74,6 @@ public class PlaySession : IDisposable
 
         LoginId = context.DmLogins.Where(x => x.CdKey == Player.CDKey).OrderByDescending(x => x.SessionStart).First()
             .LoginNumber;
-    }
-
-    private void SavePlayTime()
-    {
-        if (!Player.IsDM) return;
-        if(!Active) return;
-        
-        Log.Info($"Saving playtime for {Player.PlayerName} with login id {LoginId}");
-
-        AmiaDbContext context = DbFactory.CreateDbContext();
-
-        int playTimeInMinutes = PlayTimeInMinutes();
-
-        DmLogin? login = context.DmLogins.Find(LoginId);
-
-        login.PlayTime = playTimeInMinutes;
-
-        context.SaveChanges();
     }
 
     private int PlayTimeInMinutes() => (int)Math.Ceiling((DateTime.UtcNow - SessionStart).TotalMinutes);
