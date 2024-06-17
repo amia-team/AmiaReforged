@@ -11,11 +11,14 @@ public class ResetService
 {
     private const string ResetTimerLVar = "minutesToReset";
     private readonly SchedulerService _schedulerService;
+    private readonly ShutdownManager _shutdownManager;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public ResetService(SchedulerService schedulerService)
+    public ResetService(SchedulerService schedulerService, ShutdownManager shutdownManager)
     {
         _schedulerService = schedulerService;
+        _shutdownManager = shutdownManager;
+
         ScheduleAutosaveAndReset();
 
         NwModule.Instance.OnModuleLoad += SetInitialResetValue;
@@ -90,13 +93,13 @@ public class ResetService
 
     private void CheckShutdown()
     {
-        long uptime = ResetTimeKeeperSingleton.Instance.Uptime() / 60;
+        float uptime = (float)ResetTimeKeeperSingleton.Instance.Uptime() / 60;
         float resetAtMinutes = NWScript.GetLocalFloat(NwModule.Instance, ResetTimerLVar);
+        
         Log.Info($"Time since reset timer began: {((double)uptime / 60):0.00}");
 
         if (!(uptime >= resetAtMinutes)) return;
 
-        ShutdownManager shutdown = new(_schedulerService);
-        shutdown.InitiateShutdown();
+        _shutdownManager.InitiateShutdown();
     }
 }

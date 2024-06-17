@@ -4,6 +4,7 @@ using Anvil.Services;
 
 namespace AmiaReforged.System.Services;
 
+[ServiceBinding(typeof(ShutdownManager))]
 public class ShutdownManager
 {
     private readonly SchedulerService _schedulerService;
