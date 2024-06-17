@@ -1,10 +1,9 @@
 ﻿using AmiaReforged.Core.Models;
-using AmiaReforged.Core.Services;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.Core;
+namespace AmiaReforged.Core.Services.PlaySessionLogging;
 
 [ServiceBinding(typeof(DmLoginSessionService))]
 public class DmLoginSessionService
