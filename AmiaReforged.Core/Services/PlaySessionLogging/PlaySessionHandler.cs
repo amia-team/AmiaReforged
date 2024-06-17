@@ -2,7 +2,7 @@
 using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.Core;
+namespace AmiaReforged.Core.Services.PlaySessionLogging;
 
 [ServiceBinding(typeof(PlaySessionHandler))]
 public class PlaySessionHandler

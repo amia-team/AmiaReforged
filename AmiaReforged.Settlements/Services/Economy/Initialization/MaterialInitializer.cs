@@ -6,7 +6,7 @@ using Anvil.Services;
 
 namespace AmiaReforged.Settlements.Services.Economy.Initialization;
 
-[ServiceBinding(typeof(IResourceInitializer))]
+[ServiceBinding(typeof(MaterialInitializer))]
 public class MaterialInitializer : IResourceInitializer
 {
     private readonly IResourceImporter<Material> _importer;
@@ -41,8 +41,6 @@ public class MaterialInitializer : IResourceInitializer
                 await _materials.Add(material);
             }
         }
-
-        await _taskHelper.TrySwitchToMainThread();
     }
 
     private async Task<Material?> FindMaterial(string materialName)

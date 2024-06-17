@@ -9,6 +9,7 @@ using YamlDotNet.Serialization.NamingConventions;
 namespace AmiaReforged.Settlements.Services.Economy.FileReaders;
 
 [ServiceBinding(typeof(IResourceImporter<EconomyItem>))]
+[Obsolete("We decided not to define items in yaml files, so this class is no longer used.")]
 public class EconomyItemImporter : IResourceImporter<EconomyItem>
 {
     private readonly IFileSystem _fileSystem;

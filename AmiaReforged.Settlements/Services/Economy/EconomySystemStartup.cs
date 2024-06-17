@@ -10,15 +10,23 @@ public class EconomySystemStartup
     private readonly IEnumerable<IResourceInitializer> _initializers;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    
+
     public EconomySystemStartup(IEnumerable<IResourceInitializer> initializers)
     {
         _initializers = initializers;
 
         Initialize();
-        
+
         Log.Info("Economy System initialized.");
     }
 
-    private void Initialize() => _initializers.ToList().ForEach(x => x.Initialize());
+    private async void Initialize()
+    {
+        foreach (IResourceInitializer initializer in _initializers)
+        {
+            await initializer.Initialize();
+        }
+
+        await NwTask.SwitchToMainThread();
+    }
 }

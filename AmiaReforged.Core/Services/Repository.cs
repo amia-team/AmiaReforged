@@ -11,7 +11,7 @@ public class Repository<T, TId> : IRepository<T, TId> where T : class
 
     public Repository(DbContext context)
     {
-        _context = context; 
+        _context = context;
         _dbSet = _context.Set<T>();
     }
 

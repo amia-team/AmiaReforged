@@ -8,19 +8,20 @@ using NLog;
 
 namespace AmiaReforged.Settlements.Services.Economy.Initialization;
 
-[ServiceBinding(typeof(IResourceInitializer))]
+/// <summary>
+/// Implementation of <see cref="IResourceInitializer"/> for initializing <see cref="EconomyItem"/>s.
+/// </summary>
+[ServiceBinding(typeof(EconomyItemInitializer))]
+[Obsolete("We decided not tod define items in yaml files, so this class is no longer used.")]
 public class EconomyItemInitializer : IResourceInitializer
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly IRepository<EconomyItem, long> _itemDataService;
-    private readonly NwTaskHelper _taskHelper;
     private readonly IEnumerable<EconomyItem> _importedItems;
 
-    public EconomyItemInitializer(IResourceImporter<EconomyItem> importer, IRepositoryFactory factory,
-        NwTaskHelper taskHelper)
+    public EconomyItemInitializer(IResourceImporter<EconomyItem> importer, IRepositoryFactory factory)
     {
         _itemDataService = factory.CreateRepository<EconomyItem, long>();
-        _taskHelper = taskHelper;
         _importedItems = importer.LoadResources();
     }
 
@@ -47,8 +48,6 @@ public class EconomyItemInitializer : IResourceInitializer
                 await _itemDataService.Add(item);
             }
         }
-
-        await _taskHelper.TrySwitchToMainThread();
     }
 
     private async Task<EconomyItem?> FindItem(string? itemName)
