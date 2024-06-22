@@ -144,7 +144,6 @@ public class CreateSpellbookController : WindowController<CreateSpellbookView>
 
                 SavedSpellbook savedSpellbook = new SavedSpellbook
                 {
-                    Id = Guid.NewGuid(),
                     SpellbookName = spellbookName,
                     PlayerCharacterId = pcId,
                     ClassId = classId

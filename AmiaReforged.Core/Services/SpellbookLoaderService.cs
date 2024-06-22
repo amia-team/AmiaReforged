@@ -42,11 +42,11 @@ public class SpellbookLoaderService
         await db.SaveChangesAsync();
     }
 
-    public void DeleteSpellbook(Guid selectedSpellbookId, Guid pcId)
+    public void DeleteSpellbook(long selectedSpellbookId, Guid pcId)
     {
         using AmiaDbContext db = _factory.CreateDbContext();
 
-        SavedSpellbook? spellbook = db.SavedSpellbooks.FirstOrDefault(sb => sb.Id == selectedSpellbookId);
+        SavedSpellbook? spellbook = db.SavedSpellbooks.FirstOrDefault(sb => sb.BookId == selectedSpellbookId);
 
         if (spellbook == null)
         {
@@ -64,11 +64,11 @@ public class SpellbookLoaderService
         db.SaveChanges();
     }
 
-    public SpellbookViewModel LoadSingleSpellbook(Guid spellbookId)
+    public SpellbookViewModel LoadSingleSpellbook(long spellbookId)
     {
         using AmiaDbContext db = _factory.CreateDbContext();
 
-        SavedSpellbook? spellbook = db.SavedSpellbooks.FirstOrDefault(sb => sb.Id == spellbookId);
+        SavedSpellbook? spellbook = db.SavedSpellbooks.FirstOrDefault(sb => sb.BookId == spellbookId);
 
         if (spellbook != null)
         {

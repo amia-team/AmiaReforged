@@ -10,7 +10,7 @@ public class SpellbookViewModel
 {
    
     public string Name { get; init; }
-    public Guid Id { get; set; }
+    public long Id { get; set; }
     public string Class { get; init; }
     public Dictionary<byte, List<PreparedSpellModel>>? SpellBook { get; set; } = new();
 
@@ -20,7 +20,7 @@ public class SpellbookViewModel
         {
             Name = savedBook.SpellbookName,
             Class = savedBook.ClassId.ToString(),
-            Id = savedBook.Id
+            Id = savedBook.BookId
         };
 
         try

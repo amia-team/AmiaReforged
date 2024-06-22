@@ -5,7 +5,7 @@ namespace AmiaReforged.Core.Models;
 
 public class SavedSpellbook
 {
-    [Key] public Guid Id { get; set; }
+    [Key] public long BookId { get; set; }    
 
     public string SpellbookName { get; set; }
 

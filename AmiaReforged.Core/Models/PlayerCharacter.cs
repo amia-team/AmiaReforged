@@ -5,6 +5,9 @@ namespace AmiaReforged.Core.Models;
 
 public class PlayerCharacter
 {
+    /// <summary>
+    /// This key is not a long because the key is derived from the player character's PCKey.
+    /// </summary>
     [Key] public Guid Id { get; init; }
     public string FirstName { get; set; }
     public string LastName { get; set; }

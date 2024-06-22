@@ -20,7 +20,7 @@ public class OpenSpellbookController : WindowController<OpenSpellbookView>
     {
         string spellbookIdString = NWScript.GetLocalString(Token.Player.LoginCreature, "selected_spellbook");
 
-        Guid spellbookId = Guid.Parse(spellbookIdString);
+        long spellbookId = long.Parse(spellbookIdString);
 
         _spellbook = SpellbookLoader.Value.LoadSingleSpellbook(spellbookId);
 
