@@ -11,8 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.Core", "AmiaRe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.DMS", "AmiaReforged.DMS\AmiaReforged.DMS.csproj", "{A8E78D1E-9E78-4093-9BD3-E0F798F94076}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.Settlements", "AmiaReforged.Settlements\AmiaReforged.Settlements.csproj", "{8871EC4D-14D0-4F74-A6A2-2B57535FAD06}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.PluginTests", "AmiaReforged.PluginTests\AmiaReforged.PluginTests.csproj", "{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}"
 EndProject
 Global
@@ -41,10 +39,6 @@ Global
 		{A8E78D1E-9E78-4093-9BD3-E0F798F94076}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8E78D1E-9E78-4093-9BD3-E0F798F94076}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A8E78D1E-9E78-4093-9BD3-E0F798F94076}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8871EC4D-14D0-4F74-A6A2-2B57535FAD06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8871EC4D-14D0-4F74-A6A2-2B57535FAD06}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8871EC4D-14D0-4F74-A6A2-2B57535FAD06}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8871EC4D-14D0-4F74-A6A2-2B57535FAD06}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}.Release|Any CPU.ActiveCfg = Release|Any CPU

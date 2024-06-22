@@ -1,9 +1,6 @@
 ﻿using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Models.Faction;
-using AmiaReforged.Core.Models.Settlement;
-using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
-using NLog;
 using Npgsql;
 
 namespace AmiaReforged.Core;

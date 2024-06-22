@@ -1,6 +1,5 @@
 ﻿using AmiaReforged.Core.UserInterface;
 using Anvil.API;
-using Anvil.API.Events;
 
 namespace AmiaReforged.System.UI.PlayerTools.AssociateChat;
 
@@ -14,20 +13,5 @@ public class AssociateChatView : WindowView<AssociateChatView>
     public override IWindowController? CreateDefaultController(NwPlayer player)
     {
         return CreateController<AssociateChatController>(player);    
-    }
-}
-
-public class AssociateChatController : WindowController<AssociateChatView>
-{
-    public override void Init()
-    {
-    }
-
-    public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
-    {
-    }
-
-    protected override void OnClose()
-    {
     }
 }
