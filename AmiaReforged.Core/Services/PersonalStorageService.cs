@@ -80,7 +80,7 @@ public class PersonalStorageService
             foreach (StoredItem item in dbItems)
             {
                 NwItem? parsed = Json.Parse(item.ItemJson).ToNwObject<NwItem>(chest.Location, chest);
-                NWScript.SetLocalString(parsed, "db_guid", item.Id.ToString());
+                NWScript.SetLocalString(parsed, "db_guid", item.ItemId.ToString());
             }
         }
         else
@@ -125,7 +125,6 @@ public class PersonalStorageService
 
         Json itemJson = NWScript.ObjectToJson(obj.Item);
         newItem.ItemJson = itemJson.Dump();
-        newItem.Id = Guid.NewGuid();
         newItem.PlayerCharacterId = characterId;
 
 
@@ -154,7 +153,7 @@ public class PersonalStorageService
         }
         else
         {
-            NWScript.SetLocalString(obj.Item, "db_guid", newItem.Id.ToString());
+            NWScript.SetLocalString(obj.Item, "db_guid", newItem.ItemId.ToString());
         }
         NWScript.ExportSingleCharacter(chestOwner);
         NWScript.SendMessageToPC(chestOwner, "Your character has been saved.");
@@ -248,7 +247,7 @@ public class PersonalStorageService
                     foreach (StoredItem item in dbItems)
                     {
                         NwObject? itemParsed = Json.Parse(item.ItemJson).ToNwObject<NwItem>(chest.Location, chest);
-                        NWScript.SetLocalString(itemParsed, "db_guid", item.Id.ToString());
+                        NWScript.SetLocalString(itemParsed, "db_guid", item.ItemId.ToString());
                     }
                 }
 
