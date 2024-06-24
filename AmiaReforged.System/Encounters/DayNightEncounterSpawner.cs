@@ -25,14 +25,6 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     {
         SetSpawnPointToRandomWaypointWithinTrigger();
 
-        NWScript.WriteTimestampedLogEntry($"Sourcing spawns in area: {NWScript.GetName(_area)}");
-
-        NWScript.WriteTimestampedLogEntry($"Time is {NWScript.GetTimeHour()} and isNightTime == {IsNightTime()}.");
-
-        NWScript.WriteTimestampedLogEntry($"Spawns vary is {DoSpawnsVary()}.");
-
-        NWScript.WriteTimestampedLogEntry($"Choosing spawns from prefix {DayNightPrefix()}.");
-
         string[] creatureResRefs = GetResRefsForPrefix(DayNightPrefix()) as string[] ??
                                    GetResRefsForPrefix(DayNightPrefix()).ToArray();
 
@@ -79,11 +71,8 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     {
         int numberOfLocalVars = _area!.LocalVariables.Count();
 
-        NWScript.WriteTimestampedLogEntry($"Found ${numberOfLocalVars} local var(s).");
-
         if (numberOfLocalVars == 0)
         {
-            NWScript.WriteTimestampedLogEntry($"ERROR: No spawns for {NWScript.GetName(_area)}!!! Aborted!");
             return new List<string>();
         }
 
@@ -96,8 +85,6 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     {
         if (!resRefs.Any())
         {
-            NWScript.WriteTimestampedLogEntry(
-                $"Attempted to spawn creatures in {NWScript.GetName(NWScript.GetAreaFromLocation(_spawnLocation))}, but there were no creatures to spawn.");
             return;
         }
 
@@ -112,7 +99,6 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     {
         if (resRef.Equals(""))
         {
-            NWScript.WriteTimestampedLogEntry("Found empty resref! Aborting!");
             return;
         }
 
