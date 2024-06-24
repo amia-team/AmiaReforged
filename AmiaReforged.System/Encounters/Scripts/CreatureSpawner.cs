@@ -30,17 +30,23 @@ public class CreatureSpawner
 
         DayNightEncounterSpawner spawner = new(_trigger);
 
-        IEnumerable<NwPlayer> partyMembers = _player.PartyMembers;
-
-        if (partyMembers.Count(partyMember =>
-                NWScript.GetArea(partyMember.LoginCreature) == NWScript.GetArea(_player.LoginCreature)) > 6) spawner.IsDoubleSpawn = true;
+        DetermineDoubleSpawns(spawner);
 
         spawner.SpawnEncounters();
 
         InitTriggerCooldown();
+
         NWScript.SetLocalInt(_trigger, "on_cooldown", NWScript.TRUE);
         NWScript.DelayCommand(FifteenMinutesSeconds,
             () => NWScript.SetLocalInt(_trigger, "on_cooldown", NWScript.FALSE));
+    }
+
+    private void DetermineDoubleSpawns(DayNightEncounterSpawner spawner)
+    {
+        IEnumerable<NwPlayer> partyMembers = _player.PartyMembers;
+
+        if (partyMembers.Count(partyMember =>
+                NWScript.GetArea(partyMember.LoginCreature) == NWScript.GetArea(_player.LoginCreature)) > 6) spawner.IsDoubleSpawn = true;
     }
 
     private bool TriggerStillOnCooldown()
