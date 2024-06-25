@@ -9,9 +9,9 @@ public static class DiceRollStringConstants
     public const string RollInitiative = "Roll Initiative";
     public const string RollTouchAttackStr = "Roll Touch Attack (STR)";
     public const string RollTouchAttackDex = "Roll Touch Attack (DEX)";
-    public const string ReportTouchAttackWis = "Report Touch Attack (WIS)";
+    public const string RollTouchAttackWis = "Report Touch Attack (WIS)";
     public const string ReportTouchAttackAc = "Report Touch Attack AC";
-    public const string ReportGrappleCheck = "Roll Grapple Check";
+    public const string RollGrappleCheck = "Roll Grapple Check";
     public const string ReportFlatFootedAc = "Report Flat Footed AC";
     public const string ReportRegularAc = "Report Regular AC";
     public const string ReportAlignment = "Report your Alignment";

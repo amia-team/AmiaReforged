@@ -15,8 +15,6 @@ public sealed class DiceRollManager
             .Where(p => typeof(IRollHandler).IsAssignableFrom(p) && !p.IsInterface);
 
         IEnumerable<Type> enumerable = types as Type[] ?? types.ToArray();
-        Log.Info($"Found this many types: {enumerable.Count()}");
-        
         
         foreach (var type in enumerable)
         {
@@ -28,7 +26,6 @@ public sealed class DiceRollManager
                 return (IRollHandler)Activator.CreateInstance(type)!;
             }
         }
-
         return null;
     }
 }

@@ -26,6 +26,8 @@ public sealed class DiceRollWindowView : WindowView<DiceRollWindowView>
     public readonly NuiButton SkillRollButton;
     public readonly NuiButton NumberRollButton;
     public readonly NuiButton SavingThrowRollButton;
+    public readonly NuiButton ReportsButton;
+
 
 
     public override NuiWindow? WindowTemplate { get; }
@@ -54,7 +56,7 @@ public sealed class DiceRollWindowView : WindowView<DiceRollWindowView>
                     {
                         Children = new List<NuiElement>
                         {
-                            new NuiButton("Go!") { Id = "go_button" }.Assign(out GoButton)
+                            new NuiButton("Roll!") { Id = "go_button" }.Assign(out GoButton)
                         },
                     }
                 }
@@ -116,6 +118,12 @@ public sealed class DiceRollWindowView : WindowView<DiceRollWindowView>
                                         Width = 114f,
                                         Height = 37f
                                     }.Assign(out SpecialRollButton),
+                                    new NuiButton("Reports")
+                                    {
+                                        Id = "reports",
+                                        Width = 114f,
+                                        Height = 37f
+                                    }.Assign(out ReportsButton)
                                 }
                             }
                         }

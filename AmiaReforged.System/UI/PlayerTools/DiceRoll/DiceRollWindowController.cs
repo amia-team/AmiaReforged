@@ -39,6 +39,7 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
     {
         List<string> buttonIds = new()
         {
+            "reports",
             "special_roll",
             "ability_check",
             "skill_check",
@@ -55,7 +56,6 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
         if (eventData.ElementId == View.GoButton.Id)
         {
             int selectedRoll = Token.GetBindValue(View.Selection);
-            Token.Player.SendServerMessage($"Selected roll: {RollButtonIds[selectedRoll]}");
 
             DiceRollType rollType = DiceRollTypeChooser.FromString(RollButtonIds[selectedRoll]);
 
@@ -70,6 +70,7 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
     {
         return buttonId switch
         {
+            "reports" => DiceRollMode.Reports,
             "special_roll" => DiceRollMode.SpecialRoll,
             "ability_check" => DiceRollMode.AbilityCheck,
             "skill_check" => DiceRollMode.SkillCheck,
@@ -83,6 +84,7 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
     {
         return rollMode switch
         {
+            DiceRollMode.Reports => Reports(),
             DiceRollMode.SpecialRoll => SpecialRoll(),
             DiceRollMode.AbilityCheck => AbilityCheck(),
             DiceRollMode.SkillCheck => SkillCheck(),
@@ -92,40 +94,53 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
         };
     }
 
+    private List<NuiComboEntry> Reports()
+    {
+        List<NuiComboEntry> diceOptions = new()
+        {
+            new NuiComboEntry(DiceRollStringConstants.ReportTouchAttackAc, 0),
+            new NuiComboEntry(DiceRollStringConstants.ReportFlatFootedAc, 1),
+            new NuiComboEntry(DiceRollStringConstants.ReportRegularAc, 2),
+            new NuiComboEntry(DiceRollStringConstants.ReportAlignment, 3),
+            new NuiComboEntry(DiceRollStringConstants.ReportCharacterLevel, 4),
+            };
+        
+        RollButtonIds = new Dictionary<int, string>
+        {
+            { 0, DiceRollStringConstants.ReportTouchAttackAc },
+            { 1, DiceRollStringConstants.ReportFlatFootedAc },
+            { 2, DiceRollStringConstants.ReportRegularAc },
+            { 3, DiceRollStringConstants.ReportAlignment },
+            { 4, DiceRollStringConstants.ReportCharacterLevel }
+        };
+        
+        return diceOptions;
+    }
+
     private List<NuiComboEntry> SpecialRoll()
     {
         List<NuiComboEntry> diceOptions = new()
         {
             new NuiComboEntry(DiceRollStringConstants.CounterBluffListen, 0),
             new NuiComboEntry(DiceRollStringConstants.CounterBluffSpot, 1),
-            new NuiComboEntry(DiceRollStringConstants.CounterIntimidate, 2),
-            new NuiComboEntry(DiceRollStringConstants.RollInitiative, 3),
-            new NuiComboEntry(DiceRollStringConstants.RollTouchAttackStr, 4),
-            new NuiComboEntry(DiceRollStringConstants.RollTouchAttackDex, 5),
-            new NuiComboEntry(DiceRollStringConstants.ReportTouchAttackWis, 6),
-            new NuiComboEntry(DiceRollStringConstants.ReportTouchAttackAc, 7),
-            new NuiComboEntry(DiceRollStringConstants.ReportGrappleCheck, 8),
-            new NuiComboEntry(DiceRollStringConstants.ReportFlatFootedAc, 9),
-            new NuiComboEntry(DiceRollStringConstants.ReportRegularAc, 10),
-            new NuiComboEntry(DiceRollStringConstants.ReportAlignment, 11),
-            new NuiComboEntry(DiceRollStringConstants.ReportCharacterLevel, 12),
+            new NuiComboEntry(DiceRollStringConstants.RollGrappleCheck, 2),
+            new NuiComboEntry(DiceRollStringConstants.CounterIntimidate, 3),
+            new NuiComboEntry(DiceRollStringConstants.RollInitiative, 4),
+            new NuiComboEntry(DiceRollStringConstants.RollTouchAttackStr, 5),
+            new NuiComboEntry(DiceRollStringConstants.RollTouchAttackDex, 6),
+            new NuiComboEntry(DiceRollStringConstants.RollTouchAttackWis, 7),
         };
 
         RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.CounterBluffListen },
             { 1, DiceRollStringConstants.CounterBluffSpot },
-            { 2, DiceRollStringConstants.CounterIntimidate },
-            { 3, DiceRollStringConstants.RollInitiative },
-            { 4, DiceRollStringConstants.RollTouchAttackStr },
-            { 5, DiceRollStringConstants.RollTouchAttackDex },
-            { 6, DiceRollStringConstants.ReportTouchAttackWis },
-            { 7, DiceRollStringConstants.ReportTouchAttackAc },
-            { 8, DiceRollStringConstants.ReportGrappleCheck },
-            { 9, DiceRollStringConstants.ReportFlatFootedAc },
-            { 10, DiceRollStringConstants.ReportRegularAc },
-            { 11, DiceRollStringConstants.ReportAlignment },
-            { 12, DiceRollStringConstants.ReportCharacterLevel }
+            { 2, DiceRollStringConstants.RollGrappleCheck },
+            { 3, DiceRollStringConstants.CounterIntimidate },
+            { 4, DiceRollStringConstants.RollInitiative },
+            { 5, DiceRollStringConstants.RollTouchAttackStr },
+            { 6, DiceRollStringConstants.RollTouchAttackDex },
+            { 7, DiceRollStringConstants.RollTouchAttackWis }
         };
 
         return diceOptions;
@@ -178,15 +193,15 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
             new NuiComboEntry(DiceRollStringConstants.OpenLock, 15),
             new NuiComboEntry(DiceRollStringConstants.Parry, 16),
             new NuiComboEntry(DiceRollStringConstants.Perform, 17),
-            new NuiComboEntry(DiceRollStringConstants.Spellcraft, 18),
-            new NuiComboEntry(DiceRollStringConstants.Spot, 19),
-            new NuiComboEntry(DiceRollStringConstants.Taunt, 20),
-            new NuiComboEntry(DiceRollStringConstants.Tumble, 21),
-            new NuiComboEntry(DiceRollStringConstants.Persuade, 22),
-            new NuiComboEntry(DiceRollStringConstants.PickPocket, 23),
-            new NuiComboEntry(DiceRollStringConstants.Search, 24),
-            new NuiComboEntry(DiceRollStringConstants.SetTrap, 25),
-            new NuiComboEntry("Use Magic Device", 26)
+            new NuiComboEntry(DiceRollStringConstants.Persuade, 18),
+            new NuiComboEntry(DiceRollStringConstants.PickPocket, 19),
+            new NuiComboEntry(DiceRollStringConstants.Search, 20),
+            new NuiComboEntry(DiceRollStringConstants.SetTrap, 21),
+            new NuiComboEntry(DiceRollStringConstants.Spellcraft, 22),
+            new NuiComboEntry(DiceRollStringConstants.Spot, 23),
+            new NuiComboEntry(DiceRollStringConstants.Taunt, 24),
+            new NuiComboEntry(DiceRollStringConstants.Tumble, 25),
+            new NuiComboEntry(DiceRollStringConstants.UseMagicDevice, 26)
         };
 
         RollButtonIds = new Dictionary<int, string>
@@ -209,14 +224,14 @@ public class DiceRollWindowController : WindowController<DiceRollWindowView>
             { 15, DiceRollStringConstants.OpenLock },
             { 16, DiceRollStringConstants.Parry },
             { 17, DiceRollStringConstants.Perform },
-            { 18, DiceRollStringConstants.Spellcraft },
-            { 19, DiceRollStringConstants.Spot },
-            { 20, DiceRollStringConstants.Taunt },
-            { 21, DiceRollStringConstants.Tumble },
-            { 22, DiceRollStringConstants.Persuade },
-            { 23, DiceRollStringConstants.PickPocket },
-            { 24, DiceRollStringConstants.Search },
-            { 25, DiceRollStringConstants.SetTrap },
+            { 18, DiceRollStringConstants.Persuade },
+            { 19, DiceRollStringConstants.PickPocket },
+            { 20, DiceRollStringConstants.Search },
+            { 21, DiceRollStringConstants.SetTrap },
+            { 22, DiceRollStringConstants.Spellcraft },
+            { 23, DiceRollStringConstants.Spot },
+            { 24, DiceRollStringConstants.Taunt },
+            { 25, DiceRollStringConstants.Tumble },
             { 26, DiceRollStringConstants.UseMagicDevice }
         };
 

@@ -2,6 +2,7 @@
 
 internal enum DiceRollMode
 {
+    Reports,
     SpecialRoll,
     AbilityCheck,
     SkillCheck,
