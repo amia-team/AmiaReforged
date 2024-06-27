@@ -1,5 +1,8 @@
 namespace AmiaReforged.Core.UserInterface;
 
+/// <summary>
+/// View model for prepared spells.
+/// </summary>
 public class ClassPreparedSpells
 {
     public string Class { get; set; }
