@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Commands\FactionCommands\" />
       <Folder Include="Tests\Services" />
       <Folder Include="UI\PlayerTools\DiceRoll\RollHandlers\SaveThrow\" />
     </ItemGroup>
