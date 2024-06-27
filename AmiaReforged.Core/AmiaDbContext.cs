@@ -88,12 +88,5 @@ public class AmiaDbContext : DbContext
                 .HasColumnType("character varying")
                 .HasColumnName("cd_key");
         });
-
-        modelBuilder.Entity<FactionCharacterRelation>(e => { e.HasKey(k => new { k.CharacterId, k.FactionName }); });
-
-        modelBuilder.Entity<FactionRelation>(e =>
-        {
-            e.HasIndex(i => new { i.FactionName, i.TargetFactionName }).IsUnique();
-        });
     }
 }
