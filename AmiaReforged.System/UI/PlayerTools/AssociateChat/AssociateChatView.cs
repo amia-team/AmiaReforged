@@ -7,7 +7,7 @@ public class AssociateChatView : WindowView<AssociateChatView>
 {
     public override string Id => "playertools.associatechat";
     public override string Title => "Associate Chat";
-    public override bool ListInPlayerTools => true;
+    public override bool ListInPlayerTools => false;
 
     public override NuiWindow? WindowTemplate { get; }
     public override IWindowController? CreateDefaultController(NwPlayer player)
