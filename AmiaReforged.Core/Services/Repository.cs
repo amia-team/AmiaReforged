@@ -66,4 +66,9 @@ public class Repository<T, TId> : IRepository<T, TId> where T : class
 
         return await query.FirstOrDefaultAsync();
     }
+
+    public async Task<IEnumerable<T>> FindAll(Expression<Func<T, bool>> predicate) =>
+        await _dbSet.Where(predicate).ToListAsync();
+
+    public async Task<T?> Find(Expression<Func<T, bool>> predicate) => await _dbSet.SingleOrDefaultAsync(predicate);
 }

@@ -43,7 +43,7 @@ public class SpellbookListView : WindowView<SpellbookListView>
                 VariableSize = false,
                 Width = 35f,
             },
-            new NuiListTemplateCell(new NuiButtonImage("is_firebal")
+            new NuiListTemplateCell(new NuiButtonImage("ir_tmp_spawn")
             {
                 Id = "btn_deletebook",
                 Aspect = 1f,

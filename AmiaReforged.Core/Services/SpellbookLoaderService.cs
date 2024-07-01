@@ -42,7 +42,7 @@ public class SpellbookLoaderService
         await db.SaveChangesAsync();
     }
 
-    public void DeleteSpellbook(long selectedSpellbookId, Guid pcId)
+    public void DeleteSpellbook(long selectedSpellbookId, Guid characterId)
     {
         using AmiaDbContext db = _factory.CreateDbContext();
 
@@ -54,9 +54,9 @@ public class SpellbookLoaderService
             return;
         }
 
-        if (spellbook.PlayerCharacterId != pcId)
+        if (spellbook.PlayerCharacterId != characterId)
         {
-            Log.Error($"Spellbook with ID {selectedSpellbookId} does not belong to player with ID {pcId}.");
+            Log.Error($"Spellbook with ID {selectedSpellbookId} does not belong to player with ID {characterId}.");
             return;
         }
 

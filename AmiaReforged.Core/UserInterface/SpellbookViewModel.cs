@@ -1,7 +1,5 @@
 using System.Text.Json;
 using AmiaReforged.Core.Models;
-using Anvil.API;
-using NLog;
 using NLog.Fluent;
 
 namespace AmiaReforged.Core.UserInterface;
@@ -51,24 +49,5 @@ public class SpellbookViewModel
         
         
         return $"Name: {Name}, Id: {Id}, Class: {Class} Spellbook: {spellbookDictString}";
-    }
-}
-
-public static class PcKeyUtils
-{
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
-    public static Guid GetPcKey(NwPlayer player)
-    {
-        Log.Info($"{player.PlayerName}");
-        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
-        
-        if (pcKey == null)
-        {
-            return Guid.Empty;
-        }
-
-        string pckeyGuid = pcKey.Name.Split('_')[1];
-        return Guid.Parse(pckeyGuid);
     }
 }

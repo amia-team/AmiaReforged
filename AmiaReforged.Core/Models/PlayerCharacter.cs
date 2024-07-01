@@ -1,3 +1,4 @@
+using System.Collections;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -14,6 +15,8 @@ public class PlayerCharacter
     public ICollection<StoredItem> Items { get; set; }
     
     public ICollection<SavedSpellbook> Spellbooks { get; set; }
+    
+    public ICollection<SavedQuickslots> Quickslots { get; set; }
     public string PlayerId { get; set; }
 
     [ForeignKey("PlayerId")] public Player Player { get; set; }

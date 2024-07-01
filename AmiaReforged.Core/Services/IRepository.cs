@@ -59,4 +59,8 @@ public interface IRepository<T, in TId> where T : class
     /// <param name="includeProperties"></param>
     /// <returns></returns>
     Task<T?> GetWith(TId id, params Expression<Func<T, object>>[] includeProperties);
+    
+    Task<IEnumerable<T>> FindAll(Expression<Func<T, bool>> predicate);
+    
+    Task<T?> Find(Expression<Func<T, bool>> predicate);
 }
