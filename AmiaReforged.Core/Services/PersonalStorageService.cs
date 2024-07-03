@@ -19,14 +19,11 @@ public class PersonalStorageService
 
     private readonly DatabaseContextFactory _factory;
     private readonly CharacterService _characterService;
-    private readonly NwTaskHelper _nwTaskHelper;
 
-    public PersonalStorageService(DatabaseContextFactory factory, CharacterService characterService,
-        NwTaskHelper nwTaskHelper)
+    public PersonalStorageService(DatabaseContextFactory factory, CharacterService characterService)
     {
         _factory = factory;
         _characterService = characterService;
-        _nwTaskHelper = nwTaskHelper;
         List<NwPlaceable> chests = NwObject.FindObjectsWithTag<NwPlaceable>("db_pcstorage").ToList();
         foreach (NwPlaceable chest in chests)
         {
@@ -63,11 +60,12 @@ public class PersonalStorageService
     private void HandleChestUse(PlaceableEvents.OnLeftClick obj)
     {
         NwPlaceable chest = obj.Placeable;
-        
+
         if (NWScript.GetLocalInt(chest, ChestInUse) == NWScript.TRUE)
         {
             NWScript.SendMessageToPC(obj.ClickedBy.ControlledCreature, "This chest is already in use.");
-            NWScript.AssignCommand(obj.ClickedBy.ControlledCreature, () => NWScript.ActionMoveAwayFromObject(obj.ClickedBy.ControlledCreature, NWScript.TRUE));
+            NWScript.AssignCommand(obj.ClickedBy.ControlledCreature,
+                () => NWScript.ActionMoveAwayFromObject(obj.ClickedBy.ControlledCreature, NWScript.TRUE));
         }
     }
 
@@ -76,6 +74,7 @@ public class PersonalStorageService
         if (key != null)
         {
             IEnumerable<StoredItem> dbItems = await GetStoredItems(player);
+            await NwTask.SwitchToMainThread();
 
             foreach (StoredItem item in dbItems)
             {
@@ -87,8 +86,6 @@ public class PersonalStorageService
         {
             NWScript.SendMessageToPC(player.LoginCreature, "You do not have a key to this storage.");
         }
-
-        await _nwTaskHelper.TrySwitchToMainThread();
     }
 
     private async void AddStoredItem(OnInventoryItemAdd obj)
@@ -135,6 +132,7 @@ public class PersonalStorageService
         {
             await amiaDbContext.AddAsync(newItem);
             await amiaDbContext.SaveChangesAsync();
+            
         }
         catch (Exception e)
         {
@@ -143,7 +141,7 @@ public class PersonalStorageService
                 $"Storage chest error: Could not add item. Exception: {e.Message} \n \n{e.InnerException}\n\n{e.StackTrace}");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
 
         if (!success)
         {
@@ -155,6 +153,7 @@ public class PersonalStorageService
         {
             NWScript.SetLocalString(obj.Item, "db_guid", newItem.ItemId.ToString());
         }
+
         NWScript.ExportSingleCharacter(chestOwner);
         NWScript.SendMessageToPC(chestOwner, "Your character has been saved.");
     }
@@ -197,7 +196,7 @@ public class PersonalStorageService
             await amiaDbContext.SaveChangesAsync();
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
         uint chestOwner = NWScript.GetLastUsedBy();
         NWScript.ExportSingleCharacter(chestOwner);
         NWScript.SendMessageToPC(chestOwner, "Your character has been saved.");
@@ -208,7 +207,7 @@ public class PersonalStorageService
         NwItem? pcKey = player.LoginCreature?.FindItemWithTag(DsPckey);
         player.SendServerMessage($"pcKey: {pcKey?.Name}");
         PlayerCharacter? character = await _characterService.GetCharacterFromPcKey(pcKey);
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
         return character?.Items ?? new List<StoredItem>();
     }
 
@@ -216,7 +215,7 @@ public class PersonalStorageService
     {
         if (obj.OpenedBy == null) return;
         NwPlaceable chest = obj.Placeable;
-    
+
         NWScript.SetLocalInt(chest, "populatingChest", NWScript.TRUE);
         NWScript.SetLocalInt(chest, ChestInUse, NWScript.TRUE);
 
@@ -235,6 +234,7 @@ public class PersonalStorageService
                 NwItem? key = player?.LoginCreature?.FindItemWithTag(ownerId);
 
                 await HandleHomeStorage(key, player!, chest);
+                await NwTask.SwitchToMainThread();
                 break;
             }
             case false when pcKey != null:
@@ -244,6 +244,8 @@ public class PersonalStorageService
                 if (player != null)
                 {
                     IEnumerable<StoredItem> dbItems = await GetStoredItems(player);
+                    await NwTask.SwitchToMainThread();
+
                     foreach (StoredItem item in dbItems)
                     {
                         NwObject? itemParsed = Json.Parse(item.ItemJson).ToNwObject<NwItem>(chest.Location, chest);
@@ -254,9 +256,7 @@ public class PersonalStorageService
                 break;
             }
         }
-
-        await _nwTaskHelper.TrySwitchToMainThread();
-
+        
         NWScript.SetLocalInt(chest, "populatingChest", 0);
     }
 
