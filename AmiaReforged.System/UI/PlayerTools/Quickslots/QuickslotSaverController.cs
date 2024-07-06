@@ -75,7 +75,7 @@ public class QuickslotSaverController : WindowController<QuickslotSaverView>
         }
         else if (eventData.ElementId == View.CreateQuickslotsButton.Id)
         {
-            OpenQuickslotCreator(eventData);
+            OpenQuickslotCreator();
         }
         else if (eventData.ElementId == View.DeleteQuickslotsButton.Id)
         {
@@ -94,7 +94,7 @@ public class QuickslotSaverController : WindowController<QuickslotSaverView>
         Token.Player.LoginCreature?.DeserializeQuickbar(selectedQuickslot.Quickslots);
     }
 
-    private void OpenQuickslotCreator(ModuleEvents.OnNuiEvent eventData)
+    private void OpenQuickslotCreator()
     {
         WindowManager.Value.OpenWindow<CreateQuickslotsView>(Token.Player);
         Token.Close();
