@@ -13,6 +13,8 @@ public class QuickslotSaverController : WindowController<QuickslotSaverView>
 {
     [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; }
     [Inject] private Lazy<WindowManager> WindowManager { get; set; }
+    
+    [Inject] private Lazy<PlayerDataService> PlayerDataService { get; set; }
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -22,6 +24,15 @@ public class QuickslotSaverController : WindowController<QuickslotSaverView>
     public override async void Init()
     {
         Guid playerId = PcKeyUtils.GetPcKey(Token.Player);
+        
+        bool exists = await PlayerDataService.Value.CharacterExists(Token.Player.CDKey, playerId);
+        await NwTask.SwitchToMainThread();
+        if (!exists)
+        {
+            Token.Player.SendServerMessage("You need to go in game before you can use this feature.");
+            Token.Close();
+        }
+        
         _quickslots = (await QuickslotLoader.Value.LoadQuickslots(playerId)).ToList();
         await NwTask.SwitchToMainThread();
 

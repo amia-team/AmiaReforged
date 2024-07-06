@@ -50,4 +50,21 @@ public class PlayerDataService
 
         return characters;
     }
+    
+    public async Task<bool> CharacterExists(string cdKey, Guid characterId)
+    {
+        AmiaDbContext amiaDbContext = _factory.CreateDbContext();
+        try
+        {
+            Player? player = await amiaDbContext.Players
+                .Include(p => p.PlayerCharacters)
+                .FirstOrDefaultAsync(p => p.CdKey == cdKey);
+            return player?.PlayerCharacters.Any(c => c.Id == characterId) ?? false;
+        }
+        catch (Exception e)
+        {
+            Log.Error($"Error checking if character exists for player {cdKey}: {e.Message}");
+            return false;
+        }
+    }
 }
