@@ -174,17 +174,17 @@ public class PersonalStorageService
     {
         if (NWScript.GetLocalInt(obj.RemovedFrom, "clearingChest") == 1) return;
 
-        string guid = NWScript.GetLocalString(obj.Item, "db_guid");
-        if (guid is "") return;
-        Guid itemId;
+        string storedId = NWScript.GetLocalString(obj.Item, "db_guid");
+        if (storedId is "") return;
+        long itemId;
 
         try
         {
-            itemId = Guid.Parse(guid);
+            itemId = long.Parse(storedId);
         }
         catch
         {
-            Log.Error("Storage chest error: Could not parse item GUID.");
+            Log.Error("Storage chest error: Could not parse item ID.");
             return;
         }
 
