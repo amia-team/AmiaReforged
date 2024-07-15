@@ -1,6 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
-namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage;
+namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
 public class JobItemBuilder : IJobItemBuilder
 {

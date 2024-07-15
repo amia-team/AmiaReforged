@@ -2,7 +2,7 @@
 using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage;
+namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
 [ServiceBinding(typeof(JobItemPropertyHandler))]
 public class JobItemPropertyHandler

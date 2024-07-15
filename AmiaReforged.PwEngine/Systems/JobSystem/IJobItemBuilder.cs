@@ -1,6 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
-namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage;
+namespace AmiaReforged.PwEngine.Systems.JobSystem;
 
 public interface IJobItemNamingStep
 {

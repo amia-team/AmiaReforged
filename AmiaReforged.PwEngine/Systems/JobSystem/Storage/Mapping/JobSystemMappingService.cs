@@ -4,7 +4,7 @@ using Anvil.API;
 using Anvil.Services;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage;
+namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
 /// <summary>
 /// Maps job system items to their respective entities.

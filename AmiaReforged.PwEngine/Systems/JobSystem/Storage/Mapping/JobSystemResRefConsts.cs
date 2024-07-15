@@ -1,4 +1,4 @@
-﻿namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage;
+﻿namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
 public static class JobSystemResRefConsts
 {

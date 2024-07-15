@@ -1,8 +1,8 @@
 ﻿using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using Anvil.Services;
-using static AmiaReforged.PwEngine.Systems.JobSystem.Storage.JobSystemResRefConsts;
+using static AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping.JobSystemResRefConsts;
 
-namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage;
+namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
 /// <summary>
 ///  Maps legacy job system items to a material enum.

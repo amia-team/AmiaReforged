@@ -2,7 +2,7 @@
 using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage;
+namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
 /// <summary>
 /// Maps from NWN Item properties to Job System item properties and vice versa.

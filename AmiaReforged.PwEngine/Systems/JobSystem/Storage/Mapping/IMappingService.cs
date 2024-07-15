@@ -1,4 +1,4 @@
-﻿namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage;
+﻿namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
 /// <summary>
 /// Interface for mapping from one object to another. Bidirectional, meaning it can map from A to B and B to A.
