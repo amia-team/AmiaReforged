@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.DMS", "AmiaRef
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.PluginTests", "AmiaReforged.PluginTests\AmiaReforged.PluginTests.csproj", "{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.PwEngine", "AmiaReforged.PwEngine\AmiaReforged.PwEngine.csproj", "{38B1FEF4-3CC7-44EC-AFF2-2401D1942756}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.PwEngineTests", "AmiaReforged.PwEngineTests\AmiaReforged.PwEngineTests.csproj", "{033CCE7E-E07E-46B7-9505-D438997009E1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,5 +47,13 @@ Global
 		{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6D1A8953-6B3A-41B3-B761-14C1D7BF7222}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38B1FEF4-3CC7-44EC-AFF2-2401D1942756}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38B1FEF4-3CC7-44EC-AFF2-2401D1942756}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38B1FEF4-3CC7-44EC-AFF2-2401D1942756}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38B1FEF4-3CC7-44EC-AFF2-2401D1942756}.Release|Any CPU.Build.0 = Release|Any CPU
+		{033CCE7E-E07E-46B7-9505-D438997009E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{033CCE7E-E07E-46B7-9505-D438997009E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{033CCE7E-E07E-46B7-9505-D438997009E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{033CCE7E-E07E-46B7-9505-D438997009E1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
