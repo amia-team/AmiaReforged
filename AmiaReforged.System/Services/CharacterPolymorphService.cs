@@ -72,7 +72,6 @@ public class CharacterPolymorphService
     private void SaveMemorizedSpells(NwPlayer player)
     {
         if (player.LoginCreature == null) return;
-        Log.Info($"Saving spells for {player.LoginCreature.Name}.");
         List<ClassPreparedSpells> spellBooks = new();
 
         foreach (CreatureClassInfo classInfo in player.LoginCreature.Classes)
