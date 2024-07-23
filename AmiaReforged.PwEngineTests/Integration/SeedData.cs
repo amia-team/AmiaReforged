@@ -9,7 +9,7 @@ public static class SeedData
     public static void SeedDatabase()
     {
         using PwEngineContext context = new();
-        context.Characters.AddRange(new WorldCharacter
+        context.WorldCharacters.AddRange(new WorldCharacter
             {
                 Id = 1,
                 FirstName = "Test",

@@ -1,4 +1,5 @@
-﻿using AmiaReforged.PwEngine.Database;
+﻿using System.Text.RegularExpressions;
+using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using Anvil.API;
 using Anvil.Services;
@@ -10,7 +11,7 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 /// Maps job system items to their respective entities.
 /// </summary>
 [ServiceBinding(typeof(JobSystemMappingService))]
-public class JobSystemMappingService : IMappingService<JobItem, NwItem>
+public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
 {
     private readonly PwEngineContext _context;
     private readonly JobItemPropertyHandler _propertyHandler;
@@ -28,11 +29,16 @@ public class JobSystemMappingService : IMappingService<JobItem, NwItem>
     {
         IPQuality nwnQuality = GetQualityFromitem(item);
         QualityEnum quality = _qualityMapper.MapFrom(nwnQuality);
-
+        
+        const string replacement = "";
+        string itemName = MyRegex().Replace(item.Name, replacement);
+        
         MaterialEnum material = GetMaterialFromItem(item);
         
+        long madeBy = long.TryParse(NWScript.GetLocalString(item, "MadeBy"), out long result) ? result : 0;
+        
         return JobItemBuilder.CreateJobItem()
-            .WithName(item.Name)
+            .WithName(itemName)
             .WithDescription(item.Description)
             .WithResRef(item.ResRef)
             .WithBaseValue(_propertyHandler.DeriveValue(quality, material))
@@ -41,7 +47,7 @@ public class JobSystemMappingService : IMappingService<JobItem, NwItem>
             .WithType(_propertyHandler.DeriveType(item.BaseItem.ItemType))
             .WithQuality(quality)
             .WithMaterial(material)
-            .WithCreator(long.Parse(NWScript.GetLocalString(item, "MadeBy")))
+            .WithCreator(madeBy)
             .WithIconResRef(item.PortraitResRef)
             .WithSerializedData(item.Serialize()!)
             .Build();
@@ -93,4 +99,7 @@ public class JobSystemMappingService : IMappingService<JobItem, NwItem>
             _ => ItemProperty.Quality(IPQuality.Average)
         };
     }
+
+    [GeneratedRegex("<.*?>")]
+    private static partial Regex MyRegex();
 }

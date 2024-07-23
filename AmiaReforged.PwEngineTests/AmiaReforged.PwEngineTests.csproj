@@ -24,4 +24,8 @@
       <ProjectReference Include="..\AmiaReforged.PwEngine\AmiaReforged.PwEngine.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Unit\JobSystem\LedgerTests\" />
+    </ItemGroup>
+
 </Project>

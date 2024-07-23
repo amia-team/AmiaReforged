@@ -15,8 +15,7 @@ public sealed class NuiManager : IDisposable
 
     private readonly List<INuiView> NuiViews;
 
-    private readonly Dictionary<NwPlayer, List<INuiController>> NuiControllers =
-        new Dictionary<NwPlayer, List<INuiController>>();
+    private readonly Dictionary<NwPlayer, List<INuiController>> NuiControllers = new();
 
     public NuiManager(InjectionService injectionService, WindowAutoCloseService windowAutoCloseService,
         IEnumerable<INuiView> NuiViews)
@@ -170,5 +169,12 @@ public sealed class NuiManager : IDisposable
         }
 
         NuiControllers.Clear();
+    }
+
+    public bool WindowIsOpen(NwPlayer player, Type type)
+    {
+        NuiControllers.TryGetValue(player, out List<INuiController>? playerControllers);
+
+        return playerControllers != null && playerControllers.Any(controller => controller.GetType() == type);
     }
 }

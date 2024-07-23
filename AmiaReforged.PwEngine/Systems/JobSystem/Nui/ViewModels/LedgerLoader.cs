@@ -1,9 +1,21 @@
-﻿using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+﻿using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+using AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
+using Anvil.API;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Nui.ViewModels;
 
+[ServiceBinding(typeof(LedgerLoader))]
 public class LedgerLoader
 {
+    private readonly JobSystemMappingService _mappingService;
+
+    public LedgerLoader(JobSystemMappingService mappingService)
+    {
+        _mappingService = mappingService;
+    }
+
     public Ledger FromItemStorage(ItemStorage storage)
     {
         Ledger ledger = new()
@@ -37,6 +49,9 @@ public class LedgerLoader
             // Add individual items to the ledger entry
             foreach (StoredJobItem storedItem in storage.Items.Where(i => i.JobItem.Name == itemName))
             {
+                // This is a bit of a hack, but it works for now
+                entry.Type = storedItem.JobItem.Type;
+
                 entry.Items.Add(new LedgerItem
                 {
                     Name = storedItem.JobItem.Name,
@@ -46,6 +61,57 @@ public class LedgerLoader
                     DurabilityModifier = storedItem.JobItem.DurabilityModifier,
                     BaseValue = storedItem.JobItem.BaseValue
                 });
+            }
+        }
+
+        return ledger;
+    }
+
+    public Ledger FromPlayer(NwCreature tokenPlayer)
+    {
+        List<NwItem> nwItems = tokenPlayer.Inventory.Items.Where(i => i.ResRef.StartsWith("js_")).ToList();
+
+        ICollection<JobItem> jobItems = nwItems.Select(i => _mappingService.MapFrom(i)).ToList();
+
+        ICollection<JobItem> distinctItems = jobItems.DistinctBy(jb => jb.Name).ToList();
+
+        Ledger ledger = new()
+        {
+            Entries = new List<LedgerEntry>(),
+            ItemReferences = new List<long>()
+        };
+
+        foreach (JobItem item in distinctItems)
+        {
+            LedgerEntry entry = new()
+            {
+                Name = item.Name,
+                Quantity = jobItems.Count(i => i.Name == item.Name),
+                AverageQuality = AverageQualityCalculator.Calculate(jobItems.Where(i => i.Name == item.Name)
+                    .Select(i => i.Quality).ToArray()),
+                BaseValue = item.BaseValue,
+                Items = new List<LedgerItem>()
+            };
+
+            ledger.Entries.Add(entry);
+
+            // Add individual items to the ledger entry
+            foreach (JobItem jobItem in jobItems.Where(i => i.Name == item.Name))
+            {
+                // This is a bit of a hack, but it works for now
+                entry.Type = jobItem.Type;
+                entry.Items.Add(new LedgerItem
+                {
+                    Name = jobItem.Name,
+                    QualityEnum = jobItem.Quality,
+                    MaterialEnum = jobItem.Material,
+                    MagicModifier = jobItem.MagicModifier,
+                    DurabilityModifier = jobItem.DurabilityModifier,
+                    BaseValue = jobItem.BaseValue
+                });
+                
+                // Add item reference to the ledger
+                ledger.ItemReferences.Add(jobItem.Id);
             }
         }
 

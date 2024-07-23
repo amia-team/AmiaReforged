@@ -126,11 +126,11 @@ public class JobItemPropertyHandler
 
     public int DeriveValue(QualityEnum quality, MaterialEnum material)
     {
-        throw new NotImplementedException();
+        return 0;
     }
 
     public ItemType DeriveType(BaseItemType baseItemItemType)
     {
-        throw new NotImplementedException();
+        return ItemType.Log;
     }
 }

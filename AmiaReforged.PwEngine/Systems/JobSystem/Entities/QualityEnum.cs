@@ -4,8 +4,9 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
 public enum QualityEnum
 {
-    Cut = -1,
-    Raw = 0,
+    Cut = -2,
+    Raw = -1,
+    None = 0,
     VeryPoor = 1,
     Poor = 2, 
     BelowAverage = 3,
