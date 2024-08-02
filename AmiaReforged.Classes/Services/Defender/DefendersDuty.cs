@@ -1,5 +1,6 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 using NLog.Targets;
 using NWN.Core;
 using NWN.Core.NWNX;
@@ -10,13 +11,18 @@ public class DefendersDuty
 {
     private const float DefenderDamage = 0.25f;
 
-    public NwPlayer Defender { get; private set; }
-    public NwCreature Target { get; private set; }
+    private NwPlayer Defender { get; }
+    private NwCreature Target { get; }
 
-    public DefendersDuty(NwPlayer defender, NwCreature target)
+    private readonly SchedulerService _scheduler;
+
+    private ScheduledTask? _deleteSoakDamageTask;
+
+    public DefendersDuty(NwPlayer defender, NwCreature target, SchedulerService scheduler)
     {
         Defender = defender;
         Target = target;
+        _scheduler = scheduler;
     }
 
     public void Apply()
@@ -25,19 +31,41 @@ public class DefendersDuty
 
         Target.OnCreatureDamage += SoakDamage;
 
+        if (!Target.IsPlayerControlled(out NwPlayer? otherPlayer))
+        {
+            // This is a creature, not a player. We don't need to do anything special. This is just to get the player object for the OnClientLeave event.
+        }
+
+        if (otherPlayer != null)
+            otherPlayer.OnClientLeave += CancelDuty;
+        Defender.OnClientLeave += CancelDuty;
+
         Defender.LoginCreature?.JumpToObject(Target);
         Defender.LoginCreature?.SpeakString("*jumps to protecc fren :)))))*");
 
-        NWScript.DelayCommand(duration, () => { Target.OnCreatureDamage -= SoakDamage; });
+        _deleteSoakDamageTask =
+            _scheduler.Schedule(() =>
+            {
+                Target.OnCreatureDamage -= SoakDamage;
+                if (otherPlayer != null)
+                {
+                    otherPlayer.OnClientLeave -= CancelDuty;
+                }
+
+                Defender.OnClientLeave -= CancelDuty;
+            }, TimeSpan.FromSeconds(duration));
     }
 
-    public void Stop()
+    private void CancelDuty(ModuleEvents.OnClientLeave obj)
     {
         Target.OnCreatureDamage -= SoakDamage;
+
+        _deleteSoakDamageTask?.Cancel();
     }
+
     private void SoakDamage(OnCreatureDamage obj)
     {
-        DamageData defenderDamageData = new DamageData()
+        DamageData defenderDamageData = new()
         {
             iBludgeoning = (int)(obj.DamageData.GetDamageByType(DamageType.Bludgeoning) * DefenderDamage),
             iPierce = (int)(obj.DamageData.GetDamageByType(DamageType.Piercing) * DefenderDamage),

@@ -10,16 +10,17 @@ namespace AmiaReforged.Classes.Services.Defender;
 [ServiceBinding(typeof(DefenderScriptHandlers))]
 public class DefenderScriptHandlers
 {
+    private readonly DefendersDutyFactory _abilityFactory;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private IDictionary<NwObject, DefendersDuty> ActiveDuties { get; set; }
 
     private const string FriendsOnly = "This ability can only be used on friendly creatures.";
-    private const float DefenderDamage = 0.25f;
 
 
-    public DefenderScriptHandlers()
+    public DefenderScriptHandlers(DefendersDutyFactory abilityFactory)
     {
+        _abilityFactory = abilityFactory;
         Log.Info("Setup Defender Script Handlers.");
         ActiveDuties = new Dictionary<NwObject, DefendersDuty>();
     }
@@ -60,29 +61,8 @@ public class DefenderScriptHandlers
             return;
         }
 
-        DefendersDuty duty = new(player, creature);
+        DefendersDuty duty = _abilityFactory.CreateDefendersDuty(player, creature);
 
         duty.Apply();
-
-        ActiveDuties.Add(creature, duty);
-        if (creature.IsPlayerControlled(out NwPlayer? targetedPlayer))
-        {
-            player.OnClientLeave += StopTrackingDuty;
-        }
-    }
-
-    private void StopTrackingDuty(ModuleEvents.OnClientLeave obj)
-    {
-        if (obj.Player.LoginCreature != null)
-        {
-            DefendersDuty duty = ActiveDuties[obj.Player.LoginCreature];
-
-            duty.Stop();
-        }
-
-        if (obj.Player.LoginCreature != null && ActiveDuties.Remove(obj.Player.LoginCreature))
-        {
-            obj.Player.OnClientLeave -= StopTrackingDuty;
-        }
     }
 }
