@@ -20,6 +20,10 @@ public class DefendersDuty
 
     private ScheduledTask? _deleteSoakDamageTask;
 
+    /// <summary>
+    /// Do not construct directly. Use <see cref="DefendersDutyFactory"/> to create this object. Scheduler service
+    /// is injected by Anvil at runtime.
+    /// </summary>
     public DefendersDuty(NwPlayer defender, NwCreature target, SchedulerService scheduler)
     {
         Defender = defender;
