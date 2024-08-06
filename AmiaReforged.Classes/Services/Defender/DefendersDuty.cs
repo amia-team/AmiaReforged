@@ -107,9 +107,11 @@ public class DefendersDuty
 
         _deleteSoakDamageTask?.Cancel();
     }
-
+    
     private void SoakDamage(OnCreatureDamage obj)
     {
+        // NWN splits damage up into its core damage components then sums the net damage together after resistances
+        // and immunities are applied.
         DamageData defenderDamageData = new()
         {
             iBludgeoning = (int)(obj.DamageData.GetDamageByType(DamageType.Bludgeoning) * DefenderDamage),
@@ -126,8 +128,11 @@ public class DefendersDuty
             iSonic = (int)(obj.DamageData.GetDamageByType(DamageType.Sonic) * DefenderDamage),
         };
 
+        // This is a call to the NWNX Damage Plugin.
         DamagePlugin.DealDamage(defenderDamageData, Defender.LoginCreature, obj.DamagedBy);
 
+        // This is a call to the game event's damage data. We just override the damage done to the defended
+        // target minus the damage that the defender soaked.
         obj.DamageData.SetDamageByType(DamageType.Bludgeoning,
             obj.DamageData.GetDamageByType(DamageType.Bludgeoning) - defenderDamageData.iBludgeoning);
         obj.DamageData.SetDamageByType(DamageType.Piercing,
