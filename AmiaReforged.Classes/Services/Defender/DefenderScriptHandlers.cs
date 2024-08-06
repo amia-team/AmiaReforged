@@ -13,7 +13,6 @@ public class DefenderScriptHandlers
     private readonly DefendersDutyFactory _abilityFactory;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private IDictionary<NwObject, DefendersDuty> ActiveDuties { get; set; }
 
     private const string FriendsOnly = "This ability can only be used on friendly creatures.";
 
@@ -22,13 +21,19 @@ public class DefenderScriptHandlers
     {
         _abilityFactory = abilityFactory;
         Log.Info("Setup Defender Script Handlers.");
-        ActiveDuties = new Dictionary<NwObject, DefendersDuty>();
     }
 
 
+    /// <summary>
+    /// Script handler for defenders duty. Provides a mechanism to override the damage done
+    /// to a defended target.
+    /// </summary>
+    /// <param name="info">Default object housing information about the call to a given script. See <see cref="CallInfo"/> for more information or peruse the Anvil API documents online for more information</param>
     [ScriptHandler("todo_replace_me")]
     public void OnDefendersDuty(CallInfo info)
     {
+        // Because this ability directly intervenes with the standard game loop's typical processes,
+        // extra precaution needs to be taken that all of the values required are valid.
         if (info.ObjectSelf == null)
         {
             Log.Warn("Defenders Duty called with no object self.");
