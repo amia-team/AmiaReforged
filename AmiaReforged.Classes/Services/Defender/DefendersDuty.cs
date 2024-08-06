@@ -11,6 +11,7 @@ namespace AmiaReforged.Classes.Services.Defender;
 public class DefendersDuty
 {
     private const float DefenderDamage = 0.25f;
+    private const int OneRound = 1;
 
     private NwPlayer Defender { get; }
     private NwCreature Target { get; }
@@ -65,14 +66,20 @@ public class DefendersDuty
 
     private void ApplyStunInSmallArea()
     {
+        // Set up the effect and difficulty class.
         IntPtr stunEffect = NWScript.EffectStunned();
         int difficulty = 10 +
                          (Defender.LoginCreature!.Classes.Single(c => c.Class.ClassType == ClassType.DwarvenDefender)
                              .Level / 2) + NWScript.GetAbilityModifier(NWScript.ABILITY_CONSTITUTION);
-        float stunDur = NWScript.RoundsToSeconds(1);
+        
+        // The stun should only last one round. 6 seconds is a very long time in PVP and PVE.
+        float stunDur = NWScript.RoundsToSeconds(OneRound);
+        
+        // NWScript's internal library is used here to make it easier for non-C# devs to understand the 
+        // way that this effect is applied. Anvil actually has its own Object Oriented way of doing things, but it was
+        // felt that this is a good way to introduce new developers.
         uint objectInShape =
-            NWScript.GetFirstObjectInShape(NWScript.SHAPE_SPHERE, 5.0f, NWScript.GetLocation(Defender.LoginCreature));
-
+            NWScript.GetFirstObjectInShape(NWScript.SHAPE_SPHERE, NWScript.RADIUS_SIZE_LARGE, NWScript.GetLocation(Defender.LoginCreature));
         while (NWScript.GetIsObjectValid(objectInShape) == NWScript.TRUE)
         {
             if (objectInShape == Defender.LoginCreature || objectInShape == Target) continue;
@@ -89,7 +96,7 @@ public class DefendersDuty
                 }
             }
 
-            objectInShape = NWScript.GetNextObjectInShape(NWScript.SHAPE_SPHERE, 5.0f, NWScript.FALSE,
+            objectInShape = NWScript.GetNextObjectInShape(NWScript.SHAPE_SPHERE, NWScript.RADIUS_SIZE_LARGE, NWScript.FALSE,
                 NWScript.OBJECT_TYPE_CREATURE);
         }
     }
