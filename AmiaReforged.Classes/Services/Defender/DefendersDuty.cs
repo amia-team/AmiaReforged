@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.Classes.EffectUtils;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog.Targets;
@@ -27,6 +28,12 @@ public class DefendersDuty
 
     public void Apply()
     {
+        ApplySoak();
+        ApplyStunInSmallArea();
+    }
+
+    private void ApplySoak()
+    {
         const float duration = 7.0f;
 
         Target.OnCreatureDamage += SoakDamage;
@@ -54,6 +61,37 @@ public class DefendersDuty
 
                 Defender.OnClientLeave -= CancelDuty;
             }, TimeSpan.FromSeconds(duration));
+    }
+
+    private void ApplyStunInSmallArea()
+    {
+        IntPtr stunEffect = NWScript.EffectStunned();
+        int difficulty = 10 +
+                         (Defender.LoginCreature!.Classes.Single(c => c.Class.ClassType == ClassType.DwarvenDefender)
+                             .Level / 2) + NWScript.GetAbilityModifier(NWScript.ABILITY_CONSTITUTION);
+        float stunDur = NWScript.RoundsToSeconds(1);
+        uint objectInShape =
+            NWScript.GetFirstObjectInShape(NWScript.SHAPE_SPHERE, 5.0f, NWScript.GetLocation(Defender.LoginCreature));
+
+        while (NWScript.GetIsObjectValid(objectInShape) == NWScript.TRUE)
+        {
+            if (objectInShape == Defender.LoginCreature || objectInShape == Target) continue;
+
+            int isEnemy = NWScript.GetIsEnemy(objectInShape, Defender.LoginCreature);
+
+            if (isEnemy == NWScript.TRUE)
+            {
+                bool failed = NWScript.WillSave(objectInShape, difficulty, NWScript.SAVING_THROW_TYPE_LAW) == 0;
+                
+                if (failed)
+                {
+                    NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_TEMPORARY, stunEffect, objectInShape, stunDur);
+                }
+            }
+
+            objectInShape = NWScript.GetNextObjectInShape(NWScript.SHAPE_SPHERE, 5.0f, NWScript.FALSE,
+                NWScript.OBJECT_TYPE_CREATURE);
+        }
     }
 
     private void CancelDuty(ModuleEvents.OnClientLeave obj)
