@@ -8,9 +8,9 @@ namespace AmiaReforged.DMS.Services;
 [ServiceBinding(typeof(AssociateCustomizerService))]
 public class AssociateCustomizerService
 {
-    static readonly Color COLOR_RED = Color.FromRGBA("744");
-    static readonly Color COLOR_GREEN = Color.FromRGBA("060");
-    static readonly Color COLOR_WHITE = Color.FromRGBA("776");
+    static readonly Color COLOR_RED = Color.FromRGBA("#ff0032cc");
+    static readonly Color COLOR_GREEN = Color.FromRGBA("#43ff64d9");
+    static readonly Color COLOR_WHITE = Color.FromRGBA("#d2ffffd9");
     static readonly string TOOL_TAG = "ass_customizer";
     
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -34,12 +34,12 @@ public class AssociateCustomizerService
         if (!obj.ItemActivator.IsPlayerControlled) return;
         if (!(obj.ItemActivator.IsPlayerControlled(out NwPlayer? player) && player.IsDM))
         {
-            obj.ItemActivator.LoginPlayer.SendServerMessage("[Associate Customizer] Error: Only a DM can use this tool.", COLOR_RED);
+            obj.ItemActivator.LoginPlayer.SendServerMessage("[Associate Customizer] Only a DM can use this tool.", COLOR_RED);
             return;
         }
         if (obj.TargetObject is not NwCreature)
         {
-            obj.ItemActivator.LoginPlayer.SendServerMessage("[Associate Customizer] Error: Target must be a creature.", COLOR_RED);
+            obj.ItemActivator.LoginPlayer.SendServerMessage("[Associate Customizer] Target must be a creature.", COLOR_RED);
             return;
         }
 
@@ -58,21 +58,30 @@ public class AssociateCustomizerService
         bool vfxCopied = false;
 
         // First delete dangerous danglers from former tool activations
-        foreach (LocalVariableString variable in associateCustomizer.LocalVariables.Cast<LocalVariableString>())
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue) 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("creature").Delete();
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue) 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Delete();
+            
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").HasValue) 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").Delete();
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").HasValue) 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").Delete();
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").HasValue) 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue) 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").HasValue) 
+            associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").Delete();
+        for (int i = 0; i < 50; i++)
         {
-            if (variable.Name == "creature") variable.Delete();
-
-            if (variable.Name == "armor") variable.Delete();
-
-            if (variable.Name == "helmet") variable.Delete();
-
-            if (variable.Name == "cloak") variable.Delete();
-
-            if (variable.Name == "mainhand") variable.Delete();
-
-            if (variable.Name == "offhand") variable.Delete();
-
-            if (variable.Name == "vfx") variable.Delete();
+            if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i).HasValue)
+                associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i).Delete();
         }
 
         // Copies the creature data for later calling
@@ -116,7 +125,7 @@ public class AssociateCustomizerService
         }
 
         // If target creature has an offhand, copies the data for later calling
-        if (creature.GetItemInSlot(InventorySlot.RightHand) != null)
+        if (creature.GetItemInSlot(InventorySlot.LeftHand) != null)
         {
             NwItem offhand = creature.GetItemInSlot(InventorySlot.RightHand);
             byte[] offhandCopy = offhand.Serialize()!;
@@ -144,9 +153,8 @@ public class AssociateCustomizerService
             }
             // Store the count of vfxs for later use
             associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").Value = vfxList.Count;
+            vfxCopied = true;
         }
-
-        obj.ItemActivator.LoginPlayer.SendServerMessage("[Associate Customizer] VISUAL EFFECTS COPIED", COLOR_GREEN);
 
         obj.ItemActivator.LoginPlayer.SendServerMessage
             ("[Associate Customizer] Creature copied!", COLOR_GREEN);
@@ -185,7 +193,7 @@ public class AssociateCustomizerService
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasNothing)
         {
             obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] Error: You must first use the tool on a non-associate creature to copy its appearance.", COLOR_RED);
+            ("[Associate Customizer] You must first use the tool on a non-associate creature to copy its appearance.", COLOR_RED);
             return;
         }
 
@@ -195,12 +203,11 @@ public class AssociateCustomizerService
         {
             byte[] armorData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Value);
             NwItem armorCopy = NwItem.Deserialize(armorData);
-            if ((creature.GetItemInSlot(InventorySlot.Chest).BaseACValue != 0 
-                && creature.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue) ||
-                !(creature.GetItemInSlot(InventorySlot.Chest).BaseItem == null && armorCopy.BaseACValue == 0))
+            if ((creature.GetItemInSlot(InventorySlot.Chest) is null && !(armorCopy.BaseACValue == 0)) ||
+                (creature.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Error: Base armor items don't match. If the associate doesn't have an armor and you want an armor for the custom appearance, choose a cloth armor for the copied creature.", COLOR_RED);
+                ("[Associate Customizer] Base armor items don't match. If the associate doesn't have an armor and you want one for the custom appearance, choose a cloth armor for the copied creature.", COLOR_RED);
                 return;
             }
         }
@@ -208,10 +215,11 @@ public class AssociateCustomizerService
         {
             byte[] mainhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Value);
             NwItem mainhandCopy = NwItem.Deserialize(mainhandData);
-            if (creature.GetItemInSlot(InventorySlot.RightHand).BaseItem != mainhandCopy.BaseItem)
+            if ((creature.GetItemInSlot(InventorySlot.RightHand).BaseItem != mainhandCopy.BaseItem)
+                || creature.GetItemInSlot(InventorySlot.RightHand) == null)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Error: Base mainhand items don't match.", COLOR_RED);
+                ("[Associate Customizer] Base mainhand items don't match.", COLOR_RED);
                 return;
             }
         }
@@ -219,45 +227,48 @@ public class AssociateCustomizerService
         {
             byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value);
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
-            if (creature.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem)
+            if ((creature.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem)
+                || creature.GetItemInSlot(InventorySlot.LeftHand) == null)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Error: Base offhand items don't match.", COLOR_RED);
+                ("[Associate Customizer] Base offhand items don't match.", COLOR_RED);
                 return;
             }
         }
 
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
-        foreach (LocalVariableString variable in associateCustomizer.LocalVariables.Cast<LocalVariableString>())
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
+            associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+creature.ResRef).Value = 
+                associateCustomizer.GetObjectVariable<LocalVariableString>("creature");
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue)
+            associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+creature.ResRef).Value = 
+                associateCustomizer.GetObjectVariable<LocalVariableString>("armor");
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").HasValue)
+            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+creature.ResRef).Value = 
+                associateCustomizer.GetObjectVariable<LocalVariableString>("helmet");
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").HasValue)
+            associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+creature.ResRef).Value = 
+                associateCustomizer.GetObjectVariable<LocalVariableString>("cloak");
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").HasValue)
+            associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+creature.ResRef).Value = 
+                associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand");
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
+            associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+creature.ResRef).Value = 
+                associateCustomizer.GetObjectVariable<LocalVariableString>("offhand");
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").HasValue)
         {
-            if (variable.Name == "creature")
-            associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+creature.ResRef).Value = variable;
-
-            if (variable.Name == "armor")
-            associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+creature.ResRef).Value = variable;
-
-            if (variable.Name == "helmet")
-            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+creature.ResRef).Value = variable;
-
-            if (variable.Name == "cloak")
-            associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+creature.ResRef).Value = variable;
-
-            if (variable.Name == "mainhand")
-            associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+creature.ResRef).Value = variable;
-
-            if (variable.Name == "offhand")
-            associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+creature.ResRef).Value = variable;
-        }
-        if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").Value > 0)
-        {
-            int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").Value;
-            associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+creature.ResRef).Value =
-            associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount");
+            int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+creature.ResRef).Value =
+                associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount");
             for (int i = 0; i < vfxCount; i++)
             {
                 associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i+creature.ResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i);
-
             }
         }
 
@@ -265,21 +276,22 @@ public class AssociateCustomizerService
         if(!associateCustomizer.Description.Contains(creature.OriginalName))
         {
             string toolDescription = associateCustomizer.Description;
-            string storedString = StringExtensions.ColorString("Custom associate appearance stored: "+creature.OriginalName, COLOR_GREEN);
-            associateCustomizer.Description = toolDescription+"\n\n"+storedString;
+            string storedString = StringExtensions.ColorString("Custom associate appearance stored: "+creature.OriginalName, COLOR_WHITE);
+            associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
 
         if(!associateCustomizer.Name.Contains(creature.Master.Name))
         {
             string toolName = associateCustomizer.Name;
-            associateCustomizer.Name = creature.Master.OriginalFirstName+"'s "+toolName;
+            associateCustomizer.Name = $"{creature.Master.OriginalFirstName}'s {toolName}";
         }
 
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] Custom appearance stored for "+creature.OriginalName+". Give the tool to the player and test the summon customises properly.", COLOR_WHITE);
+            ($"[Associate Customizer] Custom appearance stored for {creature.OriginalName}. Give the player the tool and test the summon customizes properly.", COLOR_WHITE);
     }
+
     /// <summary>
-    ///     Gets the copied appearance for the associate and customizes it.
+    ///     When the associate is summoned, gets the copied appearance for the associate and customizes it .
     /// </summary>
     private async void CustomizeAssociateAppearance(OnAssociateAdd obj)
     {
