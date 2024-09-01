@@ -31,7 +31,11 @@ public class AssociateCustomizerService
         // Declare conditions for tool activation:
         // Works only if the user is a DM and the target is a non-associate creature
         if (obj.ActivatedItem.Tag != TOOL_TAG) return;
-        if (!obj.ItemActivator.IsPlayerControlled(out NwPlayer? player)) return;
+        if (!obj.ItemActivator.IsPlayerControlled(out NwPlayer? player))
+        {
+            obj.ItemActivator.LoginPlayer?.SendServerMessage("[Associate Customizer] Waaaagh.", COLOR_RED); 
+            return;
+        }
         if (player.IsDM)
         {
             obj.ItemActivator.LoginPlayer?.SendServerMessage("[Associate Customizer] Only a DM can use this tool.", COLOR_RED);
