@@ -31,22 +31,22 @@ public class AssociateCustomizerService
         // Declare conditions for tool activation:
         // Works only if the user is a DM and the target is a non-associate creature
         if (obj.ActivatedItem.Tag != TOOL_TAG) return;
-        if (!obj.ItemActivator.IsPlayerControlled) return;
-        if (!(obj.ItemActivator.IsPlayerControlled(out NwPlayer? player) && player.IsDM))
+        if (!obj.ItemActivator.IsPlayerControlled(out NwPlayer? player)) return;
+        if (player.IsDM)
         {
-            obj.ItemActivator.LoginPlayer.SendServerMessage("[Associate Customizer] Only a DM can use this tool.", COLOR_RED);
+            obj.ItemActivator.LoginPlayer?.SendServerMessage("[Associate Customizer] Only a DM can use this tool.", COLOR_RED);
             return;
         }
         if (obj.TargetObject is not NwCreature)
         {
-            obj.ItemActivator.LoginPlayer.SendServerMessage("[Associate Customizer] Target must be a creature.", COLOR_RED);
+            obj.ItemActivator.LoginPlayer?.SendServerMessage("[Associate Customizer] Target must be a creature.", COLOR_RED);
             return;
         }
 
         // Declare variables
 
         NwCreature creature = (NwCreature)obj.TargetObject;
-        if (creature.AssociateType != AssociateType.None) return;
+        if (creature.AssociateType == AssociateType.None) return;
 
         NwItem associateCustomizer = obj.ActivatedItem;
 
