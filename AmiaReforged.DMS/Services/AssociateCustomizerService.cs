@@ -36,7 +36,7 @@ public class AssociateCustomizerService
             obj.ItemActivator.LoginPlayer?.SendServerMessage("[Associate Customizer] Waaaagh.", COLOR_RED); 
             return;
         }
-        if (player.IsDM)
+        if (!player.IsDM)
         {
             obj.ItemActivator.LoginPlayer?.SendServerMessage("[Associate Customizer] Only a DM can use this tool.", COLOR_RED);
             return;
