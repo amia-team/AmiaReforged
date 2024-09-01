@@ -127,7 +127,7 @@ public class AssociateCustomizerService
         // If target creature has an offhand, copies the data for later calling
         if (creature.GetItemInSlot(InventorySlot.LeftHand) != null)
         {
-            NwItem offhand = creature.GetItemInSlot(InventorySlot.RightHand);
+            NwItem offhand = creature.GetItemInSlot(InventorySlot.LeftHand);
             byte[] offhandCopy = offhand.Serialize()!;
             associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value = Convert.ToBase64String(offhandCopy);
             offhandCopied = true;
