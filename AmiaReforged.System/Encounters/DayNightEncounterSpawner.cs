@@ -10,6 +10,9 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     private static IntPtr _spawnLocation;
 
     private static readonly string[] VarPrefixes = { "day_spawn", "night_spawn" };
+    private static readonly string MiniBossPrefix = "mini_boss";
+    private static readonly string MiniBossSpawnChance = "mini_boss_%";
+    private static readonly int RandomSizeRange = 15;
     private static NwArea? _area;
     private readonly NwTrigger _trigger;
 
@@ -33,9 +36,14 @@ public class DayNightEncounterSpawner : IEncounterSpawner
         int maxSpawns = IsDoubleSpawn ? numToSpawn * 2 : numToSpawn;
 
         SpawnCreaturesFromResRefs(maxSpawns, creatureResRefs);
+
+        // Spawns in a singular mini boss in the area based on the % chance
+        if((NWScript.Random(100)+1) <= NWScript.GetLocalInt(_area,MiniBossSpawnChance))
+        SpawnEncounterAtWaypoint(NWScript.GetLocalString(_area,MiniBossPrefix));
     }
 
     private static string DayNightPrefix() => IsNightTime() && DoSpawnsVary() ? VarPrefixes[1] : VarPrefixes[0];
+
 
     private static bool DoSpawnsVary() => NWScript.GetLocalInt(_area, "spawns_vary") == 1;
 
@@ -106,10 +114,28 @@ public class DayNightEncounterSpawner : IEncounterSpawner
 
         NWScript.DestroyObject(creature, 600.0f);
 
+        NWScript.SetObjectVisualTransform(creature,10,RandomSizeFloat());
+
         NWScript.ChangeToStandardFaction(creature, NWScript.STANDARD_FACTION_HOSTILE);
 
         if (creature == NWScript.OBJECT_INVALID)
             NWScript.WriteTimestampedLogEntry(
                 $"Spawn wasn't valid: {resRef} not valid and creature returned OBJECT_INVALID");
+    }
+    private static float RandomSizeFloat()
+    {
+
+      float sizeRange = NWScript.IntToFloat(NWScript.Random(RandomSizeRange)+1);
+      float size = 1.0f; 
+
+      if(NWScript.Random(10)<=4)
+      {
+        size = size + sizeRange; 
+      }
+      else
+      {
+        size = size - sizeRange; 
+      }
+      return size;
     }
 }
