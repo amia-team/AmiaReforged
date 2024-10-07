@@ -12,7 +12,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     private static readonly string[] VarPrefixes = { "day_spawn", "night_spawn" };
     private static readonly string MiniBossPrefix = "mini_boss";
     private static readonly string MiniBossSpawnChance = "mini_boss_%";
-    private static readonly int RandomSizeRange = 15;
+    private static readonly int RandomSizeRange = 5;
     private static NwArea? _area;
     private readonly NwTrigger _trigger;
 
