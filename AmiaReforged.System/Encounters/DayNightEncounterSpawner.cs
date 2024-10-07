@@ -12,7 +12,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     private static readonly string[] VarPrefixes = { "day_spawn", "night_spawn" };
     private static readonly string MiniBossPrefix = "mini_boss";
     private static readonly string MiniBossSpawnChance = "mini_boss_%";
-    private static readonly int RandomSizeRange = 5;
+    private static readonly int RandomSizeRange = 15;
     private static NwArea? _area;
     private readonly NwTrigger _trigger;
 
@@ -126,7 +126,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     {
 
       float sizeRange = NWScript.IntToFloat(NWScript.Random(RandomSizeRange)+1);
-      float size = 1.0f; 
+      float size = 100.0f; 
 
       if(NWScript.Random(10)<=4)
       {
@@ -136,6 +136,6 @@ public class DayNightEncounterSpawner : IEncounterSpawner
       {
         size = size - sizeRange; 
       }
-      return size;
+      return size/100;
     }
 }
