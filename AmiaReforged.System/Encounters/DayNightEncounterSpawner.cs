@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.System.Encounters.Types;
 using Anvil.API;
+using Npgsql.PostgresTypes;
 using NWN.Core;
 
 namespace AmiaReforged.System.Encounters;
@@ -13,6 +14,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     private static readonly string MiniBossPrefix = "mini_boss";
     private static readonly string MiniBossSpawnChance = "mini_boss_%";
     private static readonly int RandomSizeRange = 15;
+    private static readonly int GreaterSpawnChance = 1; 
     private static NwArea? _area;
     private readonly NwTrigger _trigger;
 
@@ -114,7 +116,16 @@ public class DayNightEncounterSpawner : IEncounterSpawner
 
         NWScript.DestroyObject(creature, 600.0f);
 
-        NWScript.SetObjectVisualTransform(creature,10,RandomSizeFloat());
+
+        // Chance to spawn in Greater Beasts
+        if((NWScript.Random(100)+1) <= GreaterSpawnChance)
+        {
+         ApplyGreaterStatus(creature);
+        }
+        else
+        {
+         NWScript.SetObjectVisualTransform(creature,10,RandomSizeFloat());
+        }
 
         NWScript.ChangeToStandardFaction(creature, NWScript.STANDARD_FACTION_HOSTILE);
 
@@ -137,5 +148,19 @@ public class DayNightEncounterSpawner : IEncounterSpawner
         size = size - sizeRange; 
       }
       return size/100;
+    }
+    private static void ApplyGreaterStatus(uint creature)
+    {
+        int level = NWScript.GetClassByPosition(1,creature) + NWScript.GetClassByPosition(2,creature) + NWScript.GetClassByPosition(3,creature);
+        IntPtr eTempHP = NWScript.EffectTemporaryHitpoints(level * 3);
+        IntPtr eVisual = NWScript.EffectVisualEffect(411);
+        string sName = NWScript.GetName(creature);
+        sName = "Greater " + sName; 
+
+        NWScript.SetName(creature,sName);
+        NWScript.SetLocalInt(creature,"CustDropPercent",100);
+        NWScript.SetObjectVisualTransform(creature,10,150.0f);
+        NWScript.ApplyEffectToObject(2,eTempHP,creature);
+        NWScript.ApplyEffectToObject(2,eVisual,creature);
     }
 }
