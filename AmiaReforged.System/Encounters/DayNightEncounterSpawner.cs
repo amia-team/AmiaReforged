@@ -14,7 +14,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     private static readonly string MiniBossPrefix = "mini_boss";
     private static readonly string MiniBossSpawnChance = "mini_boss_%";
     private static readonly int RandomSizeRange = 15;
-    private static readonly int GreaterSpawnChance = 1; 
+    private static readonly int AddonStatusSpawnChance = 1; 
     private static NwArea? _area;
     private readonly NwTrigger _trigger;
 
@@ -117,10 +117,10 @@ public class DayNightEncounterSpawner : IEncounterSpawner
         NWScript.DestroyObject(creature, 600.0f);
 
 
-        // Chance to spawn in Greater Beasts
-        if((NWScript.Random(100)+1) <= GreaterSpawnChance)
+        // Chance to spawn in a unit with a unique status
+        if((NWScript.Random(100)+1) <= AddonStatusSpawnChance)
         {
-         ApplyGreaterStatus(creature);
+         ApplyAddonStatus(creature);
         }
         else
         {
@@ -149,6 +149,18 @@ public class DayNightEncounterSpawner : IEncounterSpawner
       }
       return size/100;
     }
+    private static void ApplyAddonStatus(uint creature)
+    {
+        int nRandom = NWScript.Random(4);
+        switch(nRandom)
+        {
+            case 0: ApplyGreaterStatus(creature); break;
+            case 1: ApplyCageyStatus(creature);  break;
+            case 2: ApplyRetributionStatus(creature);  break;
+            case 3: ApplyGhostlyStatus(creature);  break;
+            default: ApplyGreaterStatus(creature);  break;
+        }
+    }
     private static void ApplyGreaterStatus(uint creature)
     {
         int level = NWScript.GetClassByPosition(1,creature) + NWScript.GetClassByPosition(2,creature) + NWScript.GetClassByPosition(3,creature);
@@ -161,6 +173,53 @@ public class DayNightEncounterSpawner : IEncounterSpawner
         NWScript.SetLocalInt(creature,"CustDropPercent",100);
         NWScript.SetObjectVisualTransform(creature,10,150.0f);
         NWScript.ApplyEffectToObject(2,eTempHP,creature);
+        NWScript.ApplyEffectToObject(2,eVisual,creature);
+    }
+    private static void ApplyCageyStatus(uint creature)
+    {
+        int level = NWScript.GetClassByPosition(1,creature) + NWScript.GetClassByPosition(2,creature) + NWScript.GetClassByPosition(3,creature);
+        IntPtr eAC = NWScript.EffectACIncrease(level/3,0);
+        IntPtr eVisual = NWScript.EffectVisualEffect(479);
+        string sName = NWScript.GetName(creature);
+        sName = "Cagey " + sName; 
+
+        NWScript.SetName(creature,sName);
+        NWScript.SetLocalInt(creature,"CustDropPercent",100);
+        NWScript.SetObjectVisualTransform(creature,10,50.0f);
+        NWScript.ApplyEffectToObject(2,eAC,creature);
+        NWScript.ApplyEffectToObject(2,eVisual,creature);
+    }
+    private static void ApplyRetributionStatus(uint creature)
+    {
+        int level = NWScript.GetClassByPosition(1,creature) + NWScript.GetClassByPosition(2,creature) + NWScript.GetClassByPosition(3,creature);
+        IntPtr eTempHP = NWScript.EffectTemporaryHitpoints(level);
+        IntPtr eVisual = NWScript.EffectVisualEffect(415);
+        IntPtr eDamShield = NWScript.EffectDamageShield(level/5,1,1);
+        string sName = NWScript.GetName(creature);
+        sName = "Retribution " + sName; 
+
+        NWScript.SetName(creature,sName);
+        NWScript.SetLocalInt(creature,"CustDropPercent",100);
+        NWScript.SetObjectVisualTransform(creature,10,120.0f);
+        NWScript.ApplyEffectToObject(2,eTempHP,creature);
+        NWScript.ApplyEffectToObject(2,eVisual,creature);
+        NWScript.ApplyEffectToObject(2,eDamShield,creature);
+    }
+     private static void ApplyGhostlyStatus(uint creature)
+    {
+        int level = NWScript.GetClassByPosition(1,creature) + NWScript.GetClassByPosition(2,creature) + NWScript.GetClassByPosition(3,creature);
+        if(level >= 30)
+        {
+            level = 30;
+        }
+        IntPtr eConceal = NWScript.EffectConcealment(level*2);
+        IntPtr eVisual = NWScript.EffectVisualEffect(9);
+        string sName = NWScript.GetName(creature);
+        sName = "Ghostly " + sName; 
+
+        NWScript.SetName(creature,sName);
+        NWScript.SetLocalInt(creature,"CustDropPercent",100);
+        NWScript.ApplyEffectToObject(2,eConceal,creature);
         NWScript.ApplyEffectToObject(2,eVisual,creature);
     }
 }
