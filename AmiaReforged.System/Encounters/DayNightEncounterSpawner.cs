@@ -14,7 +14,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     private static readonly string MiniBossPrefix = "mini_boss";
     private static readonly string MiniBossSpawnChance = "mini_boss_%";
     private static readonly int RandomSizeRange = 15;
-    private static readonly int AddonStatusSpawnChance = 1; 
+    private static readonly int AddonStatusSpawnChance = 50; 
     private static NwArea? _area;
     private readonly NwTrigger _trigger;
 
@@ -163,7 +163,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     }
     private static void ApplyGreaterStatus(uint creature)
     {
-        int level = NWScript.GetClassByPosition(1,creature) + NWScript.GetClassByPosition(2,creature) + NWScript.GetClassByPosition(3,creature);
+        int level = NWScript.GetLevelByPosition(1,creature) + NWScript.GetLevelByPosition(2,creature) + NWScript.GetLevelByPosition(3,creature); 
         IntPtr eTempHP = NWScript.EffectTemporaryHitpoints(level * 3);
         IntPtr eVisual = NWScript.EffectVisualEffect(411);
         string sName = NWScript.GetName(creature);
@@ -177,7 +177,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     }
     private static void ApplyCageyStatus(uint creature)
     {
-        int level = NWScript.GetClassByPosition(1,creature) + NWScript.GetClassByPosition(2,creature) + NWScript.GetClassByPosition(3,creature);
+        int level = NWScript.GetLevelByPosition(1,creature) + NWScript.GetLevelByPosition(2,creature) + NWScript.GetLevelByPosition(3,creature);
         IntPtr eAC = NWScript.EffectACIncrease(level/3,0);
         IntPtr eVisual = NWScript.EffectVisualEffect(479);
         string sName = NWScript.GetName(creature);
@@ -191,7 +191,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     }
     private static void ApplyRetributionStatus(uint creature)
     {
-        int level = NWScript.GetClassByPosition(1,creature) + NWScript.GetClassByPosition(2,creature) + NWScript.GetClassByPosition(3,creature);
+        int level = NWScript.GetLevelByPosition(1,creature) + NWScript.GetLevelByPosition(2,creature) + NWScript.GetLevelByPosition(3,creature);
         IntPtr eTempHP = NWScript.EffectTemporaryHitpoints(level);
         IntPtr eVisual = NWScript.EffectVisualEffect(415);
         IntPtr eDamShield = NWScript.EffectDamageShield(level/5,1,1);
@@ -207,7 +207,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     }
      private static void ApplyGhostlyStatus(uint creature)
     {
-        int level = NWScript.GetClassByPosition(1,creature) + NWScript.GetClassByPosition(2,creature) + NWScript.GetClassByPosition(3,creature);
+        int level = NWScript.GetLevelByPosition(1,creature) + NWScript.GetLevelByPosition(2,creature) + NWScript.GetLevelByPosition(3,creature);
         if(level >= 30)
         {
             level = 30;
