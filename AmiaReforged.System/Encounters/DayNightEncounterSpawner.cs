@@ -170,7 +170,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
         sName = "Greater " + sName; 
 
         NWScript.SetName(creature,sName);
-        NWScript.SetLocalInt(creature,"CustDropPercent",100);
+        NWScript.SetLocalInt(creature,"CustDropPercent",50);
         NWScript.SetObjectVisualTransform(creature,10,1.3f);
         NWScript.ApplyEffectToObject(2,eTempHP,creature);
         NWScript.ApplyEffectToObject(2,eVisual,creature);
@@ -188,7 +188,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
         sName = "Cagey " + sName; 
 
         NWScript.SetName(creature,sName);
-        NWScript.SetLocalInt(creature,"CustDropPercent",100);
+        NWScript.SetLocalInt(creature,"CustDropPercent",50);
         NWScript.SetObjectVisualTransform(creature,10,0.75f);
         NWScript.ApplyEffectToObject(2,eAC,creature);
         NWScript.ApplyEffectToObject(2,eVisual,creature);
@@ -207,7 +207,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
         sName = "Retribution " + sName; 
 
         NWScript.SetName(creature,sName);
-        NWScript.SetLocalInt(creature,"CustDropPercent",100);
+        NWScript.SetLocalInt(creature,"CustDropPercent",50);
         NWScript.SetObjectVisualTransform(creature,10,1.2f);
         NWScript.ApplyEffectToObject(2,eTempHP,creature);
         NWScript.ApplyEffectToObject(2,eVisual,creature);
@@ -226,7 +226,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
         sName = "Ghostly " + sName; 
 
         NWScript.SetName(creature,sName);
-        NWScript.SetLocalInt(creature,"CustDropPercent",100);
+        NWScript.SetLocalInt(creature,"CustDropPercent",50);
         NWScript.ApplyEffectToObject(2,eConceal,creature);
         NWScript.ApplyEffectToObject(2,eVisual,creature);
     }
