@@ -14,7 +14,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
     private static readonly string MiniBossPrefix = "mini_boss";
     private static readonly string MiniBossSpawnChance = "mini_boss_%";
     private static readonly int RandomSizeRange = 15;
-    private static readonly int AddonStatusSpawnChance = 50; 
+    private static readonly int AddonStatusSpawnChance = 1; 
     private static NwArea? _area;
     private readonly NwTrigger _trigger;
 
@@ -183,7 +183,7 @@ public class DayNightEncounterSpawner : IEncounterSpawner
          level = 3;
         }
         IntPtr eAC = NWScript.EffectACIncrease(level/3,0);
-        IntPtr eVisual = NWScript.EffectVisualEffect(479);
+        IntPtr eVisual = NWScript.EffectVisualEffect(422);
         string sName = NWScript.GetName(creature);
         sName = "Cagey " + sName; 
 
