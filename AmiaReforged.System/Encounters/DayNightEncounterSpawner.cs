@@ -171,13 +171,17 @@ public class DayNightEncounterSpawner : IEncounterSpawner
 
         NWScript.SetName(creature,sName);
         NWScript.SetLocalInt(creature,"CustDropPercent",100);
-        NWScript.SetObjectVisualTransform(creature,10,1.5f);
+        NWScript.SetObjectVisualTransform(creature,10,1.3f);
         NWScript.ApplyEffectToObject(2,eTempHP,creature);
         NWScript.ApplyEffectToObject(2,eVisual,creature);
     }
     private static void ApplyCageyStatus(uint creature)
     {
         int level = NWScript.GetLevelByPosition(1,creature) + NWScript.GetLevelByPosition(2,creature) + NWScript.GetLevelByPosition(3,creature);
+        if(level < 3)
+        {
+         level = 3;
+        }
         IntPtr eAC = NWScript.EffectACIncrease(level/3,0);
         IntPtr eVisual = NWScript.EffectVisualEffect(479);
         string sName = NWScript.GetName(creature);
@@ -185,13 +189,17 @@ public class DayNightEncounterSpawner : IEncounterSpawner
 
         NWScript.SetName(creature,sName);
         NWScript.SetLocalInt(creature,"CustDropPercent",100);
-        NWScript.SetObjectVisualTransform(creature,10,0.5f);
+        NWScript.SetObjectVisualTransform(creature,10,0.75f);
         NWScript.ApplyEffectToObject(2,eAC,creature);
         NWScript.ApplyEffectToObject(2,eVisual,creature);
     }
     private static void ApplyRetributionStatus(uint creature)
     {
         int level = NWScript.GetLevelByPosition(1,creature) + NWScript.GetLevelByPosition(2,creature) + NWScript.GetLevelByPosition(3,creature);
+        if(level < 5)
+        {
+         level = 5;
+        }
         IntPtr eTempHP = NWScript.EffectTemporaryHitpoints(level);
         IntPtr eVisual = NWScript.EffectVisualEffect(415);
         IntPtr eDamShield = NWScript.EffectDamageShield(level/5,1,1);
