@@ -1,0 +1,15 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Anvil.API;
+
+namespace AmiaReforged.Core.Models;
+
+public class InvasionRecord
+{
+    public string AreaZone { get; set; }
+    
+    public int InvasionPercent { get; set; }
+
+
+
+}
