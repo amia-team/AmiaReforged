@@ -8,6 +8,10 @@ public class InvasionRecord
     
     public int InvasionPercent { get; set; }
 
-
+    public InvasionRecord(string areaName, int invasionPercent)
+    {
+        AreaZone = areaName;
+        InvasionPercent = invasionPercent;
+    }
 
 }
