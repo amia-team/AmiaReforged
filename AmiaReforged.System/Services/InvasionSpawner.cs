@@ -4,7 +4,8 @@ using Anvil.API;
 using Anvil.Services;
 using NWN.Core;
 using AmiaReforged.System;
-using AmiaReforged.Core;
+using AmiaReforged.Core.Services;
+using AmiaReforged.Core.Models;
 
 namespace AmiaReforged.System.Services;
 
@@ -17,7 +18,7 @@ public class InvasionSpawner
     private readonly Invasions _invasions;
 
 
-    public InvasionSpawner(SchedulerService schedulerService, Invasions invasions)
+    public InvasionSpawner(SchedulerService schedulerService,InvasionService invasionService, Invasions invasions)
     {
        _schedulerService = schedulerService;
        _schedulerService.ScheduleRepeating(TestLaunch, TimeSpan.FromMinutes(10));
@@ -31,23 +32,23 @@ public class InvasionSpawner
         SummonInvasion(Waypoint);
     }
 
-    public void CheckInvasions()
+    public async void CheckInvasions()
     {
         int counter = 1; 
         uint Waypoint = NWScript.GetWaypointByTag("Invasion" + Convert.ToString(counter));
         uint WaypointArea = NWScript.GetArea(Waypoint);
         string AreaResRef = NWScript.GetResRef(WaypointArea);
-        List<InvasionRecord> invasions = _invasionService.GetAllInvasionRecords(); 
+        List<InvasionRecord> invasions = await _invasionService.GetAllInvasionRecords(); 
         InvasionRecord invasionRecord; 
         Random random = new Random();
         int ran;
 
-        while(NWScript.GetIsObjectValid(Waypoint))
+        while(NWScript.GetIsObjectValid(Waypoint)==1)
         {
 
-            if(_invasionService.InvasionRecordExists(AreaResRef) == false)
+            if(await _invasionService.InvasionRecordExists(AreaResRef) == false)
             {
-               _invasionService.AddInvasionArea(new InvasionRecord(AreaResRef,5));
+               await _invasionService.AddInvasionArea(new InvasionRecord(AreaResRef,5));
             }
             else
             {
@@ -62,7 +63,7 @@ public class InvasionSpawner
 
            counter++;
            Waypoint = NWScript.GetWaypointByTag("Invasion" + Convert.ToString(counter));
-           if(NWScript.GetIsObjectValid(Waypoint))
+           if(NWScript.GetIsObjectValid(Waypoint)==1)
            { 
              WaypointArea = NWScript.GetArea(Waypoint);
              AreaResRef = NWScript.GetResRef(WaypointArea);
@@ -75,9 +76,9 @@ public class InvasionSpawner
     public void SummonInvasion(uint Waypoint)
     {
         uint WaypointArea = NWScript.GetArea(Waypoint);
-        string AreaName = NWScript.GetAreaName(WaypointArea);
+        string AreaName = NWScript.GetName(WaypointArea);
         string InvasionType = NWScript.GetLocalString(Waypoint, "invasionType");
-        int CreatureName;
+        string CreatureName;
 
         if(InvasionType == "Beasts")
         {
