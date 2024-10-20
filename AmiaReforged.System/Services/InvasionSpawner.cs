@@ -9,7 +9,6 @@ using AmiaReforged.Core;
 namespace AmiaReforged.System.Services;
 
 
-
 [ServiceBinding(typeof(InvasionSpawner))]
 public class InvasionSpawner
 {
@@ -21,7 +20,7 @@ public class InvasionSpawner
     public InvasionSpawner(SchedulerService schedulerService, Invasions invasions)
     {
        _schedulerService = schedulerService;
-       //_schedulerService.ScheduleRepeating(TestLaunch, TimeSpan.FromMinutes(10));
+       _schedulerService.ScheduleRepeating(TestLaunch, TimeSpan.FromMinutes(10));
        _invasionService = invasionService; 
        _invasions = invasions;
     }
