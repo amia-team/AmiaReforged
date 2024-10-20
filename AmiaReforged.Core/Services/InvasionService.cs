@@ -108,6 +108,25 @@ public class InvasionService
         await _nwTaskHelper.TrySwitchToMainThread();
         return invasions;
     }
+    private async Task<List<InvasionRecord>> GetCertainInvasionRecordWithID(string invasionID)
+    {
+        AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
+
+        List<InvasionRecord> invasions = new();
+        try
+        {
+            invasions = await amiaDbContext.InvasionRecord
+                .Where(AreaZone.get(invasionID))
+                .ToListAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting certain invasion record");
+        }
+
+        await _nwTaskHelper.TrySwitchToMainThread();
+        return invasions;
+    }
 
     public async Task<bool> InvasionRecordExists(string invasionId)
     {
