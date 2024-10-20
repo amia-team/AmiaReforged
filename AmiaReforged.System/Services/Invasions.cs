@@ -1,3 +1,7 @@
+using System;
+using System.Data.Common;
+using Anvil.API;
+using Anvil.Services;
 using System.Numerics;
 using NWN.Core;
 using AmiaReforged.System;
@@ -5,6 +9,7 @@ using AmiaReforged.System;
 namespace AmiaReforged.System.Services;
 
 
+[ServiceBinding(typeof(Invasions))]
 public class Invasions
 {
     public void InvasionGeneric(uint area, int size, int random, string creaturetype1, string creaturetype2,
