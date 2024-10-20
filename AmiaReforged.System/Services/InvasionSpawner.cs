@@ -48,12 +48,14 @@ public class InvasionSpawner
 
             if(await _invasionService.InvasionRecordExists(AreaResRef) == false)
             {
-               await _invasionService.AddInvasionArea(new InvasionRecord(AreaResRef,5));
+               await _invasionService.AddInvasionArea(new InvasionRecord(AreaResRef,random.Next(5,25)));
             }
             else
             {
                invasionRecord = invasions.Find(x => x.AreaZone == AreaResRef);
                ran = random.Next(50, 100);
+               invasionRecord.InvasionPercent += 5; 
+               await _invasionService.UpdateInvasionArea(invasionRecord);
                if(ran >= invasionRecord.InvasionPercent)
                {
                 SummonInvasion(Waypoint);
