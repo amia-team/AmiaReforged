@@ -21,7 +21,7 @@ public class AmiaDbContext : DbContext
     public DbSet<StoredItem> PlayerItems { get; set; } = null!;
     public DbSet<SavedSpellbook> SavedSpellbooks { get; set; } = null!;
     public DbSet<SavedQuickslots> SavedQuickslots { get; set; } = null!;
-    public DbSet<InvasionService> InvasionRecord { get; set; } = null!;
+    public DbSet<InvasionRecord> InvasionRecord { get; set; } = null!;
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
