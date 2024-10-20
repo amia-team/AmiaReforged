@@ -1,9 +1,9 @@
 using System.Numerics;
 using NWN.Core;
 
-namespace AmiaReforged.System.Encounters.Invasions;
+namespace AmiaReforged.System.Services;
 
-public class TriggerSpawnCreatures
+public class Invasions
 {
     public void InvasionGeneric(uint area, int size, int random, string creaturetype1, string creaturetype2,
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant, string boss,
