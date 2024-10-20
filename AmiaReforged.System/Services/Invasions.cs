@@ -14,13 +14,13 @@ public class Invasions
     {
         const int totalPlc = 150;
         Random rnd = new();
-        int totalMobs = Convert.ToInt32(rnd.Next(random) + size);
+        int totalMobClusters = Convert.ToInt32(rnd.Next(random) + size); // This is 
         int totalLieutentants = Convert.ToInt32(rnd.Next(random / 2) + size * 0.75);
 
         SpawnPlc(area, totalPlc);
 
         NWScript.DelayCommand(15.0f,
-            () => SpawnMobs(area, totalMobs, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+            () => SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5));
         NWScript.DelayCommand(30.0f, () => SpawnLieutenants(area, totalLieutentants, lieutentant));
         NWScript.DelayCommand(45.0f, () => SpawnBoss(area, boss));
@@ -176,14 +176,14 @@ public class Invasions
         return plc;
     }
 
-    private static void SpawnMobs(uint area, int totalMobs, string creaturetype1, string creaturetype2,
+    private static void SpawnMobs(uint area, int totalMobClusters, string creaturetype1, string creaturetype2,
         string creaturetype3, string creaturetype4, string creaturetype5)
     {
         int countMobs = 0;
         // const float zPosition = 0.0f;
         const float facing = 0.0f;
 
-        while (countMobs < totalMobs)
+        while (countMobs < totalMobClusters)
         {
             // Determining the width and height of the area in tiles
             int widthInTiles = NWScript.GetAreaSize(NWScript.AREA_WIDTH, area);
@@ -270,5 +270,7 @@ public class Invasions
             NWScript.SendMessageToPC(objectCreature, "-----");
             objectCreature = NWScript.GetNextPC();
         }
+
+        
     }
 }
