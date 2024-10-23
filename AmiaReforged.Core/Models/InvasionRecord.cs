@@ -4,14 +4,8 @@ namespace AmiaReforged.Core.Models;
 
 public class InvasionRecord
 {
+    [Key] public int Id { get; set; }
     public string AreaZone { get; set; }
     
     public int InvasionPercent { get; set; }
-
-    public InvasionRecord(string areaName, int invasionPercent)
-    {
-        AreaZone = areaName;
-        InvasionPercent = invasionPercent;
-    }
-
 }

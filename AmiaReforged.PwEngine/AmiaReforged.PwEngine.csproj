@@ -18,9 +18,4 @@
       <PackageReference Include="NWN.Core" Version="8193.36.1" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="CommandQuery\" />
-      <Folder Include="Systems\FactionSystem\" />
-    </ItemGroup>
-
 </Project>
