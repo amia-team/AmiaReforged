@@ -6,6 +6,7 @@ using NWN.Core;
 using AmiaReforged.System;
 using AmiaReforged.Core.Services;
 using AmiaReforged.Core.Models;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client.Payloads;
 
 namespace AmiaReforged.System.Services;
 
@@ -21,7 +22,7 @@ public class InvasionSpawner
     public InvasionSpawner(SchedulerService schedulerService,InvasionService invasionService, Invasions invasions)
     {
        _schedulerService = schedulerService;
-       _schedulerService.ScheduleRepeating(TestLaunch, TimeSpan.FromMinutes(10));
+       //_schedulerService.ScheduleRepeating(TestLaunch, TimeSpan.FromMinutes(10));
        _invasionService = invasionService; 
        _invasions = invasions;
     }
@@ -39,27 +40,35 @@ public class InvasionSpawner
         uint WaypointArea = NWScript.GetArea(Waypoint);
         string AreaResRef = NWScript.GetResRef(WaypointArea);
         List<InvasionRecord> invasions = await _invasionService.GetAllInvasionRecords(); 
+        List<InvasionRecord> invasionSuccess = new List<InvasionRecord>(); 
+        List<uint> waypointSuccess =  new List<uint>(); 
         InvasionRecord invasionRecord; 
+        InvasionRecord newRecord;
         Random random = new Random();
         int ran;
+
 
         while(NWScript.GetIsObjectValid(Waypoint)==1)
         {
 
             if(await _invasionService.InvasionRecordExists(AreaResRef) == false)
             {
-               await _invasionService.AddInvasionArea(new InvasionRecord(AreaResRef,random.Next(5,25)));
+              newRecord = new InvasionRecord(); 
+              newRecord.AreaZone = "AreaResRef";
+              newRecord.InvasionPercent = random.Next(5,25);
+              await _invasionService.AddInvasionArea(newRecord);
             }
             else
             {
                invasionRecord = invasions.Find(x => x.AreaZone == AreaResRef);
-               ran = random.Next(50, 100);
+               ran = random.Next(50, 100); // Only one with 50+ are ran
                invasionRecord.InvasionPercent += 5; 
                await _invasionService.UpdateInvasionArea(invasionRecord);
                if(ran >= invasionRecord.InvasionPercent)
-               {
-                SummonInvasion(Waypoint);
-                break; 
+               { 
+                // Adds the successful rolls to an array to pick from later
+                invasionSuccess.Add(invasionRecord);
+                waypointSuccess.Add(Waypoint);
                }
             }
 
@@ -71,7 +80,34 @@ public class InvasionSpawner
              AreaResRef = NWScript.GetResRef(WaypointArea);
            }
         }
+
+        PickInvasionLocation(invasionSuccess,waypointSuccess);
         
+    }
+
+    public async void PickInvasionLocation(List<InvasionRecord> invasionSuccess,List<uint> waypointSuccess)
+    {
+      int invasionSuccessCount = invasionSuccess.Count;
+      int waypointSuccessCount = waypointSuccess.Count;
+      Random random = new Random();
+      int ran = random.Next(0, invasionSuccessCount);
+
+      if(invasionSuccessCount != waypointSuccessCount)
+      {
+        NWScript.SendMessageToAllDMs("ERROR. Invasion arrays do not match. Inform Dev.");
+      }
+      else if(invasionSuccessCount == 0 || waypointSuccessCount == 0)
+      {
+        // Do nothing 
+      }
+      else // Picks a random one out of the successes to run and resets it
+      {
+        var tempInvasion = invasionSuccess[ran];
+        var tempWP = waypointSuccess[ran];
+        tempInvasion.InvasionPercent = 1; 
+        await _invasionService.UpdateInvasionArea(tempInvasion);
+        SummonInvasion(tempWP);
+      }
     }
 
 
