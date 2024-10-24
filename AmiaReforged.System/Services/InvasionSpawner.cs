@@ -65,6 +65,7 @@ public class InvasionSpawner
               newRecord = new InvasionRecord(); 
               newRecord.AreaZone = "AreaResRef";
               newRecord.InvasionPercent = random.Next(5,25);
+              newRecord.RealmChaos = 1;
               await _invasionService.AddInvasionArea(newRecord);
             }
             else
