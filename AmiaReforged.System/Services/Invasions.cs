@@ -130,7 +130,7 @@ public class Invasions
             IntPtr randomLocation = GenerateRandomLocation(area);
             uint objectPlc = CreatePlc(randomLocation);
 
-            if (NWScript.GetIsObjectValid(objectPlc) == NWScript.TRUE) countPlc++;
+            if (NWScript.GetIsObjectValid(objectPlc) == 1) countPlc++;
         }
     }
 
@@ -204,7 +204,7 @@ public class Invasions
 
             uint creature1 = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1, randomLocation);
 
-            if (NWScript.GetIsObjectValid(creature1) != NWScript.TRUE) continue;
+            if (NWScript.GetIsObjectValid(creature1) != 1) continue;
 
             Vector3 randomPosN = NWScript.Vector(xPosition, yPosition + 1.0f);
             Vector3 randomPosS = NWScript.Vector(xPosition, yPosition - 1.0f);
@@ -244,7 +244,7 @@ public class Invasions
             IntPtr randomLocation = GenerateRandomLocation(area);
             uint objectCreature = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, lieutentant, randomLocation);
 
-            if (NWScript.GetIsObjectValid(objectCreature) == NWScript.TRUE) countLieutenant++;
+            if (NWScript.GetIsObjectValid(objectCreature) == 1) countLieutenant++;
         }
     }
 
@@ -257,7 +257,7 @@ public class Invasions
             IntPtr randomLocation = GenerateRandomLocation(area);
             uint objectCreature = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, boss, randomLocation);
 
-            if (NWScript.GetIsObjectValid(objectCreature) == NWScript.TRUE) countBoss++;
+            if (NWScript.GetIsObjectValid(objectCreature) == 1) countBoss++;
         }
     }
 
@@ -265,7 +265,7 @@ public class Invasions
     {
         uint objectCreature = NWScript.GetFirstPC();
 
-        while (NWScript.GetIsObjectValid(objectCreature) == NWScript.TRUE)
+        while (NWScript.GetIsObjectValid(objectCreature) == 1)
         {
             NWScript.SendMessageToPC(objectCreature, "-----");
             NWScript.SendMessageToPC(objectCreature, "-----");
