@@ -12,7 +12,7 @@ namespace AmiaReforged.System.Services;
 [ServiceBinding(typeof(Invasions))]
 public class Invasions
 {
-    public void InvasionGeneric(uint area, int size, int random, string creaturetype1, string creaturetype2,
+    public async void InvasionGeneric(uint area, int size, int random, string creaturetype1, string creaturetype2,
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant, string boss,
         string message)
     {
@@ -22,13 +22,16 @@ public class Invasions
         int totalLieutentants = Convert.ToInt32(rnd.Next(random / 2) + size * 0.75);
 
         SpawnPlc(area, totalPlc);
+        await Task.Delay(TimeSpan.FromSeconds(15));
+        SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+                creaturetype5);
+        await Task.Delay(TimeSpan.FromSeconds(15));
+        SpawnLieutenants(area, totalLieutentants, lieutentant);
+        await Task.Delay(TimeSpan.FromSeconds(15));
+        SpawnBoss(area, boss);
+        await Task.Delay(TimeSpan.FromSeconds(15));
+        MassMessage(message);
 
-        NWScript.DelayCommand(15.0f,
-            () => SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-                creaturetype5));
-        NWScript.DelayCommand(30.0f, () => SpawnLieutenants(area, totalLieutentants, lieutentant));
-        NWScript.DelayCommand(45.0f, () => SpawnBoss(area, boss));
-        NWScript.DelayCommand(60.0f, () => MassMessage(message));
     }
 
     public void InvasionBeasts(uint area, int size, int random)
