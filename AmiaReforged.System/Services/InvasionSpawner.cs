@@ -35,6 +35,11 @@ public class InvasionSpawner
 
     public async void CheckInvasions()
     {
+      if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired").Equals(1)))
+      {
+        return;
+      }
+
         int counter = 1; 
         uint Waypoint = NWScript.GetWaypointByTag("Invasion" + Convert.ToString(counter));
         uint WaypointArea = NWScript.GetArea(Waypoint);
@@ -159,6 +164,8 @@ public class InvasionSpawner
         CreatureName + " are rampaging in " + AreaName +
         "! We recommend an appropriately skilled group of adventurers respond and common folk stay clear! ```");
         NWScript.ExecuteScript("webhook_announce");
+
+        NWScript.SetLocalInt(NWScript.GetModule(), "InvasionFired", 1);
 
     }
 

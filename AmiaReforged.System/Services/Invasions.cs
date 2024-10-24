@@ -22,14 +22,14 @@ public class Invasions
         int totalLieutentants = Convert.ToInt32(rnd.Next(random / 2) + size * 0.75);
 
         SpawnPlc(area, totalPlc);
-        await Task.Delay(TimeSpan.FromSeconds(15));
+        //await Task.Delay(TimeSpan.FromSeconds(15));
         SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5);
-        await Task.Delay(TimeSpan.FromSeconds(15));
+        //await Task.Delay(TimeSpan.FromSeconds(15));
         SpawnLieutenants(area, totalLieutentants, lieutentant);
-        await Task.Delay(TimeSpan.FromSeconds(15));
+        //await Task.Delay(TimeSpan.FromSeconds(15));
         SpawnBoss(area, boss);
-        await Task.Delay(TimeSpan.FromSeconds(15));
+        //await Task.Delay(TimeSpan.FromSeconds(15));
         MassMessage(message);
 
     }
