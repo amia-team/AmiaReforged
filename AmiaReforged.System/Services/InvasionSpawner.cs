@@ -30,15 +30,19 @@ public class InvasionSpawner
     public void TestLaunch()
     {
         uint Waypoint = NWScript.GetWaypointByTag("invasiongoblin");
+        if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired").Equals(1)))
+        {
+         return;
+        }
         SummonInvasion(Waypoint);
     }
 
     public async void CheckInvasions()
     {
-      if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired").Equals(1)))
-      {
-        return;
-      }
+        if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired").Equals(1)))
+        {
+          return;
+        }
 
         int counter = 1; 
         uint Waypoint = NWScript.GetWaypointByTag("Invasion" + Convert.ToString(counter));
