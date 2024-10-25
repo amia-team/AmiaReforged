@@ -130,27 +130,27 @@ public class InvasionSpawner
 
         if(InvasionType == "Beasts")
         {
-          _invasions.InvasionBeasts(WaypointArea,11,8); 
+          _invasions.InvasionBeasts(Waypoint); 
           CreatureName = "Beastmen";
         }
         else if(InvasionType == "Goblins")
         {
-          _invasions.InvasionGoblins(WaypointArea,11,8); 
+          _invasions.InvasionGoblins(Waypoint); 
           CreatureName = "Goblins";
         }
         else if(InvasionType == "Trolls")
         {
-          _invasions.InvasionTrolls(WaypointArea,11,8); 
+          _invasions.InvasionTrolls(Waypoint); 
           CreatureName = "Trolls";
         }
         else if(InvasionType == "Orcs")
         {
-          _invasions.InvasionOrcs(WaypointArea,11,8); 
+          _invasions.InvasionOrcs(Waypoint); 
           CreatureName = "Orcs";
         }
         else if(InvasionType == "Custom")
         {
-          _invasions.InvasionGeneric(WaypointArea,11,8,NWScript.GetLocalString(Waypoint,"creaturetype1"),
+          _invasions.InvasionGeneric(WaypointArea,NWScript.GetLocalString(Waypoint,"creaturetype1"),
           NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
           NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
           NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
@@ -159,7 +159,7 @@ public class InvasionSpawner
         }
         else // Test stuff
         {
-          _invasions.InvasionGoblins(WaypointArea,11,8); 
+          _invasions.InvasionGoblins(WaypointArea); 
           CreatureName = "Goblins";
         }
 

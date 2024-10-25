@@ -5,6 +5,7 @@ using Anvil.Services;
 using System.Numerics;
 using NWN.Core;
 using AmiaReforged.System;
+using AmiaReforged.Core.Models;
 
 namespace AmiaReforged.System.Services;
 
@@ -12,16 +13,22 @@ namespace AmiaReforged.System.Services;
 [ServiceBinding(typeof(Invasions))]
 public class Invasions
 {
-    public async void InvasionGeneric(uint area, int size, int random, string creaturetype1, string creaturetype2,
+
+    private List<uint> _waypointMasterList; 
+
+    public async void InvasionGeneric(uint waypoint, string creaturetype1, string creaturetype2,
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant, string boss,
         string message)
     {
-        const int totalPlc = 150;
-        Random rnd = new();
-        int totalMobClusters = Convert.ToInt32(rnd.Next(random) + size); // This is 
-        int totalLieutentants = Convert.ToInt32(rnd.Next(random / 2) + size * 0.75);
+        
+        GenerateSpawnWaypointList(waypoint); 
 
-        SpawnPlc(area, totalPlc);
+
+        const int totalPlc = 150;
+        int totalMobClusters = Convert.ToInt32(_waypointMasterList.Count()*0.75); 
+        int totalLieutentants = _waypointMasterList.Count()-totalMobClusters;
+        uint area = NWScript.GetArea(waypoint);
+
         //await Task.Delay(TimeSpan.FromSeconds(15));
         SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5);
@@ -34,7 +41,7 @@ public class Invasions
 
     }
 
-    public void InvasionBeasts(uint area, int size, int random)
+    public void InvasionBeasts(uint area)
     {
         string areaName = NWScript.GetName(area);
         string creaturetype1 = "beasthero";
@@ -47,12 +54,12 @@ public class Invasions
         string message = "News quickly spreads of an amassing army of Beastmen in " + areaName +
                          ". They must be stopped before it is too late!";
 
-        InvasionGeneric(area, size, random, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+        InvasionGeneric(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
             creaturetype5, lieutentant, boss, message);
     }
 
 
-    public void InvasionGoblins(uint area, int size, int random)
+    public void InvasionGoblins(uint area)
     {
         string areaName = NWScript.GetName(area);
         string creaturetype1 = "ds_yellowfang_5";
@@ -65,12 +72,12 @@ public class Invasions
         string message = "News quickly spreads of an amassing army of Goblins in " + areaName +
                          ". They must be stopped before it is too late!";
 
-        InvasionGeneric(area, size, random, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+        InvasionGeneric(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
             creaturetype5, lieutentant, boss, message);
     }
 
 
-    public void InvasionTrolls(uint area, int size, int random)
+    public void InvasionTrolls(uint area)
     {
         string areaName = NWScript.GetName(area);
         string creaturetype1 = "mountainguard";
@@ -83,12 +90,12 @@ public class Invasions
         string message = "News quickly spreads of an amassing army of Trolls in " + areaName +
                          ". They must be stopped before it is too late!";
 
-        InvasionGeneric(area, size, random, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+        InvasionGeneric(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
             creaturetype5, lieutentant, boss, message);
     }
 
 
-    public void InvasionOrcs(uint area, int size, int random)
+    public void InvasionOrcs(uint area)
     {
         string areaName = NWScript.GetName(area);
         string creaturetype1 = "af_ds_ork";
@@ -101,40 +108,34 @@ public class Invasions
         string message = "News quickly spreads of an amassing army of Orcs in " + areaName +
                          ". They must be stopped before it is too late!";
 
-        InvasionGeneric(area, size, random, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+        InvasionGeneric(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
             creaturetype5, lieutentant, boss, message);
     }
 
-    public static IntPtr GenerateRandomLocation(uint area)
+    public void GenerateSpawnWaypointList(uint waypoint)
     {
-        // const float zPosition = 0.0f;
-        const float facing = 0.0f;
-
-
-        // Determining the width and height of the area in tiles
-        int widthInTiles = NWScript.GetAreaSize(NWScript.AREA_WIDTH, area);
-        int heightInTiles = NWScript.GetAreaSize(NWScript.AREA_HEIGHT, area);
-        int widthInMeters = widthInTiles * 10;
-        int heightInMeters = heightInTiles * 10;
-
-        //Generate a random position in the area
-        float xPosition = Convert.ToSingle(NWScript.Random(widthInMeters * 10) / 10.0);
-        float yPosition = Convert.ToSingle(NWScript.Random(heightInMeters * 10) / 10.0);
-        Vector3 randomPositon = NWScript.Vector(xPosition, yPosition);
-        IntPtr randomLocation = NWScript.Location(area, randomPositon, facing);
-        return randomLocation;
+        List<uint> waypointMasterList = new List<uint>();
+        string waypointTag = NWScript.GetTag(waypoint);
+        int count = 1; 
+        uint spawnWaypoint = NWScript.GetWaypointByTag(waypointTag+"s"+count.ToString());
+        while(NWScript.GetIsObjectValid(spawnWaypoint)==1)
+        {
+            waypointMasterList.Add(spawnWaypoint);
+            count++; 
+            spawnWaypoint = NWScript.GetWaypointByTag(waypointTag+"s"+count.ToString()); 
+        }
+        _waypointMasterList = waypointMasterList; 
     }
 
-    private void SpawnPlc(uint area, int totalPLC)
-    {
-        int countPlc = 0;
-        while (countPlc < totalPLC)
-        {
-            IntPtr randomLocation = GenerateRandomLocation(area);
-            uint objectPlc = CreatePlc(randomLocation);
-
-            if (NWScript.GetIsObjectValid(objectPlc) == 1) countPlc++;
-        }
+    public IntPtr GrabSpawnLocationInArea()
+    {  
+        int size = _waypointMasterList.Count(); 
+        Random random = new Random();
+        int ran = random.Next(0,size);
+        uint waypoint = _waypointMasterList[ran];
+        _waypointMasterList.Remove(waypoint); 
+        IntPtr location = NWScript.GetLocation(waypoint);
+        return location; 
     }
 
     private static uint CreatePlc(IntPtr objectLocation)
@@ -183,27 +184,19 @@ public class Invasions
         return plc;
     }
 
-    private static void SpawnMobs(uint area, int totalMobClusters, string creaturetype1, string creaturetype2,
+    private void SpawnMobs(uint area, int totalMobClusters, string creaturetype1, string creaturetype2,
         string creaturetype3, string creaturetype4, string creaturetype5)
     {
         int countMobs = 0;
         // const float zPosition = 0.0f;
         const float facing = 0.0f;
-
+        
         while (countMobs < totalMobClusters)
         {
-            // Determining the width and height of the area in tiles
-            int widthInTiles = NWScript.GetAreaSize(NWScript.AREA_WIDTH, area);
-            int heightInTiles = NWScript.GetAreaSize(NWScript.AREA_HEIGHT, area);
-            int widthInMeters = widthInTiles * 10;
-            int heightInMeters = heightInTiles * 10;
-
-            //Generate a random position in the area
-            float xPosition = Convert.ToSingle(NWScript.Random(widthInMeters * 10) / 10.0);
-            float yPosition = Convert.ToSingle(NWScript.Random(heightInMeters * 10) / 10.0);
-            Vector3 randomPosition = NWScript.Vector(xPosition, yPosition);
-            IntPtr randomLocation = NWScript.Location(area, randomPosition, facing);
-
+            IntPtr randomLocation = GrabSpawnLocationInArea();
+            Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
+            float xPosition = ranLocPositon.X;
+            float yPosition = ranLocPositon.Y; 
 
             uint creature1 = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1, randomLocation);
 
@@ -235,17 +228,40 @@ public class Invasions
             NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype5,
                 NWScript.Location(area, randomPosSw, facing));
             countMobs++;
+
+            // PLC Spawning
+            Vector3 randomPLCPosNw = NWScript.Vector(xPosition - 1.5f, yPosition + 1.5f);
+            Vector3 randomPLCPosSe = NWScript.Vector(xPosition + 1.5f, yPosition - 1.5f);
+            Vector3 randomPLCPosSw = NWScript.Vector(xPosition - 1.5f, yPosition - 1.5f);
+
+            CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
+            
+            CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
+            
+            CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
         }
+        
     }
 
     private void SpawnLieutenants(uint area, int totalLieutentants, string lieutentant)
     {
         int countLieutenant = 0;
+        const float facing = 0.0f;
 
         while (countLieutenant < totalLieutentants)
         {
-            IntPtr randomLocation = GenerateRandomLocation(area);
+            IntPtr randomLocation = GrabSpawnLocationInArea();
+            Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
+            float xPosition = ranLocPositon.X;
+            float yPosition = ranLocPositon.Y; 
             uint objectCreature = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, lieutentant, randomLocation);
+            // PLC Spawning
+            Vector3 randomPLCPosNw = NWScript.Vector(xPosition - 1.5f, yPosition + 1.5f);
+            Vector3 randomPLCPosSe = NWScript.Vector(xPosition + 1.5f, yPosition - 1.5f);
+            Vector3 randomPLCPosSw = NWScript.Vector(xPosition - 1.5f, yPosition - 1.5f);
+            CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
+            CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
+            CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
 
             if (NWScript.GetIsObjectValid(objectCreature) == 1) countLieutenant++;
         }
@@ -257,7 +273,7 @@ public class Invasions
 
         while (countBoss < 1)
         {
-            IntPtr randomLocation = GenerateRandomLocation(area);
+            IntPtr randomLocation = GrabSpawnLocationInArea();
             uint objectCreature = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, boss, randomLocation);
 
             if (NWScript.GetIsObjectValid(objectCreature) == 1) countBoss++;
