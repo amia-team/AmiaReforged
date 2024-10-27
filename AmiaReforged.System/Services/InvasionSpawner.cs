@@ -79,7 +79,7 @@ public class InvasionSpawner
                ran = random.Next(50, 100); // Only one with 50+ are ran
                invasionRecord.InvasionPercent += 5; 
                await _invasionService.UpdateInvasionArea(invasionRecord);
-               if(ran >= invasionRecord.InvasionPercent)
+               if(ran <= invasionRecord.InvasionPercent)
                { 
                 // Adds the successful rolls to an array to pick from later
                 invasionSuccess.Add(invasionRecord);
