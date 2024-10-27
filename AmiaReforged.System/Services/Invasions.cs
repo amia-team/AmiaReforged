@@ -39,9 +39,10 @@ public class Invasions
 
     }
 
-    public void InvasionBeasts(uint area)
+    public void InvasionBeasts(uint waypoint)
     {
-        string areaName = NWScript.GetName(area);
+        uint Area = NWScript.GetArea(waypoint);
+        string areaName = NWScript.GetName(Area);
         string creaturetype1 = "beasthero";
         string creaturetype2 = "elitebeastarcher";
         string creaturetype3 = "beastshaman";
@@ -52,14 +53,15 @@ public class Invasions
         string message = "News quickly spreads of an amassing army of Beastmen in " + areaName +
                          ". They must be stopped before it is too late!";
 
-        InvasionGeneric(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+        InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
             creaturetype5, lieutentant, boss, message);
     }
 
 
-    public void InvasionGoblins(uint area)
+    public void InvasionGoblins(uint waypoint)
     {
-        string areaName = NWScript.GetName(area);
+        uint Area = NWScript.GetArea(waypoint);
+        string areaName = NWScript.GetName(Area);
         string creaturetype1 = "ds_yellowfang_5";
         string creaturetype2 = "ds_yellowfang_1";
         string creaturetype3 = "ds_yellowfang_2";
@@ -70,14 +72,15 @@ public class Invasions
         string message = "News quickly spreads of an amassing army of Goblins in " + areaName +
                          ". They must be stopped before it is too late!";
 
-        InvasionGeneric(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+        InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
             creaturetype5, lieutentant, boss, message);
     }
 
 
-    public void InvasionTrolls(uint area)
+    public void InvasionTrolls(uint waypoint)
     {
-        string areaName = NWScript.GetName(area);
+        uint Area = NWScript.GetArea(waypoint);
+        string areaName = NWScript.GetName(Area);
         string creaturetype1 = "mountainguard";
         string creaturetype2 = "mountainguard";
         string creaturetype3 = "mounttroll";
@@ -88,14 +91,15 @@ public class Invasions
         string message = "News quickly spreads of an amassing army of Trolls in " + areaName +
                          ". They must be stopped before it is too late!";
 
-        InvasionGeneric(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+        InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
             creaturetype5, lieutentant, boss, message);
     }
 
 
-    public void InvasionOrcs(uint area)
+    public void InvasionOrcs(uint waypoint)
     {
-        string areaName = NWScript.GetName(area);
+        uint Area = NWScript.GetArea(waypoint);
+        string areaName = NWScript.GetName(Area);
         string creaturetype1 = "af_ds_ork";
         string creaturetype2 = "arelithorc001";
         string creaturetype3 = "arelithorc";
@@ -106,7 +110,7 @@ public class Invasions
         string message = "News quickly spreads of an amassing army of Orcs in " + areaName +
                          ". They must be stopped before it is too late!";
 
-        InvasionGeneric(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+        InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
             creaturetype5, lieutentant, boss, message);
     }
 

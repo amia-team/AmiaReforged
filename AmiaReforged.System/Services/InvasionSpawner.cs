@@ -150,7 +150,7 @@ public class InvasionSpawner
         }
         else if(InvasionType == "Custom")
         {
-          _invasions.InvasionGeneric(WaypointArea,NWScript.GetLocalString(Waypoint,"creaturetype1"),
+          _invasions.InvasionGeneric(Waypoint,NWScript.GetLocalString(Waypoint,"creaturetype1"),
           NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
           NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
           NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
@@ -159,7 +159,7 @@ public class InvasionSpawner
         }
         else // Test stuff
         {
-          _invasions.InvasionGoblins(WaypointArea); 
+          _invasions.InvasionGoblins(Waypoint); 
           CreatureName = "Goblins";
         }
 
