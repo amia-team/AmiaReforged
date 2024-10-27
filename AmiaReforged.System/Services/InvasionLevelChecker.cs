@@ -33,10 +33,10 @@ public class InvasionLevelChecker
       invasionRecord.InvasionPercent = 0; 
       List<InvasionRecord> invasions = await _invasionService.GetAllInvasionRecords();
       InvasionRecord invasionRecordTemp = invasions.Find(x => x.AreaZone == AreaResRef); 
-
-      //NWScript.SendMessageToAllDMs("Area: " + AreaResRef + " | Invasion Percent: " + invasionRecord.InvasionPercent.ToString() + " | Realm Chaos: "  + invasionRecord.RealmChaos.ToString());
+      if(invasionRecordTemp != null)
+      {
+        invasionRecord = invasionRecordTemp;
+      }
+      NWScript.SendMessageToAllDMs("Area: " + AreaResRef + " | Invasion Percent: " + invasionRecord.InvasionPercent.ToString() + " | Realm Chaos: "  + invasionRecord.RealmChaos.ToString());
     }
-
-
-
 }
