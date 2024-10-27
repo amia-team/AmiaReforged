@@ -14,17 +14,15 @@ namespace AmiaReforged.System.Services;
 public class Invasions
 {
 
-    private List<uint> _waypointMasterList; 
+    private List<uint> _waypointMasterList = new(); 
 
-    public async void InvasionGeneric(uint waypoint, string creaturetype1, string creaturetype2,
+    public void InvasionGeneric(uint waypoint, string creaturetype1, string creaturetype2,
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant, string boss,
         string message)
     {
         
         GenerateSpawnWaypointList(waypoint); 
 
-
-        const int totalPlc = 150;
         int totalMobClusters = Convert.ToInt32(_waypointMasterList.Count()*0.75); 
         int totalLieutentants = _waypointMasterList.Count()-totalMobClusters;
         uint area = NWScript.GetArea(waypoint);
