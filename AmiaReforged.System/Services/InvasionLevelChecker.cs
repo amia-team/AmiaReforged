@@ -28,11 +28,9 @@ public class InvasionLevelChecker
       Location Location = NWScript.GetItemActivatedTargetLocation();
       uint Area = NWScript.GetAreaFromLocation(Location);
       string AreaResRef = NWScript.GetResRef(Area);
-      //List<InvasionRecord> invasions = await _invasionService.GetAllInvasionRecords();
-      //List<InvasionRecord> invasions = new();
-      //InvasionRecord invasionRecord = invasions.Find(x => x.AreaZone == AreaResRef); 
-      //NWScript.SendMessageToAllDMs("Area: " + AreaResRef + " | Invasion Percent: " + invasionRecord.InvasionPercent.ToString() + " | Realm Chaos: "  + invasionRecord.RealmChaos.ToString());
-      NWScript.SendMessageToAllDMs("Area: " + AreaResRef);
+      List<InvasionRecord> invasions = await _invasionService.GetAllInvasionRecords();
+      InvasionRecord invasionRecord = invasions.Find(x => x.AreaZone == AreaResRef); 
+      NWScript.SendMessageToAllDMs("Area: " + AreaResRef + " | Invasion Percent: " + invasionRecord.InvasionPercent.ToString() + " | Realm Chaos: "  + invasionRecord.RealmChaos.ToString());
     }
 
 
