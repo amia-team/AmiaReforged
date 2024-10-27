@@ -29,7 +29,7 @@ public class InvasionSpawner
 
     public void TestLaunch()
     {
-        uint Waypoint = NWScript.GetWaypointByTag("invasiongoblin");
+        uint Waypoint = NWScript.GetWaypointByTag("Invasion1");
         if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired").Equals(1)))
         {
          return;
