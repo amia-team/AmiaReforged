@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client.Payloads;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(Invasions))]
+[ServiceBinding(typeof(InvasionLevelChecker))]
 public class InvasionLevelChecker
 {
     private readonly InvasionService _invasionService;
