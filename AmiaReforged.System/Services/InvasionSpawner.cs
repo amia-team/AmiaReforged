@@ -30,7 +30,7 @@ public class InvasionSpawner
     public void TestLaunch()
     {
         uint Waypoint = NWScript.GetWaypointByTag("Invasion1");
-        if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired").Equals(1)))
+        if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired") == 1))
         {
          return;
         }
@@ -39,7 +39,7 @@ public class InvasionSpawner
 
     public async void CheckInvasions()
     {
-        if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired").Equals(1)))
+        if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired") == 1))
         {
           return;
         }
