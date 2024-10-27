@@ -24,8 +24,10 @@ public class Invasions
         GenerateSpawnWaypointList(waypoint); 
 
         int totalMobClusters = Convert.ToInt32(_waypointMasterList.Count()*0.75); 
-        int totalLieutentants = _waypointMasterList.Count()-totalMobClusters;
+        int totalLieutentants = _waypointMasterList.Count()-totalMobClusters-1;
         uint area = NWScript.GetArea(waypoint);
+
+        NWScript.SendMessageToAllDMs("Total Count: " + _waypointMasterList.Count().ToString() + " | TotalMobClusters: " + totalMobClusters.ToString() + " | TotalLieutents: " + totalLieutentants.ToString());
 
         //await Task.Delay(TimeSpan.FromSeconds(15));
         SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
@@ -199,19 +201,20 @@ public class Invasions
             Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
             float xPosition = ranLocPositon.X;
             float yPosition = ranLocPositon.Y; 
+            float zPosition = ranLocPositon.Z;  
 
             uint creature1 = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1, randomLocation);
 
             if (NWScript.GetIsObjectValid(creature1) != 1) continue;
 
-            Vector3 randomPosN = NWScript.Vector(xPosition, yPosition + 1.0f);
-            Vector3 randomPosS = NWScript.Vector(xPosition, yPosition - 1.0f);
-            Vector3 randomPosE = NWScript.Vector(xPosition + 1.0f, yPosition);
-            Vector3 randomPosW = NWScript.Vector(xPosition - 1.0f, yPosition);
-            Vector3 randomPosNe = NWScript.Vector(xPosition + 1.0f, yPosition + 1.0f);
-            Vector3 randomPosNw = NWScript.Vector(xPosition - 1.0f, yPosition + 1.0f);
-            Vector3 randomPosSe = NWScript.Vector(xPosition + 1.0f, yPosition - 1.0f);
-            Vector3 randomPosSw = NWScript.Vector(xPosition - 1.0f, yPosition - 1.0f);
+            Vector3 randomPosN = NWScript.Vector(xPosition, yPosition + 1.0f,zPosition);
+            Vector3 randomPosS = NWScript.Vector(xPosition, yPosition - 1.0f,zPosition);
+            Vector3 randomPosE = NWScript.Vector(xPosition + 1.0f, yPosition,zPosition);
+            Vector3 randomPosW = NWScript.Vector(xPosition - 1.0f, yPosition,zPosition);
+            Vector3 randomPosNe = NWScript.Vector(xPosition + 1.0f, yPosition + 1.0f,zPosition);
+            Vector3 randomPosNw = NWScript.Vector(xPosition - 1.0f, yPosition + 1.0f,zPosition);
+            Vector3 randomPosSe = NWScript.Vector(xPosition + 1.0f, yPosition - 1.0f,zPosition);
+            Vector3 randomPosSw = NWScript.Vector(xPosition - 1.0f, yPosition - 1.0f,zPosition);
 
             NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype2,
                 NWScript.Location(area, randomPosN, facing));
@@ -232,9 +235,9 @@ public class Invasions
             countMobs++;
 
             // PLC Spawning
-            Vector3 randomPLCPosNw = NWScript.Vector(xPosition - 1.5f, yPosition + 1.5f);
-            Vector3 randomPLCPosSe = NWScript.Vector(xPosition + 1.5f, yPosition - 1.5f);
-            Vector3 randomPLCPosSw = NWScript.Vector(xPosition - 1.5f, yPosition - 1.5f);
+            Vector3 randomPLCPosNw = NWScript.Vector(xPosition - 1.5f, yPosition + 1.5f,zPosition);
+            Vector3 randomPLCPosSe = NWScript.Vector(xPosition + 1.5f, yPosition - 1.5f,zPosition);
+            Vector3 randomPLCPosSw = NWScript.Vector(xPosition - 1.5f, yPosition - 1.5f,zPosition);
 
             CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
             
@@ -256,11 +259,12 @@ public class Invasions
             Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
             float xPosition = ranLocPositon.X;
             float yPosition = ranLocPositon.Y; 
+            float zPosition = ranLocPositon.Z;  
             uint objectCreature = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, lieutentant, randomLocation);
             // PLC Spawning
-            Vector3 randomPLCPosNw = NWScript.Vector(xPosition - 1.5f, yPosition + 1.5f);
-            Vector3 randomPLCPosSe = NWScript.Vector(xPosition + 1.5f, yPosition - 1.5f);
-            Vector3 randomPLCPosSw = NWScript.Vector(xPosition - 1.5f, yPosition - 1.5f);
+            Vector3 randomPLCPosNw = NWScript.Vector(xPosition - 1.5f, yPosition + 1.5f,zPosition);
+            Vector3 randomPLCPosSe = NWScript.Vector(xPosition + 1.5f, yPosition - 1.5f,zPosition);
+            Vector3 randomPLCPosSw = NWScript.Vector(xPosition - 1.5f, yPosition - 1.5f,zPosition);
             CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
