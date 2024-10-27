@@ -44,6 +44,8 @@ public class InvasionSpawner
           return;
         }
 
+        NWScript.SetLocalInt(NWScript.GetModule(), "InvasionFired", 1);
+
         int counter = 1; 
         uint Waypoint = NWScript.GetWaypointByTag("Invasion" + Convert.ToString(counter));
         uint WaypointArea = NWScript.GetArea(Waypoint);
@@ -118,6 +120,7 @@ public class InvasionSpawner
         var tempInvasion = invasionSuccess[ran];
         var tempWP = waypointSuccess[ran];
         tempInvasion.InvasionPercent = 1; 
+        tempInvasion.RealmChaos += 5; 
         await _invasionService.UpdateInvasionArea(tempInvasion);
         SummonInvasion(tempWP);
       }
@@ -173,7 +176,6 @@ public class InvasionSpawner
         "! We recommend an appropriately skilled group of adventurers respond and common folk stay clear! ```");
         NWScript.ExecuteScript("webhook_announce");
 
-        NWScript.SetLocalInt(NWScript.GetModule(), "InvasionFired", 1);
 
     }
 
