@@ -28,6 +28,7 @@ public class InvasionLevelChecker
       Location Location = NWScript.GetItemActivatedTargetLocation();
       uint Area = NWScript.GetAreaFromLocation(Location);
       string AreaResRef = NWScript.GetResRef(Area);
+      string AreaSet = "No Invasion Set";
       InvasionRecord invasionRecord = new();
       invasionRecord.AreaZone = "N/A";
       invasionRecord.InvasionPercent = 0; 
@@ -37,7 +38,8 @@ public class InvasionLevelChecker
       if(invasionRecordTemp != null)
       {
         invasionRecord = invasionRecordTemp;
+        AreaSet = "Invasion Set";
       }
-      NWScript.SendMessageToAllDMs("Area: " + AreaResRef + " | Invasion Percent: " + invasionRecord.InvasionPercent.ToString() + " | Realm Chaos: "  + invasionRecord.RealmChaos.ToString());
+      NWScript.SendMessageToAllDMs("Area: " + AreaResRef + " | Set: " + AreaSet + " | Invasion Percent: " + invasionRecord.InvasionPercent.ToString() + " | Realm Chaos: "  + invasionRecord.RealmChaos.ToString());
     }
 }
