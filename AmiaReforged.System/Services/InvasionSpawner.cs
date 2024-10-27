@@ -22,7 +22,7 @@ public class InvasionSpawner
     public InvasionSpawner(SchedulerService schedulerService,InvasionService invasionService, Invasions invasions)
     {
        _schedulerService = schedulerService;
-       _schedulerService.ScheduleRepeating(TestLaunch, TimeSpan.FromMinutes(3));
+       _schedulerService.ScheduleRepeating(CheckInvasions, TimeSpan.FromMinutes(3));
        _invasionService = invasionService; 
        _invasions = invasions;
     }
@@ -51,7 +51,10 @@ public class InvasionSpawner
         List<InvasionRecord> invasions = await _invasionService.GetAllInvasionRecords(); 
         List<InvasionRecord> invasionSuccess = new List<InvasionRecord>(); 
         List<uint> waypointSuccess =  new List<uint>(); 
-        InvasionRecord invasionRecord; 
+        InvasionRecord invasionRecord = new(); 
+        invasionRecord.AreaZone = "N/A";
+        invasionRecord.InvasionPercent = 0; 
+        invasionRecord.RealmChaos = 0; 
         InvasionRecord newRecord;
         Random random = new Random();
         int ran;
@@ -63,7 +66,7 @@ public class InvasionSpawner
             if(await _invasionService.InvasionRecordExists(AreaResRef) == false)
             {
               newRecord = new InvasionRecord(); 
-              newRecord.AreaZone = "AreaResRef";
+              newRecord.AreaZone = AreaResRef;
               newRecord.InvasionPercent = random.Next(5,25);
               newRecord.RealmChaos = 1;
               await _invasionService.AddInvasionArea(newRecord);
