@@ -18,14 +18,16 @@ public class Invasions
 
     public void InvasionGeneric(uint waypoint, string creaturetype1, string creaturetype2,
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant, string boss,
-        string message)
+        string invasionName)
     {
         
         GenerateSpawnWaypointList(waypoint); 
 
         int totalMobClusters = Convert.ToInt32(_waypointMasterList.Count()*0.75); 
         int totalLieutentants = _waypointMasterList.Count()-totalMobClusters-1;
-        uint area = NWScript.GetArea(waypoint);
+        uint area = NWScript.GetArea(waypoint);   
+        string message = "News quickly spreads of an amassing army of " + invasionName + " in " + NWScript.GetName(area) +
+                         ". They must be stopped before it is too late!";
 
         NWScript.SendMessageToAllDMs("Total Count: " + _waypointMasterList.Count().ToString() + " | TotalMobClusters: " + totalMobClusters.ToString() + " | TotalLieutents: " + totalLieutentants.ToString());
 
@@ -58,27 +60,6 @@ public class Invasions
         InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
             creaturetype5, lieutentant, boss, message);
     }
-
-
-    public void InvasionGoblins(uint waypoint)
-    {
-        uint Area = NWScript.GetArea(waypoint);
-        string areaName = NWScript.GetName(Area);
-        string creaturetype1 = "ds_yellowfang_5";
-        string creaturetype2 = "ds_yellowfang_1";
-        string creaturetype3 = "ds_yellowfang_2";
-        string creaturetype4 = "ds_yellowfang_1";
-        string creaturetype5 = "ds_yellowfang_2";
-        string lieutentant = "ds_yellowfang_4";
-        string boss = "ds_yellowfang_6";
-        string message = "News quickly spreads of an amassing army of Goblins in " + areaName +
-                         ". They must be stopped before it is too late!";
-
-        InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-            creaturetype5, lieutentant, boss, message);
-    }
-
-
     public void InvasionTrolls(uint waypoint)
     {
         uint Area = NWScript.GetArea(waypoint);
