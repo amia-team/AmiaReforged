@@ -61,7 +61,7 @@ public class InvasionPatrol
       if(invasionRecordTemp != null)
       {
         invasionRecord = invasionRecordTemp;
-        if((NWScript.GetDistanceBetweenLocations(StoredLocation,Location) >= 10.0) || (NWScript.GetIsObjectValid(StoredArea) != 1))
+        if((NWScript.GetDistanceBetweenLocations(StoredLocation,Location) >= 20.0) || (NWScript.GetIsObjectValid(StoredArea) != 1))
         {
           NWScript.SetLocalLocation(oPC,AreaResRef,Location);
           int temp = invasionRecord.InvasionPercent - PatrolValue; 
@@ -70,7 +70,7 @@ public class InvasionPatrol
             temp = 0;
           }
           invasionRecord.InvasionPercent = temp; 
-          //await _invasionService.UpdateInvasionArea(invasionRecord);
+          await _invasionService.UpdateInvasionArea(invasionRecord);
           Reward(oPC);
 
           if(temp > 80)
@@ -133,7 +133,6 @@ public class InvasionPatrol
           if(NWScript.GetArea(waypoint) == NWScript.GetArea(oPC))
           {
             waypointSpawn = waypoint;
-            NWScript.SendMessageToPC(oPC,"WAYPOINT FOUND");
             break;
           }
           waypointcount++;
@@ -143,7 +142,6 @@ public class InvasionPatrol
         int i; 
         for(i=0;i<count;i++)
         {
-          NWScript.SendMessageToPC(oPC,"FOR RUNNING");
           ran = random.Next(1, 5);
           switch(ran)
           {
