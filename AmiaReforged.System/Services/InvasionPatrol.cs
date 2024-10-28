@@ -40,18 +40,18 @@ public class InvasionPatrol
       invasionRecord.RealmChaos = 0; 
       List<InvasionRecord> invasions = await _invasionService.GetAllInvasionRecords();
       InvasionRecord invasionRecordTemp = invasions.Find(x => x.AreaZone == AreaResRef); 
-      int PatrolValue = 10; 
+      int PatrolValue = 5; 
       uint JobJournal = NWScript.GetItemPossessedBy(oPC,"jobjournal");
       if(NWScript.GetIsObjectValid(JobJournal)==1)
       {
         string PrimaryJob     = NWScript.GetLocalString(JobJournal,"primaryjob");
         string SecondaryJob   = NWScript.GetLocalString(JobJournal,"secondaryjob");
-        if(PrimaryJob == "Scoundrel")
+        if(PrimaryJob == "Soldier")
         {
           PatrolValue += 10;
           NWScript.SendMessageToPC(oPC,"*Your soldier job makes you exceptional at patrols*");
         }
-        else if(SecondaryJob == "Scoundrel")
+        else if(SecondaryJob == "Soldier")
         {
           PatrolValue += 5;
           NWScript.SendMessageToPC(oPC,"*Your soldier job makes you good at patrols*"); 
@@ -118,7 +118,7 @@ public class InvasionPatrol
     {
         int waypointcount = 1;
         uint waypoint = NWScript.GetWaypointByTag("Invasion" + waypointcount.ToString());
-        uint waypointSpawn; 
+        uint waypointSpawn = new(); 
         uint Area = NWScript.GetArea(oPC);
         Random random = new Random();
         int ran;
@@ -142,14 +142,14 @@ public class InvasionPatrol
         int i; 
         for(i=0;i<count;i++)
         {
-          ran = random.Next(0, 5);
+          ran = random.Next(1, 5);
           switch(ran)
           {
-            case 1: spawn = NWScript.GetLocalString(oPC,"creaturetype1"); break;  
-            case 2: spawn = NWScript.GetLocalString(oPC,"creaturetype2"); break;  
-            case 3: spawn = NWScript.GetLocalString(oPC,"creaturetype3"); break;  
-            case 4: spawn = NWScript.GetLocalString(oPC,"creaturetype4"); break;  
-            case 5: spawn = NWScript.GetLocalString(oPC,"creaturetype5"); break;  
+            case 1: spawn = NWScript.GetLocalString(waypointSpawn,"creaturetype1"); break;  
+            case 2: spawn = NWScript.GetLocalString(waypointSpawn,"creaturetype2"); break;  
+            case 3: spawn = NWScript.GetLocalString(waypointSpawn,"creaturetype3"); break;  
+            case 4: spawn = NWScript.GetLocalString(waypointSpawn,"creaturetype4"); break;  
+            case 5: spawn = NWScript.GetLocalString(waypointSpawn,"creaturetype5"); break;  
           }
 
         NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE,spawn,NWScript.Location(Area,NWScript.Vector(xPosition + 0.5f, yPosition + 0.5f,zPosition),0.0f));
