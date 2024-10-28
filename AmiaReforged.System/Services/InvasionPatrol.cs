@@ -68,6 +68,7 @@ public class InvasionPatrol
             temp = 0;
           }
           invasionRecord.InvasionPercent = temp; 
+          Reward(oPC);
 
           if(temp > 80)
           {
@@ -148,6 +149,20 @@ public class InvasionPatrol
           }
 
         NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE,spawn,NWScript.Location(Area,NWScript.Vector(xPosition + 0.5f, yPosition + 0.5f,zPosition),0.0f));
+        }
+    }
+
+    public void Reward(uint oPC)
+    {
+        int XP = NWScript.GetXP(oPC);
+        int Level = NWScript.GetLevelByPosition(1,oPC) + NWScript.GetLevelByPosition(2,oPC) + NWScript.GetLevelByPosition(3,oPC);
+        if(Level < 30)
+        {
+          NWScript.SetXP(oPC, XP+100);
+        }
+        else
+        {
+          NWScript.SetXP(oPC, XP+1);
         }
     }
 }
