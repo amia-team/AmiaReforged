@@ -32,6 +32,8 @@ public class InvasionPatrol
       Location Location = NWScript.GetLocation(oPC);
       uint Area = NWScript.GetAreaFromLocation(Location);
       string AreaResRef = NWScript.GetResRef(Area);
+      Location StoredLocation = NWScript.GetLocalLocation(oPC,AreaResRef); 
+      uint StoredArea = NWScript.GetAreaFromLocation(StoredLocation);
       InvasionRecord invasionRecord = new();
       invasionRecord.AreaZone = "N/A";
       invasionRecord.InvasionPercent = 0; 
@@ -59,7 +61,7 @@ public class InvasionPatrol
       if(invasionRecordTemp != null)
       {
         invasionRecord = invasionRecordTemp;
-        if(NWScript.GetDistanceBetweenLocations(NWScript.GetLocalLocation(oPC,AreaResRef),Location) >= 10.0)
+        if((NWScript.GetDistanceBetweenLocations(StoredLocation,Location) >= 10.0) || (NWScript.GetIsObjectValid(StoredArea) != 1))
         {
           NWScript.SetLocalLocation(oPC,AreaResRef,Location);
           int temp = invasionRecord.InvasionPercent - PatrolValue; 
