@@ -70,6 +70,7 @@ public class InvasionPatrol
             temp = 0;
           }
           invasionRecord.InvasionPercent = temp; 
+          await _invasionService.UpdateInvasionArea(invasionRecord);
           Reward(oPC);
 
           if(temp > 80)
@@ -115,7 +116,8 @@ public class InvasionPatrol
 
     public void SpawnEnemies(uint oPC, int count)
     {
-        uint waypoint = NWScript.GetWaypointByTag("Invasion" + count.ToString());
+        int waypointcount = 1;
+        uint waypoint = NWScript.GetWaypointByTag("Invasion" + waypointcount.ToString());
         uint waypointSpawn; 
         uint Area = NWScript.GetArea(oPC);
         Random random = new Random();
@@ -133,8 +135,8 @@ public class InvasionPatrol
             waypointSpawn = waypoint;
             break;
           }
-          count++;
-          waypoint = NWScript.GetWaypointByTag("Invasion" + count.ToString());  
+          waypointcount++;
+          waypoint = NWScript.GetWaypointByTag("Invasion" + waypointcount.ToString());  
         }
 
         int i; 
@@ -160,7 +162,7 @@ public class InvasionPatrol
         int Level = NWScript.GetLevelByPosition(1,oPC) + NWScript.GetLevelByPosition(2,oPC) + NWScript.GetLevelByPosition(3,oPC);
         if(Level < 30)
         {
-          NWScript.SetXP(oPC, XP+100);
+          NWScript.SetXP(oPC, XP+25);
         }
         else
         {
