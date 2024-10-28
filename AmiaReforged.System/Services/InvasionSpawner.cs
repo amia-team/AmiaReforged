@@ -22,29 +22,33 @@ public class InvasionSpawner
     public InvasionSpawner(SchedulerService schedulerService,InvasionService invasionService, Invasions invasions)
     {
        _schedulerService = schedulerService;
-       _schedulerService.ScheduleRepeating(CheckInvasions, TimeSpan.FromMinutes(3));
+       _schedulerService.ScheduleRepeating(InvasionOne, TimeSpan.FromMinutes(3));
+       _schedulerService.ScheduleRepeating(InvasionTwo, TimeSpan.FromMinutes(10));
        _invasionService = invasionService; 
        _invasions = invasions;
     }
 
-    public void TestLaunch()
+    public void InvasionOne()
     {
-        uint Waypoint = NWScript.GetWaypointByTag("Invasion1");
-        if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired") == 1))
+        if ((NWScript.GetLocalInt(NWScript.GetModule(), "Invasion1Fired") == 1))
         {
-         return;
+          return;
         }
-        SummonInvasion(Waypoint);
+        NWScript.SetLocalInt(NWScript.GetModule(), "Invasion1Fired", 1);
+        CheckInvasions();
+    }
+    public void InvasionTwo()
+    {
+        if ((NWScript.GetLocalInt(NWScript.GetModule(), "Invasion2Fired") == 1))
+        {
+          return;
+        }
+        NWScript.SetLocalInt(NWScript.GetModule(), "Invasion2Fired", 1);
+        CheckInvasions();
     }
 
     public async void CheckInvasions()
     {
-        if ((NWScript.GetLocalInt(NWScript.GetModule(), "InvasionFired") == 1))
-        {
-          return;
-        }
-
-        NWScript.SetLocalInt(NWScript.GetModule(), "InvasionFired", 1);
 
         int counter = 1; 
         uint Waypoint = NWScript.GetWaypointByTag("Invasion" + Convert.ToString(counter));
@@ -132,43 +136,15 @@ public class InvasionSpawner
         uint WaypointArea = NWScript.GetArea(Waypoint);
         string AreaName = NWScript.GetName(WaypointArea);
         string InvasionType = NWScript.GetLocalString(Waypoint, "invasionType");
-        string CreatureName;
+        string CreatureName = NWScript.GetLocalString(Waypoint,"invasionName");
 
-        if(InvasionType == "Beasts")
-        {
-          _invasions.InvasionBeasts(Waypoint); 
-          CreatureName = "Beastmen";
-        }
-        else if(InvasionType == "Goblins")
-        {
-          _invasions.InvasionGoblins(Waypoint); 
-          CreatureName = "Goblins";
-        }
-        else if(InvasionType == "Trolls")
-        {
-          _invasions.InvasionTrolls(Waypoint); 
-          CreatureName = "Trolls";
-        }
-        else if(InvasionType == "Orcs")
-        {
-          _invasions.InvasionOrcs(Waypoint); 
-          CreatureName = "Orcs";
-        }
-        else if(InvasionType == "Custom")
-        {
-          _invasions.InvasionGeneric(Waypoint,NWScript.GetLocalString(Waypoint,"creaturetype1"),
-          NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
-          NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
-          NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
-          NWScript.GetLocalString(Waypoint,"message"));      
-          CreatureName = "Unknowns";
-        }
-        else // Test stuff
-        {
-          _invasions.InvasionGoblins(Waypoint); 
-          CreatureName = "Goblins";
-        }
-
+        
+        _invasions.InvasionGeneric(Waypoint,NWScript.GetLocalString(Waypoint,"creaturetype1"),
+        NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
+        NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
+        NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
+        CreatureName);      
+        
         
         NWScript.SetLocalString(NWScript.GetModule(), "announcerMessage",
         "``` All adventurers begin to hear murmurs and rumors from locals about a terrifying attack happening on the isles. You quickly receive a message from the Guilds to confirm this fact. The message is simple: WARNING! " +
