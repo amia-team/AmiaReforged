@@ -109,13 +109,11 @@ public class InvasionPatrol
           else if(temp >= 0)
           {   
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");
-           // Test - Remove After
            Reward(oPC,AnvilPC,rewardCount);
           }
           else
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");  
-            // Test - Remove After
            Reward(oPC,AnvilPC,rewardCount);
           }
           
@@ -144,6 +142,8 @@ public class InvasionPatrol
         float xPosition = ranLocPositon.X;
         float yPosition = ranLocPositon.Y; 
         float zPosition = ranLocPositon.Z;  
+
+        NWScript.SendMessageToPC(oPC,"*You find something of interest on your patrol*");
 
         while(NWScript.GetIsObjectValid(waypoint) == 1)
         {
@@ -179,7 +179,6 @@ public class InvasionPatrol
         int XP = NWScript.GetXP(oPC);
         Random random = new Random(); 
         int Level = NWScript.GetLevelByPosition(1,oPC) + NWScript.GetLevelByPosition(2,oPC) + NWScript.GetLevelByPosition(3,oPC);
-        Anvil.API.NwItem.Create("js_farm_appl", (NwGameObject?)AnvilPC); 
 
         if(Level < 30)
         {
@@ -198,13 +197,13 @@ public class InvasionPatrol
          {
           switch(random.Next(1,7))
           { 
-            case 1: NWScript.CreateItemOnObject("js_farm_appl",oPC); break;
-            case 2: NWScript.CreateItemOnObject("js_farm_pota",oPC); break;
-            case 3: NWScript.CreateItemOnObject("js_farm_oats",oPC); break;
-            case 4: NWScript.CreateItemOnObject("js_farm_toba",oPC); break;
-            case 5: NWScript.CreateItemOnObject("js_hun_sbone",oPC); break;
-            case 6: NWScript.CreateItemOnObject("js_hun_lbone",oPC); break;
-            case 7: NWScript.CreateItemOnObject("js_hun_mbone",oPC); break;
+            case 1: Anvil.API.NwItem.Create("js_farm_appl", (NwGameObject?)AnvilPC); break;
+            case 2: Anvil.API.NwItem.Create("js_farm_pota", (NwGameObject?)AnvilPC); break;
+            case 3: Anvil.API.NwItem.Create("js_farm_oats", (NwGameObject?)AnvilPC); break;
+            case 4: Anvil.API.NwItem.Create("js_farm_toba", (NwGameObject?)AnvilPC); break;
+            case 5: Anvil.API.NwItem.Create("js_hun_sbone", (NwGameObject?)AnvilPC); break;
+            case 6: Anvil.API.NwItem.Create("js_hun_lbone", (NwGameObject?)AnvilPC); break;
+            case 7: Anvil.API.NwItem.Create("js_hun_mbone", (NwGameObject?)AnvilPC); break;
           }
          }
          else
@@ -212,8 +211,8 @@ public class InvasionPatrol
           
           switch(random.Next(1,2))
           {
-            case 1: NWScript.CreateItemOnObject("js_sold_fang",oPC); break;
-            case 2: NWScript.CreateItemOnObject("js_sold_claw",oPC); break;
+            case 1: Anvil.API.NwItem.Create("js_sold_fang", (NwGameObject?)AnvilPC); break;
+            case 2: Anvil.API.NwItem.Create("js_sold_claw", (NwGameObject?)AnvilPC); break;
           }
          }
         }
