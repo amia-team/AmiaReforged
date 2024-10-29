@@ -184,10 +184,9 @@ public class InvasionPatrol
         int i;
         for(i=0;i<rewardCount;i++)
         {
-            NWScript.SendMessageToPC(oPC,"For Fired");
-         if(random.Next(1,10) <= 10)
-         {;
-            NWScript.SendMessageToPC(oPC,"Reward1");
+
+         if(random.Next(1,10) <= 3)
+         {
           switch(random.Next(1,7))
           {
             case 1: NWScript.CreateItemOnObject("js_farm_appl",oPC,1,""); break;
@@ -201,7 +200,6 @@ public class InvasionPatrol
          }
          else
          {
-            NWScript.SendMessageToPC(oPC,"Reward2");
           switch(random.Next(1,2))
           {
             case 1: NWScript.CreateItemOnObject("js_sold_fang",oPC,1,""); break;
