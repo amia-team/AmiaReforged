@@ -103,18 +103,21 @@ public class InvasionPatrol
           {  
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " has a few enemies sneaking around!");
            Reward(oPC,rewardCount);
+           NWScript.CreateItemOnObject("js_sold_fang",oPC);
           }
           else if(temp >= 0)
           {   
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");
            // Test - Remove After
            Reward(oPC,rewardCount);
+           NWScript.CreateItemOnObject("js_sold_fang",oPC);
           }
           else
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");  
             // Test - Remove After
            Reward(oPC,rewardCount);
+           NWScript.CreateItemOnObject("js_sold_fang",oPC);
           }
           
         }
@@ -169,6 +172,7 @@ public class InvasionPatrol
 
         NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE,spawn,NWScript.Location(Area,NWScript.Vector(xPosition + 0.5f, yPosition + 0.5f,zPosition),0.0f));
         }
+        
     }
 
     public void Reward(uint oPC, int rewardCount)
