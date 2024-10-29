@@ -10,6 +10,7 @@ using AmiaReforged.Core.Models;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client.Payloads;
 using Microsoft.VisualStudio.TestPlatform.TestExecutor;
 using NWN.Core.NWNX;
+using System.Runtime.InteropServices;
 
 namespace AmiaReforged.System.Services;
 
@@ -29,6 +30,7 @@ public class InvasionPatrol
     public async void InvasionPatrolCheck(CallInfo info)
     {
       uint oPC = NWScript.OBJECT_SELF;
+      NwObject AnvilPC = info.ObjectSelf;
       Location Location = NWScript.GetLocation(oPC);
       uint Area = NWScript.GetAreaFromLocation(Location);
       string AreaResRef = NWScript.GetResRef(Area);
@@ -79,49 +81,42 @@ public class InvasionPatrol
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is crawling with enemies and escalation is immediate!"); 
            SpawnEnemies(oPC,4);
-           Reward(oPC,rewardCount);
+           Reward(oPC,AnvilPC,rewardCount);
           }
           else if(temp > 60)
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is crawling with enemies and will escalate any day now!");
            SpawnEnemies(oPC,3);
-           Reward(oPC,rewardCount);
+           Reward(oPC,AnvilPC,rewardCount);
           }
           else if(temp > 40)
           {  
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is crawling with enemies and will escalate if left alone too long!");
            SpawnEnemies(oPC,2);
-           Reward(oPC,rewardCount);
+           Reward(oPC,AnvilPC,rewardCount);
           }
           else if(temp > 20)
           {    
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " has many enemies sneaking around!");  
            SpawnEnemies(oPC,1);
-           Reward(oPC,rewardCount);
+           Reward(oPC,AnvilPC,rewardCount);
           }
           else if(temp > 10)
           {  
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " has a few enemies sneaking around!");
-           Reward(oPC,rewardCount);
-           NWScript.CreateItemOnObject("js_sold_fang",oPC);
-           NWScript.CreateObject(2,"js_sold_fang",NWScript.GetLocation(oPC));
+           Reward(oPC,AnvilPC,rewardCount);
           }
           else if(temp >= 0)
           {   
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");
            // Test - Remove After
-           Reward(oPC,rewardCount);
-           NWScript.CreateItemOnObject("js_sold_fang",oPC);
-           NWScript.CreateObject(2,"js_sold_fang",NWScript.GetLocation(oPC));
+           Reward(oPC,AnvilPC,rewardCount);
           }
           else
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");  
             // Test - Remove After
-           Reward(oPC,rewardCount);
-           NWScript.CreateItemOnObject("js_sold_fang",oPC);
-           
-           NWScript.CreateObject(2,"js_sold_fang",NWScript.GetLocation(oPC));
+           Reward(oPC,AnvilPC,rewardCount);
           }
           
         }
@@ -179,11 +174,13 @@ public class InvasionPatrol
         
     }
 
-    public void Reward(uint oPC, int rewardCount)
+    public void Reward(uint oPC,NwObject AnvilPC, int rewardCount)
     {
         int XP = NWScript.GetXP(oPC);
         Random random = new Random(); 
         int Level = NWScript.GetLevelByPosition(1,oPC) + NWScript.GetLevelByPosition(2,oPC) + NWScript.GetLevelByPosition(3,oPC);
+        Anvil.API.NwItem.Create("js_farm_appl", (NwGameObject?)AnvilPC); 
+
         if(Level < 30)
         {
           NWScript.SetXP(oPC, XP+25);
@@ -212,6 +209,7 @@ public class InvasionPatrol
          }
          else
          {
+          
           switch(random.Next(1,2))
           {
             case 1: NWScript.CreateItemOnObject("js_sold_fang",oPC); break;
