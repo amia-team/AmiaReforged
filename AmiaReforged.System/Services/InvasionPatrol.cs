@@ -107,13 +107,13 @@ public class InvasionPatrol
           else if(temp >= 0)
           {   
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");
-           // Test
+           // Test - Remove After
            Reward(oPC,rewardCount);
           }
           else
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");  
-            // Test
+            // Test - Remove After
            Reward(oPC,rewardCount);
           }
           
@@ -193,24 +193,23 @@ public class InvasionPatrol
          {
           switch(random.Next(1,7))
           { 
-            case 1: NWScript.SetLocalString(oPC,"createitem","js_farm_appl"); break;
-            case 2: NWScript.SetLocalString(oPC,"createitem","js_farm_pota"); break;
-            case 3: NWScript.SetLocalString(oPC,"createitem","js_farm_oats"); break;
-            case 4: NWScript.SetLocalString(oPC,"createitem","js_farm_toba"); break;
-            case 5: NWScript.SetLocalString(oPC,"createitem","js_hun_sbone"); break;
-            case 6: NWScript.SetLocalString(oPC,"createitem","js_hun_lbone"); break;
-            case 7: NWScript.SetLocalString(oPC,"createitem","js_hun_mbone"); break;
+            case 1: NWScript.CreateItemOnObject("js_farm_appl",oPC); break;
+            case 2: NWScript.CreateItemOnObject("js_farm_pota",oPC); break;
+            case 3: NWScript.CreateItemOnObject("js_farm_oats",oPC); break;
+            case 4: NWScript.CreateItemOnObject("js_farm_toba",oPC); break;
+            case 5: NWScript.CreateItemOnObject("js_hun_sbone",oPC); break;
+            case 6: NWScript.CreateItemOnObject("js_hun_lbone",oPC); break;
+            case 7: NWScript.CreateItemOnObject("js_hun_mbone",oPC); break;
           }
          }
          else
          {
           switch(random.Next(1,2))
           {
-            case 1: NWScript.SetLocalString(oPC,"createitem","js_sold_fang"); break;
-            case 2: NWScript.SetLocalString(oPC,"createitem","js_sold_claw"); break;
+            case 1: NWScript.CreateItemOnObject("js_sold_fang",oPC); break;
+            case 2: NWScript.CreateItemOnObject("js_sold_claw",oPC); break;
           }
          }
-         NWScript.ExecuteScript("amiareforge_citm",oPC);
         }
 
     }
