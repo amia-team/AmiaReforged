@@ -41,6 +41,7 @@ public class InvasionPatrol
       List<InvasionRecord> invasions = await _invasionService.GetAllInvasionRecords();
       InvasionRecord invasionRecordTemp = invasions.Find(x => x.AreaZone == AreaResRef); 
       int PatrolValue = 5; 
+      int rewardCount = 1;
       uint JobJournal = NWScript.GetItemPossessedBy(oPC,"jobjournal");
       if(NWScript.GetIsObjectValid(JobJournal)==1)
       {
@@ -49,11 +50,13 @@ public class InvasionPatrol
         if(PrimaryJob == "Soldier")
         {
           PatrolValue += 10;
+          rewardCount = 3;
           NWScript.SendMessageToPC(oPC,"*Your soldier job makes you exceptional at patrols*");
         }
         else if(SecondaryJob == "Soldier")
         {
           PatrolValue += 5;
+          rewardCount = 1; 
           NWScript.SendMessageToPC(oPC,"*Your soldier job makes you good at patrols*"); 
         }
       }
@@ -71,35 +74,43 @@ public class InvasionPatrol
           }
           invasionRecord.InvasionPercent = temp; 
           await _invasionService.UpdateInvasionArea(invasionRecord);
-          Reward(oPC);
 
           if(temp > 80)
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is crawling with enemies and escalation is immediate!"); 
            SpawnEnemies(oPC,4);
+           Reward(oPC,rewardCount);
           }
           else if(temp > 60)
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is crawling with enemies and will escalate any day now!");
            SpawnEnemies(oPC,3);
+           Reward(oPC,rewardCount);
           }
           else if(temp > 40)
           {  
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is crawling with enemies and will escalate if left alone too long!");
            SpawnEnemies(oPC,2);
+           Reward(oPC,rewardCount);
           }
           else if(temp > 20)
           {    
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " has many enemies sneaking around!");  
            SpawnEnemies(oPC,1);
+           Reward(oPC,rewardCount);
           }
           else if(temp > 10)
           {  
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " has a few enemies sneaking around!");
+           Reward(oPC,rewardCount);
           }
-          else if(temp == 0)
+          else if(temp >= 0)
           {   
-           NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is rather peaceful!");
+           NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");
+          }
+          else
+          {
+           NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");   
           }
           
         }
@@ -156,9 +167,10 @@ public class InvasionPatrol
         }
     }
 
-    public void Reward(uint oPC)
+    public void Reward(uint oPC, int rewardCount)
     {
         int XP = NWScript.GetXP(oPC);
+        Random random = new Random(); 
         int Level = NWScript.GetLevelByPosition(1,oPC) + NWScript.GetLevelByPosition(2,oPC) + NWScript.GetLevelByPosition(3,oPC);
         if(Level < 30)
         {
@@ -168,5 +180,32 @@ public class InvasionPatrol
         {
           NWScript.SetXP(oPC, XP+1);
         }
+
+        int i;
+        for(i=0;i<rewardCount;i++)
+        {
+         if(random.Next(1,10) <= 3)
+         {
+          switch(random.Next(1,7))
+          {
+            case 1: NWScript.CreateItemOnObject("js_farm_appl",oPC); break;
+            case 2: NWScript.CreateItemOnObject("js_farm_pota",oPC); break;
+            case 3: NWScript.CreateItemOnObject("js_farm_oats",oPC); break;
+            case 4: NWScript.CreateItemOnObject("js_farm_toba",oPC); break;
+            case 5: NWScript.CreateItemOnObject("js_hun_sbone",oPC); break;
+            case 6: NWScript.CreateItemOnObject("js_hun_lbone",oPC); break;
+            case 7: NWScript.CreateItemOnObject("js_hun_mbone",oPC); break;
+          }
+         }
+         else
+         {
+          switch(random.Next(1,2))
+          {
+            case 1: NWScript.CreateItemOnObject("js_sold_fang",oPC); break;
+            case 2: NWScript.CreateItemOnObject("js_sold_claw",oPC); break;
+          }
+         }
+        }
+
     }
 }
