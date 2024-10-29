@@ -181,6 +181,8 @@ public class InvasionPatrol
           NWScript.SetXP(oPC, XP+1);
         }
 
+        NWScript.CreateItemOnObject("js_farm_appl",oPC);
+
         int i;
         for(i=0;i<rewardCount;i++)
         {
@@ -189,21 +191,21 @@ public class InvasionPatrol
          {
           switch(random.Next(1,7))
           {
-            case 1: NWScript.CreateItemOnObject("js_farm_appl",oPC,1,""); break;
-            case 2: NWScript.CreateItemOnObject("js_farm_pota",oPC,1,""); break;
-            case 3: NWScript.CreateItemOnObject("js_farm_oats",oPC,1,""); break;
-            case 4: NWScript.CreateItemOnObject("js_farm_toba",oPC,1,""); break;
-            case 5: NWScript.CreateItemOnObject("js_hun_sbone",oPC,1,""); break;
-            case 6: NWScript.CreateItemOnObject("js_hun_lbone",oPC,1,""); break;
-            case 7: NWScript.CreateItemOnObject("js_hun_mbone",oPC,1,""); break;
+            case 1: NWScript.CreateItemOnObject("js_farm_appl",oPC); break;
+            case 2: NWScript.CreateItemOnObject("js_farm_pota",oPC); break;
+            case 3: NWScript.CreateItemOnObject("js_farm_oats",oPC); break;
+            case 4: NWScript.CreateItemOnObject("js_farm_toba",oPC); break;
+            case 5: NWScript.CreateItemOnObject("js_hun_sbone",oPC); break;
+            case 6: NWScript.CreateItemOnObject("js_hun_lbone",oPC); break;
+            case 7: NWScript.CreateItemOnObject("js_hun_mbone",oPC); break;
           }
          }
          else
          {
           switch(random.Next(1,2))
           {
-            case 1: NWScript.CreateItemOnObject("js_sold_fang",oPC,1,""); break;
-            case 2: NWScript.CreateItemOnObject("js_sold_claw",oPC,1,""); break;
+            case 1: NWScript.CreateItemOnObject("js_sold_fang",oPC); break;
+            case 2: NWScript.CreateItemOnObject("js_sold_claw",oPC); break;
           }
          }
         }
