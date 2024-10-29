@@ -184,8 +184,11 @@ public class InvasionPatrol
         int i;
         for(i=0;i<rewardCount;i++)
         {
+            NWScript.SendMessageToPC(oPC,"For Fired");
          if(random.Next(1,10) <= 3)
          {
+          
+            NWScript.SendMessageToPC(oPC,"Reward1");
           switch(random.Next(1,7))
           {
             case 1: NWScript.CreateItemOnObject("js_farm_appl",oPC); break;
@@ -195,14 +198,17 @@ public class InvasionPatrol
             case 5: NWScript.CreateItemOnObject("js_hun_sbone",oPC); break;
             case 6: NWScript.CreateItemOnObject("js_hun_lbone",oPC); break;
             case 7: NWScript.CreateItemOnObject("js_hun_mbone",oPC); break;
+            NWScript.SendMessageToPC(oPC,"Reward Fired1");
           }
          }
          else
          {
+            NWScript.SendMessageToPC(oPC,"Reward2");
           switch(random.Next(1,2))
           {
             case 1: NWScript.CreateItemOnObject("js_sold_fang",oPC); break;
             case 2: NWScript.CreateItemOnObject("js_sold_claw",oPC); break;
+            NWScript.SendMessageToPC(oPC,"Reward Fired2");
           }
          }
         }
