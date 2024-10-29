@@ -108,13 +108,13 @@ public class InvasionPatrol
           {   
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");
            // Test
-           SpawnEnemies(oPC,1);
+           Reward(oPC,rewardCount);
           }
           else
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");  
             // Test
-           SpawnEnemies(oPC,1);
+           Reward(oPC,rewardCount);
           }
           
         }
