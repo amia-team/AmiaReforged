@@ -185,9 +185,8 @@ public class InvasionPatrol
         for(i=0;i<rewardCount;i++)
         {
             NWScript.SendMessageToPC(oPC,"For Fired");
-         if(random.Next(1,10) <= 3)
-         {
-          
+         if(random.Next(1,10) <= 10)
+         {;
             NWScript.SendMessageToPC(oPC,"Reward1");
           switch(random.Next(1,7))
           {
