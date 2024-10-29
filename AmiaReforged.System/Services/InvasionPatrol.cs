@@ -109,12 +109,10 @@ public class InvasionPatrol
           else if(temp >= 0)
           {   
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");
-           Reward(oPC,AnvilPC,rewardCount);
           }
           else
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");  
-           Reward(oPC,AnvilPC,rewardCount);
           }
           
         }
@@ -142,8 +140,6 @@ public class InvasionPatrol
         float xPosition = ranLocPositon.X;
         float yPosition = ranLocPositon.Y; 
         float zPosition = ranLocPositon.Z;  
-
-        NWScript.SendMessageToPC(oPC,"*You find something of interest on your patrol*");
 
         while(NWScript.GetIsObjectValid(waypoint) == 1)
         {
@@ -179,6 +175,8 @@ public class InvasionPatrol
         int XP = NWScript.GetXP(oPC);
         Random random = new Random(); 
         int Level = NWScript.GetLevelByPosition(1,oPC) + NWScript.GetLevelByPosition(2,oPC) + NWScript.GetLevelByPosition(3,oPC);
+        
+        NWScript.SendMessageToPC(oPC,"*You find something of interest on your patrol*");
 
         if(Level < 30)
         {
