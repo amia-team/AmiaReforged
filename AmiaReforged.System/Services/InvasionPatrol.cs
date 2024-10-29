@@ -107,10 +107,14 @@ public class InvasionPatrol
           else if(temp >= 0)
           {   
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");
+           // Test
+           SpawnEnemies(oPC,1);
           }
           else
           {
-           NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");   
+           NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");  
+            // Test
+           SpawnEnemies(oPC,1);
           }
           
         }
