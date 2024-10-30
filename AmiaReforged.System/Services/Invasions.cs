@@ -148,7 +148,7 @@ public class Invasions
         int ran = random.Next(0,size);
         if(size==1)
         {
-            ran=0;
+            ran=1;
         }
         uint waypoint = _waypointMasterList[ran];
         _waypointMasterList.Remove(waypoint); 
@@ -162,7 +162,7 @@ public class Invasions
         int ran = random.Next(0,size);
         if(size==1)
         {
-            ran=0;
+            ran=1;
         }
         uint waypoint = _waypointOverflowMasterList[ran];
         _waypointOverflowMasterList.Remove(waypoint); 
