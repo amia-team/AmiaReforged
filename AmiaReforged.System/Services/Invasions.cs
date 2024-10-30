@@ -145,7 +145,7 @@ public class Invasions
     {  
         int size = _waypointMasterList.Count(); 
         Random random = new Random();
-        int ran = random.Next(0,size-1);
+        int ran = random.Next(0,size);
         if(size==1)
         {
             ran=0;
@@ -159,7 +159,7 @@ public class Invasions
     {  
         int size = _waypointOverflowMasterList.Count(); 
         Random random = new Random();
-        int ran = random.Next(0,size-1);
+        int ran = random.Next(0,size);
         if(size==1)
         {
             ran=0;
