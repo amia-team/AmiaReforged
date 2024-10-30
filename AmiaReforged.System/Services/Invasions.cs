@@ -41,7 +41,7 @@ public class Invasions
         Random random = new Random();
 
         // Overflow Invasions
-        if(random.Next(1,12) <= 12)
+        if(random.Next(12) <= 2)
         {
          uint overflowWayPoint = NWScript.GetWaypointByTag(overflow);
          uint areaOverflow = NWScript.GetArea(overflowWayPoint);   
@@ -159,7 +159,6 @@ public class Invasions
         uint waypoint = _waypointOverflowMasterList[ran];
         _waypointOverflowMasterList.Remove(waypoint); 
         IntPtr location = NWScript.GetLocation(waypoint);
-        NWScript.SendMessageToAllDMs("Overflow Grab Launched: " + ran.ToString());
         return location; 
     }
     
@@ -174,7 +173,6 @@ public class Invasions
         
         while (countMobs < runMax)
         {
-            NWScript.SendMessageToAllDMs("Invasion Overflow ran ");
             IntPtr randomLocation = GrabSpawnLocationInOverflowArea();
             Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
             float xPosition = ranLocPositon.X;
@@ -331,7 +329,6 @@ public class Invasions
 
         while (countLieutenant < totalLieutentants)
         {
-            NWScript.SendMessageToAllDMs("Lie: " + countLieutenant.ToString());
             IntPtr randomLocation = GrabSpawnLocationInArea();
             Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
             float xPosition = ranLocPositon.X;
