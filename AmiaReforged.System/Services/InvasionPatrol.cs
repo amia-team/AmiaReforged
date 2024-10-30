@@ -74,6 +74,7 @@ public class InvasionPatrol
           {
             temp = 0;
           }
+          
           invasionRecord.InvasionPercent = temp; 
           await _invasionService.UpdateInvasionArea(invasionRecord);
 
