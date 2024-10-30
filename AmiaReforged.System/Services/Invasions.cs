@@ -145,7 +145,7 @@ public class Invasions
     {  
         int size = _waypointMasterList.Count(); 
         Random random = new Random();
-        int ran = random.Next(0,size-1);
+        int ran = random.Next(1,size);
         uint waypoint = _waypointMasterList[ran];
         _waypointMasterList.Remove(waypoint); 
         IntPtr location = NWScript.GetLocation(waypoint);
@@ -155,7 +155,7 @@ public class Invasions
     {  
         int size = _waypointOverflowMasterList.Count(); 
         Random random = new Random();
-        int ran = random.Next(0,size-1);
+        int ran = random.Next(1,size);
         uint waypoint = _waypointOverflowMasterList[ran];
         _waypointOverflowMasterList.Remove(waypoint); 
         IntPtr location = NWScript.GetLocation(waypoint);
