@@ -36,12 +36,12 @@ public class Invasions
                 creaturetype5);
         SpawnLieutenants(area, totalLieutentants, lieutentant);
         SpawnBoss(area, boss);
-        MassMessage(message);
+        MassMessage(message,invasionName,NWScript.GetName(area));
 
         Random random = new Random();
 
         // Overflow Invasions
-        if(random.Next(1,12) < 3)
+        if(random.Next(1,12) <= 12)
         {
          uint overflowWayPoint = NWScript.GetWaypointByTag(overflow);
          uint areaOverflow = NWScript.GetArea(overflowWayPoint);   
@@ -50,7 +50,7 @@ public class Invasions
          GenerateSpawnWaypointListOverflow(overflowWayPoint); 
          InvasionOverflow(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5, lieutentant);
-         MassMessage(messageOverflow);          
+         MassMessage(messageOverflow,invasionName,NWScript.GetName(areaOverflow));          
         }    
 
     }
@@ -363,7 +363,7 @@ public class Invasions
         }
     }
 
-    private static void MassMessage(string message)
+    private static void MassMessage(string message, string CreatureName, string AreaName)
     {
         uint objectCreature = NWScript.GetFirstPC();
 
@@ -376,6 +376,12 @@ public class Invasions
             NWScript.SendMessageToPC(objectCreature, "-----");
             objectCreature = NWScript.GetNextPC();
         }
+
+        NWScript.SetLocalString(NWScript.GetModule(), "announcerMessage",
+        "``` All adventurers begin to hear murmurs and rumors from locals about a terrifying attack happening on the isles. You quickly receive a message from the Guilds to confirm this fact. The message is simple: WARNING! " +
+        CreatureName + " are rampaging in " + AreaName +
+        "! We recommend an appropriately skilled group of adventurers respond and common folk stay clear! ```");
+        NWScript.ExecuteScript("webhook_announce");
 
         
     }
