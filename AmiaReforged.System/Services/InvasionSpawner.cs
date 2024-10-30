@@ -7,6 +7,7 @@ using AmiaReforged.System;
 using AmiaReforged.Core.Services;
 using AmiaReforged.Core.Models;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client.Payloads;
+using Microsoft.VisualStudio.TestPlatform.TestExecutor;
 
 namespace AmiaReforged.System.Services;
 
@@ -137,13 +138,13 @@ public class InvasionSpawner
         string AreaName = NWScript.GetName(WaypointArea);
         string InvasionType = NWScript.GetLocalString(Waypoint, "invasionType");
         string CreatureName = NWScript.GetLocalString(Waypoint,"invasionName");
+        string overflow = NWScript.GetLocalString(Waypoint,"overflow");
 
-        
         _invasions.InvasionGeneric(Waypoint,NWScript.GetLocalString(Waypoint,"creaturetype1"),
         NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
         NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
         NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
-        CreatureName);      
+        CreatureName,overflow);      
         
         
         NWScript.SetLocalString(NWScript.GetModule(), "announcerMessage",
@@ -151,8 +152,7 @@ public class InvasionSpawner
         CreatureName + " are rampaging in " + AreaName +
         "! We recommend an appropriately skilled group of adventurers respond and common folk stay clear! ```");
         NWScript.ExecuteScript("webhook_announce");
-
-
     }
+
 
 }

@@ -15,10 +15,11 @@ public class Invasions
 {
 
     private List<uint> _waypointMasterList = new(); 
+    private List<uint> _waypointOverflowMasterList = new(); 
 
     public void InvasionGeneric(uint waypoint, string creaturetype1, string creaturetype2,
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant, string boss,
-        string invasionName)
+        string invasionName, string overflow)
     {
         
         GenerateSpawnWaypointList(waypoint); 
@@ -31,15 +32,26 @@ public class Invasions
 
         NWScript.SendMessageToAllDMs("Total Count: " + _waypointMasterList.Count().ToString() + " | TotalMobClusters: " + totalMobClusters.ToString() + " | TotalLieutents: " + totalLieutentants.ToString());
 
-        //await Task.Delay(TimeSpan.FromSeconds(15));
         SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5);
-        //await Task.Delay(TimeSpan.FromSeconds(15));
         SpawnLieutenants(area, totalLieutentants, lieutentant);
-        //await Task.Delay(TimeSpan.FromSeconds(15));
         SpawnBoss(area, boss);
-        //await Task.Delay(TimeSpan.FromSeconds(15));
         MassMessage(message);
+
+        Random random = new Random();
+
+        // Overflow Invasions
+        if(random.Next(1,12) < 3)
+        {
+         uint overflowWayPoint = NWScript.GetWaypointByTag(overflow);
+         uint areaOverflow = NWScript.GetArea(overflowWayPoint);   
+         string messageOverflow = "A surprise raid from the " + invasionName + " has struck into " + NWScript.GetName(areaOverflow) +
+                         ". They are spreading and must be stopped!";
+         GenerateSpawnWaypointListOverflow(overflowWayPoint); 
+         InvasionOverflow(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+                creaturetype5, lieutentant);
+         MassMessage(messageOverflow);          
+        }    
 
     }
 
@@ -56,9 +68,10 @@ public class Invasions
         string boss = "invasionbeastbs";
         string message = "News quickly spreads of an amassing army of Beastmen in " + areaName +
                          ". They must be stopped before it is too late!";
+        string overflow = NWScript.GetLocalString(waypoint,"overflow");
 
         InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-            creaturetype5, lieutentant, boss, message);
+            creaturetype5, lieutentant, boss, message, overflow);
     }
     public void InvasionTrolls(uint waypoint)
     {
@@ -73,9 +86,10 @@ public class Invasions
         string boss = "invasiontrollbs";
         string message = "News quickly spreads of an amassing army of Trolls in " + areaName +
                          ". They must be stopped before it is too late!";
+        string overflow = NWScript.GetLocalString(waypoint,"overflow");
 
         InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-            creaturetype5, lieutentant, boss, message);
+            creaturetype5, lieutentant, boss, message, overflow);
     }
 
 
@@ -92,9 +106,10 @@ public class Invasions
         string boss = "chosenofkilma002";
         string message = "News quickly spreads of an amassing army of Orcs in " + areaName +
                          ". They must be stopped before it is too late!";
+        string overflow = NWScript.GetLocalString(waypoint,"overflow");
 
         InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-            creaturetype5, lieutentant, boss, message);
+            creaturetype5, lieutentant, boss, message, overflow);
     }
 
     public void GenerateSpawnWaypointList(uint waypoint)
@@ -111,6 +126,20 @@ public class Invasions
         }
         _waypointMasterList = waypointMasterList; 
     }
+    public void GenerateSpawnWaypointListOverflow(uint waypoint)
+    {
+        List<uint> waypointOverflowMasterList = new List<uint>();
+        string waypointTag = NWScript.GetTag(waypoint);
+        int count = 1; 
+        uint spawnWaypoint = NWScript.GetWaypointByTag(waypointTag+"s"+count.ToString());
+        while(NWScript.GetIsObjectValid(spawnWaypoint)==1)
+        {
+            waypointOverflowMasterList.Add(spawnWaypoint);
+            count++; 
+            spawnWaypoint = NWScript.GetWaypointByTag(waypointTag+"s"+count.ToString()); 
+        }
+        _waypointOverflowMasterList = waypointOverflowMasterList; 
+    }
 
     public IntPtr GrabSpawnLocationInArea()
     {  
@@ -121,6 +150,76 @@ public class Invasions
         _waypointMasterList.Remove(waypoint); 
         IntPtr location = NWScript.GetLocation(waypoint);
         return location; 
+    }
+    public IntPtr GrabSpawnLocationInOverflowArea()
+    {  
+        int size = _waypointOverflowMasterList.Count(); 
+        Random random = new Random();
+        int ran = random.Next(0,size);
+        uint waypoint = _waypointOverflowMasterList[ran];
+        _waypointOverflowMasterList.Remove(waypoint); 
+        IntPtr location = NWScript.GetLocation(waypoint);
+        return location; 
+    }
+    
+    public void InvasionOverflow(uint area, string creaturetype1, string creaturetype2,
+        string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant)
+    {
+
+      int countMobs = 0;
+        // const float zPosition = 0.0f;
+        const float facing = 0.0f;
+        
+        while (countMobs < _waypointOverflowMasterList.Count())
+        {
+            IntPtr randomLocation = GrabSpawnLocationInOverflowArea();
+            Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
+            float xPosition = ranLocPositon.X;
+            float yPosition = ranLocPositon.Y; 
+            float zPosition = ranLocPositon.Z;  
+
+            uint creature1 = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1, randomLocation);
+
+            if (NWScript.GetIsObjectValid(creature1) != 1) continue;
+
+            Vector3 randomPosN = NWScript.Vector(xPosition, yPosition + 1.0f,zPosition);
+            Vector3 randomPosS = NWScript.Vector(xPosition, yPosition - 1.0f,zPosition);
+            Vector3 randomPosE = NWScript.Vector(xPosition + 1.0f, yPosition,zPosition);
+            Vector3 randomPosW = NWScript.Vector(xPosition - 1.0f, yPosition,zPosition);
+            Vector3 randomPosNe = NWScript.Vector(xPosition + 1.0f, yPosition + 1.0f,zPosition);
+            Vector3 randomPosNw = NWScript.Vector(xPosition - 1.0f, yPosition + 1.0f,zPosition);
+            Vector3 randomPosSe = NWScript.Vector(xPosition + 1.0f, yPosition - 1.0f,zPosition);
+            Vector3 randomPosSw = NWScript.Vector(xPosition - 1.0f, yPosition - 1.0f,zPosition);
+
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1,
+                NWScript.Location(area, randomPosN, facing));
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype2,
+                NWScript.Location(area, randomPosS, facing));
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype3,
+                NWScript.Location(area, randomPosE, facing));
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype4,
+                NWScript.Location(area, randomPosW, facing));
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype5,
+                NWScript.Location(area, randomPosNe, facing));
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1,
+                NWScript.Location(area, randomPosNw, facing));
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, lieutentant,
+                NWScript.Location(area, randomPosSe, facing));
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype5,
+                NWScript.Location(area, randomPosSw, facing));
+            countMobs++;
+
+            // PLC Spawning
+            Vector3 randomPLCPosNw = NWScript.Vector(xPosition - 1.5f, yPosition + 1.5f,zPosition);
+            Vector3 randomPLCPosSe = NWScript.Vector(xPosition + 1.5f, yPosition - 1.5f,zPosition);
+            Vector3 randomPLCPosSw = NWScript.Vector(xPosition - 1.5f, yPosition - 1.5f,zPosition);
+
+            CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
+            CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
+            CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
+        }
+
+
     }
 
     private static uint CreatePlc(IntPtr objectLocation)
@@ -197,21 +296,21 @@ public class Invasions
             Vector3 randomPosSe = NWScript.Vector(xPosition + 1.0f, yPosition - 1.0f,zPosition);
             Vector3 randomPosSw = NWScript.Vector(xPosition - 1.0f, yPosition - 1.0f,zPosition);
 
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype2,
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1,
                 NWScript.Location(area, randomPosN, facing));
             NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype2,
                 NWScript.Location(area, randomPosS, facing));
             NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype3,
                 NWScript.Location(area, randomPosE, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype3,
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype4,
                 NWScript.Location(area, randomPosW, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype4,
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype5,
                 NWScript.Location(area, randomPosNe, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype4,
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype2,
                 NWScript.Location(area, randomPosNw, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype5,
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype3,
                 NWScript.Location(area, randomPosSe, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype5,
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype4,
                 NWScript.Location(area, randomPosSw, facing));
             countMobs++;
 
@@ -220,13 +319,10 @@ public class Invasions
             Vector3 randomPLCPosSe = NWScript.Vector(xPosition + 1.5f, yPosition - 1.5f,zPosition);
             Vector3 randomPLCPosSw = NWScript.Vector(xPosition - 1.5f, yPosition - 1.5f,zPosition);
 
-            CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
-            
+            CreatePlc(NWScript.Location(area, randomPLCPosNw, facing)); 
             CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
-            
             CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
-        }
-        
+        } 
     }
 
     private void SpawnLieutenants(uint area, int totalLieutentants, string lieutentant)
