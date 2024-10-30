@@ -159,6 +159,7 @@ public class Invasions
         uint waypoint = _waypointOverflowMasterList[ran];
         _waypointOverflowMasterList.Remove(waypoint); 
         IntPtr location = NWScript.GetLocation(waypoint);
+        NWScript.SendMessageToAllDMs("Overflow Grab Launched: " + ran.ToString());
         return location; 
     }
     
