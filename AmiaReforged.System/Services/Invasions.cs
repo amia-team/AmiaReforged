@@ -178,9 +178,7 @@ public class Invasions
             float yPosition = ranLocPositon.Y; 
             float zPosition = ranLocPositon.Z;  
 
-            uint creature1 = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1, randomLocation);
-
-            if (NWScript.GetIsObjectValid(creature1) != 1) continue;
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1, randomLocation);
 
             Vector3 randomPosN = NWScript.Vector(xPosition, yPosition + 1.0f,zPosition);
             Vector3 randomPosS = NWScript.Vector(xPosition, yPosition - 1.0f,zPosition);
@@ -283,9 +281,7 @@ public class Invasions
             float yPosition = ranLocPositon.Y; 
             float zPosition = ranLocPositon.Z;  
 
-            uint creature1 = NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1, randomLocation);
-
-            if (NWScript.GetIsObjectValid(creature1) != 1) continue;
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1, randomLocation);
 
             Vector3 randomPosN = NWScript.Vector(xPosition, yPosition + 1.0f,zPosition);
             Vector3 randomPosS = NWScript.Vector(xPosition, yPosition - 1.0f,zPosition);
