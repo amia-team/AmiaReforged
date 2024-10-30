@@ -131,27 +131,17 @@ public class InvasionSpawner
       }
     }
 
-
     public void SummonInvasion(uint Waypoint)
     {
         uint WaypointArea = NWScript.GetArea(Waypoint);
         string AreaName = NWScript.GetName(WaypointArea);
-        string InvasionType = NWScript.GetLocalString(Waypoint, "invasionType");
-        string CreatureName = NWScript.GetLocalString(Waypoint,"invasionName");
-        string overflow = NWScript.GetLocalString(Waypoint,"overflow");
+        string CreatureName = NWScript.GetLocalString(Waypoint,"invasionname");
 
         _invasions.InvasionGeneric(Waypoint,NWScript.GetLocalString(Waypoint,"creaturetype1"),
         NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
         NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
         NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
-        CreatureName,overflow);      
-        
-        
-        NWScript.SetLocalString(NWScript.GetModule(), "announcerMessage",
-        "``` All adventurers begin to hear murmurs and rumors from locals about a terrifying attack happening on the isles. You quickly receive a message from the Guilds to confirm this fact. The message is simple: WARNING! " +
-        CreatureName + " are rampaging in " + AreaName +
-        "! We recommend an appropriately skilled group of adventurers respond and common folk stay clear! ```");
-        NWScript.ExecuteScript("webhook_announce");
+        CreatureName,NWScript.GetLocalString(Waypoint,"overflow"));         
     }
 
 

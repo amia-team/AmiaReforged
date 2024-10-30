@@ -40,7 +40,7 @@ public class InvasionForceLaunch
         invasionRecord = invasionRecordTemp;
         Waypoint = GetInvasionWaypoint(Area);
         string AreaName = NWScript.GetName(Area);
-        string CreatureName = NWScript.GetLocalString(Waypoint,"invasionName");
+        string CreatureName = NWScript.GetLocalString(Waypoint,"invasionname");
         string overflow = NWScript.GetLocalString(Waypoint,"overflow");
 
         _invasions.InvasionGeneric(Waypoint,NWScript.GetLocalString(Waypoint,"creaturetype1"),
@@ -54,7 +54,10 @@ public class InvasionForceLaunch
         invasionRecord.RealmChaos += 5; 
         await _invasionService.UpdateInvasionArea(invasionRecord);
       }
-      NWScript.SendMessageToAllDMs("No Invasion Present to Force");
+      else
+      {
+       NWScript.SendMessageToAllDMs("No Invasion Present to Force");
+      }
     }
 
     public uint GetInvasionWaypoint(uint area)
