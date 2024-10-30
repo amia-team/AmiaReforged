@@ -48,7 +48,7 @@ public class Invasions
          string messageOverflow = "A surprise raid from the " + invasionName + " has struck into " + NWScript.GetName(areaOverflow) +
                          ". They are spreading and must be stopped!";
          GenerateSpawnWaypointListOverflow(overflowWayPoint); 
-         InvasionOverflow(area, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+         InvasionOverflow(areaOverflow, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5, lieutentant);
          MassMessage(messageOverflow,invasionName,NWScript.GetName(areaOverflow));          
         }    
@@ -178,7 +178,7 @@ public class Invasions
             float yPosition = ranLocPositon.Y; 
             float zPosition = ranLocPositon.Z;  
 
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1, randomLocation);
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, lieutentant, randomLocation);
 
             Vector3 randomPosN = NWScript.Vector(xPosition, yPosition + 1.0f,zPosition);
             Vector3 randomPosS = NWScript.Vector(xPosition, yPosition - 1.0f,zPosition);
@@ -201,7 +201,7 @@ public class Invasions
                 NWScript.Location(area, randomPosNe, facing));
             NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1,
                 NWScript.Location(area, randomPosNw, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, lieutentant,
+            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype2,
                 NWScript.Location(area, randomPosSe, facing));
             NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype5,
                 NWScript.Location(area, randomPosSw, facing));
