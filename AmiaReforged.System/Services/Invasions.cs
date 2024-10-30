@@ -135,7 +135,6 @@ public class Invasions
         while(NWScript.GetIsObjectValid(spawnWaypoint)==1)
         {
             waypointOverflowMasterList.Add(spawnWaypoint);
-            NWScript.SendMessageToAllDMs("Added Waypoint to List: " + count.ToString());
             count++; 
             spawnWaypoint = NWScript.GetWaypointByTag(waypointTag+"s"+count.ToString()); 
         }
@@ -172,7 +171,7 @@ public class Invasions
         // const float zPosition = 0.0f;
         const float facing = 0.0f;
         
-        while (countMobs < _waypointOverflowMasterList.Count())
+        while (countMobs <= _waypointOverflowMasterList.Count())
         {
             
             NWScript.SendMessageToAllDMs("Invasion Overflow Fired");
