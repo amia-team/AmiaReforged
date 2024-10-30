@@ -45,7 +45,7 @@ public class Invasions
         {
          uint overflowWayPoint = NWScript.GetWaypointByTag(overflow);
          uint areaOverflow = NWScript.GetArea(overflowWayPoint);   
-         string messageOverflow = "A surprise raid from the " + invasionName + " has struck into " + NWScript.GetName(areaOverflow) +
+         string messageOverflow = "A surprise raid from the " + invasionName + " has snuck into " + NWScript.GetName(areaOverflow) +
                          ". They are spreading and must be stopped!";
          GenerateSpawnWaypointListOverflow(overflowWayPoint); 
          InvasionOverflow(areaOverflow, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
@@ -145,7 +145,7 @@ public class Invasions
     {  
         int size = _waypointMasterList.Count(); 
         Random random = new Random();
-        int ran = random.Next(0,size);
+        int ran = random.Next(0,size-1);
         uint waypoint = _waypointMasterList[ran];
         _waypointMasterList.Remove(waypoint); 
         IntPtr location = NWScript.GetLocation(waypoint);
@@ -155,7 +155,7 @@ public class Invasions
     {  
         int size = _waypointOverflowMasterList.Count(); 
         Random random = new Random();
-        int ran = random.Next(0,size);
+        int ran = random.Next(0,size-1);
         uint waypoint = _waypointOverflowMasterList[ran];
         _waypointOverflowMasterList.Remove(waypoint); 
         IntPtr location = NWScript.GetLocation(waypoint);
