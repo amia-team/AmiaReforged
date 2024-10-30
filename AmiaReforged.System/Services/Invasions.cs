@@ -167,14 +167,14 @@ public class Invasions
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant)
     {
 
-      int countMobs = 0;
+       int countMobs = 0;
         // const float zPosition = 0.0f;
         const float facing = 0.0f;
+        int runMax = _waypointOverflowMasterList.Count();
         
-        while (countMobs <= _waypointOverflowMasterList.Count())
+        while (countMobs < runMax)
         {
-            
-            NWScript.SendMessageToAllDMs("Invasion Overflow Fired");
+            NWScript.SendMessageToAllDMs("Invasion Overflow ran ");
             IntPtr randomLocation = GrabSpawnLocationInOverflowArea();
             Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
             float xPosition = ranLocPositon.X;
@@ -331,6 +331,7 @@ public class Invasions
 
         while (countLieutenant < totalLieutentants)
         {
+            NWScript.SendMessageToAllDMs("Lie: " + countLieutenant.ToString());
             IntPtr randomLocation = GrabSpawnLocationInArea();
             Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
             float xPosition = ranLocPositon.X;
