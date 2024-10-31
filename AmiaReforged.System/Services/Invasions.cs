@@ -165,6 +165,7 @@ public class Invasions
         
         while (countMobs < runMax)
         {
+            Thread.Sleep(50);
             IntPtr randomLocation = GrabSpawnLocationInOverflowArea();
             Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
             float xPosition = ranLocPositon.X;
@@ -268,7 +269,7 @@ public class Invasions
         
         while (countMobs < totalMobClusters)
         {
-            Thread.Sleep(100);
+            Thread.Sleep(50);
             IntPtr randomLocation = GrabSpawnLocationInArea();
             Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
             float xPosition = ranLocPositon.X;
@@ -322,6 +323,7 @@ public class Invasions
 
         while (countLieutenant < totalLieutentants)
         {
+            Thread.Sleep(50);
             IntPtr randomLocation = GrabSpawnLocationInArea();
             Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
             float xPosition = ranLocPositon.X;
@@ -335,6 +337,7 @@ public class Invasions
             CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
+            countLieutenant++;
         }
     }
 
