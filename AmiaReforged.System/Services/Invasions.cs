@@ -45,16 +45,19 @@ public class Invasions
         Random random = new Random();
 
         // Overflow Invasions
-        if(random.Next(12) <= 2)
+        if((random.Next(12) <= 2) && (overflow != ""))
         {
          uint overflowWayPoint = NWScript.GetWaypointByTag(overflow);
-         uint areaOverflow = NWScript.GetArea(overflowWayPoint);   
-         string messageOverflow = "A surprise raid from the " + invasionName + " has snuck into " + NWScript.GetName(areaOverflow) +
+         if(NWScript.GetIsObjectValid(overflowWayPoint) == 1)
+         {
+          uint areaOverflow = NWScript.GetArea(overflowWayPoint);   
+          string messageOverflow = "A surprise raid from the " + invasionName + " has snuck into " + NWScript.GetName(areaOverflow) +
                          ". They are spreading and must be stopped!";
-         GenerateSpawnWaypointListOverflow(overflowWayPoint); 
-         InvasionOverflow(areaOverflow, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+          GenerateSpawnWaypointListOverflow(overflowWayPoint); 
+          InvasionOverflow(areaOverflow, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5, lieutentant);
-         MassMessage(messageOverflow,invasionName,NWScript.GetName(areaOverflow));          
+          MassMessage(messageOverflow,invasionName,NWScript.GetName(areaOverflow));             
+         }      
         }    
 
     }
@@ -89,26 +92,6 @@ public class Invasions
         string lieutentant = "bigmounttroll";
         string boss = "invasiontrollbs";
         string message = "News quickly spreads of an amassing army of Trolls in " + areaName +
-                         ". They must be stopped before it is too late!";
-        string overflow = NWScript.GetLocalString(waypoint,"overflow");
-
-        InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-            creaturetype5, lieutentant, boss, message, overflow);
-    }
-
-
-    public void InvasionOrcs(uint waypoint)
-    {
-        uint Area = NWScript.GetArea(waypoint);
-        string areaName = NWScript.GetName(Area);
-        string creaturetype1 = "af_ds_ork";
-        string creaturetype2 = "arelithorc001";
-        string creaturetype3 = "arelithorc";
-        string creaturetype4 = "arelithorc";
-        string creaturetype5 = "orcbasher";
-        string lieutentant = "orcboss001";
-        string boss = "chosenofkilma002";
-        string message = "News quickly spreads of an amassing army of Orcs in " + areaName +
                          ". They must be stopped before it is too late!";
         string overflow = NWScript.GetLocalString(waypoint,"overflow");
 
