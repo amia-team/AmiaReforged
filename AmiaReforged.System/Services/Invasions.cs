@@ -21,7 +21,11 @@ public class Invasions
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant, string boss,
         string invasionName, string overflow)
     {
-        
+        // Make sure the Waypoint lists are cleaned
+        _waypointMasterList = new(); 
+        _waypointOverflowMasterList = new();
+        //
+
         GenerateSpawnWaypointList(waypoint); 
 
         int totalMobClusters = Convert.ToInt32(_waypointMasterList.Count()*0.75); 
@@ -34,13 +38,18 @@ public class Invasions
 
         SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5);
+        NWScript.SendMessageToAllDMs("Lie Next");
         SpawnLieutenants(area, totalLieutentants, lieutentant);
+        NWScript.SendMessageToAllDMs("Boss Next");
         SpawnBoss(area, boss);
+        NWScript.SendMessageToAllDMs("Mess Next");
         MassMessage(message,invasionName,NWScript.GetName(area));
 
         Random random = new Random();
 
         // Overflow Invasions
+        
+        NWScript.SendMessageToAllDMs("Overflow Next");
         if((random.Next(12) <= 2) && (overflow != ""))
         {
          uint overflowWayPoint = NWScript.GetWaypointByTag(overflow);
