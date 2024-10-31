@@ -38,18 +38,13 @@ public class Invasions
 
         SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5);
-        NWScript.SendMessageToAllDMs("Lie Next");
         SpawnLieutenants(area, totalLieutentants, lieutentant);
-        NWScript.SendMessageToAllDMs("Boss Next");
         SpawnBoss(area, boss);
-        NWScript.SendMessageToAllDMs("Mess Next");
         MassMessage(message,invasionName,NWScript.GetName(area));
 
         Random random = new Random();
 
         // Overflow Invasions
-        
-        NWScript.SendMessageToAllDMs("Overflow Next");
         if((random.Next(12) <= 2) && (overflow != ""))
         {
          uint overflowWayPoint = NWScript.GetWaypointByTag(overflow);
