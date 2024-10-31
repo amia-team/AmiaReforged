@@ -194,24 +194,24 @@ public class InvasionPatrol
 
          if(random.Next(1,10) <= 3)
          {
-          switch(random.Next(1,7))
+          switch(random.Next(7))
           { 
+            case 0: Anvil.API.NwItem.Create("js_hun_mbone", (NwGameObject?)AnvilPC); break;
             case 1: Anvil.API.NwItem.Create("js_farm_appl", (NwGameObject?)AnvilPC); break;
             case 2: Anvil.API.NwItem.Create("js_farm_pota", (NwGameObject?)AnvilPC); break;
             case 3: Anvil.API.NwItem.Create("js_farm_oats", (NwGameObject?)AnvilPC); break;
             case 4: Anvil.API.NwItem.Create("js_farm_toba", (NwGameObject?)AnvilPC); break;
             case 5: Anvil.API.NwItem.Create("js_hun_sbone", (NwGameObject?)AnvilPC); break;
             case 6: Anvil.API.NwItem.Create("js_hun_lbone", (NwGameObject?)AnvilPC); break;
-            case 7: Anvil.API.NwItem.Create("js_hun_mbone", (NwGameObject?)AnvilPC); break;
           }
          }
          else
          {
           
-          switch(random.Next(1,2))
+          switch(random.Next(2))
           {
-            case 1: Anvil.API.NwItem.Create("js_sold_fang", (NwGameObject?)AnvilPC); break;
-            case 2: Anvil.API.NwItem.Create("js_sold_claw", (NwGameObject?)AnvilPC); break;
+            case 0: Anvil.API.NwItem.Create("js_sold_fang", (NwGameObject?)AnvilPC); break;
+            case 1: Anvil.API.NwItem.Create("js_sold_claw", (NwGameObject?)AnvilPC); break;
           }
          }
         }
