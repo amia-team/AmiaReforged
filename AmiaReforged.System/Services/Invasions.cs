@@ -220,7 +220,6 @@ public class Invasions
             CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
-            Thread.Sleep(50);
         }
 
 
@@ -324,7 +323,6 @@ public class Invasions
             CreatePlc(NWScript.Location(area, randomPLCPosNw, facing)); 
             CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
-            Thread.Sleep(50);
         } 
     }
 
@@ -348,7 +346,6 @@ public class Invasions
             CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
-            Thread.Sleep(50);
         }
     }
 
