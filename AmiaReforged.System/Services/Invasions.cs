@@ -268,6 +268,7 @@ public class Invasions
         
         while (countMobs < totalMobClusters)
         {
+            Thread.Sleep(100);
             IntPtr randomLocation = GrabSpawnLocationInArea();
             Vector3 ranLocPositon = NWScript.GetPositionFromLocation(randomLocation); 
             float xPosition = ranLocPositon.X;
