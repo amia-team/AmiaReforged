@@ -61,7 +61,24 @@ public class Invasions
         }    
 
     }
+    public void AbyssalInvasion(uint waypoint)
+    {
+        uint Area = NWScript.GetArea(waypoint);
+        string areaName = NWScript.GetName(Area);
+        string creaturetype1 = "invasioncreature";
+        string creaturetype2 = "invasioncreat002";
+        string creaturetype3 = "invasioncreat001";
+        string creaturetype4 = "invasioncreat001";
+        string creaturetype5 = "invasioncreat005";
+        string lieutentant = "invasioncreat003";
+        string boss = "invasioncreat004";
+        string message = "News quickly spreads of a portal appearing in " + areaName +
+                         ". Demon's are pouring out and must be stopped before it is too late! Only the most experienced adventurers should respond!";
+        string overflow = "";
 
+        InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
+            creaturetype5, lieutentant, boss, message, overflow);
+    }
     public void InvasionBeasts(uint waypoint)
     {
         uint Area = NWScript.GetArea(waypoint);
