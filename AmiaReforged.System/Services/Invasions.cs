@@ -34,7 +34,7 @@ public class Invasions
         string message = "News quickly spreads of an amassing army of " + invasionName + " in " + NWScript.GetName(area) +
                          ". They must be stopped before it is too late!";
 
-        NWScript.SendMessageToAllDMs("Total Count: " + _waypointMasterList.Count().ToString() + " | TotalMobClusters: " + totalMobClusters.ToString() + " | TotalLieutents: " + totalLieutentants.ToString());
+        NWScript.SendMessageToAllDMs("Total Count: " + _waypointMasterList.Count().ToString() + " | TotalMobClusters: " + totalMobClusters.ToString() + " | TotalLieutents: " + totalLieutentants.ToString() + " | Boss: 1");
 
         SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5);
@@ -220,6 +220,7 @@ public class Invasions
             CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
+            Thread.Sleep(50);
         }
 
 
@@ -323,6 +324,7 @@ public class Invasions
             CreatePlc(NWScript.Location(area, randomPLCPosNw, facing)); 
             CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
+            Thread.Sleep(50);
         } 
     }
 
@@ -346,8 +348,7 @@ public class Invasions
             CreatePlc(NWScript.Location(area, randomPLCPosNw, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSe, facing));
             CreatePlc(NWScript.Location(area, randomPLCPosSw, facing));
-
-            if (NWScript.GetIsObjectValid(objectCreature) == 1) countLieutenant++;
+            Thread.Sleep(50);
         }
     }
 
