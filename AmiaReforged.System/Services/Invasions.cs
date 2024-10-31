@@ -21,6 +21,10 @@ public class Invasions
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant, string boss,
         string invasionName, string overflow)
     {
+        // Make sure the Waypoint lists are cleaned
+        _waypointMasterList = new(); 
+        _waypointOverflowMasterList = new();
+        //
         
         GenerateSpawnWaypointList(waypoint); 
 
