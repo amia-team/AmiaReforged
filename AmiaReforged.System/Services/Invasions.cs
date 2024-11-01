@@ -45,7 +45,7 @@ public class Invasions
         Random random = new Random();
 
         // Overflow Invasions
-        if((random.Next(12) <= 2) && (overflow != ""))
+        if((random.Next(12) <= 12) && (overflow != ""))
         {
          uint overflowWayPoint = NWScript.GetWaypointByTag(overflow);
          if(NWScript.GetIsObjectValid(overflowWayPoint) == 1)
@@ -79,24 +79,7 @@ public class Invasions
         InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
             creaturetype5, lieutentant, boss, message, overflow);
     }
-    public void InvasionBeasts(uint waypoint)
-    {
-        uint Area = NWScript.GetArea(waypoint);
-        string areaName = NWScript.GetName(Area);
-        string creaturetype1 = "beasthero";
-        string creaturetype2 = "elitebeastarcher";
-        string creaturetype3 = "beastshaman";
-        string creaturetype4 = "beastmanchampion";
-        string creaturetype5 = "beastmonk";
-        string lieutentant = "beastguard";
-        string boss = "invasionbeastbs";
-        string message = "News quickly spreads of an amassing army of Beastmen in " + areaName +
-                         ". They must be stopped before it is too late!";
-        string overflow = NWScript.GetLocalString(waypoint,"overflow");
-
-        InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-            creaturetype5, lieutentant, boss, message, overflow);
-    }
+    
     public void InvasionTrolls(uint waypoint)
     {
         uint Area = NWScript.GetArea(waypoint);

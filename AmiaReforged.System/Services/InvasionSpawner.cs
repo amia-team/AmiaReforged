@@ -125,7 +125,7 @@ public class InvasionSpawner
         var tempInvasion = invasionSuccess[ran];
         var tempWP = waypointSuccess[ran];
         tempInvasion.InvasionPercent = 1; 
-        tempInvasion.RealmChaos += 5; 
+        tempInvasion.RealmChaos += random.Next(5,10); 
         await _invasionService.UpdateInvasionArea(tempInvasion);
         SummonInvasion(tempWP);
       }
