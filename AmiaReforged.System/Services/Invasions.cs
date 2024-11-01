@@ -65,13 +65,13 @@ public class Invasions
     {
         uint Area = NWScript.GetArea(waypoint);
         string areaName = NWScript.GetName(Area);
-        string creaturetype1 = "invasioncreature";
-        string creaturetype2 = "invasioncreat002";
-        string creaturetype3 = "invasioncreat001";
-        string creaturetype4 = "invasioncreat001";
-        string creaturetype5 = "invasioncreat005";
-        string lieutentant = "invasioncreat003";
-        string boss = "invasioncreat004";
+        string creaturetype1 = "ab_uce_runner";
+        string creaturetype2 = "ab_uce_heaer";
+        string creaturetype3 = "ds_demon_4";
+        string creaturetype4 = "ab_succubussneak";
+        string creaturetype5 = "ab_uce_archer";
+        string lieutentant = "balorlieutentant";
+        string boss = "demoninvaboss";
         string message = "News quickly spreads of a portal appearing in " + areaName +
                          ". Demon's are pouring out and must be stopped before it is too late! Only the most experienced adventurers should respond!";
         string overflow = "";
