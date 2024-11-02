@@ -22,7 +22,7 @@ public class InvasionSupplyDrop
        _invasions = invasions;
     }
     
-    [ScriptHandler("invasion_drop")]
+    [ScriptHandler("i_invasion_drop")]
     public async void InvasionDrop(CallInfo info)
     {
       
