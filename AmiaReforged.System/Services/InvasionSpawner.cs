@@ -163,7 +163,7 @@ public class InvasionSpawner
         _invasions.InvasionGeneric(Waypoint,NWScript.GetLocalString(Waypoint,"creaturetype1"),
         NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
         NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
-        NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
+        NWScript.GetLocalString(Waypoint,"lieutenant"),NWScript.GetLocalString(Waypoint,"boss"),
         CreatureName,NWScript.GetLocalString(Waypoint,"overflow"),0);     
         }    
     }

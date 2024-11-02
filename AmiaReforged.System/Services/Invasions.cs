@@ -19,7 +19,7 @@ public class Invasions
     private List<uint> _waypointOverflowMasterList = new(); 
 
     public void InvasionGeneric(uint waypoint, string creaturetype1, string creaturetype2,
-        string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant, string boss,
+        string creaturetype3, string creaturetype4, string creaturetype5, string lieutenant, string boss,
         string invasionName, string overflow, int customMessage)
     {
         // Make sure the Waypoint lists are cleaned
@@ -30,7 +30,7 @@ public class Invasions
         GenerateSpawnWaypointList(waypoint); 
 
         int totalMobClusters = Convert.ToInt32(_waypointMasterList.Count()*0.75); 
-        int totalLieutentants = _waypointMasterList.Count()-totalMobClusters-1;
+        int totalLieutenants = _waypointMasterList.Count()-totalMobClusters-1;
         uint area = NWScript.GetArea(waypoint);   
         string message;
 
@@ -44,11 +44,11 @@ public class Invasions
                          ". They must be stopped before it is too late!";
         }
 
-        NWScript.SendMessageToAllDMs("Total Count: " + _waypointMasterList.Count().ToString() + " | TotalMobClusters: " + totalMobClusters.ToString() + " | TotalLieutents: " + totalLieutentants.ToString() + " | Boss: 1");
+        NWScript.SendMessageToAllDMs("Total Count: " + _waypointMasterList.Count().ToString() + " | TotalMobClusters: " + totalMobClusters.ToString() + " | TotalLieutents: " + totalLieutenants.ToString() + " | Boss: 1");
 
         SpawnMobs(area, totalMobClusters, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5);
-        SpawnLieutenants(area, totalLieutentants, lieutentant);
+        SpawnLieutenants(area, totalLieutenants, lieutenant);
         SpawnBoss(area, boss);
         MassMessage(message,invasionName,NWScript.GetName(area));
 
@@ -65,7 +65,7 @@ public class Invasions
                          ". They are spreading and must be stopped!";
           GenerateSpawnWaypointListOverflow(overflowWayPoint); 
           InvasionOverflow(areaOverflow, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-                creaturetype5, lieutentant);
+                creaturetype5, lieutenant);
           MassMessage(messageOverflow,invasionName,NWScript.GetName(areaOverflow));             
          }      
         }    
