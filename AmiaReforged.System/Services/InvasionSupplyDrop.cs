@@ -46,10 +46,12 @@ public class InvasionSupplyDrop
         await _invasionService.UpdateInvasionArea(invasionRecord);
         NWScript.SendMessageToPC(oPC,"*Supplies dropped and some of the locals appear interested*");
         NWScript.SendMessageToAllDMs("Supplies Dropped: " + AreaName);
+        NWScript.CreateObject(64,"invasion_crate",Location);
       }
       else
       {
        NWScript.SendMessageToPC(oPC,"*Supplies appear to do nothing*");
+       NWScript.CreateObject(64,"invasion_crate",Location);
       }
     }
 
