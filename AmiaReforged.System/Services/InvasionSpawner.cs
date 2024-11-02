@@ -23,10 +23,25 @@ public class InvasionSpawner
     public InvasionSpawner(SchedulerService schedulerService,InvasionService invasionService, Invasions invasions)
     {
        _schedulerService = schedulerService;
-       _schedulerService.ScheduleRepeating(InvasionOne, TimeSpan.FromMinutes(3));
-       _schedulerService.ScheduleRepeating(InvasionTwo, TimeSpan.FromMinutes(10));
+       _schedulerService.ScheduleRepeating(InvasionOne, TimeSpan.FromMinutes(GenerateSpawnTime(1)));
+       _schedulerService.ScheduleRepeating(InvasionTwo, TimeSpan.FromMinutes(GenerateSpawnTime(2)));
        _invasionService = invasionService; 
        _invasions = invasions;
+    }
+    private int GenerateSpawnTime(int timeType)
+    {
+        Random random = new Random();
+        int time = 10; 
+        if(timeType==1)
+        {
+         time = random.Next(10,190);
+        }
+        else if(timeType==2)
+        {
+         time = random.Next(200,380);
+        }   
+
+        return time;
     }
 
     public void InvasionOne()
