@@ -20,7 +20,7 @@ public class Invasions
 
     public void InvasionGeneric(uint waypoint, string creaturetype1, string creaturetype2,
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutenant, string boss,
-        string invasionName, string overflow, int customMessage)
+        string invasionName, string overflow, int abyssalInvasion)
     {
         // Make sure the Waypoint lists are cleaned
         _waypointMasterList = new(); 
@@ -34,9 +34,10 @@ public class Invasions
         uint area = NWScript.GetArea(waypoint);   
         string message;
 
-        if(customMessage==1)
+        if(abyssalInvasion==1)
         {
-         message = invasionName;
+         message = "News quickly spreads of a portal appearing in " + NWScript.GetName(area) +
+                         ". Demon's are pouring out and must be stopped before it is too late! Only the most experienced adventurers should respond!";
         }
         else
         {
@@ -50,7 +51,7 @@ public class Invasions
                 creaturetype5);
         SpawnLieutenants(area, totalLieutenants, lieutenant);
         SpawnBoss(area, boss);
-        MassMessage(message,invasionName,NWScript.GetName(area));
+        MassMessage(message,invasionName,NWScript.GetName(area),abyssalInvasion);
 
         Random random = new Random();
 
@@ -66,7 +67,7 @@ public class Invasions
           GenerateSpawnWaypointListOverflow(overflowWayPoint); 
           InvasionOverflow(areaOverflow, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
                 creaturetype5, lieutenant);
-          MassMessage(messageOverflow,invasionName,NWScript.GetName(areaOverflow));             
+          MassMessage(messageOverflow,invasionName,NWScript.GetName(areaOverflow),abyssalInvasion);             
          }      
         }    
 
@@ -82,12 +83,10 @@ public class Invasions
         string creaturetype5 = "ab_uce_archer";
         string lieutentant = "balorlieutentant";
         string boss = "demoninvaboss";
-        string message = "News quickly spreads of a portal appearing in " + areaName +
-                         ". Demon's are pouring out and must be stopped before it is too late! Only the most experienced adventurers should respond!";
         string overflow = "";
 
         InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-            creaturetype5, lieutentant, boss, message, overflow,1);
+            creaturetype5, lieutentant, boss, "Demonic Forces", overflow,1);
     }
 
     public void GenerateSpawnWaypointList(uint waypoint)
@@ -340,7 +339,7 @@ public class Invasions
         }
     }
 
-    private static void MassMessage(string message, string CreatureName, string AreaName)
+    private static void MassMessage(string message, string CreatureName, string AreaName, int AbyssalInvasion)
     {
         uint objectCreature = NWScript.GetFirstPC();
 
@@ -354,10 +353,21 @@ public class Invasions
             objectCreature = NWScript.GetNextPC();
         }
 
+        if(AbyssalInvasion==1)
+        {
+        NWScript.SetLocalString(NWScript.GetModule(), "announcerMessage",
+        "``` All adventurers begin to hear murmurs and rumors from locals about a terrifying attack devastating the isles. You quickly receive a message from the Guilds to confirm this fact. The message is simple: WARNING! PORTAL OPENED! " +
+        CreatureName + " are rampaging in " + AreaName +
+        "! We recommend ONLY an extremely skilled group of adventurers respond and common folk stay clear! ```");
+        }
+        else
+        {
         NWScript.SetLocalString(NWScript.GetModule(), "announcerMessage",
         "``` All adventurers begin to hear murmurs and rumors from locals about a terrifying attack happening on the isles. You quickly receive a message from the Guilds to confirm this fact. The message is simple: WARNING! " +
         CreatureName + " are rampaging in " + AreaName +
         "! We recommend an appropriately skilled group of adventurers respond and common folk stay clear! ```");
+        }
+
         NWScript.ExecuteScript("webhook_announce");
 
         
