@@ -23,8 +23,8 @@ public class InvasionSpawner
     public InvasionSpawner(SchedulerService schedulerService,InvasionService invasionService, Invasions invasions)
     {
        _schedulerService = schedulerService;
-       _schedulerService.ScheduleRepeating(InvasionOne, TimeSpan.FromMinutes(GenerateSpawnTime(1)));
-       _schedulerService.ScheduleRepeating(InvasionTwo, TimeSpan.FromMinutes(GenerateSpawnTime(2)));
+       _schedulerService.ScheduleRepeating(InvasionOne, TimeSpan.FromMinutes(3));
+       _schedulerService.ScheduleRepeating(InvasionTwo, TimeSpan.FromMinutes(5));
        _invasionService = invasionService; 
        _invasions = invasions;
     }
@@ -142,21 +142,30 @@ public class InvasionSpawner
         tempInvasion.InvasionPercent = 1; 
         tempInvasion.RealmChaos += random.Next(5,10); 
         await _invasionService.UpdateInvasionArea(tempInvasion);
-        SummonInvasion(tempWP);
+        SummonInvasion(tempWP,tempInvasion);
       }
     }
 
-    public void SummonInvasion(uint Waypoint)
+    public async void SummonInvasion(uint Waypoint, InvasionRecord Invasion)
     {
         uint WaypointArea = NWScript.GetArea(Waypoint);
         string AreaName = NWScript.GetName(WaypointArea);
         string CreatureName = NWScript.GetLocalString(Waypoint,"invasionname");
 
+        if(Invasion.RealmChaos > 100)
+        {
+          Invasion.RealmChaos = 0; 
+          await _invasionService.UpdateInvasionArea(Invasion);
+          _invasions.AbyssalInvasion(Waypoint);
+        }
+        else
+        {
         _invasions.InvasionGeneric(Waypoint,NWScript.GetLocalString(Waypoint,"creaturetype1"),
         NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
         NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
         NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
-        CreatureName,NWScript.GetLocalString(Waypoint,"overflow"));         
+        CreatureName,NWScript.GetLocalString(Waypoint,"overflow"));     
+        }    
     }
 
 

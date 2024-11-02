@@ -43,16 +43,28 @@ public class InvasionForceLaunch
         string CreatureName = NWScript.GetLocalString(Waypoint,"invasionname");
         string overflow = NWScript.GetLocalString(Waypoint,"overflow");
 
-        _invasions.InvasionGeneric(Waypoint,NWScript.GetLocalString(Waypoint,"creaturetype1"),
-        NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
-        NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
-        NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
-        CreatureName,NWScript.GetLocalString(Waypoint,"overflow"));      
+        if(invasionRecord.RealmChaos > 100)
+        {
+          invasionRecord.RealmChaos = 0; 
+          await _invasionService.UpdateInvasionArea(invasionRecord);
+          _invasions.AbyssalInvasion(Waypoint);
+          invasionRecord.InvasionPercent = 1; 
+          invasionRecord.RealmChaos = 0; 
+          await _invasionService.UpdateInvasionArea(invasionRecord);
+        }
+        else
+        {
+          _invasions.InvasionGeneric(Waypoint,NWScript.GetLocalString(Waypoint,"creaturetype1"),
+          NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
+          NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
+          NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
+          CreatureName,NWScript.GetLocalString(Waypoint,"overflow"));   
+          invasionRecord.InvasionPercent = 1; 
+          invasionRecord.RealmChaos += 5; 
+          await _invasionService.UpdateInvasionArea(invasionRecord);
+        }   
     
         NWScript.SendMessageToAllDMs("Invasion Forced");
-        invasionRecord.InvasionPercent = 1; 
-        invasionRecord.RealmChaos += 5; 
-        await _invasionService.UpdateInvasionArea(invasionRecord);
       }
       else
       {
