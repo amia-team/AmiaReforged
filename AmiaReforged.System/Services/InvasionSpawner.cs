@@ -23,8 +23,8 @@ public class InvasionSpawner
     public InvasionSpawner(SchedulerService schedulerService,InvasionService invasionService, Invasions invasions)
     {
        _schedulerService = schedulerService;
-       _schedulerService.ScheduleRepeating(InvasionOne, TimeSpan.FromMinutes(3));
-       _schedulerService.ScheduleRepeating(InvasionTwo, TimeSpan.FromMinutes(5));
+       _schedulerService.ScheduleRepeating(InvasionOne, TimeSpan.FromMinutes(GenerateSpawnTime(1)));
+       _schedulerService.ScheduleRepeating(InvasionTwo, TimeSpan.FromMinutes(GenerateSpawnTime(2)));
        _invasionService = invasionService; 
        _invasions = invasions;
     }
@@ -164,7 +164,7 @@ public class InvasionSpawner
         NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
         NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
         NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
-        CreatureName,NWScript.GetLocalString(Waypoint,"overflow"));     
+        CreatureName,NWScript.GetLocalString(Waypoint,"overflow"),0);     
         }    
     }
 

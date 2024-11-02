@@ -6,6 +6,7 @@ using System.Numerics;
 using NWN.Core;
 using AmiaReforged.System;
 using AmiaReforged.Core.Models;
+using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 
 namespace AmiaReforged.System.Services;
 
@@ -19,7 +20,7 @@ public class Invasions
 
     public void InvasionGeneric(uint waypoint, string creaturetype1, string creaturetype2,
         string creaturetype3, string creaturetype4, string creaturetype5, string lieutentant, string boss,
-        string invasionName, string overflow)
+        string invasionName, string overflow, int customMessage)
     {
         // Make sure the Waypoint lists are cleaned
         _waypointMasterList = new(); 
@@ -31,8 +32,17 @@ public class Invasions
         int totalMobClusters = Convert.ToInt32(_waypointMasterList.Count()*0.75); 
         int totalLieutentants = _waypointMasterList.Count()-totalMobClusters-1;
         uint area = NWScript.GetArea(waypoint);   
-        string message = "News quickly spreads of an amassing army of " + invasionName + " in " + NWScript.GetName(area) +
+        string message;
+
+        if(customMessage==1)
+        {
+         message = invasionName;
+        }
+        else
+        {
+         message = "News quickly spreads of an amassing army of " + invasionName + " in " + NWScript.GetName(area) +
                          ". They must be stopped before it is too late!";
+        }
 
         NWScript.SendMessageToAllDMs("Total Count: " + _waypointMasterList.Count().ToString() + " | TotalMobClusters: " + totalMobClusters.ToString() + " | TotalLieutents: " + totalLieutentants.ToString() + " | Boss: 1");
 
@@ -45,7 +55,7 @@ public class Invasions
         Random random = new Random();
 
         // Overflow Invasions
-        if((random.Next(12) <= 12) && (overflow != ""))
+        if((random.Next(12) <= 3) && (overflow != ""))
         {
          uint overflowWayPoint = NWScript.GetWaypointByTag(overflow);
          if(NWScript.GetIsObjectValid(overflowWayPoint) == 1)
@@ -77,26 +87,7 @@ public class Invasions
         string overflow = "";
 
         InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-            creaturetype5, lieutentant, boss, message, overflow);
-    }
-    
-    public void InvasionTrolls(uint waypoint)
-    {
-        uint Area = NWScript.GetArea(waypoint);
-        string areaName = NWScript.GetName(Area);
-        string creaturetype1 = "mountainguard";
-        string creaturetype2 = "mountainguard";
-        string creaturetype3 = "mounttroll";
-        string creaturetype4 = "mounttroll";
-        string creaturetype5 = "mounttroll";
-        string lieutentant = "bigmounttroll";
-        string boss = "invasiontrollbs";
-        string message = "News quickly spreads of an amassing army of Trolls in " + areaName +
-                         ". They must be stopped before it is too late!";
-        string overflow = NWScript.GetLocalString(waypoint,"overflow");
-
-        InvasionGeneric(waypoint, creaturetype1, creaturetype2, creaturetype3, creaturetype4,
-            creaturetype5, lieutentant, boss, message, overflow);
+            creaturetype5, lieutentant, boss, message, overflow,1);
     }
 
     public void GenerateSpawnWaypointList(uint waypoint)

@@ -58,7 +58,7 @@ public class InvasionForceLaunch
           NWScript.GetLocalString(Waypoint,"creaturetype2"),NWScript.GetLocalString(Waypoint,"creaturetype3"),
           NWScript.GetLocalString(Waypoint,"creaturetype4"),NWScript.GetLocalString(Waypoint,"creaturetype5"),
           NWScript.GetLocalString(Waypoint,"lieutentant"),NWScript.GetLocalString(Waypoint,"boss"),
-          CreatureName,NWScript.GetLocalString(Waypoint,"overflow"));   
+          CreatureName,NWScript.GetLocalString(Waypoint,"overflow"),0);   
           invasionRecord.InvasionPercent = 1; 
           invasionRecord.RealmChaos += 5; 
           await _invasionService.UpdateInvasionArea(invasionRecord);
