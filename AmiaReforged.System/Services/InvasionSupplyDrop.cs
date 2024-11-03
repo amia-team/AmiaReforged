@@ -32,6 +32,7 @@ public class InvasionSupplyDrop
       string AreaName = NWScript.GetName(Area);
       uint Waypoint = new();
       string AreaResRef = NWScript.GetResRef(Area);
+      int supplyCrate = NWScript.GetLocalInt(Area,"supplycrate");
       InvasionRecord invasionRecord = new();
       invasionRecord.AreaZone = "N/A";
       invasionRecord.InvasionPercent = 0; 
@@ -40,13 +41,21 @@ public class InvasionSupplyDrop
       InvasionRecord invasionRecordTemp = invasions.Find(x => x.AreaZone == AreaResRef); 
       if(invasionRecordTemp != null)
       {
-        invasionRecord = invasionRecordTemp;
-        Waypoint = GetInvasionWaypoint(Area);
-        invasionRecord.InvasionPercent += 20; 
-        await _invasionService.UpdateInvasionArea(invasionRecord);
-        NWScript.SendMessageToPC(oPC,"*Supplies dropped and some of the locals appear interested*");
-        NWScript.SendMessageToAllDMs("Supplies Dropped: " + AreaName);
-        NWScript.CreateObject(64,"invasion_crate",Location);
+        if(supplyCrate < 2)
+        {
+         invasionRecord = invasionRecordTemp;
+         Waypoint = GetInvasionWaypoint(Area);
+         invasionRecord.InvasionPercent += 10; 
+         NWScript.SetLocalInt(Area,"supplycrate",supplyCrate+1);
+         await _invasionService.UpdateInvasionArea(invasionRecord);
+         NWScript.SendMessageToPC(oPC,"*Supplies dropped and some of the locals appear interested*");
+         NWScript.SendMessageToAllDMs("Supplies Dropped: " + AreaName);
+         NWScript.CreateObject(64,"invasion_crate",Location);
+        }
+        else
+        {
+          NWScript.SendMessageToPC(oPC,"*The area appears saturated with supplies already*");
+        }
       }
       else
       {
