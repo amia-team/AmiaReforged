@@ -74,47 +74,48 @@ public class InvasionPatrol
           {
             temp = 0;
           }
-          
-          invasionRecord.InvasionPercent = temp; 
-          await _invasionService.UpdateInvasionArea(invasionRecord);
 
-          if(temp > 80)
+          if(invasionRecord.InvasionPercent > 80)
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is crawling with enemies and escalation is immediate!"); 
            SpawnEnemies(oPC,4);
            Reward(oPC,AnvilPC,rewardCount);
           }
-          else if(temp > 60)
+          else if(invasionRecord.InvasionPercent > 60)
           {
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is crawling with enemies and will escalate any day now!");
            SpawnEnemies(oPC,3);
            Reward(oPC,AnvilPC,rewardCount);
           }
-          else if(temp > 40)
+          else if(invasionRecord.InvasionPercent > 40)
           {  
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is crawling with enemies and will escalate if left alone too long!");
            SpawnEnemies(oPC,2);
            Reward(oPC,AnvilPC,rewardCount);
           }
-          else if(temp > 20)
+          else if(invasionRecord.InvasionPercent > 20)
           {    
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " has many enemies sneaking around!");  
            SpawnEnemies(oPC,1);
            Reward(oPC,AnvilPC,rewardCount);
           }
-          else if(temp > 10)
+          else if(invasionRecord.InvasionPercent > 10)
           {  
            NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " has a few enemies sneaking around!");
            Reward(oPC,AnvilPC,rewardCount);
           }
-          else if(temp >= 0)
+          else if(invasionRecord.InvasionPercent > 0)
           {   
-           NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");
+           NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is relatively peaceful!");
+           Reward(oPC,AnvilPC,rewardCount);
           }
           else
           {
-           NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is peaceful!");  
+           NWScript.SendMessageToPC(oPC,NWScript.GetName(Area) + " is completely peaceful!");  
           }
+          
+          invasionRecord.InvasionPercent = temp; 
+          await _invasionService.UpdateInvasionArea(invasionRecord);
           
         }
         else
