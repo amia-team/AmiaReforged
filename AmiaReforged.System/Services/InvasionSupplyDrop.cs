@@ -60,7 +60,7 @@ public class InvasionSupplyDrop
       else
       {
        NWScript.SendMessageToPC(oPC,"*Supplies appear to do nothing. You can gather them back up.*");
-       NWScript.CreateObject(64,"invasion_crate",Location);
+       NWScript.CreateObject(2,"js_sco_supplycrt",Location);
       }
     }
 
