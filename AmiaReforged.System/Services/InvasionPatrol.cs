@@ -1,7 +1,9 @@
 using System;
 using System.Data.Common;
 using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 using NWN.Core;
 using System.Numerics;
 using AmiaReforged.System;
@@ -11,6 +13,8 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client.Payloads;
 using Microsoft.VisualStudio.TestPlatform.TestExecutor;
 using NWN.Core.NWNX;
 using System.Runtime.InteropServices;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using AmiaReforged.Core.UserInterface;
 
 namespace AmiaReforged.System.Services;
 
@@ -30,7 +34,8 @@ public class InvasionPatrol
     public async void InvasionPatrolCheck(CallInfo info)
     {
       uint oPC = NWScript.OBJECT_SELF;
-      NwObject AnvilPC = info.ObjectSelf;
+      NwObject? AnvilPC = info.ObjectSelf;
+  
       Location Location = NWScript.GetLocation(oPC);
       uint Area = NWScript.GetAreaFromLocation(Location);
       string AreaResRef = NWScript.GetResRef(Area);
@@ -44,7 +49,7 @@ public class InvasionPatrol
       InvasionRecord invasionRecordTemp = invasions.Find(x => x.AreaZone == AreaResRef); 
       int PatrolValue = 5; 
       int rewardCount = 1;
-      uint JobJournal = NWScript.GetItemPossessedBy(oPC,"js_jobjournal");
+      var JobJournal = NWScript.GetItemPossessedBy(oPC,"js_jobjournal");
       if(NWScript.GetIsObjectValid(JobJournal)==1)
       {
         NWScript.SendMessageToPC(oPC,"Journal found, script fired"); 
