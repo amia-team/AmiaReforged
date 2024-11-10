@@ -53,7 +53,6 @@ public class InvasionPatrol
       var JobJournal = NWScript.GetItemPossessedBy(oPC,"js_jobjournal");
       if(NWScript.GetIsObjectValid(JobJournal)==1)
       {
-        NWScript.SendMessageToPC(oPC,"Journal found, script fired"); 
         string PrimaryJob     = NWScript.GetLocalString(JobJournal,"primaryjob");
         string SecondaryJob   = NWScript.GetLocalString(JobJournal,"secondaryjob");
         if(PrimaryJob == "Soldier")
@@ -68,10 +67,6 @@ public class InvasionPatrol
           rewardCount = 1; 
           NWScript.SendMessageToPC(oPC,"*Your soldier job makes you good at patrols*"); 
         }
-      }
-      else
-      {
-          NWScript.SendMessageToPC(oPC,"*You are moderately good at patrols*"); 
       }
 
       if(invasionRecordTemp != null)
