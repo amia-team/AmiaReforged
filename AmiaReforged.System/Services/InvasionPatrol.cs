@@ -49,6 +49,7 @@ public class InvasionPatrol
       InvasionRecord invasionRecordTemp = invasions.Find(x => x.AreaZone == AreaResRef); 
       int PatrolValue = 5; 
       int rewardCount = 1;
+      await NwModule.Instance.WaitForObjectContext(); 
       var JobJournal = NWScript.GetItemPossessedBy(oPC,"js_jobjournal");
       if(NWScript.GetIsObjectValid(JobJournal)==1)
       {
