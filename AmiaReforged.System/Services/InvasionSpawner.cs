@@ -97,7 +97,7 @@ public class InvasionSpawner
             {
                invasionRecord = invasions.Find(x => x.AreaZone == AreaResRef);
                ran = random.Next(50, 100); // Only one with 50+ are ran
-               invasionRecord.InvasionPercent += 5; 
+               invasionRecord.InvasionPercent += 6; 
                await _invasionService.UpdateInvasionArea(invasionRecord);
                if(ran <= invasionRecord.InvasionPercent)
                { 
