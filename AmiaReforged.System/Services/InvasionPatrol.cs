@@ -238,7 +238,6 @@ public class InvasionPatrol
              case 28: Anvil.API.NwItem.Create("js_sold_losta29", (NwGameObject?)AnvilPC); break;
              case 29: Anvil.API.NwItem.Create("js_sold_losta30", (NwGameObject?)AnvilPC); break;
            }
-
           }
           else // DOES NOT HAVE AE
           {
