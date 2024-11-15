@@ -239,15 +239,30 @@ public class InvasionPatrol
          }
          else if( temp <= 30)
          {
-          switch(random.Next(7))
+          switch(random.Next(21))
           { 
             case 0: Anvil.API.NwItem.Create("js_hun_mbone", (NwGameObject?)AnvilPC); break;
-            case 1: Anvil.API.NwItem.Create("js_farm_appl", (NwGameObject?)AnvilPC); break;
-            case 2: Anvil.API.NwItem.Create("js_farm_pota", (NwGameObject?)AnvilPC); break;
-            case 3: Anvil.API.NwItem.Create("js_farm_oats", (NwGameObject?)AnvilPC); break;
-            case 4: Anvil.API.NwItem.Create("js_farm_toba", (NwGameObject?)AnvilPC); break;
-            case 5: Anvil.API.NwItem.Create("js_hun_sbone", (NwGameObject?)AnvilPC); break;
-            case 6: Anvil.API.NwItem.Create("js_hun_lbone", (NwGameObject?)AnvilPC); break;
+            case 1: Anvil.API.NwItem.Create("js_alch_kit10", (NwGameObject?)AnvilPC); break;
+            case 2: Anvil.API.NwItem.Create("js_alch_pore", (NwGameObject?)AnvilPC); break;
+            case 3: Anvil.API.NwItem.Create("js_jew_diam", (NwGameObject?)AnvilPC); break;
+            case 4: Anvil.API.NwItem.Create("js_jew_emer", (NwGameObject?)AnvilPC); break;
+            case 5: Anvil.API.NwItem.Create("js_jew_ruby", (NwGameObject?)AnvilPC); break;
+            case 6: Anvil.API.NwItem.Create("js_jew_sapp", (NwGameObject?)AnvilPC); break;
+            case 7: Anvil.API.NwItem.Create("js_bre_fili", (NwGameObject?)AnvilPC); break;
+            case 8: Anvil.API.NwItem.Create("js_bre_tual", (NwGameObject?)AnvilPC); break;
+            case 9: Anvil.API.NwItem.Create("js_che_saus", (NwGameObject?)AnvilPC); break;
+            case 10: Anvil.API.NwItem.Create("js_che_roro", (NwGameObject?)AnvilPC); break;
+            case 11: Anvil.API.NwItem.Create("js_che_mepi", (NwGameObject?)AnvilPC); break;
+            case 12: Anvil.API.NwItem.Create("js_che_brea", (NwGameObject?)AnvilPC); break;
+            case 13: Anvil.API.NwItem.Create("js_sco_drus", (NwGameObject?)AnvilPC); break;
+            case 14: Anvil.API.NwItem.Create("js_venomgland", (NwGameObject?)AnvilPC); break;
+            case 15: Anvil.API.NwItem.Create("js_tai_scbrd1", (NwGameObject?)AnvilPC); break;
+            case 16: Anvil.API.NwItem.Create("js_tai_scbrd2", (NwGameObject?)AnvilPC); break;
+            case 17: Anvil.API.NwItem.Create("js_tai_quiver1", (NwGameObject?)AnvilPC); break;
+            case 18: Anvil.API.NwItem.Create("js_tai_bpack1", (NwGameObject?)AnvilPC); break;
+            case 19: Anvil.API.NwItem.Create("js_arca_spiderl", (NwGameObject?)AnvilPC); break;
+            case 20: Anvil.API.NwItem.Create("js_hun_sbone", (NwGameObject?)AnvilPC); break;
+            case 21: Anvil.API.NwItem.Create("js_hun_lbone", (NwGameObject?)AnvilPC); break;
           }
          }
          else
