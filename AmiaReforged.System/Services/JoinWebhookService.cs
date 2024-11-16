@@ -13,10 +13,13 @@ public class JoinWebhookService
     private const string Username = "Savras";
     private const string GenericAvatar = "https://imgur.com/ScFFxch.png";
     private const string GenericUsername = "Tiamat";
+    private const string StaffAvatar = "https://imgur.com/zPKzLoe.png";
+    private const string StaffUsername = "Lord Ao";
     private readonly SchedulerService _schedulerService;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly WebhookSender _webhookSender;
     private readonly WebhookSender _webhookSenderGeneric;
+    private readonly WebhookSender _webhookSenderStaff;
 
     public JoinWebhookService(SchedulerService schedulerService)
     {
@@ -29,6 +32,8 @@ public class JoinWebhookService
     public JoinWebhookService()
     {
         _webhookSenderGeneric = new WebhookSender(UtilPlugin.GetEnvironmentVariable("SERVER_NOTIFICATION_GENERIC"));
+        Log.Info("JoinWebhook Service Initialized.");
+        _webhookSenderStaff = new WebhookSender(UtilPlugin.GetEnvironmentVariable("SERVER_NOTIFICATION_STAFF"));
         Log.Info("JoinWebhook Service Initialized.");
     }
 
@@ -51,6 +56,10 @@ public class JoinWebhookService
     public async Task LaunchDiscordMessage(string messageSent)
     {
        await _webhookSenderGeneric.SendMessage(GenericUsername,messageSent,GenericAvatar); 
+    }
+    public async Task LaunchStaffMessage(string messageSent)
+    {
+       await _webhookSenderStaff.SendMessage(StaffUsername,messageSent,StaffAvatar); 
     }
 }
 
