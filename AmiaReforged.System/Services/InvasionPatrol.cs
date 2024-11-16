@@ -220,7 +220,7 @@ public class InvasionPatrol
                 
                 if (NWScript.GetSkillRank(0, oPC, NWScript.TRUE) >= 1) // HAS AE
                 {
-                    switch (random.Next(36))
+                    switch (random.Next(37))
                     {
                         case 0:
                             Anvil.API.NwItem.Create("js_sold_losta1", (NwGameObject?)AnvilPC);
@@ -330,11 +330,14 @@ public class InvasionPatrol
                         case 35:
                             Anvil.API.NwItem.Create("js_sold_losta36", (NwGameObject?)AnvilPC);
                             break;
+                        case 36:
+                            Anvil.API.NwItem.Create("js_sold_losta37", (NwGameObject?)AnvilPC);
+                            break;
                     }
                 }
                 else // DOES NOT HAVE AE
                 {
-                    switch (random.Next(20))
+                    switch (random.Next(21))
                     {
                         case 0:
                             Anvil.API.NwItem.Create("js_sold_losta1", (NwGameObject?)AnvilPC);
@@ -395,6 +398,9 @@ public class InvasionPatrol
                             break;
                         case 19:
                             Anvil.API.NwItem.Create("js_sold_losta31", (NwGameObject?)AnvilPC);
+                            break;
+                        case 20:
+                            Anvil.API.NwItem.Create("js_sold_losta37", (NwGameObject?)AnvilPC);
                             break;
 
                     }
