@@ -49,8 +49,10 @@ public class InvasionSupplyDrop
          NWScript.SetLocalInt(Area,"supplycrate",supplyCrate+1);
          await _invasionService.UpdateInvasionArea(invasionRecord);
          NWScript.SendMessageToPC(oPC,"*Supplies dropped! Some of the locals appear interested!*");
-         NWScript.SendMessageToAllDMs("Supplies Dropped: " + AreaName);
+         NWScript.SendMessageToAllDMs("Supplies Dropped: " + AreaName + "by " + NWScript.GetName(oPC));
          NWScript.CreateObject(64,"invasion_crate",Location);
+         NWScript.SetLocalString(NWScript.GetModule(), "staffMessage","Supplies Dropped: " + AreaName + "by " + NWScript.GetName(oPC));
+         NWScript.ExecuteScript("webhook_staff");
         }
         else
         {
