@@ -4,7 +4,7 @@ using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(AnnouncerHandler))]
+[ServiceBinding(typeof(StaffAnnouncerHandler))]
 public class StaffAnnouncerHandler
 {
     [ScriptHandler("webhook_staff")]
