@@ -21,7 +21,7 @@ public class LastLocationService
         _nwTaskHelper = nwTaskHelper;
     }
 
-    public async Task AddInvasionArea(LastLocation lastLocation)
+    public async Task AddLastLocation(LastLocation lastLocation)
     {
         AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
         try
@@ -37,7 +37,7 @@ public class LastLocationService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task UpdateInvasionArea(LastLocation lastLocation)
+    public async Task UpdateLastLocation(LastLocation lastLocation)
     {
         AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
 
@@ -54,7 +54,7 @@ public class LastLocationService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task DeleteInvasionRecord(LastLocation lastLocation)
+    public async Task DeleteLastLocation(LastLocation lastLocation)
     {
         AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
 

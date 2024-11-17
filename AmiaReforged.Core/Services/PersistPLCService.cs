@@ -21,7 +21,7 @@ public class PersistPLCService
         _nwTaskHelper = nwTaskHelper;
     }
 
-    public async Task AddInvasionArea(PersistPLC persistPLC)
+    public async Task AddPersistPLC(PersistPLC persistPLC)
     {
         AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
         try
@@ -37,7 +37,7 @@ public class PersistPLCService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task UpdateInvasionArea(PersistPLC persistPLC)
+    public async Task UpdatePersistPLC(PersistPLC persistPLC)
     {
         AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
 
@@ -54,7 +54,7 @@ public class PersistPLCService
         await _nwTaskHelper.TrySwitchToMainThread();
     }
 
-    public async Task DeleteInvasionRecord(PersistPLC persistPLC)
+    public async Task DeletePersistPLC(PersistPLC persistPLC)
     {
         AmiaDbContext amiaDbContext = _ctxFactory.CreateDbContext();
 
