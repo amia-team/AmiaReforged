@@ -19,7 +19,7 @@ public class PersistPLCSpawner
     private readonly SchedulerService _schedulerService;
     private readonly PersistPLCService _persistPLCService;
     private List<uint> serverAreas; 
-    private List<string> serverAreaNames; 
+    private List<string> serverAreaResref; 
 
 
     public PersistPLCSpawner(SchedulerService schedulerService,PersistPLCService persistPLCService)
@@ -27,7 +27,7 @@ public class PersistPLCSpawner
        _schedulerService = schedulerService;
        _persistPLCService = persistPLCService; 
        serverAreas = new List<uint>();
-       serverAreaNames = new List<string>();
+       serverAreaResref = new List<string>();
        _schedulerService.ScheduleRepeating(Run, TimeSpan.FromMinutes(1));
     }
 
@@ -38,8 +38,9 @@ public class PersistPLCSpawner
 
         while(NWScript.GetIsObjectValid(tempWP)==1)
         {
-          serverAreas.Add(NWScript.GetArea(tempWP));
-          serverAreaNames.Add(NWScript.GetName(tempWP));
+          uint tempArea = NWScript.GetArea(tempWP);
+          serverAreas.Add(tempArea);
+          serverAreaResref.Add(NWScript.GetResRef(tempArea));
           count++;
           tempWP = NWScript.GetObjectByTag("is_area",count); 
         }
@@ -55,31 +56,32 @@ public class PersistPLCSpawner
 
         GatherAreas(); 
         
-        List<PersistPLC> invasions = await _persistPLCService.GetAllPersistPLCRecords();
-        int count = invasions.Count; 
+        List<PersistPLC> persistPLC = await _persistPLCService.GetAllPersistPLCRecords();
+        int count = persistPLC.Count; 
 
         int i;
 
-        /*
+        
 
         for(i=0;i<count;i++)
         {
-            PersistPLC temp = invasions[i];
+            PersistPLC temp = persistPLC[i];
             uint tempPLC = temp.PLC;
-            string areaName = NWScript.GetName(temp.Area);
-            int realName = serverAreaNames.FindIndex(x => x.Contains(areaName)); 
-            uint realArea = serverAreas[realName];
+            string tempPLCName = NWScript.GetName(tempPLC);
+            string areaResRef = NWScript.GetResRef(temp.Area);
+            int realResRefIndex = serverAreaResref.FindIndex(x => x.Contains(areaResRef)); 
+            uint realArea = serverAreas[realResRefIndex];
             string resRef = NWScript.GetResRef(tempPLC);
             Vector3 vector = NWScript.Vector(temp.X,temp.Y,temp.Z);
             Location location = NWScript.Location(realArea, vector,temp.Orientation);
             uint tempObject = NWScript.CreateObject(64,resRef,location);
-            NWScript.SetName(tempObject,areaName);
+            NWScript.SetName(tempObject,tempPLCName);
             NWScript.SetDescription(tempObject,NWScript.GetDescription(tempPLC));
             NWScript.SetUseableFlag(tempObject,1);
             NWScript.SetPlotFlag(tempObject,0);
         }
 
-        */
+       
 
         NWScript.SetLocalInt(NWScript.GetModule(), "PersistPLCLaunched",1); 
     }
