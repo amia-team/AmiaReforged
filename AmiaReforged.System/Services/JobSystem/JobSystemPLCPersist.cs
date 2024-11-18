@@ -50,7 +50,7 @@ public class JobSystemPLCPersist
         newPLC.Orientation = facing;
 
         await _persistPLCService.AddPersistPLC(newPLC); 
-        NWScript.DestroyObject(PLC);
+        //NWScript.DestroyObject(PLC);
 
     }
 
