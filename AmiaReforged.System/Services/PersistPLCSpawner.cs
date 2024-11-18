@@ -36,7 +36,7 @@ public class PersistPLCSpawner
 
         while(NWScript.GetIsObjectValid(tempWP)==1)
         {
-          serverAreas.Add(tempWP);
+          serverAreas.Add(NWScript.GetArea(tempWP));
           serverAreaNames.Add(NWScript.GetName(tempWP));
           count++;
           tempWP = NWScript.GetObjectByTag("is_area",count); 
