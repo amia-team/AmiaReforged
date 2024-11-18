@@ -51,6 +51,8 @@ public class JobSystemPLCPersist
 
         await _persistPLCService.AddPersistPLC(newPLC); 
         //NWScript.DestroyObject(PLC);
+        NWScript.SendMessageToAllDMs(NWScript.GetName(PLC));
+        NWScript.SendMessageToAllDMs(NWScript.GetResRef(PLC));
 
     }
 

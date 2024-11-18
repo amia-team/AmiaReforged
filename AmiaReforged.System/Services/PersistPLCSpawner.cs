@@ -28,7 +28,7 @@ public class PersistPLCSpawner
        _persistPLCService = persistPLCService; 
        serverAreas = new List<uint>();
        serverAreaResref = new List<string>();
-       _schedulerService.ScheduleRepeating(Run, TimeSpan.FromMinutes(1));
+       //_schedulerService.ScheduleRepeating(Run, TimeSpan.FromMinutes(1));
     }
 
     public void GatherAreas()
@@ -81,12 +81,14 @@ public class PersistPLCSpawner
             NWScript.SetPlotFlag(tempObject,0);
             NWScript.SendMessageToAllDMs(areaResRef);
             NWScript.SendMessageToAllDMs(realResRefIndex.ToString());
+            /*
             NWScript.SendMessageToAllDMs("Real Area: " + NWScript.GetName(realArea));
             NWScript.SendMessageToAllDMs(temp.X.ToString());
             NWScript.SendMessageToAllDMs(temp.Y.ToString());
             NWScript.SendMessageToAllDMs(temp.Z.ToString());
             NWScript.SendMessageToAllDMs("PLC ResRef: " + resRefPLC);
             NWScript.SendMessageToAllDMs("tempPLCName: " + tempPLCName);
+            */
         }
 
        
