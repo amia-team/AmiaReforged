@@ -25,11 +25,13 @@ public class PersistPLCSpawner
     public PersistPLCSpawner(SchedulerService schedulerService,PersistPLCService persistPLCService)
     {
        _schedulerService = schedulerService;
-       _schedulerService.ScheduleRepeating(Run, TimeSpan.FromMinutes(1));
        _persistPLCService = persistPLCService; 
+       serverAreas = new List<uint>();
+       serverAreaNames = new List<string>();
+       _schedulerService.ScheduleRepeating(Run, TimeSpan.FromMinutes(1));
     }
 
-    public async void GatherAreas()
+    public void GatherAreas()
     {
         int count = 0;
         uint tempWP = NWScript.GetObjectByTag("is_area",count);
