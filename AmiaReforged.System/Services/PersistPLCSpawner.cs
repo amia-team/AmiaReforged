@@ -63,8 +63,8 @@ public class PersistPLCSpawner
             PersistPLC temp = invasions[i];
             uint tempPLC = temp.PLC;
             string areaName = NWScript.GetName(temp.Area);
-            string realName = serverAreaNames.Find(x => x.Contains(areaName)); 
-            uint realArea = serverAreas[Int32.Parse(realName)];
+            int realName = serverAreaNames.FindIndex(x => x.Contains(areaName)); 
+            uint realArea = serverAreas[realName];
             string resRef = NWScript.GetResRef(tempPLC);
             Vector3 vector = NWScript.Vector(temp.X,temp.Y,temp.Z);
             Location location = NWScript.Location(realArea, vector,temp.Orientation);
