@@ -71,14 +71,16 @@ public class PersistPLCSpawner
             string areaResRef = NWScript.GetResRef(temp.Area);
             int realResRefIndex = serverAreaResref.FindIndex(x => x.Contains(areaResRef)); 
             uint realArea = serverAreas[realResRefIndex];
-            string resRef = NWScript.GetResRef(tempPLC);
+            string resRefPLC = NWScript.GetResRef(tempPLC);
             Vector3 vector = NWScript.Vector(temp.X,temp.Y,temp.Z);
             Location location = NWScript.Location(realArea, vector,temp.Orientation);
-            uint tempObject = NWScript.CreateObject(64,resRef,location);
+            uint tempObject = NWScript.CreateObject(64,resRefPLC,location);
             NWScript.SetName(tempObject,tempPLCName);
             NWScript.SetDescription(tempObject,NWScript.GetDescription(tempPLC));
             NWScript.SetUseableFlag(tempObject,1);
             NWScript.SetPlotFlag(tempObject,0);
+            NWScript.SendMessageToAllDMs(areaResRef);
+            NWScript.SendMessageToAllDMs(realResRefIndex.ToString());
         }
 
        
