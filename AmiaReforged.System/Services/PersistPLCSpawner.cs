@@ -85,6 +85,7 @@ public class PersistPLCSpawner
             NWScript.SendMessageToAllDMs(temp.X.ToString());
             NWScript.SendMessageToAllDMs(temp.Y.ToString());
             NWScript.SendMessageToAllDMs(temp.Z.ToString());
+            NWScript.SendMessageToAllDMs("PLC ResRef: " + resRefPLC);
         }
 
        
