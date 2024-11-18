@@ -18,17 +18,16 @@ using AmiaReforged.Core.UserInterface;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(JobSystemPLCPersis))]
-public class JobSystemPLCPersis
+[ServiceBinding(typeof(JobSystemPLCPersist))]
+public class JobSystemPLCPersist
 {
     private readonly PersistPLCService _persistPLCService;
     private readonly PersistPLC _persistplc;
 
 
-    public JobSystemPLCPersis(PersistPLCService persistPLCService, PersistPLC persistplc)
+    public JobSystemPLCPersist(PersistPLCService persistPLCService)
     {
         _persistPLCService = persistPLCService;
-        _persistplc = persistplc;
     }
 
     [ScriptHandler("js_persist_add")]
