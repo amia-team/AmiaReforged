@@ -18,15 +18,13 @@ public class PersistPLCSpawner
 {
     private readonly SchedulerService _schedulerService;
     private readonly PersistPLCService _persistPLCService;
-    private readonly PersistPLC _persistplc;
 
 
-    public PersistPLCSpawner(SchedulerService schedulerService,PersistPLCService persistPLCService, PersistPLC persistplc)
+    public PersistPLCSpawner(SchedulerService schedulerService,PersistPLCService persistPLCService)
     {
        _schedulerService = schedulerService;
        _schedulerService.ScheduleRepeating(Run, TimeSpan.FromMinutes(1));
        _persistPLCService = persistPLCService; 
-       _persistplc = persistplc;
     }
 
     public async void Run()
