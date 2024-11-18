@@ -22,7 +22,6 @@ namespace AmiaReforged.System.Services;
 public class JobSystemPLCPersist
 {
     private readonly PersistPLCService _persistPLCService;
-    private readonly PersistPLC _persistplc;
 
 
     public JobSystemPLCPersist(PersistPLCService persistPLCService)
@@ -51,6 +50,7 @@ public class JobSystemPLCPersist
         newPLC.Orientation = facing;
 
         await _persistPLCService.AddPersistPLC(newPLC); 
+        NWScript.DestroyObject(PLC);
 
     }
 
