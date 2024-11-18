@@ -60,6 +60,8 @@ public class PersistPLCSpawner
 
         int i;
 
+        /*
+
         for(i=0;i<count;i++)
         {
             PersistPLC temp = invasions[i];
@@ -76,6 +78,8 @@ public class PersistPLCSpawner
             NWScript.SetUseableFlag(tempObject,1);
             NWScript.SetPlotFlag(tempObject,0);
         }
+
+        */
 
         NWScript.SetLocalInt(NWScript.GetModule(), "PersistPLCLaunched",1); 
     }
