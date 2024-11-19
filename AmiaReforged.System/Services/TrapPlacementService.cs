@@ -102,5 +102,6 @@ public class TrapPlacementService
     private bool HasNoUpgradeComponentFor(TrapBaseType trapType, NwCreature? creature)
     {
         // List<NwItem> trapItems = 
+        return false;
     }
 }
