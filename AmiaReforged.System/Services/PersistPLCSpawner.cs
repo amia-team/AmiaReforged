@@ -66,29 +66,28 @@ public class PersistPLCSpawner
         for(i=0;i<count;i++)
         {
             PersistPLC temp = persistPLC[i];
-            uint tempPLC = temp.PLC;
-            string tempPLCName = NWScript.GetName(tempPLC);
-            string areaResRef = NWScript.GetResRef(temp.Area);
+            string tempPLCName = temp.PLCName;
+            string areaResRef = temp.AreaResRef;
             int realResRefIndex = serverAreaResref.FindIndex(x => x.Contains(areaResRef)); 
             uint realArea = serverAreas[realResRefIndex];
-            string resRefPLC = NWScript.GetResRef(tempPLC);
+            string PLCResRef = temp.PLCResRef;
             Vector3 vector = NWScript.Vector(temp.X,temp.Y,temp.Z);
             Location location = NWScript.Location(realArea, vector,temp.Orientation);
-            uint tempObject = NWScript.CreateObject(64,resRefPLC,location);
+            uint tempObject = NWScript.CreateObject(64,PLCResRef,location);
             NWScript.SetName(tempObject,tempPLCName);
-            NWScript.SetDescription(tempObject,NWScript.GetDescription(tempPLC));
+            NWScript.SetDescription(tempObject,temp.PLCDescription);
             NWScript.SetUseableFlag(tempObject,1);
             NWScript.SetPlotFlag(tempObject,0);
             NWScript.SendMessageToAllDMs(areaResRef);
             NWScript.SendMessageToAllDMs(realResRefIndex.ToString());
-            /*
+            
             NWScript.SendMessageToAllDMs("Real Area: " + NWScript.GetName(realArea));
             NWScript.SendMessageToAllDMs(temp.X.ToString());
             NWScript.SendMessageToAllDMs(temp.Y.ToString());
             NWScript.SendMessageToAllDMs(temp.Z.ToString());
-            NWScript.SendMessageToAllDMs("PLC ResRef: " + resRefPLC);
+            NWScript.SendMessageToAllDMs("PLC ResRef: " + PLCResRef);
             NWScript.SendMessageToAllDMs("tempPLCName: " + tempPLCName);
-            */
+            
         }
 
        

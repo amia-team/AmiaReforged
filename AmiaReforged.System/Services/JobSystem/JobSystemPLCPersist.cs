@@ -41,9 +41,12 @@ public class JobSystemPLCPersist
         Location location = NWScript.GetLocation(PLC);
         Vector3 vectorLocation = NWScript.GetPositionFromLocation(location); 
         float facing = NWScript.GetFacing(PLC);
+        uint Area =  NWScript.GetArea(PLC); 
 
-        newPLC.Area = NWScript.GetArea(PLC); 
-        newPLC.PLC = PLC; 
+        newPLC.AreaResRef = NWScript.GetResRef(Area); 
+        newPLC.PLCName = NWScript.GetName(PLC); 
+        newPLC.PLCResRef = NWScript.GetResRef(PLC); 
+        newPLC.PLCDescription = NWScript.GetDescription(PLC); 
         newPLC.X = vectorLocation.X;
         newPLC.Y = vectorLocation.Y; 
         newPLC.Z = vectorLocation.Z; 
@@ -64,9 +67,12 @@ public class JobSystemPLCPersist
         Location location = NWScript.GetLocation(PLC);
         Vector3 vectorLocation = NWScript.GetPositionFromLocation(location); 
         float facing = NWScript.GetFacing(PLC);
+        uint Area =  NWScript.GetArea(PLC); 
 
-        newPLC.Area = NWScript.GetArea(PLC); 
-        newPLC.PLC = PLC; 
+        newPLC.AreaResRef = NWScript.GetResRef(Area); 
+        newPLC.PLCName = NWScript.GetName(PLC); 
+        newPLC.PLCResRef = NWScript.GetResRef(PLC); 
+        newPLC.PLCDescription = NWScript.GetDescription(PLC); 
         newPLC.X = vectorLocation.X;
         newPLC.Y = vectorLocation.Y; 
         newPLC.Z = vectorLocation.Z; 
