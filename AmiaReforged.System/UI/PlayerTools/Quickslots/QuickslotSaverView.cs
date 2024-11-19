@@ -5,8 +5,8 @@ namespace AmiaReforged.System.UI.PlayerTools.Quickslots;
 
 public sealed class QuickslotSaverView : WindowView<QuickslotSaverView>
 {
-    public sealed override string Id => "playertools.quickslots";
-    public sealed override string Title => "Quickbar Loadouts";
+    public override string Id => "playertools.quickslots";
+    public override string Title => "Quickbar Loadouts";
     public override NuiWindow? WindowTemplate { get; }
 
     public override IWindowController? CreateDefaultController(NwPlayer player)
