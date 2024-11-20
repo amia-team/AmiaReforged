@@ -205,10 +205,7 @@ public class TrapPlacementService
         NWScript.CreateTrapAtLocation((int)trapUpgrade, trigger.Location!);
         trigger.Destroy();
 
-        if (!creature.IsPlayerControlled(out NwPlayer? player))
-        {
-            return;
-        }
+        if (!creature.IsPlayerControlled(out NwPlayer? player)) return;
 
         player.SendServerMessage("Your trap has been upgraded using a component from your inventory.");
     }
