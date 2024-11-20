@@ -1,6 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using Anvil.API;
-using Anvil.API.Events;
+﻿using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
