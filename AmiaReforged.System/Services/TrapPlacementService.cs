@@ -18,6 +18,7 @@ public class TrapPlacementService
     private const string TangleTrapComponent = "itm_sc_trazors";
     private const string NegativeTrapComponent = "itm_sc_ninducer";
     private const string SpikeTrapComponent = "itm_sc_aconcent";
+    private const string TrapPlacementScript = "TrapPlacement";
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -26,7 +27,7 @@ public class TrapPlacementService
 
     public TrapPlacementService()
     {
-        EventsPlugin.SubscribeEvent("NWNX_ON_TRAP_SET_AFTER", "TrapPlacement");
+        EventsPlugin.SubscribeEvent("NWNX_ON_TRAP_SET_AFTER", TrapPlacementScript);
 
         _trapDictionary = new Dictionary<string, Dictionary<TrapBaseType, TrapBaseType>>
         {
@@ -153,7 +154,7 @@ public class TrapPlacementService
         };
     }
 
-    [ScriptHandler("TrapPlacement")]
+    [ScriptHandler(TrapPlacementScript)]
     public void OnSetTrap(CallInfo info)
     {
         string obj = EventsPlugin.GetEventData("OBJECT_SELF");
