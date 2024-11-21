@@ -28,7 +28,7 @@ public class PersistPLCSpawner
        _persistPLCService = persistPLCService; 
        serverAreas = new List<uint>();
        serverAreaResref = new List<string>();
-       //_schedulerService.ScheduleRepeating(Run, TimeSpan.FromMinutes(1));
+       _schedulerService.ScheduleRepeating(Run, TimeSpan.FromMinutes(1));
     }
 
     public void GatherAreas()
