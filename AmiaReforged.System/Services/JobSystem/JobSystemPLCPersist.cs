@@ -32,7 +32,7 @@ public class JobSystemPLCPersist
     [ScriptHandler("js_persist_add")]
     public async void JobSystemPLCPersisSave(CallInfo info)
     {
-        uint Player = NWScript.OBJECT_SELF;
+        uint Player = NWScript.OBJECT_SELF; //
         uint PLC = NWScript.GetLocalObject(Player,"pcplc");
         NWScript.SetLocalInt(PLC,"persist",1);
         NWScript.SetUseableFlag(PLC,1);
