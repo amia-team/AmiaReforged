@@ -55,6 +55,8 @@ public class PersistPLCSpawner
         }
 
         GatherAreas(); 
+
+        NWScript.SendMessageToAllDMs("Persist PLC Spawner launched");
         
         List<PersistPLC> persistPLC = await _persistPLCService.GetAllPersistPLCRecords();
         int count = persistPLC.Count; 
