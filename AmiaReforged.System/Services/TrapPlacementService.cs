@@ -18,7 +18,8 @@ public class TrapPlacementService
     private const string TangleTrapComponent = "itm_sc_trazors";
     private const string NegativeTrapComponent = "itm_sc_ninducer";
     private const string SpikeTrapComponent = "itm_sc_aconcent";
-    private const string TrapPlacementScript = "TrapPlacement";
+    
+    private const string TrapPlacementScript = "evnt_set_trap";
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
