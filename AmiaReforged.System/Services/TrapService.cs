@@ -1,7 +1,6 @@
 ﻿using Anvil.API;
 using Anvil.Services;
 using NLog;
-using NUnit.Framework.Internal.Execution;
 using NWN.Core;
 using NWN.Core.NWNX;
 
