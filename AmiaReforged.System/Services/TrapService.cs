@@ -1,4 +1,5 @@
 ﻿using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -30,8 +31,9 @@ public class TrapService
     public TrapService()
     {
         EventsPlugin.SubscribeEvent("NWNX_ON_TRAP_SET_AFTER", TrapPlacementScript);
-        EventsPlugin.SubscribeEvent("NWNX_ON_TRAP_RECOVER_AFTER", TrapRecoverScript);
+        // EventsPlugin.SubscribeEvent("NWNX_ON_TRAP_RECOVER_AFTER", TrapRecoverScript);
 
+        NwModule.Instance.OnAcquireItem += OnRecoverTrap;
         _trapDictionary = new Dictionary<string, Dictionary<TrapBaseType, TrapBaseType>>
         {
             {
@@ -157,6 +159,7 @@ public class TrapService
         };
     }
 
+
     [ScriptHandler(TrapPlacementScript)]
     public void OnSetTrapAfter(CallInfo info)
     {
@@ -230,5 +233,19 @@ public class TrapService
         }
 
         item.Identified = true;
+    }
+
+    private void OnRecoverTrap(ModuleEvents.OnAcquireItem obj)
+    {
+        if (!obj.AcquiredBy.IsPlayerControlled(out NwPlayer? player))
+        {
+            return;
+        }
+
+        if (obj.Item is null) return;
+
+        if (NWScript.GetBaseItemType(obj.Item) != NWScript.BASE_ITEM_TRAPKIT) return;
+        
+        NWScript.SetIdentified(obj.Item, NWScript.TRUE);
     }
 }
