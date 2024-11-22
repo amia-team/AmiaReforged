@@ -155,9 +155,8 @@ public class TrapPlacementService
     }
 
     [ScriptHandler(TrapPlacementScript)]
-    public void OnSetTrap(CallInfo info)
+    public void OnSetTrapAfter(CallInfo info)
     {
-        string obj = EventsPlugin.GetEventData("OBJECT_SELF");
         if (info.ObjectSelf is null)
         {
             Log.Error("Couldn't get object self: Creature is null");
@@ -171,11 +170,10 @@ public class TrapPlacementService
 
         NwCreature creature = player.LoginCreature!;
 
-        string trap = EventsPlugin.GetEventData("TRAP_OBJECT_ID");
-        NwTrigger? trigger = NWScript.StringToObject(trap).ToNwObject<NwTrigger>();
-        if (trigger is null)
+        NwTrigger? trigger = creature.GetNearestObjectsByType<NwTrigger>().Where(t => t.TrapCreator == player).FirstOrDefault();
+        if(trigger is null)
         {
-            Log.Info("Couldn't get recently placed trap: Trap is null");
+            Log.Info("Couldn't get trigger: Trigger is null");
             return;
         }
 
