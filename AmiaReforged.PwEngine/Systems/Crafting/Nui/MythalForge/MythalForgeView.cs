@@ -23,7 +23,8 @@ public sealed class MythalForgeView : NuiView<MythalForgeView>
         {
             Children =
             {
-                new NuiRow
+                
+                new NuiColumn()
                 {
                     Children =
                     {

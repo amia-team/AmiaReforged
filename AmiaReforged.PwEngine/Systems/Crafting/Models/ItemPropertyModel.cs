@@ -1,4 +1,4 @@
-﻿namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.Models;
+﻿namespace AmiaReforged.PwEngine.Systems.Crafting.Models;
 
 public class ItemPropertyModel
 {
