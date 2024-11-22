@@ -1,13 +1,14 @@
 ﻿using Anvil.API;
 using Anvil.Services;
 using NLog;
+using NUnit.Framework.Internal.Execution;
 using NWN.Core;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(TrapPlacementService))]
-public class TrapPlacementService
+[ServiceBinding(typeof(TrapService))]
+public class TrapService
 {
     private const string ElectricTrapComponent = "itm_sc_ecoil";
     private const string FireTrapComponent = "itm_sc_fivalve";
@@ -20,15 +21,17 @@ public class TrapPlacementService
     private const string SpikeTrapComponent = "itm_sc_aconcent";
     
     private const string TrapPlacementScript = "evnt_set_trap";
+    private const string TrapRecoverScript = "evnt_rec_trap";
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly Dictionary<string, Dictionary<TrapBaseType, TrapBaseType>> _trapDictionary;
     private readonly Dictionary<TrapBaseType, string> _trapComponentDictionary;
 
-    public TrapPlacementService()
+    public TrapService()
     {
         EventsPlugin.SubscribeEvent("NWNX_ON_TRAP_SET_AFTER", TrapPlacementScript);
+        EventsPlugin.SubscribeEvent("NWNX_ON_TRAP_RECOVER_AFTER", TrapRecoverScript);
 
         _trapDictionary = new Dictionary<string, Dictionary<TrapBaseType, TrapBaseType>>
         {
@@ -158,32 +161,28 @@ public class TrapPlacementService
     [ScriptHandler(TrapPlacementScript)]
     public void OnSetTrapAfter(CallInfo info)
     {
-        Log.Info("Trap set after");
         if (info.ObjectSelf is null)
         {
             Log.Error("Couldn't get object self: Creature is null");
             return;
         }
-        Log.Info("Object self is not null");
+
         if (!info.ObjectSelf.IsLoginPlayerCharacter(out NwPlayer? player))
         {
             return;
         }
-        Log.Info("Player is not null");
         NwCreature creature = player.LoginCreature!;
 
         NwTrigger? trigger = creature.GetNearestObjectsByType<NwTrigger>().Where(t => t.TrapCreator == player).FirstOrDefault();
         if(trigger is null)
         {
-            Log.Info("Couldn't get trigger: Trigger is null");
+            Log.Error("Couldn't get trigger: Trigger is null");
             return;
         }
-        Log.Info("Trigger is not null");
+        
         TrapBaseType trapType = trigger.TrapBaseType;
-        Log.Info($"Trap type: {trapType}");
         if (HasNoUpgradeComponentFor(trapType, creature)) return;
         
-        Log.Info("Upgrade component found");
         CreateTrapUpgrade(trapType, trigger, creature);
     }
 
@@ -203,7 +202,7 @@ public class TrapPlacementService
 
         if (component is null)
         {
-            Log.Info("Couldn't find component in inventory: Component is null");
+            Log.Error("Couldn't find component in inventory: Component is null");
             return;
         }
 
@@ -217,5 +216,20 @@ public class TrapPlacementService
         if (!creature.IsPlayerControlled(out NwPlayer? player)) return;
 
         player.SendServerMessage("Your trap has been upgraded using a component from your inventory.");
+    }
+
+    [ScriptHandler(TrapRecoverScript)]
+    public void OnRecoverAfter(CallInfo info)
+    {
+        string itemString = EventsPlugin.GetEventData("TRAP_OBJECT_ID");
+        NwItem? item = NWScript.StringToObject(itemString).ToNwObject<NwItem>();
+        
+        if (item is null)
+        {
+            Log.Error("Couldn't get item: Item is null");
+            return;
+        }
+
+        item.Identified = true;
     }
 }
