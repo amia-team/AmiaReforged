@@ -2,6 +2,7 @@
 using Anvil.API;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting;
@@ -23,8 +24,15 @@ public class CraftingPropertyService
 
     private void LoadDefinitionsFromDisk()
     {
+        // Log the user home directory's contents...
+        string userHome = NwServer.Instance.UserDirectory;
+        Log.Info($"User home directory: {userHome}");
+        foreach (string file in Directory.GetFiles(userHome))
+        {
+            Log.Info($"{file}");
+        }
         string path =
-            NwServer.Instance.UserDirectory + UtilPlugin.GetEnvironmentVariable(AmiaCraftingPropertiesDirectory);
+            userHome + "/" + UtilPlugin.GetEnvironmentVariable(AmiaCraftingPropertiesDirectory);
         if (path == "")
         {
             Log.Error(
