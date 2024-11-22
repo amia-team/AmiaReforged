@@ -208,7 +208,10 @@ public class TrapPlacementService
         }
 
         component.Destroy();
-        NWScript.CreateTrapAtLocation((int)trapUpgrade, trigger.Location!);
+        
+        uint trap = NWScript.CreateTrapAtLocation((int)trapUpgrade, trigger.Location!);
+        ObjectPlugin.SetTrapCreator(trap, creature);
+        
         trigger.Destroy();
 
         if (!creature.IsPlayerControlled(out NwPlayer? player)) return;
