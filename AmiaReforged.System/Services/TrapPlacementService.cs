@@ -158,17 +158,18 @@ public class TrapPlacementService
     [ScriptHandler(TrapPlacementScript)]
     public void OnSetTrapAfter(CallInfo info)
     {
+        Log.Info("Trap set after");
         if (info.ObjectSelf is null)
         {
             Log.Error("Couldn't get object self: Creature is null");
             return;
         }
-        
+        Log.Info("Object self is not null");
         if (!info.ObjectSelf.IsLoginPlayerCharacter(out NwPlayer? player))
         {
             return;
         }
-
+        Log.Info("Player is not null");
         NwCreature creature = player.LoginCreature!;
 
         NwTrigger? trigger = creature.GetNearestObjectsByType<NwTrigger>().Where(t => t.TrapCreator == player).FirstOrDefault();
@@ -177,23 +178,23 @@ public class TrapPlacementService
             Log.Info("Couldn't get trigger: Trigger is null");
             return;
         }
-
+        Log.Info("Trigger is not null");
         TrapBaseType trapType = trigger.TrapBaseType;
-
+        Log.Info($"Trap type: {trapType}");
         if (HasNoUpgradeComponentFor(trapType, creature)) return;
-
+        
+        Log.Info("Upgrade component found");
         CreateTrapUpgrade(trapType, trigger, creature);
     }
 
     private bool HasNoUpgradeComponentFor(TrapBaseType trapType, NwCreature creature)
     {
         string componentResRef = _trapComponentDictionary[trapType];
-        return creature.Inventory.Items.Any(i => i.ResRef == componentResRef);
+        return !creature.Inventory.Items.Any(i => i.ResRef == componentResRef);
     }
 
     private void CreateTrapUpgrade(TrapBaseType trapType, NwTrigger trigger, NwCreature creature)
     {
-        Log.Info("Setting trap upgrade");
         TrapBaseType trapUpgrade = _trapDictionary[_trapComponentDictionary[trapType]][trapType];
 
         string componentResRef = _trapComponentDictionary[trapUpgrade];
