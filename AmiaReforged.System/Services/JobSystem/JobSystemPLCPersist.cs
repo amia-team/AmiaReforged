@@ -66,23 +66,29 @@ public class JobSystemPLCPersist
         PersistPLC newPLC = new PersistPLC(); 
         Location location = NWScript.GetLocation(PLC);
         Vector3 vectorLocation = NWScript.GetPositionFromLocation(location); 
-        float facing = NWScript.GetFacing(PLC);
         uint Area =  NWScript.GetArea(PLC); 
 
-        newPLC.AreaResRef = NWScript.GetResRef(Area); 
-        newPLC.PLCName = NWScript.GetName(PLC); 
-        newPLC.PLCResRef = NWScript.GetResRef(PLC); 
-        newPLC.PLCDescription = NWScript.GetDescription(PLC); 
-        newPLC.X = vectorLocation.X;
-        newPLC.Y = vectorLocation.Y; 
-        newPLC.Z = vectorLocation.Z; 
-        newPLC.Orientation = facing;
+       Predicate<PersistPLC> searcharea = (PersistPLC p) => {return p.AreaResRef == NWScript.GetResRef(Area);};
+       Predicate<PersistPLC> searchx = (PersistPLC p) => {return p.X == vectorLocation.X;};
+       Predicate<PersistPLC> searchxy = (PersistPLC p) => {return p.Y == vectorLocation.Y;};
+       Predicate<PersistPLC> searchxyz = (PersistPLC p) => {return p.Z == vectorLocation.Z;};
 
-        await _persistPLCService.DeletePersistPLC(newPLC);
+       List<PersistPLC> persistPLC = await _persistPLCService.GetAllPersistPLCRecords();
+       List<PersistPLC> persistPLCArea = persistPLC.FindAll(searcharea);
+       List<PersistPLC> persistPLCAreax = persistPLCArea.FindAll(searchx);
+       List<PersistPLC> persistPLCAreaxy = persistPLCAreax.FindAll(searchxy);
+       PersistPLC persistPLCAreaxyz = persistPLCAreax.Find(searchxyz);
+
+       if((persistPLCAreaxyz.PLCResRef == NWScript.GetResRef(PLC)) && (persistPLCAreaxyz.PLCName == NWScript.GetName(PLC)) && (persistPLCAreaxyz.Orientation == NWScript.GetFacing(PLC)))  
+       {
+        await _persistPLCService.DeletePersistPLC(persistPLCAreaxyz);
+       }
+       else
+       {
+        NWScript.SendMessageToAllDMs("Error: Record not found to delete");
+       }
 
     }
-
-
 
 
 }
