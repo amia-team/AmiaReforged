@@ -158,12 +158,18 @@ public class TrapPlacementService
     public void OnSetTrap(CallInfo info)
     {
         string obj = EventsPlugin.GetEventData("OBJECT_SELF");
-        NwCreature? creature = NWScript.StringToObject(obj).ToNwObject<NwCreature>();
-        if (creature is null)
+        if (info.ObjectSelf is null)
         {
-            Log.Info("Couldn't get creature: Creature is null");
+            Log.Error("Couldn't get object self: Creature is null");
             return;
         }
+        
+        if (!info.ObjectSelf.IsLoginPlayerCharacter(out NwPlayer? player))
+        {
+            return;
+        }
+
+        NwCreature creature = player.LoginCreature!;
 
         string trap = EventsPlugin.GetEventData("TRAP_OBJECT_ID");
         NwTrigger? trigger = NWScript.StringToObject(trap).ToNwObject<NwTrigger>();
