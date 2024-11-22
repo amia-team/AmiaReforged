@@ -23,12 +23,14 @@ public class CraftingPropertyService
 
     private void LoadDefinitionsFromDisk()
     {
-        string path = UtilPlugin.GetEnvironmentVariable(AmiaCraftingPropertiesDirectory);
+        string path =
+            NwServer.Instance.UserDirectory + UtilPlugin.GetEnvironmentVariable(AmiaCraftingPropertiesDirectory);
         if (path == "")
         {
-            Log.Error("Could not load crafting properties. Environment variable AMIA_CRAFTING_PROPERTIES_DIRECTORY is not set.");
+            Log.Error(
+                "Could not load crafting properties. Environment variable AMIA_CRAFTING_PROPERTIES_DIRECTORY is not set.");
         }
-        
+
         // See if the path exists
         if (!Directory.Exists(path))
         {
@@ -37,7 +39,7 @@ public class CraftingPropertyService
             return;
         }
     }
-    
+
     public IReadOnlyCollection<ItemPropertyCategory> GetPropertiesForItem(NwItem item)
     {
         return new List<ItemPropertyCategory>();
