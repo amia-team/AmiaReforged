@@ -192,6 +192,7 @@ public class TrapPlacementService
 
     private void CreateTrapUpgrade(TrapBaseType trapType, NwTrigger trigger, NwCreature creature)
     {
+        Log.Info("Setting trap upgrade");
         TrapBaseType trapUpgrade = _trapDictionary[_trapComponentDictionary[trapType]][trapType];
 
         string componentResRef = _trapComponentDictionary[trapUpgrade];
