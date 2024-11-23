@@ -32,7 +32,14 @@ public class JobSystemPLCPersist
     [ScriptHandler("js_persist_add")]
     public async void JobSystemPLCPersisSave(CallInfo info)
     {
-        uint Player = NWScript.OBJECT_SELF; //
+        uint Player = NWScript.OBJECT_SELF; 
+        
+        if ((NWScript.GetLocalInt(NWScript.GetArea(Player), "block_persist") == 1))
+        {
+          return;
+        }
+
+
         uint PLC = NWScript.GetLocalObject(Player,"pcplc");
         NWScript.SetLocalInt(PLC,"persist",1);
         NWScript.SetUseableFlag(PLC,1);
@@ -54,8 +61,7 @@ public class JobSystemPLCPersist
 
         await _persistPLCService.AddPersistPLC(newPLC); 
         //NWScript.DestroyObject(PLC);
-        NWScript.SendMessageToAllDMs(NWScript.GetName(PLC));
-        NWScript.SendMessageToAllDMs(NWScript.GetResRef(PLC));
+
 
     }
 
