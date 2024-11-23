@@ -25,7 +25,7 @@ public class CraftingPropertyService
     private void LoadDefinitionsFromDisk()
     {
         // Log the user home directory's contents...
-        string userHome = "/nwn/run/";
+        string userHome = "/nwn/home";
         Log.Info($"User home directory: {userHome}");
         foreach (string file in Directory.GetFiles(userHome))
         {
