@@ -72,7 +72,6 @@ public class JobSystemPLCPersist
 
         if ((NWScript.GetLocalInt(PLC, "persist") == 0))
         {
-          NWScript.SendMessageToAllDMs("No Persist Variable"); 
           return;
         }
 
@@ -94,7 +93,6 @@ public class JobSystemPLCPersist
        if((persistPLCAreaxyz.PLCResRef == NWScript.GetResRef(PLC)) && (persistPLCAreaxyz.PLCName == NWScript.GetName(PLC)) && (persistPLCAreaxyz.Orientation == NWScript.GetFacing(PLC)))  
        {
         await _persistPLCService.DeletePersistPLC(persistPLCAreaxyz);
-        NWScript.SendMessageToAllDMs("Removed Persist PLC"); 
        }
        else
        {
