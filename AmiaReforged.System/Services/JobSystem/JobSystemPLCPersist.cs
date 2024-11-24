@@ -78,6 +78,7 @@ public class JobSystemPLCPersist
         Location location = NWScript.GetLocation(PLC);
         Vector3 vectorLocation = NWScript.GetPositionFromLocation(location); 
         uint Area =  NWScript.GetArea(PLC); 
+        uint Killer = NWScript.GetLastKiller(); 
 
        Predicate<PersistPLC> searcharea = (PersistPLC p) => {return p.AreaResRef == NWScript.GetResRef(Area);};
        Predicate<PersistPLC> searchx = (PersistPLC p) => {return p.X == vectorLocation.X;};
@@ -93,6 +94,10 @@ public class JobSystemPLCPersist
        if((persistPLCAreaxyz.PLCResRef == NWScript.GetResRef(PLC)) && (persistPLCAreaxyz.PLCName == NWScript.GetName(PLC)) && (persistPLCAreaxyz.Orientation == NWScript.GetFacing(PLC)))  
        {
         await _persistPLCService.DeletePersistPLC(persistPLCAreaxyz);
+        
+        NWScript.SetLocalString(NWScript.GetModule(),"staffMessage","Persist PLC Destroyed by " + NWScript.GetName(Killer) + " in " + NWScript.GetName(Area) + ". Info --  " + " ResRef: " + 
+        NWScript.GetResRef(PLC) + " , Name: " +  NWScript.GetName(PLC) + " , X: " +  NWScript.FloatToString(vectorLocation.X) + " , Y: " + NWScript.FloatToString(vectorLocation.Y) + " , Z: "  +  NWScript.FloatToString(vectorLocation.Z) + " , Facing: "  + NWScript.FloatToString(NWScript.GetFacing(PLC)) + " , Bio: " +  NWScript.GetDescription(PLC));
+        NWScript.ExecuteScript("webhook_staff");
        }
        else
        {
