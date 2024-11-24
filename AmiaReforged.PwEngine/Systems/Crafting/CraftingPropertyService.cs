@@ -14,9 +14,14 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 [ServiceBinding(typeof(CraftingPropertyService))]
 public class CraftingPropertyService
 {
-    private const string AmiaCraftingPropertiesDirectory = "AMIA_CRAFTING_PROPERTIES_DIRECTORY";
+    private const string DirectoryEnvironmentVariable = "AMIA_CRAFTING_PROPERTIES_DIRECTORY";
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
+    /// <summary>
+    /// Do not use this constructor. It is only used for dependency injection. Inject into your class instead as a
+    /// dependency (parameter) for its constructor to use it or utilize the [Inject] attribute if you need
+    /// less strict control.
+    /// </summary>
     public CraftingPropertyService()
     {
         LoadDefinitionsFromDisk();
@@ -25,14 +30,15 @@ public class CraftingPropertyService
     private void LoadDefinitionsFromDisk()
     {
         // Log the user home directory's contents...
-        string userHome = "/nwn/home";
+        string userHome = "/nwn/home"; // TODO: Do not hardcode this.
         Log.Info($"User home directory: {userHome}");
         foreach (string file in Directory.GetFiles(userHome))
         {
             Log.Info($"{file}");
         }
+
         string path =
-            userHome + "/" + UtilPlugin.GetEnvironmentVariable(AmiaCraftingPropertiesDirectory);
+            userHome + "/" + UtilPlugin.GetEnvironmentVariable(DirectoryEnvironmentVariable);
         if (path == "")
         {
             Log.Error(
