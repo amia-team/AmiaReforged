@@ -39,8 +39,8 @@ public class JobSystemPLCPersist
           return;
         }
 
-
         uint PLC = NWScript.GetLocalObject(Player,"pcplc");
+        uint PLCWidget = NWScript.GetLocalObject(Player,"plcwidget");
         NWScript.SetLocalInt(PLC,"persist",1);
         NWScript.SetUseableFlag(PLC,1);
         NWScript.SetPlotFlag(PLC,0);
@@ -61,15 +61,19 @@ public class JobSystemPLCPersist
         newPLC.Size = NWScript.GetObjectVisualTransform(PLC,NWScript.OBJECT_VISUAL_TRANSFORM_SCALE);
 
         await _persistPLCService.AddPersistPLC(newPLC); 
-        //NWScript.DestroyObject(PLC);
-
-
+        NWScript.DestroyObject(PLCWidget);
     }
 
     [ScriptHandler("js_persist_del")]
     public async void JobSystemPLCPersisDelete(CallInfo info)
     {
         uint PLC = NWScript.OBJECT_SELF;
+
+        if ((NWScript.GetLocalInt(NWScript.GetArea(PLC), "persist") == 0))
+        {
+          return;
+        }
+
         PersistPLC newPLC = new PersistPLC(); 
         Location location = NWScript.GetLocation(PLC);
         Vector3 vectorLocation = NWScript.GetPositionFromLocation(location); 

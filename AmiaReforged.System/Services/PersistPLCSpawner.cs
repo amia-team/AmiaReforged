@@ -70,21 +70,13 @@ public class PersistPLCSpawner
             string PLCResRef = temp.PLCResRef;
             Vector3 vector = NWScript.Vector(temp.X,temp.Y,temp.Z);
             Location location = NWScript.Location(realArea, vector,temp.Orientation);
-            uint tempObject = NWScript.CreateObject(64,PLCResRef,location);
+            uint tempObject = NWScript.CreateObject(64,PLCResRef,location);           
+            NWScript.SetLocalInt(tempObject,"persist",1);
             NWScript.SetName(tempObject,tempPLCName);
             NWScript.SetDescription(tempObject,temp.PLCDescription);
             NWScript.SetUseableFlag(tempObject,1);
             NWScript.SetPlotFlag(tempObject,0);
-            NWScript.SendMessageToAllDMs(areaResRef);
-            NWScript.SendMessageToAllDMs(realResRefIndex.ToString());
-            NWScript.SetObjectVisualTransform(tempObject,NWScript.OBJECT_VISUAL_TRANSFORM_SCALE,temp.Size);
-
-            NWScript.SendMessageToAllDMs("Real Area: " + NWScript.GetName(realArea));
-            NWScript.SendMessageToAllDMs(temp.X.ToString());
-            NWScript.SendMessageToAllDMs(temp.Y.ToString());
-            NWScript.SendMessageToAllDMs(temp.Z.ToString());
-            NWScript.SendMessageToAllDMs("PLC ResRef: " + PLCResRef);
-            
+            NWScript.SetObjectVisualTransform(tempObject,NWScript.OBJECT_VISUAL_TRANSFORM_SCALE,temp.Size);     
         }
 
        
