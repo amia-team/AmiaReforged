@@ -94,6 +94,7 @@ public class JobSystemPLCPersist
        if((persistPLCAreaxyz.PLCResRef == NWScript.GetResRef(PLC)) && (persistPLCAreaxyz.PLCName == NWScript.GetName(PLC)) && (persistPLCAreaxyz.Orientation == NWScript.GetFacing(PLC)))  
        {
         await _persistPLCService.DeletePersistPLC(persistPLCAreaxyz);
+        NWScript.SendMessageToAllDMs("Removed Persist PLC"); 
        }
        else
        {
