@@ -70,7 +70,7 @@ public class JobSystemPLCPersist
     {
         uint PLC = NWScript.OBJECT_SELF;
 
-        if ((NWScript.GetLocalInt(NWScript.GetArea(PLC), "persist") == 0))
+        if ((NWScript.GetLocalInt(PLC, "persist") == 0))
         {
           return;
         }
