@@ -82,7 +82,8 @@ public class PersistPLCSpawner
             NWScript.SetPlotFlag(tempObject,0);
             NWScript.SendMessageToAllDMs(areaResRef);
             NWScript.SendMessageToAllDMs(realResRefIndex.ToString());
-            
+            NWScript.SetObjectVisualTransform(tempObject,NWScript.OBJECT_VISUAL_TRANSFORM_SCALE,temp.Size);
+
             NWScript.SendMessageToAllDMs("Real Area: " + NWScript.GetName(realArea));
             NWScript.SendMessageToAllDMs(temp.X.ToString());
             NWScript.SendMessageToAllDMs(temp.Y.ToString());

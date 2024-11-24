@@ -58,6 +58,7 @@ public class JobSystemPLCPersist
         newPLC.Y = vectorLocation.Y; 
         newPLC.Z = vectorLocation.Z; 
         newPLC.Orientation = facing;
+        newPLC.Size = NWScript.GetObjectVisualTransform(PLC,NWScript.OBJECT_VISUAL_TRANSFORM_SCALE);
 
         await _persistPLCService.AddPersistPLC(newPLC); 
         //NWScript.DestroyObject(PLC);
@@ -91,7 +92,7 @@ public class JobSystemPLCPersist
        }
        else
        {
-        NWScript.SendMessageToAllDMs("Error: Record not found to delete"); //
+        NWScript.SendMessageToAllDMs("Error: Record not found to delete"); 
        }
 
     }
