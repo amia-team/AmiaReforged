@@ -36,11 +36,8 @@ public class JobSystemPLCPersist
         
         if ((NWScript.GetLocalInt(NWScript.GetArea(Player), "block_persist") == 1))
         {
+          NWScript.SendMessageToPC(Player,"*This area does not allow persist PLC placement*");
           return;
-        }
-        else
-        {
-            NWScript.SendMessageToPC(Player,"*This area does not allow persist PLC placement*");
         }
 
         uint PLC = NWScript.GetLocalObject(Player,"pcplc");
