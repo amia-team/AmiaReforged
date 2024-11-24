@@ -38,7 +38,7 @@ public class CraftingPropertyService
             Log.Error(
                 "Could not load crafting properties. Environment variable AMIA_CRAFTING_PROPERTIES_DIRECTORY is not set.");
         }
-
+            
         // See if the path exists
         if (!Directory.Exists(path))
         {
@@ -46,6 +46,8 @@ public class CraftingPropertyService
             Log.Error($"Could not load crafting properties. Directory {path} does not exist.");
             return;
         }
+        
+        Log.Info("Loading crafting properties from disk...");
     }
 
     public IReadOnlyCollection<ItemPropertyCategory> GetPropertiesForItem(NwItem item)
