@@ -72,10 +72,10 @@ public class JobSystemPLCPersist
 
         if ((NWScript.GetLocalInt(PLC, "persist") == 0))
         {
+          NWScript.SendMessageToAllDMs("No Persist Variable"); 
           return;
         }
 
-        PersistPLC newPLC = new PersistPLC(); 
         Location location = NWScript.GetLocation(PLC);
         Vector3 vectorLocation = NWScript.GetPositionFromLocation(location); 
         uint Area =  NWScript.GetArea(PLC); 
