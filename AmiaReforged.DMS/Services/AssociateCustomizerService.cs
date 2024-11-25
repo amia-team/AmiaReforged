@@ -404,7 +404,6 @@ public class AssociateCustomizerService
             if (associate.GetItemInSlot(InventorySlot.Chest) == null)
             {
                 NwItem? armor = await NwItem.Create("cloth024", associate);
-                await associate.GiveItem(armor); 
                 associate.RunEquip(armor, InventorySlot.Chest);
                 armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
                 armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
