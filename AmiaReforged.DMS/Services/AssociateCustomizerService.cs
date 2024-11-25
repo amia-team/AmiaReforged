@@ -207,8 +207,9 @@ public class AssociateCustomizerService
         {
             byte[] armorData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Value);
             NwItem armorCopy = NwItem.Deserialize(armorData);
-            if ((creature.GetItemInSlot(InventorySlot.Chest) == null && !(armorCopy.BaseACValue == 0)) ||
-                (creature.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue))
+            if ((creature.GetItemInSlot(InventorySlot.Chest) == null && armorCopy.BaseACValue > 0) ||
+                    (creature.GetItemInSlot(InventorySlot.Chest) != null && 
+                    creature.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
                 (@"[Associate Customizer] Base armor items don't match. If you want the armor have a custom appearance, 
@@ -225,7 +226,8 @@ public class AssociateCustomizerService
                 || (creature.GetItemInSlot(InventorySlot.RightHand) == null))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Base mainhand items don't match. If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
+                (@"[Associate Customizer] Base mainhand items don't match. If you want the mainhand to have a custom appearance, 
+                make sure the base items match.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
             }
         }
@@ -300,7 +302,8 @@ public class AssociateCustomizerService
             associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
 
-        if(!associateCustomizer.Name.Contains(creature.Master.Name))
+        // If the Associate Customizer tool hasn't been assigned to a player yet, name it after the associate's master ie tool's new owner
+        if(!associateCustomizer.Name.Contains(creature.Master.OriginalFirstName))
         {
             string toolName = associateCustomizer.Name;
             associateCustomizer.Name = $"{creature.Master.OriginalFirstName}'s {toolName}";
@@ -309,7 +312,7 @@ public class AssociateCustomizerService
         obj.ItemActivator.LoginPlayer.SendServerMessage
             ($"[Associate Customizer] Custom appearance stored for {creature.OriginalName}", COLOR_GREEN);
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("Hand the tool over to the player amd have them summon the associate to make sure it applies properly!", COLOR_WHITE);
+            ("Hand the tool over to the player and have them summon the associate to make sure it applies properly!", COLOR_WHITE);
     }
 
     /// <summary>
