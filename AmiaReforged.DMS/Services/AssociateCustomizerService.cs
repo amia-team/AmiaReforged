@@ -212,9 +212,7 @@ public class AssociateCustomizerService
                     creature.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                (@"[Associate Customizer] Base armor items don't match. If you want the armor have a custom appearance, 
-                make sure the base items match. If the associate's armor slot is empty but you want an armor for the custom appearance, 
-                you can choose a cloth armor for the copied creature.", COLOR_RED);
+                ("[Associate Customizer] Armor not copied. If you want the armor to have a custom appearance, make sure the base items match. If the associate's armor slot is empty but you want an armor for the custom appearance, you can choose a cloth armor for the copied creature.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Delete();
             }
         }
@@ -226,8 +224,7 @@ public class AssociateCustomizerService
                 || (creature.GetItemInSlot(InventorySlot.RightHand) == null))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                (@"[Associate Customizer] Base mainhand items don't match. If you want the mainhand to have a custom appearance, 
-                make sure the base items match.", COLOR_RED);
+                ("[Associate Customizer] Mainhand not copied. If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
             }
         }
@@ -241,9 +238,7 @@ public class AssociateCustomizerService
             if (weaponIsTwoHanded)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                (@"[Associate Customizer] Base offhand items don't match. The associate's mainhand item is held with both hands, 
-                so it can't hold an item in offhand. If you want the mainhand to have a custom appearance, 
-                make sure the base items match.", COLOR_RED);
+                ("[Associate Customizer] Offhand not copied. The associate's mainhand item is held with both hands, so it can't hold an item in offhand. If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
             bool offhandIsHoldable = offhandCopy.BaseItem.Id == HOLDABLES;
@@ -251,9 +246,7 @@ public class AssociateCustomizerService
                 (creature.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                (@"[Associate Customizer] Base offhand items don't match. If you want the mainhand to have a custom appearance, 
-                make sure the base items match. If the associate's offhand slot is empty but you want an offhand item for the custom appearance, 
-                you can choose a holdable item for the copied creature's offhand.", COLOR_RED);
+                ("[Associate Customizer] Offhand not copied. If you want the mainhand to have a custom appearance, make sure the base items match. If the associate's offhand slot is empty but you want an offhand item for the custom appearance, you can choose a holdable item for the copied creature's offhand.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
         }
@@ -410,10 +403,10 @@ public class AssociateCustomizerService
             }
             if (associate.GetItemInSlot(InventorySlot.Chest) == null)
             {
-                NwItem? armor = await NwItem.Create("cloth024", associate);
-                associate.GiveItem(armor);
-                associate.RunEquip(armor, InventorySlot.Chest);
-                armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
+                /* NwItem? armor = await NwItem.Create("cloth024", associate);
+                associate.GiveItem(armor); */
+                associate.RunEquip(armorCopy, InventorySlot.Chest);
+                /* armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
                 armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
                 armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
                 armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
@@ -437,7 +430,7 @@ public class AssociateCustomizerService
                 armor.Appearance.SetArmorModel(CreaturePart.RightShoulder, armorCopy.Appearance.GetArmorModel(CreaturePart.RightShoulder));
                 armor.Appearance.SetArmorModel(CreaturePart.RightThigh, armorCopy.Appearance.GetArmorModel(CreaturePart.RightThigh));
                 armor.Appearance.SetArmorModel(CreaturePart.Robe, armorCopy.Appearance.GetArmorModel(CreaturePart.Robe));
-                armor.Appearance.SetArmorModel(CreaturePart.Torso, armorCopy.Appearance.GetArmorModel(CreaturePart.Torso));
+                armor.Appearance.SetArmorModel(CreaturePart.Torso, armorCopy.Appearance.GetArmorModel(CreaturePart.Torso)); */
             }
         }
         // Apply custom helmet appearance
