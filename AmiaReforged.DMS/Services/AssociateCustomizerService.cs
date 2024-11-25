@@ -12,6 +12,10 @@ public class AssociateCustomizerService
     static readonly Color COLOR_GREEN = Color.FromRGBA("#43ff64d9");
     static readonly Color COLOR_WHITE = Color.FromRGBA("#d2ffffd9");
     static readonly string TOOL_TAG = "ass_customizer";
+    // Baseitems.2da holdable items' id numbers
+    static readonly int HOLDABLES = 15 | 94 | 113;
+
+
     
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     
@@ -197,7 +201,7 @@ public class AssociateCustomizerService
             return;
         }
 
-        // First check that if the copied appearance has a custom appearance for armor, maind, or offhand
+        // First check that if the copied appearance has a custom appearance for armor, mainhand, or offhand
         // that the base item of the copied appearance matches that of the associate
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue)
         {
@@ -207,7 +211,8 @@ public class AssociateCustomizerService
                 (creature.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Base armor items don't match. If the associate doesn't have an armor and you want one for the custom appearance, choose a cloth armor for the copied creature.", COLOR_RED);
+                ("[Associate Customizer] Base armor items don't match. If you want the armor have a custom appearance, make sure the base items match. "+
+                "If the associate's armor slot is empty but you want an armor for the custom appearance, you can choose a cloth armor for the copied creature.", COLOR_RED);
                 return;
             }
         }
@@ -216,10 +221,10 @@ public class AssociateCustomizerService
             byte[] mainhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Value);
             NwItem mainhandCopy = NwItem.Deserialize(mainhandData);
             if ((creature.GetItemInSlot(InventorySlot.RightHand).BaseItem != mainhandCopy.BaseItem)
-                || creature.GetItemInSlot(InventorySlot.RightHand) == null)
+                || creature.GetItemInSlot(InventorySlot.RightHand) is null)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Base mainhand items don't match.", COLOR_RED);
+                ("[Associate Customizer] Base mainhand items don't match. If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
                 return;
             }
         }
@@ -227,11 +232,24 @@ public class AssociateCustomizerService
         {
             byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value);
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
-            if ((creature.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem)
-                || creature.GetItemInSlot(InventorySlot.LeftHand) == null)
+            bool weaponIsTwoHanded = (int?)(BaseItemWeaponWieldType.TwoHanded | BaseItemWeaponWieldType.Bow | BaseItemWeaponWieldType.Crossbow 
+                | BaseItemWeaponWieldType.DoubleSided) == (int)creature.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType 
+                    || (int)creature.Size < (int)creature.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize;
+            if (weaponIsTwoHanded)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Base offhand items don't match.", COLOR_RED);
+                ("[Associate Customizer] The associate's mainhand item is held with both hands, so it can't hold an item in offhand. " +
+                "If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
+                return;
+            }
+            bool offhandIsHoldable = offhandCopy.BaseItem.Id == HOLDABLES;
+            if (creature.GetItemInSlot(InventorySlot.LeftHand) is null && !offhandIsHoldable ||
+                creature.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem)
+            {
+                obj.ItemActivator.LoginPlayer.SendServerMessage
+                ("[Associate Customizer] Base offhand items don't match. If you want the mainhand to have a custom appearance, make sure the base items match. "+
+                "If the associate's offhand slot is empty but you want an offhand item for the custom appearance, you can choose a holdable item "+
+                "for the copied creature's offhand.", COLOR_RED);
                 return;
             }
         }
