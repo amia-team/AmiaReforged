@@ -62,6 +62,7 @@ public class AssociateCustomizerService
         bool vfxCopied = false;
 
         // First delete dangerous danglers from former tool activations
+        // First delete dangerous danglers from former tool activations
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue) 
             associateCustomizer.GetObjectVariable<LocalVariableString>("creature").Delete();
 
@@ -213,7 +214,7 @@ public class AssociateCustomizerService
                 obj.ItemActivator.LoginPlayer.SendServerMessage
                 ("[Associate Customizer] Base armor items don't match. If you want the armor have a custom appearance, make sure the base items match. "+
                 "If the associate's armor slot is empty but you want an armor for the custom appearance, you can choose a cloth armor for the copied creature.", COLOR_RED);
-                return;
+                associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Delete();
             }
         }
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").HasValue)
@@ -225,7 +226,7 @@ public class AssociateCustomizerService
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
                 ("[Associate Customizer] Base mainhand items don't match. If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
-                return;
+                associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
             }
         }
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
@@ -240,7 +241,7 @@ public class AssociateCustomizerService
                 obj.ItemActivator.LoginPlayer.SendServerMessage
                 ("[Associate Customizer] The associate's mainhand item is held with both hands, so it can't hold an item in offhand. " +
                 "If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
-                return;
+                associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
             bool offhandIsHoldable = offhandCopy.BaseItem.Id == HOLDABLES;
             if (creature.GetItemInSlot(InventorySlot.LeftHand) is null && !offhandIsHoldable ||
@@ -250,7 +251,7 @@ public class AssociateCustomizerService
                 ("[Associate Customizer] Base offhand items don't match. If you want the mainhand to have a custom appearance, make sure the base items match. "+
                 "If the associate's offhand slot is empty but you want an offhand item for the custom appearance, you can choose a holdable item "+
                 "for the copied creature's offhand.", COLOR_RED);
-                return;
+                associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
         }
 
