@@ -223,7 +223,7 @@ public class AssociateCustomizerService
             byte[] mainhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Value);
             NwItem mainhandCopy = NwItem.Deserialize(mainhandData);
             if ((creature.GetItemInSlot(InventorySlot.RightHand).BaseItem != mainhandCopy.BaseItem)
-                || creature.GetItemInSlot(InventorySlot.RightHand) is null)
+                || (creature.GetItemInSlot(InventorySlot.RightHand) is null))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
                 (@"[Associate Customizer] Base mainhand items don't match. If you want the mainhand to have a custom appearance, 
@@ -235,9 +235,9 @@ public class AssociateCustomizerService
         {
             byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value);
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
-            bool weaponIsTwoHanded = (int?)(BaseItemWeaponWieldType.TwoHanded | BaseItemWeaponWieldType.Bow | BaseItemWeaponWieldType.Crossbow 
-                | BaseItemWeaponWieldType.DoubleSided) == (int)creature.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType 
-                    || (int)creature.Size < (int)creature.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize;
+            bool weaponIsTwoHanded = ((int?)(BaseItemWeaponWieldType.TwoHanded | BaseItemWeaponWieldType.Bow | BaseItemWeaponWieldType.Crossbow 
+                | BaseItemWeaponWieldType.DoubleSided) == (int)creature.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType) 
+                    || ((int)creature.Size < (int)creature.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize);
             if (weaponIsTwoHanded)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
@@ -247,8 +247,8 @@ public class AssociateCustomizerService
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
             bool offhandIsHoldable = offhandCopy.BaseItem.Id == HOLDABLES;
-            if (creature.GetItemInSlot(InventorySlot.LeftHand) is null && !offhandIsHoldable ||
-                creature.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem)
+            if ((creature.GetItemInSlot(InventorySlot.LeftHand) is null && !offhandIsHoldable) ||
+                (creature.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
                 (@"[Associate Customizer] Base offhand items don't match. If you want the mainhand to have a custom appearance, 
@@ -309,7 +309,7 @@ public class AssociateCustomizerService
         }
 
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ($"[Associate Customizer] Custom appearance stored for {creature.OriginalName}\nGive the player the tool and test the summon customizes properly.", COLOR_WHITE);
+            ($"[Associate Customizer] Custom appearance stored for {creature.OriginalName}\n\nGive the player the tool and test the summon customizes properly.", COLOR_WHITE);
     }
 
     /// <summary>
