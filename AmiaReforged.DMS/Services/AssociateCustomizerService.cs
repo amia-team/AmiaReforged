@@ -212,8 +212,9 @@ public class AssociateCustomizerService
                 (creature.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Base armor items don't match. If you want the armor have a custom appearance, make sure the base items match. "+
-                "If the associate's armor slot is empty but you want an armor for the custom appearance, you can choose a cloth armor for the copied creature.", COLOR_RED);
+                (@"[Associate Customizer] Base armor items don't match. If you want the armor have a custom appearance, 
+                make sure the base items match. If the associate's armor slot is empty but you want an armor for the custom appearance, 
+                you can choose a cloth armor for the copied creature.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Delete();
             }
         }
@@ -225,7 +226,8 @@ public class AssociateCustomizerService
                 || creature.GetItemInSlot(InventorySlot.RightHand) is null)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Base mainhand items don't match. If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
+                (@"[Associate Customizer] Base mainhand items don't match. If you want the mainhand to have a custom appearance, 
+                make sure the base items match.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
             }
         }
@@ -239,8 +241,9 @@ public class AssociateCustomizerService
             if (weaponIsTwoHanded)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] The associate's mainhand item is held with both hands, so it can't hold an item in offhand. " +
-                "If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
+                (@"[Associate Customizer] Base offhand items don't match. The associate's mainhand item is held with both hands, 
+                so it can't hold an item in offhand. If you want the mainhand to have a custom appearance, 
+                make sure the base items match.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
             bool offhandIsHoldable = offhandCopy.BaseItem.Id == HOLDABLES;
@@ -248,9 +251,9 @@ public class AssociateCustomizerService
                 creature.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Base offhand items don't match. If you want the mainhand to have a custom appearance, make sure the base items match. "+
-                "If the associate's offhand slot is empty but you want an offhand item for the custom appearance, you can choose a holdable item "+
-                "for the copied creature's offhand.", COLOR_RED);
+                (@"[Associate Customizer] Base offhand items don't match. If you want the mainhand to have a custom appearance, 
+                make sure the base items match. If the associate's offhand slot is empty but you want an offhand item for the custom appearance, 
+                you can choose a holdable item for the copied creature's offhand.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
         }
@@ -306,7 +309,7 @@ public class AssociateCustomizerService
         }
 
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ($"[Associate Customizer] Custom appearance stored for {creature.OriginalName}. Give the player the tool and test the summon customizes properly.", COLOR_WHITE);
+            ($"[Associate Customizer] Custom appearance stored for {creature.OriginalName}\nGive the player the tool and test the summon customizes properly.", COLOR_WHITE);
     }
 
     /// <summary>
