@@ -30,10 +30,12 @@ public class PropertyDefinition
     /// <param name="category">display name for a category.</param>
     /// <param name="properties">A dictionary tying a name of a property to its direct property</param>
     /// <param name="flatStructure">determines whether this property uses a combo box</param>
-    public PropertyDefinition(string category, Dictionary<string, ItemProperty> properties, bool flatStructure)
+    /// <param name="supportedItemTypes">the list of items that can have this property</param>
+    public PropertyDefinition(string category, Dictionary<string, ItemProperty> properties, bool flatStructure, List<int> supportedItemTypes)
     {
         Category = category;
         Properties = properties;
         FlatStructure = flatStructure;
+        SupportedItemTypes = supportedItemTypes;
     }
 }

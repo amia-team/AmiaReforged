@@ -94,6 +94,7 @@ public class CraftingPropertyService
             string? category = csv.GetField<string>("Category");
             int baseItem = csv.GetField<int>("BaseItem");
             string? whitelist = csv.GetField<string>("Whitelist");
+            List<int> itemTypes = whitelist?.Split(',').Select(int.Parse).ToList() ?? new List<int>();
             string? mythalPowers = csv.GetField<string>("MythalPowers");
 
             // Process the data as needed
@@ -101,7 +102,8 @@ public class CraftingPropertyService
                 properties = new Dictionary<string, ItemProperty>(); // Populate this dictionary as needed
             List<int> supportedItemTypes = new List<int> { baseItem }; // Populate this list as needed
 
-            PropertyDefinition definition = new PropertyDefinition(category, properties, false)
+            
+            PropertyDefinition definition = new(category!, properties, false, itemTypes)
             {
                 SupportedItemTypes = supportedItemTypes
             };
