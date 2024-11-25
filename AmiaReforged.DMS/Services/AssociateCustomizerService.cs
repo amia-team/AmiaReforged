@@ -62,7 +62,6 @@ public class AssociateCustomizerService
         bool vfxCopied = false;
 
         // First delete dangerous danglers from former tool activations
-        // First delete dangerous danglers from former tool activations
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue) 
             associateCustomizer.GetObjectVariable<LocalVariableString>("creature").Delete();
 
@@ -203,12 +202,12 @@ public class AssociateCustomizerService
         }
 
         // First check that if the copied appearance has a custom appearance for armor, mainhand, or offhand
-        // that the base item of the copied appearance matches that of the associate
+        // that the base item of the copied appearance matches that of the associate.
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue)
         {
             byte[] armorData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Value);
             NwItem armorCopy = NwItem.Deserialize(armorData);
-            if ((creature.GetItemInSlot(InventorySlot.Chest) is null && !(armorCopy.BaseACValue == 0)) ||
+            if ((creature.GetItemInSlot(InventorySlot.Chest) == null && !(armorCopy.BaseACValue == 0)) ||
                 (creature.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
@@ -223,11 +222,10 @@ public class AssociateCustomizerService
             byte[] mainhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Value);
             NwItem mainhandCopy = NwItem.Deserialize(mainhandData);
             if ((creature.GetItemInSlot(InventorySlot.RightHand).BaseItem != mainhandCopy.BaseItem)
-                || (creature.GetItemInSlot(InventorySlot.RightHand) is null))
+                || (creature.GetItemInSlot(InventorySlot.RightHand) == null))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                (@"[Associate Customizer] Base mainhand items don't match. If you want the mainhand to have a custom appearance, 
-                make sure the base items match.", COLOR_RED);
+                ("[Associate Customizer] Base mainhand items don't match. If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
             }
         }
@@ -247,7 +245,7 @@ public class AssociateCustomizerService
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
             bool offhandIsHoldable = offhandCopy.BaseItem.Id == HOLDABLES;
-            if ((creature.GetItemInSlot(InventorySlot.LeftHand) is null && !offhandIsHoldable) ||
+            if ((creature.GetItemInSlot(InventorySlot.LeftHand) == null && !offhandIsHoldable) ||
                 (creature.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
@@ -309,7 +307,9 @@ public class AssociateCustomizerService
         }
 
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ($"[Associate Customizer] Custom appearance stored for {creature.OriginalName}\n\nGive the player the tool and test the summon customizes properly.", COLOR_WHITE);
+            ($"[Associate Customizer] Custom appearance stored for {creature.OriginalName}", COLOR_GREEN);
+        obj.ItemActivator.LoginPlayer.SendServerMessage
+            ("Hand the tool over to the player amd have them summon the associate to make sure it applies properly!", COLOR_WHITE);
     }
 
     /// <summary>
