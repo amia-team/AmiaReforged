@@ -201,18 +201,19 @@ public class InvasionPatrol
 
         NWScript.SendMessageToPC(oPC, "*You find something of interest on your patrol*");
 
-        if (Level < 30)
-        {
-            NWScript.SetXP(oPC, XP + 25);
-        }
-        else
-        {
-            NWScript.SetXP(oPC, XP + 1);
-        }
 
         int i;
         for (i = 0; i < rewardCount; i++)
         {
+            if (Level < 30)
+            {
+              NWScript.SetXP(oPC, XP + 25);
+            }
+            else
+            {
+              NWScript.SetXP(oPC, XP + 1);
+            }
+    
             int temp = random.Next(1, 101);
 
             if (temp == 50)
