@@ -175,7 +175,7 @@ public class AssociateCustomizerService
         if (vfxCopied) obj.ItemActivator.LoginPlayer.SendServerMessage
             ("[Associate Customizer] Visual effects copied!", COLOR_GREEN);
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("To assign the copied appearance to an associate, target the associate with the tool.", COLOR_WHITE);
+            ("[Associate Customizer] To assign the copied appearance to an associate, target the associate with the tool.", COLOR_WHITE);
     }
 
     /// <summary>
@@ -403,9 +403,9 @@ public class AssociateCustomizerService
             }
             if (associate.GetItemInSlot(InventorySlot.Chest) == null)
             {
-                await NwItem.Create("newb_cloth", associate);
-                /* associate.ActionEquipItem(armor, InventorySlot.Chest); */
-                /* armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
+                NwItem? armor = await NwItem.Create("newb_cloth", associate);
+                associate.RunEquip(armor, InventorySlot.Chest);
+                armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
                 armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
                 armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
                 armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
@@ -429,7 +429,7 @@ public class AssociateCustomizerService
                 armor.Appearance.SetArmorModel(CreaturePart.RightShoulder, armorCopy.Appearance.GetArmorModel(CreaturePart.RightShoulder));
                 armor.Appearance.SetArmorModel(CreaturePart.RightThigh, armorCopy.Appearance.GetArmorModel(CreaturePart.RightThigh));
                 armor.Appearance.SetArmorModel(CreaturePart.Robe, armorCopy.Appearance.GetArmorModel(CreaturePart.Robe));
-                armor.Appearance.SetArmorModel(CreaturePart.Torso, armorCopy.Appearance.GetArmorModel(CreaturePart.Torso)); */
+                armor.Appearance.SetArmorModel(CreaturePart.Torso, armorCopy.Appearance.GetArmorModel(CreaturePart.Torso));
             }
         }
         // Apply custom helmet appearance
