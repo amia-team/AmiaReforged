@@ -33,11 +33,20 @@ public class JobSystemPLCPersist
     public async void JobSystemPLCPersisSave(CallInfo info)
     {
         uint Player = NWScript.OBJECT_SELF; 
+        uint FactionKey = NWScript.GetItemPossessedBy(Player,NWScript.GetLocalString(NWScript.GetArea(Player), "persist_faction"));
         
         if ((NWScript.GetLocalInt(NWScript.GetArea(Player), "block_persist") == 1))
         {
           NWScript.SendMessageToPC(Player,"*This area does not allow persist PLC placement*");
           return;
+        }
+        else if((NWScript.GetLocalString(NWScript.GetArea(Player), "persist_faction") != ""))
+        {
+          if(NWScript.GetIsObjectValid(FactionKey)!=1)
+          {
+           NWScript.SendMessageToPC(Player,"*This area does not allow persist PLC placement by non faction members*");
+           return;
+          }
         }
 
         uint PLC = NWScript.GetLocalObject(Player,"pcplc");
@@ -63,6 +72,10 @@ public class JobSystemPLCPersist
 
         await _persistPLCService.AddPersistPLC(newPLC); 
         NWScript.DestroyObject(PLCWidget);
+
+        NWScript.SetLocalString(NWScript.GetModule(),"staffMessage","Persist PLC Laid by " + NWScript.GetName(Player) + " in " + NWScript.GetName(Area) + ". Info --  " + " ResRef: " + 
+        NWScript.GetResRef(PLC) + " , Name: " +  NWScript.GetName(PLC) + " , X: " +  NWScript.FloatToString(vectorLocation.X) + " , Y: " + NWScript.FloatToString(vectorLocation.Y) + " , Z: "  +  NWScript.FloatToString(vectorLocation.Z) + " , Facing: "  + NWScript.FloatToString(NWScript.GetFacing(PLC)) + " , Bio: " +  NWScript.GetDescription(PLC));
+        NWScript.ExecuteScript("webhook_staff");
     }
 
     [ScriptHandler("js_persist_del")]
