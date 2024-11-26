@@ -175,7 +175,7 @@ public class AssociateCustomizerService
         if (vfxCopied) obj.ItemActivator.LoginPlayer.SendServerMessage
             ("[Associate Customizer] Visual effects copied!", COLOR_GREEN);
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] To assign the copied appearance to an associate, target the associate with the tool.", COLOR_WHITE);
+            ("To assign the copied appearance to an associate, target the associate with the tool.", COLOR_WHITE);
     }
 
     /// <summary>
@@ -403,7 +403,7 @@ public class AssociateCustomizerService
             }
             if (associate.GetItemInSlot(InventorySlot.Chest) == null)
             {
-                await NwItem.Create("cloth024", associate);
+                await NwItem.Create("newb_cloth", associate);
                 /* associate.ActionEquipItem(armor, InventorySlot.Chest); */
                 /* armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
                 armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
