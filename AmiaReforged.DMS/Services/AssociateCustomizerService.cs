@@ -175,7 +175,7 @@ public class AssociateCustomizerService
         if (vfxCopied) obj.ItemActivator.LoginPlayer.SendServerMessage
             ("[Associate Customizer] Visual effects copied!", COLOR_GREEN);
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] To assign the copied appearance to an associate, target the associate with the tool.", COLOR_WHITE);
+            ("To assign the copied appearance to an associate, target the associate with the tool.", COLOR_WHITE);
     }
 
     /// <summary>
@@ -452,7 +452,6 @@ public class AssociateCustomizerService
             if (associate.GetItemInSlot(InventorySlot.Head) == null)
             {
                 NwItem? helmet = await NwItem.Create("hood", associate);
-                associate.GiveItem(helmet);
                 associate.RunEquip(helmet, InventorySlot.Head);
                 helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
                 helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
@@ -483,7 +482,6 @@ public class AssociateCustomizerService
             if (associate.GetItemInSlot(InventorySlot.Cloak) == null)
             {
                 NwItem? cloak = await NwItem.Create("itc_cl_basic07", associate);
-                associate.GiveItem(cloak);
                 associate.RunEquip(cloak, InventorySlot.Cloak);
                 cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
                 cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
