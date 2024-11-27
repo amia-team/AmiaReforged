@@ -12,9 +12,8 @@ public class AssociateCustomizerService
     static readonly Color COLOR_GREEN = Color.FromRGBA("#43ff64d9");
     static readonly Color COLOR_WHITE = Color.FromRGBA("#d2ffffd9");
     static readonly string TOOL_TAG = "ass_customizer";
-    // Baseitems.2da holdable items' id numbers
+    // Baseitems.2da id numbers for left-hand holdable items
     static readonly int TORCH = 15;
-    static readonly int MOON_ON_A_STICK = 94;
     static readonly int TOOLS = 113;
 
 
@@ -191,9 +190,9 @@ public class AssociateCustomizerService
         if (!obj.ItemActivator.IsPlayerControlled) return;
         if (!(obj.ItemActivator.IsPlayerControlled(out NwPlayer? player) && player.IsDM)) return;
         if (obj.TargetObject is not NwCreature) return;
-        NwCreature creature = (NwCreature)obj.TargetObject;
-        if (creature.AssociateType == AssociateType.None || 
-            creature.AssociateType == AssociateType.Dominated) return;
+        NwCreature associate = (NwCreature)obj.TargetObject;
+        if (associate.AssociateType == AssociateType.None || 
+            associate.AssociateType == AssociateType.Dominated) return;
 
         NwItem associateCustomizer = obj.ActivatedItem;
 
@@ -204,18 +203,23 @@ public class AssociateCustomizerService
             return;
         }
 
-        // First check that if the copied appearance has a custom appearance for armor, mainhand, or offhand
-        // that the base item of the copied appearance matches that of the associate.
+        // Check that the conditions between the copied creature and the associate match for armor, mainhand, and offhand.
+        // If conditions aren't met, delete that data so it doesn't carry over; give feedback to DMs what to do if they want it to carry over.
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue)
         {
             byte[] armorData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Value);
             NwItem armorCopy = NwItem.Deserialize(armorData);
-            if ((creature.GetItemInSlot(InventorySlot.Chest) == null && armorCopy.BaseACValue > 0) ||
-                    (creature.GetItemInSlot(InventorySlot.Chest) != null && 
-                    creature.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue))
+            // Base armors between associate and copied creature must either match, or empty armor slot must match cloth armor
+            if (associate.GetItemInSlot(InventorySlot.Chest) != null && associate.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Armor not copied. If you want the armor to have a custom appearance, make sure the base items match. If the associate's armor slot is empty but you want an armor for the custom appearance, you can choose a cloth armor for the copied creature.", COLOR_RED);
+                ("[Associate Customizer] Armor appearance not copied. The base armors must match for customization.", COLOR_RED);
+                associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Delete();
+            }
+            if (associate.GetItemInSlot(InventorySlot.Chest) == null && armorCopy.BaseACValue > 0)
+            {
+                obj.ItemActivator.LoginPlayer.SendServerMessage
+                ("[Associate Customizer] Armor appearance not copied. The base armor of the copied creature must be cloth for customization (you can still use the robe options for armored looks).", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Delete();
             }
         }
@@ -223,11 +227,12 @@ public class AssociateCustomizerService
         {
             byte[] mainhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Value);
             NwItem mainhandCopy = NwItem.Deserialize(mainhandData);
-            if ((creature.GetItemInSlot(InventorySlot.RightHand).BaseItem != mainhandCopy.BaseItem)
-                || (creature.GetItemInSlot(InventorySlot.RightHand) == null))
+            // Base mainhand items between associate and copied creature must match, and associate's mainhand can't be empty
+            if ((associate.GetItemInSlot(InventorySlot.RightHand) != null && associate.GetItemInSlot(InventorySlot.RightHand).BaseItem != mainhandCopy.BaseItem)
+                || (associate.GetItemInSlot(InventorySlot.RightHand) == null))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Mainhand not copied. If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
+                ("[Associate Customizer] Mainhand appearance not copied. The base mainhand items must match for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
             }
         }
@@ -236,81 +241,88 @@ public class AssociateCustomizerService
             byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value);
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
 
-            // Check if weapon is two-handed, make sure offhand data is not copied over if it is
-            BaseItemWeaponWieldType weaponType = creature.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType;
-            BaseItemWeaponSize weaponSize = creature.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize;
+            // Associate's mainhand can't be twohanded for offhand data to be carried over
+            BaseItemWeaponWieldType weaponType = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType;
+            BaseItemWeaponSize weaponSize = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize;
             bool weaponIsTwoHanded = weaponType == BaseItemWeaponWieldType.TwoHanded || weaponType == BaseItemWeaponWieldType.Bow
                 || weaponType == BaseItemWeaponWieldType.Crossbow || weaponType == BaseItemWeaponWieldType.DoubleSided
-                || (int)weaponSize > (int)creature.Size;
+                || (int)weaponSize > (int)associate.Size;
             if (weaponIsTwoHanded)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Offhand not copied. The associate's mainhand item is held with both hands, so it can't hold an item in offhand. If you want the mainhand to have a custom appearance, make sure the base items match.", COLOR_RED);
+                ("[Associate Customizer] Offhand appearance not copied. The associate's mainhand item is held with both hands, so it can't hold an item in offhand. The base mainhand items must match for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
-            // If associate's offhand is empty make sure that the copied offhand item is a valid base item; if not make sure the data is not copied over
-            bool offhandIsHoldable = offhandCopy.BaseItem.Id == TORCH || offhandCopy.BaseItem.Id == MOON_ON_A_STICK || offhandCopy.BaseItem.Id == TOOLS;
-            if (creature.GetItemInSlot(InventorySlot.LeftHand) == null && !offhandIsHoldable)
+            // If associate's offhand is empty the copied offhand item must be torch, or tools
+            bool offhandIsHoldable = offhandCopy.BaseItem.Id == TORCH || offhandCopy.BaseItem.Id == TOOLS;
+            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && !offhandIsHoldable)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Offhand not copied. If you want the mainhand to have a custom appearance, make sure the base items match. If the associate's offhand slot is empty but you want an offhand item for the custom appearance, you can choose a holdable item for the copied creature's offhand.", COLOR_RED);
+                ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be 'torch' or 'tools' for customization (check with devs for help if necessary).", COLOR_RED);
+                associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
+            }
+            // If associate's offhand isn't empty, the base items must match
+            if (associate.GetItemInSlot(InventorySlot.LeftHand) != null && associate.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem)
+            {
+                obj.ItemActivator.LoginPlayer.SendServerMessage
+                ("[Associate Customizer] Offhand appearance not copied. The base offhand items must match for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
         }
 
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+creature.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associate.ResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("creature");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+creature.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associate.ResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("armor");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+creature.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+associate.ResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("helmet");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+creature.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+associate.ResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("cloak");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+creature.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+associate.ResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+creature.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associate.ResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").HasValue)
         {
-            int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+creature.ResRef).Value =
+            int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+associate.ResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount");
             for (int i = 0; i < vfxCount; i++)
             {
-                associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i+creature.ResRef).Value =
+                associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i+associate.ResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i);
             }
         }
 
         // If the associate's custom appearance hasn't been stored before, add note to tool description
-        if(!associateCustomizer.Description.Contains(creature.OriginalName))
+        if(!associateCustomizer.Description.Contains(associate.OriginalName))
         {
             string toolDescription = associateCustomizer.Description;
-            string storedString = StringExtensions.ColorString("Custom associate appearance stored: "+creature.OriginalName, COLOR_WHITE);
+            string storedString = StringExtensions.ColorString("Custom "+associate.OriginalName, COLOR_GREEN);
             associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
 
         // If the Associate Customizer tool hasn't been assigned to a player yet, name it after the associate's master ie tool's new owner
-        if(!associateCustomizer.Name.Contains(creature.Master.OriginalFirstName))
+        if(!associateCustomizer.Name.Contains(associate.Master.OriginalFirstName))
         {
             string toolName = associateCustomizer.Name;
-            associateCustomizer.Name = $"{creature.Master.OriginalFirstName}'s {toolName}";
+            associateCustomizer.Name = $"{associate.Master.OriginalFirstName}'s {toolName}";
         }
 
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ($"[Associate Customizer] Custom appearance stored for {creature.OriginalName}", COLOR_GREEN);
+            ($"[Associate Customizer] Custom appearance stored for {associate.OriginalName}", COLOR_GREEN);
         obj.ItemActivator.LoginPlayer.SendServerMessage
             ("Hand the tool over to the player and have them summon the associate to make sure it applies properly!", COLOR_WHITE);
     }
@@ -553,12 +565,32 @@ public class AssociateCustomizerService
                     offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top));
                 }
             }
-            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null)
+            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id == TORCH)
             {
-                associate.GiveItem(offhandCopy);
-                offhandCopy.Droppable = false;
-                offhandCopy.RemoveItemProperties();
-                associate.RunEquip(offhandCopy, InventorySlot.LeftHand);
+                NwItem? offhand = await NwItem.Create("nw_it_torch001", associate);
+                if (associate.Inventory.Items.Any(item => item.ResRef == "nw_it_torch001"))
+                {
+                    offhandCopy.Droppable = false;
+                    associate.RunEquip(offhandCopy, InventorySlot.LeftHand);
+                    offhand.Appearance.SetSimpleModel(offhandCopy.Appearance.GetSimpleModel());
+                }
+                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy torch resref missing, alert devs.", COLOR_RED);
+            }
+            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id == TOOLS)
+            {
+                NwItem? offhand = await NwItem.Create("hldb_bucket", associate);
+                if (associate.Inventory.Items.Any(item => item.ResRef == "hldb_bucket"))
+                {
+                    offhandCopy.Droppable = false;
+                    associate.RunEquip(offhandCopy, InventorySlot.LeftHand);
+                    offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Bottom));
+                    offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Middle));
+                    offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Top));
+                    offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom));
+                    offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle));
+                    offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top));
+                }
+                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy tools resref missing, alert devs.", COLOR_RED);
             }
         }
         // Apply custom visual effects
