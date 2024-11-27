@@ -254,10 +254,10 @@ public class AssociateCustomizerService
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
             // If associate's offhand is empty the copied offhand item must be torch or tools
-            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && !(offhandCopy.BaseItem.Id == TORCH || offhandCopy.BaseItem.Id == TOOLS))
+            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != TORCH || offhandCopy.BaseItem.Id != TOOLS)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be 'torch' or 'tools' for customization (check with devs for help if necessary).", COLOR_RED);
+                ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be 'torch' or 'tools, left' for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
             // If associate's offhand isn't empty, the base items must match
@@ -569,7 +569,7 @@ public class AssociateCustomizerService
                 NwItem? offhand = await NwItem.Create("nw_it_torch001", associate);
                 if (associate.Inventory.Items.Any(item => item.ResRef == "nw_it_torch001"))
                 {
-                    offhandCopy.Droppable = false;
+                    offhand.Droppable = false;
                     associate.RunEquip(offhandCopy, InventorySlot.LeftHand);
                     offhand.Appearance.SetSimpleModel(offhandCopy.Appearance.GetSimpleModel());
                 }
@@ -580,7 +580,7 @@ public class AssociateCustomizerService
                 NwItem? offhand = await NwItem.Create("hldb_bucket", associate);
                 if (associate.Inventory.Items.Any(item => item.ResRef == "hldb_bucket"))
                 {
-                    offhandCopy.Droppable = false;
+                    offhand.Droppable = false;
                     associate.RunEquip(offhandCopy, InventorySlot.LeftHand);
                     offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Bottom));
                     offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Middle));
