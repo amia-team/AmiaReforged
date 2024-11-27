@@ -254,12 +254,12 @@ public class AssociateCustomizerService
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
             // If associate's offhand is empty the copied offhand item must be torch or tools
-            /* if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != TORCH || offhandCopy.BaseItem.Id != TOOLS)
+            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != TORCH || offhandCopy.BaseItem.Id != TOOLS)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
                 ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be 'torch' or 'tools, left' for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
-            } */
+            }
             // If associate's offhand isn't empty, the base items must match
             if (associate.GetItemInSlot(InventorySlot.LeftHand) != null && associate.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem)
             {
