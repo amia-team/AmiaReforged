@@ -13,8 +13,8 @@ public class AssociateCustomizerService
     static readonly Color COLOR_WHITE = Color.FromRGBA("#d2ffffd9");
     static readonly string TOOL_TAG = "ass_customizer";
     // Baseitems.2da id numbers for left-hand holdable items
-    static readonly int TORCH = 15;
-    static readonly int TOOLS = 113;
+    static readonly uint TORCH = 15;
+    static readonly uint TOOLS = 113;
 
 
 
@@ -253,9 +253,8 @@ public class AssociateCustomizerService
                 ("[Associate Customizer] Offhand appearance not copied. The associate's mainhand item is held with both hands, so it can't hold an item in offhand. The base mainhand items must match for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
-            // If associate's offhand is empty the copied offhand item must be torch, or tools
-            bool offhandIsHoldable = offhandCopy.BaseItem.Id == TORCH || offhandCopy.BaseItem.Id == TOOLS;
-            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && !offhandIsHoldable)
+            // If associate's offhand is empty the copied offhand item must be torch or tools
+            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && !(offhandCopy.BaseItem.Id == TORCH || offhandCopy.BaseItem.Id == TOOLS))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
                 ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be 'torch' or 'tools' for customization (check with devs for help if necessary).", COLOR_RED);
