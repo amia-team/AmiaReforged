@@ -372,6 +372,7 @@ public class AssociateCustomizerService
         {
             byte[] armorData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associate.ResRef).Value);
             NwItem armorCopy = NwItem.Deserialize(armorData);
+
             if (associate.GetItemInSlot(InventorySlot.Chest) != null)
             {
                 NwItem armor = associate.GetItemInSlot(InventorySlot.Chest);
@@ -404,32 +405,38 @@ public class AssociateCustomizerService
             if (associate.GetItemInSlot(InventorySlot.Chest) == null)
             {
                 NwItem? armor = await NwItem.Create("newb_cloth", associate);
-                associate.RunEquip(armor, InventorySlot.Chest);
-                armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
-                armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
-                armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
-                armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
-                armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal1));
-                armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
-                armor.Appearance.SetArmorModel(CreaturePart.Belt, armorCopy.Appearance.GetArmorModel(CreaturePart.Belt));
-                armor.Appearance.SetArmorModel(CreaturePart.LeftBicep, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftBicep));
-                armor.Appearance.SetArmorModel(CreaturePart.LeftFoot, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftFoot));
-                armor.Appearance.SetArmorModel(CreaturePart.LeftForearm, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftForearm));
-                armor.Appearance.SetArmorModel(CreaturePart.LeftHand, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftHand));
-                armor.Appearance.SetArmorModel(CreaturePart.LeftShin, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftShin));
-                armor.Appearance.SetArmorModel(CreaturePart.LeftShoulder, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftShoulder));
-                armor.Appearance.SetArmorModel(CreaturePart.LeftThigh, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftThigh));
-                armor.Appearance.SetArmorModel(CreaturePart.Neck, armorCopy.Appearance.GetArmorModel(CreaturePart.Neck));
-                armor.Appearance.SetArmorModel(CreaturePart.Pelvis, armorCopy.Appearance.GetArmorModel(CreaturePart.Pelvis));
-                armor.Appearance.SetArmorModel(CreaturePart.RightBicep, armorCopy.Appearance.GetArmorModel(CreaturePart.RightBicep));
-                armor.Appearance.SetArmorModel(CreaturePart.RightFoot, armorCopy.Appearance.GetArmorModel(CreaturePart.RightFoot));
-                armor.Appearance.SetArmorModel(CreaturePart.RightForearm, armorCopy.Appearance.GetArmorModel(CreaturePart.RightForearm));
-                armor.Appearance.SetArmorModel(CreaturePart.RightHand, armorCopy.Appearance.GetArmorModel(CreaturePart.RightHand));
-                armor.Appearance.SetArmorModel(CreaturePart.RightShin, armorCopy.Appearance.GetArmorModel(CreaturePart.RightShin));
-                armor.Appearance.SetArmorModel(CreaturePart.RightShoulder, armorCopy.Appearance.GetArmorModel(CreaturePart.RightShoulder));
-                armor.Appearance.SetArmorModel(CreaturePart.RightThigh, armorCopy.Appearance.GetArmorModel(CreaturePart.RightThigh));
-                armor.Appearance.SetArmorModel(CreaturePart.Robe, armorCopy.Appearance.GetArmorModel(CreaturePart.Robe));
-                armor.Appearance.SetArmorModel(CreaturePart.Torso, armorCopy.Appearance.GetArmorModel(CreaturePart.Torso));
+                // Failsafe if resref is missing
+                if (associate.Inventory.Items.Any(item => item.ResRef == "newb_cloth"))
+                {
+                    armor.Droppable = false;
+                    associate.RunEquip(armor, InventorySlot.Chest);
+                    armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
+                    armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
+                    armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
+                    armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
+                    armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal1));
+                    armor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
+                    armor.Appearance.SetArmorModel(CreaturePart.Belt, armorCopy.Appearance.GetArmorModel(CreaturePart.Belt));
+                    armor.Appearance.SetArmorModel(CreaturePart.LeftBicep, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftBicep));
+                    armor.Appearance.SetArmorModel(CreaturePart.LeftFoot, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftFoot));
+                    armor.Appearance.SetArmorModel(CreaturePart.LeftForearm, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftForearm));
+                    armor.Appearance.SetArmorModel(CreaturePart.LeftHand, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftHand));
+                    armor.Appearance.SetArmorModel(CreaturePart.LeftShin, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftShin));
+                    armor.Appearance.SetArmorModel(CreaturePart.LeftShoulder, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftShoulder));
+                    armor.Appearance.SetArmorModel(CreaturePart.LeftThigh, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftThigh));
+                    armor.Appearance.SetArmorModel(CreaturePart.Neck, armorCopy.Appearance.GetArmorModel(CreaturePart.Neck));
+                    armor.Appearance.SetArmorModel(CreaturePart.Pelvis, armorCopy.Appearance.GetArmorModel(CreaturePart.Pelvis));
+                    armor.Appearance.SetArmorModel(CreaturePart.RightBicep, armorCopy.Appearance.GetArmorModel(CreaturePart.RightBicep));
+                    armor.Appearance.SetArmorModel(CreaturePart.RightFoot, armorCopy.Appearance.GetArmorModel(CreaturePart.RightFoot));
+                    armor.Appearance.SetArmorModel(CreaturePart.RightForearm, armorCopy.Appearance.GetArmorModel(CreaturePart.RightForearm));
+                    armor.Appearance.SetArmorModel(CreaturePart.RightHand, armorCopy.Appearance.GetArmorModel(CreaturePart.RightHand));
+                    armor.Appearance.SetArmorModel(CreaturePart.RightShin, armorCopy.Appearance.GetArmorModel(CreaturePart.RightShin));
+                    armor.Appearance.SetArmorModel(CreaturePart.RightShoulder, armorCopy.Appearance.GetArmorModel(CreaturePart.RightShoulder));
+                    armor.Appearance.SetArmorModel(CreaturePart.RightThigh, armorCopy.Appearance.GetArmorModel(CreaturePart.RightThigh));
+                    armor.Appearance.SetArmorModel(CreaturePart.Robe, armorCopy.Appearance.GetArmorModel(CreaturePart.Robe));
+                    armor.Appearance.SetArmorModel(CreaturePart.Torso, armorCopy.Appearance.GetArmorModel(CreaturePart.Torso));
+                }
+                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy armor resref missing, alert devs.", COLOR_RED);
             }
         }
         // Apply custom helmet appearance
@@ -452,14 +459,19 @@ public class AssociateCustomizerService
             if (associate.GetItemInSlot(InventorySlot.Head) == null)
             {
                 NwItem? helmet = await NwItem.Create("hood", associate);
-                associate.RunEquip(helmet, InventorySlot.Head);
-                helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
-                helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
-                helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
-                helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
-                helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal1));
-                helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
-                helmet.Appearance.SetArmorModel(CreaturePart.Head, helmetCopy.Appearance.GetArmorModel(CreaturePart.Head));
+                if (associate.Inventory.Items.Any(item => item.ResRef == "hood"))
+                {
+                    helmet.Droppable = false;
+                    associate.RunEquip(helmet, InventorySlot.Head);
+                    helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
+                    helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
+                    helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
+                    helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
+                    helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal1));
+                    helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
+                    helmet.Appearance.SetArmorModel(CreaturePart.Head, helmetCopy.Appearance.GetArmorModel(CreaturePart.Head));
+                }
+                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy helmet resref missing, alert devs.", COLOR_RED);
             }
         }
         // Apply custom cloak appearance
@@ -482,14 +494,19 @@ public class AssociateCustomizerService
             if (associate.GetItemInSlot(InventorySlot.Cloak) == null)
             {
                 NwItem? cloak = await NwItem.Create("itc_cl_basic07", associate);
-                associate.RunEquip(cloak, InventorySlot.Cloak);
-                cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
-                cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
-                cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
-                cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
-                cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal1));
-                cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
-                cloak.Appearance.SetSimpleModel(cloakCopy.Appearance.GetSimpleModel());
+                if (associate.Inventory.Items.Any(item => item.ResRef == "itc_cl_basic07"))
+                {
+                    cloak.Droppable = false;
+                    associate.RunEquip(cloak, InventorySlot.Cloak);
+                    cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
+                    cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
+                    cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
+                    cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
+                    cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal1));
+                    cloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
+                    cloak.Appearance.SetSimpleModel(cloakCopy.Appearance.GetSimpleModel());
+                }
+                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy cloak resref missing, alert devs.", COLOR_RED);
             }
         }
         // Apply custom mainhand appearance
@@ -512,19 +529,29 @@ public class AssociateCustomizerService
             byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associate.ResRef).Value);
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
 
-            NwItem offhand = associate.GetItemInSlot(InventorySlot.LeftHand);
-            if (offhand.BaseItem.Category == BaseItemCategory.Shield)
+            if (associate.GetItemInSlot(InventorySlot.LeftHand) != null)
             {
-                offhand.Appearance.SetSimpleModel(offhandCopy.Appearance.GetSimpleModel());
+                NwItem offhand = associate.GetItemInSlot(InventorySlot.LeftHand);
+                if (offhand.BaseItem.Category == BaseItemCategory.Shield)
+                {
+                    offhand.Appearance.SetSimpleModel(offhandCopy.Appearance.GetSimpleModel());
+                }
+                else
+                {
+                    offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Bottom));
+                    offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Middle));
+                    offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Top));
+                    offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom));
+                    offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle));
+                    offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top));
+                }
             }
-            else
+            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null)
             {
-                offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Bottom));
-                offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Middle));
-                offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Top));
-                offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom));
-                offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle));
-                offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top));
+                associate.GiveItem(offhandCopy);
+                offhandCopy.Droppable = false;
+                offhandCopy.RemoveItemProperties();
+                associate.RunEquip(offhandCopy, InventorySlot.LeftHand);
             }
         }
         // Apply custom visual effects
