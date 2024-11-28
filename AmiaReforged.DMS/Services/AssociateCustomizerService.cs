@@ -254,7 +254,7 @@ public class AssociateCustomizerService
                     associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
                 }
             }
-            /*  
+              
             byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value);
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
 
@@ -271,7 +271,7 @@ public class AssociateCustomizerService
                 obj.ItemActivator.LoginPlayer.SendServerMessage
                 ("[Associate Customizer] Offhand appearance not copied. The base offhand items must match for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
-            }*/
+            }
         } 
 
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
