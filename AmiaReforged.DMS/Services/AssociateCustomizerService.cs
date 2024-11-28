@@ -244,9 +244,10 @@ public class AssociateCustomizerService
             // Associate's mainhand can't be twohanded for offhand item data to carry over
             BaseItemWeaponWieldType weaponType = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType;
             BaseItemWeaponSize weaponSize = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize;
-            bool weaponIsTwoHanded = weaponType == BaseItemWeaponWieldType.TwoHanded || weaponType == BaseItemWeaponWieldType.Bow
+            bool weaponIsTwoHanded = associate.GetItemInSlot(InventorySlot.RightHand) != null  
+                && (weaponType == BaseItemWeaponWieldType.TwoHanded || weaponType == BaseItemWeaponWieldType.Bow
                 || weaponType == BaseItemWeaponWieldType.Crossbow || weaponType == BaseItemWeaponWieldType.DoubleSided
-                || (int)weaponSize > (int)associate.Size;
+                || (int)weaponSize > (int)associate.Size);
             if (weaponIsTwoHanded)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
