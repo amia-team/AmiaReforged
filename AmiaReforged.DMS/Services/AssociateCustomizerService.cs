@@ -242,17 +242,20 @@ public class AssociateCustomizerService
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
 
             // Associate's mainhand can't be twohanded for offhand item data to carry over
-            BaseItemWeaponWieldType weaponType = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType;
-            BaseItemWeaponSize weaponSize = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize;
-            bool weaponIsTwoHanded = associate.GetItemInSlot(InventorySlot.RightHand) != null  
-                && (weaponType == BaseItemWeaponWieldType.TwoHanded || weaponType == BaseItemWeaponWieldType.Bow
-                || weaponType == BaseItemWeaponWieldType.Crossbow || weaponType == BaseItemWeaponWieldType.DoubleSided
-                || (int)weaponSize > (int)associate.Size);
-            if (weaponIsTwoHanded)
-            {
-                obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Offhand appearance not copied. The associate's mainhand item is held with both hands, so it can't hold an item in offhand. The base mainhand items must match for customization.", COLOR_RED);
-                associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
+            if(associate.GetItemInSlot(InventorySlot.RightHand) != null)
+            {}
+                BaseItemWeaponWieldType weaponType = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType;
+                BaseItemWeaponSize weaponSize = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize;
+                bool weaponIsTwoHanded = associate.GetItemInSlot(InventorySlot.RightHand) != null  
+                    && (weaponType == BaseItemWeaponWieldType.TwoHanded || weaponType == BaseItemWeaponWieldType.Bow
+                    || weaponType == BaseItemWeaponWieldType.Crossbow || weaponType == BaseItemWeaponWieldType.DoubleSided
+                    || (int)weaponSize > (int)associate.Size);
+                if (weaponIsTwoHanded)
+                {
+                    obj.ItemActivator.LoginPlayer.SendServerMessage
+                    ("[Associate Customizer] Offhand appearance not copied. The associate's mainhand item is held with both hands, so it can't hold an item in offhand. The base mainhand items must match for customization.", COLOR_RED);
+                    associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
+                }
             }
         /*     // If associate's offhand is empty the copied offhand item must be torch or tools
             if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != TORCH || offhandCopy.BaseItem.Id != TOOLS)
