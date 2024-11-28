@@ -236,7 +236,7 @@ public class AssociateCustomizerService
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
             }
         }
-        /* if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
         {
             byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value);
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
@@ -253,7 +253,7 @@ public class AssociateCustomizerService
                 ("[Associate Customizer] Offhand appearance not copied. The associate's mainhand item is held with both hands, so it can't hold an item in offhand. The base mainhand items must match for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
-            // If associate's offhand is empty the copied offhand item must be torch or tools
+        /*     // If associate's offhand is empty the copied offhand item must be torch or tools
             if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != TORCH || offhandCopy.BaseItem.Id != TOOLS)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
@@ -266,8 +266,8 @@ public class AssociateCustomizerService
                 obj.ItemActivator.LoginPlayer.SendServerMessage
                 ("[Associate Customizer] Offhand appearance not copied. The base offhand items must match for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
-            }
-        } */
+            }*/
+        } 
 
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
@@ -570,7 +570,7 @@ public class AssociateCustomizerService
                 if (associate.Inventory.Items.Any(item => item.ResRef == "nw_it_torch001"))
                 {
                     offhand.Droppable = false;
-                    associate.RunEquip(offhandCopy, InventorySlot.LeftHand);
+                    associate.RunEquip(offhand, InventorySlot.LeftHand);
                     offhand.Appearance.SetSimpleModel(offhandCopy.Appearance.GetSimpleModel());
                 }
                 else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy 'Torch' resref missing, alert devs.", COLOR_RED);
@@ -581,7 +581,7 @@ public class AssociateCustomizerService
                 if (associate.Inventory.Items.Any(item => item.ResRef == "hldb_bucket"))
                 {
                     offhand.Droppable = false;
-                    associate.RunEquip(offhandCopy, InventorySlot.LeftHand);
+                    associate.RunEquip(offhand, InventorySlot.LeftHand);
                     offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Bottom));
                     offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Middle));
                     offhand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, offhandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Top));
