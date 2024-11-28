@@ -236,12 +236,12 @@ public class AssociateCustomizerService
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
             }
         }
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
+        /* if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
         {
             byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value);
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
 
-            // Associate's mainhand can't be twohanded for offhand data to be carried over
+            // Associate's mainhand can't be twohanded for offhand item data to carry over
             BaseItemWeaponWieldType weaponType = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType;
             BaseItemWeaponSize weaponSize = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize;
             bool weaponIsTwoHanded = weaponType == BaseItemWeaponWieldType.TwoHanded || weaponType == BaseItemWeaponWieldType.Bow
@@ -257,7 +257,7 @@ public class AssociateCustomizerService
             if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != TORCH || offhandCopy.BaseItem.Id != TOOLS)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be 'torch' or 'tools, left' for customization.", COLOR_RED);
+                ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be type 'Torch' or 'Tools, Left' for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
             // If associate's offhand isn't empty, the base items must match
@@ -267,7 +267,7 @@ public class AssociateCustomizerService
                 ("[Associate Customizer] Offhand appearance not copied. The base offhand items must match for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
-        }
+        } */
 
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
@@ -573,7 +573,7 @@ public class AssociateCustomizerService
                     associate.RunEquip(offhandCopy, InventorySlot.LeftHand);
                     offhand.Appearance.SetSimpleModel(offhandCopy.Appearance.GetSimpleModel());
                 }
-                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy torch resref missing, alert devs.", COLOR_RED);
+                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy 'Torch' resref missing, alert devs.", COLOR_RED);
             }
             if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id == TOOLS)
             {
@@ -589,7 +589,7 @@ public class AssociateCustomizerService
                     offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle));
                     offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top));
                 }
-                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy tools resref missing, alert devs.", COLOR_RED);
+                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy 'Tools, Left' resref missing, alert devs.", COLOR_RED);
             }
         }
         // Apply custom visual effects
