@@ -238,12 +238,9 @@ public class AssociateCustomizerService
         }
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
         {
-            byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value);
-            NwItem offhandCopy = NwItem.Deserialize(offhandData);
-
             // Associate's mainhand can't be twohanded for offhand item data to carry over
-            if(associate.GetItemInSlot(InventorySlot.RightHand) != null)
-            {}
+            if (associate.GetItemInSlot(InventorySlot.RightHand) != null)
+            {
                 BaseItemWeaponWieldType weaponType = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType;
                 BaseItemWeaponSize weaponSize = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize;
                 bool weaponIsTwoHanded = associate.GetItemInSlot(InventorySlot.RightHand) != null  
@@ -257,7 +254,11 @@ public class AssociateCustomizerService
                     associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
                 }
             }
-        /*     // If associate's offhand is empty the copied offhand item must be torch or tools
+            /*  
+            byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value);
+            NwItem offhandCopy = NwItem.Deserialize(offhandData);
+
+            // If associate's offhand is empty the copied offhand item must be torch or tools
             if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != TORCH || offhandCopy.BaseItem.Id != TOOLS)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
