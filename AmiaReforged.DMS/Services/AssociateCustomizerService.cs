@@ -427,7 +427,7 @@ public class AssociateCustomizerService
             }
             if (associate.GetItemInSlot(InventorySlot.Chest) == null)
             {
-                await associate.GiveItem(armorCopy);
+                armorCopy.Clone(associate);
                 if (associate.Inventory.Items.Any(item => item == armorCopy))
                 {
                     armorCopy.RemoveItemProperties();
