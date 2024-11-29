@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -495,15 +496,6 @@ public class AssociateCustomizerService
             mainhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, mainhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom));
             mainhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, mainhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle));
             mainhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, mainhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top));
-            if(mainhandCopy.HasItemProperty(ItemPropertyType.VisualEffect))
-            {
-                mainhand.AddItemProperty(mainhandCopy.ItemProperties.First(itemVisual => itemVisual.Property.PropertyType == ItemPropertyType.VisualEffect),
-                    EffectDuration.Permanent);
-            }
-            if(!mainhandCopy.HasItemProperty(ItemPropertyType.VisualEffect))
-            {
-                mainhand.RemoveItemProperty(mainhand.ItemProperties.First(itemVisual => itemVisual.Property.PropertyType == ItemPropertyType.VisualEffect));
-            }
         }
         // Apply custom offhand appearance
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associate.ResRef).HasValue)
@@ -526,15 +518,6 @@ public class AssociateCustomizerService
                     offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom));
                     offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle));
                     offhand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, offhandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top));
-                    if(offhandCopy.HasItemProperty(ItemPropertyType.VisualEffect))
-                    {
-                        offhand.AddItemProperty(offhandCopy.ItemProperties.First(itemVisual => itemVisual.Property.PropertyType == ItemPropertyType.VisualEffect),
-                            EffectDuration.Permanent);
-                    }
-                    if(!offhandCopy.HasItemProperty(ItemPropertyType.VisualEffect))
-                    {
-                        offhand.RemoveItemProperty(offhand.ItemProperties.First(itemVisual => itemVisual.Property.PropertyType == ItemPropertyType.VisualEffect));
-                    }
                 }
             }
             if (associate.GetItemInSlot(InventorySlot.LeftHand) == null)
