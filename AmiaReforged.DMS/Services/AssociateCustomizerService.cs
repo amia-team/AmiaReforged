@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -426,7 +427,7 @@ public class AssociateCustomizerService
             }
             if (associate.GetItemInSlot(InventorySlot.Chest) == null)
             {
-                associate.GiveItem(armorCopy);
+                await associate.GiveItem(armorCopy);
                 if (associate.Inventory.Items.Any(item => item == armorCopy))
                 {
                     armorCopy.RemoveItemProperties();
