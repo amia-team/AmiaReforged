@@ -259,10 +259,10 @@ public class AssociateCustomizerService
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
 
             // If associate's offhand is empty the copied offhand item must be torch or tools
-            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != TORCH || offhandCopy.BaseItem.Id != TOOLS)
+            if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != TORCH && offhandCopy.BaseItem.Id != TOOLS)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be type 'Torch' or 'Tools, Left' for customization.", COLOR_RED);
+                ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be 'Torch' or 'Tools, Left' for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
             // If associate's offhand isn't empty, the base items must match
@@ -571,8 +571,8 @@ public class AssociateCustomizerService
             }
             if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id == TORCH)
             {
-                NwItem? offhand = await NwItem.Create("nw_it_torch001", associate);
-                if (associate.Inventory.Items.Any(item => item.ResRef == "nw_it_torch001"))
+                NwItem? offhand = await NwItem.Create("hldb_bartray", associate);
+                if (associate.Inventory.Items.Any(item => item.ResRef == "hldb_bartray"))
                 {
                     offhand.Droppable = false;
                     associate.RunEquip(offhand, InventorySlot.LeftHand);
