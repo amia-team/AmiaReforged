@@ -502,7 +502,7 @@ public class AssociateCustomizerService
             }
             if(!mainhandCopy.HasItemProperty(ItemPropertyType.VisualEffect))
             {
-                mainhand.RemoveItemProperty(mainhand.ItemProperties.First(itemVisual => itemVisual.Property.PropertyType == ItemPropertyType.VisualEffect));
+                mainhand.RemoveItemProperties(ItemPropertyType.VisualEffect);
             }
         }
         // Apply custom offhand appearance
@@ -533,7 +533,7 @@ public class AssociateCustomizerService
                     }
                     if(!offhandCopy.HasItemProperty(ItemPropertyType.VisualEffect))
                     {
-                        offhand.RemoveItemProperty(offhand.ItemProperties.First(itemVisual => itemVisual.Property.PropertyType == ItemPropertyType.VisualEffect));
+                        offhand.RemoveItemProperties(ItemPropertyType.VisualEffect);
                     }
                 }
             }
