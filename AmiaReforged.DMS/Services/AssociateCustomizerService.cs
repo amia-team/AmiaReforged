@@ -457,7 +457,7 @@ public class AssociateCustomizerService
                 NwItem dummyHelmet = associate.Inventory.Items.First(item => item.Tag == "dummy_helmet");
                 dummyHelmet.RemoveItemProperties();
                 dummyHelmet.Droppable = false;
-                associate.RunEquip(dummyHelmet, InventorySlot.Chest);
+                associate.RunEquip(dummyHelmet, InventorySlot.Head);
             }
         }
         // Apply custom cloak appearance
@@ -483,7 +483,7 @@ public class AssociateCustomizerService
                 NwItem dummyCloak = associate.Inventory.Items.First(item => item.Tag == "dummy_cloak");
                 dummyCloak.RemoveItemProperties();
                 dummyCloak.Droppable = false;
-                associate.RunEquip(dummyCloak, InventorySlot.Chest);
+                associate.RunEquip(dummyCloak, InventorySlot.Cloak);
             }
         }
         // Apply custom mainhand appearance
@@ -529,7 +529,7 @@ public class AssociateCustomizerService
                 NwItem dummyOffhand = associate.Inventory.Items.First(item => item.Tag == "dummy_offhand");
                 dummyOffhand.RemoveItemProperties();
                 dummyOffhand.Droppable = false;
-                associate.RunEquip(dummyOffhand, InventorySlot.Chest);
+                associate.RunEquip(dummyOffhand, InventorySlot.LeftHand);
             }
         }
         // Apply custom visual effects
