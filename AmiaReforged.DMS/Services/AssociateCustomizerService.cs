@@ -15,9 +15,6 @@ public class AssociateCustomizerService
     // Baseitems.2da id numbers for left-hand holdable items
     static readonly uint TORCH = 15;
     static readonly uint TOOLS = 113;
-
-
-
     
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     
