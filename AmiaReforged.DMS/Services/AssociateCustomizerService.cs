@@ -427,13 +427,11 @@ public class AssociateCustomizerService
             }
             if (associate.GetItemInSlot(InventorySlot.Chest) == null)
             {
-                armorCopy.Clone(associate);
-                if (associate.Inventory.Items.Any(item => item == armorCopy))
-                {
-                    armorCopy.RemoveItemProperties();
-                    armorCopy.Droppable = false;
-                    associate.RunEquip(armorCopy, InventorySlot.Chest);
-                }
+                armorCopy.Clone(associate, "dummy_armor");
+                NwItem dummyArmor = associate.Inventory.Items.First(item => item.Tag == "dummy_armor");
+                dummyArmor.RemoveItemProperties();
+                dummyArmor.Droppable = false;
+                associate.RunEquip(dummyArmor, InventorySlot.Chest);
                 
                 /* NwItem? armor = await NwItem.Create("newb_cloth", associate);
                 // Failsafe if resref is missing
