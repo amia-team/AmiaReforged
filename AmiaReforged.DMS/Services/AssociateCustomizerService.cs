@@ -243,10 +243,9 @@ public class AssociateCustomizerService
             {
                 BaseItemWeaponWieldType weaponType = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType;
                 BaseItemWeaponSize weaponSize = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponSize;
-                bool weaponIsTwoHanded = associate.GetItemInSlot(InventorySlot.RightHand) != null  
-                    && (weaponType == BaseItemWeaponWieldType.TwoHanded || weaponType == BaseItemWeaponWieldType.Bow
+                bool weaponIsTwoHanded = weaponType == BaseItemWeaponWieldType.TwoHanded || weaponType == BaseItemWeaponWieldType.Bow
                     || weaponType == BaseItemWeaponWieldType.Crossbow || weaponType == BaseItemWeaponWieldType.DoubleSided
-                    || (int)weaponSize > (int)associate.Size);
+                    || (int)weaponSize > (int)associate.Size;
                 if (weaponIsTwoHanded)
                 {
                     obj.ItemActivator.LoginPlayer.SendServerMessage
@@ -427,7 +426,15 @@ public class AssociateCustomizerService
             }
             if (associate.GetItemInSlot(InventorySlot.Chest) == null)
             {
-                NwItem? armor = await NwItem.Create("newb_cloth", associate);
+                associate.GiveItem(armorCopy);
+                if (associate.Inventory.Items.Any(item => item == armorCopy))
+                {
+                    armorCopy.RemoveItemProperties();
+                    armorCopy.Droppable = false;
+                    associate.RunEquip(armorCopy, InventorySlot.Chest);
+                }
+                
+                /* NwItem? armor = await NwItem.Create("newb_cloth", associate);
                 // Failsafe if resref is missing
                 if (associate.Inventory.Items.Any(item => item.ResRef == "newb_cloth"))
                 {
@@ -459,7 +466,7 @@ public class AssociateCustomizerService
                     armor.Appearance.SetArmorModel(CreaturePart.Robe, armorCopy.Appearance.GetArmorModel(CreaturePart.Robe));
                     armor.Appearance.SetArmorModel(CreaturePart.Torso, armorCopy.Appearance.GetArmorModel(CreaturePart.Torso));
                 }
-                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy armor resref missing, alert devs.", COLOR_RED);
+                else associate.Master?.ControllingPlayer?.SendServerMessage("[Associate Customizer] Dummy armor resref missing, alert devs.", COLOR_RED); */
             }
         }
         // Apply custom helmet appearance
