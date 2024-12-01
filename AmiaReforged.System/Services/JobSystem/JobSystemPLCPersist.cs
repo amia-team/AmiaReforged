@@ -52,8 +52,15 @@ public class JobSystemPLCPersist
         uint PLC = NWScript.GetLocalObject(Player,"pcplc");
         uint PLCWidget = NWScript.GetLocalObject(Player,"plcwidget");
         NWScript.SetLocalInt(PLC,"persist",1);
-        NWScript.SetUseableFlag(PLC,1);
         NWScript.SetPlotFlag(PLC,0);
+        if(NWScript.GetLocalInt(Player,"plctoggle")==1)
+        {
+          NWScript.SetUseableFlag(PLC,0);
+        }
+        else
+        {        
+          NWScript.SetUseableFlag(PLC,1);
+        }
         PersistPLC newPLC = new PersistPLC(); 
         Location location = NWScript.GetLocation(PLC);
         Vector3 vectorLocation = NWScript.GetPositionFromLocation(location); 
