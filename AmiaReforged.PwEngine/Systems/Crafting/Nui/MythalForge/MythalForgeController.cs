@@ -8,7 +8,6 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
 public class MythalForgeController : NuiController<MythalForgeView>
 {
-    [Inject] private Lazy<CraftingPropertyService>? PropertyService { get; set; }
 
     public override void Init()
     {
