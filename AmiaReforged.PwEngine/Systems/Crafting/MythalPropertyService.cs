@@ -4,7 +4,7 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting;
 
-[ServiceBinding(typeof(MythalPropertyService))]
+// [ServiceBinding(typeof(MythalPropertyService))]
 public class MythalPropertyService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -20,9 +20,11 @@ public class MythalPropertyService
     {
         List<MythalProperty> mythalProperties = new()
         {
-            (MythalProperty) CraftingProperties.EnhancementBonusOne,
-            (MythalProperty) CraftingProperties.AcBonusOne
+            (MythalProperty) CraftingProperties.EnhancementBonuses.EnhancementBonusOne,
+            (MythalProperty) CraftingProperties.ArmorClassBonuses.AcBonusOne
         };
+        
+        mythalProperties.ForEach(m => m.Tier = MythalTier.Minor);
         
         _properties.Add(MythalTier.Minor, mythalProperties);
     }

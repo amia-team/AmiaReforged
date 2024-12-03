@@ -8,19 +8,11 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 /// </summary>
 public static class CraftingProperties
 {
-    public static CraftingProperty EnhancementBonusOne => new()
-    {
-        Cost = 1,
-        Property = NWScript.ItemPropertyEnhancementBonus(1)!,
-        Category = PropertyCategory.EnhancementBonus,
-        SupportedItemTypes = ItemTypeConstants.MeleeWeapons()
-    };
     
-    public static CraftingProperty AcBonusOne => new()
-    {
-        Cost = 1,
-        Property = NWScript.ItemPropertyACBonus(1)!,
-        Category = PropertyCategory.ArmorClass,
-        SupportedItemTypes = ItemTypeConstants.EquippableItems()
-    };
+    // Enhancement bonuses
+    public static EnhancementBonuses EnhancementBonuses => new EnhancementBonuses();
+
+    // Armor class bonuses
+    public static 
+        ArmorClassBonuses ArmorClassBonuses => new ArmorClassBonuses();
 }
