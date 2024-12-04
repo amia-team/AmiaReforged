@@ -95,7 +95,7 @@ public class ElyonBossSpawner
         else if (NWScript.GetLocalInt(NWScript.GetModule(), "ElyonBossFired").Equals(0))
         {
             NWScript.SetLocalString(NWScript.GetModule(), "announcerMessage",
-                "``` *All is quiet on Amia and her sister isles in regards to any rampaging creatures of note* ```");
+                "``` *There are no reports of mythical creatures rampaging on Amia or her sister isles* ```");
             NWScript.SetLocalInt(NWScript.GetModule(), "ElyonBossFired", 1);
             NWScript.ExecuteScript("webhook_announce");
         }
