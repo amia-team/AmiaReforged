@@ -358,8 +358,10 @@ public class AssociateCustomizerService
             NwCreature creatureCopy = NwCreature.Deserialize(creatureData);
 
             MovementRate originalMovement = associate.MovementRate;
+            CreatureSize originalSize = associate.Size;
             associate.Appearance = creatureCopy.Appearance;
             associate.MovementRate = originalMovement;
+            associate.Size = originalSize;
             associate.PortraitId = creatureCopy.PortraitId;
             associate.SoundSet = creatureCopy.SoundSet;
             associate.FootstepType = creatureCopy.FootstepType;
