@@ -8,31 +8,14 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 public class MythalPropertyService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly Dictionary<MythalTier, List<MythalProperty>> _properties = new();
+    private readonly Dictionary<CraftingTier, List<MythalProperty>> _properties = new();
 
     public MythalPropertyService()
     {
-        AddMinorMythalProperties();
-        AddLesserMythalProperties();
+
     }
 
-    private void AddMinorMythalProperties()
-    {
-        List<MythalProperty> mythalProperties = new()
-        {
-            (MythalProperty) CraftingProperties.EnhancementBonuses.EnhancementBonusOne,
-            (MythalProperty) CraftingProperties.ArmorClassBonuses.AcBonusOne
-        };
-        
-        mythalProperties.ForEach(m => m.Tier = MythalTier.Minor);
-        
-        _properties.Add(MythalTier.Minor, mythalProperties);
-    }
 
-    public void AddLesserMythalProperties()
-    {
-        
-    }
 }
 
 public static class ItemTypeConstants

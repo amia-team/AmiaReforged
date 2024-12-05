@@ -15,5 +15,6 @@ public enum PropertyCategory
     Regeneration,
     VisualEffect,
     OnHit,
-    ArmorClass
+    ArmorClass,
+    Amulet
 }

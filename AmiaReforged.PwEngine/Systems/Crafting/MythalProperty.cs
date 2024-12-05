@@ -2,5 +2,5 @@
 
 public sealed class MythalProperty : CraftingProperty
 {
-    public MythalTier Tier { get; set; }
+    public CraftingTier Tier { get; set; }
 }

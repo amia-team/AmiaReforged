@@ -1,6 +1,6 @@
 ﻿namespace AmiaReforged.PwEngine.Systems.Crafting;
 
-public enum MythalTier
+public enum CraftingTier
 {
     Minor = 0,
     Lesser = 1,
