@@ -274,7 +274,7 @@ public class AssociateCustomizerService
         // If associate is animal companion or familiar, then store just first 8 strings so that every levelup doesn't require a reskin
         string associateResRef = associate.ResRef;
         if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar)
-            associateResRef = associateResRef[..8];
+            associateResRef = associateResRef.Substring(0,8);
 
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
@@ -349,7 +349,7 @@ public class AssociateCustomizerService
         // If associate is animal companion or familiar, then check for just first 8 strings so that every levelup doesn't require a reskin
         string associateResRef = associate.ResRef;
         if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar)
-            associateResRef = associateResRef[..8];
+            associateResRef = associateResRef.Substring(0,8);
 
         // Apply custom creature appearance, soundset, description, name
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).HasValue)
