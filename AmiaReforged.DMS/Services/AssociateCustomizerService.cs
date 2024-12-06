@@ -345,13 +345,13 @@ public class AssociateCustomizerService
         NwItem associateCustomizer = obj.Owner.Inventory.Items.First(item => item.Tag == TOOL_TAG);
         NwCreature associate = obj.Associate;
 
-        if (!associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associate.ResRef).HasValue) return;
-
         // DEBUG
         string associateResRef;
         if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar)
             associateResRef = associate.ResRef.Substring(0,8);
         else associateResRef = associate.ResRef;
+
+        if (!associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associate.ResRef).HasValue) return;
 
         obj.Owner.LoginPlayer.SendServerMessage
         ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Name}]", COLOR_GREY);
