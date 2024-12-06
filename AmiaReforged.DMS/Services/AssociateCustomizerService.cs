@@ -352,10 +352,10 @@ public class AssociateCustomizerService
         else associateResRef = associate.ResRef;
 
         // DEBUG
-        obj.Associate.Master.LoginPlayer.SendServerMessage
+        associate.Master.LoginPlayer.SendServerMessage
         ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Name}]", COLOR_GREY);
 
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).HasNothing) return;
+        if (!associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).HasValue) return;
 
         // Apply custom creature appearance, soundset, description, name
         byte[] creatureData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Value);
