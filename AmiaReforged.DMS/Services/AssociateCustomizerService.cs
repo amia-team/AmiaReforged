@@ -340,20 +340,19 @@ public class AssociateCustomizerService
         // Works only if the owner is player controlled, has the tool in inventory, and the associate isn't dominated
         if (!obj.Owner.IsPlayerControlled) return;
         if (!obj.Owner.Inventory.Items.Any(item => item.Tag == TOOL_TAG)) return;
-        if (obj.Associate.AssociateType == AssociateType.Dominated) return;
+        if (obj.AssociateType == AssociateType.Dominated) return;
 
         NwItem associateCustomizer = obj.Owner.Inventory.Items.First(item => item.Tag == TOOL_TAG);
         NwCreature associate = obj.Associate;
 
         // DEBUG
-        string associateResRef;
-        if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar)
+        string associateResRef = associate.ResRef;;
+        if (obj.AssociateType == AssociateType.AnimalCompanion || obj.AssociateType == AssociateType.Familiar)
             associateResRef = associate.ResRef.Substring(0,8);
-        else associateResRef = associate.ResRef;
 
         obj.Owner.LoginPlayer.SendServerMessage
         ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Name}]", COLOR_GREY);
-        if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar) obj.Owner.LoginPlayer.SendServerMessage
+        if (obj.AssociateType == AssociateType.AnimalCompanion || obj.AssociateType == AssociateType.Familiar) obj.Owner.LoginPlayer.SendServerMessage
         ($"DEBUG: animal companion or familiar resref is [{associate.ResRef}], whose substring is {associate.ResRef.Substring(0,8)}");
 
         if (!associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).HasValue) return;
