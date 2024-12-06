@@ -272,11 +272,9 @@ public class AssociateCustomizerService
             }
         }
 
-        // DEBUG
-        string associateResRef;
+        string associateResRef = associate.ResRef;
         if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar)
-            associateResRef = associate.ResRef.Substring(0,8);
-        else associateResRef = associate.ResRef;
+            associateResRef = associate.ResRef[..8];
 
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
@@ -345,20 +343,11 @@ public class AssociateCustomizerService
         NwItem associateCustomizer = obj.Owner.Inventory.Items.First(item => item.Tag == TOOL_TAG);
         NwCreature associate = obj.Associate;
 
-        // DEBUG
         string associateResRef = associate.ResRef;;
         if (obj.AssociateType == AssociateType.AnimalCompanion || obj.AssociateType == AssociateType.Familiar)
-            associateResRef = associate.ResRef.Substring(0,8);
-
-        obj.Owner.LoginPlayer.SendServerMessage
-        ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Name}]", COLOR_GREY);
-        if (obj.AssociateType == AssociateType.AnimalCompanion || obj.AssociateType == AssociateType.Familiar) obj.Owner.LoginPlayer.SendServerMessage
-        ($"DEBUG: animal companion or familiar resref is [{associate.ResRef}], whose substring is {associate.ResRef.Substring(0,8)}");
+            associateResRef = associate.ResRef[..8];
 
         if (!associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).HasValue) return;
-
-        obj.Owner.LoginPlayer.SendServerMessage
-        ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Name}]", COLOR_GREY);
 
         // Apply custom creature appearance, soundset, description, name
         byte[] creatureData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Value);
@@ -421,6 +410,8 @@ public class AssociateCustomizerService
         {
             string toolDescription = associateCustomizer.Description;
             string storedString = StringExtensions.ColorString($"{associate.OriginalName}is {creatureCopy.Name}", COLOR_GREEN);
+            if (obj.AssociateType == AssociateType.AnimalCompanion) storedString = StringExtensions.ColorString($"Animal companion is {creatureCopy.Name}", COLOR_GREEN);
+            if (obj.AssociateType == AssociateType.Familiar) storedString = StringExtensions.ColorString($"Familiar is {creatureCopy.Name}", COLOR_GREEN);
             associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
         
