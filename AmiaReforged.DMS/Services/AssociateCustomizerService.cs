@@ -347,17 +347,14 @@ public class AssociateCustomizerService
 
         if (!associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associate.ResRef).HasValue) return;
 
-/*         // DEBUG
+        // DEBUG
         string associateResRef;
         if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar)
             associateResRef = associate.ResRef.Substring(0,8);
         else associateResRef = associate.ResRef;
 
-        // DEBUG
-        associate.Master.LoginPlayer.SendServerMessage
+        obj.Owner.LoginPlayer.SendServerMessage
         ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Name}]", COLOR_GREY);
- */
-        string associateResRef = associate.ResRef;
 
         // Apply custom creature appearance, soundset, description, name
         byte[] creatureData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Value);
@@ -419,7 +416,7 @@ public class AssociateCustomizerService
         if(!associateCustomizer.Description.Contains(associate.OriginalName))
         {
             string toolDescription = associateCustomizer.Description;
-            string storedString = StringExtensions.ColorString($"{associate.OriginalName} is {creatureCopy.Name}", COLOR_GREEN);
+            string storedString = StringExtensions.ColorString($"{associate.OriginalName}is {creatureCopy.Name}", COLOR_GREEN);
             associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
         
