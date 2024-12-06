@@ -284,7 +284,7 @@ public class AssociateCustomizerService
             associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("creature");
             obj.ItemActivator.LoginPlayer.SendServerMessage
-            ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef)}]", COLOR_GREY);
+            ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Name}]", COLOR_GREY);
         }
             
 
@@ -330,8 +330,6 @@ public class AssociateCustomizerService
             ($"[Associate Customizer] Custom appearance stored for {associate.OriginalName}", COLOR_GREEN);
         obj.ItemActivator.LoginPlayer.SendServerMessage
             ("Hand the tool over to the player and have them summon the associate to make sure it applies properly!", COLOR_WHITE);
-
-        
     }
 
     /// <summary>
@@ -352,6 +350,10 @@ public class AssociateCustomizerService
         if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar)
             associateResRef = associate.ResRef.Substring(0,8);
         else associateResRef = associate.ResRef;
+
+        // DEBUG
+        obj.Associate.Master.LoginPlayer.SendServerMessage
+        ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Name}]", COLOR_GREY);
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).HasNothing) return;
 
@@ -418,9 +420,6 @@ public class AssociateCustomizerService
             string storedString = StringExtensions.ColorString($"{associate.OriginalName} is {creatureCopy.Name}", COLOR_GREEN);
             associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
-        // DEBUG
-        if(obj.Associate.Master.LoginPlayer.IsPlayerDM) obj.Associate.Master.LoginPlayer.SendServerMessage
-        ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef)}]", COLOR_GREY);
         
         // Apply custom armor appearance
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associateResRef).HasValue)
