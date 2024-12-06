@@ -11,6 +11,7 @@ public class AssociateCustomizerService
     static readonly Color COLOR_RED = Color.FromRGBA("#ff0032cc");
     static readonly Color COLOR_GREEN = Color.FromRGBA("#43ff64d9");
     static readonly Color COLOR_WHITE = Color.FromRGBA("#d2ffffd9");
+    static readonly Color COLOR_GREY = Color.FromRGBA("#202032");
     static readonly string TOOL_TAG = "ass_customizer";
     // Baseitems.2da id numbers for left-hand holdable items
     static readonly uint TORCH = 15;
@@ -271,48 +272,51 @@ public class AssociateCustomizerService
             }
         }
 
+        // DEBUG
+        string associateResRef;
+        if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar)
+            associateResRef = associate.ResRef.Substring(0,8);
+        else associateResRef = associate.ResRef;
+
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associate.ResRef).Value = 
+        {
+            associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("creature");
+            obj.ItemActivator.LoginPlayer.SendServerMessage
+            ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef)}]", COLOR_GREY);
+        }
+            
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associate.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associateResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("armor");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+associate.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+associateResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("helmet");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+associate.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+associateResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("cloak");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+associate.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+associateResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associate.ResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associateResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").HasValue)
         {
-            int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+associate.ResRef).Value =
+            int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+associateResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount");
             for (int i = 0; i < vfxCount; i++)
             {
-                associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i+associate.ResRef).Value =
+                associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i+associateResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i);
             }
-        }
-
-        // If the associate's custom appearance hasn't been stored before, add note to tool description
-        if(!associateCustomizer.Description.Contains(associate.OriginalName))
-        {
-            string toolDescription = associateCustomizer.Description;
-            string storedString = StringExtensions.ColorString("Custom "+associate.OriginalName, COLOR_GREEN);
-            associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
 
         // If the Associate Customizer tool hasn't been assigned to a player yet, name it after the associate's master ie tool's new owner
@@ -326,6 +330,8 @@ public class AssociateCustomizerService
             ($"[Associate Customizer] Custom appearance stored for {associate.OriginalName}", COLOR_GREEN);
         obj.ItemActivator.LoginPlayer.SendServerMessage
             ("Hand the tool over to the player and have them summon the associate to make sure it applies properly!", COLOR_WHITE);
+
+        
     }
 
     /// <summary>
@@ -341,68 +347,85 @@ public class AssociateCustomizerService
         NwItem associateCustomizer = obj.Owner.Inventory.Items.First(item => item.Tag == TOOL_TAG);
         NwCreature associate = obj.Associate;
 
+        // DEBUG
+        string associateResRef;
+        if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar)
+            associateResRef = associate.ResRef.Substring(0,8);
+        else associateResRef = associate.ResRef;
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).HasNothing) return;
+
         // Apply custom creature appearance, soundset, description, name
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associate.ResRef).HasValue)
+        byte[] creatureData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Value);
+        NwCreature creatureCopy = NwCreature.Deserialize(creatureData);
+
+        MovementRate originalMovement = associate.MovementRate;
+        CreatureSize originalSize = associate.Size;
+        associate.Appearance = creatureCopy.Appearance;
+        associate.MovementRate = originalMovement;
+        associate.Name = creatureCopy.Name;
+        associate.Size = originalSize;
+        associate.PortraitId = creatureCopy.PortraitId;
+        associate.SoundSet = creatureCopy.SoundSet;
+        associate.FootstepType = creatureCopy.FootstepType;
+        associate.Gender = creatureCopy.Gender;
+        associate.Phenotype = creatureCopy.Phenotype;
+        associate.Description = creatureCopy.Description;
+        associate.VisualTransform.Rotation = creatureCopy.VisualTransform.Rotation;
+        associate.VisualTransform.Scale = creatureCopy.VisualTransform.Scale;
+        associate.VisualTransform.Translation = creatureCopy.VisualTransform.Translation;
+        associate.VisualTransform.AnimSpeed = creatureCopy.VisualTransform.AnimSpeed;
+        associate.TailType = creatureCopy.TailType;
+        associate.WingType = creatureCopy.WingType;
+        associate.SetCreatureBodyPart(CreaturePart.Belt, creatureCopy.GetCreatureBodyPart(CreaturePart.Belt));
+        associate.SetCreatureBodyPart(CreaturePart.Head, creatureCopy.GetCreatureBodyPart(CreaturePart.Head));
+        associate.SetCreatureBodyPart(CreaturePart.LeftBicep, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftBicep));
+        associate.SetCreatureBodyPart(CreaturePart.LeftFoot, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftFoot));
+        associate.SetCreatureBodyPart(CreaturePart.LeftForearm, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftForearm));
+        associate.SetCreatureBodyPart(CreaturePart.LeftHand, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftHand));
+        associate.SetCreatureBodyPart(CreaturePart.LeftShin, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftShin));
+        associate.SetCreatureBodyPart(CreaturePart.LeftShoulder, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftShoulder));
+        associate.SetCreatureBodyPart(CreaturePart.LeftThigh, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftThigh));
+        associate.SetCreatureBodyPart(CreaturePart.Neck, creatureCopy.GetCreatureBodyPart(CreaturePart.Neck));
+        associate.SetCreatureBodyPart(CreaturePart.Pelvis, creatureCopy.GetCreatureBodyPart(CreaturePart.Pelvis));
+        associate.SetCreatureBodyPart(CreaturePart.RightBicep, creatureCopy.GetCreatureBodyPart(CreaturePart.RightBicep));
+        associate.SetCreatureBodyPart(CreaturePart.RightFoot, creatureCopy.GetCreatureBodyPart(CreaturePart.RightFoot));
+        associate.SetCreatureBodyPart(CreaturePart.RightForearm, creatureCopy.GetCreatureBodyPart(CreaturePart.RightForearm));
+        associate.SetCreatureBodyPart(CreaturePart.RightHand, creatureCopy.GetCreatureBodyPart(CreaturePart.RightHand));
+        associate.SetCreatureBodyPart(CreaturePart.RightShin, creatureCopy.GetCreatureBodyPart(CreaturePart.RightShin));
+        associate.SetCreatureBodyPart(CreaturePart.RightShoulder, creatureCopy.GetCreatureBodyPart(CreaturePart.RightShoulder));
+        associate.SetCreatureBodyPart(CreaturePart.RightThigh, creatureCopy.GetCreatureBodyPart(CreaturePart.RightThigh));
+        associate.SetCreatureBodyPart(CreaturePart.Robe, creatureCopy.GetCreatureBodyPart(CreaturePart.Robe));
+        associate.SetCreatureBodyPart(CreaturePart.Torso, creatureCopy.GetCreatureBodyPart(CreaturePart.Torso));
+        associate.SetColor(ColorChannel.Hair, creatureCopy.GetColor(ColorChannel.Hair));
+        associate.SetColor(ColorChannel.Skin, creatureCopy.GetColor(ColorChannel.Skin));
+        associate.SetColor(ColorChannel.Tattoo1, creatureCopy.GetColor(ColorChannel.Tattoo1));
+        associate.SetColor(ColorChannel.Tattoo2, creatureCopy.GetColor(ColorChannel.Tattoo2));
+
+        // Hide helmet, cloak, and shield if the copied creature has none but the associate does
+        if (creatureCopy.GetItemInSlot(InventorySlot.Head) == null && associate.GetItemInSlot(InventorySlot.Head) != null)
+            associate.GetItemInSlot(InventorySlot.Head).HiddenWhenEquipped = TRUE;
+        if (creatureCopy.GetItemInSlot(InventorySlot.Cloak) == null && associate.GetItemInSlot(InventorySlot.Cloak) != null)
+            associate.GetItemInSlot(InventorySlot.Cloak).HiddenWhenEquipped = TRUE;
+        if (creatureCopy.GetItemInSlot(InventorySlot.LeftHand) == null && associate.GetItemInSlot(InventorySlot.LeftHand) != null
+            && associate.GetItemInSlot(InventorySlot.LeftHand).BaseItem.Category == BaseItemCategory.Shield)
+            associate.GetItemInSlot(InventorySlot.LeftHand).HiddenWhenEquipped = TRUE;
+
+        // After the creature reskin has been successfully completed for the first time, store the custom appearance in the tool description
+        if(!associateCustomizer.Description.Contains(associate.OriginalName))
         {
-            byte[] creatureData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associate.ResRef).Value);
-            NwCreature creatureCopy = NwCreature.Deserialize(creatureData);
-
-            MovementRate originalMovement = associate.MovementRate;
-            CreatureSize originalSize = associate.Size;
-            associate.Appearance = creatureCopy.Appearance;
-            associate.MovementRate = originalMovement;
-            associate.Size = originalSize;
-            associate.PortraitId = creatureCopy.PortraitId;
-            associate.SoundSet = creatureCopy.SoundSet;
-            associate.FootstepType = creatureCopy.FootstepType;
-            associate.Gender = creatureCopy.Gender;
-            associate.Phenotype = creatureCopy.Phenotype;
-            associate.Description = creatureCopy.Description;
-            associate.VisualTransform.Rotation = creatureCopy.VisualTransform.Rotation;
-            associate.VisualTransform.Scale = creatureCopy.VisualTransform.Scale;
-            associate.VisualTransform.Translation = creatureCopy.VisualTransform.Translation;
-            associate.VisualTransform.AnimSpeed = creatureCopy.VisualTransform.AnimSpeed;
-            associate.TailType = creatureCopy.TailType;
-            associate.WingType = creatureCopy.WingType;
-            associate.SetCreatureBodyPart(CreaturePart.Belt, creatureCopy.GetCreatureBodyPart(CreaturePart.Belt));
-            associate.SetCreatureBodyPart(CreaturePart.Head, creatureCopy.GetCreatureBodyPart(CreaturePart.Head));
-            associate.SetCreatureBodyPart(CreaturePart.LeftBicep, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftBicep));
-            associate.SetCreatureBodyPart(CreaturePart.LeftFoot, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftFoot));
-            associate.SetCreatureBodyPart(CreaturePart.LeftForearm, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftForearm));
-            associate.SetCreatureBodyPart(CreaturePart.LeftHand, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftHand));
-            associate.SetCreatureBodyPart(CreaturePart.LeftShin, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftShin));
-            associate.SetCreatureBodyPart(CreaturePart.LeftShoulder, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftShoulder));
-            associate.SetCreatureBodyPart(CreaturePart.LeftThigh, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftThigh));
-            associate.SetCreatureBodyPart(CreaturePart.Neck, creatureCopy.GetCreatureBodyPart(CreaturePart.Neck));
-            associate.SetCreatureBodyPart(CreaturePart.Pelvis, creatureCopy.GetCreatureBodyPart(CreaturePart.Pelvis));
-            associate.SetCreatureBodyPart(CreaturePart.RightBicep, creatureCopy.GetCreatureBodyPart(CreaturePart.RightBicep));
-            associate.SetCreatureBodyPart(CreaturePart.RightFoot, creatureCopy.GetCreatureBodyPart(CreaturePart.RightFoot));
-            associate.SetCreatureBodyPart(CreaturePart.RightForearm, creatureCopy.GetCreatureBodyPart(CreaturePart.RightForearm));
-            associate.SetCreatureBodyPart(CreaturePart.RightHand, creatureCopy.GetCreatureBodyPart(CreaturePart.RightHand));
-            associate.SetCreatureBodyPart(CreaturePart.RightShin, creatureCopy.GetCreatureBodyPart(CreaturePart.RightShin));
-            associate.SetCreatureBodyPart(CreaturePart.RightShoulder, creatureCopy.GetCreatureBodyPart(CreaturePart.RightShoulder));
-            associate.SetCreatureBodyPart(CreaturePart.RightThigh, creatureCopy.GetCreatureBodyPart(CreaturePart.RightThigh));
-            associate.SetCreatureBodyPart(CreaturePart.Robe, creatureCopy.GetCreatureBodyPart(CreaturePart.Robe));
-            associate.SetCreatureBodyPart(CreaturePart.Torso, creatureCopy.GetCreatureBodyPart(CreaturePart.Torso));
-            associate.SetColor(ColorChannel.Hair, creatureCopy.GetColor(ColorChannel.Hair));
-            associate.SetColor(ColorChannel.Skin, creatureCopy.GetColor(ColorChannel.Skin));
-            associate.SetColor(ColorChannel.Tattoo1, creatureCopy.GetColor(ColorChannel.Tattoo1));
-            associate.SetColor(ColorChannel.Tattoo2, creatureCopy.GetColor(ColorChannel.Tattoo2));
-            associate.Name = creatureCopy.Name;
-
-            // Hide helmet, cloak, and shield if the copied creature has none but the associate does
-            if (creatureCopy.GetItemInSlot(InventorySlot.Head) == null && associate.GetItemInSlot(InventorySlot.Head) != null)
-                associate.GetItemInSlot(InventorySlot.Head).HiddenWhenEquipped = TRUE;
-            if (creatureCopy.GetItemInSlot(InventorySlot.Cloak) == null && associate.GetItemInSlot(InventorySlot.Cloak) != null)
-                associate.GetItemInSlot(InventorySlot.Cloak).HiddenWhenEquipped = TRUE;
-            if (creatureCopy.GetItemInSlot(InventorySlot.LeftHand) == null && associate.GetItemInSlot(InventorySlot.LeftHand) != null
-                && associate.GetItemInSlot(InventorySlot.LeftHand).BaseItem.Category == BaseItemCategory.Shield)
-                associate.GetItemInSlot(InventorySlot.LeftHand).HiddenWhenEquipped = TRUE;
+            string toolDescription = associateCustomizer.Description;
+            string storedString = StringExtensions.ColorString($"{associate.OriginalName} is {creatureCopy.Name}", COLOR_GREEN);
+            associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
+        // DEBUG
+        if(obj.Associate.Master.LoginPlayer.IsPlayerDM) obj.Associate.Master.LoginPlayer.SendServerMessage
+        ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef)}]", COLOR_GREY);
+        
         // Apply custom armor appearance
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associate.ResRef).HasValue)
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associateResRef).HasValue)
         {
-            byte[] armorData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associate.ResRef).Value);
+            byte[] armorData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associateResRef).Value);
             NwItem armorCopy = NwItem.Deserialize(armorData);
 
             if (associate.GetItemInSlot(InventorySlot.Chest) != null)
@@ -444,9 +467,9 @@ public class AssociateCustomizerService
             }
         }
         // Apply custom helmet appearance
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+associate.ResRef).HasValue)
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+associateResRef).HasValue)
         {
-            byte[] helmetData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+associate.ResRef).Value);
+            byte[] helmetData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+associateResRef).Value);
             NwItem helmetCopy = NwItem.Deserialize(helmetData);
 
             if (associate.GetItemInSlot(InventorySlot.Head) != null)
@@ -470,9 +493,9 @@ public class AssociateCustomizerService
             }
         }
         // Apply custom cloak appearance
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+associate.ResRef).HasValue)
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+associateResRef).HasValue)
         {
-            byte[] cloakData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+associate.ResRef).Value);
+            byte[] cloakData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+associateResRef).Value);
             NwItem cloakCopy = NwItem.Deserialize(cloakData);
 
             if (associate.GetItemInSlot(InventorySlot.Cloak) != null)
@@ -496,9 +519,9 @@ public class AssociateCustomizerService
             }
         }
         // Apply custom mainhand appearance
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+associate.ResRef).HasValue)
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+associateResRef).HasValue)
         {
-            byte[] mainhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+associate.ResRef).Value);
+            byte[] mainhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+associateResRef).Value);
             NwItem mainhandCopy = NwItem.Deserialize(mainhandData);
 
             NwItem mainhand = associate.GetItemInSlot(InventorySlot.RightHand);
@@ -519,9 +542,9 @@ public class AssociateCustomizerService
             }
         }
         // Apply custom offhand appearance
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associate.ResRef).HasValue)
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associateResRef).HasValue)
         {
-            byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associate.ResRef).Value);
+            byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associateResRef).Value);
             NwItem offhandCopy = NwItem.Deserialize(offhandData);
 
             if (associate.GetItemInSlot(InventorySlot.LeftHand) != null)
@@ -560,12 +583,12 @@ public class AssociateCustomizerService
             }
         }
         // Apply custom visual effects
-        if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+associate.ResRef).Value > 0)
+        if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+associateResRef).Value > 0)
         {
-            int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+associate.ResRef).Value;
+            int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+associateResRef).Value;
             for (int i = 0; i < vfxCount; i++)
             {   
-                int vfxId = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i+associate.ResRef).Value;
+                int vfxId = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i+associateResRef).Value;
                 Effect vfx = Effect.VisualEffect((VfxType)vfxId);
                 vfx.SubType = EffectSubType.Supernatural;
                 associate.ApplyEffect(EffectDuration.Permanent, vfx);
