@@ -351,6 +351,11 @@ public class AssociateCustomizerService
             associateResRef = associate.ResRef.Substring(0,8);
         else associateResRef = associate.ResRef;
 
+        obj.Owner.LoginPlayer.SendServerMessage
+        ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Name}]", COLOR_GREY);
+        if (associate.AssociateType == AssociateType.AnimalCompanion || associate.AssociateType == AssociateType.Familiar) obj.Owner.LoginPlayer.SendServerMessage
+        ($"DEBUG: animal companion or familiar resref is [{associate.ResRef}], whose substring is {associate.ResRef.Substring(0,8)}");
+
         if (!associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).HasValue) return;
 
         obj.Owner.LoginPlayer.SendServerMessage
