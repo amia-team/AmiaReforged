@@ -236,7 +236,7 @@ public class AssociateCustomizerService
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
             }
         }
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue && associate.GetItemInSlot(InventorySlot.RightHand) != null)
         {
             // Associate's mainhand can't be twohanded for offhand item data to carry over
             BaseItemWeaponWieldType weaponType = associate.GetItemInSlot(InventorySlot.RightHand).BaseItem.WeaponWieldType;
@@ -250,8 +250,9 @@ public class AssociateCustomizerService
                 ("[Associate Customizer] Offhand appearance not copied. The associate's mainhand item is held with both hands, so it can't hold an item in offhand. The base mainhand items must match for customization.", COLOR_RED);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
-            else
-            {
+        }
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
+        {
                 byte[] offhandData = Convert.FromBase64String(associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value);
                 NwItem offhandCopy = NwItem.Deserialize(offhandData);
 
@@ -269,7 +270,6 @@ public class AssociateCustomizerService
                     ("[Associate Customizer] Offhand appearance not copied. The base offhand items must match for customization.", COLOR_RED);
                     associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
                 }
-            }
         }
 
         string associateResRef = associate.ResRef;
@@ -333,7 +333,7 @@ public class AssociateCustomizerService
     /// <summary>
     ///     When the associate is summoned, gets the copied appearance for the associate and customizes it.
     /// </summary>
-    private async void CustomizeAssociateAppearance(OnAssociateAdd obj)
+    private void CustomizeAssociateAppearance(OnAssociateAdd obj)
     {
         // Works only if the owner is player controlled, has the tool in inventory, and the associate isn't dominated
         if (!obj.Owner.IsPlayerControlled) return;
@@ -410,11 +410,39 @@ public class AssociateCustomizerService
         {
             string toolDescription = associateCustomizer.Description;
             string storedString = StringExtensions.ColorString($"{associate.OriginalName}is {creatureCopy.Name}", COLOR_GREEN);
-            if (obj.AssociateType == AssociateType.AnimalCompanion) storedString = StringExtensions.ColorString($"Animal companion is {creatureCopy.Name}", COLOR_GREEN);
-            if (obj.AssociateType == AssociateType.Familiar) storedString = StringExtensions.ColorString($"Familiar is {creatureCopy.Name}", COLOR_GREEN);
+            if (obj.AssociateType == AssociateType.AnimalCompanion || obj.AssociateType == AssociateType.Familiar)
+            {
+                string companionType = "unknown";
+                if (associate.ResRef.Contains("badger")) companionType = "badger";
+                if (associate.ResRef.Contains("bat")) companionType = "bat";
+                if (associate.ResRef.Contains("bear")) companionType = "bear";
+                if (associate.ResRef.Contains("boar")) companionType = "boar";
+                if (associate.ResRef.Contains("drat")) companionType = "dire rat";
+                if (associate.ResRef.Contains("dwlf")) companionType = "dire worlf";
+                if (associate.ResRef.Contains("eye")) companionType = "eyeball";
+                if (associate.ResRef.Contains("fdrg")) companionType = "faerie dragon";
+                if (associate.ResRef.Contains("fire")) companionType = "fire mephit";
+                if (associate.ResRef.Contains("spid")) companionType = "spider";
+                if (associate.ResRef.Contains("hawk")) companionType = "hawk";
+                if (associate.ResRef.Contains("hell")) companionType = "hell hound";
+                if (associate.ResRef.Contains("ice")) companionType = "ice mephit";
+                if (associate.ResRef.Contains("imp")) companionType = "imp";
+                if (associate.ResRef.Contains("pant")) companionType = "panther";
+                if (associate.ResRef.Contains("crag")) companionType = "panther";
+                if (associate.ResRef.Contains("pixi")) companionType = "pixie";
+                if (associate.ResRef.Contains("pdrg")) companionType = "pseudodragon";
+                if (associate.ResRef.Contains("rave")) companionType = "raven";
+                if (associate.ResRef.Contains("wolf")) companionType = "wolf";
+                if (associate.ResRef.Contains("const")) companionType = "construct";
+                if (associate.ResRef.Contains("phase")) companionType = "phase spider";
+                if (associate.ResRef.Contains("skele")) companionType = "skeleton";
+                if (obj.AssociateType == AssociateType.AnimalCompanion) 
+                    storedString = StringExtensions.ColorString($"Companion {companionType} is {creatureCopy.Name}", COLOR_GREEN);
+                if (obj.AssociateType == AssociateType.Familiar) 
+                    storedString = StringExtensions.ColorString($"Familiar is {companionType} is {creatureCopy.Name}", COLOR_GREEN);
+            }
             associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
-        
         // Apply custom armor appearance
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associateResRef).HasValue)
         {
