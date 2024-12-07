@@ -2,6 +2,9 @@
 
 namespace AmiaReforged.PwEngine.Systems.Crafting;
 
+/// <summary>
+///  Plain old data object for crafting properties. Should not contain any logic (i.e.: Can the property stack).
+/// </summary>
 public class CraftingProperty
 {
     public required ItemProperty Property { get; init; }
@@ -10,4 +13,5 @@ public class CraftingProperty
     public required int Cost { get; init; }
     
     public required CraftingTier CraftingTier { get; set; }
+    
 }
