@@ -11,7 +11,6 @@ public class AssociateCustomizerService
     static readonly Color COLOR_RED = Color.FromRGBA("#ff0032cc");
     static readonly Color COLOR_GREEN = Color.FromRGBA("#43ff64d9");
     static readonly Color COLOR_WHITE = Color.FromRGBA("#d2ffffd9");
-    static readonly Color COLOR_GREY = Color.FromRGBA("#202032");
     static readonly string TOOL_TAG = "ass_customizer";
     // Baseitems.2da id numbers for left-hand holdable items
     static readonly uint TORCH = 15;
@@ -278,12 +277,8 @@ public class AssociateCustomizerService
 
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
-        {
             associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Value = 
                 associateCustomizer.GetObjectVariable<LocalVariableString>("creature");
-            obj.ItemActivator.LoginPlayer.SendServerMessage
-            ($"DEBUG: associate resref is [{associateResRef}], creature variable is [{associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Name}]", COLOR_GREY);
-        }
             
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue)
@@ -439,7 +434,7 @@ public class AssociateCustomizerService
                 if (obj.AssociateType == AssociateType.AnimalCompanion) 
                     storedString = StringExtensions.ColorString($"Companion {companionType} is {creatureCopy.Name}", COLOR_GREEN);
                 if (obj.AssociateType == AssociateType.Familiar) 
-                    storedString = StringExtensions.ColorString($"Familiar is {companionType} is {creatureCopy.Name}", COLOR_GREEN);
+                    storedString = StringExtensions.ColorString($"Familiar {companionType} is {creatureCopy.Name}", COLOR_GREEN);
             }
             associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
