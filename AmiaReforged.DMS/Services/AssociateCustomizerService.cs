@@ -431,10 +431,14 @@ public class AssociateCustomizerService
                 if (associate.ResRef.Contains("const")) companionType = "construct";
                 if (associate.ResRef.Contains("phase")) companionType = "phase spider";
                 if (associate.ResRef.Contains("skele")) companionType = "skeleton";
-                if (obj.AssociateType == AssociateType.AnimalCompanion) 
+                
+                if (!associateCustomizer.Description.Contains(companionType))
+                {
+                    if (obj.AssociateType == AssociateType.AnimalCompanion) 
                     storedString = StringExtensions.ColorString($"Companion {companionType} is {creatureCopy.Name}", COLOR_GREEN);
-                if (obj.AssociateType == AssociateType.Familiar) 
+                    if (obj.AssociateType == AssociateType.Familiar) 
                     storedString = StringExtensions.ColorString($"Familiar {companionType} is {creatureCopy.Name}", COLOR_GREEN);
+                }
             }
             associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
         }
