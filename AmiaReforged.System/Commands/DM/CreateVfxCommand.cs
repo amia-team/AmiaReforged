@@ -8,13 +8,12 @@ namespace AmiaReforged.System.Commands.DM;
 
 public class CreateVfx : IChatCommand
 {
-    public string referenceString = "";
-    public string Command => $"./createvfx {referenceString}";
-    
+    public string Command => "./createvfx";
+
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
         if (caller.IsDM == false) return Task.CompletedTask;
-        if (referenceString.TryParseInt(out int vfxId))
+        if (Command[11..].TryParseInt(out int vfxId))
         {
             string vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
             string vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
@@ -41,7 +40,7 @@ public class CreateVfx : IChatCommand
 
     private void CreateDurVfx(ModuleEvents.OnPlayerTarget obj)
     {
-        VisualEffectTableEntry vfxId = NwGameTables.VisualEffectTable[referenceString.ParseInt()];
+        VisualEffectTableEntry vfxId = NwGameTables.VisualEffectTable[Command[11..].ParseInt()];
         NwCreature targetObject = (NwCreature)obj.TargetObject;
         float targetObjectScale = targetObject.VisualTransform.Scale; 
         Effect durVfx = Effect.VisualEffect(vfxId, false, targetObjectScale);
@@ -51,7 +50,7 @@ public class CreateVfx : IChatCommand
     }
     private void CreateFnfVfx(ModuleEvents.OnPlayerTarget obj)
     {
-        VisualEffectTableEntry vfxId = NwGameTables.VisualEffectTable[referenceString.ParseInt()];
+        VisualEffectTableEntry vfxId = NwGameTables.VisualEffectTable[Command[11..].ParseInt()];
         NwArea currentArea = obj.Player.ControlledCreature.Area;
         Location targetLocation = Location.Create(currentArea, obj.TargetPosition, 0);
         targetLocation.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(vfxId));
