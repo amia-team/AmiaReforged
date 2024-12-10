@@ -8,9 +8,9 @@ namespace AmiaReforged.System.Commands.DM;
 
 public class CreateVfx : IChatCommand
 {
-    public string? referenceString;
+    public string referenceString = "";
     public string Command => $"./createvfx {referenceString}";
-
+    
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
         if (caller.IsDM == false) return Task.CompletedTask;
