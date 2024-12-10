@@ -9,7 +9,7 @@ namespace AmiaReforged.System.Commands.DM;
 public class CreateVfx : IChatCommand
 {
     public string? referenceString;
-    public string Command => "./createvfx" + referenceString;
+    public string Command => $"./createvfx {referenceString}";
 
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
@@ -33,7 +33,7 @@ public class CreateVfx : IChatCommand
         }
         else 
         {
-            caller.SendServerMessage("You're trying to set a visual effect. You must enter a reference number, './setvfx[reference number]'. To view the list, enter './listvfx'.");
+            caller.SendServerMessage("You're trying to create a visual effect. You must enter a reference number, './createvfx [reference number]'. To view the list, enter './listvfx'.");
             return Task.CompletedTask;
         }
         return Task.CompletedTask;
