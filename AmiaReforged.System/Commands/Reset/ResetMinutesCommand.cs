@@ -32,11 +32,20 @@ public class ResetMinutesCommand : IChatCommand
             return Task.CompletedTask;
         }
 
-        float newReset = float.Parse(message.Split(' ')[1]);
-        NWScript.SetLocalFloat(NwModule.Instance, "minutesToReset", newReset);
-        ResetTimeKeeperSingleton.Instance.ResetStartTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds();
+        try
+        {
+         
+            float newReset = float.Parse(message.Split(' ')[1]);
+            NWScript.SetLocalFloat(NwModule.Instance, "minutesToReset", newReset);
+            ResetTimeKeeperSingleton.Instance.ResetStartTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds();
         
-        NwModule.Instance.SendMessageToAllDMs($"Amia reset timer has been changed to {newReset} minutes");
+            NwModule.Instance.SendMessageToAllDMs($"Amia reset timer has been changed to {newReset} minutes");   
+        }catch (Exception e)
+        {
+            Log.Error(e.Message);
+            caller.SendServerMessage("Invalid input. Please use a number and strict spacing. For example: ./resetminutes 30.");
+        }
+        
         return Task.CompletedTask;
     }
 }
