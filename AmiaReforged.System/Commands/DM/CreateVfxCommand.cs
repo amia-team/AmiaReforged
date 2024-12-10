@@ -8,7 +8,8 @@ namespace AmiaReforged.System.Commands.DM;
 
 public class CreateVfx : IChatCommand
 {
-    public string Command => "./createvfx";
+    public string paramVfxId = "";
+    public string Command => $"./createvfx {paramVfxId}";
 
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
@@ -41,12 +42,27 @@ public class CreateVfx : IChatCommand
     private void CreateDurVfx(ModuleEvents.OnPlayerTarget obj)
     {
         VisualEffectTableEntry vfxId = NwGameTables.VisualEffectTable[Command[11..].ParseInt()];
-        NwCreature targetObject = (NwCreature)obj.TargetObject;
-        float targetObjectScale = targetObject.VisualTransform.Scale; 
-        Effect durVfx = Effect.VisualEffect(vfxId, false, targetObjectScale);
-        durVfx.SubType = EffectSubType.Unyielding;
-
-        targetObject.ApplyEffect(EffectDuration.Permanent, durVfx);
+        if (obj.TargetObject is NwCreature targetCreature) 
+        {
+            float targetObjectScale = targetCreature.VisualTransform.Scale;
+            Effect durVfx = Effect.VisualEffect(vfxId, false, targetObjectScale);
+            durVfx.SubType = EffectSubType.Unyielding;
+            targetCreature.ApplyEffect(EffectDuration.Permanent, durVfx);
+        }
+        if (obj.TargetObject is NwDoor targetDoor)
+        {
+            float targetObjectScale = targetDoor.VisualTransform.Scale;
+            Effect durVfx = Effect.VisualEffect(vfxId, false, targetObjectScale);
+            durVfx.SubType = EffectSubType.Unyielding;
+            targetDoor.ApplyEffect(EffectDuration.Permanent, durVfx);
+        }
+        if (obj.TargetObject is NwPlaceable targetPlaceable)
+        {
+            float targetObjectScale = targetPlaceable.VisualTransform.Scale;
+            Effect durVfx = Effect.VisualEffect(vfxId, false, targetObjectScale);
+            durVfx.SubType = EffectSubType.Unyielding;
+            targetPlaceable.ApplyEffect(EffectDuration.Permanent, durVfx);
+        }
     }
     private void CreateFnfVfx(ModuleEvents.OnPlayerTarget obj)
     {
