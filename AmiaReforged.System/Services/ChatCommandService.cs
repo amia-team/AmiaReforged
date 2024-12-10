@@ -38,6 +38,6 @@ public class ChatCommandService
             return;
         }
 
-        await new NwTaskHelper().TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 }
