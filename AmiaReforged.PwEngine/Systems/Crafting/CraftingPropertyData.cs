@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
+using Anvil.API;
 using Anvil.Services;
 using NWN.Core;
 
@@ -55,8 +56,19 @@ public class CraftingPropertyData
                 CraftingTier = CraftingTier.Flawless
             }
         };
+        
         properties.AddRange(GenericItemProperties.ElementalResistances);
         properties.AddRange(GenericItemProperties.DamageReductions);
+        properties.AddRange(GenericItemProperties.PhysicalDamageResistances);
+        properties.AddRange(GenericItemProperties.RegenerationProperties);
+        
+        properties.AddRange(SavingThrowProperties.SpecificSaves);
+        
+        properties.AddRange(SkillProperties.RoleplaySkills);
+        properties.AddRange(SkillProperties.BeneficialSkills);
+        
+        properties.AddRange(AbilityProperties.Abilities);
+        
         Properties.Add(NWScript.BASE_ITEM_AMULET, properties);
     }
 }

@@ -144,6 +144,31 @@ public static class GenericItemProperties
         }
     };
 
+    public static readonly IReadOnlyList<CraftingProperty> PhysicalDamageResistances = new[]
+    {
+        new CraftingProperty
+        {
+            Cost = 2,
+            Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_BLUDGEONING, 5)!,
+            GuiLabel = "5/- Bludgeoning Resistance",
+            CraftingTier = CraftingTier.Divine
+        },
+        new CraftingProperty
+        {
+            Cost = 2,
+            Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_PIERCING, 5)!,
+            GuiLabel = "5/- Piercing Resistance",
+            CraftingTier = CraftingTier.Divine
+        },
+        new CraftingProperty
+        {
+            Cost = 2,
+            Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SLASHING, 5)!,
+            GuiLabel = "5/- Slashing Resistance",
+            CraftingTier = CraftingTier.Divine
+        },
+    };
+
     /// <summary>
     ///     Generic damage soak properties.
     /// </summary>
@@ -279,6 +304,25 @@ public static class GenericItemProperties
             CraftingTier = CraftingTier.Flawless
         },
     };
-    
-    
+
+    public static readonly IReadOnlyList<CraftingProperty> RegenerationProperties = new[]
+    {
+        // Intermediate, +1 Regeneration costs 2.
+        new CraftingProperty
+        {
+            Cost = 2,
+            Property = NWScript.ItemPropertyRegeneration(1)!,
+            GuiLabel = "+1 Regeneration",
+            CraftingTier = CraftingTier.Intermediate
+        },
+        // Greater, +2 Regeneration costs 4.
+        new CraftingProperty
+        {
+            Cost = 4,
+            Property = NWScript.ItemPropertyRegeneration(2)!,
+            GuiLabel = "+2 Regeneration",
+            CraftingTier = CraftingTier.Greater
+        },
+    };
+
 }
