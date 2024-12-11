@@ -19,31 +19,26 @@ public class CreateVfx : IChatCommand
             string vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
             string vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
             caller.ControlledCreature.GetObjectVariable<LocalVariableInt>("createvfxid").Value = vfxId;
-            try 
+            bool floatParamSet = float.TryParse(message.Split(' ')[2], out float vfxScale);
+            if (floatParamSet) caller.ControlledCreature.GetObjectVariable<LocalVariableFloat>("createvfxscale").Value = vfxScale;
+
+            if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "D")
             {
-                float vfxScale = float.Parse(message.Split(' ')[2]);
-                caller.ControlledCreature.GetObjectVariable<LocalVariableFloat>("createvfxscale").Value = vfxScale;
-            } 
-            catch
+                caller.EnterTargetMode(CreateDurVfx, new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
+                caller.FloatingTextString($"Creating duration-type visual effect {vfxLabel}. The effect is permanent! You can remove it with \"./removevfx\".", false);
+                return Task.CompletedTask;
+            }
+            if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "F")
             {
-                if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "D")
-                {
-                    caller.EnterTargetMode(CreateDurVfx, new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
-                    caller.FloatingTextString($"Creating duration-type visual effect {vfxLabel}. The effect is permanent! You can remove it with './removevfx'.", false);
-                    return Task.CompletedTask;
-                }
-                if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "F")
-                {
-                    caller.EnterTargetMode(CreateFnfVfx);
-                    caller.FloatingTextString($"Creating instant-type visual effect {vfxLabel}.", false);
-                    return Task.CompletedTask;
-                }
+                caller.EnterTargetMode(CreateFnfVfx);
+                caller.FloatingTextString($"Creating instant-type visual effect {vfxLabel}.", false);
+                return Task.CompletedTask;
             }
         }
         catch 
         {
             caller.SendServerMessage(
-                "Usage: \"./createvfx <reference number>\". Optionally, set the vfx scale with \"./createvfx <reference number> <scale float>\" To view the vfx list, enter \"./listvfx\".");
+                "Usage: \"./createvfx <reference number>\". Optionally, set the vfx scale with \"./createvfx <reference number> <scale float>\". Use \"./listvfx\" to list vfxs.");
         }
         return Task.CompletedTask;
     }
