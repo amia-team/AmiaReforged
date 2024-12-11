@@ -13,8 +13,7 @@ public class ListVfx : IChatCommand
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
         string originalDescription = caller.ControlledCreature.Description;
-        string stringFormat = string.Format("{0, -15} {1, -4}");
-        string vfxList = string.Format(stringFormat, "VFX LABEL", "VFX ID");
+        string vfxList = "ID    LABEL";
 
         string vfxLabel;
         int vfxId;
@@ -23,9 +22,9 @@ public class ListVfx : IChatCommand
         {
             if (NwGameTables.VisualEffectTable[i].TypeFd != "D") continue;
             
-            vfxLabel = NwGameTables.VisualEffectTable[i].Label[..15];
+            vfxLabel = NwGameTables.VisualEffectTable[i].Label;
             vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
-            vfxList += "\n" + string.Format(stringFormat, $"{vfxLabel}, {vfxId}");
+            vfxList += $"\n{vfxId}  {vfxLabel}";
         }
 
         caller.ControlledCreature.Description = vfxList;
