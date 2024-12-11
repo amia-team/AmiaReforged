@@ -8,14 +8,14 @@ namespace AmiaReforged.System.Commands.DM;
 
 public class CreateVfx : IChatCommand
 {
-    public string paramVfxId = "";
-    public string Command => $"./createvfx {paramVfxId}";
+    public string Command => $"./createvfx";
 
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
-        if (caller.IsDM == false) return Task.CompletedTask;
-        if (Command[11..].TryParseInt(out int vfxId))
+        if (!caller.IsDM) return Task.CompletedTask;
+        try
         {
+            int vfxId = int.Parse(message.Split(' ')[1]);
             string vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
             string vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
             if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "D")
@@ -31,44 +31,47 @@ public class CreateVfx : IChatCommand
                 return Task.CompletedTask;
             }
         }
-        else 
+        catch 
         {
-            caller.SendServerMessage("You're trying to create a visual effect. You must enter a reference number, './createvfx [reference number]'. To view the list, enter './listvfx'.");
-            return Task.CompletedTask;
+            caller.SendServerMessage(
+                "Usage: \"./createvfx <reference number>\". Optionally, set the vfx scale with \"./createvfx <reference number> <scale float>\" To view the vfx list, enter \"./listvfx\".");
         }
         return Task.CompletedTask;
     }
 
     private void CreateDurVfx(ModuleEvents.OnPlayerTarget obj)
     {
-        VisualEffectTableEntry vfxId = NwGameTables.VisualEffectTable[Command[11..].ParseInt()];
-        if (obj.TargetObject is NwCreature targetCreature) 
+        int vfxId = int.Parse(Command.Split(' ')[1]);
+        float vfxScale;
+        VisualEffectTableEntry vfx = NwGameTables.VisualEffectTable[vfxId];
+        if (obj.TargetObject is NwCreature targetCreature)
         {
-            float targetObjectScale = targetCreature.VisualTransform.Scale;
-            Effect durVfx = Effect.VisualEffect(vfxId, false, targetObjectScale);
+            vfxScale = targetCreature.VisualTransform.Scale;
+            Effect durVfx = Effect.VisualEffect(vfx, false, vfxScale);
             durVfx.SubType = EffectSubType.Unyielding;
             targetCreature.ApplyEffect(EffectDuration.Permanent, durVfx);
         }
         if (obj.TargetObject is NwDoor targetDoor)
         {
-            float targetObjectScale = targetDoor.VisualTransform.Scale;
-            Effect durVfx = Effect.VisualEffect(vfxId, false, targetObjectScale);
+            vfxScale = targetDoor.VisualTransform.Scale;
+            Effect durVfx = Effect.VisualEffect(vfx, false, vfxScale);
             durVfx.SubType = EffectSubType.Unyielding;
             targetDoor.ApplyEffect(EffectDuration.Permanent, durVfx);
         }
         if (obj.TargetObject is NwPlaceable targetPlaceable)
         {
-            float targetObjectScale = targetPlaceable.VisualTransform.Scale;
-            Effect durVfx = Effect.VisualEffect(vfxId, false, targetObjectScale);
+            vfxScale = targetPlaceable.VisualTransform.Scale;
+            Effect durVfx = Effect.VisualEffect(vfx, false, vfxScale);
             durVfx.SubType = EffectSubType.Unyielding;
             targetPlaceable.ApplyEffect(EffectDuration.Permanent, durVfx);
         }
     }
     private void CreateFnfVfx(ModuleEvents.OnPlayerTarget obj)
     {
-        VisualEffectTableEntry vfxId = NwGameTables.VisualEffectTable[Command[11..].ParseInt()];
+        int vfxId = int.Parse(Command.Split(' ')[1]);
+        VisualEffectTableEntry vfx = NwGameTables.VisualEffectTable[vfxId];       
         NwArea currentArea = obj.Player.ControlledCreature.Area;
         Location targetLocation = Location.Create(currentArea, obj.TargetPosition, 0);
-        targetLocation.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(vfxId));
+        targetLocation.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(vfx));
     }
 }
