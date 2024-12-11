@@ -12,7 +12,7 @@ public class ListVfx : IChatCommand
 
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
-        string originalDescription = caller.ControlledCreature.Description;
+        // string originalDescription = caller.ControlledCreature.Description;
         string vfxList = "ID    LABEL";
 
         string vfxLabel;
@@ -29,7 +29,7 @@ public class ListVfx : IChatCommand
 
         caller.ControlledCreature.Description = vfxList;
         caller.ActionExamine(caller.ControlledCreature);
-        caller.ControlledCreature.Description = originalDescription;
+        // caller.ControlledCreature.Description = originalDescription;
         return Task.CompletedTask;
     }
 }
