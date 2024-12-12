@@ -8,11 +8,12 @@ namespace AmiaReforged.System.Commands.DM;
 
 public class GetVfx : IChatCommand
 {
-    public string Command => $"./removevfx";
+    public string Command => $"./getvfx";
 
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
         if (!caller.IsDM) return Task.CompletedTask;
+
         caller.EnterTargetMode(GetDurVfx, new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
         return Task.CompletedTask;
     }
@@ -57,6 +58,7 @@ public class GetVfx : IChatCommand
             }
         }
         NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", obj.Player.ControlledCreature.Location);
+        helperObject.Name = $"List of visual effects on {obj.TargetObject.Name}";
         helperObject.Description = vfxList;
         obj.Player.ActionExamine(helperObject);
         helperObject.Destroy();
