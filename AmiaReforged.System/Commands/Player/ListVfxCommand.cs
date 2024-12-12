@@ -11,66 +11,74 @@ public class ListVfx : IChatCommand
 
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
-        string vfxList = "ID  LABEL";
+        try
+        {
+            string vfxList = "ID  LABEL";
 
-        string vfxLabel;
-        int vfxId;
+            string vfxLabel;
+            int vfxId;
 
-        if (message.Contains("dur"))
-        {
-            for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
+            if (message.Split(' ')[1].Contains("inst"))
             {
-                if (NwGameTables.VisualEffectTable[i].TypeFd != "D") continue;
-            
-                vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
-                vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
-                vfxList += $"\n{vfxId} {vfxLabel}";
+                for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
+                {
+                    if (NwGameTables.VisualEffectTable[i].TypeFd != "F") continue;
+                
+                    vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
+                    vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
+                    vfxList += $"\n{vfxId} {vfxLabel}";
+                }
             }
-        }
-        if (message.Contains("inst"))
-        {
-            for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
+            if (message.Split(' ')[1].Contains("dur"))
             {
-                if (NwGameTables.VisualEffectTable[i].TypeFd != "F") continue;
-            
-                vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
-                vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
-                vfxList += $"\n{vfxId} {vfxLabel}";
+                for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
+                {
+                    if (NwGameTables.VisualEffectTable[i].TypeFd != "D") continue;
+                
+                    vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
+                    vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
+                    vfxList += $"\n{vfxId} {vfxLabel}";
+                }
             }
-        }
-        if (message.Contains("proj"))
-        {
-            for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
+            if (message.Split(' ')[1].Contains("proj"))
             {
-                if (NwGameTables.VisualEffectTable[i].TypeFd != "P") continue;
-            
-                vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
-                vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
-                vfxList += $"\n{vfxId} {vfxLabel}";
+                for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
+                {
+                    if (NwGameTables.VisualEffectTable[i].TypeFd != "P") continue;
+                
+                    vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
+                    vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
+                    vfxList += $"\n{vfxId} {vfxLabel}";
+                }
             }
-        }
-        if (message.Contains("beam"))
-        {
-            for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
+            if (message.Split(' ')[1].Contains("beam"))
             {
-                if (NwGameTables.VisualEffectTable[i].TypeFd != "B") continue;
-            
-                vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
-                vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
-                vfxList += $"\n{vfxId} {vfxLabel}";
+                for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
+                {
+                    if (NwGameTables.VisualEffectTable[i].TypeFd != "B") continue;
+                
+                    vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
+                    vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
+                    vfxList += $"\n{vfxId} {vfxLabel}";
+                }
             }
+            else 
+            {
+                caller.SendServerMessage("Usage: \"./listvfx <vfx type>\". Valid types: duration, instant, projectile, beam.");
+                return Task.CompletedTask;
+            }
+            
+            NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", caller.ControlledCreature.Location);
+            helperObject.Description = vfxList;
+            caller.ActionExamine(helperObject);
+            helperObject.Destroy();
         }
-        else 
+        catch 
         {
             caller.SendServerMessage(
                 "Usage: \"./listvfx <vfx type>\". Valid types: duration, instant, projectile, beam.");
-            return Task.CompletedTask;
         }
-        
-        NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", caller.ControlledCreature.Location);
-        helperObject.Description = vfxList;
-        caller.ActionExamine(helperObject);
-        helperObject.Destroy();
+
         return Task.CompletedTask;
     }
 }
