@@ -18,7 +18,7 @@ public class GetVfx : IChatCommand
         return Task.CompletedTask;
     }
     
-    private void GetDurVfx(ModuleEvents.OnPlayerTarget obj)
+    private async void GetDurVfx(ModuleEvents.OnPlayerTarget obj)
     {
         int vfxId;
         int vfxIndex = 0;
@@ -58,9 +58,10 @@ public class GetVfx : IChatCommand
             }
         }
 
-        NwPlaceable helperObject = NwPlaceable.Create("stat_garg001", obj.Player.ControlledCreature.Location);
-        helperObject.Name = $"VFXs on target object";
+        NwPlaceable helperObject = NwPlaceable.Create("ds_invis_object3", obj.Player.ControlledCreature.Location);
         helperObject.Description = vfxList;
         obj.Player.ActionExamine(helperObject);
+        await NwTask.Delay(TimeSpan.FromSeconds(1));
+        helperObject.Destroy();
     }
 }
