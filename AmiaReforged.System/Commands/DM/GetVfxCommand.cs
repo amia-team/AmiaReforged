@@ -62,7 +62,5 @@ public class GetVfx : IChatCommand
         helperObject.Name = $"VFXs on target object";
         helperObject.Description = vfxList;
         obj.Player.ActionExamine(helperObject);
-        helperObject.SetIsDestroyable(true);
-        helperObject.Destroy();
     }
 }
