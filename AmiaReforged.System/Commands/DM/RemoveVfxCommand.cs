@@ -35,7 +35,7 @@ public class RemoveVfx : IChatCommand
         catch 
         {
             caller.SendServerMessage(
-                "Usage: \"./removevfx <reference number>\". Use \"./listvfx dur\" to list valid vfxs. Use \"./getvfx\" to get vfxs on the target.");
+                "Usage: \"./removevfx <vfx id>\". Use \"./listvfx dur\" to list valid vfxs. Use \"./getvfx\" to get vfxs on the target.");
         }
         return Task.CompletedTask;
     }

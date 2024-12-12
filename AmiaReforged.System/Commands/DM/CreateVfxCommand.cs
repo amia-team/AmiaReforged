@@ -41,7 +41,7 @@ public class CreateVfx : IChatCommand
         catch 
         {
             caller.SendServerMessage(
-                "Usage: \"./createvfx <reference number>\". Optionally, set the vfx scale with \"./createvfx <reference number> <scale float>\". Use \"./listvfx\" to list vfxs.");
+                "Usage: \"./createvfx <vfx id>\". Optionally, set the vfx scale with \"./createvfx <vfx id> <scale float>\". Use \"./listvfx\" to list vfxs.");
         }
         return Task.CompletedTask;
     }
