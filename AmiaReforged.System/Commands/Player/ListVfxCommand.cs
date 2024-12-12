@@ -1,6 +1,4 @@
-using System.Runtime.InteropServices;
 using Anvil.API;
-using Anvil.API.Events;
 using Anvil.Services;
 
 namespace AmiaReforged.System.Commands.Player;
@@ -26,12 +24,8 @@ public class ListVfx : IChatCommand
         int vfxId;
 
         string paramInput = message.Split(' ')[1];
-        string[] durParams = {"d", "dur", "duration"};
-        string[] fnfParams = {"f", "fnf", "i", "inst", "instant"};
-        string[] projParams = {"p", "proj", "projectile"};
-        string[] beamParams = {"b", "beam"};
         
-        if (durParams.Contains(paramInput))
+        if (paramInput == "duration")
         {
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
@@ -42,7 +36,7 @@ public class ListVfx : IChatCommand
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
         }
-        if (fnfParams.Contains(paramInput))
+        if (paramInput == "instant")
         {
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
@@ -53,7 +47,7 @@ public class ListVfx : IChatCommand
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
         }
-        if (projParams.Contains(paramInput))
+        if (paramInput == "projectile")
         {
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
@@ -64,7 +58,7 @@ public class ListVfx : IChatCommand
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
         }
-        if (beamParams.Contains(paramInput))
+        if (paramInput == "beam")
         {
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
@@ -78,7 +72,7 @@ public class ListVfx : IChatCommand
         else 
         {
             caller.SendServerMessage(
-                "Usage: \"./listvfx <vfx type>\". Recognised types: duration, instant, projectile, beam.");
+                "Usage: \"./listvfx <vfx type>\". Valid types: duration, instant, projectile, beam.");
             return Task.CompletedTask;
         }
         
