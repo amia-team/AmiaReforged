@@ -40,6 +40,6 @@ public class SetSoundset : IChatCommand
         int soundsetId = targetCreature.GetObjectVariable<LocalVariableInt>("soundsetid").Value;
 
         targetCreature.SoundSet = (ushort)soundsetId;
-        targetCreature.PlayVoiceChat(VoiceChatType.Attack);
+        targetCreature.PlayVoiceChat(VoiceChatType.BattleCry1);
     }
 }
