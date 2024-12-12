@@ -13,10 +13,10 @@ public class ListVfx : IChatCommand
     {
         try
         {
+            string vfxTypeParam = message.Split(' ')[1];
             string vfxList = "ID  LABEL";
-
-            string vfxLabel;
             int vfxId;
+            string vfxLabel;
 
             if (message.Split(' ')[1].Contains("inst"))
             {
@@ -28,6 +28,12 @@ public class ListVfx : IChatCommand
                     vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                     vfxList += $"\n{vfxId} {vfxLabel}";
                 }
+                
+                NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", caller.ControlledCreature.Location);
+                helperObject.Description = vfxList;
+                caller.ActionExamine(helperObject);
+                helperObject.Destroy();
+                return Task.CompletedTask;
             }
             if (message.Split(' ')[1].Contains("dur"))
             {
@@ -39,6 +45,12 @@ public class ListVfx : IChatCommand
                     vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                     vfxList += $"\n{vfxId} {vfxLabel}";
                 }
+                
+                NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", caller.ControlledCreature.Location);
+                helperObject.Description = vfxList;
+                caller.ActionExamine(helperObject);
+                helperObject.Destroy();
+                return Task.CompletedTask;
             }
             if (message.Split(' ')[1].Contains("proj"))
             {
@@ -50,6 +62,12 @@ public class ListVfx : IChatCommand
                     vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                     vfxList += $"\n{vfxId} {vfxLabel}";
                 }
+
+                NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", caller.ControlledCreature.Location);
+                helperObject.Description = vfxList;
+                caller.ActionExamine(helperObject);
+                helperObject.Destroy();
+                return Task.CompletedTask;
             }
             if (message.Split(' ')[1].Contains("beam"))
             {
@@ -61,17 +79,13 @@ public class ListVfx : IChatCommand
                     vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                     vfxList += $"\n{vfxId} {vfxLabel}";
                 }
-            }
-            else 
-            {
-                caller.SendServerMessage("Usage: \"./listvfx <vfx type>\". Valid types: duration, instant, projectile, beam.");
+
+                NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", caller.ControlledCreature.Location);
+                helperObject.Description = vfxList;
+                caller.ActionExamine(helperObject);
+                helperObject.Destroy();
                 return Task.CompletedTask;
             }
-            
-            NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", caller.ControlledCreature.Location);
-            helperObject.Description = vfxList;
-            caller.ActionExamine(helperObject);
-            helperObject.Destroy();
         }
         catch 
         {
