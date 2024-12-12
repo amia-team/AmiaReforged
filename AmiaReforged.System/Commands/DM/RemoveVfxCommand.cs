@@ -45,20 +45,28 @@ public class RemoveVfx : IChatCommand
         int vfxId = obj.Player.ControlledCreature.GetObjectVariable<LocalVariableInt>("createvfxid").Value;
         VisualEffectTableEntry vfx = NwGameTables.VisualEffectTable[vfxId];
     
-        if (obj.TargetObject is NwCreature targetCreature) 
-        foreach (Effect visualEffect in targetCreature.ActiveEffects)
+        if (obj.TargetObject is NwCreature targetCreature)
         {
-            if (visualEffect == Effect.VisualEffect(vfx)) targetCreature.RemoveEffect(visualEffect);
+            foreach (Effect visualEffect in targetCreature.ActiveEffects)
+            {
+                if (visualEffect == Effect.VisualEffect(vfx)) targetCreature.RemoveEffect(visualEffect);
+            }
         }
-        if (obj.TargetObject is NwDoor targetDoor) 
-        foreach (Effect visualEffect in targetDoor.ActiveEffects)
+        
+        if (obj.TargetObject is NwDoor targetDoor)
         {
-            if (visualEffect == Effect.VisualEffect(vfx)) targetDoor.RemoveEffect(visualEffect);
-        }
+            foreach (Effect visualEffect in targetDoor.ActiveEffects)
+            {
+                if (visualEffect == Effect.VisualEffect(vfx)) targetDoor.RemoveEffect(visualEffect);
+            }
+        } 
+        
         if (obj.TargetObject is NwPlaceable targetPlaceable)
-        foreach (Effect visualEffect in targetPlaceable.ActiveEffects)
         {
-            if (visualEffect == Effect.VisualEffect(vfx)) targetPlaceable.RemoveEffect(visualEffect);
+            foreach (Effect visualEffect in targetPlaceable.ActiveEffects)
+            {
+                if (visualEffect == Effect.VisualEffect(vfx)) targetPlaceable.RemoveEffect(visualEffect);
+            }
         }
     }
 }
