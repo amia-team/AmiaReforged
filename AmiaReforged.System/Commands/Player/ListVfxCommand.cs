@@ -14,7 +14,7 @@ public class ListVfx : IChatCommand
         if (message.Split(' ').Length <= 1)
         {
             caller.SendServerMessage(
-                "Usage: \"./listvfx <vfx type>\". Recognised types: duration, instant, projectile, beam.");
+                "Usage: \"./listvfx <vfx type>\". Valid types: duration, instant, projectile, beam.");
             return Task.CompletedTask;
         }
         
@@ -24,8 +24,8 @@ public class ListVfx : IChatCommand
         int vfxId;
 
         string paramInput = message.Split(' ')[1];
-        
-        if (paramInput == "duration")
+
+        if (paramInput.Contains("dur"))
         {
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
@@ -36,7 +36,7 @@ public class ListVfx : IChatCommand
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
         }
-        if (paramInput == "instant")
+        if (paramInput.Contains("inst"))
         {
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
@@ -47,7 +47,7 @@ public class ListVfx : IChatCommand
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
         }
-        if (paramInput == "projectile")
+        if (paramInput.Contains("proj"))
         {
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
@@ -58,7 +58,7 @@ public class ListVfx : IChatCommand
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
         }
-        if (paramInput == "beam")
+        if (paramInput.Contains("beam"))
         {
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
