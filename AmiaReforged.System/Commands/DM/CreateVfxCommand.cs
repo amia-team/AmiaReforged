@@ -21,7 +21,7 @@ public class CreateVfx : IChatCommand
             caller.ControlledCreature.GetObjectVariable<LocalVariableInt>("createvfxid").Value = vfxId;
             bool floatParamSet = float.TryParse(message.Split(' ')[2], out float vfxScale);
             if (floatParamSet) caller.ControlledCreature.GetObjectVariable<LocalVariableFloat>("createvfxscale").Value = vfxScale;
-
+            else vfxScale = 1;
             if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "D")
             {
                 caller.EnterTargetMode(CreateDurVfx, new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
