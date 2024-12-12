@@ -23,7 +23,7 @@ public class GetVfx : IChatCommand
         int vfxId;
         int vfxIndex = 0;
         string vfxLabel;
-        string vfxList = "All visual effects on the target object:\n";
+        string vfxList = $"Visual effects on {obj.TargetObject.Name}:\n";
         if (obj.TargetObject is NwCreature targetCreature)
         foreach (Effect effect in targetCreature.ActiveEffects)
         {
@@ -57,8 +57,9 @@ public class GetVfx : IChatCommand
                 vfxList += $"\n{vfxIndex}. ID: {vfxId}. Label: {vfxLabel}\n";
             }
         }
+
         NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", obj.Player.ControlledCreature.Location);
-        helperObject.Name = $"List of visual effects on {obj.TargetObject.Name}";
+        helperObject.Name = $"VFXs on target object";
         helperObject.Description = vfxList;
         obj.Player.ActionExamine(helperObject);
         helperObject.Destroy();
