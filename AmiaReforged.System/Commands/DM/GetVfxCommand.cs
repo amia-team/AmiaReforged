@@ -58,10 +58,11 @@ public class GetVfx : IChatCommand
             }
         }
 
-        NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", obj.Player.ControlledCreature.Location);
+        NwPlaceable helperObject = NwPlaceable.Create("ds_invis_object2", obj.Player.ControlledCreature.Location);
         helperObject.Name = $"VFXs on target object";
         helperObject.Description = vfxList;
         obj.Player.ActionExamine(helperObject);
+        helperObject.SetIsDestroyable(true);
         helperObject.Destroy();
     }
 }
