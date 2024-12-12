@@ -15,7 +15,7 @@ public class PersistentVfxService
     public PersistentVfxService()
     {
         NwModule.Instance.OnEffectApply += StorePersistentVfx;
-        NwModule.Instance.OnEffectRemove += RemoveStoredPersistentVfx;
+        /* NwModule.Instance.OnEffectRemove += RemoveStoredPersistentVfx; */
         NwModule.Instance.OnClientEnter += ApplyPersistentVfx;
         Log.Info("Persistent Vfx Service initialized.");
     }
@@ -53,7 +53,7 @@ public class PersistentVfxService
         pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate").Value = vfxTranslate;
     }
 
-    /// <summary>
+    /* /// <summary>
     ///     Removes persistent vfx variables when it's removed with RemoveEffect
     /// </summary>
     private void RemoveStoredPersistentVfx(OnEffectRemove obj)
@@ -78,7 +78,7 @@ public class PersistentVfxService
         pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float").Delete();
         pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate").Delete();
         pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate").Delete();
-    }
+    } */
 
     /// <summary>
     ///     Gets the persistent vfx data and reapplies them on client enter
