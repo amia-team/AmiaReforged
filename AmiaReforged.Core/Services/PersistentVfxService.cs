@@ -96,36 +96,17 @@ public class PersistentVfxService
         if (playerCharacter.IsDMPossessed) return;
 
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
-        
-        // Loop for each unique persistent vfx stored in the pckey and reapply them
-        LoopPersistentVfxs(pcKey, playerCharacter);
-        }
-    }
 
-    /// <summary>
-    ///     Loop for each unique persistent vfx stored in the pckey and reapply them
-    /// </summary>
-    private async void LoopPersistentVfxs(NwItem pcKey, NwCreature playerCharacter)
-    {
+        // Loop for each unique persistent vfx stored in the pckey and reapply them
         foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
         {
             if (varInt.Name.Contains("persistentvfx")) 
             {
                 int vfxId = varInt.Value;
-                /* bool isDuplicatePersistentVfx = false; 
 
-                // avoid duplicate visuals for persistent vfxs
-                foreach(Effect effect in playerCharacter.ActiveEffects)
-                {
-                    if (effect.EffectType == EffectType.VisualEffect && effect.IntParams[0] == vfxId
-                        && effect.DurationType == EffectDuration.Permanent && effect.SubType == EffectSubType.Unyielding)
-                    {
-                        isDuplicatePersistentVfx = true;
-                        break;
-                    }
-                }
-                
-                if(isDuplicatePersistentVfx == true) continue; */
+                // skip duplicate visuals for persistent vfxs
+                if (playerCharacter.ActiveEffects.Any(effect => effect.IntParams[0] == vfxId 
+                    && effect.DurationType == EffectDuration.Permanent && effect.SubType == EffectSubType.Unyielding)) continue;
 
                 // Otherwise, continue to set the persistent vfx
                 float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
@@ -134,7 +115,7 @@ public class PersistentVfxService
                 playerCharacter.ApplyEffect(EffectDuration.Permanent, 
                     Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
             }
-            await NwTask.Delay(TimeSpan.FromSeconds(0.1));
+        }
         }
     }
 }
