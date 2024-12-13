@@ -10,7 +10,7 @@ public static class SkillProperties
     /// <summary>
     /// Beneficial skills that can be added to items.
     /// </summary>
-    public static readonly IReadOnlyList<CraftingProperty> BeneficialSkills = new[]
+    public static readonly IReadOnlyList<CraftingProperty> Beneficial = new[]
     {
         new CraftingProperty
         {
@@ -136,7 +136,7 @@ public static class SkillProperties
     /// <summary>
     /// Flavor skills that can be added to items.
     /// </summary>
-    public static readonly IReadOnlyList<CraftingProperty> RoleplaySkills = new[]
+    public static readonly IReadOnlyList<CraftingProperty> Roleplay = new[]
     {
         new CraftingProperty
         {

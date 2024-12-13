@@ -214,7 +214,7 @@ public static class GenericItemProperties
     /// <summary>
     ///     Generic armor class properties.
     /// </summary>
-    public static readonly IReadOnlyList<CraftingProperty> GenericArmor = new[]
+    public static readonly IReadOnlyList<CraftingProperty> Armor = new[]
     {
         new CraftingProperty
         {
@@ -277,7 +277,7 @@ public static class GenericItemProperties
     /// <summary>
     /// Generic vampiric regeneration properties.
     /// </summary>
-    public static readonly IReadOnlyList<CraftingProperty> VampiricRegenerationProperties = new[]
+    public static readonly IReadOnlyList<CraftingProperty> VampiricRegeneration = new[]
     {
         // +1 (Intermediate)
         new CraftingProperty
@@ -305,7 +305,7 @@ public static class GenericItemProperties
         },
     };
 
-    public static readonly IReadOnlyList<CraftingProperty> RegenerationProperties = new[]
+    public static readonly IReadOnlyList<CraftingProperty> Regeneration = new[]
     {
         // Intermediate, +1 Regeneration costs 2.
         new CraftingProperty
@@ -323,6 +323,14 @@ public static class GenericItemProperties
             GuiLabel = "+2 Regeneration",
             CraftingTier = CraftingTier.Greater
         },
+    };
+
+    public static readonly CraftingProperty Keen = new CraftingProperty()
+    {
+        Cost = 1,
+        Property = NWScript.ItemPropertyKeen()!,
+        GuiLabel = "Keen",
+        CraftingTier = CraftingTier.Perfect
     };
 
 }

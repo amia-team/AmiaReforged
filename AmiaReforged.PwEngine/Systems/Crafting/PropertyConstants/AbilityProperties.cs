@@ -2,7 +2,7 @@
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 
-public class AbilityProperties
+public static class AbilityProperties
 {
     public static readonly IReadOnlyList<CraftingProperty> Abilities = new[]
     {
