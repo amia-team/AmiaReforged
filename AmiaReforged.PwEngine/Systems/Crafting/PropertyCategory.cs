@@ -11,7 +11,7 @@ public enum PropertyCategory
     DamageBonus,
     SavingThrow,
     SpellResistance,
-    VampiricalRegeneration,
+    VampiricRegeneration,
     Regeneration,
     VisualEffect,
     OnHit,

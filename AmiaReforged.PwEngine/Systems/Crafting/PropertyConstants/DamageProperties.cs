@@ -679,14 +679,14 @@ public static class DamageProperties
         {
             Cost = 1,
             Property = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
-            GuiLabel = "Massive Criticals 1d6",
+            GuiLabel = "1d6 Massive Criticals",
             CraftingTier = CraftingTier.Intermediate
         },
         new CraftingProperty
         {
             Cost = 2,
             Property = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
-            GuiLabel = "Massive Criticals 1d8",
+            GuiLabel = "1d8 Massive Criticals",
             CraftingTier = CraftingTier.Greater
         },
     };
@@ -714,21 +714,21 @@ public static class DamageProperties
         {
             Cost = 1,
             Property = NWScript.ItemPropertyMaxRangeStrengthMod(3)!,
-            GuiLabel = "Mighty +3",
+            GuiLabel = "+3 Mighty",
             CraftingTier = CraftingTier.Intermediate
         },
         new CraftingProperty
         {
             Cost = 1,
             Property = NWScript.ItemPropertyMaxRangeStrengthMod(4)!,
-            GuiLabel = "Mighty +4",
+            GuiLabel = "+4 Mighty",
             CraftingTier = CraftingTier.Greater
         },
         new CraftingProperty
         {
             Cost = 2,
             Property = NWScript.ItemPropertyMaxRangeStrengthMod(5)!,
-            GuiLabel = "Mighty +5",
+            GuiLabel = "+5 Mighty",
             CraftingTier = CraftingTier.Flawless
         }
     };

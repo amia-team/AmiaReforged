@@ -7,6 +7,7 @@ public enum CraftingTier
     Intermediate = 2,
     Greater = 3,
     Flawless = 4,
-    Perfect,
-    Divine
+    Perfect = 5,
+    Divine = 6,
+    DreamCoin = 7
 }

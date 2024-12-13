@@ -56,35 +56,35 @@ public class CraftingPropertyData
             {
                 Cost = 1,
                 Property = NWScript.ItemPropertyACBonus(1)!,
-                GuiLabel = "+1",
+                GuiLabel = "+1 AC",
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
             {
                 Cost = 1,
                 Property = NWScript.ItemPropertyACBonus(2)!,
-                GuiLabel = "+2",
+                GuiLabel = "+2 AC",
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
             {
                 Cost = 1,
                 Property = NWScript.ItemPropertyACBonus(3)!,
-                GuiLabel = "+3",
+                GuiLabel = "+3 AC",
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 Cost = 1,
                 Property = NWScript.ItemPropertyACBonus(4)!,
-                GuiLabel = "+4",
+                GuiLabel = "+4 AC",
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
             {
                 Cost = 2,
                 Property = NWScript.ItemPropertyACBonus(5)!,
-                GuiLabel = "+5",
+                GuiLabel = "+5 AC",
                 CraftingTier = CraftingTier.Flawless
             }
         };
@@ -96,8 +96,8 @@ public class CraftingPropertyData
 
         properties.AddRange(SavingThrowProperties.SpecificSaves);
 
-        properties.AddRange(SkillProperties.Roleplay);
-        properties.AddRange(SkillProperties.Beneficial);
+        properties.AddRange(SkillProperties.Personal);
+        properties.AddRange(SkillProperties.Advantageous);
 
         properties.AddRange(AbilityProperties.Abilities);
 
@@ -120,7 +120,7 @@ public class CraftingPropertyData
             {
                 Cost = 1,
                 Property = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
-                GuiLabel = "Massive Criticals 2d6",
+                GuiLabel = "2d6 Massive Criticals",
                 CraftingTier = CraftingTier.Flawless
             });
             
@@ -141,8 +141,8 @@ public class CraftingPropertyData
         properties.AddRange(SavingThrowProperties.SpecificSaves);
         properties.AddRange(SavingThrowProperties.GeneralSaves);
 
-        properties.AddRange(SkillProperties.Roleplay);
-        properties.AddRange(SkillProperties.Beneficial);
+        properties.AddRange(SkillProperties.Personal);
+        properties.AddRange(SkillProperties.Advantageous);
 
         properties.AddRange(AbilityProperties.Abilities);
     }
@@ -187,8 +187,8 @@ public class CraftingPropertyData
         properties.AddRange(GenericItemProperties.Regeneration);
         properties.Add(GenericItemProperties.Keen);
 
-        properties.AddRange(SkillProperties.Roleplay);
-        properties.AddRange(SkillProperties.Beneficial);
+        properties.AddRange(SkillProperties.Personal);
+        properties.AddRange(SkillProperties.Advantageous);
 
         properties.AddRange(AbilityProperties.Abilities);
 
@@ -202,6 +202,15 @@ public class CraftingPropertyData
             List<CraftingProperty> properties = new();
 
             properties.AddRange(DamageProperties.OneHanders);
+            
+            // Thrown Weapons have a different cost for Keen
+            properties.Add(new CraftingProperty
+            {
+                Cost = 3,
+                Property = NWScript.ItemPropertyKeen()!,
+                GuiLabel = "Keen",
+                CraftingTier = CraftingTier.Perfect
+            });
 
             AddSharedWeaponProperties(properties);
 
@@ -220,12 +229,28 @@ public class CraftingPropertyData
             properties.AddRange(DamageProperties.Mighty);
             properties.AddRange(DamageProperties.MassiveCriticals);
 
-            properties.AddRange(SkillProperties.Beneficial);
-            properties.AddRange(SkillProperties.Roleplay);
+            properties.AddRange(SkillProperties.Advantageous);
+            properties.AddRange(SkillProperties.Personal);
 
             properties.AddRange(GenericItemProperties.Regeneration);
 
             properties.AddRange(AbilityProperties.Abilities);
+            
+            //Ranged have extra Massive Critical options
+            properties.Add(new CraftingProperty
+            {
+                Cost = 1,
+                Property = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
+                GuiLabel = "1d12 Massive Criticals",
+                CraftingTier = CraftingTier.DreamCoin
+            });
+            properties.Add(new CraftingProperty
+            {
+                Cost = 2,
+                Property = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d12)!,
+                GuiLabel = "2d12 Massive Criticals",
+                CraftingTier = CraftingTier.DreamCoin
+            });
 
             Properties.Add(weapon, properties);
         }
