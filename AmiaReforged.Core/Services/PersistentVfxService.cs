@@ -16,9 +16,7 @@ public class PersistentVfxService
     {
         NwModule.Instance.OnEffectApply += StorePersistentVfx;
         NwModule.Instance.OnEffectRemove += RemoveStoredPersistentVfx;
-        /* eventService.SubscribeAll<OnLoadCharacterFinish, 
-            OnLoadCharacterFinish.Factory>(ApplyPersistentVfx, EventCallbackType.After); */
-
+        
         Log.Info("Persistent Vfx Service initialized.");
     }
     
@@ -85,60 +83,8 @@ public class PersistentVfxService
     /// <summary>
     ///     Gets the persistent vfx data and reapplies them on loading the character
     /// </summary>
-    /* private void ApplyPersistentVfx(OnLoadCharacterFinish obj)
-    {
-        // Creature must be a normal player character
-        if (obj.Player.ControlledCreature is not NwCreature playerCharacter) return;
-        if (!playerCharacter.IsPlayerControlled) return;
-        if (playerCharacter.IsDMPossessed) return;
-
-        NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
-
-        // Loop for each unique persistent vfx stored in the pckey and reapply them
-        foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
-        {
-            if (varInt.Name.Contains("persistentvfx")) 
-            {
-                int vfxId = varInt.Value;
-                float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
-                Vector3 vfxTranslate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate");
-                Vector3 vfxRotate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate");
-                playerCharacter.ApplyEffect(EffectDuration.Permanent, 
-                    Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
-            }
-        }
-    } */
-
-    /// <summary>
-    ///     Gets the persistent vfx data and reapplies them on entering the starting area
-    /// </summary>
-    /* private void ApplyPersistentVfx(AreaEvents.OnEnter obj)
-    {
-        // Only Welcome Amia area applies
-        if (obj.Area.ResRef != "welcometotheeete") return;
-        // Creature must be a normal player character
-        if (obj.EnteringObject is not NwCreature playerCharacter) return;
-        if (!playerCharacter.IsPlayerControlled) return;
-        if (playerCharacter.IsDMPossessed) return;
-
-        NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
-
-        // Loop for each unique persistent vfx stored in the pckey and reapply them
-        foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
-        {
-            if (varInt.Name.Contains("persistentvfx")) 
-            {
-                int vfxId = varInt.Value;
-                float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
-                Vector3 vfxTranslate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate");
-                Vector3 vfxRotate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate");
-                playerCharacter.ApplyEffect(EffectDuration.Permanent, 
-                    Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
-            }
-        } */
-
     [ScriptHandler("ds_area_enter")]
-    private void ApplyPersistentVfxOnEnterWelcome(CallInfo callInfo)
+    private void ApplyPersistentVfxOnEnterWelcomeArea(CallInfo callInfo)
     {
       if (callInfo.TryGetEvent(out AreaEvents.OnEnter obj))
       {
@@ -156,7 +102,17 @@ public class PersistentVfxService
         {
             if (varInt.Name.Contains("persistentvfx")) 
             {
+                bool isDuplicatePersistentVfx = false;
                 int vfxId = varInt.Value;
+
+                // avoid duplicate visuals for persistent vfxs
+                foreach(Effect effect in playerCharacter.ActiveEffects)
+                    if(effect.EffectType == EffectType.VisualEffect && effect.IntParams[0] == vfxId 
+                        && effect.DurationType == EffectDuration.Permanent && effect.SubType == EffectSubType.Unyielding)
+                        isDuplicatePersistentVfx = true;
+                if (isDuplicatePersistentVfx) continue;
+
+                // Otherwise, continue to set the persistent vfx
                 float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
                 Vector3 vfxTranslate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate");
                 Vector3 vfxRotate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate");
