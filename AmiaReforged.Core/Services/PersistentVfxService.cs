@@ -102,15 +102,13 @@ public class PersistentVfxService
         {
             if (varInt.Name.Contains("persistentvfx")) 
             {
-                bool isDuplicatePersistentVfx = false;
                 int vfxId = varInt.Value;
 
                 // avoid duplicate visuals for persistent vfxs
                 foreach(Effect effect in playerCharacter.ActiveEffects)
                     if(effect.EffectType == EffectType.VisualEffect && effect.IntParams[0] == vfxId 
                         && effect.DurationType == EffectDuration.Permanent && effect.SubType == EffectSubType.Unyielding)
-                        isDuplicatePersistentVfx = true;
-                if (isDuplicatePersistentVfx) continue;
+                        continue;
 
                 // Otherwise, continue to set the persistent vfx
                 float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
