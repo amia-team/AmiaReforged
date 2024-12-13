@@ -51,6 +51,10 @@ public class PersistentVfxService
         pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float").Value = vfxScale;
         pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate").Value = vfxTranslate;
         pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate").Value = vfxTranslate;
+
+        // Debug
+        playerCharacter.LoginPlayer.SendServerMessage(
+            $"DEBUG: OnEffectApply stored variables: {pcKey.GetObjectVariable<LocalVariableInt>("persistentvfx"+vfxId).Name}, {pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float").Value}, {pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate").Name}, {pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate").Name}");
     }
 
     /// <summary>
@@ -96,25 +100,35 @@ public class PersistentVfxService
         if (playerCharacter.IsDMPossessed) return;
 
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
+        
+        // Return if no persistent vfx is stored
+        if (!pcKey.LocalVariables.Cast<LocalVariableInt>().Any(localInt => localInt.Name.Contains("persistentvfx"))) return;
+        
+        // Add each stored vfxId int to list  
+        List<int> vfxList = new();
+
+        foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
+        if(varInt.Name.Contains("persistentvfx")) vfxList.Add(varInt.Value);
+        
+        // Debug
+        playerCharacter.LoginPlayer.SendServerMessage("Debug OnEnter vfx apply: "+string.Join(", ", vfxList));
 
         // Loop for each unique persistent vfx stored in the pckey and reapply them
-        foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
+        for (int i = 0; i < vfxList.Count; i++)
         {
-            if (varInt.Name.Contains("persistentvfx")) 
-            {
-                int vfxId = varInt.Value;
+            int vfxId = vfxList[i];
 
-                // skip duplicate visuals for persistent vfxs
-                if (playerCharacter.ActiveEffects.Any(effect => effect.IntParams[0] == vfxId 
-                    /* && effect.DurationType == EffectDuration.Permanent && effect.SubType == EffectSubType.Unyielding */)) continue;
+            // Skip duplicate visuals for persistent vfxs
+            if (playerCharacter.ActiveEffects.Any(effect => effect.IntParams[0] == vfxId 
+                && effect.DurationType == EffectDuration.Permanent && effect.SubType == EffectSubType.Unyielding)) continue;
+            
+            float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
+            Vector3 vfxTranslate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate");
+            Vector3 vfxRotate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate");
 
-                // Otherwise, continue to set the persistent vfx
-                float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
-                /* Vector3 vfxTranslate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate");
-                Vector3 vfxRotate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate"); */
-                playerCharacter.ApplyEffect(EffectDuration.Permanent, 
-                    Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale/* , vfxTranslate, vfxRotate */));
-            }
+            // Set persistent vfx
+            playerCharacter.ApplyEffect(EffectDuration.Permanent, 
+            Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
         }
         }
     }
