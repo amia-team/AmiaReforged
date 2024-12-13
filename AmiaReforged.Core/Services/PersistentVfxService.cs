@@ -12,21 +12,16 @@ public class PersistentVfxService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     
-    public PersistentVfxService(EventService eventService)
+    public PersistentVfxService()
     {
         NwModule.Instance.OnEffectApply += StorePersistentVfx;
         NwModule.Instance.OnEffectRemove += RemoveStoredPersistentVfx;
         /* eventService.SubscribeAll<OnLoadCharacterFinish, 
             OnLoadCharacterFinish.Factory>(ApplyPersistentVfx, EventCallbackType.After); */
 
-        NwArea? welcomeArea = NwObject.FindObjectsWithTag<NwArea>("welcometotheeete").FirstOrDefault();
-        if(welcomeArea != null)
-        {
-            welcomeArea.OnEnter += ApplyPersistentVfx;
-        }
         Log.Info("Persistent Vfx Service initialized.");
     }
-
+    
     /// <summary>
     ///     When a permanent-duration unyielding vfx is applied, stores it in the player's PCKey for later application
     /// </summary>
@@ -117,7 +112,7 @@ public class PersistentVfxService
     /// <summary>
     ///     Gets the persistent vfx data and reapplies them on entering the starting area
     /// </summary>
-    private void ApplyPersistentVfx(AreaEvents.OnEnter obj)
+    /* private void ApplyPersistentVfx(AreaEvents.OnEnter obj)
     {
         // Only Welcome Amia area applies
         if (obj.Area.ResRef != "welcometotheeete") return;
@@ -140,6 +135,35 @@ public class PersistentVfxService
                 playerCharacter.ApplyEffect(EffectDuration.Permanent, 
                     Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
             }
+        } */
+
+    [ScriptHandler("ds_area_enter")]
+    private void ApplyPersistentVfxOnEnterWelcome(CallInfo callInfo)
+    {
+      if (callInfo.TryGetEvent(out AreaEvents.OnEnter obj))
+      {
+        // Only Welcome Amia area applies
+        if (obj.Area.ResRef != "welcometotheeete") return;
+        // Creature must be a normal player character
+        if (obj.EnteringObject is not NwCreature playerCharacter) return;
+        if (!playerCharacter.IsPlayerControlled) return;
+        if (playerCharacter.IsDMPossessed) return;
+
+        NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
+
+        // Loop for each unique persistent vfx stored in the pckey and reapply them
+        foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
+        {
+            if (varInt.Name.Contains("persistentvfx")) 
+            {
+                int vfxId = varInt.Value;
+                float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
+                Vector3 vfxTranslate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate");
+                Vector3 vfxRotate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate");
+                playerCharacter.ApplyEffect(EffectDuration.Permanent, 
+                    Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
+            }
+        }
         }
     }
 }
