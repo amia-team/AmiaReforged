@@ -107,9 +107,14 @@ public class PersistentVfxService
 
                 // avoid duplicate visuals for persistent vfxs
                 foreach(Effect effect in playerCharacter.ActiveEffects)
-                    if(effect.EffectType == EffectType.VisualEffect && effect.IntParams[0] == vfxId 
+                {
+                    if (effect.EffectType == EffectType.VisualEffect && effect.IntParams[0] == vfxId
                         && effect.DurationType == EffectDuration.Permanent && effect.SubType == EffectSubType.Unyielding)
+                    {
                         isDuplicatePersistentVfx = true;
+                        break;
+                    }
+                }
                 
                 if(isDuplicatePersistentVfx == true) continue;
 
