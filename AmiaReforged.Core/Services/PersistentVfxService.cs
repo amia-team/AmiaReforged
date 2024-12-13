@@ -90,43 +90,40 @@ public class PersistentVfxService
     [ScriptHandler("ds_area_enter")]
     private void ApplyPersistentVfxOnEnterWelcomeArea(CallInfo callInfo)
     {
-      if (callInfo.TryGetEvent(out AreaEvents.OnEnter obj))
-      {
-        // Only Welcome Amia area applies
-        if (obj.Area.ResRef != "welcometotheeete") return;
-        // Creature must be a normal player character
-        if (obj.EnteringObject is not NwCreature playerCharacter) return;
-        if (!playerCharacter.IsPlayerControlled) return;
-        if (playerCharacter.IsDMPossessed) return;
-
-        NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
-        
-        // Return if no persistent vfx is stored
-        if (!pcKey.LocalVariables.Cast<LocalVariableInt>().Any(localInt => localInt.Name.Contains("persistentvfx"))) return;
-        
-        // Add each stored vfxId int to list  
-        List<int> vfxList = new();
-
-        foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
-            if(varInt.Name.Contains("persistentvfx")) vfxList.Add(varInt.Value);
-
-        // Loop for each unique persistent vfx stored in the pckey and reapply them
-        for (int i = 0; i < vfxList.Count; i++)
+        if (callInfo.TryGetEvent(out AreaEvents.OnEnter obj))
         {
-            int vfxId = vfxList[i];
+            // Only Welcome Amia area applies
+            if (obj.Area.ResRef != "welcometotheeete") return;
+            // Creature must be a normal player character
+            if (obj.EnteringObject is not NwCreature playerCharacter) return;
+            if (!playerCharacter.IsPlayerControlled) return;
+            if (playerCharacter.IsDMPossessed) return;
 
-            // Skip duplicate visuals for persistent vfxs
-            if (playerCharacter.ActiveEffects.Any(effect => effect.IntParams[0] == vfxId 
-                && effect.DurationType == EffectDuration.Permanent && effect.SubType == EffectSubType.Unyielding)) continue;
+            NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
             
-            float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
-            Vector3 vfxTranslate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate");
-            Vector3 vfxRotate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate");
+            // Add each stored vfxId int to list  
+            List<int> vfxList = new();
 
-            // Set persistent vfx
-            playerCharacter.ApplyEffect(EffectDuration.Permanent, 
-                Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
-        }
+            foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
+                if(varInt.Name.Contains("persistentvfx")) vfxList.Add(varInt.Value);
+
+            // Loop for each unique persistent vfx stored in the pckey and reapply them
+            for (int i = 0; i < vfxList.Count; i++)
+            {
+                int vfxId = vfxList[i];
+
+                // Skip duplicate visuals for persistent vfxs
+                if (playerCharacter.ActiveEffects.Any(effect => effect.IntParams[0] == vfxId 
+                    && effect.DurationType == EffectDuration.Permanent && effect.SubType == EffectSubType.Unyielding)) continue;
+                
+                float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
+                Vector3 vfxTranslate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate");
+                Vector3 vfxRotate = pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate");
+
+                // Set persistent vfx
+                playerCharacter.ApplyEffect(EffectDuration.Permanent, 
+                    Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
+            }
         }
     }
 }
