@@ -54,7 +54,7 @@ public class PersistentVfxService
 
         // Debug
         playerCharacter.LoginPlayer.SendServerMessage(
-            $"DEBUG: OnEffectApply stored variables: {pcKey.GetObjectVariable<LocalVariableInt>("persistentvfx"+vfxId).Name}, {pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float").Value}, {pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate").Name}, {pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate").Name}");
+            $"DEBUG: OnEffectApply stored variables: {pcKey.GetObjectVariable<LocalVariableInt>("persistentvfx"+vfxId).Name}, {pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float").Name}, {pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate").Name}, {pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate").Name}");
     }
 
     /// <summary>
@@ -108,10 +108,7 @@ public class PersistentVfxService
         List<int> vfxList = new();
 
         foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
-        if(varInt.Name.Contains("persistentvfx")) vfxList.Add(varInt.Value);
-        
-        // Debug
-        playerCharacter.LoginPlayer.SendServerMessage("Debug OnEnter vfx apply: "+string.Join(", ", vfxList));
+            if(varInt.Name.Contains("persistentvfx")) vfxList.Add(varInt.Value);
 
         // Loop for each unique persistent vfx stored in the pckey and reapply them
         for (int i = 0; i < vfxList.Count; i++)
@@ -128,7 +125,7 @@ public class PersistentVfxService
 
             // Set persistent vfx
             playerCharacter.ApplyEffect(EffectDuration.Permanent, 
-            Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
+                Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
         }
         }
     }
