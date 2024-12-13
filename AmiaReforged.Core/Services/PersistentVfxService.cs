@@ -84,7 +84,7 @@ public class PersistentVfxService
     ///     Gets the persistent vfx data and reapplies them on loading the character
     /// </summary>
     [ScriptHandler("ds_area_enter")]
-    private async void ApplyPersistentVfxOnEnterWelcomeArea(CallInfo callInfo)
+    private void ApplyPersistentVfxOnEnterWelcomeArea(CallInfo callInfo)
     {
       if (callInfo.TryGetEvent(out AreaEvents.OnEnter obj))
       {
@@ -96,8 +96,17 @@ public class PersistentVfxService
         if (playerCharacter.IsDMPossessed) return;
 
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
-
+        
         // Loop for each unique persistent vfx stored in the pckey and reapply them
+        LoopPersistentVfxs(pcKey, playerCharacter);
+        }
+    }
+
+    /// <summary>
+    ///     Loop for each unique persistent vfx stored in the pckey and reapply them
+    /// </summary>
+    private async void LoopPersistentVfxs(NwItem pcKey, NwCreature playerCharacter)
+    {
         foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
         {
             if (varInt.Name.Contains("persistentvfx")) 
@@ -125,8 +134,7 @@ public class PersistentVfxService
                 playerCharacter.ApplyEffect(EffectDuration.Permanent, 
                     Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
             }
-            await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
-        }
+            await NwTask.Delay(TimeSpan.FromSeconds(0.1));
         }
     }
 }
