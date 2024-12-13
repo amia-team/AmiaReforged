@@ -84,7 +84,7 @@ public class PersistentVfxService
     ///     Gets the persistent vfx data and reapplies them on loading the character
     /// </summary>
     [ScriptHandler("ds_area_enter")]
-    private async Task ApplyPersistentVfxOnEnterWelcomeAreaAsync(CallInfo callInfo)
+    private void ApplyPersistentVfxOnEnterWelcomeArea(CallInfo callInfo)
     {
       if (callInfo.TryGetEvent(out AreaEvents.OnEnter obj))
       {
@@ -125,7 +125,6 @@ public class PersistentVfxService
                 playerCharacter.ApplyEffect(EffectDuration.Permanent, 
                     Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
             }
-            await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
         }
     }
