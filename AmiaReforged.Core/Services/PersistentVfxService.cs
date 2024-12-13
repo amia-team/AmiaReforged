@@ -54,7 +54,7 @@ public class PersistentVfxService
 
         // Debug
         playerCharacter.LoginPlayer.SendServerMessage(
-            $"DEBUG: OnEffectApply stored variables: {pcKey.GetObjectVariable<LocalVariableInt>("persistentvfx"+vfxId).Name}, {pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float").Value}, {pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate").Name}, {pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate").Name}");
+            $"DEBUG: OnEffectApply stored variables: {pcKey.GetObjectVariable<LocalVariableInt>("persistentvfx"+vfxId).Name}, {pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float").Name}, {pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate").Name}, {pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate").Name}");
     }
 
     /// <summary>
@@ -88,7 +88,7 @@ public class PersistentVfxService
     ///     Gets the persistent vfx data and reapplies them on loading the character
     /// </summary>
     [ScriptHandler("ds_area_enter")]
-    private void ApplyPersistentVfxOnEnterWelcomeArea(CallInfo callInfo)
+    private async void ApplyPersistentVfxOnEnterWelcomeArea(CallInfo callInfo)
     {
       if (callInfo.TryGetEvent(out AreaEvents.OnEnter obj))
       {
@@ -99,6 +99,8 @@ public class PersistentVfxService
         if (!playerCharacter.IsPlayerControlled) return;
         if (playerCharacter.IsDMPossessed) return;
 
+        await NwTask.Delay(TimeSpan.FromSeconds(1));
+
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
         
         // Return if no persistent vfx is stored
@@ -108,7 +110,7 @@ public class PersistentVfxService
         List<int> vfxList = new();
 
         foreach (LocalVariableInt varInt in pcKey.LocalVariables.Cast<LocalVariableInt>())
-        if(varInt.Name.Contains("persistentvfx")) vfxList.Add(varInt.Value);
+            if(varInt.Name.Contains("persistentvfx")) vfxList.Add(varInt.Value);
         
         // Debug
         playerCharacter.LoginPlayer.SendServerMessage("Debug OnEnter vfx apply: "+string.Join(", ", vfxList));
@@ -128,7 +130,7 @@ public class PersistentVfxService
 
             // Set persistent vfx
             playerCharacter.ApplyEffect(EffectDuration.Permanent, 
-            Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
+                Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate, vfxRotate));
         }
         }
     }
