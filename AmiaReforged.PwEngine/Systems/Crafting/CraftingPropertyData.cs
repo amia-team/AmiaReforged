@@ -32,7 +32,7 @@ public class CraftingPropertyData
 
             AddEquippedItemProperties(properties);
 
-            Properties.Add(item, properties);
+            Properties.TryAdd(item, properties);
         }
     }
 
@@ -44,7 +44,7 @@ public class CraftingPropertyData
         
         // TODO: Support for spell slots.
         
-        Properties.Add(NWScript.BASE_ITEM_MAGICSTAFF, properties);
+        Properties.TryAdd(NWScript.BASE_ITEM_MAGICSTAFF, properties);
     }
 
     private void SetupAmulets()
@@ -101,7 +101,7 @@ public class CraftingPropertyData
 
         properties.AddRange(AbilityProperties.Abilities);
 
-        Properties.Add(NWScript.BASE_ITEM_AMULET, properties);
+        Properties.TryAdd(NWScript.BASE_ITEM_AMULET, properties);
     }
 
     private void SetupGloves()
@@ -127,7 +127,7 @@ public class CraftingPropertyData
             properties.AddRange(GenericItemProperties.VampiricRegeneration);
             properties.Add(GenericItemProperties.Keen);
             
-            Properties.Add(NWScript.BASE_ITEM_GLOVES, properties);
+            Properties.TryAdd(NWScript.BASE_ITEM_GLOVES, properties);
     }
 
     private static void AddEquippedItemProperties(List<CraftingProperty> properties)
@@ -157,13 +157,13 @@ public class CraftingPropertyData
 
             AddSharedWeaponProperties(properties);
 
-            Properties.Add(weapon, properties);
+            Properties.TryAdd(weapon, properties);
         }
     }
 
     private void Setup2HMeleeWeapons()
     {
-        foreach (int weapon in ItemTypeConstants.MeleeWeapons())
+        foreach (int weapon in ItemTypeConstants.Melee2HWeapons())
         {
             List<CraftingProperty> properties = new();
 
@@ -171,7 +171,7 @@ public class CraftingPropertyData
 
             AddSharedWeaponProperties(properties);
 
-            Properties.Add(weapon, properties);
+            Properties.TryAdd(weapon, properties);
         }
     }
 
@@ -214,7 +214,7 @@ public class CraftingPropertyData
 
             AddSharedWeaponProperties(properties);
 
-            Properties.Add(weapon, properties);
+            Properties.TryAdd(weapon, properties);
         }
     }
 
@@ -252,7 +252,7 @@ public class CraftingPropertyData
                 CraftingTier = CraftingTier.DreamCoin
             });
 
-            Properties.Add(weapon, properties);
+            Properties.TryAdd(weapon, properties);
         }
     }
 
@@ -265,7 +265,7 @@ public class CraftingPropertyData
             properties.AddRange(DamageProperties.Ammo);
             properties.AddRange(GenericItemProperties.VampiricRegeneration);
 
-            Properties.Add(ammo, properties);
+            Properties.TryAdd(ammo, properties);
         }
     }
 }
