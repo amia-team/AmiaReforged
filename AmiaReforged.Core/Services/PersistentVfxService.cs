@@ -93,9 +93,11 @@ public class PersistentVfxService
 
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
 
+        obj.Player.SendServerMessage("DEBUG: SANITY CHECK!!!");
         await NwTask.Delay(TimeSpan.FromSeconds(3));
 
         if (!playerCharacter.IsValid) return;
+        obj.Player.SendServerMessage("DEBUG: VALID AFTER DELAY!!!");
         
         foreach (LocalVariableInt varInt in pcKey.LocalVariables.OfType<LocalVariableInt>())
         {
