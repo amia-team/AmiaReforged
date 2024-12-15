@@ -101,7 +101,7 @@ public class PersistentVfxService
         
         foreach (LocalVariableInt varInt in pcKey.LocalVariables.OfType<LocalVariableInt>())
         {
-            if (!varInt.Name.Contains("persistentvfx")) return;
+            if (!varInt.Name.Contains("persistentvfx")) continue;
             
             int vfxId = varInt.Value;
 
