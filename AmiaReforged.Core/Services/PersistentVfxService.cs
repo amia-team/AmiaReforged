@@ -17,7 +17,6 @@ public class PersistentVfxService
         NwModule.Instance.OnEffectApply += StorePersistentVfx;
         NwModule.Instance.OnEffectRemove += RemoveStoredPersistentVfx;
         eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(ApplyPersistentVfx, EventCallbackType.After);
-
         
         Log.Info("Persistent Vfx Service initialized.");
     }
@@ -85,7 +84,7 @@ public class PersistentVfxService
     /// <summary>
     ///     Gets the persistent vfx data and reapplies them on loading the character
     /// </summary>
-    private void ApplyPersistentVfx(OnLoadCharacterFinish obj)
+    private async void ApplyPersistentVfx(OnLoadCharacterFinish obj)
     {
         // Creature must be a normal player character
         if (obj.Player.ControlledCreature is not NwCreature playerCharacter) return;
@@ -93,6 +92,10 @@ public class PersistentVfxService
         if (playerCharacter.IsDMPossessed) return;
 
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
+
+        await NwTask.Delay(TimeSpan.FromSeconds(3));
+
+        if (!playerCharacter.IsValid) return;
         
         foreach (LocalVariableInt varInt in pcKey.LocalVariables.OfType<LocalVariableInt>())
         {
