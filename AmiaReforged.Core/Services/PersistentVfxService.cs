@@ -84,7 +84,7 @@ public class PersistentVfxService
     /// <summary>
     ///     Gets the persistent vfx data and reapplies them on loading the character
     /// </summary>
-    private async void ApplyPersistentVfx(OnLoadCharacterFinish obj)
+    private void ApplyPersistentVfx(OnLoadCharacterFinish obj)
     {
         // Creature must be a normal player character
         if (obj.Player.ControlledCreature is not NwCreature playerCharacter) return;
@@ -94,10 +94,6 @@ public class PersistentVfxService
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
 
         obj.Player.SendServerMessage("DEBUG: SANITY CHECK!!!");
-        await NwTask.Delay(TimeSpan.FromSeconds(3));
-
-        if (!playerCharacter.IsValid) return;
-        obj.Player.SendServerMessage("DEBUG: VALID AFTER DELAY!!!");
         
         foreach (LocalVariableInt varInt in pcKey.LocalVariables.OfType<LocalVariableInt>())
         {
