@@ -92,8 +92,6 @@ public class PersistentVfxService
         if (playerCharacter.IsDMPossessed) return;
 
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.Tag == "ds_pckey");
-
-        obj.Player.SendServerMessage("DEBUG: SANITY CHECK!!!");
         
         foreach (LocalVariableInt varInt in pcKey.LocalVariables.OfType<LocalVariableInt>())
         {
