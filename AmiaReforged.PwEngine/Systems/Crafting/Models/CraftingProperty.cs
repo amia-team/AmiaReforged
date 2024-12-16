@@ -1,6 +1,6 @@
 ﻿using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Systems.Crafting;
+namespace AmiaReforged.PwEngine.Systems.Crafting.Models;
 
 /// <summary>
 ///  Plain old data object for crafting properties. Should not contain any logic (i.e.: Can the property stack).

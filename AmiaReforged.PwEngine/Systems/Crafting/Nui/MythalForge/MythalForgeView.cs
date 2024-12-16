@@ -8,9 +8,11 @@ public sealed class MythalForgeView : NuiView<MythalForgeView>
 {
     public override string Id => "crafting.mythal_forge";
     public override string Title => "Mythal Forge";
-    public override NuiWindow? WindowTemplate { get; }
+    public override Anvil.API.NuiWindow? WindowTemplate { get; }
 
     public readonly NuiButtonImage SelectItemButton;
+    public readonly NuiBind<string> PropertyCategories = new NuiBind<string>("labels");
+    public readonly NuiBind<int> PropertyCount = new NuiBind<int>("count");
 
     public override INuiController? CreateDefaultController(NwPlayer player)
     {
@@ -19,11 +21,15 @@ public sealed class MythalForgeView : NuiView<MythalForgeView>
 
     public MythalForgeView()
     {
-        NuiColumn rootElement = new()
+        List<NuiListTemplateCell> rowTemplate = new()
+        {
+            new NuiListTemplateCell(new NuiLabel(PropertyCategories))
+        };
+
+        NuiRow root = new()
         {
             Children =
             {
-                
                 new NuiColumn()
                 {
                     Children =
@@ -31,20 +37,31 @@ public sealed class MythalForgeView : NuiView<MythalForgeView>
                         new NuiLabel("Select an item to craft:"),
                         new NuiButtonImage("ir_sell02")
                         {
+                            Id = "btn_selectitem",
                             Aspect = 1f,
-                            Tooltip = "Select Item"
+                            Tooltip = "Select Item",
                         }.Assign(out SelectItemButton)
+                    },
+                    
+                },
+                new NuiRow
+                {
+                    Children = new List<NuiElement>()
+                    {
+                        new NuiList(rowTemplate, PropertyCount)
+                        {
+                            RowHeight = 35f,
+                            Width = 400,
+                            Height = 400
+                        }
                     }
                 }
             }
         };
 
-        WindowTemplate = new NuiWindow(rootElement, Title)
+        WindowTemplate = new NuiWindow(root, Title)
         {
-            Border = false,
-            Transparent = true,
-            Resizable = false,
-            Collapsed = false,
+            Geometry = new NuiRect(100f, 100f, 400f, 600f),
         };
     }
 }
