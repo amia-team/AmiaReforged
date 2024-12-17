@@ -59,6 +59,7 @@ public class CreateVfx : IChatCommand
                 else vfxScale = targetCreature.VisualTransform.Scale;
             Effect durVfx = Effect.VisualEffect(vfx, false, vfxScale);
             durVfx.SubType = EffectSubType.Unyielding;
+            durVfx.Tag = "dm_persistentvfx";
             targetCreature.ApplyEffect(EffectDuration.Permanent, durVfx);
         }
         if (obj.TargetObject is NwDoor targetDoor)
@@ -68,6 +69,7 @@ public class CreateVfx : IChatCommand
                 else vfxScale = targetDoor.VisualTransform.Scale;
             Effect durVfx = Effect.VisualEffect(vfx, false, vfxScale);
             durVfx.SubType = EffectSubType.Unyielding;
+            durVfx.Tag = "dm_persistentvfx";
             targetDoor.ApplyEffect(EffectDuration.Permanent, durVfx);
         }
         if (obj.TargetObject is NwPlaceable targetPlaceable)
@@ -77,6 +79,7 @@ public class CreateVfx : IChatCommand
                 else vfxScale = targetPlaceable.VisualTransform.Scale;
             Effect durVfx = Effect.VisualEffect(vfx, false, vfxScale);
             durVfx.SubType = EffectSubType.Unyielding;
+            durVfx.Tag = "dm_persistentvfx";
             targetPlaceable.ApplyEffect(EffectDuration.Permanent, durVfx);
         }
         playerCreature.GetObjectVariable<LocalVariableInt>("createvfxid").Delete();
