@@ -100,7 +100,8 @@ public class PersistentVfxService
             int vfxId = varInt.Value;
 
             // skip duplicate visuals for persistent vfxs
-            if (playerCharacter.ActiveEffects.Any(effect => effect.IntParams[0] == vfxId)) continue;
+            if (playerCharacter.ActiveEffects.Any(effect => effect.IntParams[0] == vfxId && effect.SubType == EffectSubType.Unyielding
+                && effect.DurationType == EffectDuration.Permanent)) continue;
 
             // Otherwise, continue to set the persistent vfx
             float vfxScale = pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float");
@@ -112,9 +113,10 @@ public class PersistentVfxService
             ("persistentvfx"+vfxId+"rotate");
             
             // Apply persistent vfx
-            playerCharacter.ApplyEffect(EffectDuration.Permanent, 
-            Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate,  
-            vfxRotate));
+            Effect persistentVfx = Effect.VisualEffect(NwGameTables.VisualEffectTable[vfxId], false, vfxScale, vfxTranslate,  vfxRotate);
+            persistentVfx.SubType = EffectSubType.Unyielding;
+
+            playerCharacter.ApplyEffect(EffectDuration.Permanent, persistentVfx);
         }
     }
 }
