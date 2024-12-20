@@ -28,7 +28,8 @@ public static class ItemTypeConstants
             NWScript.BASE_ITEM_SICKLE,
             NWScript.BASE_ITEM_TRIDENT,
             NWScript.BASE_ITEM_WARHAMMER,
-            NWScript.BASE_ITEM_WHIP
+            NWScript.BASE_ITEM_WHIP,
+            NWScript.BASE_ITEM_MAGICSTAFF
         };
     }
 

@@ -9,7 +9,10 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
 public class MythalForgeController : NuiController<MythalForgeView>
 {
+    private const string TargetingModeMythalForge = "mythal_forge";
+    private const string LvarTargetingMode = "targeting_mode";
     [Inject] private Lazy<CraftingPropertyData>? PropertyData { get; set; }
+    [Inject] private Lazy<CraftingBudgetService>? BudgetService { get; set; }
 
     private IReadOnlyList<CraftingPropertyCategory> _itemProperties;
 
@@ -30,6 +33,8 @@ public class MythalForgeController : NuiController<MythalForgeView>
     private void ValidateAndSelect(ModuleEvents.OnPlayerTarget obj)
     {
         if (obj.TargetObject is not NwItem item || !obj.TargetObject.IsValid) return;
+        
+        if(NWScript.GetLocalString(Token.Player.LoginCreature, LvarTargetingMode) != TargetingModeMythalForge) return;
 
         int baseItemType = NWScript.GetBaseItemType(item);
         
@@ -42,6 +47,20 @@ public class MythalForgeController : NuiController<MythalForgeView>
         }
 
         PopulateData(baseItemType);
+        CalculateBudget(item);
+        // Remove the token.
+        NWScript.DeleteLocalString(Token.Player.LoginCreature, LvarTargetingMode);
+    }
+
+    private void CalculateBudget(NwItem item)
+    {
+        if(BudgetService is null) return;
+        
+        int budget = BudgetService.Value.MythalBudgetFor(NWScript.GetBaseItemType(item));
+        Token.SetBindValue(View.Budget, budget.ToString());
+        
+        int remaining = BudgetService.Value.RemainingBudgetFor(item);
+        Token.SetBindValue(View.RemainingBudget, remaining.ToString());
     }
 
     private void PopulateData(int baseItemType)
@@ -86,8 +105,9 @@ public class MythalForgeController : NuiController<MythalForgeView>
 
     private void EnterTargetingMode()
     {
-        Token.Player.SendServerMessage("Select an item to craft.");
+        Token.Player.FloatingTextString("Select an Item to craft with from your inventory.");
         NWScript.EnterTargetingMode(Token.Player.LoginCreature, NWScript.OBJECT_TYPE_ITEM);
+        NWScript.SetLocalString(Token.Player.LoginCreature, LvarTargetingMode, TargetingModeMythalForge);
     }
 
     protected override void OnClose()

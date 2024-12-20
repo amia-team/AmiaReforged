@@ -275,4 +275,16 @@ public class CraftingPropertyData
             Properties.TryAdd(ammo, properties);
         }
     }
+    
+    public IReadOnlyList<CraftingProperty> UncategorizedPropertiesFor(int baseItemType)
+    {
+        List<CraftingProperty?> properties = new();
+
+        foreach (CraftingPropertyCategory category in Properties[baseItemType])
+        {
+            properties.AddRange(category.Properties);
+        }
+
+        return (IReadOnlyList<CraftingProperty>) properties;
+    }
 }

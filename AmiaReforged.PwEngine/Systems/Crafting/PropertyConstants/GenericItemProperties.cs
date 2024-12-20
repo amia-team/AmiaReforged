@@ -307,7 +307,7 @@ public static class GenericItemProperties
         }
     };
 
-    public static readonly CraftingPropertyCategory Other = new CraftingPropertyCategory()
+    public static readonly CraftingPropertyCategory Other = new()
     {
         Label = "Other Properties",
         Properties = new[]

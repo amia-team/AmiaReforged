@@ -14,6 +14,9 @@ public sealed class MythalForgeView : NuiView<MythalForgeView>
     public readonly NuiBind<string> PropertyCategories = new NuiBind<string>("labels");
     public readonly NuiBind<int> PropertyCount = new NuiBind<int>("count");
 
+    public readonly NuiBind<string> Budget = new NuiBind<string>("budget");
+    public readonly NuiBind<string> RemainingBudget = new NuiBind<string>("spent");
+
     public override INuiController? CreateDefaultController(NwPlayer player)
     {
         return CreateController<MythalForgeController>(player);
@@ -23,7 +26,30 @@ public sealed class MythalForgeView : NuiView<MythalForgeView>
     {
         List<NuiListTemplateCell> rowTemplate = new()
         {
-            new NuiListTemplateCell(new NuiLabel(PropertyCategories))
+            new NuiListTemplateCell(new NuiButtonSelect(PropertyCategories, selected: false)
+            {
+                Id = "btn_select",
+                Aspect = 1f,
+            })
+        };
+        List<NuiListTemplateCell> budgetRowTemplate = new()
+        {
+            new NuiListTemplateCell(new NuiRow()
+            {
+                Children =
+                {
+                    new NuiLabel("Budget:"),
+                    new NuiLabel(Budget)
+                }
+            }),
+            new NuiListTemplateCell(new NuiRow
+            {
+                Children =
+                {
+                    new NuiLabel("Remaining:"),
+                    new NuiLabel(RemainingBudget)
+                }
+            }),
         };
 
         NuiRow root = new()
@@ -42,7 +68,18 @@ public sealed class MythalForgeView : NuiView<MythalForgeView>
                             Tooltip = "Select Item",
                         }.Assign(out SelectItemButton)
                     },
-                    
+                },
+                new NuiRow
+                {
+                    Children = new List<NuiElement>()
+                    {
+                        new NuiList(budgetRowTemplate, 1)
+                        {
+                            RowHeight = 35f,
+                            Width = 400,
+                            Height = 100
+                        }
+                    }
                 },
                 new NuiRow
                 {
