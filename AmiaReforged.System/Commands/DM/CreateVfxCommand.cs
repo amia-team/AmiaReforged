@@ -99,6 +99,8 @@ public class CreateVfx : IChatCommand
         NwArea currentArea = obj.Player.ControlledCreature.Area;
         Location targetLocation = Location.Create(currentArea, obj.TargetPosition, 0);
 
-        targetLocation.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(vfx, false, vfxScale));
+        if (obj.TargetObject is NwCreature creature) 
+            creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(vfx, false, vfxScale));
+        else targetLocation.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(vfx, false, vfxScale));
     }
 }
