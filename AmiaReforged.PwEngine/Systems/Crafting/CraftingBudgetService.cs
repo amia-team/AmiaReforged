@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -101,18 +102,8 @@ public class CraftingBudgetService
 
         foreach (ItemProperty property in item.ItemProperties)
         {
-            // Log.Info($"Cost table label: {property.CostTableValue?.Label}");
-            // Log.Info($"Cost table index: {property.CostTableValue?.RowIndex}");
-            //
-            // Log.Info($"Game Str Ref: {property.Property.GameStrRef}");
-            // Log.Info($"Game Label: {property.Property.Label}");
-            // Log.Info($"Game Name: {property.Property.Name}");
-            // Log.Info($"Game Desc: {property.Property.Description}");
-            //
-            // Log.Info($"Full item string: {property.Property.GameStrRef} {property.CostTableValue?.Label}");
-
-            string propString = ItemPropString(property);
-            CraftingProperty? found = uncategorized.FirstOrDefault(p => ItemPropString(p.Property) == propString);
+            string propString = ItemPropertyHelper.GameLabel(property);
+            CraftingProperty? found = uncategorized.FirstOrDefault(p => ItemPropertyHelper.GameLabel(p.ItemProperty) == propString);
 
             if (found != null)
             {
@@ -127,10 +118,5 @@ public class CraftingBudgetService
         }
 
         return max - spent;
-    }
-
-    private string ItemPropString(ItemProperty property)
-    {
-        return $"{property.Property.GameStrRef} {property.CostTableValue?.Label}";
     }
 }

@@ -5,7 +5,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 
 public static class GenericItemProperties
 {
-    public static readonly CraftingPropertyCategory ElementalResistances = new()
+    public static readonly CraftingCategory ElementalResistances = new("elemental_resists")
     {
         Label = "Elemental Resistances",
         Properties = new[]
@@ -13,105 +13,105 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID, 5)!,
                 GuiLabel = "5/- Acid Resistance",
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD, 5)!,
                 GuiLabel = "5/- Cold Resistance",
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL, 5)!,
                 GuiLabel = "5/- Electrical Resistance",
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE, 5)!,
                 GuiLabel = "5/- Fire Resistance",
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC, 5)!,
                 GuiLabel = "5/- Sonic Resistance",
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID, 10)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID, 10)!,
                 GuiLabel = "10/- Acid Resistance",
                 CraftingTier = CraftingTier.Flawless
             },
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD, 10)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD, 10)!,
                 GuiLabel = "10/- Cold Resistance",
                 CraftingTier = CraftingTier.Flawless
             },
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL, 10)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL, 10)!,
                 GuiLabel = "10/- Electrical Resistance",
                 CraftingTier = CraftingTier.Flawless
             },
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE, 10)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE, 10)!,
                 GuiLabel = "10/- Fire Resistance",
                 CraftingTier = CraftingTier.Flawless
             },
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC, 10)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC, 10)!,
                 GuiLabel = "10/- Sonic Resistance",
                 CraftingTier = CraftingTier.Flawless
             },
             new CraftingProperty
             {
                 Cost = 3,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID, 15)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID, 15)!,
                 GuiLabel = "15/- Acid Resistance",
                 CraftingTier = CraftingTier.Divine
             },
             new CraftingProperty
             {
                 Cost = 3,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD, 15)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD, 15)!,
                 GuiLabel = "15/- Cold Resistance",
                 CraftingTier = CraftingTier.Divine
             },
             new CraftingProperty
             {
                 Cost = 3,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL, 15)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL, 15)!,
                 GuiLabel = "15/- Electrical Resistance",
                 CraftingTier = CraftingTier.Divine
             },
             new CraftingProperty
             {
                 Cost = 3,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE, 15)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE, 15)!,
                 GuiLabel = "15/- Fire Resistance",
                 CraftingTier = CraftingTier.Divine
             },
             new CraftingProperty
             {
                 Cost = 3,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC, 15)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC, 15)!,
                 GuiLabel = "15/- Sonic Resistance",
                 CraftingTier = CraftingTier.Divine
             },
@@ -121,7 +121,7 @@ public static class GenericItemProperties
     /// <summary>
     /// Physical damage resistance category
     /// </summary>
-    public static readonly CraftingPropertyCategory PhysicalDamageResistances = new()
+    public static readonly CraftingCategory PhysicalDamageResistances = new("physical_resists")
     {
         Label = "Physical Damage Resistance",
         Properties = new[]
@@ -129,21 +129,21 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_BLUDGEONING, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_BLUDGEONING, 5)!,
                 GuiLabel = "5/- Bludgeoning Resistance",
                 CraftingTier = CraftingTier.Divine
             },
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_PIERCING, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_PIERCING, 5)!,
                 GuiLabel = "5/- Piercing Resistance",
                 CraftingTier = CraftingTier.Divine
             },
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SLASHING, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SLASHING, 5)!,
                 GuiLabel = "5/- Slashing Resistance",
                 CraftingTier = CraftingTier.Divine
             },
@@ -154,7 +154,7 @@ public static class GenericItemProperties
     /// <summary>
     /// Damage reduction category
     /// </summary>
-    public static readonly CraftingPropertyCategory DamageReductions = new()
+    public static readonly CraftingCategory DamageReductions = new("damage_reduction")
     {
         Label = "Damage Reduction",
         Properties = new[]
@@ -162,42 +162,42 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyDamageReduction(1, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageReduction(1, 5)!,
                 GuiLabel = "+1 Soak 5 Damage",
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyDamageReduction(2, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageReduction(2, 5)!,
                 GuiLabel = "+2 Soak 5 Damage",
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyDamageReduction(3, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageReduction(3, 5)!,
                 GuiLabel = "+3 Soak 5 Damage",
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyDamageReduction(4, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageReduction(4, 5)!,
                 GuiLabel = "+4 Soak 5 Damage",
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyDamageReduction(5, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageReduction(5, 5)!,
                 GuiLabel = "+5 Soak 5 Damage",
                 CraftingTier = CraftingTier.Flawless
             }
         }
     };
 
-    public static readonly CraftingPropertyCategory Armor = new()
+    public static readonly CraftingCategory Armor = new("armor")
     {
         Label = "Armor Class",
         Properties = new[]
@@ -205,35 +205,35 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyACBonus(1)!,
+                ItemProperty = NWScript.ItemPropertyACBonus(1)!,
                 GuiLabel = "+1 AC",
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyACBonus(2)!,
+                ItemProperty = NWScript.ItemPropertyACBonus(2)!,
                 GuiLabel = "+2 AC",
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyACBonus(3)!,
+                ItemProperty = NWScript.ItemPropertyACBonus(3)!,
                 GuiLabel = "+3 AC",
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyACBonus(4)!,
+                ItemProperty = NWScript.ItemPropertyACBonus(4)!,
                 GuiLabel = "+4 AC",
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
             {
                 Cost = 4,
-                Property = NWScript.ItemPropertyACBonus(5)!,
+                ItemProperty = NWScript.ItemPropertyACBonus(5)!,
                 GuiLabel = "+5 AC",
                 CraftingTier = CraftingTier.Flawless
             }
@@ -243,7 +243,7 @@ public static class GenericItemProperties
     /// <summary>
     /// Vampiric regeneration category.
     /// </summary>
-    public static readonly CraftingPropertyCategory VampiricRegeneration = new()
+    public static readonly CraftingCategory VampiricRegeneration = new("vampiric_regeneration")
     {
         Label = "Vampiric Regeneration",
         Properties = new[]
@@ -252,7 +252,7 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyVampiricRegeneration(1)!,
+                ItemProperty = NWScript.ItemPropertyVampiricRegeneration(1)!,
                 GuiLabel = "+1 Vampiric Regeneration",
                 CraftingTier = CraftingTier.Intermediate
             },
@@ -260,7 +260,7 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyVampiricRegeneration(2)!,
+                ItemProperty = NWScript.ItemPropertyVampiricRegeneration(2)!,
                 GuiLabel = "+2 Vampiric Regeneration",
                 CraftingTier = CraftingTier.Greater
             },
@@ -268,14 +268,14 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 3,
-                Property = NWScript.ItemPropertyVampiricRegeneration(3)!,
+                ItemProperty = NWScript.ItemPropertyVampiricRegeneration(3)!,
                 GuiLabel = "+3 Vampiric Regeneration",
                 CraftingTier = CraftingTier.Flawless
             },
         }
     };
 
-    public static readonly CraftingPropertyCategory Regeneration = new()
+    public static readonly CraftingCategory Regeneration = new("regeneration")
     {
         Label = "Regeneration",
         Properties = new[]
@@ -284,7 +284,7 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 2,
-                Property = NWScript.ItemPropertyRegeneration(1)!,
+                ItemProperty = NWScript.ItemPropertyRegeneration(1)!,
                 GuiLabel = "+1 Regeneration",
                 CraftingTier = CraftingTier.Intermediate
             },
@@ -292,7 +292,7 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 4,
-                Property = NWScript.ItemPropertyRegeneration(2)!,
+                ItemProperty = NWScript.ItemPropertyRegeneration(2)!,
                 GuiLabel = "+2 Regeneration",
                 CraftingTier = CraftingTier.Greater
             },
@@ -300,14 +300,14 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 6,
-                Property = NWScript.ItemPropertyRegeneration(3)!,
+                ItemProperty = NWScript.ItemPropertyRegeneration(3)!,
                 GuiLabel = "+3 Regeneration",
                 CraftingTier = CraftingTier.Flawless
             },
         }
     };
 
-    public static readonly CraftingPropertyCategory Other = new()
+    public static readonly CraftingCategory Other = new("others")
     {
         Label = "Other Properties",
         Properties = new[]
@@ -315,7 +315,7 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 Cost = 1,
-                Property = NWScript.ItemPropertyKeen()!,
+                ItemProperty = NWScript.ItemPropertyKeen()!,
                 GuiLabel = "Keen",
                 CraftingTier = CraftingTier.Perfect
             }

@@ -10,7 +10,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 [ServiceBinding(typeof(CraftingPropertyData))]
 public class CraftingPropertyData
 {
-    public Dictionary<int, IReadOnlyList<CraftingPropertyCategory>> Properties { get; } = new();
+    public Dictionary<int, IReadOnlyList<CraftingCategory>> Properties { get; } = new();
 
     public CraftingPropertyData()
     {
@@ -29,7 +29,7 @@ public class CraftingPropertyData
     {
         foreach (int item in ItemTypeConstants.EquippableItems())
         {
-            List<CraftingPropertyCategory> properties = new();
+            List<CraftingCategory> properties = new();
 
             AddEquippedItemProperties(properties);
 
@@ -39,7 +39,7 @@ public class CraftingPropertyData
 
     public void SetupMagicStaves()
     {
-        List<CraftingPropertyCategory> properties = new();
+        List<CraftingCategory> properties = new();
 
         AddEquippedItemProperties(properties);
 
@@ -51,9 +51,9 @@ public class CraftingPropertyData
     private void SetupAmulets()
     {
         // This list of properties is different because natural armor has its own unique costs.
-        List<CraftingPropertyCategory> properties = new()
+        List<CraftingCategory> properties = new()
         {
-            new CraftingPropertyCategory
+            new CraftingCategory("natural_armor")
             {
                 Label = "Armor",
                 Properties = new[]
@@ -61,35 +61,35 @@ public class CraftingPropertyData
                     new CraftingProperty
                     {
                         Cost = 1,
-                        Property = NWScript.ItemPropertyACBonus(1)!,
+                        ItemProperty = NWScript.ItemPropertyACBonus(1)!,
                         GuiLabel = "+1 AC",
                         CraftingTier = CraftingTier.Minor
                     },
                     new CraftingProperty
                     {
                         Cost = 1,
-                        Property = NWScript.ItemPropertyACBonus(2)!,
+                        ItemProperty = NWScript.ItemPropertyACBonus(2)!,
                         GuiLabel = "+2 AC",
                         CraftingTier = CraftingTier.Lesser
                     },
                     new CraftingProperty
                     {
                         Cost = 1,
-                        Property = NWScript.ItemPropertyACBonus(3)!,
+                        ItemProperty = NWScript.ItemPropertyACBonus(3)!,
                         GuiLabel = "+3 AC",
                         CraftingTier = CraftingTier.Intermediate
                     },
                     new CraftingProperty
                     {
                         Cost = 1,
-                        Property = NWScript.ItemPropertyACBonus(4)!,
+                        ItemProperty = NWScript.ItemPropertyACBonus(4)!,
                         GuiLabel = "+4 AC",
                         CraftingTier = CraftingTier.Greater
                     },
                     new CraftingProperty
                     {
                         Cost = 2,
-                        Property = NWScript.ItemPropertyACBonus(5)!,
+                        ItemProperty = NWScript.ItemPropertyACBonus(5)!,
                         GuiLabel = "+5 AC",
                         CraftingTier = CraftingTier.Flawless
                     }
@@ -114,7 +114,7 @@ public class CraftingPropertyData
 
     private void SetupGloves()
     {
-        List<CraftingPropertyCategory> properties = new();
+        List<CraftingCategory> properties = new();
 
         AddEquippedItemProperties(properties);
 
@@ -123,7 +123,7 @@ public class CraftingPropertyData
         properties.Add(DamageProperties.MassiveCriticals);
 
         // Gauntlets have another tier of massive criticals.
-        properties.Add(new CraftingPropertyCategory()
+        properties.Add(new CraftingCategory("massive_criticals")
         {
             Label = "Massive Criticals",
             Properties = new[]
@@ -131,7 +131,7 @@ public class CraftingPropertyData
                 new CraftingProperty
                 {
                     Cost = 1,
-                    Property = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                    ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                     GuiLabel = "2d6 Massive Criticals",
                     CraftingTier = CraftingTier.Flawless
                 }
@@ -144,7 +144,7 @@ public class CraftingPropertyData
         Properties.TryAdd(NWScript.BASE_ITEM_GLOVES, properties);
     }
 
-    private static void AddEquippedItemProperties(List<CraftingPropertyCategory> properties)
+    private static void AddEquippedItemProperties(List<CraftingCategory> properties)
     {
         properties.Add(GenericItemProperties.Armor);
         properties.Add(GenericItemProperties.ElementalResistances);
@@ -165,7 +165,7 @@ public class CraftingPropertyData
     {
         foreach (int weapon in ItemTypeConstants.MeleeWeapons())
         {
-            List<CraftingPropertyCategory> properties = new() { DamageProperties.OneHanders };
+            List<CraftingCategory> properties = new() { DamageProperties.OneHanders };
 
             AddSharedWeaponProperties(properties);
 
@@ -177,7 +177,7 @@ public class CraftingPropertyData
     {
         foreach (int weapon in ItemTypeConstants.Melee2HWeapons())
         {
-            List<CraftingPropertyCategory> properties = new() { DamageProperties.TwoHanders };
+            List<CraftingCategory> properties = new() { DamageProperties.TwoHanders };
 
             AddSharedWeaponProperties(properties);
 
@@ -185,7 +185,7 @@ public class CraftingPropertyData
         }
     }
 
-    private static void AddSharedWeaponProperties(List<CraftingPropertyCategory> properties)
+    private static void AddSharedWeaponProperties(List<CraftingCategory> properties)
     {
         properties.Add(DamageProperties.MassiveCriticals);
 
@@ -209,7 +209,7 @@ public class CraftingPropertyData
     {
         foreach (int weapon in ItemTypeConstants.ThrownWeapons())
         {
-            List<CraftingPropertyCategory> properties = new() { DamageProperties.OneHanders };
+            List<CraftingCategory> properties = new() { DamageProperties.OneHanders };
 
             // Thrown Weapons have a different cost for Keen
             properties.Add(GenericItemProperties.Other);
@@ -224,7 +224,7 @@ public class CraftingPropertyData
     {
         foreach (int weapon in ItemTypeConstants.RangedWeapons())
         {
-            List<CraftingPropertyCategory> properties = new()
+            List<CraftingCategory> properties = new()
             {
                 AttackBonusProperties.AttackBonus,
                 DamageProperties.Mighty,
@@ -232,31 +232,30 @@ public class CraftingPropertyData
                 SkillProperties.Advantageous,
                 SkillProperties.Personal,
                 GenericItemProperties.Regeneration,
-                AbilityProperties.Abilities
-            };
-
-            //Ranged have extra Massive Critical options
-            properties.Add(new CraftingPropertyCategory
-            {
-                Label = "Massive Criticals",
-                Properties = new[]
+                AbilityProperties.Abilities,
+                //Ranged have extra Massive Critical options
+                new CraftingCategory("ranged_massive_criticals")
                 {
-                    new CraftingProperty
+                    Label = "Massive Criticals",
+                    Properties = new[]
                     {
-                        Cost = 1,
-                        Property = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
-                        GuiLabel = "1d12 Massive Criticals",
-                        CraftingTier = CraftingTier.DreamCoin
-                    },
-                    new CraftingProperty
-                    {
-                        Cost = 2,
-                        Property = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d12)!,
-                        GuiLabel = "2d12 Massive Criticals",
-                        CraftingTier = CraftingTier.DreamCoin
+                        new CraftingProperty
+                        {
+                            Cost = 1,
+                            ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
+                            GuiLabel = "1d12 Massive Criticals",
+                            CraftingTier = CraftingTier.DreamCoin
+                        },
+                        new CraftingProperty
+                        {
+                            Cost = 2,
+                            ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d12)!,
+                            GuiLabel = "2d12 Massive Criticals",
+                            CraftingTier = CraftingTier.DreamCoin
+                        }
                     }
                 }
-            });
+            };
 
             Properties.TryAdd(weapon, properties);
         }
@@ -266,7 +265,7 @@ public class CraftingPropertyData
     {
         foreach (int ammo in ItemTypeConstants.Ammo())
         {
-            List<CraftingPropertyCategory> properties = new()
+            List<CraftingCategory> properties = new()
             {
                 DamageProperties.Ammo,
                 GenericItemProperties.VampiricRegeneration
@@ -280,7 +279,7 @@ public class CraftingPropertyData
     {
         List<CraftingProperty?> properties = new();
 
-        foreach (CraftingPropertyCategory category in Properties[baseItemType])
+        foreach (CraftingCategory category in Properties[baseItemType])
         {
             properties.AddRange(category.Properties);
         }

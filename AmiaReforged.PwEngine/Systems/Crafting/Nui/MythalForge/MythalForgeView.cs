@@ -1,40 +1,49 @@
 ﻿using AmiaReforged.Core.UserInterface;
+using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using Anvil.API;
+using Anvil.Services;
+using Microsoft.Extensions.Logging;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
 public sealed class MythalForgeView : NuiView<MythalForgeView>
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public override string Id => "crafting.mythal_forge";
     public override string Title => "Mythal Forge";
-    public override Anvil.API.NuiWindow? WindowTemplate { get; }
+    public override NuiWindow? WindowTemplate { get; }
 
-    public readonly NuiButtonImage SelectItemButton;
     public readonly NuiBind<string> PropertyCategories = new NuiBind<string>("labels");
     public readonly NuiBind<int> PropertyCount = new NuiBind<int>("count");
+    
+    public readonly NuiBind<int> CategoryCount = new NuiBind<int>("count");
 
     public readonly NuiBind<string> Budget = new NuiBind<string>("budget");
     public readonly NuiBind<string> RemainingBudget = new NuiBind<string>("spent");
-
+    
+    private INuiController? _controller;
+    
     public override INuiController? CreateDefaultController(NwPlayer player)
     {
-        return CreateController<MythalForgeController>(player);
+        _controller = CreateController<MythalForgeController>(player);
+        return _controller;
     }
 
     public MythalForgeView()
     {
-        List<NuiListTemplateCell> rowTemplate = new()
+        Log.Info("Mythal Forge view initialized.");
+
+        List<NuiListTemplateCell> categoryTemplate = new()
         {
-            new NuiListTemplateCell(new NuiButtonSelect(PropertyCategories, selected: false)
-            {
-                Id = "btn_select",
-                Aspect = 1f,
-            })
+            new NuiListTemplateCell(new NuiLabel(PropertyCategories)),
+            new NuiListTemplateCell(new NuiCombo())
         };
+        
         List<NuiListTemplateCell> budgetRowTemplate = new()
         {
-            new NuiListTemplateCell(new NuiRow()
+            new NuiListTemplateCell(new NuiRow
             {
                 Children =
                 {
@@ -60,16 +69,10 @@ public sealed class MythalForgeView : NuiView<MythalForgeView>
                 {
                     Children =
                     {
-                        new NuiLabel("Select an item to craft:"),
-                        new NuiButtonImage("ir_sell02")
-                        {
-                            Id = "btn_selectitem",
-                            Aspect = 1f,
-                            Tooltip = "Select Item",
-                        }.Assign(out SelectItemButton)
-                    },
+                        new NuiList(categoryTemplate, CategoryCount)
+                    }
                 },
-                new NuiRow
+                new NuiColumn
                 {
                     Children = new List<NuiElement>()
                     {
@@ -78,18 +81,6 @@ public sealed class MythalForgeView : NuiView<MythalForgeView>
                             RowHeight = 35f,
                             Width = 400,
                             Height = 100
-                        }
-                    }
-                },
-                new NuiRow
-                {
-                    Children = new List<NuiElement>()
-                    {
-                        new NuiList(rowTemplate, PropertyCount)
-                        {
-                            RowHeight = 35f,
-                            Width = 400,
-                            Height = 400
                         }
                     }
                 }
