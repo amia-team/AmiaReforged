@@ -18,6 +18,10 @@ public class CraftingBudgetService
         _data = data;
     }
 
+    public int MythalBudgetForNwItem(NwItem item)
+    {
+        return MythalBudgetFor(NWScript.GetBaseItemType(item));
+    }
     public int MythalBudgetFor(int baseItemType)
     {
         return baseItemType switch
@@ -88,6 +92,11 @@ public class CraftingBudgetService
         };
     }
 
+    public int RemainingBudgetForNwItem(NwItem item)
+    {
+        return RemainingBudgetFor(item);
+    }
+    
     public int RemainingBudgetFor(NwItem item)
     {
         if (!item.Possessor.IsPlayerControlled(out NwPlayer? player)) return 0;
@@ -107,7 +116,7 @@ public class CraftingBudgetService
 
             if (found != null)
             {
-                spent += found.Cost;
+                spent += found.PowerCost;
             }
             else
             {

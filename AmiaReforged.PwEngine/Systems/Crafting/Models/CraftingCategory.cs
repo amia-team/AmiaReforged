@@ -6,13 +6,13 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Models;
 
 public class CraftingCategory
 {
-    public string NuiSelectionId { get; set; }
-    public string ComboId => NuiSelectionId + "_combo";
-    public CraftingCategory(string nuiSelectionId)
+    public string CategoryId { get; set; }
+    public string ComboId => CategoryId + "_combo";
+    public CraftingCategory(string categoryId)
     {
-        NuiSelectionId = nuiSelectionId;
-        ComboSelection = new NuiBind<int>(nuiSelectionId);
-        ShowGroup = new NuiBind<bool>(nuiSelectionId + "_show");
+        CategoryId = categoryId;
+        ComboSelection = new NuiBind<int>(categoryId);
+        ShowGroup = new NuiBind<bool>(categoryId + "_show");
     }
 
     public NuiBind<bool> ShowGroup { get; set; }
@@ -21,18 +21,6 @@ public class CraftingCategory
     public required string Label { get; set; }
     public required IReadOnlyList<CraftingProperty> Properties { get; init; }
     
-
-    public NuiCombo ToCombo()
-    {
-        List<NuiComboEntry> entries = Properties.Select((t, i) => t.ToComboEntry(i)).ToList();
-        return new NuiCombo
-        {
-            Id = NuiSelectionId + "_combo",
-            Entries = entries,
-            Selected = ComboSelection
-        };
-    }
-
     private NuiButton _categoryButton;
 
     public NuiColumn ToColumnWithGroup()
@@ -45,7 +33,7 @@ public class CraftingCategory
             {
                 new NuiButton(Label)
                 {
-                    Id = NuiSelectionId + "_btn",
+                    Id = CategoryId + "_btn",
                 }.Assign(out _categoryButton),
                 new NuiGroup
                 {
@@ -65,27 +53,15 @@ public class CraftingCategory
 
     private void OnCategoryPress(ModuleEvents.OnNuiEvent obj)
     {
-        if (obj.EventType == NuiEventType.Click && obj.ElementId == _categoryButton.Id)
-        {
-            bool show = obj.Token.GetBindValue(ShowGroup);
+        if (obj.EventType != NuiEventType.Click || obj.ElementId != _categoryButton.Id) return;
+        
+        bool show = obj.Token.GetBindValue(ShowGroup);
             
-            obj.Token.SetBindValue(ShowGroup, !show);
-        }
-    }
-
-
-    public CraftingProperty CurrentProperty(NuiWindowToken token)
-    {
-        return Properties[GetComboSelection(token)];
+        obj.Token.SetBindValue(ShowGroup, !show);
     }
 
     public void UpdateComboSelection(NuiWindowToken token, int value)
     {
         token.SetBindValue(ComboSelection, value);
-    }
-
-    public int GetComboSelection(NuiWindowToken token)
-    {
-        return token.GetBindValue(ComboSelection);
     }
 }

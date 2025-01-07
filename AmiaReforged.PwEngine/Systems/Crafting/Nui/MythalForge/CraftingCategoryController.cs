@@ -2,7 +2,7 @@
 
 public class CraftingCategoryController
 {
-    public CraftingCategoryView View { get; init; }
+    public CraftingCategoryElement Element { get; init; }
 
     public CraftingCategoryController()
     {

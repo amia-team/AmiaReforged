@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using AmiaReforged.PwEngine.Systems.WindowingSystem;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Porthole;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -16,17 +17,15 @@ public class MythalForgeInitializer
     private const string TargetingModeMythalForge = "mythal_forge";
     private const string LvarTargetingMode = "targeting_mode";
 
-    private readonly NuiManager _windowManager;
+    private readonly WindowDirector _windowSystem;
     private readonly CraftingPropertyData _propertyData;
-    private readonly ActiveCraftingData _activeCraftingData;
-    private readonly CraftingWindowManager _craftingWindowManager;
+    private readonly CraftingBudgetService _budget;
 
-    public MythalForgeInitializer(NuiManager windowManager, CraftingPropertyData propertyData, ActiveCraftingData activeCraftingData, CraftingWindowManager craftingWindowManager)
+    public MythalForgeInitializer(WindowDirector windowSystem, CraftingPropertyData propertyData, CraftingBudgetService budget)
     {
-        _windowManager = windowManager;
+        _windowSystem = windowSystem;
         _propertyData = propertyData;
-        _activeCraftingData = activeCraftingData;
-        _craftingWindowManager = craftingWindowManager;
+        _budget = budget;
 
         InitForges();
     }
@@ -45,11 +44,9 @@ public class MythalForgeInitializer
     {
         if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
 
-        if (_windowManager.WindowIsOpen(player, typeof(MythalForgeController)))
+        if (_windowSystem.IsWindowOpen(player, typeof(MythalForgeWindow)))
         {
-            player.SendServerMessage(
-                "You already have the Mythal Forge open. Close it and select another item if you want to craft something else.",
-                ColorConstants.Red);
+            _windowSystem.CloseWindow(player, typeof(MythalForgeWindow));
             return;
         }
        
@@ -83,6 +80,8 @@ public class MythalForgeInitializer
             obj.Player.SendServerMessage("Item not supported by Mythal forge", ColorConstants.Orange);
 
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
+            
+            NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
             return;
         }
@@ -92,21 +91,17 @@ public class MythalForgeInitializer
             obj.Player.SendServerMessage("Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.", ColorConstants.Red);
             
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
+            NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
             return;
         }
-
-
         
-        // PopulateData(baseItemType);
-        // CalculateBudget(item);
-        _activeCraftingData.SetSelectedCategory(obj.Player, categories);
-        _activeCraftingData.SetSelectedItem(obj.Player, item);
         
         // Remove the token.
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
         
-        _craftingWindowManager.OpenWindow(obj.Player, item);
+        MythalForgeWindow itemWindow = new MythalForgeWindow(obj.Player, item, _propertyData, _budget);
+        _windowSystem.OpenWindow(itemWindow);
         
         obj.Player.OnPlayerTarget -= ValidateAndSelect;
     }

@@ -18,7 +18,7 @@ public sealed class CraftingWindow
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
 
-    private readonly List<NuiCombo?> _combos = new();
+    private readonly List<NuiColumn> _combos = new();
 
     private readonly NuiBind<string> _itemPropertyNames = new("item_properties");
     private readonly NuiBind<string> _itemPropertyCosts = new("item_property_costs");
@@ -58,54 +58,14 @@ public sealed class CraftingWindow
         if (obj.ElementId is null) return;
         if (obj.ElementId.StartsWith("ip_remove"))
         {
-            int index = obj.ArrayIndex;
-
-            PropertyListEntry entry = _existing[index];
-            entry.State = EntryState.Removed;
-            _changelist.Add(entry);
-
-            PopulateItemProperties();
         }
 
         if (_addButtons.Any(b => b.Id == obj.ElementId))
         {
-            int index = _addButtons.FindIndex(b => b.Id == obj.ElementId);
-
-            NuiCombo? combo = _combos[index];
-
-            if (combo is null) return;
-
-            int selectedIndex = _token.GetBindValue(_categories[index].ComboSelection);
-
-            CraftingCategory category = _categories[index];
-
-            CraftingProperty property = category.Properties[selectedIndex];
-
-            int projectedCost = _spentNum + property.Cost;
-
-            if (projectedCost > _maxNum)
-            {
-                _player.SendServerMessage("You cannot afford this property.", ColorConstants.Red);
-                return;
-            }
-
-            PropertyListEntry entry = new()
-            {
-                Label = property.GuiLabel,
-                State = EntryState.Added,
-                CraftingModel = property
-            };
-
-            _changelist.Add(entry);
-
-            RecalculateBudget();
-
-            UpdateChangelist();
         }
 
         if (_categories.Any(c => c.Properties.Any(p => p.Button.Id == obj.ElementId)))
         {
-            
         }
     }
 
@@ -114,26 +74,17 @@ public sealed class CraftingWindow
         List<NuiElement> entries = new();
         foreach (CraftingCategory category in _categories)
         {
-            NuiCombo nuiElement = category.ToCombo();
+            NuiColumn nuiElement = category.ToColumnWithGroup();
             _combos.Add(nuiElement);
 
-            NuiButtonImage nuiButtonImage = new("ife_x2critowham")
-            {
-                Id = category.NuiSelectionId + "_add",
-                Height = 35f,
-                Width = 35f
-            };
             NuiRow element = new()
             {
                 Children =
                 {
-                    new NuiLabel(category.Label + ":"),
-                    nuiElement,
-                    nuiButtonImage
+                    nuiElement
                 }
             };
 
-            _addButtons.Add(nuiButtonImage);
             entries.Add(element);
         }
 
@@ -286,7 +237,8 @@ public sealed class CraftingWindow
             string gameLabel = ItemPropertyHelper.GameLabel(property);
             string label = _categories.SelectMany(c => c.Properties).FirstOrDefault(p => p.GameLabel == gameLabel)
                 ?.GuiLabel ?? gameLabel;
-            string cost = _categories.SelectMany(c => c.Properties).FirstOrDefault(p => p.GameLabel == gameLabel)?.Cost
+            string cost = _categories.SelectMany(c => c.Properties).FirstOrDefault(p => p.GameLabel == gameLabel)
+                ?.PowerCost
                 .ToString() ?? "2";
 
             bool removable = _categories.SelectMany(c => c.Properties).FirstOrDefault(p => p.GameLabel == gameLabel)
@@ -322,7 +274,7 @@ public sealed class CraftingWindow
         {
             ItemProperty = property,
             GuiLabel = gameLabel,
-            Cost = 2,
+            PowerCost = 2,
             CraftingTier = CraftingTier.DreamCoin
         };
     }
@@ -335,7 +287,7 @@ public sealed class CraftingWindow
         foreach (PropertyListEntry propertyListEntry in _changelist)
         {
             changelistPropertyNames.Add(propertyListEntry.CraftingModel.GuiLabel);
-            changelistCosts.Add(propertyListEntry.CraftingModel.Cost.ToString());
+            changelistCosts.Add(propertyListEntry.CraftingModel.PowerCost.ToString());
         }
 
         int changelistCount = _changelist.Count;
@@ -358,7 +310,7 @@ public sealed class CraftingWindow
         int baseItemType = NWScript.GetBaseItemType(_selection);
         _maxNum = _budget.MythalBudgetFor(baseItemType);
         _spentNum = _selection.ItemProperties.Sum(p => _categories.SelectMany(c => c.Properties)
-            .FirstOrDefault(cp => cp.GameLabel == ItemPropertyHelper.GameLabel(p))?.Cost ?? 2);
+            .FirstOrDefault(cp => cp.GameLabel == ItemPropertyHelper.GameLabel(p))?.PowerCost ?? 2);
 
         _token.SetBindValue(_maxBudget, _maxNum.ToString());
         _token.SetBindValue(_spent, _spentNum.ToString());
@@ -373,8 +325,8 @@ public sealed class CraftingWindow
     private void RecalculateBudget()
     {
         _spentNum = _selection.ItemProperties.Sum(p => _categories.SelectMany(c => c.Properties)
-                        .FirstOrDefault(cp => cp.GameLabel == ItemPropertyHelper.GameLabel(p))?.Cost ?? 2) +
-                    _changelist.Sum(p => p.CraftingModel.Cost);
+                        .FirstOrDefault(cp => cp.GameLabel == ItemPropertyHelper.GameLabel(p))?.PowerCost ?? 2) +
+                    _changelist.Sum(p => p.CraftingModel.PowerCost);
 
         _token.SetBindValue(_spent, _spentNum.ToString());
     }

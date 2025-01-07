@@ -60,35 +60,35 @@ public class CraftingPropertyData
                 {
                     new CraftingProperty
                     {
-                        Cost = 1,
+                        PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(1)!,
                         GuiLabel = "+1 AC",
                         CraftingTier = CraftingTier.Minor
                     },
                     new CraftingProperty
                     {
-                        Cost = 1,
+                        PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(2)!,
                         GuiLabel = "+2 AC",
                         CraftingTier = CraftingTier.Lesser
                     },
                     new CraftingProperty
                     {
-                        Cost = 1,
+                        PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(3)!,
                         GuiLabel = "+3 AC",
                         CraftingTier = CraftingTier.Intermediate
                     },
                     new CraftingProperty
                     {
-                        Cost = 1,
+                        PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(4)!,
                         GuiLabel = "+4 AC",
                         CraftingTier = CraftingTier.Greater
                     },
                     new CraftingProperty
                     {
-                        Cost = 2,
+                        PowerCost = 2,
                         ItemProperty = NWScript.ItemPropertyACBonus(5)!,
                         GuiLabel = "+5 AC",
                         CraftingTier = CraftingTier.Flawless
@@ -130,7 +130,7 @@ public class CraftingPropertyData
             {
                 new CraftingProperty
                 {
-                    Cost = 1,
+                    PowerCost = 1,
                     ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                     GuiLabel = "2d6 Massive Criticals",
                     CraftingTier = CraftingTier.Flawless
@@ -241,14 +241,14 @@ public class CraftingPropertyData
                     {
                         new CraftingProperty
                         {
-                            Cost = 1,
+                            PowerCost = 1,
                             ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
                             GuiLabel = "1d12 Massive Criticals",
                             CraftingTier = CraftingTier.DreamCoin
                         },
                         new CraftingProperty
                         {
-                            Cost = 2,
+                            PowerCost = 2,
                             ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d12)!,
                             GuiLabel = "2d12 Massive Criticals",
                             CraftingTier = CraftingTier.DreamCoin

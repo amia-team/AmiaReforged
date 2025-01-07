@@ -12,7 +12,7 @@ public class CraftingProperty
     public NuiButton Button;
     public required ItemProperty ItemProperty { get; init; }
     public required string GuiLabel { get; init; }
-    public required int Cost { get; init; }
+    public required int PowerCost { get; init; }
 
     public string GameLabel => ItemPropertyHelper.GameLabel(ItemProperty);
 
@@ -32,13 +32,30 @@ public class CraftingProperty
         {
             Children =
             {
-                new NuiButton($"{GuiLabel} ({Cost} Points)")
+                new NuiButton(GuiLabel)
                 {
-                    Id = Guid.NewGuid().ToString()
-                }.Assign(out Button)
+                    Id = Guid.NewGuid().ToString(),
+                    Width = 200f
+                }.Assign(out Button),
+                new NuiGroup()
+                {
+                    Element = new NuiLabel(PowerCost.ToString())
+                    {
+                        HorizontalAlign = NuiHAlign.Center,
+                        VerticalAlign = NuiVAlign.Middle
+                    },
+                    Width = 50f,
+                    Height = 50f,
+                    Tooltip = "Power Cost On Item"
+                }
             }
         };
         
         return row;
+    }
+
+    public int CalculateGoldCost()
+    {
+        return 0;
     }
 }
