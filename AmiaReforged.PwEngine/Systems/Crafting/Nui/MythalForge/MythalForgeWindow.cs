@@ -400,9 +400,19 @@ public sealed class MythalForgeWindow : IWindow
 
         _token.SetBindValue(EntryCount, _changeList.Count);
 
-        List<Color> colors = _changeList
-            .Select(entry => entry.State == ChangeState.Added ? ColorConstants.Lime : ColorConstants.Red).ToList();
+         List<Color> colors = _changeList.Select(entry => ColorForState(entry.State)).ToList();
         _token.SetBindValues(ItemPropertyColors, colors);
+    }
+
+    private Color ColorForState(ChangeState state)
+    {
+        return state switch
+        {
+            ChangeState.Added => ColorConstants.Lime,
+            ChangeState.Removed => ColorConstants.Red,
+            ChangeState.Replaced => ColorConstants.Yellow,
+            _ => ColorConstants.White
+        };
     }
 
     private void RemoveProperties()
