@@ -3,7 +3,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Porthole;
+namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 
 [ServiceBinding(typeof(WindowDirector))]
 public sealed class WindowDirector : IDisposable

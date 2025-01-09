@@ -1,7 +1,7 @@
 ﻿using Anvil.API;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Porthole;
+namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 
 public interface IWindow
 {

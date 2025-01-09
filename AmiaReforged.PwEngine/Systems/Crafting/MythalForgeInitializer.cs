@@ -1,7 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using AmiaReforged.PwEngine.Systems.WindowingSystem;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Porthole;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

@@ -1,7 +1,7 @@
 ﻿using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Porthole;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core;
@@ -232,7 +232,7 @@ public sealed class MythalForgeWindow : IWindow
 
         _window = new NuiWindow(root, Title)
         {
-            Geometry = new NuiRect(400, 400, 800f, 800f)
+            Geometry = new NuiRect(400, 400, 1000f, 1000f)
         };
     }
 
