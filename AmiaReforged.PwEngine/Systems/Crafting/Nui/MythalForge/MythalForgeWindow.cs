@@ -49,6 +49,7 @@ public sealed class MythalForgeWindow : IWindow
     private readonly List<ItemProperty> _visibleProperties = new();
     private readonly List<ItemProperty> _removedProperties = new();
     private CraftingCategorySectionView _craftingCategorySectionView;
+    private NuiElement _categorySection;
 
     public NuiBind<bool> PropertyEnabled { get; } = new("property_enabled");
 
@@ -75,6 +76,7 @@ public sealed class MythalForgeWindow : IWindow
         }
 
         _craftingCategorySectionView = new CraftingCategorySectionView(this, _categories);
+        _categorySection = _craftingCategorySectionView.GetElement();
         
         foreach (CraftingProperty property in _categories.SelectMany(element => element.Properties))
         {
@@ -112,9 +114,6 @@ public sealed class MythalForgeWindow : IWindow
             Width = 400f,
             Height = 400f
         };
-
-
-        NuiElement categorySection = _craftingCategorySectionView.GetElement();
 
         List<NuiListTemplateCell> changelistSectionCells = new()
         {
@@ -218,7 +217,7 @@ public sealed class MythalForgeWindow : IWindow
                 {
                     Children =
                     {
-                        categorySection,
+                        _categorySection,
                         itemPropertySection,
                         changelistSection
                     }
