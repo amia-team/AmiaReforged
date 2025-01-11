@@ -285,8 +285,10 @@ public sealed class MythalForgeWindow : IWindow
             foreach (CraftingProperty property in category.Properties)
             {
                 enabled.Add(property.PowerCost <= freePowers);
+                _player.SendServerMessage($"Property: {property.GuiLabel} Enabled: {property.PowerCost <= freePowers}");
             }
         }
+
         // List<bool> enabled = _categories.SelectMany(category => category.Properties)
         //     .Select(property => property.PowerCost <= freePowers).ToList();
         //
