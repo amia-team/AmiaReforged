@@ -378,7 +378,7 @@ public sealed class MythalForgeWindow : IWindow
         AddToChangeList(p);
         CheckForExisting(p);
         UpdateChangeListView();
-
+        UpdateRemainingPowers();
         UpdateSelectableProperties();
     }
 
