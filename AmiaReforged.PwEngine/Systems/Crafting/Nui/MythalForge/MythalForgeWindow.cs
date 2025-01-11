@@ -53,6 +53,7 @@ public sealed class MythalForgeWindow : IWindow
     private readonly NuiElement _categorySection;
 
     public NuiBind<bool> PropertyEnabled { get; } = new("property_enabled");
+    public NuiBind<Color> PropertyColors { get; } = new("property_colors");
 
     public MythalForgeWindow(NwPlayer player, NwItem selection, CraftingPropertyData data,
         CraftingBudgetService budgetService)
@@ -288,11 +289,13 @@ public sealed class MythalForgeWindow : IWindow
                 _player.SendServerMessage($"Property: {property.GuiLabel} Enabled: {property.PowerCost <= freePowers}");
             }
         }
-
+        
+        List<Color> colors = enabled.Select(b => b ? ColorConstants.White : ColorConstants.Red).ToList();
         // List<bool> enabled = _categories.SelectMany(category => category.Properties)
         //     .Select(property => property.PowerCost <= freePowers).ToList();
         //
         _token.SetBindValues(PropertyEnabled, enabled);
+        _token.SetBindValues(PropertyColors, colors);
     }
 
     private void UpdateItemName()

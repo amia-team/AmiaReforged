@@ -31,7 +31,8 @@ public class CraftingCategorySectionView : INuiModel
                         {
                             Id = Guid.NewGuid().ToString(),
                             Width = 200f,
-                            Enabled = _window.PropertyEnabled
+                            Enabled = _window.PropertyEnabled,
+                            ForegroundColor = _window.PropertyColors
                         }.Assign(out categoryProperty.Button),
                         new NuiGroup
                         {
