@@ -295,4 +295,10 @@ public class CraftingPropertyData
 
         return (IReadOnlyList<CraftingProperty>) properties;
     }
+
+    public IReadOnlyList<CraftingProperty> UncategorizedPropertiesForNwItem(NwItem selection)
+    {
+        int baseItemInt = NWScript.GetBaseItemType(selection);
+        return UncategorizedPropertiesFor(baseItemInt);
+    }
 }

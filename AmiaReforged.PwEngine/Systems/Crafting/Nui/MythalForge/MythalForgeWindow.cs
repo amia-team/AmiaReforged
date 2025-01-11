@@ -31,6 +31,7 @@ public sealed class MythalForgeWindow : IWindow
     private const string RemoveChangeId = "remove_change";
     private const string? RemoveItemProperty = "remove_item_property";
 
+    private NuiBind<string> RemainingPowers { get; } = new("remaining_powers");
     private NuiBind<string> SpentPowers { get; } = new("spent_powers");
     private NuiBind<string> ItemName { get; } = new("item_name");
 
@@ -77,7 +78,7 @@ public sealed class MythalForgeWindow : IWindow
 
         _craftingCategorySectionView = new CraftingCategorySectionView(this, _categories);
         _categorySection = _craftingCategorySectionView.GetElement();
-        
+
         foreach (CraftingProperty property in _categories.SelectMany(element => element.Properties))
         {
             if (property.Button.Id == null) continue;
@@ -201,7 +202,7 @@ public sealed class MythalForgeWindow : IWindow
                                         HorizontalAlign = NuiHAlign.Center,
                                         VerticalAlign = NuiVAlign.Middle
                                     },
-                                    new NuiLabel(SpentPowers)
+                                    new NuiLabel(RemainingPowers)
                                     {
                                         HorizontalAlign = NuiHAlign.Center,
                                         VerticalAlign = NuiVAlign.Middle
@@ -238,8 +239,43 @@ public sealed class MythalForgeWindow : IWindow
 
         UpdateItemName();
         UpdatePropertyList();
-        UpdateSpentPowers();
+        UpdateRemainingPowers();
         UpdateSelectableProperties();
+    }
+
+    private void UpdateRemainingPowers()
+    {
+        IReadOnlyList<CraftingProperty> allCategorizedProperties = _data.UncategorizedPropertiesForNwItem(_selection);
+        int maxBudget = _budgetService.MythalBudgetForNwItem(_selection);
+        int remainingBudget = maxBudget;
+
+        foreach (CraftingProperty p in allCategorizedProperties)
+        {
+            if (_selection.ItemProperties.Any(i => ItemPropertyHelper.GameLabel(i) == p.GameLabel))
+            {
+                remainingBudget -= p.PowerCost;
+            }
+            else
+            {
+                CraftingProperty property = ItemPropertyHelper.ToCraftingProperty(p.ItemProperty);
+                remainingBudget -= property.PowerCost;
+            }
+        }
+
+        foreach (ChangelistEntry entry in _changeList)
+        {
+            switch (entry.State)
+            {
+                case ChangeState.Added:
+                    remainingBudget -= entry.Property.PowerCost;
+                    break;
+                case ChangeState.Removed:
+                    remainingBudget += entry.Property.PowerCost;
+                    break;
+            }
+        }
+
+        _token.SetBindValue(RemainingPowers, remainingBudget.ToString());
     }
 
     private void UpdateSpentPowers()
@@ -277,15 +313,13 @@ public sealed class MythalForgeWindow : IWindow
 
     private void UpdateSelectableProperties()
     {
-        string? spentPowersString = _token.GetBindValue(SpentPowers);
-        if (spentPowersString == null) return;
+        string? freePowersString = _token.GetBindValue(RemainingPowers);
+        if (freePowersString == null) return;
 
-        int spentPowers = int.Parse(spentPowersString);
-        int maxBudget = _budgetService.MythalBudgetForNwItem(_selection);
-        int remainingBudget = maxBudget - spentPowers;
+        int freePowers = int.Parse(freePowersString);
 
         List<bool> enabled;
-        if (remainingBudget < 0)
+        if (freePowers < 0)
         {
             enabled = _categories.SelectMany(category => category.Properties)
                 .Select(property => false).ToList();
@@ -293,7 +327,7 @@ public sealed class MythalForgeWindow : IWindow
         else
         {
             enabled = _categories.SelectMany(category => category.Properties)
-                .Select(property => property.PowerCost <= remainingBudget).ToList();
+                .Select(property => property.PowerCost <= freePowers).ToList();
         }
 
         _token.SetBindValues(PropertyEnabled, enabled);
