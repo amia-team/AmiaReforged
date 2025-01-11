@@ -281,7 +281,8 @@ public sealed class MythalForgeWindow : IWindow
         _token.Player.SendServerMessage($"Free powers: {freePowersString}");
         int freePowers = int.Parse(freePowersString);
 
-        List<bool> enabled = _data.UncategorizedPropertiesForNwItem(_selection).Select(property => property.PowerCost <= freePowers).ToList();
+        List<bool> enabled = _categories.SelectMany(category => category.Properties)
+            .Select(property => property.PowerCost <= freePowers).ToList();
 
         _token.SetBindValues(PropertyEnabled, enabled);
     }
