@@ -251,11 +251,8 @@ public sealed class MythalForgeWindow : IWindow
 
         foreach (ItemProperty p in _selection.ItemProperties)
         {
-            CraftingProperty? property = allCategorizedProperties.FirstOrDefault(g => g.ItemProperty == p);
-            if (property == null)
-            {
-                property = ItemPropertyHelper.ToCraftingProperty(p);
-            }
+            CraftingProperty property = allCategorizedProperties.FirstOrDefault(g => g.ItemProperty == p) ??
+                                        ItemPropertyHelper.ToCraftingProperty(p);
 
             remainingBudget -= property.PowerCost;
         }
@@ -281,19 +278,10 @@ public sealed class MythalForgeWindow : IWindow
         string? freePowersString = _token.GetBindValue(RemainingPowers);
         if (freePowersString == null) return;
 
+        _token.Player.SendServerMessage($"Free powers: {freePowersString}");
         int freePowers = int.Parse(freePowersString);
 
-        List<bool> enabled;
-        if (freePowers < 0)
-        {
-            enabled = _categories.SelectMany(category => category.Properties)
-                .Select(property => false).ToList();
-        }
-        else
-        {
-            enabled = _categories.SelectMany(category => category.Properties)
-                .Select(property => property.PowerCost <= freePowers).ToList();
-        }
+        List<bool> enabled = _data.UncategorizedPropertiesForNwItem(_selection).Select(property => property.PowerCost <= freePowers).ToList();
 
         _token.SetBindValues(PropertyEnabled, enabled);
     }
