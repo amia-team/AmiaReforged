@@ -280,22 +280,26 @@ public sealed class MythalForgeWindow : IWindow
         if (freePowersString == null) return;
 
         int freePowers = int.Parse(freePowersString);
-        List<bool> enabled = new();
+        
         foreach (CraftingCategory category in _categories)
         {
-            foreach (CraftingProperty property in category.Properties)
+            foreach (CraftingProperty categoryProperty in category.Properties)
             {
-                enabled.Add(property.PowerCost <= freePowers);
-                _player.SendServerMessage($"Property: {property.GuiLabel} Enabled: {property.PowerCost <= freePowers}");
+                string? id = categoryProperty.Button.Id;
+                if (id == null)
+                {
+                    continue;
+                }
+                
+                NuiBind<bool> enableProperty = _craftingCategorySectionView.EnablePropertyBinds[id];
+                
+                bool canAdd = categoryProperty.PowerCost <= freePowers;
+                _token.SetBindValue(enableProperty, canAdd);
+
+                _token.SetBindValue(_craftingCategorySectionView.PropertyColors[id],
+                    canAdd ? ColorConstants.White : ColorConstants.Red);
             }
         }
-        
-        List<Color> colors = enabled.Select(b => b ? ColorConstants.White : ColorConstants.Red).ToList();
-        // List<bool> enabled = _categories.SelectMany(category => category.Properties)
-        //     .Select(property => property.PowerCost <= freePowers).ToList();
-        //
-        _token.SetBindValues(PropertyEnabled, enabled);
-        _token.SetBindValues(PropertyColors, colors);
     }
 
     private void UpdateItemName()
@@ -385,17 +389,26 @@ public sealed class MythalForgeWindow : IWindow
         if (p == null) return;
         if (!exists) return;
 
-        ValidateCost(p);
+        bool canAdd = ValidateCost(p);
+        if (!canAdd) return;
 
         AddToChangeList(p);
         CheckForExisting(p);
         UpdateChangeListView();
         UpdateRemainingPowers();
-        UpdateSelectableProperties();
     }
 
-    private void ValidateCost(CraftingProperty property)
+    private bool ValidateCost(CraftingProperty property)
     {
+        string? bindValue = _token.GetBindValue(RemainingPowers);
+        if (bindValue == null) return false;
+        
+        int remainingPowers = int.Parse(bindValue);
+        if (property.PowerCost <= remainingPowers) return true;
+        
+        _player.SendServerMessage("This item cannot support more powers.", ColorConstants.Red);
+        return false;
+
     }
 
     private void AddToChangeList(CraftingProperty property)

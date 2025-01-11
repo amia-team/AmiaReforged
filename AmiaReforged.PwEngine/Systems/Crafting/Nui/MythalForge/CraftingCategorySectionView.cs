@@ -14,30 +14,37 @@ public class CraftingCategorySectionView : INuiModel
         _window = window;
         _categories = categories;
     }
-
+    
+    public readonly Dictionary<string, NuiBind<bool>> EnablePropertyBinds = new();
+    public readonly Dictionary<string, NuiBind<Color>> PropertyColors = new();
+    
     public NuiElement GetElement()
     {
         List<NuiElement> elements = new();
+        
         foreach (CraftingCategory category in _categories)
         {
             List<NuiElement> properties = new();
             foreach (CraftingProperty categoryProperty in category.Properties)
             {
+                string id = Guid.NewGuid().ToString();
+                NuiBind<bool> enableProperty = new(id + "_enable");
+                NuiBind<Color> colorProperty = new(id + "_color");
                 NuiRow row = new()
                 {
                     Children =
                     {
                         new NuiButton(categoryProperty.GuiLabel)
                         {
-                            Id = Guid.NewGuid().ToString(),
+                            Id = id,
                             Width = 200f,
-                            Enabled = _window.PropertyEnabled,
-                            ForegroundColor = _window.PropertyColors
+                            Enabled = enableProperty,
                         }.Assign(out categoryProperty.Button),
                         new NuiGroup
                         {
                             Element = new NuiLabel(categoryProperty.PowerCost.ToString())
                             {
+                                ForegroundColor = colorProperty,
                                 HorizontalAlign = NuiHAlign.Center,
                                 VerticalAlign = NuiVAlign.Middle
                             },
@@ -49,6 +56,8 @@ public class CraftingCategorySectionView : INuiModel
                 };
 
                 properties.Add(row);
+                EnablePropertyBinds.Add(id, enableProperty);
+                PropertyColors.Add(id, colorProperty);
             }
 
             NuiColumn column = new()
