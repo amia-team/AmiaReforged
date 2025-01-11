@@ -74,13 +74,13 @@ public sealed class MythalForgeWindow : IWindow
             _categories.Add(category);
         }
 
+        _craftingCategorySectionView = new CraftingCategorySectionView(this, _categories);
+        
         foreach (CraftingProperty property in _categories.SelectMany(element => element.Properties))
         {
             if (property.Button.Id == null) continue;
             _itemProperties.Add(property.Button.Id, property);
         }
-
-        _craftingCategorySectionView = new CraftingCategorySectionView(this, _categories);
     }
 
     public NuiWindowToken GetToken()
