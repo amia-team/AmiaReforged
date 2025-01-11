@@ -50,7 +50,7 @@ public sealed class MythalForgeWindow : IWindow
     private readonly List<ItemProperty> _visibleProperties = new();
     private readonly List<ItemProperty> _removedProperties = new();
     private CraftingCategorySectionView _craftingCategorySectionView;
-    private NuiElement _categorySection;
+    private readonly NuiElement _categorySection;
 
     public NuiBind<bool> PropertyEnabled { get; } = new("property_enabled");
 
@@ -278,18 +278,19 @@ public sealed class MythalForgeWindow : IWindow
         string? freePowersString = _token.GetBindValue(RemainingPowers);
         if (freePowersString == null) return;
 
-        _token.Player.SendServerMessage($"Free powers: {freePowersString}");
         int freePowers = int.Parse(freePowersString);
-
-        foreach (CraftingProperty property in _categories.SelectMany(category => category.Properties))
+        List<bool> enabled = new();
+        foreach (CraftingCategory category in _categories)
         {
-            property.Button.Enabled = property.PowerCost <= freePowers;
+            foreach (CraftingProperty property in category.Properties)
+            {
+                enabled.Add(property.PowerCost <= freePowers);
+            }
         }
-        //
         // List<bool> enabled = _categories.SelectMany(category => category.Properties)
         //     .Select(property => property.PowerCost <= freePowers).ToList();
         //
-        // _token.SetBindValues(PropertyEnabled, enabled);
+        _token.SetBindValues(PropertyEnabled, enabled);
     }
 
     private void UpdateItemName()
