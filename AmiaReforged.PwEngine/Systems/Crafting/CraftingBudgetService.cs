@@ -128,4 +128,9 @@ public class CraftingBudgetService
 
         return max - spent;
     }
+    
+    public bool CanAffordProperty(NwItem item, CraftingProperty property)
+    {
+        return RemainingBudgetFor(item) >= property.PowerCost;
+    }
 }

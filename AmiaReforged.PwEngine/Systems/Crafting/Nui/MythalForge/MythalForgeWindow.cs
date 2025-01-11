@@ -10,7 +10,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
 public sealed class MythalForgeWindow : IWindow
 {
-    private readonly List<CraftingCategoryElement> _categories = new();
+    private readonly List<CraftingCategory> _categories = new();
     private readonly List<ChangelistEntry> _changeList = new();
     public string Title => "Mythal Forge";
     private NuiWindowToken _token;
@@ -24,7 +24,7 @@ public sealed class MythalForgeWindow : IWindow
     private NuiWindow _window;
 
     // Buttons
-    private NuiButton ApplyNameButton;
+    private NuiButton _applyNameButton;
 
 
     private const float AutoCloseDistance = 10.0f;
@@ -48,6 +48,9 @@ public sealed class MythalForgeWindow : IWindow
     private readonly List<ItemProperty> _existingProperties = new();
     private readonly List<ItemProperty> _visibleProperties = new();
     private readonly List<ItemProperty> _removedProperties = new();
+    private CraftingCategorySectionView _craftingCategorySectionView;
+
+    public NuiBind<bool> PropertyEnabled { get; } = new("property_enabled");
 
     public MythalForgeWindow(NwPlayer player, NwItem selection, CraftingPropertyData data,
         CraftingBudgetService budgetService)
@@ -68,15 +71,16 @@ public sealed class MythalForgeWindow : IWindow
 
         foreach (CraftingCategory category in data.Properties[baseItem])
         {
-            CraftingCategoryElement element = new(category);
-            _categories.Add(element);
+            _categories.Add(category);
         }
 
-        foreach (CraftingProperty property in _categories.SelectMany(element => element.Category.Properties))
+        foreach (CraftingProperty property in _categories.SelectMany(element => element.Properties))
         {
             if (property.Button.Id == null) continue;
             _itemProperties.Add(property.Button.Id, property);
         }
+
+        _craftingCategorySectionView = new CraftingCategorySectionView(this, _categories);
     }
 
     public NuiWindowToken GetToken()
@@ -87,7 +91,6 @@ public sealed class MythalForgeWindow : IWindow
     public void Init()
     {
         NwModule.Instance.OnNuiEvent += OnNuiEvent;
-        List<NuiElement> elements = _categories.Select(element => element.GetElement()).ToList();
 
         List<NuiListTemplateCell> itemPropertyCells = new()
         {
@@ -110,15 +113,8 @@ public sealed class MythalForgeWindow : IWindow
             Height = 400f
         };
 
-        NuiGroup categorySection = new()
-        {
-            Element = new NuiColumn()
-            {
-                Children = elements,
-                Width = 400f,
-                Height = 400f
-            }
-        };
+
+        NuiElement categorySection = _craftingCategorySectionView.GetElement();
 
         List<NuiListTemplateCell> changelistSectionCells = new()
         {
@@ -165,7 +161,7 @@ public sealed class MythalForgeWindow : IWindow
                         {
                             Id = "apply_name",
                             Height = 60f
-                        }.Assign(out ApplyNameButton),
+                        }.Assign(out _applyNameButton),
                     }
                 },
                 new NuiRow()
@@ -243,13 +239,69 @@ public sealed class MythalForgeWindow : IWindow
 
         UpdateItemName();
         UpdatePropertyList();
+        UpdateSpentPowers();
+        UpdateSelectableProperties();
+    }
+
+    private void UpdateSpentPowers()
+    {
+        int spentPowers = 0;
+        List<CraftingProperty> craftingProperties = _categories.SelectMany(c => c.Properties).ToList();
+        foreach (ItemProperty p in _selection.ItemProperties)
+        {
+            if (craftingProperties.Any(c => c.GameLabel == ItemPropertyHelper.GameLabel(p)))
+            {
+                CraftingProperty property =
+                    craftingProperties.First(c => c.GameLabel == ItemPropertyHelper.GameLabel(p));
+                spentPowers += property.PowerCost;
+            }
+            else
+            {
+                spentPowers += 2;
+            }
+        }
+
+        foreach (ChangelistEntry e in _changeList)
+        {
+            if (e.State == ChangeState.Added)
+            {
+                spentPowers += e.Property.PowerCost;
+            }
+            else if (e.State == ChangeState.Removed)
+            {
+                spentPowers -= e.Property.PowerCost;
+            }
+        }
+
+        _token.SetBindValue(SpentPowers, spentPowers.ToString());
+    }
+
+    private void UpdateSelectableProperties()
+    {
+        string? spentPowersString = _token.GetBindValue(SpentPowers);
+        if (spentPowersString == null) return;
+
+        int spentPowers = int.Parse(spentPowersString);
+        int maxBudget = _budgetService.MythalBudgetForNwItem(_selection);
+        int remainingBudget = maxBudget - spentPowers;
+
+        List<bool> enabled;
+        if (remainingBudget < 0)
+        {
+            enabled = _categories.SelectMany(category => category.Properties)
+                .Select(property => false).ToList();
+        }
+        else
+        {
+            enabled = _categories.SelectMany(category => category.Properties)
+                .Select(property => property.PowerCost <= remainingBudget).ToList();
+        }
+
+        _token.SetBindValues(PropertyEnabled, enabled);
     }
 
     private void UpdateItemName()
     {
-        string spentPowers = _budgetService.RemainingBudgetForNwItem(_selection).ToString();
-        _token.SetBindValue(SpentPowers, spentPowers);
-
         _token.SetBindValue(ItemName, _selection.Name);
     }
 
@@ -259,7 +311,7 @@ public sealed class MythalForgeWindow : IWindow
         foreach (ItemProperty property in _existingProperties)
         {
             if (_removedProperties.Contains(property)) continue;
-            
+
             selectionPropertyNames.Add(ItemPropertyHelper.GameLabel(property));
         }
 
@@ -280,7 +332,7 @@ public sealed class MythalForgeWindow : IWindow
     {
         List<bool> removables = _existingProperties.Select(ItemPropertyHelper.CanBeRemoved)
             .ToList();
-        
+
         _token.SetBindValues(Removables, removables);
     }
 
@@ -340,6 +392,8 @@ public sealed class MythalForgeWindow : IWindow
         AddToChangeList(p);
         CheckForExisting(p);
         UpdateChangeListView();
+
+        UpdateSelectableProperties();
     }
 
     private void ValidateCost(CraftingProperty property)
@@ -400,11 +454,11 @@ public sealed class MythalForgeWindow : IWindow
 
         _token.SetBindValue(EntryCount, _changeList.Count);
 
-         List<Color> colors = _changeList.Select(entry => ColorForState(entry.State)).ToList();
+        List<Color> colors = _changeList.Select(entry => ColorForState(entry.State)).ToList();
         _token.SetBindValues(ItemPropertyColors, colors);
     }
 
-    private Color ColorForState(ChangeState state)
+    private static Color ColorForState(ChangeState state)
     {
         return state switch
         {

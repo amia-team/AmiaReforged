@@ -159,6 +159,15 @@ public class CraftingPropertyData
         properties.Add(SkillProperties.Advantageous);
 
         properties.Add(AbilityProperties.Abilities);
+        
+        properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
+        properties.Add(BonusSpellSlotProperties.BardBonusSpells);
+        properties.Add(BonusSpellSlotProperties.ClericBonusSpells);
+        properties.Add(BonusSpellSlotProperties.DruidBonusSpells);
+        properties.Add(BonusSpellSlotProperties.PaladinBonusSpells);
+        properties.Add(BonusSpellSlotProperties.RangerBonusSpells);
+        properties.Add(BonusSpellSlotProperties.SorcererBonusSpells);
+        properties.Add(BonusSpellSlotProperties.WizardBonusSpells);
     }
 
     private void Setup1HMeleeWeapons()

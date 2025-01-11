@@ -35,7 +35,7 @@ public class CraftingProperty
                 new NuiButton(GuiLabel)
                 {
                     Id = Guid.NewGuid().ToString(),
-                    Width = 200f
+                    Width = 200f,
                 }.Assign(out Button),
                 new NuiGroup()
                 {

@@ -14,35 +14,35 @@ public static class AttackBonusProperties
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyAttackBonus(1)!,
-                GuiLabel = "+1 Attack Bonus",
+                GuiLabel = "+1",
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyAttackBonus(2)!,
-                GuiLabel = "+2 Attack Bonus",
+                GuiLabel = "+2",
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyAttackBonus(3)!,
-                GuiLabel = "+3 Attack Bonus",
+                GuiLabel = "+3",
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyAttackBonus(4)!,
-                GuiLabel = "+4 Attack Bonus",
+                GuiLabel = "+4",
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyAttackBonus(5)!,
-                GuiLabel = "+5 Attack Bonus",
+                GuiLabel = "+5",
                 CraftingTier = CraftingTier.Flawless
             },
         }
@@ -57,35 +57,35 @@ public static class AttackBonusProperties
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyEnhancementBonus(1)!,
-                GuiLabel = "+1 Enhancement Bonus",
+                GuiLabel = "+1",
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyEnhancementBonus(2)!,
-                GuiLabel = "+2 Enhancement Bonus",
+                GuiLabel = "+2",
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyEnhancementBonus(3)!,
-                GuiLabel = "+3 Enhancement Bonus",
+                GuiLabel = "+3",
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyEnhancementBonus(4)!,
-                GuiLabel = "+4 Enhancement Bonus",
+                GuiLabel = "+4",
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyEnhancementBonus(5)!,
-                GuiLabel = "+5 Enhancement Bonus",
+                GuiLabel = "+5",
                 CraftingTier = CraftingTier.Flawless
             }
         }
