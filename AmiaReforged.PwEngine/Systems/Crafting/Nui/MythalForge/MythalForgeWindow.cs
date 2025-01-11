@@ -249,17 +249,15 @@ public sealed class MythalForgeWindow : IWindow
         int maxBudget = _budgetService.MythalBudgetForNwItem(_selection);
         int remainingBudget = maxBudget;
 
-        foreach (CraftingProperty p in allCategorizedProperties)
+        foreach (ItemProperty p in _selection.ItemProperties)
         {
-            if (_selection.ItemProperties.Any(i => ItemPropertyHelper.GameLabel(i) == p.GameLabel))
+            CraftingProperty? property = allCategorizedProperties.FirstOrDefault(g => g.ItemProperty == p);
+            if (property == null)
             {
-                remainingBudget -= p.PowerCost;
+                property = ItemPropertyHelper.ToCraftingProperty(p);
             }
-            else
-            {
-                CraftingProperty property = ItemPropertyHelper.ToCraftingProperty(p.ItemProperty);
-                remainingBudget -= property.PowerCost;
-            }
+
+            remainingBudget -= property.PowerCost;
         }
 
         foreach (ChangelistEntry entry in _changeList)
@@ -276,39 +274,6 @@ public sealed class MythalForgeWindow : IWindow
         }
 
         _token.SetBindValue(RemainingPowers, remainingBudget.ToString());
-    }
-
-    private void UpdateSpentPowers()
-    {
-        int spentPowers = 0;
-        List<CraftingProperty> craftingProperties = _categories.SelectMany(c => c.Properties).ToList();
-        foreach (ItemProperty p in _selection.ItemProperties)
-        {
-            if (craftingProperties.Any(c => c.GameLabel == ItemPropertyHelper.GameLabel(p)))
-            {
-                CraftingProperty property =
-                    craftingProperties.First(c => c.GameLabel == ItemPropertyHelper.GameLabel(p));
-                spentPowers += property.PowerCost;
-            }
-            else
-            {
-                spentPowers += 2;
-            }
-        }
-
-        foreach (ChangelistEntry e in _changeList)
-        {
-            if (e.State == ChangeState.Added)
-            {
-                spentPowers += e.Property.PowerCost;
-            }
-            else if (e.State == ChangeState.Removed)
-            {
-                spentPowers -= e.Property.PowerCost;
-            }
-        }
-
-        _token.SetBindValue(SpentPowers, spentPowers.ToString());
     }
 
     private void UpdateSelectableProperties()
