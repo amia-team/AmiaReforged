@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting;
 using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using Anvil.API;
 using Anvil.Services;
 
@@ -77,5 +78,44 @@ public static class ItemPropertyHelper
             ItemPropertyType.UseLimitationSpecificAlignment => false,
             _ => true
         };
+    }
+
+    public static Dictionary<string, MythalEntry> GetMythals(NwPlayer player)
+    {
+        List<string> mythals = new()
+        {
+            "mythal1",
+            "mythal2",
+            "mythal3",
+            "mythal4",
+            "mythal5",
+            "mythal6",
+            "mythal7",
+        };
+
+        Dictionary<string, MythalEntry> mythalTierMap = new()
+        {
+            { "mythal1", new MythalEntry { Amount = 0, Tier = CraftingTier.Minor, ResRef = "mythal1" } },
+            { "mythal2", new MythalEntry { Amount = 0, Tier = CraftingTier.Lesser, ResRef = "mythal2" } },
+            { "mythal3", new MythalEntry { Amount = 0, Tier = CraftingTier.Intermediate, ResRef = "mythal3" } },
+            { "mythal4", new MythalEntry { Amount = 0, Tier = CraftingTier.Greater, ResRef = "mythal4" } },
+            { "mythal5", new MythalEntry { Amount = 0, Tier = CraftingTier.Flawless, ResRef = "mythal5" } },
+            { "mythal6", new MythalEntry { Amount = 0, Tier = CraftingTier.Perfect, ResRef = "mythal6" } },
+            { "mythal7", new MythalEntry { Amount = 0, Tier = CraftingTier.Divine, ResRef = "mythal7" } }
+        };
+
+        NwCreature? playerLoginCreature = player.LoginCreature;
+        if (playerLoginCreature == null) return mythalTierMap;
+
+        foreach (NwItem item in playerLoginCreature.Inventory.Items.Where(i => i.ResRef.StartsWith("mythal")))
+        {
+            string resRef = item.ResRef;
+            if (mythals.Contains(resRef))
+            {
+                mythalTierMap[resRef].Amount += 1;
+            }
+        }
+
+        return mythalTierMap;
     }
 }

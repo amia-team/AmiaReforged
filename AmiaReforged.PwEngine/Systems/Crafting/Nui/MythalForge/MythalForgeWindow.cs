@@ -49,11 +49,13 @@ public sealed class MythalForgeWindow : IWindow
     private readonly List<ItemProperty> _existingProperties = new();
     private readonly List<ItemProperty> _visibleProperties = new();
     private readonly List<ItemProperty> _removedProperties = new();
-    private CraftingCategorySectionView _craftingCategorySectionView;
+    private readonly CraftingCategorySectionView _craftingCategorySectionView;
     private readonly NuiElement _categorySection;
 
     public NuiBind<bool> PropertyEnabled { get; } = new("property_enabled");
     public NuiBind<Color> PropertyColors { get; } = new("property_colors");
+    
+    
 
     public MythalForgeWindow(NwPlayer player, NwItem selection, CraftingPropertyData data,
         CraftingBudgetService budgetService)
@@ -63,7 +65,10 @@ public sealed class MythalForgeWindow : IWindow
         _data = data;
         _budgetService = budgetService;
 
-        _existingProperties.AddRange(selection.ItemProperties);
+        foreach (ItemProperty pr in selection.ItemProperties)
+        {
+            _existingProperties.Add(pr);
+        }
 
         int baseItem = NWScript.GetBaseItemType(_selection);
         if (!_data.Properties.ContainsKey(baseItem))
@@ -280,7 +285,7 @@ public sealed class MythalForgeWindow : IWindow
         if (freePowersString == null) return;
 
         int freePowers = int.Parse(freePowersString);
-        
+
         foreach (CraftingCategory category in _categories)
         {
             foreach (CraftingProperty categoryProperty in category.Properties)
@@ -290,9 +295,9 @@ public sealed class MythalForgeWindow : IWindow
                 {
                     continue;
                 }
-                
+
                 NuiBind<bool> enableProperty = _craftingCategorySectionView.EnablePropertyBinds[id];
-                
+
                 bool canAdd = categoryProperty.PowerCost <= freePowers;
                 _token.SetBindValue(enableProperty, canAdd);
 
@@ -365,6 +370,11 @@ public sealed class MythalForgeWindow : IWindow
         _token.Player.SendServerMessage("Removing property at index: " + index);
         _token.Player.SendServerMessage($"{_existingProperties.Count} existing properties");
         ItemProperty property = _existingProperties[index];
+        
+        for(int i = 0; i < _existingProperties.Count; i++)
+        {
+            _token.Player.SendServerMessage($"Property at {i}: {ItemPropertyHelper.GameLabel(_existingProperties[i])}");
+        }
 
         _removedProperties.Add(property);
         _existingProperties.Remove(property);
@@ -381,6 +391,8 @@ public sealed class MythalForgeWindow : IWindow
 
         UpdatePropertyList();
         UpdateChangeListView();
+        UpdateRemainingPowers();
+        UpdateSelectableProperties();
     }
 
     private void HandleChangeListAddition(ModuleEvents.OnNuiEvent eventData)
@@ -396,19 +408,19 @@ public sealed class MythalForgeWindow : IWindow
         CheckForExisting(p);
         UpdateChangeListView();
         UpdateRemainingPowers();
+        UpdateSelectableProperties();
     }
 
     private bool ValidateCost(CraftingProperty property)
     {
         string? bindValue = _token.GetBindValue(RemainingPowers);
         if (bindValue == null) return false;
-        
+
         int remainingPowers = int.Parse(bindValue);
         if (property.PowerCost <= remainingPowers) return true;
-        
+
         _player.SendServerMessage("This item cannot support more powers.", ColorConstants.Red);
         return false;
-
     }
 
     private void AddToChangeList(CraftingProperty property)
@@ -504,17 +516,25 @@ public sealed class MythalForgeWindow : IWindow
         }
 
         int index = eventData.ArrayIndex;
+        _token.Player.SendServerMessage("Removing change at index: " + eventData.ArrayIndex);
 
         CraftingProperty property = _changeList[index].Property;
+
+        if (_removedProperties.Any(p => property.GameLabel == ItemPropertyHelper.GameLabel(p)))
+        {
+            _token.Player.SendServerMessage("Removing property from ChangeList: " + property.GuiLabel);
+            _existingProperties.Add(property.ItemProperty);
+            _removedProperties.Remove(property.ItemProperty);
+        }
+
         property.Removeable = true;
         _changeList.RemoveAt(index);
-
-        _existingProperties.Add(property.ItemProperty);
-        _removedProperties.Remove(property.ItemProperty);
 
         UpdateChangeListView();
         UpdatePropertyList();
         UpdateRemovables();
+        UpdateRemainingPowers();
+        UpdateSelectableProperties();
     }
 
     public void Close()
@@ -537,4 +557,12 @@ public sealed class MythalForgeWindow : IWindow
         Removed,
         Replaced
     }
+    
+}
+
+public class MythalEntry
+{
+    public CraftingTier Tier { get; set; }
+    public int Amount { get; set; }
+    public string ResRef { get; set; }
 }
