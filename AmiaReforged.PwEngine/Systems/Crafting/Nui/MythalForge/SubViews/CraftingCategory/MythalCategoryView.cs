@@ -5,21 +5,46 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.Crafti
 
 public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
 {
+    /// <summary>
+    /// A read-only list of Mythal categories. Provided by the presenter.
+    /// </summary>
     private readonly IReadOnlyList<MythalCategoryModel.MythalCategory> _categories;
+
+    /// <summary>
+    /// Gets or sets the presenter for the Mythal Forge.
+    /// </summary>
     public override MythalForgePresenter Presenter { get; protected set; }
 
+    /// <summary>
+    /// Gets a list of button IDs. Used for event handling.
+    /// </summary>
     public List<string> ButtonIds { get; } = new();
-    
+
+    /// <summary>
+    /// A dictionary of enabled property bindings. More performant than looking up the property by ID.
+    /// </summary>
     public readonly Dictionary<string, NuiBind<bool>> EnabledPropertyBindings = new();
+
+    /// <summary>
+    /// A dictionary of power cost color bindings. More performant than looking up the color by ID.
+    /// </summary>
     public readonly Dictionary<string, NuiBind<Color>> PowerCostColors = new();
+
+    /// <summary>
+    /// A dictionary of power cost tooltip bindings. More performant than looking up the tooltip by ID.
+    /// </summary>
     public readonly Dictionary<string, NuiBind<string>> PowerCostTooltips = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MythalCategoryView"/> class.
+    /// </summary>
+    /// <param name="presenter">The presenter for the Mythal Forge.</param>
     public MythalCategoryView(MythalForgePresenter presenter)
     {
         Presenter = presenter;
         _categories = presenter.MythalCategories;
     }
-
+    
     public override NuiLayout RootLayout()
     {
         List<NuiElement> elements = new();
