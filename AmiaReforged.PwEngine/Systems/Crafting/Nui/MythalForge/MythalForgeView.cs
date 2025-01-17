@@ -1,95 +1,114 @@
-﻿using AmiaReforged.Core.UserInterface;
-using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using AmiaReforged.PwEngine.Systems.WindowingSystem;
+﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
-using Anvil.Services;
-using Microsoft.Extensions.Logging;
-using NLog;
+using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
-
-public sealed class MythalForgeView : NuiView<MythalForgeView>
+namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    public override string Id => "crafting.mythal_forge";
-    public override string Title => "Mythal Forge";
-    public override NuiWindow? WindowTemplate { get; }
-
-    public readonly NuiBind<string> PropertyCategories = new NuiBind<string>("labels");
-    public readonly NuiBind<int> PropertyCount = new NuiBind<int>("count");
-    
-    public readonly NuiBind<int> CategoryCount = new NuiBind<int>("count");
-
-    public readonly NuiBind<string> Budget = new NuiBind<string>("budget");
-    public readonly NuiBind<string> RemainingBudget = new NuiBind<string>("spent");
-    
-    private INuiController? _controller;
-    
-    public override INuiController? CreateDefaultController(NwPlayer player)
+    /// <summary>
+    /// Represents the view for the Mythal Forge crafting system.
+    /// </summary>
+    public sealed class MythalForgeView : ScryView<MythalForgePresenter>
     {
-        _controller = CreateController<MythalForgeController>(player);
-        return _controller;
-    }
+        /// <summary>
+        /// Gets the presenter associated with this view.
+        /// </summary>
+        public override MythalForgePresenter Presenter { get; protected set; }
 
-    public MythalForgeView()
-    {
-        Log.Info("Mythal Forge view initialized.");
+        /// <summary>
+        /// Gets the binding for the item name.
+        /// </summary>
+        private NuiBind<string> ItemName { get; } = new("item_name");
 
-        List<NuiListTemplateCell> categoryTemplate = new()
+        /// <summary>
+        /// Gets the category view for the Mythal Forge. Public so that the presenter can access it.
+        /// </summary>
+        public readonly MythalCategoryView CategoryView;
+
+        /// <summary>
+        /// Gets the active properties view for the Mythal Forge.
+        /// </summary>
+        private readonly ActivePropertiesView _activePropertiesView;
+
+        /// <summary>
+        /// Gets the changelist view for the Mythal Forge.
+        /// </summary>
+        private readonly ChangelistView _changelistView;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MythalForgeView"/> class. Initializes the presenter and sub-views.
+        /// </summary>
+        /// <param name="propertyData">The crafting property data.</param>
+        /// <param name="budget">The crafting budget service.</param>
+        /// <param name="item">The item being crafted.</param>
+        /// <param name="player">The player performing the crafting.</param>
+        public MythalForgeView(CraftingPropertyData propertyData, CraftingBudgetService budget, NwItem item, NwPlayer player)
         {
-            new NuiListTemplateCell(new NuiLabel(PropertyCategories)),
-            new NuiListTemplateCell(new NuiCombo())
-        };
-        
-        List<NuiListTemplateCell> budgetRowTemplate = new()
+            Presenter = new MythalForgePresenter(this, propertyData, budget, item, player);
+            
+            CategoryView = new MythalCategoryView(Presenter);
+            _activePropertiesView = new ActivePropertiesView(Presenter);
+            _changelistView = new ChangelistView(Presenter);
+        }
+
+        /// <summary>
+        /// Defines the root layout of the Mythal Forge view. The layout is composed of several sub-views, which are
+        /// created and referenced by the view in the constructor.
+        /// </summary>
+        /// <returns>The root layout of the view.</returns>
+        public override NuiLayout RootLayout()
         {
-            new NuiListTemplateCell(new NuiRow
+            return new NuiColumn
             {
                 Children =
                 {
-                    new NuiLabel("Budget:"),
-                    new NuiLabel(Budget)
-                }
-            }),
-            new NuiListTemplateCell(new NuiRow
-            {
-                Children =
-                {
-                    new NuiLabel("Remaining:"),
-                    new NuiLabel(RemainingBudget)
-                }
-            }),
-        };
-
-        NuiRow root = new()
-        {
-            Children =
-            {
-                new NuiColumn()
-                {
-                    Children =
+                    new NuiRow
                     {
-                        new NuiList(categoryTemplate, CategoryCount)
-                    }
-                },
-                new NuiColumn
-                {
-                    Children = new List<NuiElement>()
-                    {
-                        new NuiList(budgetRowTemplate, 1)
+                        Children =
                         {
-                            RowHeight = 35f,
-                            Width = 400,
-                            Height = 100
+                            new NuiTextEdit("Edit Name", ItemName, 100, false)
+                            {
+                                Width = 200f,
+                                Height = 60f
+                            },
+                            new NuiButton("Apply")
+                            {
+                                Id = "apply_name",
+                                Height = 60f
+                            }
+                        }
+                    },
+                    new NuiRow
+                    {
+                        Children =
+                        {
+                            CategoryView.RootLayout(),
+                            _activePropertiesView.RootLayout(),
+                            _changelistView.RootLayout()
+                        }
+                    },
+                    new NuiRow
+                    {
+                        Children =
+                        {
+                            new NuiButton("Cancel")
+                            {
+                                Id = "cancel",
+                                Width = 200f,
+                                Height = 60f
+                            },
+                            new NuiButton("Apply")
+                            {
+                                Id = "apply",
+                                Width = 200f,
+                                Height = 60f
+                            }
                         }
                     }
                 }
-            }
-        };
-
-        WindowTemplate = new NuiWindow(root, Title)
-        {
-            Geometry = new NuiRect(100f, 100f, 400f, 600f),
-        };
+            };
+        }
     }
 }

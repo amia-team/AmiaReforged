@@ -80,42 +80,42 @@ public static class ItemPropertyHelper
         };
     }
 
-    public static Dictionary<string, MythalEntry> GetMythals(NwPlayer player)
+    public static Dictionary<CraftingTier, int> GetMythals(NwPlayer player)
     {
-        List<string> mythals = new()
+        Dictionary<string, CraftingTier> mythalMap = new()
         {
-            "mythal1",
-            "mythal2",
-            "mythal3",
-            "mythal4",
-            "mythal5",
-            "mythal6",
-            "mythal7",
+            { "mythal1", CraftingTier.Minor },
+            { "mythal2", CraftingTier.Lesser },
+            { "mythal3", CraftingTier.Intermediate },
+            { "mythal4", CraftingTier.Greater },
+            { "mythal5", CraftingTier.Flawless },
+            { "mythal6", CraftingTier.Perfect },
+            { "mythal7", CraftingTier.Divine },
         };
 
-        Dictionary<string, MythalEntry> mythalTierMap = new()
+        Dictionary<CraftingTier, int> mythals = new()
         {
-            { "mythal1", new MythalEntry { Amount = 0, Tier = CraftingTier.Minor, ResRef = "mythal1" } },
-            { "mythal2", new MythalEntry { Amount = 0, Tier = CraftingTier.Lesser, ResRef = "mythal2" } },
-            { "mythal3", new MythalEntry { Amount = 0, Tier = CraftingTier.Intermediate, ResRef = "mythal3" } },
-            { "mythal4", new MythalEntry { Amount = 0, Tier = CraftingTier.Greater, ResRef = "mythal4" } },
-            { "mythal5", new MythalEntry { Amount = 0, Tier = CraftingTier.Flawless, ResRef = "mythal5" } },
-            { "mythal6", new MythalEntry { Amount = 0, Tier = CraftingTier.Perfect, ResRef = "mythal6" } },
-            { "mythal7", new MythalEntry { Amount = 0, Tier = CraftingTier.Divine, ResRef = "mythal7" } }
+            { CraftingTier.Minor, 0 },
+            { CraftingTier.Lesser, 0 },
+            { CraftingTier.Intermediate, 0 },
+            { CraftingTier.Greater, 0 },
+            { CraftingTier.Flawless, 0 },
+            { CraftingTier.Perfect, 0 },
+            { CraftingTier.Divine, 0 },
         };
 
         NwCreature? playerLoginCreature = player.LoginCreature;
-        if (playerLoginCreature == null) return mythalTierMap;
+        if (playerLoginCreature == null) return mythals;
 
         foreach (NwItem item in playerLoginCreature.Inventory.Items.Where(i => i.ResRef.StartsWith("mythal")))
         {
             string resRef = item.ResRef;
-            if (mythals.Contains(resRef))
-            {
-                mythalTierMap[resRef].Amount += 1;
-            }
+
+            if (!mythalMap.TryGetValue(resRef, out CraftingTier tier)) continue;
+
+            mythals[tier] += 1;
         }
 
-        return mythalTierMap;
+        return mythals;
     }
 }
