@@ -151,7 +151,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
     
     /// <summary>
-    /// Gets the list of Mythal categories.
+    /// Gets the list of Mythal categories from the model.
     /// </summary>
     public IReadOnlyList<MythalCategoryModel.MythalCategory> MythalCategories => _model.MythalCategoryModel.Categories;
 }
