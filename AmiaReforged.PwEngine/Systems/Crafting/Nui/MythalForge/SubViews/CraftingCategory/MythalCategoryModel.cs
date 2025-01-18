@@ -19,7 +19,7 @@ public class MythalCategoryModel
     {
         _item = item;
         _data = data;
-        
+
         _mythals = new MythalMap(player);
         Categories = new List<MythalCategory>();
 
@@ -42,9 +42,9 @@ public class MythalCategoryModel
 
             foreach (CraftingProperty property in category.Properties)
             {
-                if(!_mythals.Map.TryGetValue(property.CraftingTier, out int amount)) continue;
-                if(amount == 0) continue;
-                
+                if (!_mythals.Map.TryGetValue(property.CraftingTier, out int amount)) continue;
+                if (amount == 0) continue;
+
                 MythalProperty modelProperty = new()
                 {
                     Id = Guid.NewGuid().ToString(),
@@ -52,24 +52,27 @@ public class MythalCategoryModel
                     InternalProperty = property,
                     Selectable = true
                 };
-                
+
                 modelCategory.Properties.Add(modelProperty);
             }
-            
-            Categories.Add(modelCategory);
+
+            if (modelCategory.Properties.Count > 0)
+            {
+                Categories.Add(modelCategory);
+            }
         }
     }
 
     public void UpdateFromRemainingBudget(int remainingBudget)
     {
         List<MythalProperty> properties = Categories.SelectMany(c => c.Properties).ToList();
-        
+
         foreach (MythalProperty property in properties)
         {
             property.Selectable = property.InternalProperty.PowerCost <= remainingBudget;
 
             property.Color = property.Selectable ? ColorConstants.White : ColorConstants.Red;
-            
+
             property.CostLabelTooltip = property.Selectable ? "Power Cost" : "Too expensive";
         }
     }
