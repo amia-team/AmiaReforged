@@ -100,8 +100,8 @@ public class MythalForgeInitializer
         // Remove the token.
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
         
-        MythalForgeWindow itemWindow = new MythalForgeWindow(obj.Player, item, _propertyData, _budget);
-        _windowSystem.OpenWindow(itemWindow);
+        MythalForgeView itemWindow = new MythalForgeView(_propertyData, _budget, item, obj.Player);
+        _windowSystem.OpenWindow(itemWindow.Presenter);
         
         obj.Player.OnPlayerTarget -= ValidateAndSelect;
     }
