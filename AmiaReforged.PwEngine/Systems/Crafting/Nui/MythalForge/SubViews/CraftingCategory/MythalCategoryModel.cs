@@ -44,6 +44,7 @@ public class MythalCategoryModel
                 
                 MythalProperty modelProperty = new()
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Label = property.GuiLabel,
                     InternalProperty = property,
                     Selectable = true

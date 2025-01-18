@@ -44,7 +44,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
         Presenter = presenter;
         _categories = presenter.MythalCategories;
     }
-    
+
     public override NuiLayout RootLayout()
     {
         List<NuiElement> elements = new();
@@ -54,11 +54,9 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
             List<NuiElement> properties = new();
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
-                string id = Guid.NewGuid().ToString();
-                property.Id = id;
-                NuiBind<bool> enableProperty = new(id + "_enable");
-                NuiBind<Color> costColor = new(id + "_color");
-                NuiBind<string> powerCostTooltip = new(id + "_tooltip");
+                NuiBind<bool> enableProperty = new(property.Id + "_enable");
+                NuiBind<Color> costColor = new(property.Id + "_color");
+                NuiBind<string> powerCostTooltip = new(property.Id + "_tooltip");
 
                 NuiRow propertyRow = new()
                 {
@@ -66,7 +64,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                     {
                         new NuiButton(property.Label)
                         {
-                            Id = id,
+                            Id = property.Id,
                             Width = 200f,
                             Enabled = enableProperty
                         },
@@ -86,10 +84,10 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                 };
 
                 properties.Add(propertyRow);
-                EnabledPropertyBindings.Add(id, enableProperty);
-                PowerCostColors.Add(id, costColor);
-                PowerCostTooltips.Add(id, powerCostTooltip);
-                ButtonIds.Add(id);
+                EnabledPropertyBindings.Add(property.Id, enableProperty);
+                PowerCostColors.Add(property.Id, costColor);
+                PowerCostTooltips.Add(property.Id, powerCostTooltip);
+                ButtonIds.Add(property.Id);
             }
 
             NuiColumn categoryColumn = new()

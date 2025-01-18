@@ -67,6 +67,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         {
             // Handle category view button click
         }
+        
+        UpdateView();
     }
 
     /// <summary>
@@ -75,8 +77,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     public override void Initialize()
     {
         // Sets up all of the initial data...Calls the model for this...
-        UpdateCategoryBindings();
-
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
             Geometry = new NuiRect(500f, 500f, 1000f, 1000f)
@@ -84,8 +84,20 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
-    /// Updates the category bindings with the latest data.
+    /// Updates the view with the latest data.
     /// </summary>
+    public override void UpdateView()
+    {
+        UpdateItemPowerBindings();
+        UpdateCategoryBindings();
+    }
+
+    private void UpdateItemPowerBindings()
+    {
+        Token().SetBindValue(View.MaxPowers, _model.MaxBudget.ToString());
+        Token().SetBindValue(View.RemainingPowers, _model.RemainingPowers.ToString());
+    }
+
     private void UpdateCategoryBindings()
     {
         _model.RecalculateCategoryAffordability();
@@ -98,14 +110,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                 Token().SetBindValue(View.CategoryView.PowerCostTooltips[property.Id], property.CostLabelTooltip);
             }
         }
-    }
-
-    /// <summary>
-    /// Updates the view with the latest data.
-    /// </summary>
-    public override void UpdateView()
-    {
-        // Updates all the nui bindings for data that can change...
     }
 
     /// <summary>
@@ -130,6 +134,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         // This assigns out our token and renders the actual NUI window.
         _player.TryCreateNuiWindow(_window, out _token);
+        
+        UpdateView();
     }
 
     /// <summary>

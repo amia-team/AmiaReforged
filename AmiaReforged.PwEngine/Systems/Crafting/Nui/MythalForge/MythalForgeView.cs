@@ -20,21 +20,17 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         /// <summary>
         /// Gets the binding for the item name.
         /// </summary>
-        private NuiBind<string> ItemName { get; } = new("item_name");
+        public NuiBind<string> ItemName { get; } = new("item_name");
+        
+        public NuiBind<string> MaxPowers { get; } = new("max_powers");
+        public NuiBind<string> RemainingPowers { get; } = new("remaining_powers");
 
         /// <summary>
         /// Gets the category view for the Mythal Forge. Public so that the presenter can access it.
         /// </summary>
         public readonly MythalCategoryView CategoryView;
 
-        /// <summary>
-        /// Gets the active properties view for the Mythal Forge.
-        /// </summary>
         private readonly ActivePropertiesView _activePropertiesView;
-
-        /// <summary>
-        /// Gets the changelist view for the Mythal Forge.
-        /// </summary>
         private readonly ChangelistView _changelistView;
 
         /// <summary>
@@ -44,10 +40,11 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         /// <param name="budget">The crafting budget service.</param>
         /// <param name="item">The item being crafted.</param>
         /// <param name="player">The player performing the crafting.</param>
-        public MythalForgeView(CraftingPropertyData propertyData, CraftingBudgetService budget, NwItem item, NwPlayer player)
+        public MythalForgeView(CraftingPropertyData propertyData, CraftingBudgetService budget, NwItem item,
+            NwPlayer player)
         {
             Presenter = new MythalForgePresenter(this, propertyData, budget, item, player);
-            
+
             CategoryView = new MythalCategoryView(Presenter);
             _activePropertiesView = new ActivePropertiesView(Presenter);
             _changelistView = new ChangelistView(Presenter);
@@ -77,6 +74,23 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                             {
                                 Id = "apply_name",
                                 Height = 60f
+                            },
+                            new NuiSpacer(),
+                            new NuiLabel("Max Powers:"),
+                            new NuiGroup
+                            {
+                                Element = new NuiLabel(MaxPowers),
+                                Border = true,
+                                Width = 50f,
+                                Height = 50f
+                            },
+                            new NuiLabel("Remaining Powers:"),
+                            new NuiGroup
+                            {
+                                Element = new NuiLabel(RemainingPowers),
+                                Border = true,
+                                Width = 50f,
+                                Height = 50f
                             }
                         }
                     },

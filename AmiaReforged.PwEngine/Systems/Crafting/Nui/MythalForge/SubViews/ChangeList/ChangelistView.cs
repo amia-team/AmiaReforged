@@ -21,10 +21,16 @@ public class ChangelistView : IScryView
     /// <returns>A nui element intended only for use as an element of a larger view.</returns>
     public NuiLayout RootLayout()
     {
-        return new NuiGroup()
+        return new NuiColumn
         {
-            Element = new NuiColumn()
+            Children =
             {
+                new NuiGroup
+                {
+                    Border = true,
+                    Width = 400f,
+                    Height = 400f,
+                }
             }
         };
     }

@@ -14,6 +14,17 @@ public class ActivePropertiesView : IScryView
 
     public NuiLayout RootLayout()
     {
-        throw new NotImplementedException();
+        return new NuiColumn
+        {
+            Children =
+            {
+                new NuiGroup
+                {
+                    Border = true,
+                    Width = 400f,
+                    Height = 400f,
+                }
+            }
+        };
     }
 }
