@@ -107,7 +107,7 @@ public class MythalMap
 
     public MythalMap(NwPlayer player)
     {
-        Log.Debug("Getting mythals for player.");
+        Log.Info("Getting mythals for player.");
         Map = ItemPropertyHelper.GetMythals(player);
     }
 }

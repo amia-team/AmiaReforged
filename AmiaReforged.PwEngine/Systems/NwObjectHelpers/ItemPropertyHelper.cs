@@ -84,7 +84,7 @@ public static class ItemPropertyHelper
 
     public static Dictionary<CraftingTier, int> GetMythals(NwPlayer player)
     {
-        Log.Debug($"Getting mythals for player: {player.PlayerName}.");
+        Log.Info($"Getting mythals for player: {player.PlayerName}.");
         Dictionary<string, CraftingTier> mythalMap = new()
         {
             { "mythal1", CraftingTier.Minor },
@@ -114,11 +114,11 @@ public static class ItemPropertyHelper
         {
             string resRef = item.ResRef;
             
-            Log.Debug("Item: " + resRef);
+            Log.Info("Item: " + resRef);
 
             if (!mythalMap.TryGetValue(resRef, out CraftingTier tier)) continue;
             
-            Log.Debug("Tier: " + tier);
+            Log.Info("Tier: " + tier);
             mythals[tier] += 1;
         }
 

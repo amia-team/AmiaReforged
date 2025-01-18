@@ -30,7 +30,7 @@ public class MythalCategoryModel
     {
         int baseType = NWScript.GetBaseItemType(_item);
         IReadOnlyList<Models.CraftingCategory> internalCategories = _data.Properties[baseType];
-        Log.Debug("Setting up categories.");
+        Log.Info("Setting up categories.");
         foreach (Models.CraftingCategory category in internalCategories)
         {
             Log.Info("Setting up category: " + category.Label);
