@@ -20,7 +20,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override MythalForgeView View { get; }
 
-    private MythalForgeModel _model;
+    private readonly MythalForgeModel _model;
     private NuiWindowToken _token;
     private readonly NwPlayer _player;
     private NuiWindow? _window;
@@ -88,8 +88,14 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void UpdateView()
     {
+        UpdateNameField();
         UpdateItemPowerBindings();
         UpdateCategoryBindings();
+    }
+
+    private void UpdateNameField()
+    {
+        Token().SetBindValue(View.ItemName, _model.Item.Name);
     }
 
     private void UpdateItemPowerBindings()

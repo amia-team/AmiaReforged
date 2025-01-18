@@ -13,7 +13,7 @@ public class MythalForgeModel
     public MythalCategoryModel MythalCategoryModel { get; }
     public ActivePropertiesModel ActivePropertiesModel { get; }
 
-    private readonly NwItem _item;
+    public NwItem Item { get; }
     private readonly List<ItemProperty> _mythalProperties = new();
     private readonly List<ItemProperty> _removedProperties = new();
     private readonly List<ChangelistEntry> _changeList = new();
@@ -22,7 +22,7 @@ public class MythalForgeModel
 
     public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player)
     {
-        _item = item;
+        Item = item;
         _data = data;
         _budget = budget;
 
@@ -36,7 +36,7 @@ public class MythalForgeModel
         MythalCategoryModel = new MythalCategoryModel(item, data, player);
     }
 
-    public int MaxBudget => _budget.MythalBudgetForNwItem(_item);
+    public int MaxBudget => _budget.MythalBudgetForNwItem(Item);
 
     public int RemainingPowers
     {
