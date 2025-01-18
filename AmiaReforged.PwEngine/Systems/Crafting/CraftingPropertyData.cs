@@ -103,6 +103,8 @@ public class CraftingPropertyData
         properties.Add(GenericItemProperties.Regeneration);
 
         properties.Add(SavingThrowProperties.SpecificSaves);
+        properties.Add(SavingThrowProperties.GeneralSaves);
+        properties.Add(SavingThrowProperties.UniversalSaves);
 
         properties.Add(SkillProperties.Personal);
         properties.Add(SkillProperties.Advantageous);
@@ -154,6 +156,7 @@ public class CraftingPropertyData
 
         properties.Add(SavingThrowProperties.SpecificSaves);
         properties.Add(SavingThrowProperties.GeneralSaves);
+        properties.Add(SavingThrowProperties.UniversalSaves);
 
         properties.Add(SkillProperties.Personal);
         properties.Add(SkillProperties.Advantageous);

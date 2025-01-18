@@ -116,85 +116,93 @@ public static class SavingThrowProperties
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_COLD, 3)!,
                 GuiLabel = "+3 vs Cold",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_ELECTRICAL, 3)!,
                 GuiLabel = "+3 vs Electrical",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_FIRE, 3)!,
                 GuiLabel = "+3 vs Fire",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_SONIC, 3)!,
                 GuiLabel = "+3 vs Sonic",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_NEGATIVE, 3)!,
                 GuiLabel = "+3 vs Negative",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_POISON, 3)!,
                 GuiLabel = "+3 vs Poison",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_POSITIVE, 3)!,
                 GuiLabel = "+3 vs Positive",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_FEAR, 3)!,
                 GuiLabel = "+3 vs Fear",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_DISEASE, 3)!,
                 GuiLabel = "+3 vs Disease",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_DIVINE, 3)!,
                 GuiLabel = "+3 vs Divine",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_MINDAFFECTING, 3)!,
                 GuiLabel = "+3 vs Mind-Affecting",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_DEATH, 3)!,
                 GuiLabel = "+3 vs Death",
-                CraftingTier = CraftingTier.Perfect
+                CraftingTier = CraftingTier.Intermediate
             },
+        }
+    };
+
+    public static readonly CraftingCategory UniversalSaves = new("universal_saves")
+    {
+        Label = "Universal Saves",
+        Properties = new[]
+        {
             // Universal saves...
             new CraftingProperty
             {
@@ -237,7 +245,7 @@ public static class SavingThrowProperties
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_UNIVERSAL, 6)!,
                 GuiLabel = "+6 Universal",
                 CraftingTier = CraftingTier.DreamCoin
-            },
+            }
         }
     };
 
