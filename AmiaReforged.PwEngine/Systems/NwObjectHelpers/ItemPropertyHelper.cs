@@ -84,6 +84,7 @@ public static class ItemPropertyHelper
 
     public static Dictionary<CraftingTier, int> GetMythals(NwPlayer player)
     {
+        Log.Debug($"Getting mythals for player: {player.PlayerName}.");
         Dictionary<string, CraftingTier> mythalMap = new()
         {
             { "mythal1", CraftingTier.Minor },

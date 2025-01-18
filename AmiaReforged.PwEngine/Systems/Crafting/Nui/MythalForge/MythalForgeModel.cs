@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
@@ -101,10 +102,12 @@ public class ChangelistModel
 
 public class MythalMap
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger(); 
     public Dictionary<CraftingTier, int> Map { get; }
 
     public MythalMap(NwPlayer player)
     {
+        Log.Debug("Getting mythals for player.");
         Map = ItemPropertyHelper.GetMythals(player);
     }
 }
