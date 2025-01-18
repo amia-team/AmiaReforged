@@ -3,11 +3,13 @@ using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using Anvil.API;
 using Anvil.Services;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 
 public static class ItemPropertyHelper
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public static List<string> ItemPropertyLabelsFor(NwItem item) =>
         item.ItemProperties.Select(GameLabel).ToList();
 
@@ -110,9 +112,12 @@ public static class ItemPropertyHelper
         foreach (NwItem item in playerLoginCreature.Inventory.Items.Where(i => i.ResRef.StartsWith("mythal")))
         {
             string resRef = item.ResRef;
+            
+            Log.Debug("Item: " + resRef);
 
             if (!mythalMap.TryGetValue(resRef, out CraftingTier tier)) continue;
-
+            
+            Log.Debug("Tier: " + tier);
             mythals[tier] += 1;
         }
 

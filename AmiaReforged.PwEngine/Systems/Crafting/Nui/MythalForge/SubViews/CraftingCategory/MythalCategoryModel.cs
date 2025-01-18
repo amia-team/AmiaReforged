@@ -1,11 +1,13 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using Anvil.API;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
 
 public class MythalCategoryModel
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly NwItem _item;
     private readonly CraftingPropertyData _data;
 
@@ -28,9 +30,10 @@ public class MythalCategoryModel
     {
         int baseType = NWScript.GetBaseItemType(_item);
         IReadOnlyList<Models.CraftingCategory> internalCategories = _data.Properties[baseType];
-
+        Log.Debug("Setting up categories.");
         foreach (Models.CraftingCategory category in internalCategories)
         {
+            Log.Info("Setting up category: " + category.Label);
             MythalCategory modelCategory = new()
             {
                 Label = category.Label,
