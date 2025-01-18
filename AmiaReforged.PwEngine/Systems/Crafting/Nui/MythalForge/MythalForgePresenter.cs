@@ -152,7 +152,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <returns>The NUI window token.</returns>
     public override NuiWindowToken Token()
     {
-        Create();
         return _token;
     }
     
