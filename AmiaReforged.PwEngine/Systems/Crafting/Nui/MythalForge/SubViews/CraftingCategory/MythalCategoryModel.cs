@@ -55,6 +55,8 @@ public class MythalCategoryModel
                 
                 modelCategory.Properties.Add(modelProperty);
             }
+            
+            Categories.Add(modelCategory);
         }
     }
 
