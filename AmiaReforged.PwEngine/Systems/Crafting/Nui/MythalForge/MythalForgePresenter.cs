@@ -68,6 +68,18 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             // Handle category view button click
         }
         
+        if (eventData.ElementId == MythalForgeView.ApplyNameButtonId)
+        {
+            string? newName = _token.GetBindValue(View.ItemName);
+            if (string.IsNullOrEmpty(newName))
+            {
+                _player.SendServerMessage("The item name cannot be empty.", ColorConstants.Orange);
+                return;
+            }
+            
+            _model.Item.Name = newName;
+        }
+        
         UpdateView();
     }
 

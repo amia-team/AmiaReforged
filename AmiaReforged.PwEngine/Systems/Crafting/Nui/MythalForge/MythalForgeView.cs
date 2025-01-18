@@ -12,6 +12,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
     /// </summary>
     public sealed class MythalForgeView : ScryView<MythalForgePresenter>
     {
+        public const string ApplyNameButtonId = "apply_name";
+
         /// <summary>
         /// Gets the presenter associated with this view.
         /// </summary>
@@ -72,7 +74,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                             },
                             new NuiButton("Apply")
                             {
-                                Id = "apply_name",
+                                Id = ApplyNameButtonId,
                                 Height = 60f
                             },
                             new NuiSpacer(),
