@@ -3,22 +3,23 @@ using Anvil.API;
 using NLog;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
+namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 
 public class MythalCategoryModel
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly NwItem _item;
-    private readonly CraftingPropertyData _data;
 
     public List<MythalCategory> Categories { get; }
+    public Dictionary<string, MythalProperty> PropertyMap { get; } = new();
 
     private readonly MythalMap _mythals;
+    private readonly IReadOnlyList<CraftingCategory> _categories;
 
-    public MythalCategoryModel(NwItem item, CraftingPropertyData data, NwPlayer player)
+    public MythalCategoryModel(NwItem item, NwPlayer player, IReadOnlyList<CraftingCategory> categories)
     {
         _item = item;
-        _data = data;
+        _categories = categories;
 
         _mythals = new MythalMap(player);
         Categories = new List<MythalCategory>();
@@ -29,9 +30,9 @@ public class MythalCategoryModel
     private void SetupCategories()
     {
         int baseType = NWScript.GetBaseItemType(_item);
-        IReadOnlyList<Models.CraftingCategory> internalCategories = _data.Properties[baseType];
+        IReadOnlyList<CraftingCategory> internalCategories = _categories;
         Log.Info("Setting up categories.");
-        foreach (Models.CraftingCategory category in internalCategories)
+        foreach (CraftingCategory category in internalCategories)
         {
             Log.Info("Setting up category: " + category.Label);
             MythalCategory modelCategory = new()
@@ -54,6 +55,7 @@ public class MythalCategoryModel
                 };
 
                 modelCategory.Properties.Add(modelProperty);
+                PropertyMap.Add(modelProperty.Id, modelProperty);
             }
 
             if (modelCategory.Properties.Count > 0)

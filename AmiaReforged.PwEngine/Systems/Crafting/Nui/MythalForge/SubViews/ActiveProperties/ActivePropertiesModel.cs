@@ -1,6 +1,60 @@
-﻿namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
+﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
+using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
+using Anvil.API;
+
+namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
 
 public class ActivePropertiesModel
 {
-    
+    private readonly NwItem _item;
+    private readonly NwPlayer _player;
+
+    public readonly List<CraftingProperty> Removed = new();
+    public readonly List<CraftingProperty> Visible = new();
+
+
+    public ActivePropertiesModel(NwItem item, NwPlayer player, IReadOnlyList<CraftingCategory> categories)
+    {
+        _item = item;
+        _player = player;
+
+        List<CraftingProperty> properties = categories.SelectMany(c => c.Properties).ToList();
+
+        foreach (ItemProperty property in item.ItemProperties)
+        {
+            if (!ItemPropertyHelper.CanBeRemoved(property)) continue;
+
+            // Check the existing properties in the categories
+            CraftingProperty? craftingProperty = properties.FirstOrDefault(p => p.ItemProperty == property) ??
+                                                 ItemPropertyHelper.ToCraftingProperty(property);
+
+            // If the property is in the categories, add it to the list of all properties
+            Visible.Add(craftingProperty);
+        }
+    }
+
+    public void RemoveProperty(CraftingProperty property)
+    {
+        Removed.Add(property);
+    }
+
+    public void AddProperty(CraftingProperty property)
+    {
+        Removed.Remove(property);
+    }
+
+    public List<MythalCategoryModel.MythalProperty> GetVisibleProperties()
+    {
+        return Visible.Select(property => new MythalCategoryModel.MythalProperty
+        {
+            Id = Guid.NewGuid().ToString(), Label = property.GuiLabel, InternalProperty = property, Selectable = true
+        }).ToList();
+    }
+
+    public class ActiveProperty
+    {
+        public required string Label { get; set; }
+        public required CraftingProperty Property { get; set; }
+    }
 }

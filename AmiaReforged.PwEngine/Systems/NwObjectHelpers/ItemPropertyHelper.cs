@@ -10,6 +10,7 @@ namespace AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 public static class ItemPropertyHelper
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     public static List<string> ItemPropertyLabelsFor(NwItem item) =>
         item.ItemProperties.Select(GameLabel).ToList();
 
@@ -47,14 +48,15 @@ public static class ItemPropertyHelper
         return label;
     }
 
-    public static CraftingProperty ToCraftingProperty(ItemProperty propertyItemProperty)
+    public static CraftingProperty ToCraftingProperty(ItemProperty ip)
     {
         return new CraftingProperty
         {
-            ItemProperty = propertyItemProperty,
-            GuiLabel = GameLabel(propertyItemProperty),
+            ItemProperty = ip,
+            GuiLabel = GameLabel(ip),
             PowerCost = 2,
-            CraftingTier = CraftingTier.DreamCoin
+            CraftingTier = CraftingTier.DreamCoin,
+            Removable = CanBeRemoved(ip)
         };
     }
 
@@ -113,15 +115,23 @@ public static class ItemPropertyHelper
         foreach (NwItem item in playerLoginCreature.Inventory.Items.Where(i => i.ResRef.StartsWith("mythal")))
         {
             string resRef = item.ResRef;
-            
+
             Log.Info("Item: " + resRef);
 
             if (!mythalMap.TryGetValue(resRef, out CraftingTier tier)) continue;
-            
+
             Log.Info("Tier: " + tier);
             mythals[tier] += 1;
         }
 
         return mythals;
+    }
+
+    public static bool PropertiesAreSame(ItemProperty property1, ItemProperty property2)
+    {
+        return property1.Property == property2.Property &&
+               property1.SubType == property2.SubType &&
+               property1.CostTableValue == property2.CostTableValue &&
+               property1.Param1TableValue == property2.Param1TableValue;
     }
 }

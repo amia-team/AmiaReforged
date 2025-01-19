@@ -1,9 +1,11 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
-using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
@@ -14,11 +16,9 @@ public class MythalForgeModel
     public ActivePropertiesModel ActivePropertiesModel { get; }
 
     public NwItem Item { get; }
-    private readonly List<ItemProperty> _mythalProperties = new();
-    private readonly List<ItemProperty> _removedProperties = new();
-    private readonly List<ChangelistEntry> _changeList = new();
     private readonly CraftingPropertyData _data;
     private readonly CraftingBudgetService _budget;
+    private readonly IReadOnlyList<CraftingCategory> _categories;
 
     public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player)
     {
@@ -26,14 +26,12 @@ public class MythalForgeModel
         _data = data;
         _budget = budget;
 
-        foreach (ItemProperty property in item.ItemProperties)
-        {
-            if (ItemPropertyHelper.CanBeRemoved(property)) continue;
+        int baseType = NWScript.GetBaseItemType(item);
+        _categories = data.Properties[baseType];
 
-            _mythalProperties.Add(property);
-        }
-
-        MythalCategoryModel = new MythalCategoryModel(item, data, player);
+        MythalCategoryModel = new MythalCategoryModel(item, player, _categories);
+        ChangeListModel = new ChangeListModel();
+        ActivePropertiesModel = new ActivePropertiesModel(item, player, _categories);
     }
 
     public int MaxBudget => _budget.MythalBudgetForNwItem(Item);
@@ -42,13 +40,15 @@ public class MythalForgeModel
     {
         get
         {
-            int remaining = _mythalProperties.Where(p => !_removedProperties.Contains(p)).Aggregate(MaxBudget,
-                (current, prop) => current - ItemPropertyHelper.ToCraftingProperty(prop).PowerCost);
+            int remaining = ActivePropertiesModel.Visible
+                .Where(p => !ActivePropertiesModel.Removed.Contains(p))
+                .Aggregate(MaxBudget,
+                    (current, prop) => current - ItemPropertyHelper.ToCraftingProperty(prop).PowerCost);
 
-            remaining += _changeList.Sum(change => change.State switch
+            remaining += ChangeListModel.ChangeList.Sum(change => change.State switch
             {
-                ChangeState.Added => -change.Property.PowerCost,
-                ChangeState.Removed => change.Property.PowerCost,
+                ChangeListModel.ChangeState.Added => -change.Property.PowerCost,
+                ChangeListModel.ChangeState.Removed => change.Property.PowerCost,
                 _ => 0
             });
 
@@ -56,53 +56,30 @@ public class MythalForgeModel
         }
     }
 
-    public IEnumerable<ItemProperty> VisibleProperties =>
-        _mythalProperties.Where(p => !_removedProperties.Contains(p));
+    public IEnumerable<MythalCategoryModel.MythalProperty> VisibleProperties =>
+        ActivePropertiesModel.GetVisibleProperties();
 
-    public IReadOnlyList<ChangelistEntry> ChangeList => _changeList;
 
-    public bool TryAddProperty(CraftingProperty property)
+    public void TryAddProperty(CraftingProperty property)
     {
-        if (property.PowerCost > RemainingPowers)
-            return false;
+        if (PropertyIsInvalid(property)) return;
 
-        ChangelistEntry entry = new()
-        {
-            Label = property.GuiLabel,
-            Property = property,
-            GpCost = property.CalculateGoldCost(),
-            State = ChangeState.Added
-        };
-
-        _changeList.Add(entry);
-        return true;
+        ChangeListModel.AddProperty(property);
     }
 
-    public class ChangelistEntry
+    private bool PropertyIsInvalid(CraftingProperty property)
     {
-        public required string Label { get; set; }
-        public required CraftingProperty Property { get; set; }
-        public int GpCost { get; set; }
-        public ChangeState State { get; set; }
+        return property.PowerCost > RemainingPowers ||
+               Item.ItemProperties.Any(c => ItemPropertyHelper.GameLabel(c) == property.GameLabel);
     }
 
-    public enum ChangeState
-    {
-        Added,
-        Removed,
-        Replaced
-    }
 
     public void RecalculateCategoryAffordability() => MythalCategoryModel.UpdateFromRemainingBudget(RemainingPowers);
 }
 
-public class ChangelistModel
-{
-}
-
 public class MythalMap
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger(); 
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public Dictionary<CraftingTier, int> Map { get; }
 
     public MythalMap(NwPlayer player)
@@ -110,8 +87,4 @@ public class MythalMap
         Log.Info("Getting mythals for player.");
         Map = ItemPropertyHelper.GetMythals(player);
     }
-}
-
-public class ActivePropertiesModel
-{
 }

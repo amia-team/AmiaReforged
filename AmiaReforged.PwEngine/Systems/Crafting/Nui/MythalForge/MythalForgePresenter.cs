@@ -1,4 +1,5 @@
-﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
+﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
@@ -63,11 +64,13 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <param name="eventData">The event data for the button click.</param>
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (View.CategoryView.ButtonIds.Contains(eventData.ElementId))
+        if (!_model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId, out MythalCategoryModel.MythalProperty? property))
         {
-            // Handle category view button click
+            if(property == null) return;
+
+            _model.TryAddProperty(property.InternalProperty);
         }
-        
+
         if (eventData.ElementId == MythalForgeView.ApplyNameButtonId)
         {
             string? newName = _token.GetBindValue(View.ItemName);
@@ -103,6 +106,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         UpdateNameField();
         UpdateItemPowerBindings();
         UpdateCategoryBindings();
+        UpdateItemPropertyBindings();
     }
 
     private void UpdateNameField()
@@ -128,6 +132,23 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                 Token().SetBindValue(View.CategoryView.PowerCostTooltips[property.Id], property.CostLabelTooltip);
             }
         }
+    }
+
+    private void UpdateItemPropertyBindings()
+    {
+        List<MythalCategoryModel.MythalProperty> visibleProperties = _model.VisibleProperties.ToList();
+
+        int count = visibleProperties.Count;
+        Token().SetBindValue(View.ActivePropertiesView.PropertyCount, count);
+        
+        List<string> labels = visibleProperties.Select(m => m.Label).ToList();
+        Token().SetBindValues(View.ActivePropertiesView.PropertyNames, labels);
+
+        List<string> powerCosts = visibleProperties.Select(m => m.InternalProperty.PowerCost.ToString()).ToList();
+        Token().SetBindValues(View.ActivePropertiesView.PropertyPowerCosts, powerCosts);
+
+        List<bool> removable = visibleProperties.Select(m => m.InternalProperty.Removable).ToList();
+        Token().SetBindValues(View.ActivePropertiesView.Removable, removable);
     }
 
     /// <summary>

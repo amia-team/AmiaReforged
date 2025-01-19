@@ -429,7 +429,7 @@ public sealed class MythalForgeWindow : IWindow
         {
             Label = property.GuiLabel,
             Property = property,
-            GpCost = property.CalculateGoldCost(),
+            GpCost = property.GoldCost,
             State = ChangeState.Added,
         };
         _changeList.Add(entry);
@@ -527,7 +527,7 @@ public sealed class MythalForgeWindow : IWindow
             _removedProperties.Remove(property.ItemProperty);
         }
 
-        property.Removeable = true;
+        property.Removable = true;
         _changeList.RemoveAt(index);
 
         UpdateChangeListView();

@@ -1,7 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
+namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 
 public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
 {

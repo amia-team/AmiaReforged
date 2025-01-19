@@ -1,6 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
-using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using NWN.Core;
@@ -32,7 +32,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         /// </summary>
         public readonly MythalCategoryView CategoryView;
 
-        private readonly ActivePropertiesView _activePropertiesView;
+        public readonly ActivePropertiesView ActivePropertiesView;
         private readonly ChangelistView _changelistView;
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
             Presenter = new MythalForgePresenter(this, propertyData, budget, item, player);
 
             CategoryView = new MythalCategoryView(Presenter);
-            _activePropertiesView = new ActivePropertiesView(Presenter);
+            ActivePropertiesView = new ActivePropertiesView(Presenter);
             _changelistView = new ChangelistView(Presenter);
         }
 
@@ -101,7 +101,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                         Children =
                         {
                             CategoryView.RootLayout(),
-                            _activePropertiesView.RootLayout(),
+                            ActivePropertiesView.RootLayout(),
                             _changelistView.RootLayout()
                         }
                     },
