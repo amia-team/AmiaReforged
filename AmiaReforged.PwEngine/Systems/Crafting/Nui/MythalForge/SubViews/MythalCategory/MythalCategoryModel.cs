@@ -71,7 +71,8 @@ public class MythalCategoryModel
 
         foreach (MythalProperty property in properties)
         {
-            property.Selectable = property.InternalProperty.PowerCost <= remainingBudget;
+            property.Selectable = property.InternalProperty.PowerCost <= remainingBudget ||
+                                  property.InternalProperty.PowerCost == 0;
 
             property.Color = property.Selectable ? ColorConstants.White : ColorConstants.Red;
 
