@@ -5,12 +5,16 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.Active
 
 public class ActivePropertiesView : IScryView
 {
+    private const string RemovePropertyConst = "remove_property";
+    
+    public string RemoveProperty => RemovePropertyConst;
     public IScryPresenter Presenter { get; }
     
     public NuiBind<string> PropertyNames { get; } = new("property_names");
     public NuiBind<string> PropertyPowerCosts { get; } = new("property_descriptions");
     public NuiBind<bool> Removable { get; } = new("property_enabled");
     public NuiBind<int> PropertyCount { get; } = new("property_count");
+    
 
     public ActivePropertiesView(IScryPresenter presenter)
     {
@@ -28,7 +32,7 @@ public class ActivePropertiesView : IScryView
             }),
             new NuiListTemplateCell(new NuiButton("X")
             {
-                Id = "remove_property",
+                Id = RemovePropertyConst,
                 Enabled = Removable
             })
             

@@ -8,6 +8,12 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.Change
 /// </summary>
 public class ChangelistView : IScryView
 {
+    public NuiBind<string> PropertyLabel { get; } = new("property_label");
+    public NuiBind<string> CostString { get; } = new("cost_string");
+    public NuiBind<Color> Colors { get; } = new("changelist_colors");
+    public const string RemoveFromChangeList = "remove_from_changelist";
+    public string RemoveId => RemoveFromChangeList;
+    public NuiBind<int> PropertyCount { get; } = new("property_count");
     public IScryPresenter Presenter { get; }
 
     public ChangelistView(IScryPresenter presenter)
@@ -21,17 +27,29 @@ public class ChangelistView : IScryView
     /// <returns>A nui element intended only for use as an element of a larger view.</returns>
     public NuiLayout RootLayout()
     {
+        List<NuiListTemplateCell> cells = new()
+        {
+            new NuiListTemplateCell(new NuiLabel(PropertyLabel)
+            {
+                ForegroundColor = Colors
+            }),
+            new NuiListTemplateCell(new NuiGroup
+            {
+                Element = new NuiLabel(CostString)
+            }),
+            new NuiListTemplateCell(new NuiButton("X")
+            {
+                Id = RemoveFromChangeList
+            })
+        };
         return new NuiColumn
         {
             Children =
             {
-                new NuiGroup
-                {
-                    Border = true,
-                    Width = 400f,
-                    Height = 400f,
-                }
-            }
+                new NuiList(cells, PropertyCount)
+            },
+            Width = 400f,
+            Height = 400f
         };
     }
 }

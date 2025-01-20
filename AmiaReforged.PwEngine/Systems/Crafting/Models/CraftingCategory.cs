@@ -19,6 +19,6 @@ public class CraftingCategory
     public required IReadOnlyList<CraftingProperty> Properties { get; init; }
     
     // special function that can be defined to determines rules for the category
-    public Func<CraftingProperty, NwItem, PropertyValidationResult> PerformValidation { get; set; }
+    public Func<CraftingProperty, NwItem, PropertyValidationResult>? PerformValidation { get; set; }
     
 }

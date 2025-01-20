@@ -16,22 +16,19 @@ public class MythalForgeModel
     public ActivePropertiesModel ActivePropertiesModel { get; }
 
     public NwItem Item { get; }
-    private readonly CraftingPropertyData _data;
     private readonly CraftingBudgetService _budget;
-    private readonly IReadOnlyList<CraftingCategory> _categories;
 
     public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player)
     {
         Item = item;
-        _data = data;
         _budget = budget;
 
         int baseType = NWScript.GetBaseItemType(item);
-        _categories = data.Properties[baseType];
+        IReadOnlyList<CraftingCategory> categories = data.Properties[baseType];
 
-        MythalCategoryModel = new MythalCategoryModel(item, player, _categories);
+        MythalCategoryModel = new MythalCategoryModel(item, player, categories);
         ChangeListModel = new ChangeListModel();
-        ActivePropertiesModel = new ActivePropertiesModel(item, player, _categories);
+        ActivePropertiesModel = new ActivePropertiesModel(item, player, categories);
     }
 
     public int MaxBudget => _budget.MythalBudgetForNwItem(Item);
@@ -41,11 +38,11 @@ public class MythalForgeModel
         get
         {
             int remaining = ActivePropertiesModel.Visible
-                .Where(p => !ActivePropertiesModel.Removed.Contains(p))
+                .Where(p => !ActivePropertiesModel.Hidden.Contains(p))
                 .Aggregate(MaxBudget,
                     (current, prop) => current - ItemPropertyHelper.ToCraftingProperty(prop).PowerCost);
 
-            remaining += ChangeListModel.ChangeList.Sum(change => change.State switch
+            remaining += ChangeListModel.ChangeList().Sum(change => change.State switch
             {
                 ChangeListModel.ChangeState.Added => -change.Property.PowerCost,
                 ChangeListModel.ChangeState.Removed => change.Property.PowerCost,
@@ -59,12 +56,11 @@ public class MythalForgeModel
     public IEnumerable<MythalCategoryModel.MythalProperty> VisibleProperties =>
         ActivePropertiesModel.GetVisibleProperties();
 
-
     public void TryAddProperty(CraftingProperty property)
     {
         if (PropertyIsInvalid(property)) return;
 
-        ChangeListModel.AddProperty(property);
+        ChangeListModel.AddNewProperty(property);
     }
 
     private bool PropertyIsInvalid(CraftingProperty property)
@@ -72,7 +68,6 @@ public class MythalForgeModel
         return property.PowerCost > RemainingPowers ||
                Item.ItemProperties.Any(c => ItemPropertyHelper.GameLabel(c) == property.GameLabel);
     }
-
 
     public void RefreshCategories()
     {
@@ -82,7 +77,14 @@ public class MythalForgeModel
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
-                property.Selectable = ActivePropertiesModel.PropertyExistsOnItem(property);
+                PropertyValidationResult validationResult = PropertyValidationResult.Valid;
+                if (category.PerformValidation != null)
+                {
+                    validationResult = category.PerformValidation(property, Item);
+                }
+
+                property.Selectable = ActivePropertiesModel.PropertyExistsOnItem(property) ||
+                                      validationResult == PropertyValidationResult.Valid;
             }
         }
     }

@@ -4,9 +4,25 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.Change
 
 public class ChangeListModel
 {
-    public readonly List<ChangelistEntry> ChangeList = new();
+    private readonly List<ChangelistEntry> _changeList = new();
 
-    public void AddProperty(CraftingProperty property)
+    private readonly List<ChangelistEntry> _removedProperties = new();
+    private readonly List<ChangelistEntry> _addedProperties = new();
+
+    public void AddRemovedProperty(CraftingProperty property)
+    {
+        ChangelistEntry entry = new()
+        {
+            Label = property.GuiLabel,
+            Property = property,
+            GpCost = property.GoldCost,
+            State = ChangeState.Removed
+        };
+
+        _removedProperties.Add(entry);
+    }
+
+    public void AddNewProperty(CraftingProperty property)
     {
         ChangelistEntry entry = new()
         {
@@ -16,9 +32,12 @@ public class ChangeListModel
             State = ChangeState.Added
         };
 
-        ChangeList.Add(entry);
+        _addedProperties.Add(entry);
     }
     
+    public List<ChangelistEntry> ChangeList() =>
+        _removedProperties.Concat(_addedProperties).Concat(_changeList).ToList();
+
     public class ChangelistEntry
     {
         public required string Label { get; set; }

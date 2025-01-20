@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
@@ -40,7 +41,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         _model = new MythalForgeModel(item, propertyData, budget, player);
         View = view;
         _player = player;
-        
+
         NwModule.Instance.OnNuiEvent += HandleNuiInputs;
     }
 
@@ -64,9 +65,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <param name="eventData">The event data for the button click.</param>
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (!_model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId, out MythalCategoryModel.MythalProperty? property))
+        if (!_model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
+                out MythalCategoryModel.MythalProperty? property))
         {
-            if(property == null) return;
+            if (property == null) return;
 
             _model.TryAddProperty(property.InternalProperty);
         }
@@ -79,10 +81,19 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                 _player.SendServerMessage("The item name cannot be empty.", ColorConstants.Orange);
                 return;
             }
-            
+
             _model.Item.Name = newName;
         }
-        
+
+        if (eventData.ElementId == View.ActivePropertiesView.RemoveProperty)
+        {
+            int index = eventData.ArrayIndex;
+            MythalCategoryModel.MythalProperty p = _model.ActivePropertiesModel.GetVisibleProperties()[index];
+
+            _model.ActivePropertiesModel.HideProperty(p);
+            _model.ChangeListModel.AddRemovedProperty(p);
+        }
+
         UpdateView();
     }
 
@@ -107,6 +118,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         UpdateItemPowerBindings();
         UpdateCategoryBindings();
         UpdateItemPropertyBindings();
+        UpdateChangeListBindings();
     }
 
     private void UpdateNameField()
@@ -123,7 +135,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void UpdateCategoryBindings()
     {
         _model.RefreshCategories();
-            
+
         foreach (MythalCategoryModel.MythalCategory category in MythalCategories)
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
@@ -141,7 +153,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         int count = visibleProperties.Count;
         Token().SetBindValue(View.ActivePropertiesView.PropertyCount, count);
-        
+
         List<string> labels = visibleProperties.Select(m => m.Label).ToList();
         Token().SetBindValues(View.ActivePropertiesView.PropertyNames, labels);
 
@@ -150,6 +162,25 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         List<bool> removable = visibleProperties.Select(m => m.InternalProperty.Removable).ToList();
         Token().SetBindValues(View.ActivePropertiesView.Removable, removable);
+    }
+
+    private void UpdateChangeListBindings()
+    {
+        List<string> entryLabels = _model.ChangeListModel.ChangeList().Select(m => m.Label).ToList();
+        Token().SetBindValues(View.ChangelistView.PropertyLabel, entryLabels);
+
+        List<string> entryCosts =
+            _model.ChangeListModel.ChangeList().Select(m => m.Property.PowerCost.ToString()).ToList();
+        Token().SetBindValues(View.ChangelistView.CostString, entryCosts);
+
+        List<Color> entryColors = _model.ChangeListModel.ChangeList().Select(m => m.State switch
+        {
+            ChangeListModel.ChangeState.Added => ColorConstants.Green,
+            ChangeListModel.ChangeState.Removed => ColorConstants.Red,
+            _ => ColorConstants.White
+        }).ToList();
+        
+        Token().SetBindValues(View.ChangelistView.Colors, entryColors);
     }
 
     /// <summary>
@@ -174,7 +205,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         // This assigns out our token and renders the actual NUI window.
         _player.TryCreateNuiWindow(_window, out _token);
-        
+
         UpdateView();
     }
 
@@ -194,7 +225,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         return _token;
     }
-    
+
     /// <summary>
     /// Gets the list of Mythal categories from the model.
     /// </summary>

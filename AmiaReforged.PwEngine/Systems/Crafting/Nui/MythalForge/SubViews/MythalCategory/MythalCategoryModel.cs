@@ -29,16 +29,14 @@ public class MythalCategoryModel
 
     private void SetupCategories()
     {
-        int baseType = NWScript.GetBaseItemType(_item);
         IReadOnlyList<CraftingCategory> internalCategories = _categories;
-        Log.Info("Setting up categories.");
         foreach (CraftingCategory category in internalCategories)
         {
-            Log.Info("Setting up category: " + category.Label);
             MythalCategory modelCategory = new()
             {
                 Label = category.Label,
-                Properties = new List<MythalProperty>()
+                Properties = new List<MythalProperty>(),
+                PerformValidation = category.PerformValidation
             };
 
             foreach (CraftingProperty property in category.Properties)
@@ -84,6 +82,8 @@ public class MythalCategoryModel
     {
         public string Label { get; set; }
         public List<MythalProperty> Properties { get; init; }
+        
+        public Func<CraftingProperty, NwItem, PropertyValidationResult>? PerformValidation { get; set; }
     }
 
     public class MythalProperty

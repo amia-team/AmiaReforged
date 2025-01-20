@@ -33,7 +33,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         public readonly MythalCategoryView CategoryView;
 
         public readonly ActivePropertiesView ActivePropertiesView;
-        private readonly ChangelistView _changelistView;
+        public readonly ChangelistView ChangelistView;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MythalForgeView"/> class. Initializes the presenter and sub-views.
@@ -49,7 +49,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
 
             CategoryView = new MythalCategoryView(Presenter);
             ActivePropertiesView = new ActivePropertiesView(Presenter);
-            _changelistView = new ChangelistView(Presenter);
+            ChangelistView = new ChangelistView(Presenter);
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                         {
                             CategoryView.RootLayout(),
                             ActivePropertiesView.RootLayout(),
-                            _changelistView.RootLayout()
+                            ChangelistView.RootLayout()
                         }
                     },
                     new NuiRow

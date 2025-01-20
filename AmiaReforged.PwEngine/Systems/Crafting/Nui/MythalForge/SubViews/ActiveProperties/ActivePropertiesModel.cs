@@ -10,7 +10,7 @@ public class ActivePropertiesModel
     private readonly NwItem _item;
     private readonly NwPlayer _player;
 
-    public readonly List<CraftingProperty> Removed = new();
+    public readonly List<CraftingProperty> Hidden = new();
     public readonly List<CraftingProperty> Visible = new();
 
 
@@ -34,14 +34,14 @@ public class ActivePropertiesModel
         }
     }
 
-    public void RemoveProperty(CraftingProperty property)
+    public void HideProperty(CraftingProperty property)
     {
-        Removed.Add(property);
+        Hidden.Add(property);
     }
 
-    public void AddProperty(CraftingProperty property)
+    public void RevealProperty(CraftingProperty property)
     {
-        Removed.Remove(property);
+        Hidden.Remove(property);
     }
 
     public List<MythalCategoryModel.MythalProperty> GetVisibleProperties()
@@ -53,5 +53,6 @@ public class ActivePropertiesModel
     }
 
 
-    public bool PropertyExistsOnItem(CraftingProperty c) => Visible.Any(property => ItemPropertyHelper.PropertiesAreSame(c, property));
+    public bool PropertyExistsOnItem(CraftingProperty c) =>
+        Visible.Any(property => ItemPropertyHelper.PropertiesAreSame(c, property));
 }
