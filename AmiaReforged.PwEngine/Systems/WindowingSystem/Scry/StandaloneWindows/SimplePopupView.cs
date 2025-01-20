@@ -31,8 +31,8 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
                                 VerticalAlign = NuiVAlign.Middle
                             },
                             Border = true,
-                            Width = 300f,
-                            Height = 300f
+                            Width = 350,
+                            Height = 200
                         }
                     }
                 },
