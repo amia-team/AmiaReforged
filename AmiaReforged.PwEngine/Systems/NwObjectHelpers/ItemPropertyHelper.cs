@@ -126,7 +126,7 @@ public static class ItemPropertyHelper
 
         return mythals;
     }
-
+    
     public static bool PropertiesAreSame(ItemProperty property1, ItemProperty property2)
     {
         return property1.Property == property2.Property &&

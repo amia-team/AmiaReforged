@@ -74,7 +74,18 @@ public class MythalForgeModel
     }
 
 
-    public void RecalculateCategoryAffordability() => MythalCategoryModel.UpdateFromRemainingBudget(RemainingPowers);
+    public void RefreshCategories()
+    {
+        MythalCategoryModel.UpdateFromRemainingBudget(RemainingPowers);
+
+        foreach (MythalCategoryModel.MythalCategory category in MythalCategoryModel.Categories)
+        {
+            foreach (MythalCategoryModel.MythalProperty property in category.Properties)
+            {
+                property.Selectable = ActivePropertiesModel.PropertyExistsOnItem(property);
+            }
+        }
+    }
 }
 
 public class MythalMap

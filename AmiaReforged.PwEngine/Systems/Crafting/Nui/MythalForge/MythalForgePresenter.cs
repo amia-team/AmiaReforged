@@ -122,7 +122,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private void UpdateCategoryBindings()
     {
-        _model.RecalculateCategoryAffordability();
+        _model.RefreshCategories();
+            
         foreach (MythalCategoryModel.MythalCategory category in MythalCategories)
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)

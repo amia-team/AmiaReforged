@@ -28,5 +28,5 @@ public class ItemPropertyModel
     private string GetPropertyParam() =>
         (Property.Param1TableValue == null ? string.Empty : Property.Param1TableValue.Label) ?? string.Empty;
 
-    public required string GoldCost { get; set; }
+    public required int GoldCost { get; set; }
 }

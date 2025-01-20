@@ -52,9 +52,6 @@ public class ActivePropertiesModel
         }).ToList();
     }
 
-    public class ActiveProperty
-    {
-        public required string Label { get; set; }
-        public required CraftingProperty Property { get; set; }
-    }
+
+    public bool PropertyExistsOnItem(CraftingProperty c) => Visible.Any(property => ItemPropertyHelper.PropertiesAreSame(c, property));
 }

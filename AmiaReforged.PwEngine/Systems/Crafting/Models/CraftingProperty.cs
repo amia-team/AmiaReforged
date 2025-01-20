@@ -24,7 +24,7 @@ public class CraftingProperty
         return new ItemPropertyModel
         {
             Property = ItemProperty,
-            GoldCost = GoldCost.ToString()
+            GoldCost = GoldCost
         };
     }
 

@@ -94,5 +94,11 @@ public class MythalCategoryModel
         public bool Selectable { get; set; }
         public Color Color { get; set; }
         public string CostLabelTooltip { get; set; }
+        
+        // operator for converting to crafting property
+        public static implicit operator CraftingProperty(MythalProperty property)
+        {
+            return property.InternalProperty;
+        }
     }
 }
