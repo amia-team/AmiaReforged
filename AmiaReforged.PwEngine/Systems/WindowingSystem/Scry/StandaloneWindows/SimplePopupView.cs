@@ -19,37 +19,31 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
         {
             Children =
             {
-                new NuiRow
+                new NuiGroup
                 {
-                    Children =
+                    Element = new NuiLabel(_message)
                     {
-                        new NuiGroup
-                        {
-                            Element = new NuiLabel(_message)
-                            {
-                                HorizontalAlign = NuiHAlign.Center,
-                                VerticalAlign = NuiVAlign.Middle
-                            },
-                            Border = true,
-                            Width = 200,
-                            Height = 150,
-                        }
-                    }
+                        HorizontalAlign = NuiHAlign.Center,
+                        VerticalAlign = NuiVAlign.Middle
+                    },
+                    Border = true,
+                    Width = 200,
+                    Height = 150,
                 },
                 new NuiRow
                 {
-                    Children =
-                    {
-                        new NuiSpacer(),
-                        new NuiButton("OK")
-                        {
-                            Id = "ok_button",
-                            Width = 80f,
-                            Height = 80f
-                        }
-                    }
+                Children =
+                {
+                new NuiSpacer(),
+                new NuiButton("OK")
+                {
+                    Id = "ok_button",
+                    Width = 80f,
+                    Height = 80f
                 }
             }
+        }
+        }
         };
         return popupLayout;
     }
