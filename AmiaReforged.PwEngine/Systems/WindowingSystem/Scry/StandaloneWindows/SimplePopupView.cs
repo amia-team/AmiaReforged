@@ -34,7 +34,6 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
                 {
                     Children =
                     {
-                        new NuiSpacer(),
                         new NuiButton("OK")
                         {
                             Id = "ok_button",
