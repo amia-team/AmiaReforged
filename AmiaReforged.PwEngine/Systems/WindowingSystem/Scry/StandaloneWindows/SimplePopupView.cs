@@ -31,8 +31,8 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
                                 VerticalAlign = NuiVAlign.Middle
                             },
                             Border = true,
-                            Width = 350,
-                            Height = 200
+                            Width = 200,
+                            Height = 150,
                         }
                     }
                 },
@@ -40,9 +40,12 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
                 {
                     Children =
                     {
+                        new NuiSpacer(),
                         new NuiButton("OK")
                         {
                             Id = "ok_button",
+                            Width = 80f,
+                            Height = 80f
                         }
                     }
                 }
