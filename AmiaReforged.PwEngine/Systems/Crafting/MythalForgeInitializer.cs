@@ -2,6 +2,7 @@
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -21,7 +22,8 @@ public class MythalForgeInitializer
     private readonly CraftingPropertyData _propertyData;
     private readonly CraftingBudgetService _budget;
 
-    public MythalForgeInitializer(WindowDirector windowSystem, CraftingPropertyData propertyData, CraftingBudgetService budget)
+    public MythalForgeInitializer(WindowDirector windowSystem, CraftingPropertyData propertyData,
+        CraftingBudgetService budget)
     {
         _windowSystem = windowSystem;
         _propertyData = propertyData;
@@ -49,14 +51,14 @@ public class MythalForgeInitializer
             _windowSystem.CloseWindow(player, typeof(MythalForgeWindow));
             return;
         }
-       
+
         player.OnPlayerTarget += ValidateAndSelect;
-        
+
         EnterTargetingMode(player);
-        
+
         NWScript.SetLocalString(player.LoginCreature, LvarTargetingMode, TargetingModeMythalForge);
     }
-    
+
     private void EnterTargetingMode(NwPlayer player)
     {
         player.FloatingTextString("Pick an Item from your inventory.", false);
@@ -68,41 +70,47 @@ public class MythalForgeInitializer
     private void ValidateAndSelect(ModuleEvents.OnPlayerTarget obj)
     {
         if (obj.TargetObject is not NwItem item || !obj.TargetObject.IsValid) return;
-        if(obj.Player.LoginCreature == null) return;
-        
-        if(NWScript.GetLocalString(obj.Player.LoginCreature, LvarTargetingMode) != TargetingModeMythalForge) return;
+        if (obj.Player.LoginCreature == null) return;
+
+        if (NWScript.GetLocalString(obj.Player.LoginCreature, LvarTargetingMode) != TargetingModeMythalForge) return;
 
         int baseItemType = NWScript.GetBaseItemType(item);
 
-        bool notFound = !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
+        bool notFound =
+            !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
         if (notFound)
         {
             obj.Player.SendServerMessage("Item not supported by Mythal forge", ColorConstants.Orange);
 
+            StandAloneWindow.Builder().For().SimplePopup().WithPlayer(obj.Player).WithTitle("Mythal Forge")
+                .WithMessage("Item not supported by Mythal forge").Build().Presenter.Create();
+
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
-            
+
             NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
             return;
         }
-        
-        if(categories == null)
+
+        if (categories == null)
         {
-            obj.Player.SendServerMessage("Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.", ColorConstants.Red);
-            
+            obj.Player.SendServerMessage(
+                "Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.",
+                ColorConstants.Red);
+
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
             NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
             return;
         }
-        
-        
+
+
         // Remove the token.
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
-        
+
         MythalForgeView itemWindow = new MythalForgeView(_propertyData, _budget, item, obj.Player);
         _windowSystem.OpenWindow(itemWindow.Presenter);
-        
+
         obj.Player.OnPlayerTarget -= ValidateAndSelect;
     }
 }
