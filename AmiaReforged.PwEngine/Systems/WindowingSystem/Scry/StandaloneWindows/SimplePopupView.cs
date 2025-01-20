@@ -59,7 +59,7 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
         _player = player;
         _title = title;
         View = view;
-        
+
         NwModule.Instance.OnNuiEvent += HandleOkButton;
     }
 
@@ -90,7 +90,8 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
 
     public override void Create()
     {
-        if (_window != null) _player.TryCreateNuiWindow(_window, out _token);
+        Initialize();
+        _player.TryCreateNuiWindow(_window!, out _token);
     }
 
     public override void Close()

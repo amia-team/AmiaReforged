@@ -82,8 +82,15 @@ public class MythalForgeInitializer
         {
             obj.Player.SendServerMessage("Item not supported by Mythal forge", ColorConstants.Orange);
 
-            StandAloneWindow.Builder().For().SimplePopup().WithPlayer(obj.Player).WithTitle("Mythal Forge")
-                .WithMessage("Item not supported by Mythal forge").Build().Presenter.Create();
+            StandAloneWindow.Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(obj.Player)
+                .WithTitle("Mythal Forge")
+                .WithMessage("Item not supported by Mythal forge")
+                .Build()
+                .Presenter
+                .Create();
 
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
 
