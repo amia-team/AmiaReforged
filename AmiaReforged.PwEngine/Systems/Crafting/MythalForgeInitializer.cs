@@ -80,7 +80,6 @@ public class MythalForgeInitializer
             !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
         if (notFound)
         {
-            obj.Player.SendServerMessage("Item not supported by Mythal forge", ColorConstants.Orange);
 
             StandAloneWindow.Builder()
                 .For()
@@ -95,7 +94,10 @@ public class MythalForgeInitializer
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
 
             NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
-
+            
+            //  Closes the inventory window
+            obj.Player.OpenInventory();
+            
             return;
         }
 
