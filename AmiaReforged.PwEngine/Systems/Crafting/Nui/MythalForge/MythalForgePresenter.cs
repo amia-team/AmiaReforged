@@ -229,10 +229,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         List<string> labels = visibleProperties.Select(m => m.Label).ToList();
         Token().SetBindValues(View.ActivePropertiesView.PropertyNames, labels);
 
-        List<string> powerCosts = visibleProperties.Select(m => m.InternalProperty.PowerCost.ToString()).ToList();
+        List<string> powerCosts = visibleProperties.Select(m => m.Internal.PowerCost.ToString()).ToList();
         Token().SetBindValues(View.ActivePropertiesView.PropertyPowerCosts, powerCosts);
 
-        List<bool> removable = visibleProperties.Select(m => m.InternalProperty.Removable).ToList();
+        List<bool> removable = visibleProperties.Select(m => m.Internal.Removable).ToList();
         Token().SetBindValues(View.ActivePropertiesView.Removable, removable);
     }
 

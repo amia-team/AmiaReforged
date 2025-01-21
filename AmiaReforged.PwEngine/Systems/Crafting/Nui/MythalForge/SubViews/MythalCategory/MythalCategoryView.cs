@@ -70,7 +70,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                         },
                         new NuiGroup
                         {
-                            Element = new NuiLabel(property.InternalProperty.PowerCost.ToString())
+                            Element = new NuiLabel(property.Internal.PowerCost.ToString())
                             {
                                 ForegroundColor = costColor,
                                 HorizontalAlign = NuiHAlign.Center,

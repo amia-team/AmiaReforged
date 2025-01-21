@@ -50,8 +50,9 @@ public class MythalCategoryModel
                 {
                     Id = Guid.NewGuid().ToString(),
                     Label = property.GuiLabel,
-                    InternalProperty = property,
-                    Selectable = true
+                    Internal = property,
+                    Selectable = true,
+                    Difficulty = modelCategory.BaseDifficulty * property.PowerCost
                 };
 
                 modelCategory.Properties.Add(modelProperty);
@@ -71,9 +72,9 @@ public class MythalCategoryModel
 
         foreach (MythalProperty property in properties)
         {
-            int mythalsLeft = _mythals.Map[property.InternalProperty.CraftingTier];
-            property.Selectable = property.InternalProperty.PowerCost <= remainingBudget ||
-                                  property.InternalProperty.PowerCost == 0 || mythalsLeft > 0;
+            int mythalsLeft = _mythals.Map[property.Internal.CraftingTier];
+            property.Selectable = property.Internal.PowerCost <= remainingBudget ||
+                                  property.Internal.PowerCost == 0 || mythalsLeft > 0;
 
             property.Color = property.Selectable ? ColorConstants.White : ColorConstants.Red;
 
@@ -98,31 +99,6 @@ public class MythalCategoryModel
         }
     }
 
-    public class MythalCategory
-    {
-        public string Label { get; set; }
-        public List<MythalProperty> Properties { get; init; }
-        
-        public Func<CraftingProperty, NwItem, PropertyValidationResult>? PerformValidation { get; set; }
-        public int BaseDifficulty { get; set; }
-    }
-
-    public class MythalProperty
-    {
-        public string Id { get; set; }
-        public string Label { get; set; }
-        public CraftingProperty InternalProperty { get; set; }
-        public bool Selectable { get; set; }
-        public Color Color { get; set; }
-        public string CostLabelTooltip { get; set; }
-        
-        // operator for converting to crafting property
-        public static implicit operator CraftingProperty(MythalProperty property)
-        {
-            return property.InternalProperty;
-        }
-    }
-    
     public void DestroyMythals(NwPlayer player)
     {
         if (player.LoginCreature is null) return;
@@ -143,7 +119,6 @@ public class MythalCategoryModel
             }
         }
     }
-
     public bool IsMythal(NwItem item)
     {
         return item.ResRef.Contains("mythal");
@@ -152,5 +127,32 @@ public class MythalCategoryModel
     public bool HasMythals(CraftingTier internalPropertyCraftingTier)
     {
         return _mythals.Map[internalPropertyCraftingTier] > 0;
+    }
+
+    public class MythalCategory
+    {
+        public string Label { get; set; }
+        public List<MythalProperty> Properties { get; init; }
+        
+        public Func<CraftingProperty, NwItem, PropertyValidationResult>? PerformValidation { get; set; }
+        public int BaseDifficulty { get; set; }
+    }
+
+    public class MythalProperty
+    {
+        public string Id { get; set; }
+        public string Label { get; set; }
+        public CraftingProperty Internal { get; set; }
+        public bool Selectable { get; set; }
+        public Color Color { get; set; }
+        public string CostLabelTooltip { get; set; }
+        
+        public int Difficulty { get; set; }
+        
+        // operator for converting to crafting property
+        public static implicit operator CraftingProperty(MythalProperty property)
+        {
+            return property.Internal;
+        }
     }
 }

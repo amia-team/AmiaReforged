@@ -43,7 +43,7 @@ public class MythalForgeModel
 
             foreach (MythalCategoryModel.MythalProperty visibleProperty in ActivePropertiesModel.GetVisibleProperties())
             {
-                remaining -= visibleProperty.InternalProperty.PowerCost;
+                remaining -= visibleProperty.Internal.PowerCost;
             }
 
             foreach (ChangeListModel.ChangelistEntry entry in ChangeListModel.ChangeList())
@@ -68,21 +68,15 @@ public class MythalForgeModel
             return 0;
         }
 
-        int craftingDifficulty = MythalCategoryModel.Categories.Select(c => c.BaseDifficulty).Max() *
-                                 ChangeListModel.ChangeList().Select(c => c.Property.PowerCost).Max();
+        int craftingDifficulty = ChangeListModel.ChangeList().Select(c => c.Difficulty).Max();
+        
         return craftingDifficulty;
     }
 
-    public void AddNewProperty(CraftingProperty property)
+    public void AddNewProperty(MythalCategoryModel.MythalProperty property)
     {
         ChangeListModel.AddNewProperty(property);
-        MythalCategoryModel.ConsumeMythal(property.CraftingTier);
-    }
-
-    private bool PropertyIsInvalid(CraftingProperty property)
-    {
-        return property.PowerCost > RemainingPowers ||
-               Item.ItemProperties.Any(c => ItemPropertyHelper.GameLabel(c) == property.GameLabel);
+        MythalCategoryModel.ConsumeMythal(property.Internal.CraftingTier);
     }
 
     public void ApplyChanges()
@@ -118,8 +112,8 @@ public class MythalForgeModel
 
                 property.Selectable = !ActivePropertiesModel.PropertyExistsOnItem(property) &&
                                       validationResult == PropertyValidationResult.Valid &&
-                                      property.InternalProperty.PowerCost <= RemainingPowers &&
-                                      MythalCategoryModel.HasMythals(property.InternalProperty.CraftingTier);
+                                      property.Internal.PowerCost <= RemainingPowers &&
+                                      MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
             }
         }
     }
@@ -194,28 +188,6 @@ public class MythalForgeModel
     {
         ActivePropertiesModel.HideProperty(property);
         ChangeListModel.AddRemovedProperty(property);
-    }
-
-    public void RevealProperty(CraftingProperty property)
-    {
-        ActivePropertiesModel.RevealProperty(property);
-    }
-
-    public void UndoAllChanges()
-    {
-        ChangeListModel.UndoAllChanges();
-        ActivePropertiesModel.UndoAllChanges();
-    }
-
-    public void UndoRemoval(CraftingProperty property)
-    {
-        ChangeListModel.UndoRemoval(property);
-    }
-
-    public void UndoAddition(CraftingProperty property)
-    {
-        ChangeListModel.UndoAddition(property);
-        MythalCategoryModel.RefundMythal(property.CraftingTier);
     }
 }
 

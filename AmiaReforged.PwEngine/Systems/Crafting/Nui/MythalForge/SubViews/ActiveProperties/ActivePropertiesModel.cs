@@ -50,7 +50,7 @@ public class ActivePropertiesModel
     {
         return Visible.Select(property => new MythalCategoryModel.MythalProperty
         {
-            Id = Guid.NewGuid().ToString(), Label = property.GuiLabel, InternalProperty = property, Selectable = true
+            Id = Guid.NewGuid().ToString(), Label = property.GuiLabel, Internal = property, Selectable = true
         }).ToList();
     }
 
