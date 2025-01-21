@@ -187,7 +187,7 @@ public class MythalForgeModel
 
     public bool CanMakeCheck()
     {
-        return NWScript.GetSkillRank(GetSkill(), NWScript.OBJECT_SELF) >= GetCraftingDifficulty();
+        return NWScript.GetSkillRank(GetSkill(), _player.LoginCreature) >= GetCraftingDifficulty();
     }
 
     public void RemoveActiveProperty(CraftingProperty property)
