@@ -103,6 +103,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         {
             int index = eventData.ArrayIndex;
 
+            Log.Info($"Attempting to remove index {index}");
+            Log.Info("Change list count: " + _model.ChangeListModel.ChangeList().Count);
             ChangeListModel.ChangelistEntry e = _model.ChangeListModel.ChangeList()[index];
 
             switch (e.State)
