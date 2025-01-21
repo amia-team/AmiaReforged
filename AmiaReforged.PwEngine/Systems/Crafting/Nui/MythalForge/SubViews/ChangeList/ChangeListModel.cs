@@ -37,8 +37,21 @@ public class ChangeListModel
         _addedProperties.Add(entry);
     }
     
-    public List<ChangelistEntry> ChangeList() =>
-        _removedProperties.Concat(_addedProperties).Concat(_removedProperties).ToList();
+    public List<ChangelistEntry> ChangeList()
+    {
+        List<ChangelistEntry> changes = new();
+        
+        foreach (ChangelistEntry entry in _addedProperties)
+        {
+            changes.Add(entry);
+        }
+        foreach (ChangelistEntry entry in _removedProperties)
+        {
+            changes.Add(entry);
+        }
+
+        return changes;
+    }
 
     public int TotalGpCost()
     {

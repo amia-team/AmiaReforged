@@ -37,11 +37,13 @@ public class ActivePropertiesModel
     public void HideProperty(CraftingProperty property)
     {
         Hidden.Add(property);
+        Visible.Remove(property);
     }
 
     public void RevealProperty(CraftingProperty property)
     {
         Hidden.Remove(property);
+        Visible.Add(property);
     }
 
     public List<MythalCategoryModel.MythalProperty> GetVisibleProperties()

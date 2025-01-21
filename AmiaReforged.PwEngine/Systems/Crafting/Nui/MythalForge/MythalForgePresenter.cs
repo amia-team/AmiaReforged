@@ -196,9 +196,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private void UpdateChangeListBindings()
     {
-        
-        _model.ChangeListModel.ChangeList().ForEach(p => Log.Info(p.Property.GameLabel));
-
         int count = _model.ChangeListModel.ChangeList().Count;
         Token().SetBindValue(View.ChangelistView.ChangeCount, count);
         
