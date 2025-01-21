@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -226,6 +227,10 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
+        PerformValidation = (_, i) =>
+            NWScript.GetItemHasItemProperty(i, NWScript.ITEM_PROPERTY_DAMAGE_REDUCTION) == NWScript.TRUE
+                ? PropertyValidationResult.BasePropertyMustBeUnique
+                : PropertyValidationResult.Valid,
         BaseDifficulty = 18
     };
 
@@ -281,6 +286,10 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
+        PerformValidation = (_, item) =>
+            NWScript.GetItemHasItemProperty(item, NWScript.ITEM_PROPERTY_AC_BONUS) == NWScript.TRUE
+                ? PropertyValidationResult.BasePropertyMustBeUnique
+                : PropertyValidationResult.Valid,
         BaseDifficulty = 9
     };
 
@@ -330,6 +339,7 @@ public static class GenericItemProperties
     private const int MythalCostRegen1 = 20000;
     private const int MythalCostRegen2 = 30000;
     private const int MythalCostRegen3 = 50000;
+
     public static readonly CraftingCategory Regeneration = new("regeneration")
     {
         Label = "Regeneration",
@@ -363,10 +373,15 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             },
         },
+        PerformValidation = (_, item) =>
+            NWScript.GetItemHasItemProperty(item, NWScript.ITEM_PROPERTY_REGENERATION) == NWScript.TRUE
+                ? PropertyValidationResult.BasePropertyMustBeUnique
+                : PropertyValidationResult.Valid,
         BaseDifficulty = 6
     };
 
     private const int MythalKeenCost = 50000;
+
     public static readonly CraftingCategory Other = new("others")
     {
         Label = "Other Properties",
