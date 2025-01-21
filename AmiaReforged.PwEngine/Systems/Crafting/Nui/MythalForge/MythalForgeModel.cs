@@ -73,7 +73,7 @@ public class MythalForgeModel
     {
         foreach (ChangeListModel.ChangelistEntry change in ChangeListModel.ChangeList())
         {
-            if(change.State == ChangeListModel.ChangeState.Added)
+            if (change.State == ChangeListModel.ChangeState.Added)
             {
                 Item.AddItemProperty(change.Property, EffectDuration.Permanent);
             }
@@ -99,7 +99,8 @@ public class MythalForgeModel
                 }
 
                 property.Selectable = !ActivePropertiesModel.PropertyExistsOnItem(property) &&
-                                      validationResult == PropertyValidationResult.Valid;
+                                      validationResult == PropertyValidationResult.Valid &&
+                                      property.InternalProperty.PowerCost <= RemainingPowers;
             }
         }
     }
