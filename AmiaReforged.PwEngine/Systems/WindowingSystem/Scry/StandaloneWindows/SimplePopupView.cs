@@ -28,7 +28,6 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
                     Border = true,
                     Width = 300,
                     Height = 150,
-                    Encouraged = true
                 },
                 new NuiRow
                 {
