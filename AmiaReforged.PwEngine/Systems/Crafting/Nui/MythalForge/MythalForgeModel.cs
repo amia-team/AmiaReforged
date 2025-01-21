@@ -49,7 +49,7 @@ public class MythalForgeModel
                 _ => 0
             });
 
-            return remaining;
+            return Math.Clamp(remaining, -16, MaxBudget);
         }
     }
 
