@@ -258,6 +258,21 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         Token().SetBindValues(View.ChangelistView.Colors, entryColors);
     }
 
+    private void UpdateGoldCost()
+    {
+        Token().SetBindValue(View.GoldCost, _model.ChangeListModel.TotalGpCost().ToString());
+
+        bool canAfford = _model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
+        Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
+        Token().SetBindValue(View.ApplyEnabled, canAfford && _model.CanMakeCheck());
+    }
+
+    private void UpdateDifficultyClass()
+    {
+        Token().SetBindValue(View.DifficultyClass, _model.GetCraftingDifficulty().ToString());
+        Token().SetBindValue(View.SkillName, _model.GetSkillName());
+    }
+
     /// <summary>
     /// Creates the NUI window if it does not already exist.
     /// </summary>
@@ -285,21 +300,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         UpdateView();
 
         _creating = false;
-    }
-
-    private void UpdateGoldCost()
-    {
-        Token().SetBindValue(View.GoldCost, _model.ChangeListModel.TotalGpCost().ToString());
-
-        bool canAfford = _model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
-        Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
-        Token().SetBindValue(View.ApplyEnabled, canAfford && _model.CanMakeCheck());
-    }
-
-    private void UpdateDifficultyClass()
-    {
-        Token().SetBindValue(View.DifficultyClass, _model.GetCraftingDifficulty().ToString());
-        Token().SetBindValue(View.SkillName, _model.GetSkillName());
     }
 
     /// <summary>
