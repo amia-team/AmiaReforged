@@ -111,6 +111,8 @@ public class MythalCategoryModel
             
             string resRefForMythal = ItemPropertyHelper.TierToResRef(key);
             
+            Log.Info("ResRef: " + resRefForMythal);
+            
             List<NwItem> mythals = player.LoginCreature.Inventory.Items.Where(i => i.ResRef == resRefForMythal).ToList();
             
             for(int i = 0; i < amountToTake; i++)
