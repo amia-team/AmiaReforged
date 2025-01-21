@@ -54,7 +54,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void PreventMunchkins(ModuleEvents.OnUnacquireItem obj)
     {
         if (!obj.Item.ResRef.Contains("mythal")) return;
-        
+
         StandAloneWindow
             .Builder()
             .For()
@@ -63,8 +63,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             .WithTitle("Don't Try That")
             .WithMessage("Don't try to game the system by dropping the mythals. You will lose all progress.")
             .Build()
-            .Presenter
-            .Create();
+            .Open();
 
         NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName + " tried to drop a mythal.");
         Close();
@@ -201,8 +200,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                 .WithMessage(
                     "This item is stronger than what a Mythal Forge can create. Take care not to weaken the item when editing it!")
                 .Build()
-                .Presenter
-                .Create();
+                .Open();
         }
     }
 

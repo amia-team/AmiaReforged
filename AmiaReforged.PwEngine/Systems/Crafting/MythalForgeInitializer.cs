@@ -88,8 +88,7 @@ public class MythalForgeInitializer
                 .WithTitle("Mythal Forge")
                 .WithMessage("Item not supported by Mythal forge")
                 .Build()
-                .Presenter
-                .Create();
+                .Open();
 
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
 

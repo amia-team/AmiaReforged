@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -128,5 +129,13 @@ public sealed class WindowDirector : IDisposable
     {
         _activeWindows.TryGetValue(player, out List<IScryPresenter>? playerWindows);
         return playerWindows?.Any(w => w.GetType() == type) ?? false;
+    }
+
+    public void OpenPopup(NwPlayer nwPlayer, string title, string message)
+    {
+        SimplePopupView view = new(nwPlayer, message, title);
+        SimplePopupPresenter presenter = view.Presenter;
+        
+        OpenWindow(presenter);
     }
 }
