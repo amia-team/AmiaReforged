@@ -13,15 +13,22 @@ public sealed class WindowDirector : IDisposable
     private readonly Dictionary<NuiWindowToken, IScryPresenter> _tokens = new();
     private readonly Dictionary<NwPlayer, List<IScryPresenter>> _activeWindows = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WindowDirector"/> class.
+    /// Registers event handlers for client enter, client leave, and NUI events.
+    /// </summary>
     public WindowDirector()
     {
         NwModule.Instance.OnClientEnter += RegisterPlayer;
         NwModule.Instance.OnClientLeave += PurgeWindows;
-
-        NwModule.Instance.OnNuiEvent += HandleOpenClose;
+        NwModule.Instance.OnNuiEvent += HandleNuiEvents;
     }
 
-    private void HandleOpenClose(ModuleEvents.OnNuiEvent obj)
+    /// <summary>
+    /// Passes NUI events to the relevant Presenter. If the event is a close event, the window is removed.
+    /// </summary>
+    /// <param name="obj">The NUI event object containing details about the event.</param>
+    private void HandleNuiEvents(ModuleEvents.OnNuiEvent obj)
     {
         switch (obj.EventType)
         {
@@ -45,17 +52,29 @@ public sealed class WindowDirector : IDisposable
         }
     }
 
+    /// <summary>
+    /// Registers a player when they enter the module.
+    /// </summary>
+    /// <param name="obj">The event object containing details about the client enter event.</param>
     private void RegisterPlayer(ModuleEvents.OnClientEnter obj)
     {
         _activeWindows.Add(obj.Player, new List<IScryPresenter>());
     }
 
+    /// <summary>
+    /// Purges windows associated with a player when they leave the module.
+    /// </summary>
+    /// <param name="obj">The event object containing details about the client leave event.</param>
     private void PurgeWindows(ModuleEvents.OnClientLeave obj)
     {
         _activeWindows[obj.Player].ForEach(w => w.Close());
         _activeWindows.Remove(obj.Player);
     }
 
+    /// <summary>
+    /// Opens a new window and associates it with the player.
+    /// </summary>
+    /// <param name="window">The window presenter to be opened.</param>
     public void OpenWindow(IScryPresenter window)
     {
         window.Initialize();
@@ -65,6 +84,11 @@ public sealed class WindowDirector : IDisposable
         playerWindows?.Add(window);
     }
 
+    /// <summary>
+    /// Closes a window of a specific type for a player.
+    /// </summary>
+    /// <param name="player">The player whose window is to be closed.</param>
+    /// <param name="type">The type of the window to be closed.</param>
     public void CloseWindow(NwPlayer player, Type type)
     {
         if (!IsWindowOpen(player, type)) return;
@@ -81,6 +105,9 @@ public sealed class WindowDirector : IDisposable
         }
     }
 
+    /// <summary>
+    /// Disposes the WindowDirector, closing all active windows and clearing resources.
+    /// </summary>
     public void Dispose()
     {
         foreach (List<IScryPresenter> windows in _activeWindows.Values)
@@ -91,6 +118,12 @@ public sealed class WindowDirector : IDisposable
         _activeWindows.Clear();
     }
 
+    /// <summary>
+    /// Checks if a window of a specific type is open for a player.
+    /// </summary>
+    /// <param name="player">The player to check for open windows.</param>
+    /// <param name="type">The type of the window to check.</param>
+    /// <returns>True if the window is open, otherwise false.</returns>
     public bool IsWindowOpen(NwPlayer player, Type type)
     {
         _activeWindows.TryGetValue(player, out List<IScryPresenter>? playerWindows);

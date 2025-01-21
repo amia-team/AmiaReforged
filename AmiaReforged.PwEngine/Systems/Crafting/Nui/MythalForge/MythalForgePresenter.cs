@@ -47,8 +47,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         View = view;
         _player = player;
         _creating = false;
-
-
     }
 
     public override void HandleInput(ModuleEvents.OnNuiEvent obj)
