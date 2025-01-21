@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using Anvil;
+using Anvil.API;
 using Anvil.Services;
 using NLog;
 
@@ -21,7 +22,15 @@ public class StandaloneWindowBuilder : IWindowBuilder, IWindowTypeStage
 
     public ISimplePopupBuilder SimplePopup()
     {
-        return new SimplePopupBuilder();
+        InjectionService? service = AnvilCore.GetService<InjectionService>();
+        if (service == null)
+        {
+            LogManager.GetCurrentClassLogger().Error("InjectionService is not available");
+            return new SimplePopupBuilder();
+        }
+        
+        SimplePopupBuilder popupBuilder = service.Inject(new SimplePopupBuilder());
+        return popupBuilder;
     }
 }
 
@@ -67,7 +76,6 @@ public class SimplePopupBuilder : ISimplePopupBuilder, IPlayerStage, ITitleStage
             Log.Error("WindowDirector is not injected");
             return;
         }
-
         Director.Value.OpenPopup(_nwPlayer, _title, _message);
     }
 }
