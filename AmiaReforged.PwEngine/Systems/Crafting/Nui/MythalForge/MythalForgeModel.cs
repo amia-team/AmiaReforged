@@ -61,8 +61,14 @@ public class MythalForgeModel
 
     public int GetCraftingDifficulty()
     {
-        return MythalCategoryModel.Categories.Select(c => c.BaseDifficulty).Max() *
-               ChangeListModel.ChangeList().Select(c => c.Property.PowerCost).Max();
+        if(ChangeListModel.ChangeList().Count == 0)
+        {
+            return 0;
+        }
+        
+        int craftingDifficulty = MythalCategoryModel.Categories.Select(c => c.BaseDifficulty).Max() *
+                                 ChangeListModel.ChangeList().Select(c => c.Property.PowerCost).Max();
+        return craftingDifficulty;
     }
 
     public void TryAddProperty(CraftingProperty property)
