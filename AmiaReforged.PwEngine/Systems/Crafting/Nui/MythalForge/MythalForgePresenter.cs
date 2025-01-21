@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCate
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
@@ -12,6 +13,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 /// </summary>
 public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     /// <summary>
     /// The title of the Mythal Forge window.
     /// </summary>
@@ -65,11 +67,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <param name="eventData">The event data for the button click.</param>
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (!_model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
+        if (_model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
                 out MythalCategoryModel.MythalProperty? property))
         {
-            if (property == null) return;
-
+            Log.Info(property.Label);
             _model.TryAddProperty(property.InternalProperty);
         }
 

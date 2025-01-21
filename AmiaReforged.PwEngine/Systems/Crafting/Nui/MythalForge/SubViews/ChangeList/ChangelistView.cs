@@ -8,12 +8,12 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.Change
 /// </summary>
 public class ChangelistView : IScryView
 {
-    public NuiBind<string> PropertyLabel { get; } = new("property_label");
+    public NuiBind<string> PropertyLabel { get; } = new("change_label");
     public NuiBind<string> CostString { get; } = new("cost_string");
     public NuiBind<Color> Colors { get; } = new("changelist_colors");
     public const string RemoveFromChangeList = "remove_from_changelist";
     public string RemoveId => RemoveFromChangeList;
-    public NuiBind<int> PropertyCount { get; } = new("property_count");
+    public NuiBind<int> PropertyCount { get; } = new("change_count");
     public IScryPresenter Presenter { get; }
 
     public ChangelistView(IScryPresenter presenter)
