@@ -296,6 +296,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void Close()
     {
+        NwModule.Instance.OnNuiEvent -= HandleNuiInputs;
         _token.Close();
     }
 
