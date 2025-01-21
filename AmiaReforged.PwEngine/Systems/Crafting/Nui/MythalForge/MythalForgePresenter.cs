@@ -63,8 +63,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             .Build()
             .Open();
 
-        NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName + " tried to drop a mythal.");
-        Close();
+        NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName + " tried to drop a mythal while crafting.");
+        _player.LoginCreature.AcquireItem(obj.Item);
     }
 
     public override void HandleInput(ModuleEvents.OnNuiEvent obj)
