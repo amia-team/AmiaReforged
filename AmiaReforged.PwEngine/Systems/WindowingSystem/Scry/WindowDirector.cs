@@ -10,6 +10,7 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 public sealed class WindowDirector : IDisposable
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly Dictionary<NuiWindowToken, IScryPresenter> _tokens = new();
     private readonly Dictionary<NwPlayer, List<IScryPresenter>> _activeWindows = new();
 
     public WindowDirector()
@@ -22,16 +23,25 @@ public sealed class WindowDirector : IDisposable
 
     private void HandleOpenClose(ModuleEvents.OnNuiEvent obj)
     {
-        if (obj.EventType != NuiEventType.Close) return;
-        _activeWindows.TryGetValue(obj.Token.Player, out List<IScryPresenter>? playerWindows);
-        
-        Log.Info("Attempting to remove window for player: " + obj.Token.Player.LoginCreature?.Name);
-        IScryPresenter? window = playerWindows?.Find(w => w.Token() == obj.Token);
-
-        if (window != null)
+        switch (obj.EventType)
         {
-            Log.Info("Window found, removing.");
-            playerWindows?.Remove(window);
+            case NuiEventType.Close:
+                if (obj.EventType != NuiEventType.Close) return;
+                _activeWindows.TryGetValue(obj.Token.Player, out List<IScryPresenter>? playerWindows);
+
+                Log.Info("Attempting to remove window for player: " + obj.Token.Player.LoginCreature?.Name);
+                IScryPresenter? window = playerWindows?.Find(w => w.Token() == obj.Token);
+
+                if (window != null)
+                {
+                    Log.Info("Window found, removing.");
+                    playerWindows?.Remove(window);
+                }
+                break;
+            default:
+                _tokens.TryGetValue(obj.Token, out IScryPresenter? presenter);
+                presenter?.HandleInput(obj);
+                break;
         }
     }
 
@@ -50,20 +60,25 @@ public sealed class WindowDirector : IDisposable
     {
         window.Initialize();
         window.Create();
-        
+        _tokens.Add(window.Token(), window);
         _activeWindows.TryGetValue(window.Token().Player, out List<IScryPresenter>? playerWindows);
         playerWindows?.Add(window);
     }
-    
+
     public void CloseWindow(NwPlayer player, Type type)
     {
         if (!IsWindowOpen(player, type)) return;
-            
+
         _activeWindows.TryGetValue(player, out List<IScryPresenter>? playerWindows);
-        
+
         IScryPresenter? window = playerWindows?.Find(w => w.GetType() == type);
-        
+
         window?.Close();
+        if (window != null)
+        {
+            playerWindows?.Remove(window);
+            _tokens.Remove(window.Token());
+        }
     }
 
     public void Dispose()

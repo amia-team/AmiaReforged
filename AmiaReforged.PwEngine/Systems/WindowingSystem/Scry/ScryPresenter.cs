@@ -1,4 +1,5 @@
 ﻿using Anvil.API;
+using Anvil.API.Events;
 
 namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 
@@ -23,6 +24,8 @@ public abstract class ScryPresenter<TView> : IScryPresenter where TView : IScryV
     /// Initializes the presenter, setting up any necessary state or resources.
     /// </summary>
     public abstract void Initialize();
+
+    public abstract void HandleInput(ModuleEvents.OnNuiEvent obj);
 
     /// <summary>
     /// Updates the view with any changes that need to be reflected in the user interface.

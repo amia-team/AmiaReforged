@@ -48,14 +48,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         _player = player;
         _creating = false;
 
-        NwModule.Instance.OnNuiEvent += HandleNuiInputs;
+
     }
 
-    /// <summary>
-    /// Handles NUI input events.
-    /// </summary>
-    /// <param name="obj">The NUI event data.</param>
-    private void HandleNuiInputs(ModuleEvents.OnNuiEvent obj)
+    public override void HandleInput(ModuleEvents.OnNuiEvent obj)
     {
         if(obj.Token != _token) return;
         switch (obj.EventType)
@@ -297,7 +293,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void Close()
     {
-        NwModule.Instance.OnNuiEvent -= HandleNuiInputs;
         _token.Close();
     }
 

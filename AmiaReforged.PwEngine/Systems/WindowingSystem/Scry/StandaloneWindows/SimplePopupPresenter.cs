@@ -15,11 +15,10 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
         _player = player;
         _title = title;
         View = view;
-
-        NwModule.Instance.OnNuiEvent += HandleOkButton;
     }
 
-    private void HandleOkButton(ModuleEvents.OnNuiEvent obj)
+
+    public override void HandleInput(ModuleEvents.OnNuiEvent obj)
     {
         if (obj.EventType != NuiEventType.Click) return;
         if (obj.ElementId != "ok_button") return;
