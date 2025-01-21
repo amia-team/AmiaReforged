@@ -50,11 +50,6 @@ public class MythalForgeModel
                 {
                     remaining -= entry.Property.PowerCost;
                 }
-                
-                if (entry.State == ChangeListModel.ChangeState.Removed)
-                {
-                    remaining += entry.Property.PowerCost;
-                }
             }
 
             return Math.Clamp(remaining, -16, MaxBudget);
