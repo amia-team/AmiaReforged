@@ -29,6 +29,7 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
                     Border = true,
                     Width = 300,
                     Height = 150,
+                    Encouraged = true
                 },
                 new NuiRow
                 {
@@ -39,7 +40,8 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
                         {
                             Id = "ok_button",
                             Width = 80f,
-                            Height = 80f
+                            Height = 80f,
+                            Encouraged = true
                         },
                         new NuiSpacer()
                     }

@@ -2,6 +2,7 @@
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using NLog;
@@ -14,6 +15,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// The title of the Mythal Forge window.
     /// </summary>
@@ -28,6 +30,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private NuiWindowToken _token;
     private readonly NwPlayer _player;
     private NuiWindow? _window;
+    private bool _creating;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MythalForgePresenter"/> class.
@@ -43,6 +46,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         _model = new MythalForgeModel(item, propertyData, budget, player);
         View = view;
         _player = player;
+        _creating = false;
 
         NwModule.Instance.OnNuiEvent += HandleNuiInputs;
     }
@@ -112,12 +116,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                     break;
             }
         }
-        
+
         if (eventData.ElementId == MythalForgeView.ApplyChanges)
         {
             int goldCost = _model.ChangeListModel.TotalGpCost();
             _player.LoginCreature?.TakeGold(goldCost);
-            
+
             _model.ApplyChanges();
 
             Close();
@@ -159,7 +163,30 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void UpdateItemPowerBindings()
     {
         Token().SetBindValue(View.MaxPowers, _model.MaxBudget.ToString());
-        Token().SetBindValue(View.RemainingPowers, _model.RemainingPowers.ToString());
+        int remaining = _model.RemainingPowers;
+        Token().SetBindValue(View.RemainingPowers, remaining.ToString());
+
+        if (_creating)
+        {
+            DisplayPopupIfOverBudget(remaining);
+        }
+    }
+
+    private void DisplayPopupIfOverBudget(int remaining)
+    {
+        if (remaining < 0)
+        {
+            StandAloneWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(_player)
+                .WithTitle("Mythal Forge: WARNING!!!!")
+                .WithMessage("This item is stronger than what a Mythal Forge can create. Take care when editing it!")
+                .Build()
+                .Presenter
+                .Create();
+        }
     }
 
     private void UpdateCategoryBindings()
@@ -198,7 +225,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         int count = _model.ChangeListModel.ChangeList().Count;
         Token().SetBindValue(View.ChangelistView.ChangeCount, count);
-        
+
         List<string> entryLabels = _model.ChangeListModel.ChangeList().Select(m => m.Label).ToList();
         Token().SetBindValues(View.ChangelistView.PropertyLabel, entryLabels);
 
@@ -212,7 +239,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             ChangeListModel.ChangeState.Removed => ColorConstants.Red,
             _ => ColorConstants.White
         }).ToList();
-        
+
         Token().SetBindValues(View.ChangelistView.Colors, entryColors);
     }
 
@@ -221,6 +248,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void Create()
     {
+        _creating = true;
         // Create the window if it's null.
         if (_window == null)
         {
@@ -240,6 +268,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         _player.TryCreateNuiWindow(_window, out _token);
 
         UpdateView();
+
+        _creating = false;
     }
 
     private void UpdateGoldCost()
