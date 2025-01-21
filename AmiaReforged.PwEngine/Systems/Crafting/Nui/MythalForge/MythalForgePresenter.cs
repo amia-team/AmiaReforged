@@ -14,8 +14,6 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 /// </summary>
 public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
     /// <summary>
     /// The title of the Mythal Forge window.
     /// </summary>
@@ -88,7 +86,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         if (_model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
                 out MythalCategoryModel.MythalProperty? property))
         {
-            Log.Info(property.Label);
             _model.AddNewProperty(property);
         }
 
@@ -116,8 +113,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         {
             int index = eventData.ArrayIndex;
 
-            Log.Info($"Attempting to remove index {index}");
-            Log.Info("Change list count: " + _model.ChangeListModel.ChangeList().Count);
             ChangeListModel.ChangelistEntry e = _model.ChangeListModel.ChangeList()[index];
 
             switch (e.State)
