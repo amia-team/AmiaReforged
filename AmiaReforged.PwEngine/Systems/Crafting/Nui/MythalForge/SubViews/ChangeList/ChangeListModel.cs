@@ -1,10 +1,12 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using NLog;
+using NLog.Fluent;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 
 public class ChangeListModel
 {
-    private readonly List<ChangelistEntry> _changeList = new();
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly List<ChangelistEntry> _removedProperties = new();
     private readonly List<ChangelistEntry> _addedProperties = new();
@@ -36,8 +38,12 @@ public class ChangeListModel
     }
     
     public List<ChangelistEntry> ChangeList() =>
-        _removedProperties.Concat(_addedProperties).Concat(_changeList).ToList();
+        _removedProperties.Concat(_addedProperties).Concat(_removedProperties).ToList();
 
+    public int TotalGpCost()
+    {
+        return _addedProperties.Sum(p => p.GpCost);
+    }
     public class ChangelistEntry
     {
         public required string Label { get; set; }
@@ -49,7 +55,24 @@ public class ChangeListModel
     public enum ChangeState
     {
         Added,
-        Removed,
-        Replaced
+        Removed
+    }
+
+    public void UndoRemoval(CraftingProperty craftingProperty)
+    {
+        ChangelistEntry? entry = _removedProperties.FirstOrDefault(p => p.Property == craftingProperty);
+        
+        if (entry == null) return;
+
+        _removedProperties.Remove(entry);
+    }
+    
+    public void UndoAddition(CraftingProperty craftingProperty)
+    {
+        ChangelistEntry? entry = _addedProperties.FirstOrDefault(p => p.Property == craftingProperty);
+        
+        if (entry == null) return;
+
+        _addedProperties.Remove(entry);
     }
 }

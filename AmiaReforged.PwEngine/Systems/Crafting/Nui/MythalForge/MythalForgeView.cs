@@ -13,6 +13,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
     public sealed class MythalForgeView : ScryView<MythalForgePresenter>
     {
         public const string ApplyNameButtonId = "apply_name";
+        public const string ApplyChanges = "apply_changes";
 
         /// <summary>
         /// Gets the presenter associated with this view.
@@ -26,6 +27,9 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         
         public NuiBind<string> MaxPowers { get; } = new("max_powers");
         public NuiBind<string> RemainingPowers { get; } = new("remaining_powers");
+        public NuiBind<bool> ApplyEnabled { get; } = new("apply_enabled");
+        public NuiBind<string> GoldCost { get; } = new("gold_cost");
+        public NuiBind<Color> GoldCostColor { get; } = new("gold_cost_color");
 
         /// <summary>
         /// Gets the category view for the Mythal Forge. Public so that the presenter can access it.
@@ -72,10 +76,10 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                 Width = 200f,
                                 Height = 60f
                             },
-                            new NuiButton("Apply")
+                            new NuiButton("Change Name")
                             {
                                 Id = ApplyNameButtonId,
-                                Height = 60f
+                                Height = 60f,
                             },
                             new NuiSpacer(),
                             new NuiLabel("Max Powers:"),
@@ -117,9 +121,30 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                             },
                             new NuiButton("Apply")
                             {
-                                Id = "apply",
+                                Id = ApplyChanges,
                                 Width = 200f,
-                                Height = 60f
+                                Height = 60f,
+                                Enabled = ApplyEnabled
+                            },
+                            new NuiSpacer(),
+                            new NuiGroup
+                            {
+                                Element = new NuiRow()
+                                {
+                                    Children =
+                                    {
+                                        new NuiLabel("Gold Cost:"),
+                                        new NuiGroup()
+                                        {
+                                            Element = new NuiLabel(GoldCost)
+                                            {
+                                                ForegroundColor = GoldCostColor,
+                                                HorizontalAlign = NuiHAlign.Center,
+                                                VerticalAlign = NuiVAlign.Middle
+                                            }
+                                        }
+                                    }
+                                },
                             }
                         }
                     }

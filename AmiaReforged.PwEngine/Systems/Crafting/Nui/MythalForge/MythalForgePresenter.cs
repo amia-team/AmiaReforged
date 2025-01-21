@@ -94,6 +94,34 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             _model.ChangeListModel.AddRemovedProperty(p);
         }
 
+        if (eventData.ElementId == ChangelistView.RemoveFromChangeList)
+        {
+            int index = eventData.ArrayIndex;
+
+            ChangeListModel.ChangelistEntry e = _model.ChangeListModel.ChangeList()[index];
+
+            switch (e.State)
+            {
+                case ChangeListModel.ChangeState.Added:
+                    _model.ChangeListModel.UndoAddition(e.Property);
+                    break;
+                case ChangeListModel.ChangeState.Removed:
+                    _model.ChangeListModel.UndoRemoval(e.Property);
+                    _model.ActivePropertiesModel.RevealProperty(e.Property);
+                    break;
+            }
+        }
+        
+        if (eventData.ElementId == MythalForgeView.ApplyChanges)
+        {
+            int goldCost = _model.ChangeListModel.TotalGpCost();
+            _player.LoginCreature?.TakeGold(goldCost);
+            
+            _model.ApplyChanges();
+
+            Close();
+        }
+
         UpdateView();
     }
 
@@ -119,6 +147,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         UpdateCategoryBindings();
         UpdateItemPropertyBindings();
         UpdateChangeListBindings();
+        UpdateGoldCost();
     }
 
     private void UpdateNameField()
@@ -207,6 +236,15 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         _player.TryCreateNuiWindow(_window, out _token);
 
         UpdateView();
+    }
+
+    private void UpdateGoldCost()
+    {
+        Token().SetBindValue(View.GoldCost, _model.ChangeListModel.TotalGpCost().ToString());
+
+        bool canAfford = _model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
+        Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
+        Token().SetBindValue(View.ApplyEnabled, canAfford);
     }
 
     /// <summary>

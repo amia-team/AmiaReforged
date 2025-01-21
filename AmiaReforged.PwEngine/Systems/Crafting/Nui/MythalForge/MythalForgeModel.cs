@@ -69,6 +69,21 @@ public class MythalForgeModel
                Item.ItemProperties.Any(c => ItemPropertyHelper.GameLabel(c) == property.GameLabel);
     }
 
+    public void ApplyChanges()
+    {
+        foreach (ChangeListModel.ChangelistEntry change in ChangeListModel.ChangeList())
+        {
+            if(change.State == ChangeListModel.ChangeState.Added)
+            {
+                Item.AddItemProperty(change.Property, EffectDuration.Permanent);
+            }
+            else if (change.State == ChangeListModel.ChangeState.Removed)
+            {
+                Item.RemoveItemProperty(change.Property.ItemProperty);
+            }
+        }
+    }
+
     public void RefreshCategories()
     {
         MythalCategoryModel.UpdateFromRemainingBudget(RemainingPowers);
