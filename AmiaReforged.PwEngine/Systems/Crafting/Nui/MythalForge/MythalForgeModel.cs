@@ -81,16 +81,36 @@ public class MythalForgeModel
 
     public void ApplyChanges()
     {
+        bool failed = false;
+        List<ItemProperty> propertiesToRemove = new();
+        foreach (ChangeListModel.ChangelistEntry change in ChangeListModel.ChangeList())
+        {
+            if (change.State != ChangeListModel.ChangeState.Removed) continue;
+            ItemProperty? identical = Item.ItemProperties.FirstOrDefault(p => ItemPropertyHelper.PropertiesAreSame(p, change.Property));
+            if (identical == null)
+            {
+                failed = true;
+                break;
+            }
+            propertiesToRemove.Add(identical);
+        }
+        
+        if (failed)
+        {
+            return;
+        }
+        
+        foreach (ItemProperty property in propertiesToRemove)
+        {
+            Item.RemoveItemProperty(property);
+        }
+        
+        // Handle additions.
         foreach (ChangeListModel.ChangelistEntry change in ChangeListModel.ChangeList())
         {
             if (change.State == ChangeListModel.ChangeState.Added)
             {
                 Item.AddItemProperty(change.Property, EffectDuration.Permanent);
-            }
-            else if (change.State == ChangeListModel.ChangeState.Removed)
-            {
-                LogManager.GetCurrentClassLogger().Info("Removing property: " + change.Property.GuiLabel);
-                Item.RemoveItemProperty(change.Property.ItemProperty);
             }
         }
 
