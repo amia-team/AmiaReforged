@@ -184,7 +184,7 @@ public static class AbilityProperties
                     GoldCost = 0
                 };
 
-                result = current.PropertyParam == compared.PropertyParam
+                result = current.BasePropertyLabel == compared.BasePropertyLabel
                     ? PropertyValidationResult.CannotStackSameSubtype
                     : PropertyValidationResult.Valid;
             }
