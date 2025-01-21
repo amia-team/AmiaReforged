@@ -210,6 +210,18 @@ public class MythalForgeModel
         ActivePropertiesModel.HideProperty(property);
         ChangeListModel.AddRemovedProperty(property);
     }
+
+    public void UndoAddition(CraftingProperty property)
+    {
+        ChangeListModel.UndoAddition(property);
+        MythalCategoryModel.RefundMythal(property.CraftingTier);
+    }
+
+    public void UndoRemoval(CraftingProperty property)
+    {
+        ChangeListModel.UndoRemoval(property);
+        ActivePropertiesModel.RevealProperty(property);
+    }
 }
 
 public class MythalMap

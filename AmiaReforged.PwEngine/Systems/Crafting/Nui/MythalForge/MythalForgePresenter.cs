@@ -118,11 +118,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             switch (e.State)
             {
                 case ChangeListModel.ChangeState.Added:
-                    _model.ChangeListModel.UndoAddition(e.Property);
+                    _model.UndoAddition(e.Property);
                     break;
                 case ChangeListModel.ChangeState.Removed:
-                    _model.ChangeListModel.UndoRemoval(e.Property);
-                    _model.ActivePropertiesModel.RevealProperty(e.Property);
+                    _model.UndoRemoval(e.Property);
                     break;
             }
         }
