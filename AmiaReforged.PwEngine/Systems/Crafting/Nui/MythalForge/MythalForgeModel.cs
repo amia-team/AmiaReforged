@@ -37,17 +37,25 @@ public class MythalForgeModel
     {
         get
         {
-            int remaining = ActivePropertiesModel.Visible
-                .Where(p => !ActivePropertiesModel.Hidden.Contains(p))
-                .Aggregate(MaxBudget,
-                    (current, prop) => current - ItemPropertyHelper.ToCraftingProperty(prop).PowerCost);
+            int remaining = MaxBudget;
 
-            remaining += ChangeListModel.ChangeList().Sum(change => change.State switch
+            foreach (MythalCategoryModel.MythalProperty visibleProperty in ActivePropertiesModel.GetVisibleProperties())
             {
-                ChangeListModel.ChangeState.Added => -change.Property.PowerCost,
-                ChangeListModel.ChangeState.Removed => change.Property.PowerCost,
-                _ => 0
-            });
+                remaining -= visibleProperty.InternalProperty.PowerCost;
+            }
+
+            foreach (ChangeListModel.ChangelistEntry entry in ChangeListModel.ChangeList())
+            {
+                if (entry.State == ChangeListModel.ChangeState.Added)
+                {
+                    remaining -= entry.Property.PowerCost;
+                }
+                
+                if (entry.State == ChangeListModel.ChangeState.Removed)
+                {
+                    remaining += entry.Property.PowerCost;
+                }
+            }
 
             return Math.Clamp(remaining, -16, MaxBudget);
         }
