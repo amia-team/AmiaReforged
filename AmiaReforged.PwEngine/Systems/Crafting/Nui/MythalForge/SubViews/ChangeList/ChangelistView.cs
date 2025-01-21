@@ -13,7 +13,7 @@ public class ChangelistView : IScryView
     public NuiBind<Color> Colors { get; } = new("changelist_colors");
     public const string RemoveFromChangeList = "remove_from_changelist";
     public string RemoveId => RemoveFromChangeList;
-    public NuiBind<int> PropertyCount { get; } = new("change_count");
+    public NuiBind<int> ChangeCount { get; } = new("change_count");
     public IScryPresenter Presenter { get; }
 
     public ChangelistView(IScryPresenter presenter)
@@ -46,7 +46,7 @@ public class ChangelistView : IScryView
         {
             Children =
             {
-                new NuiList(cells, PropertyCount)
+                new NuiList(cells, ChangeCount)
             },
             Width = 400f,
             Height = 400f
