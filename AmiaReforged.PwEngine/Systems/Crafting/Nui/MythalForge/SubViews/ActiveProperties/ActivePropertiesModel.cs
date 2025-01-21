@@ -57,4 +57,14 @@ public class ActivePropertiesModel
 
     public bool PropertyExistsOnItem(CraftingProperty c) =>
         Visible.Any(property => ItemPropertyHelper.PropertiesAreSame(c, property));
+
+    public void UndoAllChanges()
+    {
+        foreach (CraftingProperty property in Hidden)
+        {
+            Visible.Add(property);
+        }
+        
+        Hidden.Clear();
+    }
 }

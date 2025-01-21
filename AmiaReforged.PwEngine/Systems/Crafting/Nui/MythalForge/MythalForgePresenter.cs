@@ -47,6 +47,27 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         View = view;
         _player = player;
         _creating = false;
+
+        if (player.LoginCreature != null) player.LoginCreature.OnUnacquireItem += PreventMunchkins;
+    }
+
+    private void PreventMunchkins(ModuleEvents.OnUnacquireItem obj)
+    {
+        if (!obj.Item.ResRef.Contains("mythal")) return;
+        
+        StandAloneWindow
+            .Builder()
+            .For()
+            .SimplePopup()
+            .WithPlayer(Token().Player)
+            .WithTitle("Don't Try That")
+            .WithMessage("Don't try to game the system by dropping the mythals. You will lose all progress.")
+            .Build()
+            .Presenter
+            .Create();
+
+        NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName + " tried to drop a mythal.");
+        Close();
     }
 
     public override void HandleInput(ModuleEvents.OnNuiEvent obj)
@@ -69,7 +90,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                 out MythalCategoryModel.MythalProperty? property))
         {
             Log.Info(property.Label);
-            _model.TryAddProperty(property.InternalProperty);
+            _model.AddNewProperty(property);
         }
 
         if (eventData.ElementId == MythalForgeView.ApplyNameButtonId)
@@ -89,8 +110,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             int index = eventData.ArrayIndex;
             MythalCategoryModel.MythalProperty p = _model.ActivePropertiesModel.GetVisibleProperties()[index];
 
-            _model.ActivePropertiesModel.HideProperty(p);
-            _model.ChangeListModel.AddRemovedProperty(p);
+            _model.RemoveActiveProperty(p);
         }
 
         if (eventData.ElementId == ChangelistView.RemoveFromChangeList)
@@ -277,7 +297,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
         Token().SetBindValue(View.ApplyEnabled, canAfford && _model.CanMakeCheck());
     }
-    
+
     private void UpdateDifficultyClass()
     {
         Token().SetBindValue(View.DifficultyClass, _model.GetCraftingDifficulty().ToString());
@@ -289,6 +309,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void Close()
     {
+        if (_token.Player.LoginCreature != null) _token.Player.LoginCreature.OnUnacquireItem -= PreventMunchkins;
         _token.Close();
     }
 

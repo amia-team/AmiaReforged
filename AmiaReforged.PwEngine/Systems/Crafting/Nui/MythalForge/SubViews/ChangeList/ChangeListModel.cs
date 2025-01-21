@@ -88,4 +88,10 @@ public class ChangeListModel
 
         _addedProperties.Remove(entry);
     }
+
+    public void UndoAllChanges()
+    {
+        _addedProperties.Clear();
+        _removedProperties.Clear();
+    }
 }

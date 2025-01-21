@@ -17,11 +17,13 @@ public class MythalForgeModel
 
     public NwItem Item { get; }
     private readonly CraftingBudgetService _budget;
+    private readonly NwPlayer _player;
 
     public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player)
     {
         Item = item;
         _budget = budget;
+        _player = player;
 
         int baseType = NWScript.GetBaseItemType(item);
         IReadOnlyList<CraftingCategory> categories = data.Properties[baseType];
@@ -71,9 +73,10 @@ public class MythalForgeModel
         return craftingDifficulty;
     }
 
-    public void TryAddProperty(CraftingProperty property)
+    public void AddNewProperty(CraftingProperty property)
     {
         ChangeListModel.AddNewProperty(property);
+        MythalCategoryModel.ConsumeMythal(property.CraftingTier);
     }
 
     private bool PropertyIsInvalid(CraftingProperty property)
@@ -182,6 +185,34 @@ public class MythalForgeModel
     public bool CanMakeCheck()
     {
         return NWScript.GetSkillRank(GetSkill(), NWScript.OBJECT_SELF) >= GetCraftingDifficulty();
+    }
+    
+    public void RemoveActiveProperty(CraftingProperty property)
+    {
+        ActivePropertiesModel.HideProperty(property);
+        ChangeListModel.AddRemovedProperty(property);
+    }
+    
+    public void RevealProperty(CraftingProperty property)
+    {
+        ActivePropertiesModel.RevealProperty(property);
+    }
+    
+    public void UndoAllChanges()
+    {
+        ChangeListModel.UndoAllChanges();
+        ActivePropertiesModel.UndoAllChanges();
+    }
+    
+    public void UndoRemoval(CraftingProperty property)
+    {
+        ChangeListModel.UndoRemoval(property);
+    }
+    
+    public void UndoAddition(CraftingProperty property)
+    {
+        ChangeListModel.UndoAddition(property);
+        MythalCategoryModel.RefundMythal(property.CraftingTier);
     }
 }
 

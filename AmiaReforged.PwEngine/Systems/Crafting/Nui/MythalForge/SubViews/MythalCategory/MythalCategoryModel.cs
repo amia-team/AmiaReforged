@@ -70,12 +70,30 @@ public class MythalCategoryModel
 
         foreach (MythalProperty property in properties)
         {
+            int mythalsLeft = _mythals.Map[property.InternalProperty.CraftingTier];
             property.Selectable = property.InternalProperty.PowerCost <= remainingBudget ||
-                                  property.InternalProperty.PowerCost == 0;
+                                  property.InternalProperty.PowerCost == 0 || mythalsLeft > 0;
 
             property.Color = property.Selectable ? ColorConstants.White : ColorConstants.Red;
 
             property.CostLabelTooltip = property.Selectable ? "Power Cost" : "Too expensive";
+        }
+    }
+
+    public void ConsumeMythal(CraftingTier tier)
+    {
+        if (_mythals.Map.ContainsKey(tier))
+        {
+            if(_mythals.Map[tier] - 1 <= 0) return;
+            _mythals.Map[tier] -= 1;
+        }
+    }
+    
+    public void RefundMythal(CraftingTier tier)
+    {
+        if (_mythals.Map.ContainsKey(tier))
+        {
+            _mythals.Map[tier] += 1;
         }
     }
 
@@ -102,5 +120,10 @@ public class MythalCategoryModel
         {
             return property.InternalProperty;
         }
+    }
+
+    public bool IsMythal(NwItem item)
+    {
+        return item.ResRef.Contains("mythal");
     }
 }
