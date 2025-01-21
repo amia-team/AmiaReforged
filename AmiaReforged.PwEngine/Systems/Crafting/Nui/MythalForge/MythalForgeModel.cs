@@ -58,8 +58,6 @@ public class MythalForgeModel
 
     public void TryAddProperty(CraftingProperty property)
     {
-        if (PropertyIsInvalid(property)) return;
-
         ChangeListModel.AddNewProperty(property);
     }
 

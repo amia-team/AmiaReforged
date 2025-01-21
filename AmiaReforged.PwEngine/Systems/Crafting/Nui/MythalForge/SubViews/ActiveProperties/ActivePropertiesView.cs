@@ -10,10 +10,10 @@ public class ActivePropertiesView : IScryView
     public string RemoveProperty => RemovePropertyConst;
     public IScryPresenter Presenter { get; }
     
-    public NuiBind<string> PropertyNames { get; } = new("property_names");
-    public NuiBind<string> PropertyPowerCosts { get; } = new("property_descriptions");
-    public NuiBind<bool> Removable { get; } = new("property_enabled");
-    public NuiBind<int> PropertyCount { get; } = new("property_count");
+    public NuiBind<string> PropertyNames { get; } = new("ip_names");
+    public NuiBind<string> PropertyPowerCosts { get; } = new("ip_power_costs");
+    public NuiBind<bool> Removable { get; } = new("ip_remove");
+    public NuiBind<int> PropertyCount { get; } = new("ip_count");
     
 
     public ActivePropertiesView(IScryPresenter presenter)

@@ -196,6 +196,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private void UpdateChangeListBindings()
     {
+        _model.ChangeListModel.ChangeList().ForEach(p => Log.Info(p.Property.GameLabel));
         List<string> entryLabels = _model.ChangeListModel.ChangeList().Select(m => m.Label).ToList();
         Token().SetBindValues(View.ChangelistView.PropertyLabel, entryLabels);
 
