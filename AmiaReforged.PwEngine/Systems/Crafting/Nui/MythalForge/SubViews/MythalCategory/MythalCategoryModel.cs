@@ -113,7 +113,7 @@ public class MythalCategoryModel
             Log.Info("Key: " + key);
             Log.Info("Current: " + current[key]);
             Log.Info("After Operations: " + _mythals.Map[key]);
-            int amountToTake = current[key] - _mythals.Map[key];
+            int amountToTake = Math.Abs(_mythals.Map[key] - current[key]);
             Log.Info("Amount to take: " + amountToTake);
             if (amountToTake <= 0) continue;
             
