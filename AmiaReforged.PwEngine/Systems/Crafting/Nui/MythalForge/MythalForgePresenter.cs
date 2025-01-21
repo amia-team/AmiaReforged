@@ -53,7 +53,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     public override void HandleInput(ModuleEvents.OnNuiEvent obj)
     {
-        if(obj.Token != _token) return;
         switch (obj.EventType)
         {
             case NuiEventType.Click:
