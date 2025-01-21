@@ -2,12 +2,14 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 
 [ServiceBinding(typeof(WindowDirector))]
 public sealed class WindowDirector : IDisposable
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly Dictionary<NwPlayer, List<IScryPresenter>> _activeWindows = new();
 
     public WindowDirector()
@@ -22,9 +24,15 @@ public sealed class WindowDirector : IDisposable
     {
         if (obj.EventType != NuiEventType.Close) return;
         _activeWindows.TryGetValue(obj.Token.Player, out List<IScryPresenter>? playerWindows);
+        
+        Log.Info("Attempting to remove window for player: " + obj.Token.Player.LoginCreature?.Name);
         IScryPresenter? window = playerWindows?.Find(w => w.Token() == obj.Token);
 
-        if (window != null) playerWindows?.Remove(window);
+        if (window != null)
+        {
+            Log.Info("Window found, removing.");
+            playerWindows?.Remove(window);
+        }
     }
 
     private void RegisterPlayer(ModuleEvents.OnClientEnter obj)
