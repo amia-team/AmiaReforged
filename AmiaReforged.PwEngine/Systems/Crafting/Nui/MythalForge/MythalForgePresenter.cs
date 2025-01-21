@@ -252,7 +252,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         List<Color> entryColors = _model.ChangeListModel.ChangeList().Select(m => m.State switch
         {
-            ChangeListModel.ChangeState.Added => ColorConstants.Green,
+            ChangeListModel.ChangeState.Added => ColorConstants.Lime,
             ChangeListModel.ChangeState.Removed => ColorConstants.Red,
             _ => ColorConstants.White
         }).ToList();
