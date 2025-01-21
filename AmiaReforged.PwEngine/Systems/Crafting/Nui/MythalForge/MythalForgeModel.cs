@@ -63,11 +63,11 @@ public class MythalForgeModel
 
     public int GetCraftingDifficulty()
     {
-        if(ChangeListModel.ChangeList().Count == 0)
+        if (ChangeListModel.ChangeList().Count == 0)
         {
             return 0;
         }
-        
+
         int craftingDifficulty = MythalCategoryModel.Categories.Select(c => c.BaseDifficulty).Max() *
                                  ChangeListModel.ChangeList().Select(c => c.Property.PowerCost).Max();
         return craftingDifficulty;
@@ -98,7 +98,7 @@ public class MythalForgeModel
                 Item.RemoveItemProperty(change.Property.ItemProperty);
             }
         }
-        
+
         MythalCategoryModel.DestroyMythals(_player);
     }
 
@@ -118,7 +118,8 @@ public class MythalForgeModel
 
                 property.Selectable = !ActivePropertiesModel.PropertyExistsOnItem(property) &&
                                       validationResult == PropertyValidationResult.Valid &&
-                                      property.InternalProperty.PowerCost <= RemainingPowers;
+                                      property.InternalProperty.PowerCost <= RemainingPowers &&
+                                      MythalCategoryModel.HasMythals(property.InternalProperty.CraftingTier);
             }
         }
     }
@@ -183,34 +184,34 @@ public class MythalForgeModel
         // Default fall back value
         return NWScript.SKILL_SPELLCRAFT;
     }
-    
+
     public bool CanMakeCheck()
     {
         return NWScript.GetSkillRank(GetSkill(), NWScript.OBJECT_SELF) >= GetCraftingDifficulty();
     }
-    
+
     public void RemoveActiveProperty(CraftingProperty property)
     {
         ActivePropertiesModel.HideProperty(property);
         ChangeListModel.AddRemovedProperty(property);
     }
-    
+
     public void RevealProperty(CraftingProperty property)
     {
         ActivePropertiesModel.RevealProperty(property);
     }
-    
+
     public void UndoAllChanges()
     {
         ChangeListModel.UndoAllChanges();
         ActivePropertiesModel.UndoAllChanges();
     }
-    
+
     public void UndoRemoval(CraftingProperty property)
     {
         ChangeListModel.UndoRemoval(property);
     }
-    
+
     public void UndoAddition(CraftingProperty property)
     {
         ChangeListModel.UndoAddition(property);

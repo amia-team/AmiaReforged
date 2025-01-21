@@ -148,4 +148,9 @@ public class MythalCategoryModel
     {
         return item.ResRef.Contains("mythal");
     }
+
+    public bool HasMythals(CraftingTier internalPropertyCraftingTier)
+    {
+        return _mythals.Map[internalPropertyCraftingTier] > 0;
+    }
 }
