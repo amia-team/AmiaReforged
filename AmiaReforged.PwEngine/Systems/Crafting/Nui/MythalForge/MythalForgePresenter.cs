@@ -57,6 +57,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <param name="obj">The NUI event data.</param>
     private void HandleNuiInputs(ModuleEvents.OnNuiEvent obj)
     {
+        if(obj.Token != _token) return;
         switch (obj.EventType)
         {
             case NuiEventType.Click:
