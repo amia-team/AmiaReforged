@@ -131,7 +131,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void Initialize()
     {
-        // Sets up all of the initial data...Calls the model for this...
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
             Geometry = new NuiRect(500f, 500f, 1000f, 1000f)
