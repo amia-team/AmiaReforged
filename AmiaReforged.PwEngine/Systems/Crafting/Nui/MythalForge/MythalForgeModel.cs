@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCate
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 using NLog;
+using NLog.Fluent;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
@@ -129,6 +130,7 @@ public class MythalForgeModel
                 if (category.PerformValidation != null)
                 {
                     validationResult = category.PerformValidation(property, Item);
+                    LogManager.GetCurrentClassLogger().Info("Validation result: " + validationResult);
                 }
 
                 property.Selectable = !ActivePropertiesModel.PropertyExistsOnItem(property) &&
@@ -226,7 +228,6 @@ public class MythalForgeModel
 
 public class MythalMap
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public Dictionary<CraftingTier, int> Map { get; }
 
     public MythalMap(NwPlayer player)
