@@ -116,11 +116,9 @@ public static class ItemPropertyHelper
         {
             string resRef = item.ResRef;
 
-            Log.Info("Item: " + resRef);
 
             if (!mythalMap.TryGetValue(resRef, out CraftingTier tier)) continue;
 
-            Log.Info("Tier: " + tier);
             mythals[tier] += 1;
         }
 

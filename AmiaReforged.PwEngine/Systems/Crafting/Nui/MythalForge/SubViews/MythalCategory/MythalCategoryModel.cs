@@ -101,12 +101,20 @@ public class MythalCategoryModel
 
     public void DestroyMythals(NwPlayer player)
     {
-        if (player.LoginCreature is null) return;
-        Dictionary<CraftingTier, int> current = ItemPropertyHelper.GetMythals(player);
+        if (player.LoginCreature is null)
+        {
+            Log.Info("Player login creature is null.");
+            return;
+        }
         
+        Dictionary<CraftingTier, int> current = ItemPropertyHelper.GetMythals(player);
         foreach (CraftingTier key in _mythals.Map.Keys)
         {
+            Log.Info("Key: " + key);
+            Log.Info("Current: " + current[key]);
+            Log.Info("After Operations: " + _mythals.Map[key]);
             int amountToTake = current[key] - _mythals.Map[key];
+            Log.Info("Amount to take: " + amountToTake);
             if (amountToTake <= 0) continue;
             
             string resRefForMythal = ItemPropertyHelper.TierToResRef(key);
