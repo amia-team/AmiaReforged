@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 using NLog;
 using NWN.Core;
@@ -119,6 +120,27 @@ public class MythalCategoryModel
         public static implicit operator CraftingProperty(MythalProperty property)
         {
             return property.InternalProperty;
+        }
+    }
+    
+    public void DestroyMythals(NwPlayer player)
+    {
+        if (player.LoginCreature is null) return;
+        Dictionary<CraftingTier, int> current = ItemPropertyHelper.GetMythals(player);
+        
+        foreach (CraftingTier key in _mythals.Map.Keys)
+        {
+            int amountToTake = current[key] - _mythals.Map[key];
+            if (amountToTake <= 0) continue;
+            
+            string resRefForMythal = ItemPropertyHelper.TierToResRef(key);
+            
+            List<NwItem> mythals = player.LoginCreature.Inventory.Items.Where(i => i.ResRef == resRefForMythal).ToList();
+            
+            for(int i = 0; i < amountToTake; i++)
+            {
+                mythals[i].Destroy();
+            }
         }
     }
 

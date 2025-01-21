@@ -126,7 +126,25 @@ public static class ItemPropertyHelper
 
         return mythals;
     }
-    
+
+    public static string TierToResRef(CraftingTier tier)
+    {
+        Dictionary<CraftingTier, string> tierMap = new()
+        {
+            { CraftingTier.Minor, "mythal1" },
+            { CraftingTier.Lesser, "mythal2" },
+            { CraftingTier.Intermediate, "mythal3" },
+            { CraftingTier.Greater, "mythal4" },
+            { CraftingTier.Flawless, "mythal5" },
+            { CraftingTier.Perfect, "mythal6" },
+            { CraftingTier.Divine, "mythal7" },
+        };
+        
+        tierMap.TryGetValue(tier, out string? t);
+        
+        return t ?? "";
+    }
+
     public static bool PropertiesAreSame(ItemProperty property1, ItemProperty property2)
     {
         return property1.Property == property2.Property &&

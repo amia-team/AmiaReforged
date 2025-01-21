@@ -98,6 +98,8 @@ public class MythalForgeModel
                 Item.RemoveItemProperty(change.Property.ItemProperty);
             }
         }
+        
+        MythalCategoryModel.DestroyMythals(_player);
     }
 
     public void RefreshCategories()
@@ -151,7 +153,7 @@ public class MythalForgeModel
         return "Spellcraft";
     }
 
-    public int GetSkill()
+    private int GetSkill()
     {
         int baseType = NWScript.GetBaseItemType(Item);
         if (ItemTypeConstants.EquippableItems().Contains(baseType))
