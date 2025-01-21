@@ -86,7 +86,7 @@ public class MythalCategoryModel
     {
         if (_mythals.Map.ContainsKey(tier))
         {
-            if(_mythals.Map[tier] - 1 <= 0) return;
+            if(_mythals.Map[tier] - 1 < 0) return;
             _mythals.Map[tier] -= 1;
         }
     }
