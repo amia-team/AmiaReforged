@@ -98,7 +98,7 @@ public class MythalForgeModel
                     validationResult = category.PerformValidation(property, Item);
                 }
 
-                property.Selectable = ActivePropertiesModel.PropertyExistsOnItem(property) ||
+                property.Selectable = !ActivePropertiesModel.PropertyExistsOnItem(property) &&
                                       validationResult == PropertyValidationResult.Valid;
             }
         }
