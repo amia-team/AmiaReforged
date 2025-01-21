@@ -58,7 +58,7 @@ public static class AttackBonusProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
-
+        BaseDifficulty = 5,
         PerformValidation = (_, i) =>
         {
             return i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.AttackBonus)
@@ -119,6 +119,7 @@ public static class AttackBonusProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
+        BaseDifficulty = 8,
         PerformValidation = (_, i) =>
         {
             return i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.EnhancementBonus)

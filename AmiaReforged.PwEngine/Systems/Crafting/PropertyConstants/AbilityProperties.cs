@@ -163,6 +163,7 @@ public static class AbilityProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
+        BaseDifficulty = 5,
         PerformValidation = (c, i) =>
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;

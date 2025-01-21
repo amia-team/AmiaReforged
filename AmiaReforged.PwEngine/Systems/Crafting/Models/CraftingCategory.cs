@@ -13,6 +13,8 @@ public class CraftingCategory
     }
 
     public NuiBind<bool> ShowGroup { get; set; }
+    
+    public int BaseDifficulty { get; set; }
 
     public NuiBind<int> ComboSelection { get; set; }
     public required string Label { get; set; }

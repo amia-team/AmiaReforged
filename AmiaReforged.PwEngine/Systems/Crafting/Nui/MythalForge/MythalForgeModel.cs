@@ -59,6 +59,12 @@ public class MythalForgeModel
     public IEnumerable<MythalCategoryModel.MythalProperty> VisibleProperties =>
         ActivePropertiesModel.GetVisibleProperties();
 
+    public int GetCraftingDifficulty()
+    {
+        return MythalCategoryModel.Categories.Select(c => c.BaseDifficulty).Max() *
+               ChangeListModel.ChangeList().Select(c => c.Property.PowerCost).Max();
+    }
+
     public void TryAddProperty(CraftingProperty property)
     {
         ChangeListModel.AddNewProperty(property);
@@ -104,6 +110,72 @@ public class MythalForgeModel
                                       property.InternalProperty.PowerCost <= RemainingPowers;
             }
         }
+    }
+
+    public string GetSkillName()
+    {
+        int baseType = NWScript.GetBaseItemType(Item);
+        if (ItemTypeConstants.EquippableItems().Contains(baseType))
+        {
+            return baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
+                or NWScript.BASE_ITEM_LARGESHIELD or NWScript.BASE_ITEM_TOWERSHIELD or NWScript.BASE_ITEM_GLOVES
+                or NWScript.BASE_ITEM_BRACER or NWScript.BASE_ITEM_BELT
+                ? "Craft Armor"
+                : "Spellcraft";
+        }
+
+        if (ItemTypeConstants.RangedWeapons().Contains(baseType))
+        {
+            return "Craft Weapon";
+        }
+
+        if (ItemTypeConstants.ThrownWeapons().Contains(baseType))
+        {
+            return "Craft Weapon";
+        }
+
+        if (ItemTypeConstants.Ammo().Contains(baseType))
+        {
+            return "Craft Weapon";
+        }
+
+        return "Spellcraft";
+    }
+
+    public int GetSkill()
+    {
+        int baseType = NWScript.GetBaseItemType(Item);
+        if (ItemTypeConstants.EquippableItems().Contains(baseType))
+        {
+            return baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
+                or NWScript.BASE_ITEM_LARGESHIELD or NWScript.BASE_ITEM_TOWERSHIELD or NWScript.BASE_ITEM_GLOVES
+                or NWScript.BASE_ITEM_BRACER or NWScript.BASE_ITEM_BELT
+                ? NWScript.SKILL_CRAFT_ARMOR
+                : NWScript.SKILL_SPELLCRAFT;
+        }
+
+        if (ItemTypeConstants.RangedWeapons().Contains(baseType))
+        {
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+
+        if (ItemTypeConstants.ThrownWeapons().Contains(baseType))
+        {
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+
+        if (ItemTypeConstants.Ammo().Contains(baseType))
+        {
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+
+        // Default fall back value
+        return NWScript.SKILL_SPELLCRAFT;
+    }
+    
+    public bool CanMakeCheck()
+    {
+        return NWScript.GetSkillRank(GetSkill(), NWScript.OBJECT_SELF) >= GetCraftingDifficulty();
     }
 }
 

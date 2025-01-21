@@ -246,7 +246,8 @@ public static class DamageProperties
                 GoldCost = MythalCost1D8,
                 CraftingTier = CraftingTier.Greater
             }
-        }
+        },
+        BaseDifficulty = 10
     };
 
     /// <summary>
@@ -480,7 +481,8 @@ public static class DamageProperties
                 GoldCost = MythalCost2D4,
                 CraftingTier = CraftingTier.Greater
             }
-        }
+        },
+        BaseDifficulty = 15
     };
 
     /// <summary>
@@ -740,7 +742,8 @@ public static class DamageProperties
                 GuiLabel = "2d6 Sonic",
                 CraftingTier = CraftingTier.Flawless
             }
-        }
+        },
+        BaseDifficulty = 10
     };
 
 
@@ -763,7 +766,8 @@ public static class DamageProperties
                 GuiLabel = "1d8 Massive Criticals",
                 CraftingTier = CraftingTier.Greater
             },
-        }
+        },
+        BaseDifficulty = 15
     };
 
     /// <summary>
@@ -809,7 +813,8 @@ public static class DamageProperties
                 GuiLabel = "+5 Mighty",
                 CraftingTier = CraftingTier.Flawless
             }
-        }
+        },
+        BaseDifficulty = 15
     };
 
     public static readonly CraftingCategory Ammo = new("ammo_damage")
@@ -1040,6 +1045,7 @@ public static class DamageProperties
                 GoldCost = MythalCost1D8,
                 CraftingTier = CraftingTier.Greater
             }
-        }
+        },
+        BaseDifficulty = 10
     };
 }

@@ -225,16 +225,14 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-        }
+        },
+        BaseDifficulty = 15
     };
     
     private const int UniversalSaveCost1 = 10000;
     private const int UniversalSaveCost2 = 15000;
     private const int UniversalSaveCost3 = 30000;
     private const int UniversalSaveCost4 = 50000;
-    private const int UniversalSaveCost5 = 75000;
-    private const int UniversalSaveCost6 = 100000;
-    
 
     public static readonly CraftingCategory UniversalSaves = new("universal_saves")
     {
@@ -288,7 +286,8 @@ public static class SavingThrowProperties
                 GuiLabel = "+6 Universal",
                 CraftingTier = CraftingTier.DreamCoin
             }
-        }
+        },
+        BaseDifficulty = 10
     };
 
     private const int GeneralSaveCost1 = 1000;
@@ -374,6 +373,7 @@ public static class SavingThrowProperties
                 GoldCost = GeneralSaveCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-        }
+        },
+        BaseDifficulty = 8
     };
 }

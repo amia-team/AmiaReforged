@@ -136,7 +136,8 @@ public static class GenericItemProperties
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
             },
-        }
+        },
+        BaseDifficulty = 13
     };
 
     /// <summary>
@@ -171,7 +172,8 @@ public static class GenericItemProperties
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
             },
-        }
+        },
+        BaseDifficulty = 18
     };
 
 
@@ -223,7 +225,8 @@ public static class GenericItemProperties
                 GoldCost = ResistanceCost5,
                 CraftingTier = CraftingTier.Flawless
             }
-        }
+        },
+        BaseDifficulty = 18
     };
 
     private const int AcCost1 = 2000;
@@ -277,7 +280,8 @@ public static class GenericItemProperties
                 GoldCost = AcCost5,
                 CraftingTier = CraftingTier.Flawless
             }
-        }
+        },
+        BaseDifficulty = 9
     };
 
     private const int MythalCostVregen1 = 2000;
@@ -319,7 +323,8 @@ public static class GenericItemProperties
                 GoldCost = MythalCostVregen3,
                 CraftingTier = CraftingTier.Flawless
             },
-        }
+        },
+        BaseDifficulty = 10
     };
 
     private const int MythalCostRegen1 = 20000;
@@ -357,7 +362,8 @@ public static class GenericItemProperties
                 GoldCost = MythalCostRegen3,
                 CraftingTier = CraftingTier.Flawless
             },
-        }
+        },
+        BaseDifficulty = 6
     };
 
     private const int MythalKeenCost = 50000;
@@ -374,6 +380,7 @@ public static class GenericItemProperties
                 GoldCost = MythalKeenCost,
                 CraftingTier = CraftingTier.Perfect
             }
-        }
+        },
+        BaseDifficulty = 15
     };
 }

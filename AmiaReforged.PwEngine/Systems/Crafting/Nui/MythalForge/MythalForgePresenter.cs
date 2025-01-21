@@ -153,6 +153,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         UpdateItemPropertyBindings();
         UpdateChangeListBindings();
         UpdateGoldCost();
+        UpdateDifficultyClass();
     }
 
     private void UpdateNameField()
@@ -182,7 +183,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                 .SimplePopup()
                 .WithPlayer(_player)
                 .WithTitle("Mythal Forge: WARNING!!!!")
-                .WithMessage("This item is stronger than what a Mythal Forge can create. Take care when editing it!")
+                .WithMessage(
+                    "This item is stronger than what a Mythal Forge can create. Take care not to weaken the item when editing it!")
                 .Build()
                 .Presenter
                 .Create();
@@ -278,7 +280,13 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         bool canAfford = _model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
         Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
-        Token().SetBindValue(View.ApplyEnabled, canAfford);
+        Token().SetBindValue(View.ApplyEnabled, canAfford && _model.CanMakeCheck());
+    }
+    
+    private void UpdateDifficultyClass()
+    {
+        Token().SetBindValue(View.DifficultyClass, _model.GetCraftingDifficulty().ToString());
+        Token().SetBindValue(View.SkillName, _model.GetSkillName());
     }
 
     /// <summary>

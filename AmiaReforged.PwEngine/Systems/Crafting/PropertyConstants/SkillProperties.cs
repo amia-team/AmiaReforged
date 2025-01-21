@@ -476,7 +476,8 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             }
-        }
+        },
+        BaseDifficulty = 8,
     };
 
     /// <summary>
@@ -647,6 +648,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             }
-        }
+        },
+        BaseDifficulty = 8,
     };
 }

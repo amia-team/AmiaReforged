@@ -36,7 +36,8 @@ public class MythalCategoryModel
             {
                 Label = category.Label,
                 Properties = new List<MythalProperty>(),
-                PerformValidation = category.PerformValidation
+                PerformValidation = category.PerformValidation,
+                BaseDifficulty = category.BaseDifficulty
             };
 
             foreach (CraftingProperty property in category.Properties)
@@ -84,6 +85,7 @@ public class MythalCategoryModel
         public List<MythalProperty> Properties { get; init; }
         
         public Func<CraftingProperty, NwItem, PropertyValidationResult>? PerformValidation { get; set; }
+        public int BaseDifficulty { get; set; }
     }
 
     public class MythalProperty

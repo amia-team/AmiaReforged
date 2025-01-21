@@ -52,7 +52,8 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             }
-        }
+        },
+        BaseDifficulty = 25
     };
 
     public static readonly CraftingCategory BardBonusSpells = new("bard_bonus_spells")
@@ -116,7 +117,8 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot7,
                 CraftingTier = CraftingTier.Perfect
             }
-        }
+        },
+        BaseDifficulty = 25
     };
 
     public static readonly CraftingCategory BlackguardBonusSpells = new("blackguard_bonus_spells")
@@ -156,7 +158,8 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             }
-        }
+        },
+        BaseDifficulty = 25
     };
 
     public static readonly CraftingCategory ClericBonusSpells = new("cleric_bonus_spells")
@@ -244,7 +247,8 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             }
-        }
+        },
+        BaseDifficulty = 25
     };
 
     public static readonly CraftingCategory DruidBonusSpells = new("druid_bonus_spells")
@@ -332,7 +336,8 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             }
-        }
+        },
+        BaseDifficulty = 25
     };
 
     public static readonly CraftingCategory PaladinBonusSpells = new("paladin_bonus_spells")
@@ -372,7 +377,8 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             }
-        }
+        },
+        BaseDifficulty = 25
     };
 
     public static readonly CraftingCategory RangerBonusSpells = new("ranger_bonus_spells")
@@ -412,7 +418,8 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             }
-        }
+        },
+        BaseDifficulty = 25
     };
 
     public static readonly CraftingCategory SorcererBonusSpells = new("sorcerer_bonus_spells")
@@ -500,7 +507,8 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             }
-        }
+        },
+        BaseDifficulty = 25
     };
 
     public static readonly CraftingCategory WizardBonusSpells = new("wizard_bonus_spells")
@@ -588,6 +596,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             }
-        }
+        },
+        BaseDifficulty = 25
     };
 }

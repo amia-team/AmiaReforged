@@ -30,6 +30,9 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         public NuiBind<bool> ApplyEnabled { get; } = new("apply_enabled");
         public NuiBind<string> GoldCost { get; } = new("gold_cost");
         public NuiBind<Color> GoldCostColor { get; } = new("gold_cost_color");
+        
+        public NuiBind<string> DifficultyClass { get; } = new("difficulty_class");
+        public NuiBind<string> SkillName { get; } = new("skill_name");
 
         /// <summary>
         /// Gets the category view for the Mythal Forge. Public so that the presenter can access it.
@@ -126,7 +129,21 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                 Height = 60f,
                                 Enabled = ApplyEnabled
                             },
-                            new NuiSpacer(),
+                            new NuiGroup()
+                            {
+                                Element = new NuiRow
+                                {
+                                    Children =
+                                    {
+                                        new NuiLabel("Difficulty:"),
+                                        new NuiGroup()
+                                        {
+                                            Element = new NuiLabel(DifficultyClass),
+                                            Tooltip = SkillName
+                                        }
+                                    }
+                                }
+                            },
                             new NuiGroup
                             {
                                 Element = new NuiRow()
