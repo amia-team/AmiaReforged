@@ -21,10 +21,9 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
             {
                 new NuiGroup
                 {
-                    Element = new NuiLabel(_message)
+                    Element = new NuiText(_message)
                     {
-                        HorizontalAlign = NuiHAlign.Center,
-                        VerticalAlign = NuiVAlign.Middle
+                        Scrollbars = NuiScrollbars.Auto
                     },
                     Border = true,
                     Width = 300,
