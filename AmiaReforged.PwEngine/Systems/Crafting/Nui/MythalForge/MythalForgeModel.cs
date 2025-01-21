@@ -89,6 +89,7 @@ public class MythalForgeModel
             }
             else if (change.State == ChangeListModel.ChangeState.Removed)
             {
+                LogManager.GetCurrentClassLogger().Info("Removing property: " + change.Property.GuiLabel);
                 Item.RemoveItemProperty(change.Property.ItemProperty);
             }
         }
