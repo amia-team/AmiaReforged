@@ -26,7 +26,7 @@ public class ActivePropertiesModel
             if (!ItemPropertyHelper.CanBeRemoved(property)) continue;
 
             // Check the existing properties in the categories
-            CraftingProperty? craftingProperty = properties.FirstOrDefault(p => p.ItemProperty == property) ??
+            CraftingProperty? craftingProperty = properties.FirstOrDefault(p => ItemPropertyHelper.PropertiesAreSame(p, property)) ??
                                                  ItemPropertyHelper.ToCraftingProperty(property);
 
             // If the property is in the categories, add it to the list of all properties
