@@ -80,31 +80,37 @@ public class MythalForgeInitializer
             !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
         if (notFound)
         {
-
             StandAloneWindow.Builder()
                 .For()
                 .SimplePopup()
                 .WithPlayer(obj.Player)
-                .WithTitle("Mythal Forge")
+                .WithTitle("Mythal Forge: Notice")
                 .WithMessage("Item not supported by Mythal forge")
-                .Build()
                 .Open();
 
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
 
             NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
-            
+
             //  Closes the inventory window
             obj.Player.OpenInventory();
-            
+
             return;
         }
 
         if (categories == null)
         {
-            obj.Player.SendServerMessage(
-                "Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.",
-                ColorConstants.Red);
+            // obj.Player.SendServerMessage(
+            //     "Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.",
+            //     ColorConstants.Red);
+            
+            StandAloneWindow.Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(obj.Player)
+                .WithTitle("Mythal Forge: Error")
+                .WithMessage("Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.")
+                .Open();
 
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
             NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);

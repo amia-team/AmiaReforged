@@ -34,7 +34,7 @@ public class StandaloneWindowBuilder : IWindowBuilder, IWindowTypeStage
     }
 }
 
-public class SimplePopupBuilder : ISimplePopupBuilder, IPlayerStage, ITitleStage, IMessageStage, IOpenStage
+public class SimplePopupBuilder : ISimplePopupBuilder, IPlayerStage, ITitleStage, IOpenStage
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     // N.B.: This is a special case where we build a fluent API on rails, don't instantiate the fields in the constructor
@@ -42,6 +42,7 @@ public class SimplePopupBuilder : ISimplePopupBuilder, IPlayerStage, ITitleStage
     private NwPlayer _nwPlayer;
     private string _title;
     private string _message;
+    private NuiWindowToken _token;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     [Inject] private Lazy<WindowDirector>? Director { get; set; }
 
@@ -58,17 +59,12 @@ public class SimplePopupBuilder : ISimplePopupBuilder, IPlayerStage, ITitleStage
         return this;
     }
 
-    public IMessageStage WithMessage(string message)
+    public IOpenStage WithMessage(string message)
     {
         _message = message;
         return this;
     }
-
-    public IOpenStage Build()
-    {
-        return this;
-    }
-
+    
     public void Open()
     {
         if (Director == null)
@@ -76,7 +72,20 @@ public class SimplePopupBuilder : ISimplePopupBuilder, IPlayerStage, ITitleStage
             Log.Error("WindowDirector is not injected");
             return;
         }
+        
+        if (_token != default)
+        {
+            Director.Value.OpenPopup(_nwPlayer, _title, _message, _token);
+            return;
+        }
+        
         Director.Value.OpenPopup(_nwPlayer, _title, _message);
+    }
+    
+    public IOpenStage WithToken(NuiWindowToken token)
+    {
+        _token = token;
+        return this;
     }
 }
 
@@ -102,15 +111,11 @@ public interface IPlayerStage
 
 public interface ITitleStage
 {
-    IMessageStage WithMessage(string message);
-}
-
-public interface IMessageStage
-{
-    IOpenStage Build();
+    IOpenStage WithMessage(string message);
 }
 
 public interface IOpenStage
 {
     void Open();
+    IOpenStage WithToken(NuiWindowToken token);
 }

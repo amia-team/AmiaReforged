@@ -12,6 +12,7 @@ public sealed class WindowDirector : IDisposable
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly Dictionary<NuiWindowToken, IScryPresenter> _tokens = new();
+    private readonly Dictionary<NuiWindowToken, List<NuiWindowToken>> _linkedTokens = new();
     private readonly Dictionary<NwPlayer, List<IScryPresenter>> _activeWindows = new();
 
     /// <summary>
@@ -45,6 +46,7 @@ public sealed class WindowDirector : IDisposable
                     Log.Info("Window found, removing.");
                     playerWindows?.Remove(window);
                 }
+
                 break;
             default:
                 _tokens.TryGetValue(obj.Token, out IScryPresenter? presenter);
@@ -82,6 +84,7 @@ public sealed class WindowDirector : IDisposable
         window.Create();
         _tokens.Add(window.Token(), window);
         _activeWindows.TryGetValue(window.Token().Player, out List<IScryPresenter>? playerWindows);
+        _linkedTokens.Add(window.Token(), new List<NuiWindowToken>());
         playerWindows?.Add(window);
     }
 
@@ -98,9 +101,17 @@ public sealed class WindowDirector : IDisposable
 
         IScryPresenter? window = playerWindows?.Find(w => w.GetType() == type);
 
-        window?.Close();
         if (window != null)
         {
+            _linkedTokens.TryGetValue(window.Token(), out List<NuiWindowToken>? linkedTokens);
+
+            linkedTokens?.ForEach(t =>
+            {
+                t.Close();
+                _linkedTokens.Remove(t);
+            });
+
+            window.Close();
             playerWindows?.Remove(window);
             _tokens.Remove(window.Token());
         }
@@ -115,7 +126,7 @@ public sealed class WindowDirector : IDisposable
         {
             windows.ForEach(w => w.Close());
         }
-
+        
         _activeWindows.Clear();
     }
 
@@ -131,11 +142,17 @@ public sealed class WindowDirector : IDisposable
         return playerWindows?.Any(w => w.GetType() == type) ?? false;
     }
 
-    public void OpenPopup(NwPlayer nwPlayer, string title, string message)
+    public void OpenPopup(NwPlayer nwPlayer, string title, string message, NuiWindowToken linkedToken = default)
     {
+        if (linkedToken != default)
+        {
+            _linkedTokens.TryGetValue(linkedToken, out List<NuiWindowToken>? linkedTokens);
+            linkedTokens?.Add(linkedToken);
+        }
+
         SimplePopupView view = new(nwPlayer, message, title);
         SimplePopupPresenter presenter = view.Presenter;
-        
+
         OpenWindow(presenter);
     }
 }
