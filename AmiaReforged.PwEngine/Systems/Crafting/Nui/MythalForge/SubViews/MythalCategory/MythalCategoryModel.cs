@@ -65,6 +65,9 @@ public class MythalCategoryModel
                 Categories.Add(modelCategory);
             }
         }
+        
+        // sort categories alphabetically
+        Categories.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
     }
 
     public void UpdateFromRemainingBudget(int remainingBudget)

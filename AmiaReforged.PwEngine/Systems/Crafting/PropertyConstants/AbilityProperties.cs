@@ -175,7 +175,7 @@ public static class AbilityProperties
             ItemPropertyModel incomingProperty = c;
 
             bool changeListHasIdentical = l.Any(e => ItemPropertyHelper.PropertiesAreSame(e.Property, incomingProperty.Property));
-            bool itemHasIdentical = i.ItemProperties.Any(ip => ItemPropertyHelper.PropertiesAreSame(ip, incomingProperty.Property));
+            bool itemHasIdentical = i.ItemProperties.Any(ip => ItemPropertyHelper.PropertiesAreSame(ip, incomingProperty.Property) && ip.DurationType == EffectDuration.Permanent);
             if(changeListHasIdentical || itemHasIdentical)
             {
                 result = PropertyValidationResult.CannotBeTheSame;
