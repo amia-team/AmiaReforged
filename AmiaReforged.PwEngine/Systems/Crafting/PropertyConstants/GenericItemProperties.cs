@@ -2,6 +2,7 @@
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -22,7 +23,8 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 1,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID, NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Acid",
                 GoldCost = ResistanceCost1,
                 CraftingTier = CraftingTier.Greater
@@ -30,7 +32,8 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 1,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD, NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Cold",
                 GoldCost = ResistanceCost1,
                 CraftingTier = CraftingTier.Greater
@@ -38,7 +41,8 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 1,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL,
+                    NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Electrical",
                 GoldCost = ResistanceCost1,
                 CraftingTier = CraftingTier.Greater
@@ -46,7 +50,8 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 1,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE, NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Fire",
                 GoldCost = ResistanceCost1,
                 CraftingTier = CraftingTier.Greater
@@ -54,7 +59,9 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 1,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC,
+                        NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Sonic",
                 GoldCost = ResistanceCost1,
                 CraftingTier = CraftingTier.Greater
@@ -62,7 +69,9 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID, NWScript.IP_CONST_DAMAGERESIST_10)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID,
+                        NWScript.IP_CONST_DAMAGERESIST_10)!,
                 GuiLabel = "10/- Acid",
                 GoldCost = ResistanceCost2,
                 CraftingTier = CraftingTier.Flawless
@@ -70,7 +79,9 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD, NWScript.IP_CONST_DAMAGERESIST_10)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD,
+                        NWScript.IP_CONST_DAMAGERESIST_10)!,
                 GuiLabel = "10/- Cold",
                 GoldCost = ResistanceCost2,
                 CraftingTier = CraftingTier.Flawless
@@ -78,7 +89,8 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL, NWScript.IP_CONST_DAMAGERESIST_10)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL,
+                    NWScript.IP_CONST_DAMAGERESIST_10)!,
                 GuiLabel = "10/- Electrical",
                 GoldCost = ResistanceCost2,
                 CraftingTier = CraftingTier.Flawless
@@ -86,7 +98,9 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE, NWScript.IP_CONST_DAMAGERESIST_10)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE,
+                        NWScript.IP_CONST_DAMAGERESIST_10)!,
                 GuiLabel = "10/- Fire",
                 GoldCost = ResistanceCost2,
                 CraftingTier = CraftingTier.Flawless
@@ -94,7 +108,9 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC, NWScript.IP_CONST_DAMAGERESIST_10)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC,
+                        NWScript.IP_CONST_DAMAGERESIST_10)!,
                 GuiLabel = "10/- Sonic",
                 GoldCost = ResistanceCost2,
                 CraftingTier = CraftingTier.Flawless
@@ -102,7 +118,9 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 3,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID, NWScript.IP_CONST_DAMAGERESIST_15)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ACID,
+                        NWScript.IP_CONST_DAMAGERESIST_15)!,
                 GuiLabel = "15/- Acid",
                 GoldCost = ResistanceCost2,
                 CraftingTier = CraftingTier.Divine
@@ -110,7 +128,9 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 3,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD, NWScript.IP_CONST_DAMAGERESIST_15)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_COLD,
+                        NWScript.IP_CONST_DAMAGERESIST_15)!,
                 GuiLabel = "15/- Cold",
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
@@ -118,7 +138,8 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 3,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL, NWScript.IP_CONST_DAMAGERESIST_15)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_ELECTRICAL,
+                    NWScript.IP_CONST_DAMAGERESIST_15)!,
                 GuiLabel = "15/- Electrical",
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
@@ -126,7 +147,9 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 3,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE, NWScript.IP_CONST_DAMAGERESIST_15)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_FIRE,
+                        NWScript.IP_CONST_DAMAGERESIST_15)!,
                 GuiLabel = "15/- Fire",
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
@@ -134,11 +157,30 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 3,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC, NWScript.IP_CONST_DAMAGERESIST_15)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SONIC,
+                        NWScript.IP_CONST_DAMAGERESIST_15)!,
                 GuiLabel = "15/- Sonic",
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
             },
+        },
+        PerformValidation = (c, i, l) =>
+        {
+            PropertyValidationResult result = PropertyValidationResult.Valid;
+
+            ItemPropertyModel incoming = new()
+            {
+                Property = c,
+                GoldCost = 0, // We don't care about the cost here.
+            };
+            
+            LogManager.GetCurrentClassLogger().Info($"test: {incoming.Label}");
+            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.DamageResistance) return result;
+            
+            
+            
+            return result;
         },
         BaseDifficulty = 13
     };
@@ -154,7 +196,8 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_BLUDGEONING, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_BLUDGEONING,
+                    NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Bludgeoning",
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
@@ -162,7 +205,9 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_PIERCING, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_PIERCING,
+                        NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Piercing",
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
@@ -170,7 +215,9 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SLASHING, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                ItemProperty =
+                    NWScript.ItemPropertyDamageResistance(NWScript.DAMAGE_TYPE_SLASHING,
+                        NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Slashing",
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
@@ -237,7 +284,7 @@ public static class GenericItemProperties
             {
                 result = PropertyValidationResult.BasePropertyMustBeUnique;
             }
-            
+
             if (i.ItemProperties.Any(p => p.Property.PropertyType == ItemPropertyType.DamageReduction))
             {
                 result = PropertyValidationResult.BasePropertyMustBeUnique;
@@ -410,7 +457,7 @@ public static class GenericItemProperties
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
             if (c.ItemProperty.Property.PropertyType != ItemPropertyType.Regeneration) return result;
-            
+
             // First, check if the property has already been added to the incoming changelist.
             foreach (ChangeListModel.ChangelistEntry entry in list)
             {
