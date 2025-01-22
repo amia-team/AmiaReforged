@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using Anvil.API;
 using Anvil.Services;
+using Microsoft.Extensions.Primitives;
 using NLog;
 using NWN.Core;
 
@@ -161,8 +162,8 @@ public static class ItemPropertyHelper
             return description.ToString();
         }
 
+        description.Append($"Item Property valid? {property.Valid}");
         description.Append(property.Property.GameStrRef.ToString());
-
 
         int subtypepepe = NWScript.GetItemPropertySubType(property);
         description.Append($"Subtype Debug: {subtypepepe}");
