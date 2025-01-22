@@ -163,11 +163,6 @@ public static class ItemPropertyHelper
 
         description.Append(property.Property.GameStrRef.ToString());
 
-        int subty = NWScript.GetItemPropertySubType(property);
-        // if (subty != -1)
-        // {
-            description.Append($" Subtype Const: {subty}");
-        // }
         ItemPropertySubTypeTableEntry? subType = property.SubType;
         if (subType != null)
         {
@@ -183,12 +178,16 @@ public static class ItemPropertyHelper
             {
                 description.Append(' ');
                 description.Append(costTableValue.Name);
+                description.Append(' ');
+                description.Append(costTableValue.Label);
             }
 
             if (param1Value != null)
             {
                 description.Append(' ');
                 description.Append(param1Value.Name);
+                description.Append(' ');
+                description.Append(param1Value.Label);
             }
         }
 
