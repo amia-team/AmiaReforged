@@ -29,4 +29,8 @@ public class ItemPropertyModel
         (Property.Param1TableValue == null ? string.Empty : Property.Param1TableValue.Label) ?? string.Empty;
 
     public required int GoldCost { get; set; }
+
+
+    // implicit operator to map back to ItemProperty
+    public static implicit operator ItemProperty(ItemPropertyModel model) => model.Property;
 }
