@@ -38,12 +38,18 @@ public class ActivePropertiesModel
     {
         Hidden.Add(property);
         Visible.Remove(property);
+        
+        // sort alphabetically
+        Hidden.Sort((a, b) => string.Compare(a.GuiLabel, b.GuiLabel, StringComparison.Ordinal));
     }
 
     public void RevealProperty(CraftingProperty property)
     {
         Hidden.Remove(property);
         Visible.Add(property);
+        
+        // sort alphabetically
+        Visible.Sort((a, b) => string.Compare(a.GuiLabel, b.GuiLabel, StringComparison.Ordinal));
     }
 
     public List<MythalCategoryModel.MythalProperty> GetVisibleProperties()
@@ -57,19 +63,5 @@ public class ActivePropertiesModel
         visibleProperties.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
         
         return visibleProperties;
-    }
-
-
-    public bool PropertyExistsOnItem(CraftingProperty c) =>
-        Visible.Any(property => ItemPropertyHelper.PropertiesAreSame(c, property));
-
-    public void UndoAllChanges()
-    {
-        foreach (CraftingProperty property in Hidden)
-        {
-            Visible.Add(property);
-        }
-        
-        Hidden.Clear();
     }
 }
