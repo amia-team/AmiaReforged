@@ -82,9 +82,11 @@ public sealed class WindowDirector : IDisposable
     {
         window.Initialize();
         window.Create();
+        
         _tokens.Add(window.Token(), window);
         _activeWindows.TryGetValue(window.Token().Player, out List<IScryPresenter>? playerWindows);
         _linkedTokens.Add(window.Token(), new List<NuiWindowToken>());
+        
         playerWindows?.Add(window);
     }
 
