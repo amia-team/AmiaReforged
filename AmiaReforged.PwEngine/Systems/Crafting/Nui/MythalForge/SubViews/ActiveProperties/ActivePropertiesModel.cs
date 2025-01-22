@@ -48,10 +48,15 @@ public class ActivePropertiesModel
 
     public List<MythalCategoryModel.MythalProperty> GetVisibleProperties()
     {
-        return Visible.Select(property => new MythalCategoryModel.MythalProperty
+        List<MythalCategoryModel.MythalProperty> visibleProperties = Visible.Select(property => new MythalCategoryModel.MythalProperty
         {
             Id = Guid.NewGuid().ToString(), Label = property.GuiLabel, Internal = property, Selectable = true
         }).ToList();
+        
+        // sort alphabetically
+        visibleProperties.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
+        
+        return visibleProperties;
     }
 
 
