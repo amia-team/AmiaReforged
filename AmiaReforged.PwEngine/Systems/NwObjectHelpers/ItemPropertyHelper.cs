@@ -164,10 +164,10 @@ public static class ItemPropertyHelper
         description.Append(property.Property.GameStrRef.ToString());
 
         int subty = NWScript.GetItemPropertySubType(property);
-        if (subty != -1)
-        {
+        // if (subty != -1)
+        // {
             description.Append($" Subtype Const: {subty}");
-        }
+        // }
         ItemPropertySubTypeTableEntry? subType = property.SubType;
         if (subType != null)
         {
