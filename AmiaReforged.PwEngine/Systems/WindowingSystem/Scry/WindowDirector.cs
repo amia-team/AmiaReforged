@@ -44,6 +44,7 @@ public sealed class WindowDirector : IDisposable
                 if (window != null)
                 {
                     Log.Info("Window found, removing.");
+                    window.Close();
                     playerWindows?.Remove(window);
                 }
 
