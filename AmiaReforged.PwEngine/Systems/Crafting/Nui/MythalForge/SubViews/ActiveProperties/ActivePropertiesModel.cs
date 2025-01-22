@@ -23,7 +23,7 @@ public class ActivePropertiesModel
 
         foreach (ItemProperty property in item.ItemProperties)
         {
-            if (!ItemPropertyHelper.CanBeRemoved(property)) continue;
+            if (!ItemPropertyHelper.CanBeRemoved(property) && property.DurationType != EffectDuration.Permanent) continue;
 
             // Check the existing properties in the categories
             CraftingProperty? craftingProperty = properties.FirstOrDefault(p => ItemPropertyHelper.PropertiesAreSame(p, property)) ??
