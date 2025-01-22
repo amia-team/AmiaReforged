@@ -165,7 +165,7 @@ public static class ItemPropertyHelper
         ItemPropertySubTypeTableEntry? subType = property.SubType;
         if (subType != null)
         {
-            description.Append($" {subType.Name}");
+            description.Append($" {subType.Label}");
         }
 
         ItemPropertyParamTableEntry? param1Value = property.Param1TableValue;

@@ -180,7 +180,6 @@ public static class GenericItemProperties
             if (c.ItemProperty.Property.PropertyType != ItemPropertyType.DamageResistance) return result;
             
             
-            
             return result;
         },
         BaseDifficulty = 13
