@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 
@@ -154,7 +155,7 @@ public static class ItemPropertyHelper
     
     public static string FullPropertyDescription(ItemProperty property)
     {
-        StringBuilder description = new StringBuilder("");
+        StringBuilder description = new("");
         if (property.Property.GameStrRef == null)
         {
             return description.ToString();
@@ -162,10 +163,15 @@ public static class ItemPropertyHelper
 
         description.Append(property.Property.GameStrRef.ToString());
 
+        int subty = NWScript.GetItemPropertySubType(property);
+        if (subty != -1)
+        {
+            description.Append($" Subtype Const: {subty}");
+        }
         ItemPropertySubTypeTableEntry? subType = property.SubType;
         if (subType != null)
         {
-            description.Append($" {subType.Label}");
+            description.Append($"Subtype Label: {subType.Label} Subtype Name: {subType.Name}");
         }
 
         ItemPropertyParamTableEntry? param1Value = property.Param1TableValue;
