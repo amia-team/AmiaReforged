@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 using NLog;
@@ -86,11 +87,11 @@ public class MythalCategoryModel
     {
         if (_mythals.Map.ContainsKey(tier))
         {
-            if(_mythals.Map[tier] - 1 < 0) return;
+            if (_mythals.Map[tier] - 1 < 0) return;
             _mythals.Map[tier] -= 1;
         }
     }
-    
+
     public void RefundMythal(CraftingTier tier)
     {
         if (_mythals.Map.ContainsKey(tier))
@@ -106,7 +107,7 @@ public class MythalCategoryModel
             Log.Info("Player login creature is null.");
             return;
         }
-        
+
         Dictionary<CraftingTier, int> current = ItemPropertyHelper.GetMythals(player);
         foreach (CraftingTier key in _mythals.Map.Keys)
         {
@@ -116,19 +117,21 @@ public class MythalCategoryModel
             int amountToTake = Math.Abs(_mythals.Map[key] - current[key]);
             Log.Info("Amount to take: " + amountToTake);
             if (amountToTake <= 0) continue;
-            
+
             string resRefForMythal = ItemPropertyHelper.TierToResRef(key);
-            
+
             Log.Info("ResRef: " + resRefForMythal);
-            
-            List<NwItem> mythals = player.LoginCreature.Inventory.Items.Where(i => i.ResRef == resRefForMythal).ToList();
-            
-            for(int i = 0; i < amountToTake; i++)
+
+            List<NwItem> mythals =
+                player.LoginCreature.Inventory.Items.Where(i => i.ResRef == resRefForMythal).ToList();
+
+            for (int i = 0; i < amountToTake; i++)
             {
                 mythals[i].Destroy();
             }
         }
     }
+
     public bool IsMythal(NwItem item)
     {
         return item.ResRef.Contains("mythal");
@@ -143,8 +146,10 @@ public class MythalCategoryModel
     {
         public string Label { get; set; }
         public List<MythalProperty> Properties { get; init; }
-        
-        public Func<CraftingProperty, NwItem, PropertyValidationResult>? PerformValidation { get; set; }
+
+        public Func<CraftingProperty, NwItem, List<ChangeListModel.ChangelistEntry>, PropertyValidationResult>?
+            PerformValidation { get; set; }
+
         public int BaseDifficulty { get; set; }
     }
 
@@ -156,9 +161,9 @@ public class MythalCategoryModel
         public bool Selectable { get; set; }
         public Color Color { get; set; }
         public string CostLabelTooltip { get; set; }
-        
+
         public int Difficulty { get; set; }
-        
+
         // operator for converting to crafting property
         public static implicit operator CraftingProperty(MythalProperty property)
         {

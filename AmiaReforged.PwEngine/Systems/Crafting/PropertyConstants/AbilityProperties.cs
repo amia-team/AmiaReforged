@@ -1,5 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using Anvil.API;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -164,29 +166,24 @@ public static class AbilityProperties
             }
         },
         BaseDifficulty = 5,
-        PerformValidation = (c, i) =>
+        PerformValidation = (c, i,l) =>
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
-
-            foreach (ItemProperty property in i.ItemProperties)
+            if(c.ItemProperty.Property.PropertyType != ItemPropertyType.AbilityBonus) return result;
+            
+            ItemPropertyModel incomingProperty = c;
+            
+            foreach (ChangeListModel.ChangelistEntry entry in l)
             {
-                if (property.Property.PropertyType != ItemPropertyType.AbilityBonus) continue;
-
-                ItemPropertyModel current = new()
+                ItemPropertyModel entryProperty = entry.Property;
+                LogManager.GetCurrentClassLogger().Info($"{entryProperty.Label}, {incomingProperty.Label}\n{entryProperty.PropertyParam}, {incomingProperty.PropertyParam}\nName: {incomingProperty.Property.Param1TableValue?.Name}");
+                if(entryProperty.Label == incomingProperty.Label)
                 {
-                    Property = property,
-                    GoldCost = 0
-                };
-
-                ItemPropertyModel compared = new()
-                {
-                    Property = c.ItemProperty,
-                    GoldCost = 0
-                };
-
-                result = current.BasePropertyLabel == compared.BasePropertyLabel
-                    ? PropertyValidationResult.CannotStackSameSubtype
-                    : PropertyValidationResult.Valid;
+                    result = PropertyValidationResult.CannotBeTheSame;
+                    break;
+                }
+                
+                
             }
 
             return result;

@@ -59,11 +59,23 @@ public static class AttackBonusProperties
             }
         },
         BaseDifficulty = 5,
-        PerformValidation = (_, i) =>
+        PerformValidation = (c, i, l) =>
         {
-            return i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.AttackBonus)
-                ? PropertyValidationResult.BasePropertyMustBeUnique
-                : PropertyValidationResult.Valid;
+            PropertyValidationResult result = PropertyValidationResult.Valid;
+
+            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.AttackBonus) return result;
+            
+            if(l.Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.AttackBonus))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+            
+            if(i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.AttackBonus))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+            
+            return result;
         }
     };
 
@@ -120,11 +132,23 @@ public static class AttackBonusProperties
             }
         },
         BaseDifficulty = 8,
-        PerformValidation = (_, i) =>
+        PerformValidation = (c, i, l) =>
         {
-            return i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.EnhancementBonus)
-                ? PropertyValidationResult.BasePropertyMustBeUnique
-                : PropertyValidationResult.Valid;
+            PropertyValidationResult result = PropertyValidationResult.Valid;
+
+            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.EnhancementBonus) return result;
+            
+            if(l.Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.EnhancementBonus))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+            
+            if(i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.EnhancementBonus))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+            
+            return result;
         }
     };
 }

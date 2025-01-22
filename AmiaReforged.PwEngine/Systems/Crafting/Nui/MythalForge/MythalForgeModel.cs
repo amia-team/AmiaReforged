@@ -129,7 +129,7 @@ public class MythalForgeModel
                 PropertyValidationResult validationResult = PropertyValidationResult.Valid;
                 if (category.PerformValidation != null)
                 {
-                    validationResult = category.PerformValidation(property, Item);
+                    validationResult = category.PerformValidation(property, Item, ChangeListModel.ChangeList());
                     LogManager.GetCurrentClassLogger().Info("Validation result: " + validationResult);
                 }
 

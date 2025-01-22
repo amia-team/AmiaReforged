@@ -1,5 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
+using Anvil.API;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -227,10 +229,22 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
-        PerformValidation = (_, i) =>
-            NWScript.GetItemHasItemProperty(i, NWScript.ITEM_PROPERTY_DAMAGE_REDUCTION) == NWScript.TRUE
-                ? PropertyValidationResult.BasePropertyMustBeUnique
-                : PropertyValidationResult.Valid,
+        PerformValidation = (c, i, l) =>
+        {
+            PropertyValidationResult result = PropertyValidationResult.Valid;
+
+            if (l.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.DamageReduction))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+            
+            if (i.ItemProperties.Any(p => p.Property.PropertyType == ItemPropertyType.DamageReduction))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+
+            return result;
+        },
         BaseDifficulty = 18
     };
 
@@ -286,10 +300,29 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
-        PerformValidation = (_, item) =>
-            NWScript.GetItemHasItemProperty(item, NWScript.ITEM_PROPERTY_AC_BONUS) == NWScript.TRUE
-                ? PropertyValidationResult.BasePropertyMustBeUnique
-                : PropertyValidationResult.Valid,
+        PerformValidation = (c, item, list) =>
+        {
+            PropertyValidationResult result = PropertyValidationResult.Valid;
+            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.AcBonus) return result;
+
+            // First, check if the property has already been added to the incoming changelist.
+            if (list.Any(entry => PropertiesAreSameType(entry.Property, c)))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+
+            // Second, check that the item doesn't already have the property.
+            if (item.ItemProperties.Any(i => i.Property.PropertyType == ItemPropertyType.AcBonus))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+
+            return result;
+
+            // Local function to check if properties are the same type.
+            bool PropertiesAreSameType(CraftingProperty c1, CraftingProperty c2) =>
+                c1.ItemProperty.Property.PropertyType == c2.ItemProperty.Property.PropertyType;
+        },
         BaseDifficulty = 9
     };
 
@@ -373,10 +406,28 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             },
         },
-        PerformValidation = (_, item) =>
-            NWScript.GetItemHasItemProperty(item, NWScript.ITEM_PROPERTY_REGENERATION) == NWScript.TRUE
-                ? PropertyValidationResult.BasePropertyMustBeUnique
-                : PropertyValidationResult.Valid,
+        PerformValidation = (c, item, list) =>
+        {
+            PropertyValidationResult result = PropertyValidationResult.Valid;
+            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.Regeneration) return result;
+            
+            // First, check if the property has already been added to the incoming changelist.
+            foreach (ChangeListModel.ChangelistEntry entry in list)
+            {
+                if (entry.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Regeneration)
+                {
+                    result = PropertyValidationResult.BasePropertyMustBeUnique;
+                    break;
+                }
+            }
+
+            if (item.ItemProperties.Any(i => i.Property.PropertyType == ItemPropertyType.Regeneration))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+
+            return result;
+        },
         BaseDifficulty = 6
     };
 

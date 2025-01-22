@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
+using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models;
 
@@ -20,7 +21,9 @@ public class CraftingCategory
     public required string Label { get; set; }
     public required IReadOnlyList<CraftingProperty> Properties { get; init; }
     
-    // special function that can be defined to determines rules for the category
-    public Func<CraftingProperty, NwItem, PropertyValidationResult>? PerformValidation { get; set; }
+    /// <summary>
+    /// Provides a functional interface to validate a property before it is applied to an item.
+    /// </summary>
+    public Func<CraftingProperty, NwItem, List<ChangeListModel.ChangelistEntry>, PropertyValidationResult>? PerformValidation { get; set; }
     
 }
