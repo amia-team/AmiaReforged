@@ -166,27 +166,50 @@ public static class AbilityProperties
             }
         },
         BaseDifficulty = 5,
-        PerformValidation = (c, i,l) =>
+        PerformValidation = (c, i, l) =>
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
-            if(c.ItemProperty.Property.PropertyType != ItemPropertyType.AbilityBonus) return result;
-            
+            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.AbilityBonus) return result;
+
             ItemPropertyModel incomingProperty = c;
-            
+
             foreach (ChangeListModel.ChangelistEntry entry in l)
             {
                 ItemPropertyModel entryProperty = entry.Property;
-                LogManager.GetCurrentClassLogger().Info($"{entryProperty.Label}, {incomingProperty.Label}\n{entryProperty.PropertyParam}, {incomingProperty.PropertyParam}\nName: {incomingProperty.Property.Param1TableValue?.Name}");
-                if(entryProperty.Label == incomingProperty.Label)
+
+                if (HasSameAbilityType(incomingProperty, entryProperty)) continue;
+
+                result = PropertyValidationResult.CannotStackSameSubtype;
+                break;
+            }
+
+            foreach (ItemProperty p in i.ItemProperties)
+            {
+                ItemPropertyModel itemPropertyEntry = new()
                 {
-                    result = PropertyValidationResult.CannotBeTheSame;
-                    break;
-                }
-                
-                
+                    Property = p,
+                    GoldCost = 0, // We don't care about it here.
+                };
+
+                if (!HasSameAbilityType(incomingProperty, itemPropertyEntry)) continue;
+                result = PropertyValidationResult.CannotStackSameSubtype;
+                break;
             }
 
             return result;
+            
+            bool HasSameAbilityType(ItemPropertyModel model, ItemPropertyModel model2)
+            {
+                string modelLabel = model.Label;
+                string trimmedModel = modelLabel.Replace("Enhancement Bonus: ", "");
+                string modelAbilityType = trimmedModel.Split(" ")[0];
+                
+                string model2Label = model2.Label;
+                string trimmedModel2 = model2Label.Replace("Enhancement Bonus: ", "");
+                string model2AbilityType = trimmedModel2.Split(" ")[0];
+                
+                return modelAbilityType == model2AbilityType;
+            }
         }
     };
 }
