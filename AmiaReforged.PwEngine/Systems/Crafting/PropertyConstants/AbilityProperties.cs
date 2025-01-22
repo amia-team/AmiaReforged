@@ -207,7 +207,7 @@ public static class AbilityProperties
                 string model2Label = model2.Label;
                 string trimmedModel2 = model2Label.Replace("Enhancement Bonus: ", "");
                 string model2AbilityType = trimmedModel2.Split(" ")[0];
-                
+                LogManager.GetCurrentClassLogger().Info($"{model2AbilityType} == {modelAbilityType}");;
                 return modelAbilityType == model2AbilityType;
             }
         }
