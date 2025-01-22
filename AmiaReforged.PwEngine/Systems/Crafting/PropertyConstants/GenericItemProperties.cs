@@ -175,7 +175,7 @@ public static class GenericItemProperties
                 GoldCost = 0, // We don't care about the cost here.
             };
             
-            LogManager.GetCurrentClassLogger().Info($"Game Label: {ItemPropertyHelper.GameLabel(incoming)}");
+            LogManager.GetCurrentClassLogger().Info($"Game Label: {ItemPropertyHelper.FullPropertyDescription(incoming)}");
             LogManager.GetCurrentClassLogger().Info($"test: {incoming.Label}");
             if (c.ItemProperty.Property.PropertyType != ItemPropertyType.DamageResistance) return result;
             

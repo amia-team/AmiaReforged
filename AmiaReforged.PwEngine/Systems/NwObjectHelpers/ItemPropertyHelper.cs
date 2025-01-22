@@ -1,4 +1,5 @@
-﻿using AmiaReforged.PwEngine.Systems.Crafting;
+﻿using System.Text;
+using AmiaReforged.PwEngine.Systems.Crafting;
 using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using Anvil.API;
@@ -149,5 +150,42 @@ public static class ItemPropertyHelper
                property1.SubType == property2.SubType &&
                property1.CostTableValue == property2.CostTableValue &&
                property1.Param1TableValue == property2.Param1TableValue;
+    }
+    
+    public static string FullPropertyDescription(ItemProperty property)
+    {
+        StringBuilder description = new StringBuilder("");
+        if (property.Property.GameStrRef == null)
+        {
+            return description.ToString();
+        }
+
+        description.Append(property.Property.GameStrRef.ToString());
+
+        ItemPropertySubTypeTableEntry? subType = property.SubType;
+        if (subType != null)
+        {
+            description.Append($" {subType.Name}");
+        }
+
+        ItemPropertyParamTableEntry? param1Value = property.Param1TableValue;
+        ItemPropertyCostTableEntry? costTableValue = property.CostTableValue;
+
+        if (param1Value != null || costTableValue != null)
+        {
+            if (costTableValue != null)
+            {
+                description.Append(' ');
+                description.Append(costTableValue.Name);
+            }
+
+            if (param1Value != null)
+            {
+                description.Append(' ');
+                description.Append(param1Value.Name);
+            }
+        }
+
+        return description.ToString();
     }
 }
