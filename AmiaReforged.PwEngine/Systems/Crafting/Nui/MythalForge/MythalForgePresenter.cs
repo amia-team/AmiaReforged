@@ -301,7 +301,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void Close()
     {
-        if (_token.Player.LoginCreature != null) _token.Player.LoginCreature.OnUnacquireItem -= PreventMunchkins;
+        if (_player.LoginCreature != null) _player.LoginCreature.OnUnacquireItem -= PreventMunchkins;
         _token.Close();
     }
 
