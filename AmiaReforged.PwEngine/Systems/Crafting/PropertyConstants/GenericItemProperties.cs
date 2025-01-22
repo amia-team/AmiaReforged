@@ -191,7 +191,7 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 1,
-                ItemProperty = NWScript.ItemPropertyDamageReduction(1, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageReduction(1, NWScript.IP_CONST_DAMAGESOAK_5_HP)!,
                 GuiLabel = "+1 Soak 5 Damage",
                 GoldCost = ResistanceCost1,
                 CraftingTier = CraftingTier.Minor
@@ -199,7 +199,7 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 1,
-                ItemProperty = NWScript.ItemPropertyDamageReduction(2, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageReduction(2, NWScript.IP_CONST_DAMAGESOAK_5_HP)!,
                 GuiLabel = "+2 Soak 5 Damage",
                 GoldCost = ResistanceCost2,
                 CraftingTier = CraftingTier.Lesser
@@ -207,7 +207,7 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 1,
-                ItemProperty = NWScript.ItemPropertyDamageReduction(3, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageReduction(3, NWScript.IP_CONST_DAMAGESOAK_5_HP)!,
                 GuiLabel = "+3 Soak 5 Damage",
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Intermediate
@@ -215,7 +215,7 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 1,
-                ItemProperty = NWScript.ItemPropertyDamageReduction(4, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageReduction(4, NWScript.IP_CONST_DAMAGESOAK_5_HP)!,
                 GuiLabel = "+4 Soak 5 Damage",
                 GoldCost = ResistanceCost4,
                 CraftingTier = CraftingTier.Greater
@@ -223,13 +223,13 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertyDamageReduction(5, 5)!,
+                ItemProperty = NWScript.ItemPropertyDamageReduction(5, NWScript.IP_CONST_DAMAGESOAK_5_HP)!,
                 GuiLabel = "+5 Soak 5 Damage",
                 GoldCost = ResistanceCost5,
                 CraftingTier = CraftingTier.Flawless
             }
         },
-        PerformValidation = (c, i, l) =>
+        PerformValidation = (_, i, l) =>
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
 
