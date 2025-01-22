@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
+using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 using NLog;
 using NWN.Core;
@@ -173,11 +174,19 @@ public static class AbilityProperties
 
             ItemPropertyModel incomingProperty = c;
 
+            bool changeListHasIdentical = l.Any(e => ItemPropertyHelper.PropertiesAreSame(e.Property, incomingProperty.Property));
+            bool itemHasIdentical = i.ItemProperties.Any(ip => ItemPropertyHelper.PropertiesAreSame(ip, incomingProperty.Property));
+            if(changeListHasIdentical || itemHasIdentical)
+            {
+                result = PropertyValidationResult.CannotBeTheSame;
+                return result;
+            }
+            
             foreach (ChangeListModel.ChangelistEntry entry in l)
             {
                 ItemPropertyModel entryProperty = entry.Property;
 
-                if (HasSameAbilityType(incomingProperty, entryProperty)) continue;
+                if (!HasSameAbilityType(incomingProperty, entryProperty)) continue;
 
                 result = PropertyValidationResult.CannotStackSameSubtype;
                 break;

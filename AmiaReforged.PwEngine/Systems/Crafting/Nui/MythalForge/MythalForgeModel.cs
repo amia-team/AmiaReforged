@@ -70,7 +70,7 @@ public class MythalForgeModel
         }
 
         int craftingDifficulty = ChangeListModel.ChangeList().Select(c => c.Difficulty).Max();
-        
+
         return craftingDifficulty;
     }
 
@@ -87,25 +87,27 @@ public class MythalForgeModel
         foreach (ChangeListModel.ChangelistEntry change in ChangeListModel.ChangeList())
         {
             if (change.State != ChangeListModel.ChangeState.Removed) continue;
-            ItemProperty? identical = Item.ItemProperties.FirstOrDefault(p => ItemPropertyHelper.PropertiesAreSame(p, change.Property));
+            ItemProperty? identical =
+                Item.ItemProperties.FirstOrDefault(p => ItemPropertyHelper.PropertiesAreSame(p, change.Property));
             if (identical == null)
             {
                 failed = true;
                 break;
             }
+
             propertiesToRemove.Add(identical);
         }
-        
+
         if (failed)
         {
             return;
         }
-        
+
         foreach (ItemProperty property in propertiesToRemove)
         {
             Item.RemoveItemProperty(property);
         }
-        
+
         // Handle additions.
         foreach (ChangeListModel.ChangelistEntry change in ChangeListModel.ChangeList())
         {
@@ -133,10 +135,12 @@ public class MythalForgeModel
                     LogManager.GetCurrentClassLogger().Info("Validation result: " + validationResult);
                 }
 
-                property.Selectable = !ActivePropertiesModel.PropertyExistsOnItem(property) &&
-                                      validationResult == PropertyValidationResult.Valid &&
-                                      property.Internal.PowerCost <= RemainingPowers &&
-                                      MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
+                bool passesValidation = validationResult == PropertyValidationResult.Valid;
+                bool canAfford = property.Internal.PowerCost <= RemainingPowers;
+                bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
+                property.Selectable = passesValidation &&
+                                      canAfford &&
+                                      hasTheMythals;
             }
         }
     }
