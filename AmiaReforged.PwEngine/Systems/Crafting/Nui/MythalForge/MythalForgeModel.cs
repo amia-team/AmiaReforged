@@ -130,6 +130,8 @@ public class MythalForgeModel
             {
                 PropertyValidationResult validationResult =
                     category.PerformValidation(property, Item, ChangeListModel.ChangeList());
+                
+                LogManager.GetCurrentClassLogger().Info($"Property {property.Internal.GuiLabel} validation result: {validationResult}");
 
                 bool passesValidation = validationResult == PropertyValidationResult.Valid;
                 bool canAfford = property.Internal.PowerCost <= RemainingPowers;
