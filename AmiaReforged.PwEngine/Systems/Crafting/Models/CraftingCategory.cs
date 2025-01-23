@@ -34,7 +34,32 @@ public class CraftingCategory
             return PropertyValidationResult.Valid;
         }
 
+        ItemProperty? propertyInChangeList = changeList.FirstOrDefault(ce =>
+            ce.Property.ItemProperty.Property.PropertyType == property.ItemProperty.Property.PropertyType &&
+            ce.State != ChangeListModel.ChangeState.Removed)?.Property.ItemProperty;
+        if (propertyInChangeList != null)
+        {
+            if (ItemPropertyValidations.SameSubtype(property.ItemProperty, propertyInChangeList))
+            {
+                return PropertyValidationResult.CannotBeTheSame;
+            }
+        }
+
+        ItemProperty? propertyForItem = item.ItemProperties.FirstOrDefault(ip =>
+            ip.Property.PropertyType == property.ItemProperty.Property.PropertyType);
+        if (propertyForItem == null)
+        {
+            return PropertyValidationResult.Valid;
+        }
+
+        if (ItemPropertyValidations.SameSubtype(property.ItemProperty, propertyForItem))
+        {
+            return PropertyValidationResult.CannotBeTheSame;
+        }
+
         // Check if the property is the same as what is on the item or in the changelist
-        return item.ItemProperties.Any(ip => ItemPropertyHelper.PropertiesAreSame(ip, property)) ? PropertyValidationResult.CannotBeTheSame : PropertyValidationResult.Valid;
+        return item.ItemProperties.Any(ip => ItemPropertyHelper.PropertiesAreSame(ip, property))
+            ? PropertyValidationResult.CannotBeTheSame
+            : PropertyValidationResult.Valid;
     };
 }

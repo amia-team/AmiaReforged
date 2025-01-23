@@ -649,6 +649,12 @@ public static class SkillProperties
                 CraftingTier = CraftingTier.Greater
             }
         },
+        PerformValidation = (c, i, l) =>
+        {
+            PropertyValidationResult propertyValidationResult = PropertyValidationResult.Valid;
+            
+            return propertyValidationResult;
+        },
         BaseDifficulty = 8,
     };
 }
