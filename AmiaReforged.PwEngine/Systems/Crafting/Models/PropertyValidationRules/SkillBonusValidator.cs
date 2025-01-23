@@ -7,10 +7,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 [ValidationRuleFor(Property = ItemPropertyType.SkillBonus)]
 public class SkillBonusValidator : IValidationRule
 {
-    private const int MaxPersonalSkills = 2;
-    private const int MaxTotalSkillBonus = 30;
 
-    private List<string> _personalSkills = new List<string>
+    private readonly List<string> _personalSkills = new List<string>
     {
         "Appraise",
         "Bluff",
@@ -64,22 +62,21 @@ public class SkillBonusValidator : IValidationRule
             .Select(SkillBonus.FromProperty)
             .Where(s => _personalSkills.Contains(s.Skill))
             .ToList();
-        
+
         // Combine the two lists
         List<SkillBonus> allPersonalSkills = skillsInChangelist.Concat(skillsInItem).ToList();
-        
+
         // Check if the incoming skill is already in the item properties or changelist
         bool anySkill = allPersonalSkills.Any(x => x.Skill == skillBonus.Skill);
-        
+
         result = anySkill ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        error = anySkill? "Personal skill already exists on this item." : string.Empty;
-        
-        // Check if the incoming skill in addition to the existing skills exceeds the maximum
-        if (allPersonalSkills.Count + 1 > MaxPersonalSkills)
-        {
-            result = ValidationEnum.LimitReached;
-            error = "You can only have two personal skills on an item at a time.";
-        }
+        error = anySkill ? "Personal skill already exists on this item." : string.Empty;
+
+        // Check if any of the existing skills are +5 since there may only be one
+        bool hasMaxSkill = allPersonalSkills.Any(x => x.Bonus == 5) && skillBonus.Bonus == 5;
+
+        result = hasMaxSkill ? ValidationEnum.LimitReached : result;
+        error = hasMaxSkill ? "Free personal skill bonus limit reached." : error;
 
         return new ValidationResult
         {
@@ -94,7 +91,7 @@ public class SkillBonusValidator : IValidationRule
         ValidationEnum result = ValidationEnum.Valid;
         string error = string.Empty;
 
-        
+
         // Get all the skills in the changelist that haven't been removed
         List<SkillBonus> skillsInChangelist = changelistProperties
             .Where(e => e.BasePropertyType == ItemPropertyType.SkillBonus &&
@@ -102,31 +99,23 @@ public class SkillBonusValidator : IValidationRule
             .Select(p => SkillBonus.FromProperty(p.Property))
             .Where(s => !_personalSkills.Contains(s.Skill))
             .ToList();
-        
+
         // Get all the skills in the item properties
         List<SkillBonus> skillsInItem = itemProperties
             .Where(e => e.Property.PropertyType == ItemPropertyType.SkillBonus)
             .Select(SkillBonus.FromProperty)
             .Where(s => !_personalSkills.Contains(s.Skill))
             .ToList();
-        
+
         // Combine the two lists
         List<SkillBonus> allSkills = skillsInChangelist.Concat(skillsInItem).ToList();
-        
+
         // Check if the incoming skill is already in the item properties or changelist
         bool anySkill = allSkills.Any(x => x.Skill == skillBonus.Skill);
-        
+
         result = anySkill ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        error = anySkill? "Skill already exists on this item." : string.Empty;
-        
-        // Now we want to make sure the incoming skill in addition to the existing skills doesn't exceed the maximum skill bonus
-        int totalSkillBonus = allSkills.Sum(s => s.Bonus) + skillBonus.Bonus;
-        if (totalSkillBonus > MaxTotalSkillBonus)
-        {
-            result = ValidationEnum.LimitReached;
-            error = "The cumulative skill bonuses on this item cannot exceed 30.";
-        }
-        
+        error = anySkill ? "Skill already exists on this item." : string.Empty;
+
         return new ValidationResult
         {
             Enum = result,
