@@ -169,18 +169,34 @@ public static class GenericItemProperties
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
 
-            ItemPropertyModel incoming = new()
-            {
-                Property = c,
-                GoldCost = 0, // We don't care about the cost here.
-            };
-            
-            LogManager.GetCurrentClassLogger().Info($"Game Label: {ItemPropertyHelper.FullPropertyDescription(incoming)}");
-            LogManager.GetCurrentClassLogger().Info($"test: {incoming.Label}");
             if (c.ItemProperty.Property.PropertyType != ItemPropertyType.DamageResistance) return result;
             
+            if (l.Any(cl => SameSubtype(c, cl.Property)))
+            {
+                result = PropertyValidationResult.CannotStackSameSubtype;
+            }
+            
+            if (i.ItemProperties.Any(ip => SameSubtype(c, ip)))
+            {
+                result = PropertyValidationResult.CannotStackSameSubtype;
+            }
             
             return result;
+
+            bool SameSubtype(ItemProperty p1, ItemProperty p2)
+            {
+                string p1Label = ItemPropertyHelper.GameLabel(p1);
+                string p2Label = ItemPropertyHelper.GameLabel(p2);
+
+                string drPrefix = "Damage Resistance: ";
+                string removedPrefix1 = p1Label.Replace(drPrefix, "");
+                string removedPrefix2 = p2Label.Replace(drPrefix, "");
+                
+                string[] split1 = removedPrefix1.Split(" ");
+                string[] split2 = removedPrefix2.Split(" ");
+                
+                return split1[0] == split2[0];
+            }
         },
         BaseDifficulty = 13
     };
@@ -222,6 +238,39 @@ public static class GenericItemProperties
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
             },
+        },
+        PerformValidation = (c, i, l) =>
+        {
+            PropertyValidationResult result = PropertyValidationResult.Valid;
+
+            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.DamageResistance) return result;
+            
+            if (l.Any(cl => SameSubtype(c, cl.Property)))
+            {
+                result = PropertyValidationResult.CannotStackSameSubtype;
+            }
+            
+            if (i.ItemProperties.Any(ip => SameSubtype(c, ip)))
+            {
+                result = PropertyValidationResult.CannotStackSameSubtype;
+            }
+            
+            return result;
+
+            bool SameSubtype(ItemProperty p1, ItemProperty p2)
+            {
+                string p1Label = ItemPropertyHelper.GameLabel(p1);
+                string p2Label = ItemPropertyHelper.GameLabel(p2);
+
+                string drPrefix = "Damage Resistance: ";
+                string removedPrefix1 = p1Label.Replace(drPrefix, "");
+                string removedPrefix2 = p2Label.Replace(drPrefix, "");
+                
+                string[] split1 = removedPrefix1.Split(" ");
+                string[] split2 = removedPrefix2.Split(" ");
+                
+                return split1[0] == split2[0];
+            }
         },
         BaseDifficulty = 18
     };
@@ -413,6 +462,27 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             },
         },
+        PerformValidation = (c, i, l) =>
+        {
+            // We only care if there's a Vampiric Regeneration property in the incoming changelist or item
+            PropertyValidationResult result = PropertyValidationResult.Valid;
+            
+            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.RegenerationVampiric) return result;
+            
+            // First, check if the property has already been added to the incoming changelist.
+            if (l.Any(cl => cl.Property.ItemProperty.Property.PropertyType == ItemPropertyType.RegenerationVampiric))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+            
+            // Second, check that the item doesn't already have the property.
+            if (i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.RegenerationVampiric))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+            
+            return result;
+        },
         BaseDifficulty = 10
     };
 
@@ -493,6 +563,24 @@ public static class GenericItemProperties
                 GoldCost = MythalKeenCost,
                 CraftingTier = CraftingTier.Perfect
             }
+        },
+        PerformValidation = (c, i, l) =>
+        {
+            PropertyValidationResult result = PropertyValidationResult.Valid;
+            
+            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.Keen) return result;
+            
+            if (l.Any(cl => cl.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Keen))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+            
+            if (i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.Keen))
+            {
+                result = PropertyValidationResult.BasePropertyMustBeUnique;
+            }
+            
+            return result;
         },
         BaseDifficulty = 15
     };
