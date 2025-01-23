@@ -1,4 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
+using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
+using Anvil.API;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -651,9 +654,17 @@ public static class SkillProperties
         },
         PerformValidation = (c, i, l) =>
         {
-            PropertyValidationResult propertyValidationResult = PropertyValidationResult.Valid;
+            bool propertyRemoved = l.Any(e =>
+                e is { BasePropertyType: ItemPropertyType.SkillBonus, State: ChangeListModel.ChangeState.Removed } && ItemPropertyValidations.SameSubtype(e.Property, c));
+            if (propertyRemoved) return PropertyValidationResult.Valid;
             
-            return propertyValidationResult;
+            bool changeListContainsProperty = l.Any(e =>
+                e.BasePropertyType == ItemPropertyType.SkillBonus && ItemPropertyValidations.SameSubtype(e.Property, c));
+            bool itemContainsProperty = i.ItemProperties.Any(ip => ItemPropertyValidations.SameSubtype(ip, c));
+            
+            bool valid = !changeListContainsProperty && !itemContainsProperty;
+            
+            return valid ? PropertyValidationResult.Valid : PropertyValidationResult.CannotStackSameSubtype;
         },
         BaseDifficulty = 8,
     };

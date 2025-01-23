@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
+using Anvil.API;
 using NLog;
 using NLog.Fluent;
 
@@ -66,6 +67,8 @@ public class ChangeListModel
         public int Difficulty { get; set; }
         public int GpCost { get; set; }
         public ChangeState State { get; set; }
+        
+        public ItemPropertyType BasePropertyType => Property.ItemProperty.Property.PropertyType;
     }
 
     public enum ChangeState
