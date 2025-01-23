@@ -1,7 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
-using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
-using Anvil.API;
 using NLog;
 using NWN.Core;
 
@@ -166,59 +163,6 @@ public static class AbilityProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
-        PropertyType = ItemPropertyType.AbilityBonus,
-        BaseDifficulty = 5,
-        PerformValidation = (c, i, l) =>
-        {
-            PropertyValidationResult result = PropertyValidationResult.Valid;
-            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.AbilityBonus) return result;
-
-            ItemPropertyModel incomingProperty = c;
-
-            bool changeListHasIdentical = l.Any(e => ItemPropertyHelper.PropertiesAreSame(e.Property, incomingProperty.Property));
-            bool itemHasIdentical = i.ItemProperties.Any(ip => ItemPropertyHelper.PropertiesAreSame(ip, incomingProperty.Property) && ip.DurationType == EffectDuration.Permanent);
-            if(changeListHasIdentical || itemHasIdentical)
-            {
-                result = PropertyValidationResult.CannotBeTheSame;
-                return result;
-            }
-            
-            foreach (ChangeListModel.ChangelistEntry entry in l)
-            {
-                ItemPropertyModel entryProperty = entry.Property;
-
-                if (!HasSameAbilityType(incomingProperty, entryProperty)) continue;
-
-                result = PropertyValidationResult.CannotStackSameSubtype;
-                break;
-            }
-
-            foreach (ItemProperty p in i.ItemProperties)
-            {
-                ItemPropertyModel itemPropertyEntry = new()
-                {
-                    Property = p,
-                    GoldCost = 0, // We don't care about it here.
-                };
-
-                if (!HasSameAbilityType(incomingProperty, itemPropertyEntry)) continue;
-                result = PropertyValidationResult.CannotStackSameSubtype;
-                break;
-            }
-
-            return result;
-            
-            bool HasSameAbilityType(ItemPropertyModel model, ItemPropertyModel model2)
-            {
-                string modelLabel = model.Label;
-                string trimmedModel = modelLabel.Replace("Enhancement Bonus: ", "");
-                string modelAbilityType = trimmedModel.Split(" ")[0];
-                
-                string model2Label = model2.Label;
-                string trimmedModel2 = model2Label.Replace("Enhancement Bonus: ", "");
-                string model2AbilityType = trimmedModel2.Split(" ")[0];
-                return modelAbilityType == model2AbilityType;
-            }
-        }
+        BaseDifficulty = 5
     };
 }

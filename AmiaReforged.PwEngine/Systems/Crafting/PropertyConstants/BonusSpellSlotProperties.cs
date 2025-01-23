@@ -1,5 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using Anvil.API;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -54,7 +53,6 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
-        PropertyType = ItemPropertyType.BonusSpellSlotOfLevelN,
         BaseDifficulty = 25
     };
 
@@ -120,7 +118,6 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
-        PropertyType = ItemPropertyType.BonusSpellSlotOfLevelN,
         BaseDifficulty = 25
     };
 
@@ -162,7 +159,6 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
-        PropertyType = ItemPropertyType.BonusSpellSlotOfLevelN,
         BaseDifficulty = 25
     };
 
@@ -252,7 +248,6 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
-        PropertyType = ItemPropertyType.BonusSpellSlotOfLevelN,
         BaseDifficulty = 25
     };
 
@@ -342,7 +337,6 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
-        PropertyType = ItemPropertyType.BonusSpellSlotOfLevelN,
         BaseDifficulty = 25
     };
 
@@ -384,7 +378,6 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
-        PropertyType = ItemPropertyType.BonusSpellSlotOfLevelN,
         BaseDifficulty = 25
     };
 
@@ -426,7 +419,6 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
-        PropertyType = ItemPropertyType.BonusSpellSlotOfLevelN,
         BaseDifficulty = 25
     };
 
@@ -516,7 +508,6 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
-        PropertyType = ItemPropertyType.BonusSpellSlotOfLevelN,
         BaseDifficulty = 25
     };
 
@@ -606,7 +597,6 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
-        PropertyType = ItemPropertyType.BonusSpellSlotOfLevelN,
         BaseDifficulty = 25
     };
 }

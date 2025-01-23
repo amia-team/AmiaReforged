@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
@@ -19,12 +20,15 @@ public class MythalForgeModel
     public NwItem Item { get; }
     private readonly CraftingBudgetService _budget;
     private readonly NwPlayer _player;
+    private readonly PropertyValidator _validator;
 
-    public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player)
+    public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player,
+        PropertyValidator validator)
     {
         Item = item;
         _budget = budget;
         _player = player;
+        _validator = validator;
 
         int baseType = NWScript.GetBaseItemType(item);
         IReadOnlyList<CraftingCategory> categories = data.Properties[baseType];
@@ -128,27 +132,17 @@ public class MythalForgeModel
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
-                PropertyValidationResult validationResult = PropertyValidationResult.Valid;
-                if (category.PerformValidation != null)
-                {
-                    validationResult = category.PerformValidation(property, Item, ChangeListModel.ChangeList());
-                }
+                ValidationResult operation =
+                    _validator.Validate(property, Item.ItemProperties, ChangeListModel.ChangeList());
 
-                bool passesValidation = validationResult == PropertyValidationResult.Valid;
+                bool passesValidation = operation.Result == PropertyValidationResult.Valid;
                 bool canAfford = property.Internal.PowerCost <= RemainingPowers;
                 bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
                 property.Selectable = passesValidation &&
                                       canAfford &&
                                       hasTheMythals;
                 property.CostLabelTooltip = !passesValidation
-                    ? validationResult switch
-                    {
-                        PropertyValidationResult.CannotBeTheSame => "Property already exists on the item.",
-                        PropertyValidationResult.BasePropertyMustBeUnique => "Property already exists on the item.",
-                        PropertyValidationResult.CannotStackSameSubtype =>
-                            "Cannot stack with other properties of this type.",
-                        _ => "BUG: Unknown validation error."
-                    }
+                    ? operation.ErrorMessage ?? "Validation failed."
                     : !canAfford
                         ? "Not enough points left."
                         : !hasTheMythals

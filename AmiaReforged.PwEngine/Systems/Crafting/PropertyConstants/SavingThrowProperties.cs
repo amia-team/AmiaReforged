@@ -1,5 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using Anvil.API;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -227,7 +226,6 @@ public static class SavingThrowProperties
                 CraftingTier = CraftingTier.Intermediate
             },
         },
-        PropertyType = ItemPropertyType.SavingThrowBonusSpecific,
         BaseDifficulty = 15
     };
     
@@ -289,7 +287,6 @@ public static class SavingThrowProperties
                 CraftingTier = CraftingTier.DreamCoin
             }
         },
-        PropertyType = ItemPropertyType.SavingThrowBonusSpecific,
         BaseDifficulty = 10
     };
 
@@ -377,7 +374,6 @@ public static class SavingThrowProperties
                 CraftingTier = CraftingTier.Intermediate
             },
         },
-        PropertyType = ItemPropertyType.SavingThrowBonus,
         BaseDifficulty = 8
     };
 }

@@ -38,7 +38,6 @@ public class MythalCategoryModel
             {
                 Label = category.Label,
                 Properties = new List<MythalProperty>(),
-                PerformValidation = category.PerformValidation,
                 BaseDifficulty = category.BaseDifficulty
             };
 
@@ -149,9 +148,6 @@ public class MythalCategoryModel
     {
         public string Label { get; set; }
         public List<MythalProperty> Properties { get; init; }
-
-        public Func<CraftingProperty, NwItem, List<ChangeListModel.ChangelistEntry>, PropertyValidationResult>? PerformValidation { get; set; }
-
         public int BaseDifficulty { get; set; }
     }
 

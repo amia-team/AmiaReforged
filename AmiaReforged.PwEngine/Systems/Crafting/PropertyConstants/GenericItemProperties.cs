@@ -1,7 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
-using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
-using Anvil.API;
 using NLog;
 using NWN.Core;
 
@@ -165,48 +162,6 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Divine
             },
         },
-        PerformValidation = (c, i, l) =>
-        {
-            PropertyValidationResult result = PropertyValidationResult.Valid;
-
-            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.DamageResistance) return result;
-            
-            // look for the same subtype and see that it wasn't already removed
-            bool wasRemoved = l.Any(cl => SameSubtype(c, cl.Property) && cl.State == ChangeListModel.ChangeState.Removed);
-            if (wasRemoved)
-            {
-                return result;
-            }
-            
-            // We still ignore the property if it was removed.
-            if (l.Any(cl => SameSubtype(c, cl.Property) && cl.State != ChangeListModel.ChangeState.Removed))
-            {
-                result = PropertyValidationResult.CannotStackSameSubtype;
-            }
-            
-            if (i.ItemProperties.Any(ip => SameSubtype(c, ip)))
-            {
-                result = PropertyValidationResult.CannotStackSameSubtype;
-            }
-            
-            return result;
-
-            bool SameSubtype(ItemProperty p1, ItemProperty p2)
-            {
-                string p1Label = ItemPropertyHelper.GameLabel(p1);
-                string p2Label = ItemPropertyHelper.GameLabel(p2);
-
-                string drPrefix = "Damage Resistance: ";
-                string removedPrefix1 = p1Label.Replace(drPrefix, "");
-                string removedPrefix2 = p2Label.Replace(drPrefix, "");
-                
-                string[] split1 = removedPrefix1.Split(" ");
-                string[] split2 = removedPrefix2.Split(" ");
-                
-                return split1[0] == split2[0];
-            }
-        },
-        PropertyType = ItemPropertyType.DamageResistance,
         BaseDifficulty = 13
     };
 
@@ -247,40 +202,6 @@ public static class GenericItemProperties
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
             },
-        },
-        PropertyType = ItemPropertyType.DamageResistance,
-        PerformValidation = (c, i, l) =>
-        {
-            PropertyValidationResult result = PropertyValidationResult.Valid;
-
-            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.DamageResistance) return result;
-            
-            if (l.Any(cl => SameSubtype(c, cl.Property)))
-            {
-                result = PropertyValidationResult.CannotStackSameSubtype;
-            }
-            
-            if (i.ItemProperties.Any(ip => SameSubtype(c, ip)))
-            {
-                result = PropertyValidationResult.CannotStackSameSubtype;
-            }
-            
-            return result;
-
-            bool SameSubtype(ItemProperty p1, ItemProperty p2)
-            {
-                string p1Label = ItemPropertyHelper.GameLabel(p1);
-                string p2Label = ItemPropertyHelper.GameLabel(p2);
-
-                string drPrefix = "Damage Resistance: ";
-                string removedPrefix1 = p1Label.Replace(drPrefix, "");
-                string removedPrefix2 = p2Label.Replace(drPrefix, "");
-                
-                string[] split1 = removedPrefix1.Split(" ");
-                string[] split2 = removedPrefix2.Split(" ");
-                
-                return split1[0] == split2[0];
-            }
         },
         BaseDifficulty = 18
     };
@@ -334,30 +255,6 @@ public static class GenericItemProperties
                 GoldCost = ResistanceCost5,
                 CraftingTier = CraftingTier.Flawless
             }
-        },
-        PropertyType = ItemPropertyType.DamageReduction,
-        PerformValidation = (c, i, l) =>
-        {
-            PropertyValidationResult result = PropertyValidationResult.Valid;
-            if(c.ItemProperty.Property.PropertyType != ItemPropertyType.DamageReduction) return result;
-            
-            bool wasRemoved = l.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.DamageReduction && p.State == ChangeListModel.ChangeState.Removed);
-            if (wasRemoved)
-            {
-                return result;
-            }
-            
-            if (l.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.DamageReduction && p.State != ChangeListModel.ChangeState.Removed))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-
-            if (i.ItemProperties.Any(p => p.Property.PropertyType == ItemPropertyType.DamageReduction))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-
-            return result;
         },
         BaseDifficulty = 18
     };
@@ -414,36 +311,6 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
-        PropertyType = ItemPropertyType.AcBonus,
-        PerformValidation = (c, item, list) =>
-        {
-            PropertyValidationResult result = PropertyValidationResult.Valid;
-            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.AcBonus) return result;
-            
-            bool wasRemoved = list.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.AcBonus && p.State == ChangeListModel.ChangeState.Removed);
-            if (wasRemoved)
-            {
-                return result;
-            }
-            
-            // First, check if the property has already been added to the incoming changelist.
-            if (list.Any(entry => PropertiesAreSameType(entry.Property, c) && entry.State != ChangeListModel.ChangeState.Removed))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-
-            // Second, check that the item doesn't already have the property.
-            if (item.ItemProperties.Any(i => i.Property.PropertyType == ItemPropertyType.AcBonus))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-
-            return result;
-
-            // Local function to check if properties are the same type.
-            bool PropertiesAreSameType(CraftingProperty c1, CraftingProperty c2) =>
-                c1.ItemProperty.Property.PropertyType == c2.ItemProperty.Property.PropertyType;
-        },
         BaseDifficulty = 9
     };
 
@@ -487,35 +354,6 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             },
         },
-        PropertyType = ItemPropertyType.RegenerationVampiric,
-        PerformValidation = (c, i, l) =>
-        {
-            // We only care if there's a Vampiric Regeneration property in the incoming changelist or item
-            PropertyValidationResult result = PropertyValidationResult.Valid;
-            
-            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.RegenerationVampiric) return result;
-            bool propertyWasRemoved = l.Any(cl => cl.Property.ItemProperty.Property.PropertyType == ItemPropertyType.RegenerationVampiric && cl.State == ChangeListModel.ChangeState.Removed);
-            if (propertyWasRemoved)
-            {
-                return result;
-            }
-
-            // First, check if the property has already been added to the incoming changelist.
-            if (l.Any(cl => cl.Property.ItemProperty.Property.PropertyType == ItemPropertyType.RegenerationVampiric && cl.State != ChangeListModel.ChangeState.Removed))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-
-            // If it's on the changelist as removed, then it would be valid to add it again...
-
-            // Second, check that the item doesn't already have the property.
-            if (i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.RegenerationVampiric))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-            
-            return result;
-        },
         BaseDifficulty = 10
     };
 
@@ -556,39 +394,6 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             },
         },
-        PropertyType = ItemPropertyType.Regeneration,
-        PerformValidation = (c, item, list) =>
-        {
-            PropertyValidationResult result = PropertyValidationResult.Valid;
-            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.Regeneration) return result;
-            bool wasRemoved = list.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Regeneration && p.State == ChangeListModel.ChangeState.Removed);
-            
-            if (wasRemoved)
-            {
-                return result;
-            }
-            
-            // First, check if the property has already been added to the incoming changelist.
-            foreach (ChangeListModel.ChangelistEntry entry in list)
-            {
-                if (entry.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Regeneration && entry.State != ChangeListModel.ChangeState.Removed)
-                {
-                    result = PropertyValidationResult.BasePropertyMustBeUnique;
-                    break;
-                }
-                {
-                    result = PropertyValidationResult.BasePropertyMustBeUnique;
-                    break;
-                }
-            }
-
-            if (item.ItemProperties.Any(i => i.Property.PropertyType == ItemPropertyType.Regeneration))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-
-            return result;
-        },
         BaseDifficulty = 6
     };
 
@@ -608,31 +413,6 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
-        PerformValidation = (c, i, l) =>
-        {
-            PropertyValidationResult result = PropertyValidationResult.Valid;
-            
-            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.Keen) return result;
-            
-            bool wasRemoved = l.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Keen && p.State == ChangeListModel.ChangeState.Removed);
-            if (wasRemoved)
-            {
-                return result;
-            }
-            
-            if (l.Any(cl => cl.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Keen))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-            
-            if (i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.Keen))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-            
-            return result;
-        },
-        PropertyType = ItemPropertyType.Keen,
         BaseDifficulty = 15
     };
 }

@@ -3,7 +3,7 @@
 public enum PropertyValidationResult
 {
     CannotBeTheSame,
-    BasePropertyMustBeUnique,
+    PropertyNeverStacks,
     CannotStackSameSubtype,
     Valid
 }

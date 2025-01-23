@@ -1,5 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using Anvil.API;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -58,26 +57,7 @@ public static class AttackBonusProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
-        PropertyType = ItemPropertyType.AttackBonus,
-        BaseDifficulty = 5,
-        PerformValidation = (c, i, l) =>
-        {
-            PropertyValidationResult result = PropertyValidationResult.Valid;
-
-            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.AttackBonus) return result;
-            
-            if(l.Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.AttackBonus))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-            
-            if(i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.AttackBonus))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-            
-            return result;
-        }
+        BaseDifficulty = 5
     };
 
     private const int MythalCostEnhancement1 = 2000;
@@ -132,25 +112,6 @@ public static class AttackBonusProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
-        BaseDifficulty = 8,
-        PropertyType = ItemPropertyType.EnhancementBonus,
-        PerformValidation = (c, i, l) =>
-        {
-            PropertyValidationResult result = PropertyValidationResult.Valid;
-
-            if (c.ItemProperty.Property.PropertyType != ItemPropertyType.EnhancementBonus) return result;
-            
-            if(l.Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.EnhancementBonus))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-            
-            if(i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.EnhancementBonus))
-            {
-                result = PropertyValidationResult.BasePropertyMustBeUnique;
-            }
-            
-            return result;
-        }
+        BaseDifficulty = 8
     };
 }

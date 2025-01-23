@@ -21,13 +21,15 @@ public class MythalForgeInitializer
     private readonly WindowDirector _windowSystem;
     private readonly CraftingPropertyData _propertyData;
     private readonly CraftingBudgetService _budget;
+    private readonly PropertyValidator _validator;
 
     public MythalForgeInitializer(WindowDirector windowSystem, CraftingPropertyData propertyData,
-        CraftingBudgetService budget)
+        CraftingBudgetService budget, PropertyValidator validator)
     {
         _windowSystem = windowSystem;
         _propertyData = propertyData;
         _budget = budget;
+        _validator = validator;
 
         InitForges();
     }
@@ -122,7 +124,7 @@ public class MythalForgeInitializer
         // Remove the token.
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
-        MythalForgeView itemWindow = new MythalForgeView(_propertyData, _budget, item, obj.Player);
+        MythalForgeView itemWindow = new MythalForgeView(_propertyData, _budget, item, obj.Player, _validator);
         _windowSystem.OpenWindow(itemWindow.Presenter);
 
         obj.Player.OnPlayerTarget -= ValidateAndSelect;

@@ -1,8 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
-using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
-using Anvil.API;
-using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -481,7 +477,6 @@ public static class SkillProperties
                 CraftingTier = CraftingTier.Lesser
             }
         },
-        PropertyType = ItemPropertyType.SkillBonus,
         BaseDifficulty = 8,
     };
 
@@ -653,28 +648,6 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             }
-        },
-        PropertyType = ItemPropertyType.SkillBonus,
-        PerformValidation = (c, i, l) =>
-        {
-            bool propertyRemoved = l.Any(e =>
-                e is { BasePropertyType: ItemPropertyType.SkillBonus, State: ChangeListModel.ChangeState.Removed } && ItemPropertyValidations.SameSubtype(e.Property, c));
-            if (propertyRemoved) return PropertyValidationResult.Valid;
-            
-            ItemPropertyModel incomingProperty = new()
-            {
-                Property = c,
-                GoldCost = 0,
-            };
-            LogManager.GetCurrentClassLogger().Info($"{incomingProperty.Label}");
-            
-            bool changeListContainsProperty = l.Any(e =>
-                e.BasePropertyType == ItemPropertyType.SkillBonus && ItemPropertyValidations.SameSubtype(e.Property, c));
-            bool itemContainsProperty = i.ItemProperties.Any(ip => ItemPropertyValidations.SameSubtype(ip, c));
-            
-            bool valid = !changeListContainsProperty && !itemContainsProperty;
-            
-            return valid ? PropertyValidationResult.Valid : PropertyValidationResult.CannotStackSameSubtype;
         },
         BaseDifficulty = 8,
     };

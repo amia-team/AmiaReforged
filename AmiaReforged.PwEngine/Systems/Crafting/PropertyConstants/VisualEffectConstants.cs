@@ -1,5 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using Anvil.API;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -69,6 +68,5 @@ public static class VisualEffectConstants
                 CraftingTier = CraftingTier.Greater
             }
         },
-        PropertyType = ItemPropertyType.VisualEffect,
     };
 }
