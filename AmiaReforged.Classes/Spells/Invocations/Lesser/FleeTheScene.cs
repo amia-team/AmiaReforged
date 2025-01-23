@@ -14,8 +14,7 @@ public class FleeTheScene
         IntPtr haste = NwEffects.LinkEffectList(new List<IntPtr>
         {
             EffectVisualEffect(VFX_DUR_CESSATE_POSITIVE),
-            EffectHaste(),
-            EffectBonusFeat(FEAT_UNCANNY_DODGE_1)
+            EffectHaste()
         });
         IntPtr sanctuary = NwEffects.LinkEffectList(new List<IntPtr>
         {
@@ -24,6 +23,8 @@ public class FleeTheScene
         });
 
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, haste, nwnObjectId, duration);
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, sanctuary, nwnObjectId, 3f);
+        
+        if (GetIsInCombat(nwnObjectId) == TRUE)
+            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, sanctuary, nwnObjectId, 3f);
     }
 }
