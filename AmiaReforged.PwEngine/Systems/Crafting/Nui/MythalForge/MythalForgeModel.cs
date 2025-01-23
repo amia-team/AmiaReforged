@@ -140,6 +140,20 @@ public class MythalForgeModel
                 property.Selectable = passesValidation &&
                                       canAfford &&
                                       hasTheMythals;
+                property.CostLabelTooltip = !passesValidation
+                    ? validationResult switch
+                    {
+                        PropertyValidationResult.CannotBeTheSame => "Property already exists on the item.",
+                        PropertyValidationResult.BasePropertyMustBeUnique => "Property already exists on the item.",
+                        PropertyValidationResult.CannotStackSameSubtype =>
+                            "Cannot stack with other properties of this type.",
+                        _ => "BUG: Unknown validation error."
+                    }
+                    : !canAfford
+                        ? "Not enough points left."
+                        : !hasTheMythals
+                            ? "Not enough mythals."
+                            : string.Empty;
             }
         }
     }
