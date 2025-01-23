@@ -23,6 +23,8 @@ public class FleeTheScene
         });
 
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, haste, nwnObjectId, duration);
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, sanctuary, nwnObjectId, 3f);
+        
+        if (GetIsInCombat(nwnObjectId) == TRUE)
+            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, sanctuary, nwnObjectId, 3f);
     }
 }
