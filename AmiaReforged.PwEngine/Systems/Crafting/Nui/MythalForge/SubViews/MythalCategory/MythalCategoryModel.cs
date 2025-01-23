@@ -65,7 +65,7 @@ public class MythalCategoryModel
                 Categories.Add(modelCategory);
             }
         }
-        
+
         // sort categories alphabetically
         Categories.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
     }
@@ -150,7 +150,7 @@ public class MythalCategoryModel
         public string Label { get; set; }
         public List<MythalProperty> Properties { get; init; }
 
-        public Func<CraftingProperty, NwItem, List<ChangeListModel.ChangelistEntry>, PropertyValidationResult>?
+        public required Func<CraftingProperty, NwItem, List<ChangeListModel.ChangelistEntry>, PropertyValidationResult>
             PerformValidation { get; set; }
 
         public int BaseDifficulty { get; set; }
