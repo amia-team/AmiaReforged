@@ -31,14 +31,6 @@ public static class SkillProperties
             new CraftingProperty
             {
                 PowerCost = 4,
-                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_APPRAISE, 10)!,
-                GuiLabel = "+10 Appraise",
-                GoldCost = SkillCost2,
-                CraftingTier = CraftingTier.Greater
-            },
-            new CraftingProperty
-            {
-                PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CONCENTRATION, 10)!,
                 GuiLabel = "+10 Concentration",
                 GoldCost = SkillCost2,
@@ -177,14 +169,6 @@ public static class SkillProperties
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_ANIMAL_EMPATHY, 5)!,
                 GuiLabel = "+5 Animal Empathy",
-                GoldCost = SkillCost1,
-                CraftingTier = CraftingTier.Intermediate
-            },
-            new CraftingProperty
-            {
-                PowerCost = 2,
-                ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_APPRAISE, 5)!,
-                GuiLabel = "+5 Appraise",
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
