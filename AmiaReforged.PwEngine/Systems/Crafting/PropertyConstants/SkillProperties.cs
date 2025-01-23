@@ -2,6 +2,7 @@
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -657,6 +658,13 @@ public static class SkillProperties
             bool propertyRemoved = l.Any(e =>
                 e is { BasePropertyType: ItemPropertyType.SkillBonus, State: ChangeListModel.ChangeState.Removed } && ItemPropertyValidations.SameSubtype(e.Property, c));
             if (propertyRemoved) return PropertyValidationResult.Valid;
+            
+            ItemPropertyModel incomingProperty = new()
+            {
+                Property = c,
+                GoldCost = 0,
+            };
+            LogManager.GetCurrentClassLogger().Info($"{incomingProperty.Label}");
             
             bool changeListContainsProperty = l.Any(e =>
                 e.BasePropertyType == ItemPropertyType.SkillBonus && ItemPropertyValidations.SameSubtype(e.Property, c));
