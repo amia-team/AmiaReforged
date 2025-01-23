@@ -135,6 +135,7 @@ public class MythalForgeModel
                 ValidationResult operation =
                     _validator.Validate(property, Item.ItemProperties, ChangeListModel.ChangeList());
 
+                
                 bool passesValidation = operation.Result == PropertyValidationResult.Valid;
                 bool canAfford = property.Internal.PowerCost <= RemainingPowers;
                 bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);

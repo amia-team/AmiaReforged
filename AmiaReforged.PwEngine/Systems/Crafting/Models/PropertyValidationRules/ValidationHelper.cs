@@ -1,8 +1,9 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
+using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Systems.NwObjectHelpers;
+namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
-public static class ItemPropertyValidations
+public static class ValidationHelper
 {
     public static bool SameSubtype(ItemProperty p1, ItemProperty p2)
     {
@@ -17,5 +18,10 @@ public static class ItemPropertyValidations
         string[] split2 = removedPrefix2.Split(" ");
                 
         return split1[0] == split2[0];
+    }
+
+    public static bool IdenticalBaseType(ItemProperty p1, ItemProperty p2)
+    {
+        return p1.Property.PropertyType == p2.Property.PropertyType;
     }
 }
