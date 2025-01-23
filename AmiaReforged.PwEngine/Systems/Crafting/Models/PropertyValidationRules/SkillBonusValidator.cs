@@ -51,7 +51,7 @@ public class SkillBonusValidator : IValidationRule
                 GoldCost = 0
             };
             
-            Skill = model.SubTypeName;
+            Skill = model.SubTypeName.Replace("SkillBonus: ", "");
             Bonus = int.Parse(model.PropertyBonus);
         }
         
