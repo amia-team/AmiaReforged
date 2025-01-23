@@ -15,7 +15,7 @@ public class CraftingCategory
     }
 
     public NuiBind<bool> ShowGroup { get; set; }
-
+    public required ItemPropertyType PropertyType { get; init; }
     public int BaseDifficulty { get; init; }
     public required string Label { get; init; }
     public required IReadOnlyList<CraftingProperty> Properties { get; init; }

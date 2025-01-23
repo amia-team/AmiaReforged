@@ -58,6 +58,7 @@ public static class AttackBonusProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
+        PropertyType = ItemPropertyType.AttackBonus,
         BaseDifficulty = 5,
         PerformValidation = (c, i, l) =>
         {
@@ -132,6 +133,7 @@ public static class AttackBonusProperties
             }
         },
         BaseDifficulty = 8,
+        PropertyType = ItemPropertyType.EnhancementBonus,
         PerformValidation = (c, i, l) =>
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;

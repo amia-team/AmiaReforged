@@ -481,6 +481,7 @@ public static class SkillProperties
                 CraftingTier = CraftingTier.Lesser
             }
         },
+        PropertyType = ItemPropertyType.SkillBonus,
         BaseDifficulty = 8,
     };
 
@@ -653,6 +654,7 @@ public static class SkillProperties
                 CraftingTier = CraftingTier.Greater
             }
         },
+        PropertyType = ItemPropertyType.SkillBonus,
         PerformValidation = (c, i, l) =>
         {
             bool propertyRemoved = l.Any(e =>

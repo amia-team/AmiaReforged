@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using Anvil.API;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -247,6 +248,7 @@ public static class DamageProperties
                 CraftingTier = CraftingTier.Greater
             }
         },
+        PropertyType = ItemPropertyType.DamageBonus,
         BaseDifficulty = 10
     };
 
@@ -482,6 +484,7 @@ public static class DamageProperties
                 CraftingTier = CraftingTier.Greater
             }
         },
+        PropertyType = ItemPropertyType.DamageBonus,
         BaseDifficulty = 15
     };
 
@@ -743,6 +746,7 @@ public static class DamageProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
+        PropertyType = ItemPropertyType.DamageBonus,
         BaseDifficulty = 10
     };
 
@@ -767,6 +771,7 @@ public static class DamageProperties
                 CraftingTier = CraftingTier.Greater
             },
         },
+        PropertyType = ItemPropertyType.DamageBonus,
         BaseDifficulty = 15
     };
 
@@ -814,6 +819,7 @@ public static class DamageProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
+        PropertyType = ItemPropertyType.DamageBonus,
         BaseDifficulty = 15
     };
 
@@ -1046,6 +1052,7 @@ public static class DamageProperties
                 CraftingTier = CraftingTier.Greater
             }
         },
+        PropertyType = ItemPropertyType.DamageBonus,
         BaseDifficulty = 10
     };
 }

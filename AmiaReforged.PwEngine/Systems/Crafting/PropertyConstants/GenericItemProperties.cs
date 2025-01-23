@@ -206,6 +206,7 @@ public static class GenericItemProperties
                 return split1[0] == split2[0];
             }
         },
+        PropertyType = ItemPropertyType.DamageResistance,
         BaseDifficulty = 13
     };
 
@@ -247,6 +248,7 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Divine
             },
         },
+        PropertyType = ItemPropertyType.DamageResistance,
         PerformValidation = (c, i, l) =>
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
@@ -333,6 +335,7 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
+        PropertyType = ItemPropertyType.DamageReduction,
         PerformValidation = (c, i, l) =>
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
@@ -411,6 +414,7 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
+        PropertyType = ItemPropertyType.AcBonus,
         PerformValidation = (c, item, list) =>
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
@@ -483,6 +487,7 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             },
         },
+        PropertyType = ItemPropertyType.RegenerationVampiric,
         PerformValidation = (c, i, l) =>
         {
             // We only care if there's a Vampiric Regeneration property in the incoming changelist or item
@@ -551,6 +556,7 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             },
         },
+        PropertyType = ItemPropertyType.Regeneration,
         PerformValidation = (c, item, list) =>
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
@@ -590,7 +596,7 @@ public static class GenericItemProperties
 
     public static readonly CraftingCategory Other = new("others")
     {
-        Label = "Other Properties",
+        Label = "Keen",
         Properties = new[]
         {
             new CraftingProperty
@@ -626,6 +632,7 @@ public static class GenericItemProperties
             
             return result;
         },
+        PropertyType = ItemPropertyType.Keen,
         BaseDifficulty = 15
     };
 }

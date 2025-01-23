@@ -166,6 +166,7 @@ public static class AbilityProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
+        PropertyType = ItemPropertyType.AbilityBonus,
         BaseDifficulty = 5,
         PerformValidation = (c, i, l) =>
         {

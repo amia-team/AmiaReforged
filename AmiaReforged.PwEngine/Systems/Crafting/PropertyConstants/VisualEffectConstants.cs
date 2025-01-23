@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using Anvil.API;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -66,7 +67,8 @@ public static class VisualEffectConstants
                 GuiLabel = "Evil",
                 GoldCost = VfxCost,
                 CraftingTier = CraftingTier.Greater
-            },
-        }
+            }
+        },
+        PropertyType = ItemPropertyType.VisualEffect,
     };
 }
