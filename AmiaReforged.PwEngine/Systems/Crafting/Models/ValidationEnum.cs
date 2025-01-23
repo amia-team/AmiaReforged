@@ -1,6 +1,6 @@
 ﻿namespace AmiaReforged.PwEngine.Systems.Crafting.Models;
 
-public enum PropertyValidationResult
+public enum ValidationEnum
 {
     CannotBeTheSame,
     PropertyNeverStacks,

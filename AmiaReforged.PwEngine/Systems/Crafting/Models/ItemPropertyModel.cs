@@ -17,6 +17,10 @@ public class ItemPropertyModel
         baseLabel += Property.Property.GameStrRef;
         return baseLabel;
     }
+    
+    public string SubTypeName => GetSubTypeName();
+
+    private string GetSubTypeName() => Property.SubType?.Name.ToString() ?? string.Empty;
 
     public string PropertyBonus => GetPropertyBonus();
 

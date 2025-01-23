@@ -10,20 +10,20 @@ public class AcValidationRule : IValidationRule
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
         string errorMessage = "";
-        PropertyValidationResult result = PropertyValidationResult.Valid;
+        ValidationEnum @enum = ValidationEnum.Valid;
         
         if(incoming.ItemProperty.Property.PropertyType == ItemPropertyType.AcBonus)
         {
             bool anyAcBonus = itemProperties.Any(x => x.Property.PropertyType == ItemPropertyType.AcBonus);
             bool anyInChangelist = changelistProperties.Any(e => e.BasePropertyType == ItemPropertyType.AcBonus && e.State != ChangeListModel.ChangeState.Removed);
             
-            result = anyAcBonus || anyInChangelist ? PropertyValidationResult.PropertyNeverStacks : PropertyValidationResult.Valid;
+            @enum = anyAcBonus || anyInChangelist ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid;
             errorMessage = "AC Bonus already exists on this item.";
         }
         
         return new ValidationResult
         {
-            Result = result,
+            Enum = @enum,
             ErrorMessage = errorMessage
         };
     }

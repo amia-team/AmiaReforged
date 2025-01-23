@@ -44,7 +44,7 @@ public class PropertyValidator
         {
             return new ValidationResult
             {
-                Result = PropertyValidationResult.Valid
+                Enum = ValidationEnum.Valid
             };
         }
 

@@ -10,7 +10,7 @@ public class AbilityBonusValidation : IValidationRule
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
-        PropertyValidationResult result = PropertyValidationResult.Valid;
+        ValidationEnum @enum = ValidationEnum.Valid;
         string error = string.Empty;
 
         // Extract any one of Cha, Wis, Str, Dex, Int, Con bonuses substrings in the incoming item property label
@@ -35,14 +35,14 @@ public class AbilityBonusValidation : IValidationRule
                 e.BasePropertyType == ItemPropertyType.AbilityBonus && AbilitiesAreSame(incomingAbility, e.Property) &&
                 e.State != ChangeListModel.ChangeState.Removed);
             
-            result = anyAbilityBonus || anyInChangelist ? PropertyValidationResult.CannotStackSameSubtype : PropertyValidationResult.Valid;
+            @enum = anyAbilityBonus || anyInChangelist ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
             error = "Ability already exists on this item.";
         }
 
 
         return new ValidationResult
         {
-            Result = result,
+            Enum = @enum,
             ErrorMessage = error
         };
     }
