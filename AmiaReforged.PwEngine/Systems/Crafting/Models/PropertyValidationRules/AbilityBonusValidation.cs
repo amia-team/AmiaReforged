@@ -36,6 +36,7 @@ public class AbilityBonusValidation : IValidationRule
                 e.State != ChangeListModel.ChangeState.Removed);
             
             result = anyAbilityBonus || anyInChangelist ? PropertyValidationResult.CannotStackSameSubtype : PropertyValidationResult.Valid;
+            error = "Ability already exists on this item.";
         }
 
 
