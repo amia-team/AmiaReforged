@@ -171,7 +171,15 @@ public static class GenericItemProperties
 
             if (c.ItemProperty.Property.PropertyType != ItemPropertyType.DamageResistance) return result;
             
-            if (l.Any(cl => SameSubtype(c, cl.Property)))
+            // look for the same subtype and see that it wasn't already removed
+            bool wasRemoved = l.Any(cl => SameSubtype(c, cl.Property) && cl.State == ChangeListModel.ChangeState.Removed);
+            if (wasRemoved)
+            {
+                return result;
+            }
+            
+            // We still ignore the property if it was removed.
+            if (l.Any(cl => SameSubtype(c, cl.Property) && cl.State != ChangeListModel.ChangeState.Removed))
             {
                 result = PropertyValidationResult.CannotStackSameSubtype;
             }
@@ -325,11 +333,18 @@ public static class GenericItemProperties
                 CraftingTier = CraftingTier.Flawless
             }
         },
-        PerformValidation = (_, i, l) =>
+        PerformValidation = (c, i, l) =>
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
-
-            if (l.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.DamageReduction))
+            if(c.ItemProperty.Property.PropertyType != ItemPropertyType.DamageReduction) return result;
+            
+            bool wasRemoved = l.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.DamageReduction && p.State == ChangeListModel.ChangeState.Removed);
+            if (wasRemoved)
+            {
+                return result;
+            }
+            
+            if (l.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.DamageReduction && p.State != ChangeListModel.ChangeState.Removed))
             {
                 result = PropertyValidationResult.BasePropertyMustBeUnique;
             }
@@ -400,9 +415,15 @@ public static class GenericItemProperties
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
             if (c.ItemProperty.Property.PropertyType != ItemPropertyType.AcBonus) return result;
-
+            
+            bool wasRemoved = list.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.AcBonus && p.State == ChangeListModel.ChangeState.Removed);
+            if (wasRemoved)
+            {
+                return result;
+            }
+            
             // First, check if the property has already been added to the incoming changelist.
-            if (list.Any(entry => PropertiesAreSameType(entry.Property, c)))
+            if (list.Any(entry => PropertiesAreSameType(entry.Property, c) && entry.State != ChangeListModel.ChangeState.Removed))
             {
                 result = PropertyValidationResult.BasePropertyMustBeUnique;
             }
@@ -468,13 +489,20 @@ public static class GenericItemProperties
             PropertyValidationResult result = PropertyValidationResult.Valid;
             
             if (c.ItemProperty.Property.PropertyType != ItemPropertyType.RegenerationVampiric) return result;
-            
+            bool propertyWasRemoved = l.Any(cl => cl.Property.ItemProperty.Property.PropertyType == ItemPropertyType.RegenerationVampiric && cl.State == ChangeListModel.ChangeState.Removed);
+            if (propertyWasRemoved)
+            {
+                return result;
+            }
+
             // First, check if the property has already been added to the incoming changelist.
-            if (l.Any(cl => cl.Property.ItemProperty.Property.PropertyType == ItemPropertyType.RegenerationVampiric))
+            if (l.Any(cl => cl.Property.ItemProperty.Property.PropertyType == ItemPropertyType.RegenerationVampiric && cl.State != ChangeListModel.ChangeState.Removed))
             {
                 result = PropertyValidationResult.BasePropertyMustBeUnique;
             }
-            
+
+            // If it's on the changelist as removed, then it would be valid to add it again...
+
             // Second, check that the item doesn't already have the property.
             if (i.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.RegenerationVampiric))
             {
@@ -527,11 +555,21 @@ public static class GenericItemProperties
         {
             PropertyValidationResult result = PropertyValidationResult.Valid;
             if (c.ItemProperty.Property.PropertyType != ItemPropertyType.Regeneration) return result;
-
+            bool wasRemoved = list.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Regeneration && p.State == ChangeListModel.ChangeState.Removed);
+            
+            if (wasRemoved)
+            {
+                return result;
+            }
+            
             // First, check if the property has already been added to the incoming changelist.
             foreach (ChangeListModel.ChangelistEntry entry in list)
             {
-                if (entry.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Regeneration)
+                if (entry.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Regeneration && entry.State != ChangeListModel.ChangeState.Removed)
+                {
+                    result = PropertyValidationResult.BasePropertyMustBeUnique;
+                    break;
+                }
                 {
                     result = PropertyValidationResult.BasePropertyMustBeUnique;
                     break;
@@ -569,6 +607,12 @@ public static class GenericItemProperties
             PropertyValidationResult result = PropertyValidationResult.Valid;
             
             if (c.ItemProperty.Property.PropertyType != ItemPropertyType.Keen) return result;
+            
+            bool wasRemoved = l.ToList().Any(p => p.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Keen && p.State == ChangeListModel.ChangeState.Removed);
+            if (wasRemoved)
+            {
+                return result;
+            }
             
             if (l.Any(cl => cl.Property.ItemProperty.Property.PropertyType == ItemPropertyType.Keen))
             {

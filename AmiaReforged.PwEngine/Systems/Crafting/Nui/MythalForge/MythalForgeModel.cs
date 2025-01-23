@@ -131,9 +131,7 @@ public class MythalForgeModel
                 PropertyValidationResult validationResult = PropertyValidationResult.Valid;
                 if (category.PerformValidation != null)
                 {
-                    validationResult = category.PerformValidation(property, Item,
-                        ChangeListModel.ChangeList().Where(c => c.State != ChangeListModel.ChangeState.Removed)
-                            .ToList());
+                    validationResult = category.PerformValidation(property, Item, ChangeListModel.ChangeList());
                 }
 
                 bool passesValidation = validationResult == PropertyValidationResult.Valid;
