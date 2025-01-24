@@ -61,9 +61,10 @@ public class ShockPylonTrap
 
     private void Zap(PlaceableEvents.OnHeartbeat obj)
     {
+        Log.Info("Zap time");
         // Find zappers in a 50 meter radius
         List<NwPlaceable>? zappers = obj.Placeable.Area?.FindObjectsOfTypeInArea<NwPlaceable>()
-            .Where(p => p.ResRef == MeatZapper && p.Distance(obj.Placeable) <= 50.0f).ToList();
+            .Where(p => p.ResRef == MeatZapper && p.Distance(obj.Placeable) <= 100.0f).ToList();
         
         Effect beam = Effect.Beam(VfxType.BeamBlack, obj.Placeable, BodyNode.Chest);
 
