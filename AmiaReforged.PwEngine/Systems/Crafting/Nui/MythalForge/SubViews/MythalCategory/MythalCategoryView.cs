@@ -34,6 +34,8 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
     /// A dictionary of power cost tooltip bindings. More performant than looking up the tooltip by ID.
     /// </summary>
     public readonly Dictionary<string, NuiBind<string>> PowerCostTooltips = new();
+    
+    public readonly Dictionary<string, NuiBind<bool>> EmphasizedProperties = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MythalCategoryView"/> class.
@@ -57,6 +59,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                 NuiBind<bool> enableProperty = new(property.Id + "_enable");
                 NuiBind<Color> costColor = new(property.Id + "_color");
                 NuiBind<string> powerCostTooltip = new(property.Id + "_tooltip");
+                NuiBind<bool> emphasized = new(property.Id + "_emphasized");
 
                 NuiRow propertyRow = new()
                 {
@@ -78,6 +81,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                             },
                             Width = 50f,
                             Height = 50f,
+                            Encouraged = emphasized,
                             Tooltip = powerCostTooltip
                         }
                     }
@@ -88,6 +92,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                 PowerCostColors.Add(property.Id, costColor);
                 PowerCostTooltips.Add(property.Id, powerCostTooltip);
                 ButtonIds.Add(property.Id);
+                EmphasizedProperties.Add(property.Id, emphasized);
             }
 
             NuiColumn categoryColumn = new()

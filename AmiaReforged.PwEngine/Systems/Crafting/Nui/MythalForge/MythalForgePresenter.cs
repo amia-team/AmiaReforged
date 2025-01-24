@@ -207,8 +207,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
                 Token().SetBindValue(View.CategoryView.EnabledPropertyBindings[property.Id], property.Selectable);
+                Token().SetBindValue(View.CategoryView.EmphasizedProperties[property.Id], !property.Selectable);
                 Token().SetBindValue(View.CategoryView.PowerCostColors[property.Id], property.Color);
                 Token().SetBindValue(View.CategoryView.PowerCostTooltips[property.Id], property.CostLabelTooltip);
+                
             }
         }
     }
