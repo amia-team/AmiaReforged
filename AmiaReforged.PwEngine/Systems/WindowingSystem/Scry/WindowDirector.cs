@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
@@ -148,7 +149,7 @@ public sealed class WindowDirector : IDisposable
 
 
     /// <summary>
-    /// Use <see cref="StandAloneWindow"/> to build a new window in a more fluent manner.
+    /// Use <see cref="GenericWindow"/> to build a new window in a more fluent manner.
     /// </summary>
     /// <param name="nwPlayer"></param>
     /// <param name="title">Title of window</param>

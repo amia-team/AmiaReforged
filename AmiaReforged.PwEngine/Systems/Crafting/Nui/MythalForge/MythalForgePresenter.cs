@@ -2,6 +2,7 @@
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
@@ -53,7 +54,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         if (!obj.Item.ResRef.Contains("mythal")) return;
 
-        StandAloneWindow
+        GenericWindow
             .Builder()
             .For()
             .SimplePopup()
@@ -185,7 +186,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         if (remaining < 0)
         {
-            StandAloneWindow
+            GenericWindow
                 .Builder()
                 .For()
                 .SimplePopup()

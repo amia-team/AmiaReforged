@@ -2,6 +2,7 @@
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
@@ -82,7 +83,7 @@ public class MythalForgeInitializer
             !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
         if (notFound)
         {
-            StandAloneWindow.Builder()
+            GenericWindow.Builder()
                 .For()
                 .SimplePopup()
                 .WithPlayer(obj.Player)
@@ -102,7 +103,7 @@ public class MythalForgeInitializer
 
         if (item.Possessor != null && item.Possessor.ObjectId != obj.Player.LoginCreature.ObjectId)
         {
-            StandAloneWindow.Builder()
+            GenericWindow.Builder()
                 .For()
                 .SimplePopup()
                 .WithPlayer(obj.Player)
@@ -115,7 +116,7 @@ public class MythalForgeInitializer
 
         if (categories == null)
         {
-            StandAloneWindow.Builder()
+            GenericWindow.Builder()
                 .For()
                 .SimplePopup()
                 .WithPlayer(obj.Player)

@@ -3,27 +3,27 @@ using Anvil.API;
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows
+namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows
 {
     /// <summary>
-    /// Provides a static method to create a new instance of <see cref="StandaloneWindowBuilder"/>.
+    /// Provides a static method to create a new instance of <see cref="GenericWindowBuilder"/>.
     /// </summary>
-    public static class StandAloneWindow
+    public static class GenericWindow
     {
         /// <summary>
-        /// Creates a new instance of <see cref="StandaloneWindowBuilder"/>.
+        /// Creates a new instance of <see cref="GenericWindowBuilder"/>.
         /// </summary>
-        /// <returns>A new <see cref="StandaloneWindowBuilder"/> instance.</returns>
+        /// <returns>A new <see cref="GenericWindowBuilder"/> instance.</returns>
         public static IWindowBuilder Builder()
         {
-            return new StandaloneWindowBuilder();
+            return new GenericWindowBuilder();
         }
     }
 
     /// <summary>
-    /// Builder class for creating standalone windows.
+    /// Builder class for creating generic windows.
     /// </summary>
-    public class StandaloneWindowBuilder : IWindowBuilder, IWindowTypeStage
+    public class GenericWindowBuilder : IWindowBuilder, IWindowTypeStage
     {
         /// <summary>
         /// Returns the current instance for further configuration.
