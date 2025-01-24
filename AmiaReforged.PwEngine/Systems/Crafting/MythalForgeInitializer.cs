@@ -100,18 +100,32 @@ public class MythalForgeInitializer
             return;
         }
 
+        if (item.Possessor != null && item.Possessor.ObjectId != obj.Player.LoginCreature.ObjectId)
+        {
+            StandAloneWindow.Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(obj.Player)
+                .WithTitle("Mythal Forge: Notice")
+                .WithMessage("That doesn't belong to you. Pick it from your inventory.")
+                .Open();
+            obj.Player.OpenInventory();
+            return;
+        }
+
         if (categories == null)
         {
             // obj.Player.SendServerMessage(
             //     "Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.",
             //     ColorConstants.Red);
-            
+
             StandAloneWindow.Builder()
                 .For()
                 .SimplePopup()
                 .WithPlayer(obj.Player)
                 .WithTitle("Mythal Forge: Error")
-                .WithMessage("Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.")
+                .WithMessage(
+                    "Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.")
                 .Open();
 
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
@@ -126,7 +140,8 @@ public class MythalForgeInitializer
 
         MythalForgeView itemWindow = new MythalForgeView(_propertyData, _budget, item, obj.Player, _validator);
         _windowSystem.OpenWindow(itemWindow.Presenter);
-
+        
+        obj.Player.OpenInventory();
         obj.Player.OnPlayerTarget -= ValidateAndSelect;
     }
 }
