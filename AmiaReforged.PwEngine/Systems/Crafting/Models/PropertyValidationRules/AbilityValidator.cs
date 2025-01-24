@@ -5,7 +5,7 @@ using Anvil.API;
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
 [ValidationRuleFor(Property = ItemPropertyType.AbilityBonus)]
-public class AbilityBonusValidation : IValidationRule
+public class AbilityValidator : IValidationRule
 {
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
