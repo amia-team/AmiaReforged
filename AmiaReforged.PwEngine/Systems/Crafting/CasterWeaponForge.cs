@@ -14,6 +14,14 @@ public class CasterWeaponForge
 
     public CasterWeaponForge()
     {
+        NwArea starterArea = NwModule.Instance.StartingLocation.Area;
+        
+        starterArea.OnEnter += RegisterNewForges;
+        
+    }
+
+    private void RegisterNewForges(AreaEvents.OnEnter obj)
+    {
         IEnumerable<NwPlaceable> forges = NwObject.FindObjectsWithTag<NwPlaceable>(ForgeTag);
 
         foreach (NwPlaceable forge in forges)
