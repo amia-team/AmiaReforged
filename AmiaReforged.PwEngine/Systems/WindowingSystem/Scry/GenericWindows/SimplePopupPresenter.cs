@@ -1,8 +1,9 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
+using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
+namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
 
 public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
 {

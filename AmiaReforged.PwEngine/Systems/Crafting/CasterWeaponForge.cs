@@ -15,13 +15,6 @@ public class CasterWeaponForge
 
     public CasterWeaponForge()
     {
-        NwArea starterArea = NwModule.Instance.StartingLocation.Area;
-        
-        starterArea.OnEnter += RegisterNewForges;
-    }
-
-    private void RegisterNewForges(AreaEvents.OnEnter obj)
-    {
         NwPlaceable[] forges = NwObject.FindObjectsWithTag<NwPlaceable>(ForgeTag).ToArray();
         LogManager.GetCurrentClassLogger().Info("Number of forges found: " + forges.Length);
         foreach (NwPlaceable forge in forges)
@@ -39,17 +32,17 @@ public class CasterWeaponForge
         }
 
         NwItem? pcKey = player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.Tag == "ds_pckey");
-        
+
         if (pcKey == null)
         {
             return;
         }
-        
-        if(NWScript.GetLocalInt(pcKey, "ignore_caster_forge") == 1)
+
+        if (NWScript.GetLocalInt(pcKey, "ignore_caster_forge") == 1)
         {
             return;
         }
-        
+
         GenericWindow
             .Builder()
             .For()
@@ -96,7 +89,7 @@ public class CasterWeaponForge
             player.SendServerMessage("This weapon is already enchanted.");
             return;
         }
-        
+
         // No properties may be present on the weapon
         if (weapon.ItemProperties.Any())
         {
