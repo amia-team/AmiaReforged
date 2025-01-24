@@ -53,7 +53,9 @@ public class ResistanceValidationRules : IValidationRule
             };
 
             ResistanceType = incoming.SubTypeName;
-            ResistanceValue = int.Parse(incoming.PropertyBonus.Split("_")[1]);
+            
+            // Splits Resist_5/- into its constituent parts and selects the numeric component
+            ResistanceValue = int.Parse(incoming.PropertyBonus.Split("_")[1].Split("/")[0]);
         }
 
         public string ResistanceType { get; set; }
