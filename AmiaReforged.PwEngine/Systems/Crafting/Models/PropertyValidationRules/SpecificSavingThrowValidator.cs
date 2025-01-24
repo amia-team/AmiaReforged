@@ -19,13 +19,13 @@ public class SpecificSavingThrowValidator : IValidationRule
         
         // Get all of the saving throw bonuses on the item
         List<SavingThrow> savingThrows = itemProperties
-            .Where(x => x.Property.PropertyType == ItemPropertyType.SavingThrowBonus)
+            .Where(x => x.Property.PropertyType == ItemPropertyType.SavingThrowBonusSpecific)
             .Select(x => new SavingThrow(x))
             .ToList();
 
         // And in the changelist (if it's not being removed)
         savingThrows.AddRange(changelistProperties
-            .Where(x => x.BasePropertyType == ItemPropertyType.SavingThrowBonus &&
+            .Where(x => x.BasePropertyType == ItemPropertyType.SavingThrowBonusSpecific &&
                         x.State != ChangeListModel.ChangeState.Removed)
             .Select(x => new SavingThrow(x.Property)));
         
