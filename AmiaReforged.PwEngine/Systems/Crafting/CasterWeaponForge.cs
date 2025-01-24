@@ -13,6 +13,15 @@ public class CasterWeaponForge
 {
     private const string ForgeTag = "caster_weapon_forge";
 
+    private List<Spell> _spellWhiteList = new List<Spell>
+    {
+        Spell.Restoration,
+        Spell.IsaacsLesserMissileStorm,
+        Spell.IsaacsGreaterMissileStorm,
+        Spell.FlameStrike,
+        Spell.HealingCircle
+    };
+    
     public CasterWeaponForge()
     {
         NwPlaceable[] forges = NwObject.FindObjectsWithTag<NwPlaceable>(ForgeTag).ToArray();
@@ -68,10 +77,8 @@ public class CasterWeaponForge
         {
             return;
         }
-
-        if (obj.Spell.SpellType != Spell.Restoration || obj.Spell.SpellType != Spell.IsaacsLesserMissileStorm ||
-            obj.Spell.SpellType != Spell.IsaacsGreaterMissileStorm || obj.Spell.SpellType != Spell.FlameStrike ||
-            obj.Spell.SpellType != Spell.HealingCircle)
+        
+        if (!_spellWhiteList.Contains(obj.Spell.SpellType))
         {
             player.SendServerMessage(
                 "You can only enchant weapons here with: Restoration, Isaac's Lesser Missile Storm, Isaac's Greater Missile, Flame Strike, or Healing Circle.");
