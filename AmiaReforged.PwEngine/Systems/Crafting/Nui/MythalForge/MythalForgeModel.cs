@@ -39,6 +39,8 @@ public class MythalForgeModel
             baseType = ItemTypeConstants.Melee2HWeapons().Contains(baseType) ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
         }
         
+        LogManager.GetCurrentClassLogger().Info("Base type: " + baseType);
+        
         IReadOnlyList<CraftingCategory> categories = data.Properties[baseType];
 
         MythalCategoryModel = new MythalCategoryModel(item, player, categories);

@@ -39,6 +39,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <param name="budget">The crafting budget service.</param>
     /// <param name="item">The item being crafted.</param>
     /// <param name="player">The player performing the crafting.</param>
+    /// <param name="validator"></param>
     public MythalForgePresenter(MythalForgeView view, CraftingPropertyData propertyData, CraftingBudgetService budget,
         NwItem item, NwPlayer player, PropertyValidator validator)
     {
