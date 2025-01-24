@@ -32,7 +32,7 @@ public class SavingThrowValidator : IValidationRule
         
         // The bonus is irrelevant, we just don't want it to already exist on the item or in the changelist
         result = onItem ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        error = onItem ? $"{savingThrow.ThrowType} already exists on this item." : string.Empty;
+        error = onItem ? $"{savingThrow.ThrowType} throw already exists on this item." : string.Empty;
 
         return new ValidationResult
         {

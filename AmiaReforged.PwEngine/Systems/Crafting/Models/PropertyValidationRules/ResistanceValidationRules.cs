@@ -33,7 +33,7 @@ public class ResistanceValidationRules : IValidationRule
         // Now we only care if the same type exists in the item or the changelist
         bool alreadyExists = allResistances.Any(x => x.ResistanceType == resistance.ResistanceType);
         result = alreadyExists ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        error = alreadyExists ? "Resistance already exists on this item." : string.Empty;
+        error = alreadyExists ? $"{resistance.ResistanceType} Resistance already exists on this item." : string.Empty;
 
         return new ValidationResult
         {
