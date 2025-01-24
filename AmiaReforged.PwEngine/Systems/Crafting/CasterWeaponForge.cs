@@ -21,7 +21,7 @@ public class CasterWeaponForge
         Spell.FlameStrike,
         Spell.HealingCircle
     };
-    
+
     public CasterWeaponForge()
     {
         NwPlaceable[] forges = NwObject.FindObjectsWithTag<NwPlaceable>(ForgeTag).ToArray();
@@ -77,7 +77,7 @@ public class CasterWeaponForge
         {
             return;
         }
-        
+
         if (!_spellWhiteList.Contains(obj.Spell.SpellType))
         {
             player.SendServerMessage(
@@ -94,10 +94,15 @@ public class CasterWeaponForge
         NwItem weapon = obj.Placeable.Inventory.Items.ToArray()[0];
         int baseItemType = NWScript.GetBaseItemType(weapon);
 
-        if (!ItemTypeConstants.Melee2HWeapons().Contains(baseItemType) ||
-            !ItemTypeConstants.MeleeWeapons().Contains(baseItemType))
+        // combines weapons
+        List<int> weapons = ItemTypeConstants.MeleeWeapons();
+        List<int> melee2HWeapons = ItemTypeConstants.Melee2HWeapons();
+        
+        weapons.AddRange(melee2HWeapons);
+        
+        if (!weapons.Contains(baseItemType))
         {
-            player.SendServerMessage("You can only enchant melee weapons here.");
+            player.SendServerMessage("You can only enchant one-handed or two-handed melee weapons.");
             return;
         }
 
