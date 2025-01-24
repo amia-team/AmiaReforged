@@ -64,7 +64,7 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows
         private NwPlayer _nwPlayer;
         private string _title;
         private string _message;
-        private NuiWindowToken _token;
+        private NuiWindowToken _token = default;
         private string _ignoreTag = string.Empty;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         [Inject] private Lazy<WindowDirector>? Director { get; set; }
