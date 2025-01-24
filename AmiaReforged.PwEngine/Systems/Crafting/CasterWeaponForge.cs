@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
@@ -17,7 +18,39 @@ public class CasterWeaponForge
         foreach (NwPlaceable forge in forges)
         {
             forge.OnSpellCastAt += EnchantWeapon;
+            forge.OnOpen += OpenPopup;
         }
+    }
+
+    private void OpenPopup(PlaceableEvents.OnOpen obj)
+    {
+        if (!obj.OpenedBy.IsPlayerControlled(out NwPlayer? player))
+        {
+            return;
+        }
+
+        NwItem? pcKey = player.LoginCreature.Inventory.Items.Where(i => i.ResRef == "ds_pckey").FirstOrDefault();
+        
+        if (pcKey == null)
+        {
+            return;
+        }
+        
+        if(NWScript.GetLocalInt(pcKey, "ignore_caster_forge") == 1)
+        {
+            return;
+        }
+        
+        StandAloneWindow
+            .Builder()
+            .For()
+            .SimplePopup()
+            .WithPlayer(player)
+            .WithTitle("Caster Weapon Forge")
+            .WithMessage(
+                "You can turn a blank weapon into a caster weapon here.One-handed weapons have 12 powers, Two-handed weapons have 20")
+            .EnableIgnoreButton("ignore_caster_forge")
+            .Open();
     }
 
     private void EnchantWeapon(PlaceableEvents.OnSpellCastAt obj)

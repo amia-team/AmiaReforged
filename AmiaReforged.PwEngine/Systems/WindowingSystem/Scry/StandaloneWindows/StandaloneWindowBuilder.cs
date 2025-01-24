@@ -43,6 +43,7 @@ public class SimplePopupBuilder : ISimplePopupBuilder, IPlayerStage, ITitleStage
     private string _title;
     private string _message;
     private NuiWindowToken _token;
+    private string _ignoreTag = string.Empty;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     [Inject] private Lazy<WindowDirector>? Director { get; set; }
 
@@ -75,11 +76,11 @@ public class SimplePopupBuilder : ISimplePopupBuilder, IPlayerStage, ITitleStage
         
         if (_token != default)
         {
-            Director.Value.OpenPopup(_nwPlayer, _title, _message, _token);
+            Director.Value.OpenPopup(_nwPlayer, _title, _message, _token, _ignoreTag != string.Empty);
             return;
         }
         
-        Director.Value.OpenPopup(_nwPlayer, _title, _message);
+        Director.Value.OpenPopup(_nwPlayer, _title, _message, default, _ignoreTag != string.Empty);
     }
     
     public IOpenStage WithToken(NuiWindowToken token)
@@ -87,6 +88,13 @@ public class SimplePopupBuilder : ISimplePopupBuilder, IPlayerStage, ITitleStage
         _token = token;
         return this;
     }
+
+    public IOpenStage EnableIgnoreButton(string ignoreTag)
+    {
+        _ignoreTag = ignoreTag;
+        return this;
+    }
+
 }
 
 public interface IWindowBuilder
@@ -118,4 +126,5 @@ public interface IOpenStage
 {
     void Open();
     IOpenStage WithToken(NuiWindowToken token);
+    IOpenStage EnableIgnoreButton(string ignoreTag);
 }

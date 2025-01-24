@@ -6,10 +6,13 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
 {
     private readonly string _message;
     public sealed override SimplePopupPresenter Presenter { get; protected set; }
+    public bool IgnoreButton { get; }
+    public NuiBind<bool> IgnoreButtonVisible { get; } = new("ignore_button_visible");
 
-    public SimplePopupView(NwPlayer player, string message, string title)
+    public SimplePopupView(NwPlayer player, string message, string title, bool ignoreButton = false)
     {
         _message = message;
+        IgnoreButton = ignoreButton;
         Presenter = new SimplePopupPresenter(player, this, title);
     }
 
@@ -41,7 +44,13 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
                             Height = 80f,
                             Encouraged = true
                         },
-                        new NuiSpacer()
+                        new NuiButton("Don't Show Again")
+                        {
+                            Id = "ignore_button",
+                            Width = 120f,
+                            Height = 80f,
+                            Visible = IgnoreButtonVisible
+                        }
                     }
                 }
             }

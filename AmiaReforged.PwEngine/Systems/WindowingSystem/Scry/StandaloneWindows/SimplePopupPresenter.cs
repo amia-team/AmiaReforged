@@ -1,5 +1,6 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 
@@ -21,9 +22,24 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
     public override void HandleInput(ModuleEvents.OnNuiEvent obj)
     {
         if (obj.EventType != NuiEventType.Click) return;
-        if (obj.ElementId != "ok_button") return;
+        if (obj.ElementId == "ok_button")
+        {
+            Close();
+            return;
+        }
+        
+        if (obj.ElementId == "ignore_button")
+        {
+            NwItem? pcKey = _player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey");
+            if (pcKey == null)
+            {
+                return;
+            }
+            
+            NWScript.SetLocalInt(pcKey, "ignore_caster_forge", 1);
+            Close();
+        }
 
-        Close();
     }
 
     public override NuiWindowToken Token()
@@ -50,6 +66,8 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
     {
         Initialize();
         _player.TryCreateNuiWindow(_window!, out _token);
+        
+        Token().SetBindValue(View.IgnoreButtonVisible, View.IgnoreButton);
     }
 
     public override void Close()

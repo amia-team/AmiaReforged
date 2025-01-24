@@ -146,7 +146,7 @@ public sealed class WindowDirector : IDisposable
         return playerWindows?.Any(w => w.GetType() == type) ?? false;
     }
 
-    public void OpenPopup(NwPlayer nwPlayer, string title, string message, NuiWindowToken linkedToken = default)
+    public void OpenPopup(NwPlayer nwPlayer, string title, string message, NuiWindowToken linkedToken = default, bool ignoreButton = false)
     {
         if (linkedToken != default)
         {
@@ -154,7 +154,7 @@ public sealed class WindowDirector : IDisposable
             linkedTokens?.Add(linkedToken);
         }
 
-        SimplePopupView view = new(nwPlayer, message, title);
+        SimplePopupView view = new(nwPlayer, message, title, ignoreButton);
         SimplePopupPresenter presenter = view.Presenter;
 
         OpenWindow(presenter);
