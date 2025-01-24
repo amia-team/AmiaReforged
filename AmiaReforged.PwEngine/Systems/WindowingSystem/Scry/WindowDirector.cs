@@ -84,11 +84,11 @@ public sealed class WindowDirector : IDisposable
     {
         window.Initialize();
         window.Create();
-        
+
         _tokens.TryAdd(window.Token(), window);
         _activeWindows.TryGetValue(window.Token().Player, out List<IScryPresenter>? playerWindows);
         _linkedTokens.TryAdd(window.Token(), new List<NuiWindowToken>());
-        
+
         playerWindows?.Add(window);
     }
 
@@ -130,7 +130,7 @@ public sealed class WindowDirector : IDisposable
         {
             windows.ForEach(w => w.Close());
         }
-        
+
         _activeWindows.Clear();
     }
 
@@ -146,7 +146,17 @@ public sealed class WindowDirector : IDisposable
         return playerWindows?.Any(w => w.GetType() == type) ?? false;
     }
 
-    public void OpenPopup(NwPlayer nwPlayer, string title, string message, NuiWindowToken linkedToken = default, bool ignoreButton = false)
+
+    /// <summary>
+    /// Use <see cref="StandAloneWindow"/> to build a new window in a more fluent manner.
+    /// </summary>
+    /// <param name="nwPlayer"></param>
+    /// <param name="title">Title of window</param>
+    /// <param name="message">Message that shows in message box</param>
+    /// <param name="linkedToken">If this popup was opened because of an event from another window, include the token here.</param>
+    /// <param name="ignoreButton">Local variable tag that will be set to never open this window again</param>
+    public void OpenPopup(NwPlayer nwPlayer, string title, string message, NuiWindowToken linkedToken = default,
+        bool ignoreButton = false)
     {
         if (linkedToken != default)
         {

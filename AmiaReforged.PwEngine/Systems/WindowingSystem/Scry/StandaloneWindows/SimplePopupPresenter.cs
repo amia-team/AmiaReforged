@@ -60,6 +60,7 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
 
     public override void UpdateView()
     {
+        // No updates needed
     }
 
     public override void Create()
