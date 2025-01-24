@@ -49,7 +49,7 @@ public class CasterWeaponForge
             .WithPlayer(player)
             .WithTitle("Caster Weapon Forge")
             .WithMessage(
-                "You can turn a blank weapon into a caster weapon here.One-handed weapons have 12 powers, Two-handed weapons have 20")
+                "You can turn a blank weapon into a caster weapon here.One-handed weapons have 12 powers, Two-handed weapons have 20.")
             .EnableIgnoreButton("ignore_caster_forge")
             .Open();
     }
@@ -86,6 +86,13 @@ public class CasterWeaponForge
         if (NWScript.GetLocalInt(weapon, "CASTER_WEAPON") == 1)
         {
             player.SendServerMessage("This weapon is already enchanted.");
+            return;
+        }
+        
+        // No properties may be present on the weapon
+        if (weapon.ItemProperties.Any())
+        {
+            player.SendServerMessage("This weapon already has properties.");
             return;
         }
 
