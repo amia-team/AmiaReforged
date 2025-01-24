@@ -38,7 +38,7 @@ public class CasterWeaponForge
             return;
         }
 
-        NwItem? pcKey = player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey");
+        NwItem? pcKey = player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.Tag == "ds_pckey");
         
         if (pcKey == null)
         {
