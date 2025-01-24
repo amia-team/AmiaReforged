@@ -33,7 +33,7 @@ public class MythalForgeModel
         int baseType = NWScript.GetBaseItemType(item);
         
         // Is it a caster weapon?
-        bool casterWeapon = NWScript.GetLocalInt(item, "caster_weapon") == NWScript.TRUE;
+        bool casterWeapon = NWScript.GetLocalInt(item, ItemTypeConstants.CasterWeaponVar) == NWScript.TRUE;
         if(casterWeapon)
         {
             baseType = ItemTypeConstants.Melee2HWeapons().Contains(baseType) ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
