@@ -76,6 +76,13 @@ public sealed class MythalForgeWindow : IWindow
             _player.SendServerMessage("This item cannot be modified.", ColorConstants.Red);
             return;
         }
+        
+        // caster weapon?
+        bool casterWeapon = NWScript.GetLocalInt(_selection, "caster_weapon") == NWScript.TRUE;
+        if (casterWeapon)
+        {
+            baseItem = ItemTypeConstants.Melee2HWeapons().Contains(baseItem) ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+        }
 
         foreach (CraftingCategory category in data.Properties[baseItem])
         {
