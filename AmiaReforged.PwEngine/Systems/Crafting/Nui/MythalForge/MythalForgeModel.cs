@@ -31,6 +31,14 @@ public class MythalForgeModel
         _validator = validator;
 
         int baseType = NWScript.GetBaseItemType(item);
+        
+        // Is it a caster weapon?
+        bool casterWeapon = NWScript.GetLocalInt(item, "caster_weapon") == NWScript.TRUE;
+        if(casterWeapon)
+        {
+            baseType = ItemTypeConstants.Melee2HWeapons().Contains(baseType) ? 9999 : 9998;
+        }
+        
         IReadOnlyList<CraftingCategory> categories = data.Properties[baseType];
 
         MythalCategoryModel = new MythalCategoryModel(item, player, categories);

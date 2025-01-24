@@ -10,8 +10,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 [ServiceBinding(typeof(CraftingPropertyData))]
 public class CraftingPropertyData
 {
-    private const int CasterWeapon1h = 9998;
-    private const int CasterWeapon2h = 9999;
+    private const int CasterWeapon1H = 9998;
+    private const int CasterWeapon2H = 9999;
     public Dictionary<int, IReadOnlyList<CraftingCategory>> Properties { get; } = new();
 
     public CraftingPropertyData()
@@ -45,8 +45,8 @@ public class CraftingPropertyData
 
         AddEquippedItemProperties(properties);
 
-        Properties.TryAdd(CasterWeapon1h, properties);
-        Properties.TryAdd(CasterWeapon2h, properties);
+        Properties.TryAdd(CasterWeapon1H, properties);
+        Properties.TryAdd(CasterWeapon2H, properties);
     }
 
     private void SetupAmulets()
