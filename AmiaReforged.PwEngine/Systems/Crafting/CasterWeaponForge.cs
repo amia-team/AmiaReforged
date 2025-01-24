@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting;
@@ -17,13 +18,12 @@ public class CasterWeaponForge
         NwArea starterArea = NwModule.Instance.StartingLocation.Area;
         
         starterArea.OnEnter += RegisterNewForges;
-        
     }
 
     private void RegisterNewForges(AreaEvents.OnEnter obj)
     {
-        IEnumerable<NwPlaceable> forges = NwObject.FindObjectsWithTag<NwPlaceable>(ForgeTag);
-
+        NwPlaceable[] forges = NwObject.FindObjectsWithTag<NwPlaceable>(ForgeTag).ToArray();
+        LogManager.GetCurrentClassLogger().Info("Number of forges found: " + forges.Length);
         foreach (NwPlaceable forge in forges)
         {
             forge.OnSpellCastAt += EnchantWeapon;
