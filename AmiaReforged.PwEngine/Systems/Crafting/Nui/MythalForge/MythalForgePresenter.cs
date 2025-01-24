@@ -61,10 +61,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             .WithPlayer(Token().Player)
             .WithTitle("Don't Try That")
             .WithMessage("Don't try to game the system by dropping the mythals. You will lose all progress.")
-            .WithToken(Token())
-            .Open();
+            .OpenWithParent(Token());
 
-        NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName + " tried to drop a mythal while crafting.");
+        NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName +
+                                              " tried to drop a mythal while crafting.");
         _player.LoginCreature.AcquireItem(obj.Item);
     }
 
@@ -194,8 +194,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                 .WithTitle("Mythal Forge: WARNING!!!!")
                 .WithMessage(
                     "This item is stronger than what a Mythal Forge can create. Take care not to weaken the item when editing it!")
-                .WithToken(Token())
-                .Open();
+                .OpenWithParent(Token());
         }
     }
 

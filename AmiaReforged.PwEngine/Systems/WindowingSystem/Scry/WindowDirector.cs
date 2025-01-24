@@ -159,12 +159,20 @@ public sealed class WindowDirector : IDisposable
     public void OpenPopup(NwPlayer nwPlayer, string title, string message, NuiWindowToken linkedToken = default,
         bool ignoreButton = false)
     {
-        if (linkedToken != null || linkedToken != default)
+        if (linkedToken != default)
         {
             _linkedTokens.TryGetValue(linkedToken, out List<NuiWindowToken>? linkedTokens);
             linkedTokens?.Add(linkedToken);
         }
 
+        SimplePopupView view = new(nwPlayer, message, title, ignoreButton);
+        SimplePopupPresenter presenter = view.Presenter;
+
+        OpenWindow(presenter);
+    }
+    
+    public void OpenPopup(NwPlayer nwPlayer, string title, string message, bool ignoreButton = false)
+    {
         SimplePopupView view = new(nwPlayer, message, title, ignoreButton);
         SimplePopupPresenter presenter = view.Presenter;
 

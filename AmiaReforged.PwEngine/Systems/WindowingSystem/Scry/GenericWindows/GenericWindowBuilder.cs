@@ -119,7 +119,7 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows
             //     return;
             // }
 
-            Director.Value.OpenPopup(_nwPlayer, _title, _message, _token, _ignoreTag != string.Empty);
+            Director.Value.OpenPopup(_nwPlayer, _title, _message, _ignoreTag != string.Empty);
         }
 
         /// <summary>
@@ -127,10 +127,16 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows
         /// </summary>
         /// <param name="token">The token of the parent window.</param>
         /// <returns>The current <see cref="IOpenStage"/> instance.</returns>
-        public IOpenStage WithToken(NuiWindowToken token)
+        public void OpenWithParent(NuiWindowToken token)
         {
             _token = token;
-            return this;
+            if (Director == null)
+            {
+                Log.Error("WindowDirector is not injected");
+                return;
+            }
+            
+            Director.Value.OpenPopup(_nwPlayer, _title, _message, _token, _ignoreTag != string.Empty);
         }
 
         /// <summary>
@@ -224,7 +230,7 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows
         /// </summary>
         /// <param name="token">The token of the parent window.</param>
         /// <returns>The current <see cref="IOpenStage"/> instance.</returns>
-        IOpenStage WithToken(NuiWindowToken token);
+        void OpenWithParent(NuiWindowToken token);
 
         /// <summary>
         /// Enables the ignore button for the popup window.
