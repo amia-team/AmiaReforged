@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using Anvil.API;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -53,6 +54,8 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
+        ExclusiveToClass = true,
+        ExclusiveClass = ClassType.Assassin,
         BaseDifficulty = 25
     };
 
@@ -118,6 +121,8 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
+        ExclusiveToClass = true,
+        ExclusiveClass = ClassType.Bard,
         BaseDifficulty = 25
     };
 
@@ -159,6 +164,8 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
+        ExclusiveToClass = true,
+        ExclusiveClass = ClassType.Blackguard,
         BaseDifficulty = 25
     };
 
@@ -248,6 +255,8 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
+        ExclusiveToClass = true,
+        ExclusiveClass = ClassType.Cleric,
         BaseDifficulty = 25
     };
 
@@ -337,6 +346,8 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
+        ExclusiveToClass = true,
+        ExclusiveClass = ClassType.Druid,
         BaseDifficulty = 25
     };
 
@@ -378,6 +389,8 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
+        ExclusiveToClass = true,
+        ExclusiveClass = ClassType.Paladin,
         BaseDifficulty = 25
     };
 
@@ -419,6 +432,8 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
+        ExclusiveToClass = true,
+        ExclusiveClass = ClassType.Ranger,
         BaseDifficulty = 25
     };
 
@@ -508,6 +523,8 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
+        ExclusiveToClass = true,
+        ExclusiveClass = ClassType.Sorcerer,
         BaseDifficulty = 25
     };
 
@@ -597,6 +614,8 @@ public static class BonusSpellSlotProperties
                 CraftingTier = CraftingTier.Perfect
             }
         },
+        ExclusiveToClass = true,
+        ExclusiveClass = ClassType.Wizard,
         BaseDifficulty = 25
     };
 }

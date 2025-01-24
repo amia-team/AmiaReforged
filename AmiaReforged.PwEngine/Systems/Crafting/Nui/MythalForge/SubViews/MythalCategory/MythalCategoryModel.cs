@@ -17,6 +17,7 @@ public class MythalCategoryModel
 
     private readonly MythalMap _mythals;
     private readonly IReadOnlyList<CraftingCategory> _categories;
+    private readonly NwPlayer _player;
 
     public MythalCategoryModel(NwItem item, NwPlayer player, IReadOnlyList<CraftingCategory> categories)
     {
@@ -24,6 +25,7 @@ public class MythalCategoryModel
         _categories = categories;
 
         _mythals = new MythalMap(player);
+        _player = player;
         Categories = new List<MythalCategory>();
 
         SetupCategories();
@@ -34,6 +36,17 @@ public class MythalCategoryModel
         IReadOnlyList<CraftingCategory> internalCategories = _categories;
         foreach (CraftingCategory category in internalCategories)
         {
+            if (_player.LoginCreature is null)
+            {
+                Log.Info("Player login creature is null.");
+                return;
+            }
+            
+            // Ignore this category if it is exclusive to a class and the player does not have that class
+            if (category.ExclusiveToClass)
+            {
+                if(_player.LoginCreature.Classes.All(c => c.Class.ClassType != category.ExclusiveClass)) continue;
+            }
             MythalCategory modelCategory = new()
             {
                 Label = category.Label,
