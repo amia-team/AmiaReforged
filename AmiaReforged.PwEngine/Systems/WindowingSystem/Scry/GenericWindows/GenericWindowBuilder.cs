@@ -113,13 +113,13 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows
                 return;
             }
 
-            if (_token != default)
-            {
-                Director.Value.OpenPopup(_nwPlayer, _title, _message, _token, _ignoreTag != string.Empty);
-                return;
-            }
+            // if (_token != default)
+            // {
+            //     Director.Value.OpenPopup(_nwPlayer, _title, _message, _token, _ignoreTag != string.Empty);
+            //     return;
+            // }
 
-            Director.Value.OpenPopup(_nwPlayer, _title, _message, default, _ignoreTag != string.Empty);
+            Director.Value.OpenPopup(_nwPlayer, _title, _message, _token, _ignoreTag != string.Empty);
         }
 
         /// <summary>

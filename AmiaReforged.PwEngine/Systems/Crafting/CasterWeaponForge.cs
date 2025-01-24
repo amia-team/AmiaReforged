@@ -30,11 +30,18 @@ public class CasterWeaponForge
         {
             return;
         }
+        
+        if(player.LoginCreature == null)
+        {
+            LogManager.GetCurrentClassLogger().Info("Player login creature is null.");
+            return;
+        }
 
         NwItem? pcKey = player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.Tag == "ds_pckey");
 
         if (pcKey == null)
         {
+            LogManager.GetCurrentClassLogger().Info("PC key is null.");
             return;
         }
 
