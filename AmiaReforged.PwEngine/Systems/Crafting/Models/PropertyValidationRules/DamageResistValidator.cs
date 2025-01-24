@@ -5,7 +5,7 @@ using NLog;
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
 [ValidationRuleFor(Property = ItemPropertyType.DamageResistance)]
-public class ResistanceValidationRules : IValidationRule
+public class DamageResistValidator : IValidationRule
 {
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
