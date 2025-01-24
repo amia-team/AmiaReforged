@@ -32,7 +32,7 @@ public class ItemPropertyModel
     private string GetPropertyParam() =>
         (Property.Param1TableValue == null ? string.Empty : Property.Param1TableValue.Label) ?? string.Empty;
 
-    public required int GoldCost { get; set; }
+    public int GoldCost { get; set; }
 
 
     // implicit operator to map back to ItemProperty
