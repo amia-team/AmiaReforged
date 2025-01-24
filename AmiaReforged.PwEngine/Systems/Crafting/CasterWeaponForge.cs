@@ -30,8 +30,8 @@ public class CasterWeaponForge
         {
             return;
         }
-        
-        if(player.LoginCreature == null)
+
+        if (player.LoginCreature == null)
         {
             LogManager.GetCurrentClassLogger().Info("Player login creature is null.");
             return;
@@ -57,7 +57,7 @@ public class CasterWeaponForge
             .WithPlayer(player)
             .WithTitle("Caster Weapon Forge")
             .WithMessage(
-                "You can turn a blank weapon into a caster weapon here.One-handed weapons have 12 powers, Two-handed weapons have 20.")
+                "You can turn a blank weapon into a caster weapon here by casting Restoration, any Missile Storm, Flame Strike, or Healing Circle. One-handed weapons have 12 powers, Two-handed weapons have 20.")
             .EnableIgnoreButton("ignore_caster_forge")
             .Open();
     }
@@ -69,9 +69,12 @@ public class CasterWeaponForge
             return;
         }
 
-        if (obj.Spell.SpellType != Spell.GreaterMagicWeapon)
+        if (obj.Spell.SpellType != Spell.Restoration || obj.Spell.SpellType != Spell.IsaacsLesserMissileStorm ||
+            obj.Spell.SpellType != Spell.IsaacsGreaterMissileStorm || obj.Spell.SpellType != Spell.FlameStrike ||
+            obj.Spell.SpellType != Spell.HealingCircle)
         {
-            player.SendServerMessage("You can only enchant weapons here with Greater Magic Weapon.");
+            player.SendServerMessage(
+                "You can only enchant weapons here with: Restoration, Isaac's Lesser Missile Storm, Isaac's Greater Missile, Flame Strike, or Healing Circle.");
             return;
         }
 
