@@ -10,7 +10,6 @@ public class ResistanceValidationRules : IValidationRule
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
-        LogManager.GetCurrentClassLogger().Info($"{incoming.GameLabel}");
         ValidationEnum result = ValidationEnum.Valid;
         string error = string.Empty;
 
