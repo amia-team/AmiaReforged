@@ -83,7 +83,7 @@ public class MythalForgeInitializer
         bool is2H = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
         if (isCasterWeapon == NWScript.TRUE)
         {
-            baseItemType = is2H ? 9999 : 9998;
+            baseItemType = is2H ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
         }
         
 

@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -17,7 +18,7 @@ public class CraftingBudgetService
         int trueBase = baseItemType;
         if (casterWeapon == 1)
         {
-            trueBase = isTwoHanded ? 9999 : 9998;
+            trueBase = isTwoHanded ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
         }
 
         return MythalBudgetFor(trueBase);
@@ -89,8 +90,8 @@ public class CraftingBudgetService
             NWScript.BASE_ITEM_BOLT => 4,
             NWScript.BASE_ITEM_BULLET => 4,
             // Special case where there isn't actually a set base item type
-            9998 => 12,
-            9999 => 20,
+            CraftingPropertyData.CasterWeapon1H => 12,
+            CraftingPropertyData.CasterWeapon2H => 20,
             _ => 0
         };
     }
