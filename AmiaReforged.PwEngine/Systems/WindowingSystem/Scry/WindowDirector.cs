@@ -44,6 +44,7 @@ public sealed class WindowDirector : IDisposable
                 if (window != null)
                 {
                     Log.Info("Window found, removing.");
+                    _tokens.Remove(window.Token());
                     window.Close();
                     playerWindows?.Remove(window);
                 }
@@ -84,9 +85,9 @@ public sealed class WindowDirector : IDisposable
         window.Initialize();
         window.Create();
         
-        _tokens.Add(window.Token(), window);
+        _tokens.TryAdd(window.Token(), window);
         _activeWindows.TryGetValue(window.Token().Player, out List<IScryPresenter>? playerWindows);
-        _linkedTokens.Add(window.Token(), new List<NuiWindowToken>());
+        _linkedTokens.TryAdd(window.Token(), new List<NuiWindowToken>());
         
         playerWindows?.Add(window);
     }
