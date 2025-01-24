@@ -1,11 +1,13 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using Anvil.API;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
-[ValidationRuleFor(Property = ItemPropertyType.SavingThrowBonus)]
-public class SavingThrowValidator : IValidationRule
+/// <summary>
+/// Duplication here is intentional. This is a validator for specific saving throw bonuses.
+/// </summary>
+[ValidationRuleFor(Property = ItemPropertyType.SavingThrowBonusSpecific)]
+public class SpecificSavingThrowValidator : IValidationRule
 {
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
