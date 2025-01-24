@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using Anvil.API;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
@@ -13,6 +14,8 @@ public class SavingThrowValidator : IValidationRule
         string error = string.Empty;
 
         SavingThrow savingThrow = new(incoming);
+        
+        LogManager.GetCurrentClassLogger().Info($"{savingThrow.ThrowType} {savingThrow.Bonus}");
 
         // Get all of the saving throw bonuses on the item
         List<SavingThrow> savingThrows = itemProperties
