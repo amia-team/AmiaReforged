@@ -53,7 +53,7 @@ public class ResistanceValidationRules : IValidationRule
             };
 
             ResistanceType = incoming.SubTypeName;
-            ResistanceValue = int.Parse(incoming.PropertyBonus);
+            ResistanceValue = int.Parse(incoming.PropertyBonus.Split("_")[1]);
         }
 
         public string ResistanceType { get; set; }
