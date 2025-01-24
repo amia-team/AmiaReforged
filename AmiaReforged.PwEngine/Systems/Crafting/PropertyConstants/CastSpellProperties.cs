@@ -3,7 +3,7 @@ using static NWN.Core.NWScript;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 
-public class CastSpellConstants
+public class CastSpellProperties
 {
     /* Useful spells:
      - Aura of Vitality (13)

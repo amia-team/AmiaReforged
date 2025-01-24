@@ -107,7 +107,7 @@ public class MythalForgeInitializer
                 .SimplePopup()
                 .WithPlayer(obj.Player)
                 .WithTitle("Mythal Forge: Notice")
-                .WithMessage("That doesn't belong to you. Pick it from your inventory.")
+                .WithMessage("That doesn't belong to you. Pick an item from your inventory.")
                 .Open();
             obj.Player.OpenInventory();
             return;
@@ -115,10 +115,6 @@ public class MythalForgeInitializer
 
         if (categories == null)
         {
-            // obj.Player.SendServerMessage(
-            //     "Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.",
-            //     ColorConstants.Red);
-
             StandAloneWindow.Builder()
                 .For()
                 .SimplePopup()
@@ -138,9 +134,9 @@ public class MythalForgeInitializer
         // Remove the token.
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
-        MythalForgeView itemWindow = new MythalForgeView(_propertyData, _budget, item, obj.Player, _validator);
+        MythalForgeView itemWindow = new(_propertyData, _budget, item, obj.Player, _validator);
         _windowSystem.OpenWindow(itemWindow.Presenter);
-        
+
         obj.Player.OpenInventory();
         obj.Player.OnPlayerTarget -= ValidateAndSelect;
     }

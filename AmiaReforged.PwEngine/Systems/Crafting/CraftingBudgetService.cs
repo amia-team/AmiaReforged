@@ -1,6 +1,4 @@
-﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -10,25 +8,27 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 [ServiceBinding(typeof(CraftingBudgetService))]
 public class CraftingBudgetService
 {
-    private readonly CraftingPropertyData _data;
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
-    public CraftingBudgetService(CraftingPropertyData data)
-    {
-        _data = data;
-    }
-
     public int MythalBudgetForNwItem(NwItem item)
     {
-        return MythalBudgetFor(NWScript.GetBaseItemType(item));
+        int baseItemType = NWScript.GetBaseItemType(item);
+        int casterWeapon = NWScript.GetLocalInt(item, "CASTER_WEAPON");
+        bool isTwoHanded = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
+
+        int trueBase = baseItemType;
+        if (casterWeapon == 1)
+        {
+            trueBase = isTwoHanded ? 9999 : 9998;
+        }
+
+        return MythalBudgetFor(trueBase);
     }
+
     public int MythalBudgetFor(int baseItemType)
     {
         return baseItemType switch
         {
             // Equippables
             NWScript.BASE_ITEM_AMULET => 4,
-
             NWScript.BASE_ITEM_ARMOR => 8,
             NWScript.BASE_ITEM_TOWERSHIELD => 8,
             NWScript.BASE_ITEM_SMALLSHIELD => 8,
@@ -88,49 +88,10 @@ public class CraftingBudgetService
             NWScript.BASE_ITEM_ARROW => 4,
             NWScript.BASE_ITEM_BOLT => 4,
             NWScript.BASE_ITEM_BULLET => 4,
+            // Special case where there isn't actually a set base item type
+            9998 => 12,
+            9999 => 20,
             _ => 0
         };
-    }
-
-    public int RemainingBudgetForNwItem(NwItem item)
-    {
-        return RemainingBudgetFor(item);
-    }
-    
-    public int RemainingBudgetFor(NwItem item)
-    {
-        if (!item.Possessor.IsPlayerControlled(out NwPlayer? player)) return 0;
-
-        int baseItem = NWScript.GetBaseItemType(item);
-        int max = MythalBudgetFor(baseItem);
-
-        int spent = 0;
-        IReadOnlyList<CraftingProperty> uncategorized = _data.UncategorizedPropertiesFor(baseItem);
-
-        if (uncategorized.Count == 0) return max;
-
-        foreach (ItemProperty property in item.ItemProperties)
-        {
-            string propString = ItemPropertyHelper.GameLabel(property);
-            CraftingProperty? found = uncategorized.FirstOrDefault(p => ItemPropertyHelper.GameLabel(p.ItemProperty) == propString);
-
-            if (found != null)
-            {
-                spent += found.PowerCost;
-            }
-            else
-            {
-                player.FloatingTextString("Uncategorized property found: " + propString);
-
-                spent += 2;
-            }
-        }
-
-        return max - spent;
-    }
-    
-    public bool CanAffordProperty(NwItem item, CraftingProperty property)
-    {
-        return RemainingBudgetFor(item) >= property.PowerCost;
     }
 }
