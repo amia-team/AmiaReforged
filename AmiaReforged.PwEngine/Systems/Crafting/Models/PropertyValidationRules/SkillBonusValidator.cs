@@ -79,7 +79,7 @@ public class SkillBonusValidator : IValidationRule
 
         return new ValidationResult
         {
-            Enum = result,
+            Result = result,
             ErrorMessage = error
         };
     }
@@ -117,7 +117,7 @@ public class SkillBonusValidator : IValidationRule
 
         return new ValidationResult
         {
-            Enum = result,
+            Result = result,
             ErrorMessage = error
         };
     }

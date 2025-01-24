@@ -20,7 +20,7 @@ public class AttackBonusValidator : IValidationRule
         
         return new ValidationResult
         {
-            Enum = result,
+            Result = result,
             ErrorMessage = error
         };
     }

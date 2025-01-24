@@ -2,6 +2,6 @@
 
 public class ValidationResult
 {
-    public ValidationEnum Enum { get; init; }
+    public ValidationEnum Result { get; init; }
     public string? ErrorMessage { get; init; }
 }

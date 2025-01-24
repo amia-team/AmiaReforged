@@ -42,7 +42,7 @@ public class AbilityValidator : IValidationRule
 
         return new ValidationResult
         {
-            Enum = @enum,
+            Result = @enum,
             ErrorMessage = error
         };
     }

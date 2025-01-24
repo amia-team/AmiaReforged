@@ -23,7 +23,7 @@ public class AcValidationRule : IValidationRule
         
         return new ValidationResult
         {
-            Enum = @enum,
+            Result = @enum,
             ErrorMessage = errorMessage
         };
     }

@@ -136,7 +136,7 @@ public class MythalForgeModel
                     _validator.Validate(property, Item.ItemProperties, ChangeListModel.ChangeList());
 
                 
-                bool passesValidation = operation.Enum == ValidationEnum.Valid;
+                bool passesValidation = operation.Result == ValidationEnum.Valid;
                 bool canAfford = property.Internal.PowerCost <= RemainingPowers;
                 bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
                 property.Selectable = passesValidation &&
