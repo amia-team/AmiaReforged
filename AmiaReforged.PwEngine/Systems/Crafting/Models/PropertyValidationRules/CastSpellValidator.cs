@@ -7,36 +7,58 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 [ValidationRuleFor(Property = ItemPropertyType.CastSpell)]
 public class CastSpellValidator : IValidationRule
 {
-    private static readonly string[] Beneficial = new[]
-    {
-        "Aura of Vitality",
-        "Belagarn's Iron Horn",
-        "Barkskin",
-        "War Cry",
-        "Bless Weapon",
-        "Cat's Grace",
-        "Haste",
-        "Improved Invisibility"
-    };
-
     private static readonly string[] Fluff = new[]
     {
-        "Aid",
-        "Bless",
-        "Bull's Strength",
-        "Cure Critical Wounds",
+        "Aid (3)",
+        "Bless (2)",
+        "Cat's Grace (3)",
+        "Bull's Strength (3)",
+        "Endurance (3)",
+        "Expeditious Retreat (5)",
+        "Light (1)",
     };
 
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
-        ValidationEnum result = ValidationEnum.Valid;
-        string error = string.Empty;
-
         CastSpell castSpell = new(incoming.ItemProperty);
 
-        LogManager.GetCurrentClassLogger().Info($"{castSpell.SpellName} {castSpell.UsesPerDay}");
+        ValidationResult res = Fluff.Contains(castSpell.SpellName)
+            ? ValidateFluff(castSpell, itemProperties, changelistProperties)
+            : ValidateNonFluff(castSpell, itemProperties, changelistProperties);
 
+        return res;
+    }
+
+    private ValidationResult ValidateFluff(CastSpell castSpell, IEnumerable<ItemProperty> itemProperties,
+        List<ChangeListModel.ChangelistEntry> changelistProperties)
+    {
+        // Get all of the cast spell properties in the changelist and on the item and combine them
+        List<CastSpell> castSpellsInChangelist = changelistProperties
+            .Where(e => e.BasePropertyType == ItemPropertyType.CastSpell &&
+                        e.State != ChangeListModel.ChangeState.Removed)
+            .Select(p => new CastSpell(p.Property))
+            .ToList();
+        List<CastSpell> castSpellsInItem = itemProperties
+            .Where(x => x.Property.PropertyType == ItemPropertyType.CastSpell)
+            .Select(p => new CastSpell(p))
+            .ToList();
+
+        List<CastSpell> allCastSpells = castSpellsInChangelist.Concat(castSpellsInItem).ToList();
+        
+        // Look for any fluff spells in the item or changelist
+        bool fluffExists = allCastSpells.Any(x => Fluff.Contains(x.SpellName));
+
+        return new ValidationResult()
+        {
+            Result = fluffExists ? ValidationEnum.LimitReached : ValidationEnum.Valid,
+            ErrorMessage = fluffExists ? "Only one fluff spell can be added to an item." : string.Empty
+        };
+    }
+
+    private ValidationResult ValidateNonFluff(CastSpell castSpell, IEnumerable<ItemProperty> itemProperties,
+        List<ChangeListModel.ChangelistEntry> changelistProperties)
+    {
         // Get all of the cast spell properties in the changelist and on the item and combine them
         List<CastSpell> castSpellsInChangelist = changelistProperties
             .Where(e => e.BasePropertyType == ItemPropertyType.CastSpell &&
@@ -52,13 +74,11 @@ public class CastSpellValidator : IValidationRule
 
         // Now we only care if the same spell exists in the item or the changelist
         bool alreadyExists = allCastSpells.Any(x => x.SpellName == castSpell.SpellName);
-        result = alreadyExists ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
 
-
-        return new ValidationResult
+        return new ValidationResult()
         {
-            Result = result,
-            ErrorMessage = error
+            Result = alreadyExists ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid,
+            ErrorMessage = alreadyExists ? $"{castSpell.SpellName} already exists on the item." : string.Empty
         };
     }
 
