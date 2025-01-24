@@ -49,9 +49,9 @@ public class MythalForgeInitializer
     {
         if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
 
-        if (_windowSystem.IsWindowOpen(player, typeof(MythalForgeWindow)))
+        if (_windowSystem.IsWindowOpen(player, typeof(MythalForgePresenter)))
         {
-            _windowSystem.CloseWindow(player, typeof(MythalForgeWindow));
+            _windowSystem.CloseWindow(player, typeof(MythalForgePresenter));
             return;
         }
 
