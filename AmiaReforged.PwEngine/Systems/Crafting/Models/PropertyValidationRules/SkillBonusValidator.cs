@@ -29,7 +29,6 @@ public class SkillBonusValidator : IValidationRule
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
         SkillBonus skillBonus = new(incoming);
-        LogManager.GetCurrentClassLogger().Info($"{skillBonus.Skill} {skillBonus.Bonus}");
 
         bool isPersonalSkill = _personalSkills.Contains(skillBonus.Skill);
         if (isPersonalSkill)
