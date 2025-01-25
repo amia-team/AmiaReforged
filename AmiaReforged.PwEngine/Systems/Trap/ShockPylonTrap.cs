@@ -5,13 +5,13 @@ using Anvil.Services;
 using NLog;
 using NLog.Fluent;
 using NWN.Core;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.Trap;
 
 [ServiceBinding(typeof(ShockPylonTrap))]
 public class ShockPylonTrap
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private const string MeatZapper = "meatzapper";
     private readonly Dictionary<NwArea, List<NwPlaceable>> _activeTraps = new();
 
@@ -49,7 +49,8 @@ public class ShockPylonTrap
             return;
         }
 
-        NwPlaceable? previous = obj.Area.FindObjectsOfTypeInArea<NwPlaceable>().FirstOrDefault(p => p.ResRef == MeatZapper);
+        NwPlaceable? previous =
+            obj.Area.FindObjectsOfTypeInArea<NwPlaceable>().FirstOrDefault(p => p.ResRef == MeatZapper);
         if (previous == null)
         {
             return;
@@ -59,9 +60,9 @@ public class ShockPylonTrap
         // Start off by zapping the creature closest to the trap (10m)
         NwCreature? initialClosest = obj.Area.FindObjectsOfTypeInArea<NwCreature>()
             .Where(c => c.Distance(previous) <= 10.0f).OrderBy(c => c.Distance(previous)).FirstOrDefault();
-        
+
         previous.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
-        
+
         if (initialClosest != null && initialClosest.IsPlayerControlled)
         {
             Effect initialBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, previous, NWScript.BODY_NODE_CHEST,
@@ -122,14 +123,13 @@ public class ShockPylonTrap
         {
             return;
         }
-        
+
         if (!_activeTraps.ContainsKey(obj.Area))
         {
-            Log.Info("Registering new area: " + obj.Area.Name);
             _activeTraps.Add(obj.Area, new List<NwPlaceable>());
             obj.Area.OnHeartbeat += Zap;
         }
-        
+
         RegisterNewTraps(obj.Area);
     }
 
@@ -138,22 +138,18 @@ public class ShockPylonTrap
         // We just want to get the meat zappers that are in the area, but ignore the ones we already have and add them
         // with the rest of the traps
         List<NwPlaceable> traps = area.FindObjectsOfTypeInArea<NwPlaceable>().Where(t => t.Tag == MeatZapper).ToList();
-        Log.Info("Number of traps in area: " + traps.Count);
         foreach (NwPlaceable trap in traps)
         {
             if (trap.Area == null) continue;
 
             if (_activeTraps.ContainsKey(trap.Area) && _activeTraps[trap.Area].Contains(trap))
             {
-                Log.Info("Trap already registered: " + trap.Tag);
                 continue;
             }
 
-            Log.Info("Registering new trap: " + trap.Tag);
             _activeTraps[trap.Area].Add(trap);
             trap.OnDeath += OnTrapDeath;
         }
-        
     }
 
 
