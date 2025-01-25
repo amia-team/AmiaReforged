@@ -129,6 +129,7 @@ public class ShockPylonTrap
         {
             Log.Info("Registering new area: " + obj.Area.Name);
             _activeTraps.Add(obj.Area, new List<NwPlaceable>());
+            obj.Area.OnHeartbeat += Zap;
         }
         
         RegisterNewTraps(obj.Area);
@@ -155,7 +156,6 @@ public class ShockPylonTrap
             trap.OnDeath += OnTrapDeath;
         }
         
-        area.OnHeartbeat += Zap;
     }
 
 
