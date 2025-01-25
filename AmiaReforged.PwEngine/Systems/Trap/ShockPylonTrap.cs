@@ -128,6 +128,7 @@ public class ShockPylonTrap
         
         if (!_activeTraps.ContainsKey(obj.Area))
         {
+            Log.Info("Registering new area: " + obj.Area.Name);
             _activeTraps.Add(obj.Area, new List<NwPlaceable>());
         }
         
