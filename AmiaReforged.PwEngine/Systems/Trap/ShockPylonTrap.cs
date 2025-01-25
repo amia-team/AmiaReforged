@@ -64,21 +64,20 @@ public class ShockPylonTrap
         Log.Info("Zap time");
         // Find zappers in a 50 meter radius
         List<NwPlaceable>? zappers = obj.Placeable.Area?.FindObjectsOfTypeInArea<NwPlaceable>()
-            .Where(p => p.ResRef == MeatZapper && p.Distance(obj.Placeable) <= 100.0f).ToList();
+            .Where(p => p.ResRef == MeatZapper && p.Distance(obj.Placeable) <= 100.0f && p != obj.Placeable).ToList();
         
-        Effect beam = Effect.Beam(VfxType.BeamBlack, obj.Placeable, BodyNode.Chest);
 
         if (zappers != null)
         {
+            NwPlaceable previous = obj.Placeable;
             foreach (NwPlaceable zapper in zappers)
             {
-                if (zapper == obj.Placeable)
-                {
-                    continue;
-                }
-
+                Effect beam = Effect.Beam(VfxType.BeamBlack, previous, BodyNode.Chest);
                 zapper.ApplyEffect(EffectDuration.Instant, beam, TimeSpan.FromSeconds(2));
+                
+                previous = zapper;
             }
+
         }
     }
 
