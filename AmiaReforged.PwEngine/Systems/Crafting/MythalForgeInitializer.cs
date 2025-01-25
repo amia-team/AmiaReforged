@@ -13,7 +13,7 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting;
 
-[ServiceBinding(typeof(MythalForgeInitializer))]
+// [ServiceBinding(typeof(MythalForgeInitializer))]
 public class MythalForgeInitializer
 {
     private const string TargetingModeMythalForge = "mythal_forge";
