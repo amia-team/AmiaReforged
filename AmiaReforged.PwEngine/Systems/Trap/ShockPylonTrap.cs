@@ -13,7 +13,7 @@ namespace AmiaReforged.PwEngine.Systems.Trap;
 public class ShockPylonTrap
 {
     private const string MeatZapper = "meatzapper";
-    private readonly Dictionary<NwArea, List<NwPlaceable?>> _activeTraps = new();
+    private readonly Dictionary<NwArea, List<NwPlaceable>> _activeTraps = new();
 
     public ShockPylonTrap()
     {
