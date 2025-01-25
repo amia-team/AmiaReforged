@@ -49,27 +49,7 @@ public class ShockPylonTrap
         {
             return;
         }
-
-        // bool visitedAll = false;
-        // NwPlaceable? current = trap[0];
-        // List<NwPlaceable?> visited = new() { current };
-        //
-        // while (!visitedAll)
-        // {
-        //     NwPlaceable? next = trap.Where(t => t != current && t.Distance(current) <= 30.0f && !visited.Contains(t))
-        //         .OrderBy(t => t.Distance(current)).FirstOrDefault();
-        //
-        //     if (next == null)
-        //     {
-        //         visitedAll = true;
-        //         continue;
-        //     }
-        //
-        //     visited.Add(next);
-        //     ApplyBeamEffects(current, next);
-        //     current = next;
-        // }
-
+        
         foreach (NwPlaceable current in _activeTraps[obj.Area])
         {
             // Get the closest zapper within 20m. We only do this once.
@@ -83,7 +63,7 @@ public class ShockPylonTrap
         }
     }
 
-    private static void ApplyBeamEffects(NwPlaceable? origin, NwPlaceable? target)
+    private static void ApplyBeamEffects(NwPlaceable origin, NwPlaceable target)
     {
         Effect beam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, origin, NWScript.BODY_NODE_CHEST, 0,
             2.5f, new Vector3(0, 0, 3))!;
@@ -102,6 +82,7 @@ public class ShockPylonTrap
 
             creature.ApplyEffect(EffectDuration.Temporary, creatureBeam, TimeSpan.FromSeconds(2));
 
+            origin.SpeakString("Doing a zap motherFUCKER");
             // damage
 
             int damage = NWScript.d6(2);
