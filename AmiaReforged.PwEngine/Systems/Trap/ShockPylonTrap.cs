@@ -37,7 +37,6 @@ public class ShockPylonTrap
 
     private void Zap(AreaEvents.OnHeartbeat obj)
     {
-        RegisterNewTraps(obj.Area);
         // Don't do anything here if the area's traps are empty
         if (!_activeTraps.TryGetValue(obj.Area, out List<NwPlaceable>? trap))
         {
