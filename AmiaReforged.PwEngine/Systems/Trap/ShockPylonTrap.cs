@@ -37,7 +37,7 @@ public class ShockPylonTrap
 
     private void Zap(AreaEvents.OnHeartbeat obj)
     {
-        RegisterNewTraps();
+        RegisterNewTraps(obj.Area);
         // Don't do anything here if the area's traps are empty
         if (!_activeTraps.TryGetValue(obj.Area, out List<NwPlaceable>? trap))
         {
@@ -129,23 +129,23 @@ public class ShockPylonTrap
         }
 
 
-        RegisterNewTraps();
+        RegisterNewTraps(obj.Area);
     }
 
-    private void RegisterNewTraps()
+    private void RegisterNewTraps(NwArea area)
     {
         // We just want to get the meat zappers that are in the area, but ignore the ones we already have and add them
         // with the rest of the traps
-        List<NwPlaceable> traps = NwObject.FindObjectsWithTag<NwPlaceable>(MeatZapper).ToList();
+        List<NwPlaceable> traps = area.FindObjectsOfTypeInArea<NwPlaceable>().Where(t => t.Tag == MeatZapper).ToList();
         foreach (NwPlaceable trap in traps)
         {
             if (trap.Area == null) continue;
-            
+
             if (_activeTraps.ContainsKey(trap.Area) && _activeTraps[trap.Area].Contains(trap))
             {
                 continue;
             }
-            
+
             _activeTraps[trap.Area].Add(trap);
             trap.OnDeath += OnTrapDeath;
         }
