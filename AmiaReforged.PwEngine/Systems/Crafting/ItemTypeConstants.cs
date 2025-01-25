@@ -4,6 +4,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 
 public static class ItemTypeConstants
 {
+    public const string CasterWeaponVar = "CASTER_WEAPON";
     public static List<int> MeleeWeapons()
     {
         return new List<int>

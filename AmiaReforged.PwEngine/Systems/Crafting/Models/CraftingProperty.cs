@@ -1,5 +1,4 @@
-﻿using AmiaReforged.Core.UserInterface;
-using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
+﻿using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models;
@@ -13,49 +12,31 @@ public class CraftingProperty
     public required ItemProperty ItemProperty { get; init; }
     public required string GuiLabel { get; init; }
     public required int PowerCost { get; init; }
-
     public string GameLabel => ItemPropertyHelper.GameLabel(ItemProperty);
-
-
     public required CraftingTier CraftingTier { get; set; }
 
-    public NuiComboEntry ToComboEntry(int value)
-    {
-        return new NuiComboEntry(GuiLabel, value);
-    }
+    public bool Removable { get; set; } = true;
 
-    public bool Removeable { get; set; } = true;
+    public int GoldCost { get; set; }
 
-    public NuiElement ToNuiElement()
+    public ItemPropertyModel ToItemPropertyModel()
     {
-        NuiRow row = new()
+        return new ItemPropertyModel
         {
-            Children =
-            {
-                new NuiButton(GuiLabel)
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Width = 200f,
-                }.Assign(out Button),
-                new NuiGroup()
-                {
-                    Element = new NuiLabel(PowerCost.ToString())
-                    {
-                        HorizontalAlign = NuiHAlign.Center,
-                        VerticalAlign = NuiVAlign.Middle
-                    },
-                    Width = 50f,
-                    Height = 50f,
-                    Tooltip = "Power Cost On Item"
-                }
-            }
+            Property = ItemProperty,
+            GoldCost = GoldCost
         };
-        
-        return row;
     }
 
-    public int CalculateGoldCost()
+    // operator to convert back to ItemProperty
+    public static implicit operator ItemProperty(CraftingProperty craftingProperty)
     {
-        return 0;
+        return craftingProperty.ItemProperty;
+    }
+
+    //operator to convert to ItemPropertyModel
+    public static implicit operator ItemPropertyModel(CraftingProperty craftingProperty)
+    {
+        return craftingProperty.ToItemPropertyModel();
     }
 }

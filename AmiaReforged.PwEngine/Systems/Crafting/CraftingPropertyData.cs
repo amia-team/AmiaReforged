@@ -10,6 +10,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 [ServiceBinding(typeof(CraftingPropertyData))]
 public class CraftingPropertyData
 {
+    public const int CasterWeapon1H = 9998;
+    public const int CasterWeapon2H = 9999;
     public Dictionary<int, IReadOnlyList<CraftingCategory>> Properties { get; } = new();
 
     public CraftingPropertyData()
@@ -37,15 +39,14 @@ public class CraftingPropertyData
         }
     }
 
-    public void SetupMagicStaves()
+    private void SetupMagicStaves()
     {
         List<CraftingCategory> properties = new();
 
         AddEquippedItemProperties(properties);
 
-        // TODO: Support for spell slots.
-
-        Properties.TryAdd(NWScript.BASE_ITEM_MAGICSTAFF, properties);
+        Properties.TryAdd(CasterWeapon1H, properties);
+        Properties.TryAdd(CasterWeapon2H, properties);
     }
 
     private void SetupAmulets()
@@ -103,11 +104,17 @@ public class CraftingPropertyData
         properties.Add(GenericItemProperties.Regeneration);
 
         properties.Add(SavingThrowProperties.SpecificSaves);
+        properties.Add(SavingThrowProperties.GeneralSaves);
+        properties.Add(SavingThrowProperties.UniversalSaves);
 
         properties.Add(SkillProperties.Personal);
         properties.Add(SkillProperties.Advantageous);
 
         properties.Add(AbilityProperties.Abilities);
+        
+        properties.Add(CastSpellProperties.FluffSpells);
+        properties.Add(CastSpellProperties.BeneficialSpells);
+        
 
         Properties.TryAdd(NWScript.BASE_ITEM_AMULET, properties);
     }
@@ -154,11 +161,15 @@ public class CraftingPropertyData
 
         properties.Add(SavingThrowProperties.SpecificSaves);
         properties.Add(SavingThrowProperties.GeneralSaves);
+        properties.Add(SavingThrowProperties.UniversalSaves);
 
         properties.Add(SkillProperties.Personal);
         properties.Add(SkillProperties.Advantageous);
 
         properties.Add(AbilityProperties.Abilities);
+        
+        properties.Add(CastSpellProperties.FluffSpells);
+        properties.Add(CastSpellProperties.BeneficialSpells);
         
         properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
         properties.Add(BonusSpellSlotProperties.BardBonusSpells);

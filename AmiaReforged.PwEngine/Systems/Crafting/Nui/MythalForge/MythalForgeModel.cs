@@ -1,8 +1,13 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
+using AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
-using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
+using NLog;
+using NLog.Fluent;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
@@ -12,91 +17,235 @@ public class MythalForgeModel
     public MythalCategoryModel MythalCategoryModel { get; }
     public ActivePropertiesModel ActivePropertiesModel { get; }
 
-    private readonly NwItem _item;
-    private readonly List<ItemProperty> _mythalProperties = new();
-    private readonly List<ItemProperty> _removedProperties = new();
-    private readonly List<ChangelistEntry> _changeList = new();
-    private readonly CraftingPropertyData _data;
+    public NwItem Item { get; }
     private readonly CraftingBudgetService _budget;
+    private readonly NwPlayer _player;
+    private readonly PropertyValidator _validator;
 
-    public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player)
+    public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player,
+        PropertyValidator validator)
     {
-        _item = item;
-        _data = data;
+        Item = item;
         _budget = budget;
+        _player = player;
+        _validator = validator;
 
-        foreach (ItemProperty property in item.ItemProperties)
+        int baseType = NWScript.GetBaseItemType(item);
+        
+        // Is it a caster weapon?
+        bool casterWeapon = NWScript.GetLocalInt(item, ItemTypeConstants.CasterWeaponVar) == NWScript.TRUE;
+        if(casterWeapon)
         {
-            if (ItemPropertyHelper.CanBeRemoved(property)) continue;
-
-            _mythalProperties.Add(property);
+            baseType = ItemTypeConstants.Melee2HWeapons().Contains(baseType) ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
         }
+        
+        LogManager.GetCurrentClassLogger().Info("Base type: " + baseType);
+        
+        IReadOnlyList<CraftingCategory> categories = data.Properties[baseType];
 
-        MythalCategoryModel = new MythalCategoryModel(item, data, player);
+        MythalCategoryModel = new MythalCategoryModel(item, player, categories);
+        ChangeListModel = new ChangeListModel();
+        ActivePropertiesModel = new ActivePropertiesModel(item, player, categories);
     }
 
-    public int MaxBudget => _budget.MythalBudgetForNwItem(_item);
+    public int MaxBudget => _budget.MythalBudgetForNwItem(Item);
 
     public int RemainingPowers
     {
         get
         {
-            int remaining = _mythalProperties.Where(p => !_removedProperties.Contains(p)).Aggregate(MaxBudget,
-                (current, prop) => current - ItemPropertyHelper.ToCraftingProperty(prop).PowerCost);
+            int remaining = MaxBudget;
 
-            remaining += _changeList.Sum(change => change.State switch
+            foreach (MythalCategoryModel.MythalProperty visibleProperty in ActivePropertiesModel.GetVisibleProperties())
             {
-                ChangeState.Added => -change.Property.PowerCost,
-                ChangeState.Removed => change.Property.PowerCost,
-                _ => 0
-            });
+                remaining -= visibleProperty.Internal.PowerCost;
+            }
 
-            return remaining;
+            foreach (ChangeListModel.ChangelistEntry entry in ChangeListModel.ChangeList())
+            {
+                if (entry.State == ChangeListModel.ChangeState.Added)
+                {
+                    remaining -= entry.Property.PowerCost;
+                }
+            }
+
+            return Math.Clamp(remaining, -16, MaxBudget);
         }
     }
 
-    public IEnumerable<ItemProperty> VisibleProperties =>
-        _mythalProperties.Where(p => !_removedProperties.Contains(p));
+    public IEnumerable<MythalCategoryModel.MythalProperty> VisibleProperties =>
+        ActivePropertiesModel.GetVisibleProperties();
 
-    public IReadOnlyList<ChangelistEntry> ChangeList => _changeList;
-
-    public bool TryAddProperty(CraftingProperty property)
+    public int GetCraftingDifficulty()
     {
-        if (property.PowerCost > RemainingPowers)
-            return false;
-
-        ChangelistEntry entry = new()
+        if (ChangeListModel.ChangeList().Count == 0)
         {
-            Label = property.GuiLabel,
-            Property = property,
-            GpCost = property.CalculateGoldCost(),
-            State = ChangeState.Added
-        };
+            return 0;
+        }
 
-        _changeList.Add(entry);
-        return true;
+        int craftingDifficulty = ChangeListModel.ChangeList().Select(c => c.Difficulty).Max();
+
+        return craftingDifficulty;
     }
 
-    public class ChangelistEntry
+    public void AddNewProperty(MythalCategoryModel.MythalProperty property)
     {
-        public required string Label { get; set; }
-        public required CraftingProperty Property { get; set; }
-        public int GpCost { get; set; }
-        public ChangeState State { get; set; }
+        ChangeListModel.AddNewProperty(property);
+        MythalCategoryModel.ConsumeMythal(property.Internal.CraftingTier);
     }
 
-    public enum ChangeState
+    public void ApplyChanges()
     {
-        Added,
-        Removed,
-        Replaced
+        bool failed = false;
+        List<ItemProperty> propertiesToRemove = new();
+        foreach (ChangeListModel.ChangelistEntry change in ChangeListModel.ChangeList())
+        {
+            if (change.State != ChangeListModel.ChangeState.Removed) continue;
+            ItemProperty? identical =
+                Item.ItemProperties.FirstOrDefault(p => ItemPropertyHelper.PropertiesAreSame(p, change.Property));
+            if (identical == null)
+            {
+                failed = true;
+                break;
+            }
+
+            propertiesToRemove.Add(identical);
+        }
+
+        if (failed)
+        {
+            return;
+        }
+
+        foreach (ItemProperty property in propertiesToRemove)
+        {
+            Item.RemoveItemProperty(property);
+        }
+
+        // Handle additions.
+        foreach (ChangeListModel.ChangelistEntry change in ChangeListModel.ChangeList())
+        {
+            if (change.State == ChangeListModel.ChangeState.Added)
+            {
+                Item.AddItemProperty(change.Property, EffectDuration.Permanent);
+            }
+        }
+
+        MythalCategoryModel.DestroyMythals(_player);
     }
 
-    public void RecalculateCategoryAffordability() => MythalCategoryModel.UpdateFromRemainingBudget(RemainingPowers);
-}
+    public void RefreshCategories()
+    {
+        MythalCategoryModel.UpdateFromRemainingBudget(RemainingPowers);
 
-public class ChangelistModel
-{
+        foreach (MythalCategoryModel.MythalCategory category in MythalCategoryModel.Categories)
+        {
+            foreach (MythalCategoryModel.MythalProperty property in category.Properties)
+            {
+                ValidationResult operation =
+                    _validator.Validate(property, Item.ItemProperties, ChangeListModel.ChangeList());
+
+                
+                bool passesValidation = operation.Result == ValidationEnum.Valid;
+                bool canAfford = property.Internal.PowerCost <= RemainingPowers;
+                bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
+                property.Selectable = passesValidation &&
+                                      canAfford &&
+                                      hasTheMythals;
+                property.CostLabelTooltip = !passesValidation
+                    ? operation.ErrorMessage ?? "Validation failed."
+                    : !canAfford
+                        ? "Not enough points left."
+                        : !hasTheMythals
+                            ? "Not enough mythals."
+                            : string.Empty;
+            }
+        }
+    }
+
+    public string GetSkillName()
+    {
+        int baseType = NWScript.GetBaseItemType(Item);
+        if (ItemTypeConstants.EquippableItems().Contains(baseType))
+        {
+            return baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
+                or NWScript.BASE_ITEM_LARGESHIELD or NWScript.BASE_ITEM_TOWERSHIELD or NWScript.BASE_ITEM_GLOVES
+                or NWScript.BASE_ITEM_BRACER or NWScript.BASE_ITEM_BELT
+                ? "Craft Armor"
+                : "Spellcraft";
+        }
+
+        if (ItemTypeConstants.RangedWeapons().Contains(baseType))
+        {
+            return "Craft Weapon";
+        }
+
+        if (ItemTypeConstants.ThrownWeapons().Contains(baseType))
+        {
+            return "Craft Weapon";
+        }
+
+        if (ItemTypeConstants.Ammo().Contains(baseType))
+        {
+            return "Craft Weapon";
+        }
+
+        return "Spellcraft";
+    }
+
+    private int GetSkill()
+    {
+        int baseType = NWScript.GetBaseItemType(Item);
+        if (ItemTypeConstants.EquippableItems().Contains(baseType))
+        {
+            return baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
+                or NWScript.BASE_ITEM_LARGESHIELD or NWScript.BASE_ITEM_TOWERSHIELD or NWScript.BASE_ITEM_GLOVES
+                or NWScript.BASE_ITEM_BRACER or NWScript.BASE_ITEM_BELT
+                ? NWScript.SKILL_CRAFT_ARMOR
+                : NWScript.SKILL_SPELLCRAFT;
+        }
+
+        if (ItemTypeConstants.RangedWeapons().Contains(baseType))
+        {
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+
+        if (ItemTypeConstants.ThrownWeapons().Contains(baseType))
+        {
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+
+        if (ItemTypeConstants.Ammo().Contains(baseType))
+        {
+            return NWScript.SKILL_CRAFT_WEAPON;
+        }
+
+        // Default fall back value
+        return NWScript.SKILL_SPELLCRAFT;
+    }
+
+    public bool CanMakeCheck()
+    {
+        return NWScript.GetSkillRank(GetSkill(), _player.LoginCreature) >= GetCraftingDifficulty();
+    }
+
+    public void RemoveActiveProperty(CraftingProperty property)
+    {
+        ActivePropertiesModel.HideProperty(property);
+        ChangeListModel.AddRemovedProperty(property);
+    }
+
+    public void UndoAddition(CraftingProperty property)
+    {
+        ChangeListModel.UndoAddition(property);
+        MythalCategoryModel.RefundMythal(property.CraftingTier);
+    }
+
+    public void UndoRemoval(CraftingProperty property)
+    {
+        ChangeListModel.UndoRemoval(property);
+        ActivePropertiesModel.RevealProperty(property);
+    }
 }
 
 public class MythalMap
@@ -107,8 +256,4 @@ public class MythalMap
     {
         Map = ItemPropertyHelper.GetMythals(player);
     }
-}
-
-public class ActivePropertiesModel
-{
 }

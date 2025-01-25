@@ -1,4 +1,5 @@
 ﻿using Anvil.API;
+using Anvil.API.Events;
 
 namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 
@@ -18,6 +19,8 @@ public interface IScryPresenter
     /// </summary>
     public void Initialize();
 
+    public void HandleInput(ModuleEvents.OnNuiEvent obj);
+    
     /// <summary>
     /// Updates the view with any changes that need to be reflected in the user interface.
     /// </summary>

@@ -2,6 +2,8 @@
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
+using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -11,7 +13,7 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting;
 
-[ServiceBinding(typeof(MythalForgeInitializer))]
+// [ServiceBinding(typeof(MythalForgeInitializer))]
 public class MythalForgeInitializer
 {
     private const string TargetingModeMythalForge = "mythal_forge";
@@ -20,12 +22,15 @@ public class MythalForgeInitializer
     private readonly WindowDirector _windowSystem;
     private readonly CraftingPropertyData _propertyData;
     private readonly CraftingBudgetService _budget;
+    private readonly PropertyValidator _validator;
 
-    public MythalForgeInitializer(WindowDirector windowSystem, CraftingPropertyData propertyData, CraftingBudgetService budget)
+    public MythalForgeInitializer(WindowDirector windowSystem, CraftingPropertyData propertyData,
+        CraftingBudgetService budget, PropertyValidator validator)
     {
         _windowSystem = windowSystem;
         _propertyData = propertyData;
         _budget = budget;
+        _validator = validator;
 
         InitForges();
     }
@@ -44,19 +49,19 @@ public class MythalForgeInitializer
     {
         if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
 
-        if (_windowSystem.IsWindowOpen(player, typeof(MythalForgeWindow)))
+        if (_windowSystem.IsWindowOpen(player, typeof(MythalForgePresenter)))
         {
-            _windowSystem.CloseWindow(player, typeof(MythalForgeWindow));
+            _windowSystem.CloseWindow(player, typeof(MythalForgePresenter));
             return;
         }
-       
+
         player.OnPlayerTarget += ValidateAndSelect;
-        
+
         EnterTargetingMode(player);
-        
+
         NWScript.SetLocalString(player.LoginCreature, LvarTargetingMode, TargetingModeMythalForge);
     }
-    
+
     private void EnterTargetingMode(NwPlayer player)
     {
         player.FloatingTextString("Pick an Item from your inventory.", false);
@@ -68,41 +73,80 @@ public class MythalForgeInitializer
     private void ValidateAndSelect(ModuleEvents.OnPlayerTarget obj)
     {
         if (obj.TargetObject is not NwItem item || !obj.TargetObject.IsValid) return;
-        if(obj.Player.LoginCreature == null) return;
-        
-        if(NWScript.GetLocalString(obj.Player.LoginCreature, LvarTargetingMode) != TargetingModeMythalForge) return;
+        if (obj.Player.LoginCreature == null) return;
 
+        if (NWScript.GetLocalString(obj.Player.LoginCreature, LvarTargetingMode) != TargetingModeMythalForge) return;
+
+        int isCasterWeapon = NWScript.GetLocalInt(item, "CASTER_WEAPON");
         int baseItemType = NWScript.GetBaseItemType(item);
+        
+        bool is2H = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
+        if (isCasterWeapon == NWScript.TRUE)
+        {
+            baseItemType = is2H ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+        }
+        
 
-        bool notFound = !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
+        bool notFound =
+            !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
         if (notFound)
         {
-            obj.Player.SendServerMessage("Item not supported by Mythal forge", ColorConstants.Orange);
+            GenericWindow.Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(obj.Player)
+                .WithTitle("Mythal Forge: Notice")
+                .WithMessage("Item not supported by Mythal forge")
+                .Open();
 
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
-            
+
             NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
+
+            //  Closes the inventory window
+            obj.Player.OpenInventory();
 
             return;
         }
-        
-        if(categories == null)
+
+        if (item.Possessor != null && item.Possessor.ObjectId != obj.Player.LoginCreature.ObjectId)
         {
-            obj.Player.SendServerMessage("Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.", ColorConstants.Red);
-            
+            GenericWindow.Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(obj.Player)
+                .WithTitle("Mythal Forge: Notice")
+                .WithMessage("That doesn't belong to you. Pick an item from your inventory.")
+                .Open();
+            obj.Player.OpenInventory();
+            return;
+        }
+
+        if (categories == null)
+        {
+            GenericWindow.Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(obj.Player)
+                .WithTitle("Mythal Forge: Error")
+                .WithMessage(
+                    "Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.")
+                .Open();
+
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
             NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
             return;
         }
-        
-        
+
+
         // Remove the token.
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
-        
-        MythalForgeWindow itemWindow = new MythalForgeWindow(obj.Player, item, _propertyData, _budget);
-        _windowSystem.OpenWindow(itemWindow);
-        
+
+        MythalForgeView itemWindow = new(_propertyData, _budget, item, obj.Player, _validator);
+        _windowSystem.OpenWindow(itemWindow.Presenter);
+
+        obj.Player.OpenInventory();
         obj.Player.OnPlayerTarget -= ValidateAndSelect;
     }
 }

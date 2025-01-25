@@ -1,19 +1,46 @@
 ﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
+namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 
 public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
 {
+    /// <summary>
+    /// A read-only list of Mythal categories. Provided by the presenter.
+    /// </summary>
     private readonly IReadOnlyList<MythalCategoryModel.MythalCategory> _categories;
+
+    /// <summary>
+    /// Gets or sets the presenter for the Mythal Forge.
+    /// </summary>
     public override MythalForgePresenter Presenter { get; protected set; }
 
+    /// <summary>
+    /// Gets a list of button IDs. Used for event handling.
+    /// </summary>
     public List<string> ButtonIds { get; } = new();
-    
-    public readonly Dictionary<string, NuiBind<bool>> EnabledPropertyBindings = new();
-    public readonly Dictionary<string, NuiBind<Color>> PowerCostColors = new();
-    public readonly Dictionary<string, NuiBind<string>> PowerCostTooltips = new();
 
+    /// <summary>
+    /// A dictionary of enabled property bindings. More performant than looking up the property by ID.
+    /// </summary>
+    public readonly Dictionary<string, NuiBind<bool>> EnabledPropertyBindings = new();
+
+    /// <summary>
+    /// A dictionary of power cost color bindings. More performant than looking up the color by ID.
+    /// </summary>
+    public readonly Dictionary<string, NuiBind<Color>> PowerCostColors = new();
+
+    /// <summary>
+    /// A dictionary of power cost tooltip bindings. More performant than looking up the tooltip by ID.
+    /// </summary>
+    public readonly Dictionary<string, NuiBind<string>> PowerCostTooltips = new();
+    
+    public readonly Dictionary<string, NuiBind<bool>> EmphasizedProperties = new();
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MythalCategoryView"/> class.
+    /// </summary>
+    /// <param name="presenter">The presenter for the Mythal Forge.</param>
     public MythalCategoryView(MythalForgePresenter presenter)
     {
         Presenter = presenter;
@@ -29,11 +56,10 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
             List<NuiElement> properties = new();
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
-                string id = Guid.NewGuid().ToString();
-                property.Id = id;
-                NuiBind<bool> enableProperty = new(id + "_enable");
-                NuiBind<Color> costColor = new(id + "_color");
-                NuiBind<string> powerCostTooltip = new(id + "_tooltip");
+                NuiBind<bool> enableProperty = new(property.Id + "_enable");
+                NuiBind<Color> costColor = new(property.Id + "_color");
+                NuiBind<string> powerCostTooltip = new(property.Id + "_tooltip");
+                NuiBind<bool> emphasized = new(property.Id + "_emphasized");
 
                 NuiRow propertyRow = new()
                 {
@@ -41,13 +67,13 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                     {
                         new NuiButton(property.Label)
                         {
-                            Id = id,
+                            Id = property.Id,
                             Width = 200f,
                             Enabled = enableProperty
                         },
                         new NuiGroup
                         {
-                            Element = new NuiLabel(property.InternalProperty.PowerCost.ToString())
+                            Element = new NuiLabel(property.Internal.PowerCost.ToString())
                             {
                                 ForegroundColor = costColor,
                                 HorizontalAlign = NuiHAlign.Center,
@@ -55,16 +81,18 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                             },
                             Width = 50f,
                             Height = 50f,
+                            Encouraged = emphasized,
                             Tooltip = powerCostTooltip
                         }
                     }
                 };
 
                 properties.Add(propertyRow);
-                EnabledPropertyBindings.Add(id, enableProperty);
-                PowerCostColors.Add(id, costColor);
-                PowerCostTooltips.Add(id, powerCostTooltip);
-                ButtonIds.Add(id);
+                EnabledPropertyBindings.Add(property.Id, enableProperty);
+                PowerCostColors.Add(property.Id, costColor);
+                PowerCostTooltips.Add(property.Id, powerCostTooltip);
+                ButtonIds.Add(property.Id);
+                EmphasizedProperties.Add(property.Id, emphasized);
             }
 
             NuiColumn categoryColumn = new()

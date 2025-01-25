@@ -1,6 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ActiveProperties;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
-using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.CraftingCategory;
+using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using NWN.Core;
@@ -12,6 +12,9 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
     /// </summary>
     public sealed class MythalForgeView : ScryView<MythalForgePresenter>
     {
+        public const string ApplyNameButtonId = "apply_name";
+        public const string ApplyChanges = "apply_changes";
+
         /// <summary>
         /// Gets the presenter associated with this view.
         /// </summary>
@@ -20,22 +23,24 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         /// <summary>
         /// Gets the binding for the item name.
         /// </summary>
-        private NuiBind<string> ItemName { get; } = new("item_name");
+        public NuiBind<string> ItemName { get; } = new("item_name");
+        
+        public NuiBind<string> MaxPowers { get; } = new("max_powers");
+        public NuiBind<string> RemainingPowers { get; } = new("remaining_powers");
+        public NuiBind<bool> ApplyEnabled { get; } = new("apply_enabled");
+        public NuiBind<string> GoldCost { get; } = new("gold_cost");
+        public NuiBind<Color> GoldCostColor { get; } = new("gold_cost_color");
+        
+        public NuiBind<string> DifficultyClass { get; } = new("difficulty_class");
+        public NuiBind<string> SkillName { get; } = new("skill_name");
 
         /// <summary>
         /// Gets the category view for the Mythal Forge. Public so that the presenter can access it.
         /// </summary>
         public readonly MythalCategoryView CategoryView;
 
-        /// <summary>
-        /// Gets the active properties view for the Mythal Forge.
-        /// </summary>
-        private readonly ActivePropertiesView _activePropertiesView;
-
-        /// <summary>
-        /// Gets the changelist view for the Mythal Forge.
-        /// </summary>
-        private readonly ChangelistView _changelistView;
+        public readonly ActivePropertiesView ActivePropertiesView;
+        public readonly ChangelistView ChangelistView;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MythalForgeView"/> class. Initializes the presenter and sub-views.
@@ -44,13 +49,14 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         /// <param name="budget">The crafting budget service.</param>
         /// <param name="item">The item being crafted.</param>
         /// <param name="player">The player performing the crafting.</param>
-        public MythalForgeView(CraftingPropertyData propertyData, CraftingBudgetService budget, NwItem item, NwPlayer player)
+        public MythalForgeView(CraftingPropertyData propertyData, CraftingBudgetService budget, NwItem item,
+            NwPlayer player, PropertyValidator validator)
         {
-            Presenter = new MythalForgePresenter(this, propertyData, budget, item, player);
-            
+            Presenter = new MythalForgePresenter(this, propertyData, budget, item, player, validator);
+
             CategoryView = new MythalCategoryView(Presenter);
-            _activePropertiesView = new ActivePropertiesView(Presenter);
-            _changelistView = new ChangelistView(Presenter);
+            ActivePropertiesView = new ActivePropertiesView(Presenter);
+            ChangelistView = new ChangelistView(Presenter);
         }
 
         /// <summary>
@@ -73,10 +79,27 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                 Width = 200f,
                                 Height = 60f
                             },
-                            new NuiButton("Apply")
+                            new NuiButton("Change Name")
                             {
-                                Id = "apply_name",
-                                Height = 60f
+                                Id = ApplyNameButtonId,
+                                Height = 60f,
+                            },
+                            new NuiSpacer(),
+                            new NuiLabel("Max Powers:"),
+                            new NuiGroup
+                            {
+                                Element = new NuiLabel(MaxPowers),
+                                Border = true,
+                                Width = 50f,
+                                Height = 50f
+                            },
+                            new NuiLabel("Remaining Powers:"),
+                            new NuiGroup
+                            {
+                                Element = new NuiLabel(RemainingPowers),
+                                Border = true,
+                                Width = 50f,
+                                Height = 50f
                             }
                         }
                     },
@@ -85,8 +108,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                         Children =
                         {
                             CategoryView.RootLayout(),
-                            _activePropertiesView.RootLayout(),
-                            _changelistView.RootLayout()
+                            ActivePropertiesView.RootLayout(),
+                            ChangelistView.RootLayout()
                         }
                     },
                     new NuiRow
@@ -101,9 +124,44 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                             },
                             new NuiButton("Apply")
                             {
-                                Id = "apply",
+                                Id = ApplyChanges,
                                 Width = 200f,
-                                Height = 60f
+                                Height = 60f,
+                                Enabled = ApplyEnabled
+                            },
+                            new NuiGroup()
+                            {
+                                Element = new NuiRow
+                                {
+                                    Children =
+                                    {
+                                        new NuiLabel("Difficulty:"),
+                                        new NuiGroup()
+                                        {
+                                            Element = new NuiLabel(DifficultyClass),
+                                            Tooltip = SkillName
+                                        }
+                                    }
+                                }
+                            },
+                            new NuiGroup
+                            {
+                                Element = new NuiRow()
+                                {
+                                    Children =
+                                    {
+                                        new NuiLabel("Gold Cost:"),
+                                        new NuiGroup()
+                                        {
+                                            Element = new NuiLabel(GoldCost)
+                                            {
+                                                ForegroundColor = GoldCostColor,
+                                                HorizontalAlign = NuiHAlign.Center,
+                                                VerticalAlign = NuiVAlign.Middle
+                                            }
+                                        }
+                                    }
+                                },
                             }
                         }
                     }
