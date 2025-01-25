@@ -140,15 +140,18 @@ public class ShockPylonTrap
         // We just want to get the meat zappers that are in the area, but ignore the ones we already have and add them
         // with the rest of the traps
         List<NwPlaceable> traps = area.FindObjectsOfTypeInArea<NwPlaceable>().Where(t => t.Tag == MeatZapper).ToList();
+        Log.Info("Number of traps in area: " + traps.Count);
         foreach (NwPlaceable trap in traps)
         {
             if (trap.Area == null) continue;
 
             if (_activeTraps.ContainsKey(trap.Area) && _activeTraps[trap.Area].Contains(trap))
             {
+                Log.Info("Trap already registered: " + trap.Tag);
                 continue;
             }
 
+            Log.Info("Registering new trap: " + trap.Tag);
             _activeTraps[trap.Area].Add(trap);
             trap.OnDeath += OnTrapDeath;
         }
