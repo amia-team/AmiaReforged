@@ -42,10 +42,12 @@ public class ShockPylonTrap
         {
             return;
         }
+
         if (trap.Count == 0)
         {
             return;
         }
+
         NwPlaceable? previous = obj.Area.FindObjectsOfTypeInArea<NwPlaceable>().FirstOrDefault();
         if (previous == null)
         {
@@ -55,9 +57,12 @@ public class ShockPylonTrap
         // Start off by zapping the creature closest to the trap (10m)
         NwCreature? initialClosest = obj.Area.FindObjectsOfTypeInArea<NwCreature>()
             .Where(c => c.Distance(previous) <= 10.0f).OrderBy(c => c.Distance(previous)).FirstOrDefault();
-        
+
         // do an aura here
-        previous.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurAuraDragonFear), TimeSpan.FromSeconds(7));
+        NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_TEMPORARY,
+            NWScript.EffectVisualEffect(NWScript.VFX_DUR_AURA_DRAGON_FEAR, 0, previous, new Vector3(0, 0, 0.3f)),
+            previous, 7.0f);
+        previous.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
 
         if (initialClosest != null)
         {
@@ -65,7 +70,7 @@ public class ShockPylonTrap
                 0, 2.5f, new Vector3(0, 0, 3))!;
             initialClosest.ApplyEffect(EffectDuration.Temporary, initialBeam, TimeSpan.FromSeconds(2));
             initialClosest.PlaySound("sff_deatharmor");
-            
+
             int damage = NWScript.d10(4);
             initialClosest.ApplyEffect(EffectDuration.Instant,
                 NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_ELECTRICAL)!);
@@ -78,12 +83,12 @@ public class ShockPylonTrap
         {
             if (zapper == previous)
                 continue;
-            
+
             Effect beam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, previous, NWScript.BODY_NODE_CHEST, 0,
                 2.5f, new Vector3(0, 0, 3))!;
             zapper.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
             zapper.PlaySound("sff_deatharmor");
-            
+
             Effect vfx = Effect.VisualEffect(VfxType.DurAuraDragonFear);
             zapper.ApplyEffect(EffectDuration.Temporary, vfx, TimeSpan.FromSeconds(7));
 
