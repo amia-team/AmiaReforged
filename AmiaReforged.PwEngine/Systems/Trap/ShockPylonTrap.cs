@@ -49,7 +49,7 @@ public class ShockPylonTrap
             return;
         }
 
-        NwPlaceable? previous = obj.Area.FindObjectsOfTypeInArea<NwPlaceable>().FirstOrDefault();
+        NwPlaceable? previous = obj.Area.FindObjectsOfTypeInArea<NwPlaceable>().FirstOrDefault(p => p.ResRef == MeatZapper);
         if (previous == null)
         {
             return;
