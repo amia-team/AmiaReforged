@@ -50,24 +50,36 @@ public class ShockPylonTrap
             return;
         }
 
-        bool visitedAll = false;
-        NwPlaceable? current = trap[0];
-        List<NwPlaceable?> visited = new() { current };
-
-        while (!visitedAll)
+        // bool visitedAll = false;
+        // NwPlaceable? current = trap[0];
+        // List<NwPlaceable?> visited = new() { current };
+        //
+        // while (!visitedAll)
+        // {
+        //     NwPlaceable? next = trap.Where(t => t != current && t.Distance(current) <= 30.0f && !visited.Contains(t))
+        //         .OrderBy(t => t.Distance(current)).FirstOrDefault();
+        //
+        //     if (next == null)
+        //     {
+        //         visitedAll = true;
+        //         continue;
+        //     }
+        //
+        //     visited.Add(next);
+        //     ApplyBeamEffects(current, next);
+        //     current = next;
+        // }
+        
+        foreach (NwPlaceable current in _activeTraps[obj.Area])
         {
-            NwPlaceable? next = trap.Where(t => t != current && t.Distance(current) <= 30.0f && !visited.Contains(t))
+            // Get the closest zapper within 20m. We only do this once.
+            NwPlaceable? closestZapper = _activeTraps[obj.Area].Where(t => t != current && t.Distance(current) <= 20.0f)
                 .OrderBy(t => t.Distance(current)).FirstOrDefault();
-
-            if (next == null)
-            {
-                visitedAll = true;
+            
+            if (closestZapper == null)
                 continue;
-            }
-
-            visited.Add(next);
-            ApplyBeamEffects(current, next);
-            current = next;
+            
+            ApplyBeamEffects(current, closestZapper);
         }
     }
 
@@ -78,7 +90,7 @@ public class ShockPylonTrap
         target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
         target.PlaySound("sff_deatharmor");
 
-        target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
+        // target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
 
         // Get the closest creature to the zapper
         NwCreature? closestCreature = target.Area?.FindObjectsOfTypeInArea<NwCreature>()
