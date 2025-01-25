@@ -28,6 +28,7 @@ public class ShockPylonTrap
 
             if (trap.Area != null) _activeTraps[trap.Area].Add(trap);
 
+            trap.OnHeartbeat += Zap;
             trap.OnDeath += OnTrapDeath;
         }
 
