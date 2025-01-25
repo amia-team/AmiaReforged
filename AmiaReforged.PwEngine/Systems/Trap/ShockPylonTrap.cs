@@ -1,8 +1,10 @@
-﻿using Anvil.API;
+﻿using System.Numerics;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NLog.Fluent;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Trap;
 
@@ -73,7 +75,9 @@ public class ShockPylonTrap
             NwPlaceable previous = obj.Placeable;
             foreach (NwPlaceable zapper in zappers)
             {
-                Effect beam = Effect.Beam(VfxType.BeamDisintegrate, previous, BodyNode.Hand);
+
+                Effect beam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, previous, NWScript.BODY_NODE_CHEST, 0,
+                    2.5f, new Vector3(0, 0, 10))!;
                 zapper.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
                 Log.Info($"Pewpew from ({zapper.Location.Position.X}, {zapper.Location.Position.Y}, {zapper.Location.Position.Z}) to ({previous.Location.Position.X}, {previous.Location.Position.Y}, {previous.Location.Position.Z})");                
                 previous = zapper;
