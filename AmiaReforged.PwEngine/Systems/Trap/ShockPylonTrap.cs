@@ -55,13 +55,11 @@ public class ShockPylonTrap
             return;
         }
 
-        Effect indicatorVfx = Effect.VisualEffect(VfxType.DurAuraDragonFear);
 
         // Start off by zapping the creature closest to the trap (10m)
         NwCreature? initialClosest = obj.Area.FindObjectsOfTypeInArea<NwCreature>()
             .Where(c => c.Distance(previous) <= 10.0f).OrderBy(c => c.Distance(previous)).FirstOrDefault();
         
-        previous.Location.ApplyEffect(EffectDuration.Temporary, indicatorVfx, TimeSpan.FromSeconds(7));
         previous.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
         
         if (initialClosest != null && initialClosest.IsPlayerControlled)
@@ -84,20 +82,19 @@ public class ShockPylonTrap
             if (zapper == previous)
                 continue;
 
-            ApplyBeamEffects(previous, zapper, indicatorVfx);
+            ApplyBeamEffects(previous, zapper);
 
             previous = zapper;
         }
     }
 
-    private static void ApplyBeamEffects(NwPlaceable origin, NwPlaceable target, Effect indicatorVfx)
+    private static void ApplyBeamEffects(NwPlaceable origin, NwPlaceable target)
     {
         Effect beam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, origin, NWScript.BODY_NODE_CHEST, 0,
             2.5f, new Vector3(0, 0, 3))!;
         target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
         target.PlaySound("sff_deatharmor");
 
-        target.Location.ApplyEffect(EffectDuration.Temporary, indicatorVfx, TimeSpan.FromSeconds(7));
         target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
 
         // Get the closest creature to the zapper
