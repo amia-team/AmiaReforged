@@ -69,16 +69,16 @@ public class ShockPylonTrap
         //     ApplyBeamEffects(current, next);
         //     current = next;
         // }
-        
+
         foreach (NwPlaceable current in _activeTraps[obj.Area])
         {
             // Get the closest zapper within 20m. We only do this once.
             NwPlaceable? closestZapper = _activeTraps[obj.Area].Where(t => t != current && t.Distance(current) <= 20.0f)
                 .OrderBy(t => t.Distance(current)).FirstOrDefault();
-            
+
             if (closestZapper == null)
                 continue;
-            
+
             ApplyBeamEffects(current, closestZapper);
         }
     }
@@ -90,22 +90,24 @@ public class ShockPylonTrap
         target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
 
 
-        // Get the closest creature to the zapper
-        NwCreature? closestCreature = target.Area?.FindObjectsOfTypeInArea<NwCreature>()
-            .Where(c => c.Distance(target) <= 10.0f).OrderBy(c => c.Distance(target)).FirstOrDefault();
+        // Shock creatures near it in a 10m radius
+        List<NwCreature> creatures = target.Area!.FindObjectsOfTypeInArea<NwCreature>()
+            .Where(c => c.IsPlayerControlled && c.Distance(target) <= 10f).ToList();
 
-        // If it's a player, apply the effect
-        if (closestCreature != null && closestCreature.IsPlayerControlled)
+        foreach (NwCreature creature in creatures)
         {
-            Effect creatureBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, target,
-                NWScript.BODY_NODE_CHEST,
-                0, 2.5f)!;
-            closestCreature.ApplyEffect(EffectDuration.Temporary, creatureBeam, TimeSpan.FromSeconds(2));
+            // beam
+            Effect creatureBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, origin, NWScript.BODY_NODE_CHEST, 0,
+                2.5f, new Vector3(0, 0, 3))!;
+
+            creature.ApplyEffect(EffectDuration.Temporary, creatureBeam, TimeSpan.FromSeconds(2));
+
+            // damage
+
             int damage = NWScript.d6(2);
-            closestCreature.ApplyEffect(EffectDuration.Instant,
+            creature.ApplyEffect(EffectDuration.Instant,
                 NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_ELECTRICAL)!);
-            closestCreature.ApplyEffect(EffectDuration.Instant,
-                NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_NEGATIVE)!);
+            creature.ApplyEffect(EffectDuration.Instant, NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_NEGATIVE)!);
         }
     }
 
