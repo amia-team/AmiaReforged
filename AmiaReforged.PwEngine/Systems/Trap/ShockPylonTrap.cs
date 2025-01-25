@@ -63,7 +63,7 @@ public class ShockPylonTrap
         previous.Location.ApplyEffect(EffectDuration.Temporary, indicatorVfx, TimeSpan.FromSeconds(7));
         previous.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
 
-        if (initialClosest != null)
+        if (initialClosest != null && initialClosest.IsPlayerControlled)
         {
             Effect initialBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, previous, NWScript.BODY_NODE_CHEST,
                 0, 2.5f, new Vector3(0, 0, 3))!;
