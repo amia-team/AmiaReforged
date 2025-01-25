@@ -77,7 +77,7 @@ public class ShockPylonTrap
             {
 
                 Effect beam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, previous, NWScript.BODY_NODE_CHEST, 0,
-                    2.5f, new Vector3(0, 0, 10))!;
+                    2.5f, new Vector3(0, 0, 3))!;
                 zapper.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
                 zapper.PlaySound("sco_lgsprelec01");
                 Log.Info($"Pewpew from ({zapper.Location.Position.X}, {zapper.Location.Position.Y}, {zapper.Location.Position.Z}) to ({previous.Location.Position.X}, {previous.Location.Position.Y}, {previous.Location.Position.Z})");                
