@@ -125,14 +125,12 @@ public class ShockPylonTrap
         {
             return;
         }
-
-
+        
         if (!_activeTraps.ContainsKey(obj.Area))
         {
             _activeTraps.Add(obj.Area, new List<NwPlaceable>());
         }
-
-
+        
         RegisterNewTraps(obj.Area);
     }
 
