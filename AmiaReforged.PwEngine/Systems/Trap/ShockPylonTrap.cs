@@ -53,6 +53,7 @@ public class ShockPylonTrap
         {
             return;
         }
+
         Effect vfx = Effect.VisualEffect(VfxType.DurAuraDragonFear);
 
         // Start off by zapping the creature closest to the trap (10m)
@@ -120,22 +121,26 @@ public class ShockPylonTrap
             return;
         }
 
-        NwPlaceable? trap = (NwPlaceable)obj.SpawnedObject;
-        if (trap == null)
-        {
-            Log.Info("Trap is not a placeable.");
-            return;
-        }
 
         if (!_activeTraps.ContainsKey(obj.Area))
         {
             _activeTraps.Add(obj.Area, new List<NwPlaceable>());
         }
 
-        _activeTraps[obj.Area].Add(trap);
 
+        RegisterNewTraps();
+    }
 
-        trap.OnDeath += OnTrapDeath;
+    private void RegisterNewTraps()
+    {
+        // We just want to get the meat zappers that are in the area, but ignore the ones we already have and add them
+        // with the rest of the traps
+        List<NwPlaceable> traps = NwObject.FindObjectsWithTag<NwPlaceable>(MeatZapper).ToList();
+        foreach (NwPlaceable trap in traps.Where(trap => trap.Area == null || !_activeTraps[trap.Area].Contains(trap)))
+        {
+            if (trap.Area != null) _activeTraps[trap.Area].Add(trap);
+            trap.OnDeath += OnTrapDeath;
+        }
     }
 
 
