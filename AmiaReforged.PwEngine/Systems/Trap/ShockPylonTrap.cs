@@ -38,6 +38,7 @@ public class ShockPylonTrap
     private void Zap(AreaEvents.OnHeartbeat obj)
     {
         RegisterNewTraps(obj.Area);
+
         // Don't do anything here if the area's traps are empty
         if (!_activeTraps.TryGetValue(obj.Area, out List<NwPlaceable>? trap))
         {
@@ -49,43 +50,38 @@ public class ShockPylonTrap
             return;
         }
 
-        NwPlaceable? previous =
-            obj.Area.FindObjectsOfTypeInArea<NwPlaceable>().FirstOrDefault(p => p.ResRef == MeatZapper);
-        if (previous == null)
+        foreach (NwPlaceable previous in _activeTraps[obj.Area])
         {
-            return;
-        }
+            // Start off by zapping the creature closest to the trap (10m)
+
+            NwCreature? initialClosest = obj.Area.FindObjectsOfTypeInArea<NwCreature>()
+                .Where(c => c.Distance(previous) <= 10.0f).OrderBy(c => c.Distance(previous)).FirstOrDefault();
+
+            previous.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
+
+            if (initialClosest != null && initialClosest.IsPlayerControlled)
+            {
+                Effect initialBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, previous,
+                    NWScript.BODY_NODE_CHEST,
+                    0, 2.5f, new Vector3(0, 0, 3))!;
+                initialClosest.ApplyEffect(EffectDuration.Temporary, initialBeam, TimeSpan.FromSeconds(2));
+                initialClosest.PlaySound("sff_deatharmor");
+
+                int damage = NWScript.d10(4);
+                initialClosest.ApplyEffect(EffectDuration.Instant,
+                    NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_ELECTRICAL)!);
+                initialClosest.ApplyEffect(EffectDuration.Instant,
+                    NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_NEGATIVE)!);
+            }
 
 
-        // Start off by zapping the creature closest to the trap (10m)
-        NwCreature? initialClosest = obj.Area.FindObjectsOfTypeInArea<NwCreature>()
-            .Where(c => c.Distance(previous) <= 10.0f).OrderBy(c => c.Distance(previous)).FirstOrDefault();
+            foreach (NwPlaceable zapper in _activeTraps[obj.Area].Where(z => z.Distance(previous) <= 30.0f))
+            {
+                if (zapper == previous)
+                    continue;
 
-        previous.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
-
-        if (initialClosest != null && initialClosest.IsPlayerControlled)
-        {
-            Effect initialBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, previous, NWScript.BODY_NODE_CHEST,
-                0, 2.5f, new Vector3(0, 0, 3))!;
-            initialClosest.ApplyEffect(EffectDuration.Temporary, initialBeam, TimeSpan.FromSeconds(2));
-            initialClosest.PlaySound("sff_deatharmor");
-
-            int damage = NWScript.d10(4);
-            initialClosest.ApplyEffect(EffectDuration.Instant,
-                NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_ELECTRICAL)!);
-            initialClosest.ApplyEffect(EffectDuration.Instant,
-                NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_NEGATIVE)!);
-        }
-
-
-        foreach (NwPlaceable zapper in _activeTraps[obj.Area].Where(z => z.Distance(previous) <= 30.0f))
-        {
-            if (zapper == previous)
-                continue;
-
-            ApplyBeamEffects(previous, zapper);
-
-            previous = zapper;
+                ApplyBeamEffects(previous, zapper);
+            }
         }
     }
 
