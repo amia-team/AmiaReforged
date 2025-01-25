@@ -56,7 +56,7 @@ public class ShockPylonTrap
 
         while (!visitedAll)
         {
-            NwPlaceable? next = trap.Where(t => t.Distance(current) <= 20.0f && !visited.Contains(t))
+            NwPlaceable? next = trap.Where(t => t.Distance(current) <= 30.0f && !visited.Contains(t))
                 .OrderBy(t => t.Distance(current)).FirstOrDefault();
 
             if (next == null)
