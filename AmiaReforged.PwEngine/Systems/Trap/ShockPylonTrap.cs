@@ -79,7 +79,7 @@ public class ShockPylonTrap
         }
 
 
-        foreach (NwPlaceable zapper in _activeTraps[obj.Area])
+        foreach (NwPlaceable zapper in _activeTraps[obj.Area].Where(z => z.Distance(previous) <= 20.0f))
         {
             if (zapper == previous)
                 continue;
