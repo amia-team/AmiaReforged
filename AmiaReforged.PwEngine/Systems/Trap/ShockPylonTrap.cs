@@ -43,10 +43,12 @@ public class ShockPylonTrap
         {
             return;
         }
+
         if (trap.Count == 0)
         {
             return;
         }
+
         NwPlaceable? previous = obj.Area.FindObjectsOfTypeInArea<NwPlaceable>().FirstOrDefault();
         if (previous == null)
         {
@@ -58,10 +60,8 @@ public class ShockPylonTrap
         // Start off by zapping the creature closest to the trap (10m)
         NwCreature? initialClosest = obj.Area.FindObjectsOfTypeInArea<NwCreature>()
             .Where(c => c.Distance(previous) <= 10.0f).OrderBy(c => c.Distance(previous)).FirstOrDefault();
-
-        // do an aura here
+        
         previous.Location.ApplyEffect(EffectDuration.Temporary, indicatorVfx, TimeSpan.FromSeconds(7));
-
         previous.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
 
         if (initialClosest != null)
@@ -84,33 +84,38 @@ public class ShockPylonTrap
             if (zapper == previous)
                 continue;
 
-            Effect beam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, previous, NWScript.BODY_NODE_CHEST, 0,
-                2.5f, new Vector3(0, 0, 3))!;
-            zapper.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
-            zapper.PlaySound("sff_deatharmor");
-
-            zapper.Location.ApplyEffect(EffectDuration.Temporary, indicatorVfx, TimeSpan.FromSeconds(7));
-            zapper.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
-
-            // Get the closest creature to the zapper
-            NwCreature? closestCreature = zapper.Area?.FindObjectsOfTypeInArea<NwCreature>()
-                .Where(c => c.Distance(zapper) <= 10.0f).OrderBy(c => c.Distance(zapper)).FirstOrDefault();
-
-            // If it's a player, apply the effect
-            if (closestCreature != null && closestCreature.IsPlayerControlled)
-            {
-                Effect creatureBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, zapper,
-                    NWScript.BODY_NODE_CHEST,
-                    0, 2.5f)!;
-                closestCreature.ApplyEffect(EffectDuration.Temporary, creatureBeam, TimeSpan.FromSeconds(2));
-                int damage = NWScript.d10(2);
-                closestCreature.ApplyEffect(EffectDuration.Instant,
-                    NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_ELECTRICAL)!);
-                closestCreature.ApplyEffect(EffectDuration.Instant,
-                    NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_NEGATIVE)!);
-            }
+            ApplyBeamEffects(previous, zapper, indicatorVfx);
 
             previous = zapper;
+        }
+    }
+
+    private static void ApplyBeamEffects(NwPlaceable origin, NwPlaceable target, Effect indicatorVfx)
+    {
+        Effect beam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, origin, NWScript.BODY_NODE_CHEST, 0,
+            2.5f, new Vector3(0, 0, 3))!;
+        target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
+        target.PlaySound("sff_deatharmor");
+
+        target.Location.ApplyEffect(EffectDuration.Temporary, indicatorVfx, TimeSpan.FromSeconds(7));
+        target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
+
+        // Get the closest creature to the zapper
+        NwCreature? closestCreature = target.Area?.FindObjectsOfTypeInArea<NwCreature>()
+            .Where(c => c.Distance(target) <= 10.0f).OrderBy(c => c.Distance(target)).FirstOrDefault();
+
+        // If it's a player, apply the effect
+        if (closestCreature != null && closestCreature.IsPlayerControlled)
+        {
+            Effect creatureBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, target,
+                NWScript.BODY_NODE_CHEST,
+                0, 2.5f)!;
+            closestCreature.ApplyEffect(EffectDuration.Temporary, creatureBeam, TimeSpan.FromSeconds(2));
+            int damage = NWScript.d10(2);
+            closestCreature.ApplyEffect(EffectDuration.Instant,
+                NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_ELECTRICAL)!);
+            closestCreature.ApplyEffect(EffectDuration.Instant,
+                NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_NEGATIVE)!);
         }
     }
 
