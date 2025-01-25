@@ -78,9 +78,9 @@ public class PillarOfPhantoms
 
             foreach (NwCreature unused in creatures)
             {
-                // Pick a random, valid location within 10 meters of the trap
-                int randomXOffset = Random.Shared.Next(-10, 10);
-                int randomYOffset = Random.Shared.Next(-10, 10); 
+                // Pick a random, valid location within 4 meters of the trap
+                int randomXOffset = Random.Shared.Next(-4, 4);
+                int randomYOffset = Random.Shared.Next(-4, 4); 
                 // The Z axis is shared with the trap, so we don't need to randomize it
                 Location spawnLocation = Location.Create(trap.Area, new Vector3(trap.Position.X + randomXOffset, trap.Position.Y + randomYOffset, trap.Position.Z), trap.Rotation);
                 
