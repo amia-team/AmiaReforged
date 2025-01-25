@@ -74,7 +74,7 @@ public class PillarOfPhantoms
             
             // Get creatures that are player controlled within 25 meters of the trap
             List<NwCreature> creatures = trap.Area.FindObjectsOfTypeInArea<NwCreature>()
-                .Where(c => c.IsPlayerControlled && c.Distance(trap) <= 25f).ToList();
+                .Where(c => c.IsPlayerControlled && c.Distance(trap) <= 10f).ToList();
 
             foreach (NwCreature unused in creatures)
             {
