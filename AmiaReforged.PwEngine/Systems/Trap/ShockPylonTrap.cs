@@ -73,7 +73,7 @@ public class ShockPylonTrap
             NwPlaceable previous = obj.Placeable;
             foreach (NwPlaceable zapper in zappers)
             {
-                Effect beam = Effect.Beam(VfxType.BeamBlack, previous, BodyNode.Chest);
+                Effect beam = Effect.Beam(VfxType.BeamDisintegrate, previous, BodyNode.Hand);
                 zapper.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
                 Log.Info($"Pewpew from ({zapper.Location.Position.X}, {zapper.Location.Position.Y}, {zapper.Location.Position.Z}) to ({previous.Location.Position.X}, {previous.Location.Position.Y}, {previous.Location.Position.Z})");                
                 previous = zapper;
