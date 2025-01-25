@@ -91,9 +91,11 @@ public class PillarOfPhantoms
                     Location trueSpawnLocation = Location.Create(trap.Area, new Vector3(spawnLocation.Position.X, spawnLocation.Position.Y, spawnLocation.GroundHeight), trap.Rotation);
                     NwCreature.Create(PillarPhantomTag, trueSpawnLocation);
                     Effect spawnVfx = Effect.VisualEffect(VfxType.FnfSummonUndead, false, Random.Shared.NextFloat(-1.5f, 1.5f));
+                    Effect secondaryVfx = Effect.VisualEffect(VfxType.ImpRaiseDead, false, Random.Shared.NextFloat(-1.5f, 1.5f));
                     
                     // Apply at location
                     trueSpawnLocation.ApplyEffect(EffectDuration.Instant, spawnVfx);
+                    trueSpawnLocation.ApplyEffect(EffectDuration.Instant, secondaryVfx);
                 }
             }
         }
