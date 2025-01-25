@@ -13,17 +13,17 @@ namespace AmiaReforged.PwEngine.Systems.Trap;
 public class ShockPylonTrap
 {
     private const string MeatZapper = "meatzapper";
-    private readonly Dictionary<NwArea, List<NwPlaceable>> _activeTraps = new();
+    private readonly Dictionary<NwArea, List<NwPlaceable?>> _activeTraps = new();
 
     public ShockPylonTrap()
     {
-        List<NwPlaceable> traps = NwObject.FindObjectsWithTag<NwPlaceable>(MeatZapper).ToList();
+        List<NwPlaceable?> traps = NwObject.FindObjectsWithTag<NwPlaceable>(MeatZapper).ToList();
 
-        foreach (NwPlaceable trap in traps)
+        foreach (NwPlaceable? trap in traps)
         {
             if (trap.Area != null && !_activeTraps.ContainsKey(trap.Area))
             {
-                _activeTraps.Add(trap.Area, new List<NwPlaceable>());
+                _activeTraps.Add(trap.Area, new List<NwPlaceable?>());
             }
 
             if (trap.Area != null) _activeTraps[trap.Area].Add(trap);
@@ -50,42 +50,28 @@ public class ShockPylonTrap
             return;
         }
 
-        foreach (NwPlaceable previous in _activeTraps[obj.Area])
+        bool visitedAll = false;
+        NwPlaceable? current = trap[0];
+        List<NwPlaceable?> visited = new() { current };
+
+        while (!visitedAll)
         {
-            // Start off by zapping the creature closest to the trap (10m)
+            NwPlaceable? next = trap.Where(t => t.Distance(current) <= 20.0f && !visited.Contains(t))
+                .OrderBy(t => t.Distance(current)).FirstOrDefault();
 
-            NwCreature? initialClosest = obj.Area.FindObjectsOfTypeInArea<NwCreature>()
-                .Where(c => c.Distance(previous) <= 10.0f).OrderBy(c => c.Distance(previous)).FirstOrDefault();
-
-            previous.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
-
-            if (initialClosest != null && initialClosest.IsPlayerControlled)
+            if (next == null)
             {
-                Effect initialBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, previous,
-                    NWScript.BODY_NODE_CHEST,
-                    0, 2.5f, new Vector3(0, 0, 3))!;
-                initialClosest.ApplyEffect(EffectDuration.Temporary, initialBeam, TimeSpan.FromSeconds(2));
-                initialClosest.PlaySound("sff_deatharmor");
-
-                int damage = NWScript.d10(4);
-                initialClosest.ApplyEffect(EffectDuration.Instant,
-                    NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_ELECTRICAL)!);
-                initialClosest.ApplyEffect(EffectDuration.Instant,
-                    NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_NEGATIVE)!);
+                visitedAll = true;
+                continue;
             }
 
-
-            foreach (NwPlaceable zapper in _activeTraps[obj.Area].Where(z => z.Distance(previous) <= 30.0f))
-            {
-                if (zapper == previous)
-                    continue;
-
-                ApplyBeamEffects(previous, zapper);
-            }
+            visited.Add(next);
+            ApplyBeamEffects(current, next);
+            current = next;
         }
     }
 
-    private static void ApplyBeamEffects(NwPlaceable origin, NwPlaceable target)
+    private static void ApplyBeamEffects(NwPlaceable? origin, NwPlaceable? target)
     {
         Effect beam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, origin, NWScript.BODY_NODE_CHEST, 0,
             2.5f, new Vector3(0, 0, 3))!;
@@ -122,7 +108,7 @@ public class ShockPylonTrap
 
         if (!_activeTraps.ContainsKey(obj.Area))
         {
-            _activeTraps.Add(obj.Area, new List<NwPlaceable>());
+            _activeTraps.Add(obj.Area, new List<NwPlaceable?>());
             obj.Area.OnHeartbeat += Zap;
         }
 
@@ -133,8 +119,8 @@ public class ShockPylonTrap
     {
         // We just want to get the meat zappers that are in the area, but ignore the ones we already have and add them
         // with the rest of the traps
-        List<NwPlaceable> traps = area.FindObjectsOfTypeInArea<NwPlaceable>().Where(t => t.Tag == MeatZapper).ToList();
-        foreach (NwPlaceable trap in traps)
+        List<NwPlaceable?> traps = area.FindObjectsOfTypeInArea<NwPlaceable>().Where(t => t.Tag == MeatZapper).ToList();
+        foreach (NwPlaceable? trap in traps)
         {
             if (trap.Area == null) continue;
 
