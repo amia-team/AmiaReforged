@@ -88,9 +88,7 @@ public class ShockPylonTrap
         Effect beam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, origin, NWScript.BODY_NODE_CHEST, 0,
             2.5f, new Vector3(0, 0, 3))!;
         target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
-        target.PlaySound("sff_deatharmor");
 
-        // target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
 
         // Get the closest creature to the zapper
         NwCreature? closestCreature = target.Area?.FindObjectsOfTypeInArea<NwCreature>()
