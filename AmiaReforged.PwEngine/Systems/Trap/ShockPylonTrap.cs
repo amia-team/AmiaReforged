@@ -108,7 +108,7 @@ public class ShockPylonTrap
                 NWScript.BODY_NODE_CHEST,
                 0, 2.5f)!;
             closestCreature.ApplyEffect(EffectDuration.Temporary, creatureBeam, TimeSpan.FromSeconds(2));
-            int damage = NWScript.d10(2);
+            int damage = NWScript.d6(2);
             closestCreature.ApplyEffect(EffectDuration.Instant,
                 NWScript.EffectDamage(damage, NWScript.DAMAGE_TYPE_ELECTRICAL)!);
             closestCreature.ApplyEffect(EffectDuration.Instant,
