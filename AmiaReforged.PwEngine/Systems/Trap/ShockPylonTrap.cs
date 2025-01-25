@@ -120,7 +120,7 @@ public class ShockPylonTrap
             return;
         }
 
-        NwPlaceable? trap = obj.SpawnedObject as NwPlaceable;
+        NwPlaceable? trap = (NwPlaceable)obj.SpawnedObject;
         if (trap == null)
         {
             Log.Info("Trap is not a placeable.");
