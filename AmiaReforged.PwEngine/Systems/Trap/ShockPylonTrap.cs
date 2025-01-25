@@ -90,6 +90,7 @@ public class ShockPylonTrap
             zapper.PlaySound("sff_deatharmor");
 
             zapper.Location.ApplyEffect(EffectDuration.Temporary, indicatorVfx, TimeSpan.FromSeconds(7));
+            zapper.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.DurDeathArmor));
 
             // Get the closest creature to the zapper
             NwCreature? closestCreature = zapper.Area?.FindObjectsOfTypeInArea<NwCreature>()
