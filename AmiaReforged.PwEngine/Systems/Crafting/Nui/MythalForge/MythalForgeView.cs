@@ -91,7 +91,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                 Element = new NuiLabel(MaxPowers),
                                 Border = true,
                                 Width = 50f,
-                                Height = 50f
+                                Height = 50f,
+                                Margin = 2f
                             },
                             new NuiLabel("Remaining Powers:"),
                             new NuiGroup
@@ -99,7 +100,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                 Element = new NuiLabel(RemainingPowers),
                                 Border = true,
                                 Width = 50f,
-                                Height = 50f
+                                Height = 50f,
+                                Margin = 2f
                             }
                         }
                     },
