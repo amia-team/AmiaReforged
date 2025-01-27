@@ -31,16 +31,18 @@ public class MythalForgeModel
         _validator = validator;
 
         int baseType = NWScript.GetBaseItemType(item);
-        
+
         // Is it a caster weapon?
         bool casterWeapon = NWScript.GetLocalInt(item, ItemTypeConstants.CasterWeaponVar) == NWScript.TRUE;
-        if(casterWeapon)
+        if (casterWeapon)
         {
-            baseType = ItemTypeConstants.Melee2HWeapons().Contains(baseType) ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+            baseType = ItemTypeConstants.Melee2HWeapons().Contains(baseType)
+                ? CraftingPropertyData.CasterWeapon2H
+                : CraftingPropertyData.CasterWeapon1H;
         }
-        
+
         LogManager.GetCurrentClassLogger().Info("Base type: " + baseType);
-        
+
         IReadOnlyList<CraftingCategory> categories = data.Properties[baseType];
 
         MythalCategoryModel = new MythalCategoryModel(item, player, categories);
@@ -130,7 +132,7 @@ public class MythalForgeModel
                 Item.AddItemProperty(change.Property, EffectDuration.Permanent);
             }
         }
-        
+
         int goldCost = ChangeListModel.TotalGpCost();
         _player.LoginCreature?.TakeGold(goldCost);
 
@@ -148,7 +150,7 @@ public class MythalForgeModel
                 ValidationResult operation =
                     _validator.Validate(property, Item.ItemProperties, ChangeListModel.ChangeList());
 
-                
+
                 bool passesValidation = operation.Result == ValidationEnum.Valid;
                 bool canAfford = property.Internal.PowerCost <= RemainingPowers;
                 bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
@@ -178,17 +180,11 @@ public class MythalForgeModel
                 : "Spellcraft";
         }
 
-        if (ItemTypeConstants.RangedWeapons().Contains(baseType))
-        {
-            return "Craft Weapon";
-        }
-
-        if (ItemTypeConstants.ThrownWeapons().Contains(baseType))
-        {
-            return "Craft Weapon";
-        }
-
-        if (ItemTypeConstants.Ammo().Contains(baseType))
+        if (ItemTypeConstants.RangedWeapons().Contains(baseType) ||
+            ItemTypeConstants.ThrownWeapons().Contains(baseType) ||
+            ItemTypeConstants.Ammo().Contains(baseType) ||
+            ItemTypeConstants.Melee2HWeapons().Contains(baseType) ||
+            ItemTypeConstants.MeleeWeapons().Contains(baseType))
         {
             return "Craft Weapon";
         }
