@@ -80,7 +80,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
-    /// Handles button click events.
+    /// Handles button click events. Gets passed in from the Window Director.
     /// </summary>
     /// <param name="eventData">The event data for the button click.</param>
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
@@ -148,7 +148,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         // want to initialize other data that might not be present at construction time.
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
-            Geometry = new NuiRect(500f, 500f, 1440f, 720f)
+            Geometry = new NuiRect(500f, 500f, 1200f, 640f)
         };
     }
 

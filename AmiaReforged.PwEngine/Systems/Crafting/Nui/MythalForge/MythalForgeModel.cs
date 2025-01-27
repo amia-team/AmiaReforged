@@ -189,7 +189,7 @@ public class MythalForgeModel
             return "Craft Weapon";
         }
 
-        return "Spellcraft";
+        return "(BUG) Unknown skill";
     }
 
     private int GetSkill()
