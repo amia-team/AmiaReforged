@@ -130,6 +130,9 @@ public class MythalForgeModel
                 Item.AddItemProperty(change.Property, EffectDuration.Permanent);
             }
         }
+        
+        int goldCost = ChangeListModel.TotalGpCost();
+        _player.LoginCreature?.TakeGold(goldCost);
 
         MythalCategoryModel.DestroyMythals(_player);
     }

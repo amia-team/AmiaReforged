@@ -130,9 +130,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         if (eventData.ElementId == MythalForgeView.ApplyChanges)
         {
-            int goldCost = _model.ChangeListModel.TotalGpCost();
-            _player.LoginCreature?.TakeGold(goldCost);
-
             _model.ApplyChanges();
 
             Close();
