@@ -20,4 +20,8 @@
       <PackageReference Include="NWN.Core" Version="8193.36.1" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Migrations\" />
+    </ItemGroup>
+
 </Project>
