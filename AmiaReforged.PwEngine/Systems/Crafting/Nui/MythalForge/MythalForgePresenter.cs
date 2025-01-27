@@ -143,6 +143,9 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void Initialize()
     {
+        // N.B: Other things can happen here, so if you're following this as an example
+        // you can do more than just create the window here. The window is supposed to be created here, but you might
+        // want to initialize other data that might not be present at construction time.
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
             Geometry = new NuiRect(500f, 500f, 1440f, 720f)
