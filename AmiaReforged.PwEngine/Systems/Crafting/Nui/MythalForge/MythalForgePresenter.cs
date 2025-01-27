@@ -148,7 +148,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
-            Geometry = new NuiRect(500f, 500f, 1000f, 1000f)
+            Geometry = new NuiRect(500f, 500f, 1440f, 720f)
         };
     }
 
