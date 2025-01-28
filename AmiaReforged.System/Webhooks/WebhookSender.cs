@@ -30,7 +30,7 @@ public class WebhookSender
             await new NwTaskHelper().TrySwitchToMainThread();
         }catch(Exception ex)
         {
-            Log.Error(ex, "Error sending webhook message");
+            Log.Error(ex, "Webhook is likely not correct, or not set");
         }
     }
 }
