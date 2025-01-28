@@ -116,9 +116,13 @@ public class MythalForgeModel
 
         if (failed)
         {
+            _player.SendServerMessage(
+                "For some reason, we couldn't find the properties to remove. Please try again. If the problem persists, contact the team on Discord.");
             return;
         }
 
+        // Only remove properties after we've checked that we can remove them all.
+        // Invalid or null properties means that the "transaction" failed.
         foreach (ItemProperty property in propertiesToRemove)
         {
             Item.RemoveItemProperty(property);
