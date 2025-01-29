@@ -22,14 +22,16 @@ public class MythalForgeModel
     private readonly CraftingBudgetService _budget;
     private readonly NwPlayer _player;
     private readonly PropertyValidator _validator;
+    private readonly DifficultyClassCalculator _dcCalculator;
 
     public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player,
-        PropertyValidator validator)
+        PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
         Item = item;
         _budget = budget;
         _player = player;
         _validator = validator;
+        _dcCalculator = dcCalculator;
 
         int baseType = NWScript.GetBaseItemType(item);
 
@@ -48,7 +50,7 @@ public class MythalForgeModel
 
         MythalCategoryModel = new MythalCategoryModel(item, player, categories);
         ChangeListModel = new ChangeListModel();
-        ActivePropertiesModel = new ActivePropertiesModel(item, player, categories);
+        ActivePropertiesModel = new ActivePropertiesModel(item, categories);
     }
 
     public int MaxBudget => _budget.MythalBudgetForNwItem(Item);
@@ -86,7 +88,21 @@ public class MythalForgeModel
             return 0;
         }
 
-        int craftingDifficulty = ChangeListModel.ChangeList().Select(c => c.Difficulty).Max();
+        int craftingDifficulty = 0;
+
+        List<CraftingProperty> changelistProperties =
+            ChangeListModel.ChangeList()
+                .Where(e => e.State != ChangeListModel.ChangeState.Removed)
+                .Select(p => p.Property)
+                .ToList();
+
+
+        foreach (CraftingProperty craftingProperty in changelistProperties)
+        {
+            int newDifficulty = _dcCalculator.ComputeDifficulty(craftingProperty);
+
+            craftingDifficulty = newDifficulty > craftingDifficulty ? newDifficulty : craftingDifficulty;
+        }
 
         return craftingDifficulty;
     }

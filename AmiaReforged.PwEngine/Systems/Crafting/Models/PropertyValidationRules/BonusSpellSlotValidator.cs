@@ -1,5 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using Anvil.API;
+using Microsoft.Extensions.Logging;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
@@ -17,6 +19,8 @@ public class BonusSpellSlotValidator : IValidationRule
         string error = string.Empty;
 
         BonusSpellSlot incomingBonusSpellSlot = new(incoming);
+            
+        LogManager.GetCurrentClassLogger().Info($"{incomingBonusSpellSlot.Class} {incomingBonusSpellSlot.Level}");
 
         // Get all bonus spell slots on the item
         List<BonusSpellSlot> bonusSpellSlots = itemProperties

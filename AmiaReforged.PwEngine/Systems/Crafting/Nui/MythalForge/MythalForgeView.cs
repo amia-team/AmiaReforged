@@ -51,10 +51,12 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         /// <param name="budget">The crafting budget service.</param>
         /// <param name="item">The item being crafted.</param>
         /// <param name="player">The player performing the crafting.</param>
+        /// <param name="validator"></param>
+        /// <param name="dcCalculator"></param>
         public MythalForgeView(CraftingPropertyData propertyData, CraftingBudgetService budget, NwItem item,
-            NwPlayer player, PropertyValidator validator)
+            NwPlayer player, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
         {
-            Presenter = new MythalForgePresenter(this, propertyData, budget, item, player, validator);
+            Presenter = new MythalForgePresenter(this, propertyData, budget, item, player, validator, dcCalculator);
 
             CategoryView = new MythalCategoryView(Presenter);
             ActivePropertiesView = new ActivePropertiesView(Presenter);

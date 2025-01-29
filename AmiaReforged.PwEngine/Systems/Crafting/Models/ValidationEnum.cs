@@ -2,7 +2,6 @@
 
 public enum ValidationEnum
 {
-    CannotBeTheSame,
     PropertyNeverStacks,
     CannotStackSameSubtype,
     LimitReached,

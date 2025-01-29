@@ -29,12 +29,17 @@ public class ActivePropertiesView : IScryView
             new NuiListTemplateCell(new NuiGroup
             {
                 Element = new NuiLabel(PropertyPowerCosts)
+                {
+                    HorizontalAlign = NuiHAlign.Center,
+                    VerticalAlign = NuiVAlign.Middle,
+                },
+                Aspect = 1f
             })
             {
                 Width = 30f,
-                VariableSize = false
+                VariableSize = false,
             },
-            new NuiListTemplateCell(new NuiButton("X")
+            new NuiListTemplateCell(new NuiButtonImage("ir_cntrspell")
             {
                 Id = RemovePropertyConst,
                 Enabled = Removable
@@ -51,9 +56,14 @@ public class ActivePropertiesView : IScryView
             Children =
             {
                 new NuiList(cells, PropertyCount)
+                {
+                    RowHeight = 30f,
+                    Scrollbars = NuiScrollbars.None
+                }
             },
             Width = 400f,
-            Height = 400f
+            Height = 400f,
+
         };
     }
 }

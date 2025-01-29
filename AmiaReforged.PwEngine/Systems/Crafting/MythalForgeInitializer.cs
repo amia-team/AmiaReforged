@@ -23,14 +23,16 @@ public class MythalForgeInitializer
     private readonly CraftingPropertyData _propertyData;
     private readonly CraftingBudgetService _budget;
     private readonly PropertyValidator _validator;
+    private readonly DifficultyClassCalculator _dcCalculator;
 
     public MythalForgeInitializer(WindowDirector windowSystem, CraftingPropertyData propertyData,
-        CraftingBudgetService budget, PropertyValidator validator)
+        CraftingBudgetService budget, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
         _windowSystem = windowSystem;
         _propertyData = propertyData;
         _budget = budget;
         _validator = validator;
+        _dcCalculator = dcCalculator;
 
         InitForges();
     }
@@ -143,7 +145,7 @@ public class MythalForgeInitializer
         // Remove the token.
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
-        MythalForgeView itemWindow = new(_propertyData, _budget, item, obj.Player, _validator);
+        MythalForgeView itemWindow = new(_propertyData, _budget, item, obj.Player, _validator, _dcCalculator);
         _windowSystem.OpenWindow(itemWindow.Presenter);
 
         obj.Player.OpenInventory();

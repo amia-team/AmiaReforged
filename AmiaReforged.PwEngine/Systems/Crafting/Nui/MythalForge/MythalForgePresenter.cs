@@ -56,9 +56,9 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <param name="player">The player performing the crafting.</param>
     /// <param name="validator"></param>
     public MythalForgePresenter(MythalForgeView view, CraftingPropertyData propertyData, CraftingBudgetService budget,
-        NwItem item, NwPlayer player, PropertyValidator validator)
+        NwItem item, NwPlayer player, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
-        Model = new MythalForgeModel(item, propertyData, budget, player, validator);
+        Model = new MythalForgeModel(item, propertyData, budget, player, validator, dcCalculator);
         View = view;
         _player = player;
         _creating = false;
