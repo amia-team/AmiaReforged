@@ -191,12 +191,13 @@ public class MythalForgeModel
         }
     }
 
-    public string GetSkillName()
+    public string SkillToolTip()
     {
         int baseType = NWScript.GetBaseItemType(Item);
+        string tooltip = "Skill: ";
         if (ItemTypeConstants.EquippableItems().Contains(baseType))
         {
-            return baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
+            tooltip += baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
                 or NWScript.BASE_ITEM_LARGESHIELD or NWScript.BASE_ITEM_TOWERSHIELD or NWScript.BASE_ITEM_GLOVES
                 or NWScript.BASE_ITEM_BRACER or NWScript.BASE_ITEM_BELT
                 ? "Craft Armor"
@@ -209,10 +210,13 @@ public class MythalForgeModel
             ItemTypeConstants.Melee2HWeapons().Contains(baseType) ||
             ItemTypeConstants.MeleeWeapons().Contains(baseType))
         {
-            return "Craft Weapon";
+            tooltip += "Craft Weapon";
         }
+        
+        bool canCraft = CanMakeCheck();
+        if (!canCraft) tooltip += " (You don't have the required skill rank)";
 
-        return "(BUG) Unknown skill";
+        return tooltip;
     }
 
     private int GetSkill()
@@ -267,6 +271,15 @@ public class MythalForgeModel
     {
         ChangeListModel.UndoRemoval(property);
         ActivePropertiesModel.RevealProperty(property);
+    }
+
+    public string StatusMessageForApply()
+    {
+        string status = "";
+        bool canAfford = ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
+        if (!canAfford) status += "You don't have enough gold. ";
+
+        return status;
     }
 }
 

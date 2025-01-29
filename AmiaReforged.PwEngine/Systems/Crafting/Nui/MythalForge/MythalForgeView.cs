@@ -28,11 +28,19 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         public NuiBind<string> MaxPowers { get; } = new("max_powers");
         public NuiBind<string> RemainingPowers { get; } = new("remaining_powers");
         public NuiBind<bool> ApplyEnabled { get; } = new("apply_enabled");
+        
+        public NuiBind<bool> EncourageDifficulty { get; } = new("encourage_difficulty");
+        public NuiBind<bool> EncourageGold { get; } = new("encourage_gold");
+        
         public NuiBind<string> GoldCost { get; } = new("gold_cost");
         public NuiBind<Color> GoldCostColor { get; } = new("gold_cost_color");
+        public NuiBind<string> GoldCostTooltip { get; } = new("gold_cost_tooltip");
+
 
         public NuiBind<string> DifficultyClass { get; } = new("difficulty_class");
-        public NuiBind<string> SkillName { get; } = new("skill_name");
+        
+        public NuiBind<Color> SkillColor { get; } = new("dc_color");
+        public NuiBind<string> SkillTooltip { get; } = new("skill_name");
 
 
         /// <summary>
@@ -140,7 +148,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                 Id = ApplyChanges,
                                 Width = 200f,
                                 Height = 60f,
-                                Enabled = ApplyEnabled
+                                Enabled = ApplyEnabled,
                             },
                             new NuiGroup()
                             {
@@ -152,7 +160,9 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                         new NuiGroup()
                                         {
                                             Element = new NuiLabel(DifficultyClass),
-                                            Tooltip = SkillName
+                                            Tooltip = SkillTooltip,
+                                            Encouraged = EncourageDifficulty,
+                                            ForegroundColor = SkillColor,
                                         }
                                     }
                                 }
@@ -170,7 +180,9 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                             {
                                                 ForegroundColor = GoldCostColor,
                                                 HorizontalAlign = NuiHAlign.Center,
-                                                VerticalAlign = NuiVAlign.Middle
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Tooltip = GoldCostTooltip,
+                                                Encouraged = EncourageGold
                                             }
                                         }
                                     }

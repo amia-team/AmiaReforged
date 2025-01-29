@@ -288,13 +288,19 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         bool canAfford = Model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
         Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
-        Token().SetBindValue(View.ApplyEnabled, canAfford && Model.CanMakeCheck());
+        Token().SetBindValue(View.GoldCostTooltip, canAfford ? "" : "You cannot afford this.");
+        bool validAction = canAfford && Model.CanMakeCheck();
+        Token().SetBindValue(View.ApplyEnabled, validAction);
+        Token().SetBindValue(View.EncourageGold, !canAfford);
     }
 
     private void UpdateDifficultyClass()
     {
+        bool canMakeCheck = Model.CanMakeCheck();
+        Token().SetBindValue(View.SkillColor, canMakeCheck ? ColorConstants.White : ColorConstants.Red);
         Token().SetBindValue(View.DifficultyClass, Model.GetCraftingDifficulty().ToString());
-        Token().SetBindValue(View.SkillName, Model.GetSkillName());
+        Token().SetBindValue(View.SkillTooltip, Model.SkillToolTip());
+        Token().SetBindValue(View.EncourageDifficulty, !canMakeCheck);
     }
 
     /// <summary>
