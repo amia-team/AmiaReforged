@@ -15,6 +15,19 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 /// </summary>
 public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 {
+
+    /// <summary>
+    /// An event raised every time Update is called.
+    /// </summary>
+    public delegate void ViewUpdatedEventHandler(MythalForgePresenter sender, EventArgs e);
+    
+    // Event using the delegate.
+    public event ViewUpdatedEventHandler? ViewUpdated;
+    
+    public delegate void ForgeClosingEventHandler(MythalForgePresenter sender, EventArgs e);
+    
+    public event ForgeClosingEventHandler? ForgeClosing;
+    
     /// <summary>
     /// The title of the Mythal Forge window.
     /// </summary>
@@ -25,7 +38,9 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override MythalForgeView View { get; }
 
-    private readonly MythalForgeModel _model;
+    private MythalLedgerView _ledgerView;
+
+    public readonly MythalForgeModel Model;
     private NuiWindowToken _token;
     private readonly NwPlayer _player;
     private NuiWindow? _window;
@@ -43,10 +58,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     public MythalForgePresenter(MythalForgeView view, CraftingPropertyData propertyData, CraftingBudgetService budget,
         NwItem item, NwPlayer player, PropertyValidator validator)
     {
-        _model = new MythalForgeModel(item, propertyData, budget, player, validator);
+        Model = new MythalForgeModel(item, propertyData, budget, player, validator);
         View = view;
         _player = player;
         _creating = false;
+        
+        _ledgerView = new MythalLedgerView(this, player);
 
         if (player.LoginCreature != null) player.LoginCreature.OnUnacquireItem += PreventMunchkins;
     }
@@ -85,57 +102,65 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <param name="eventData">The event data for the button click.</param>
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (_model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
+        if (Model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
                 out MythalCategoryModel.MythalProperty? property))
         {
-            _model.AddNewProperty(property);
+            Model.AddNewProperty(property);
         }
 
         if (eventData.ElementId == MythalForgeView.ApplyNameButtonId)
         {
-            string? newName = _token.GetBindValue(View.ItemName);
-            if (string.IsNullOrEmpty(newName))
-            {
-                _player.SendServerMessage("The item name cannot be empty.", ColorConstants.Orange);
-                return;
-            }
-
-            _model.Item.Name = newName;
+            if (ApplyName()) return;
         }
 
         if (eventData.ElementId == View.ActivePropertiesView.RemoveProperty)
         {
             int index = eventData.ArrayIndex;
-            MythalCategoryModel.MythalProperty p = _model.ActivePropertiesModel.GetVisibleProperties()[index];
+            MythalCategoryModel.MythalProperty p = Model.ActivePropertiesModel.GetVisibleProperties()[index];
 
-            _model.RemoveActiveProperty(p);
+            Model.RemoveActiveProperty(p);
         }
 
         if (eventData.ElementId == ChangelistView.RemoveFromChangeList)
         {
             int index = eventData.ArrayIndex;
 
-            ChangeListModel.ChangelistEntry e = _model.ChangeListModel.ChangeList()[index];
+            ChangeListModel.ChangelistEntry e = Model.ChangeListModel.ChangeList()[index];
 
             switch (e.State)
             {
                 case ChangeListModel.ChangeState.Added:
-                    _model.UndoAddition(e.Property);
+                    Model.UndoAddition(e.Property);
                     break;
                 case ChangeListModel.ChangeState.Removed:
-                    _model.UndoRemoval(e.Property);
+                    Model.UndoRemoval(e.Property);
                     break;
             }
+            
         }
 
         if (eventData.ElementId == MythalForgeView.ApplyChanges)
         {
-            _model.ApplyChanges();
+            Model.ApplyChanges();
 
             Close();
+            return;
         }
 
         UpdateView();
+    }
+
+    private bool ApplyName()
+    {
+        string? newName = _token.GetBindValue(View.ItemName);
+        if (string.IsNullOrEmpty(newName))
+        {
+            _player.SendServerMessage("The item name cannot be empty.", ColorConstants.Orange);
+            return true;
+        }
+
+        Model.Item.Name = newName;
+        return false;
     }
 
     /// <summary>
@@ -148,7 +173,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         // want to initialize other data that might not be present at construction time.
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
-            Geometry = new NuiRect(500f, 500f, 1200f, 640f)
+            Geometry = new NuiRect(400f, 400f, 1200f, 640f)
         };
     }
 
@@ -164,17 +189,20 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         UpdateChangeListBindings();
         UpdateGoldCost();
         UpdateDifficultyClass();
+        
+        // Raise the event to subscribed child windows.
+        OnViewUpdated();
     }
 
     private void UpdateNameField()
     {
-        Token().SetBindValue(View.ItemName, _model.Item.Name);
+        Token().SetBindValue(View.ItemName, Model.Item.Name);
     }
 
     private void UpdateItemPowerBindings()
     {
-        Token().SetBindValue(View.MaxPowers, _model.MaxBudget.ToString());
-        int remaining = _model.RemainingPowers;
+        Token().SetBindValue(View.MaxPowers, Model.MaxBudget.ToString());
+        int remaining = Model.RemainingPowers;
         Token().SetBindValue(View.RemainingPowers, remaining.ToString());
 
         if (_creating)
@@ -201,7 +229,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private void UpdateCategoryBindings()
     {
-        _model.RefreshCategories();
+        Model.RefreshCategories();
 
         foreach (MythalCategoryModel.MythalCategory category in MythalCategories)
         {
@@ -217,7 +245,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private void UpdateItemPropertyBindings()
     {
-        List<MythalCategoryModel.MythalProperty> visibleProperties = _model.VisibleProperties.ToList();
+        List<MythalCategoryModel.MythalProperty> visibleProperties = Model.VisibleProperties.ToList();
 
         int count = visibleProperties.Count;
         Token().SetBindValue(View.ActivePropertiesView.PropertyCount, count);
@@ -234,17 +262,17 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private void UpdateChangeListBindings()
     {
-        int count = _model.ChangeListModel.ChangeList().Count;
+        int count = Model.ChangeListModel.ChangeList().Count;
         Token().SetBindValue(View.ChangelistView.ChangeCount, count);
 
-        List<string> entryLabels = _model.ChangeListModel.ChangeList().Select(m => m.Label).ToList();
+        List<string> entryLabels = Model.ChangeListModel.ChangeList().Select(m => m.Label).ToList();
         Token().SetBindValues(View.ChangelistView.PropertyLabel, entryLabels);
 
         List<string> entryCosts =
-            _model.ChangeListModel.ChangeList().Select(m => m.Property.PowerCost.ToString()).ToList();
+            Model.ChangeListModel.ChangeList().Select(m => m.Property.PowerCost.ToString()).ToList();
         Token().SetBindValues(View.ChangelistView.CostString, entryCosts);
 
-        List<Color> entryColors = _model.ChangeListModel.ChangeList().Select(m => m.State switch
+        List<Color> entryColors = Model.ChangeListModel.ChangeList().Select(m => m.State switch
         {
             ChangeListModel.ChangeState.Added => ColorConstants.Lime,
             ChangeListModel.ChangeState.Removed => ColorConstants.Red,
@@ -256,17 +284,17 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private void UpdateGoldCost()
     {
-        Token().SetBindValue(View.GoldCost, _model.ChangeListModel.TotalGpCost().ToString());
+        Token().SetBindValue(View.GoldCost, Model.ChangeListModel.TotalGpCost().ToString());
 
-        bool canAfford = _model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
+        bool canAfford = Model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
         Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
-        Token().SetBindValue(View.ApplyEnabled, canAfford && _model.CanMakeCheck());
+        Token().SetBindValue(View.ApplyEnabled, canAfford && Model.CanMakeCheck());
     }
 
     private void UpdateDifficultyClass()
     {
-        Token().SetBindValue(View.DifficultyClass, _model.GetCraftingDifficulty().ToString());
-        Token().SetBindValue(View.SkillName, _model.GetSkillName());
+        Token().SetBindValue(View.DifficultyClass, Model.GetCraftingDifficulty().ToString());
+        Token().SetBindValue(View.SkillName, Model.GetSkillName());
     }
 
     /// <summary>
@@ -292,8 +320,11 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         // This assigns out our token and renders the actual NUI window.
         _player.TryCreateNuiWindow(_window, out _token);
+        _ledgerView.Presenter.Create();
 
         UpdateView();
+
+        // Create the child view (the ledger)
 
         _creating = false;
     }
@@ -304,6 +335,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     public override void Close()
     {
         if (_player.LoginCreature != null) _player.LoginCreature.OnUnacquireItem -= PreventMunchkins;
+        
+        // Raise an event to child windows.
+        OnForgeClosing();
+        
         _token.Close();
     }
 
@@ -319,5 +354,15 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <summary>
     /// Gets the list of Mythal categories from the model.
     /// </summary>
-    public IReadOnlyList<MythalCategoryModel.MythalCategory> MythalCategories => _model.MythalCategoryModel.Categories;
+    public IReadOnlyList<MythalCategoryModel.MythalCategory> MythalCategories => Model.MythalCategoryModel.Categories;
+
+    private void OnViewUpdated()
+    {
+        ViewUpdated?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnForgeClosing()
+    {
+        ForgeClosing?.Invoke(this, EventArgs.Empty);
+    }
 }

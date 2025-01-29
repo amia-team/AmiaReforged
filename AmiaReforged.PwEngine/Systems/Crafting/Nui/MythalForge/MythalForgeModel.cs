@@ -17,6 +17,7 @@ public class MythalForgeModel
     public MythalCategoryModel MythalCategoryModel { get; }
     public ActivePropertiesModel ActivePropertiesModel { get; }
 
+
     public NwItem Item { get; }
     private readonly CraftingBudgetService _budget;
     private readonly NwPlayer _player;
@@ -117,7 +118,9 @@ public class MythalForgeModel
         if (failed)
         {
             _player.SendServerMessage(
-                "For some reason, we couldn't find the properties to remove. Please try again. If the problem persists, contact the team on Discord.");
+                "For some reason, we couldn't find the properties to remove. Please try again."
+                + " If the problem persists, contact the team on Discord.",
+                ColorConstants.Red);
             return;
         }
 

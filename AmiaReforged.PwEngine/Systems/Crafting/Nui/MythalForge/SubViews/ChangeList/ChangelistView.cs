@@ -36,11 +36,19 @@ public class ChangelistView : IScryView
             new NuiListTemplateCell(new NuiGroup
             {
                 Element = new NuiLabel(CostString)
-            }),
+            })
+            {
+                Width = 30f,
+                VariableSize = false
+            },
             new NuiListTemplateCell(new NuiButton("X")
             {
-                Id = RemoveFromChangeList
+                Id = RemoveFromChangeList,
             })
+            {
+                Width = 30f,
+                VariableSize = false
+            }
         };
         return new NuiColumn
         {

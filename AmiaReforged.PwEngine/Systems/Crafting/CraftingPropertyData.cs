@@ -126,7 +126,7 @@ public class CraftingPropertyData
         AddEquippedItemProperties(properties);
 
         // These are also weapons...
-        properties.Add(DamageProperties.OneHanders);
+        properties.Add(DamageProperties.GloveDamage);
         properties.Add(DamageProperties.MassiveCriticals);
 
         // Gauntlets have another tier of massive criticals.

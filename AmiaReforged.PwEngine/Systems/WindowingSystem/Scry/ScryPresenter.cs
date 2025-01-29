@@ -29,12 +29,18 @@ public abstract class ScryPresenter<TView> : IScryPresenter where TView : IScryV
     /// Handles input events from the module, which are passed to the presenter by <see cref="WindowDirector"/>.
     /// </summary>
     /// <param name="obj">The event object containing details about the input event.</param>
-    public abstract void HandleInput(ModuleEvents.OnNuiEvent obj);
+    public virtual void HandleInput(ModuleEvents.OnNuiEvent obj)
+    {
+        // Default implementation does nothing.
+    }
 
     /// <summary>
     /// Updates the view with any changes that need to be reflected in the user interface.
     /// </summary>
-    public abstract void UpdateView();
+    public virtual void UpdateView()
+    {
+        // Default implementation does nothing.
+    }
 
     /// <summary>
     /// Creates the view or any associated resources.

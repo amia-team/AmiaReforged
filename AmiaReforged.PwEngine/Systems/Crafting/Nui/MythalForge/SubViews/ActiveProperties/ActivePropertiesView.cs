@@ -29,12 +29,20 @@ public class ActivePropertiesView : IScryView
             new NuiListTemplateCell(new NuiGroup
             {
                 Element = new NuiLabel(PropertyPowerCosts)
-            }),
+            })
+            {
+                Width = 30f,
+                VariableSize = false
+            },
             new NuiListTemplateCell(new NuiButton("X")
             {
                 Id = RemovePropertyConst,
                 Enabled = Removable
             })
+            {
+                Width = 30f,
+                VariableSize = false
+            }
             
         };
         
