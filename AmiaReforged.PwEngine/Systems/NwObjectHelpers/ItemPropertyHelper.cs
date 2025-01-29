@@ -58,7 +58,7 @@ public static class ItemPropertyHelper
             ItemProperty = ip,
             GuiLabel = GameLabel(ip),
             PowerCost = 2,
-            CraftingTier = CraftingTier.DreamCoin,
+            CraftingTier = CraftingTier.Wondrous,
             Removable = CanBeRemoved(ip)
         };
     }

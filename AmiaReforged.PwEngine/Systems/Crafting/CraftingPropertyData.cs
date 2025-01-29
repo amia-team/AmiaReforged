@@ -264,14 +264,14 @@ public class CraftingPropertyData
                             PowerCost = 1,
                             ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
                             GuiLabel = "1d12 Massive Criticals",
-                            CraftingTier = CraftingTier.DreamCoin
+                            CraftingTier = CraftingTier.Wondrous
                         },
                         new CraftingProperty
                         {
                             PowerCost = 2,
                             ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d12)!,
                             GuiLabel = "2d12 Massive Criticals",
-                            CraftingTier = CraftingTier.DreamCoin
+                            CraftingTier = CraftingTier.Wondrous
                         }
                     }
                 }

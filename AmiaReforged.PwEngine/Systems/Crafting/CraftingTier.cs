@@ -9,6 +9,6 @@ public enum CraftingTier
     Flawless = 4,
     Perfect = 5,
     Divine = 6,
-    DreamCoin = 7,
+    Wondrous = 7,
     Unattainable = 8
 }
