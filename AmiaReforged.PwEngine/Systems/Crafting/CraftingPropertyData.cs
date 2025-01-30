@@ -64,35 +64,40 @@ public class CraftingPropertyData
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(1)!,
                         GuiLabel = "+1 AC",
-                        CraftingTier = CraftingTier.Minor
+                        CraftingTier = CraftingTier.Minor,
+                        GoldCost = GenericItemProperties.AcCost1
                     },
                     new CraftingProperty
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(2)!,
                         GuiLabel = "+2 AC",
-                        CraftingTier = CraftingTier.Lesser
+                        CraftingTier = CraftingTier.Lesser,
+                        GoldCost = GenericItemProperties.AcCost2
                     },
                     new CraftingProperty
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(3)!,
                         GuiLabel = "+3 AC",
-                        CraftingTier = CraftingTier.Intermediate
+                        CraftingTier = CraftingTier.Intermediate,
+                        GoldCost = GenericItemProperties.AcCost3
                     },
                     new CraftingProperty
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(4)!,
                         GuiLabel = "+4 AC",
-                        CraftingTier = CraftingTier.Greater
+                        CraftingTier = CraftingTier.Greater,
+                        GoldCost = GenericItemProperties.AcCost4
                     },
                     new CraftingProperty
                     {
                         PowerCost = 2,
                         ItemProperty = NWScript.ItemPropertyACBonus(5)!,
                         GuiLabel = "+5 AC",
-                        CraftingTier = CraftingTier.Flawless
+                        CraftingTier = CraftingTier.Flawless,
+                        GoldCost = GenericItemProperties.AcCost5
                     }
                 }
             }
@@ -140,7 +145,8 @@ public class CraftingPropertyData
                     PowerCost = 1,
                     ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                     GuiLabel = "2d6 Massive Criticals",
-                    CraftingTier = CraftingTier.Flawless
+                    CraftingTier = CraftingTier.Flawless,
+                    GoldCost = 20000
                 }
             }
         });

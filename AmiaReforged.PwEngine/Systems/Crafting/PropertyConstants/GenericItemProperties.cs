@@ -259,11 +259,11 @@ public static class GenericItemProperties
         BaseDifficulty = 18
     };
 
-    private const int AcCost1 = 2000;
-    private const int AcCost2 = 6000;
-    private const int AcCost3 = 12000;
-    private const int AcCost4 = 20000;
-    private const int AcCost5 = 30000;
+    public const int AcCost1 = 2000;
+    public const int AcCost2 = 6000;
+    public const int AcCost3 = 12000;
+    public const int AcCost4 = 20000;
+    public const int AcCost5 = 30000;
 
     public static readonly CraftingCategory Armor = new("armor")
     {
