@@ -179,6 +179,8 @@ public class CraftingPropertyData
         properties.Add(BonusSpellSlotProperties.RangerBonusSpells);
         properties.Add(BonusSpellSlotProperties.SorcererBonusSpells);
         properties.Add(BonusSpellSlotProperties.WizardBonusSpells);
+        
+        properties.Add(SpellResistanceProperties.SpellResistances);
     }
 
     private void Setup1HMeleeWeapons()

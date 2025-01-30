@@ -5,7 +5,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 
 public static class SpellResistanceProperties
 {
-    public static readonly CraftingCategory Category = new CraftingCategory("spell_resistance")
+    public static readonly CraftingCategory SpellResistances = new CraftingCategory("spell_resistance")
     {
         Label = "Spell Resistance",
         Properties = new[]
