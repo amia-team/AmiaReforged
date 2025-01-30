@@ -391,7 +391,7 @@ public static class GenericItemProperties
                 ItemProperty = NWScript.ItemPropertyRegeneration(3)!,
                 GuiLabel = "+3",
                 GoldCost = MythalCostRegen3,
-                CraftingTier = CraftingTier.Flawless
+                CraftingTier = CraftingTier.Wondrous
             },
         },
         BaseDifficulty = 6
