@@ -393,6 +393,15 @@ public static class GenericItemProperties
                 GoldCost = MythalCostRegen3,
                 CraftingTier = CraftingTier.Wondrous
             },
+            // Unattainable, +4 costs 8.
+            new CraftingProperty
+            {
+                PowerCost = 8,
+                ItemProperty = NWScript.ItemPropertyRegeneration(4)!,
+                GuiLabel = "+4",
+                GoldCost = MythalCostRegen3,
+                CraftingTier = CraftingTier.Wondrous
+            },
         },
         BaseDifficulty = 6
     };
