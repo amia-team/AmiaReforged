@@ -184,12 +184,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         UpdateNameField();
         UpdateItemPowerBindings();
-        UpdateCategoryBindings();
         UpdateItemPropertyBindings();
         UpdateChangeListBindings();
         UpdateGoldCost();
         UpdateDifficultyClass();
-        
+        UpdateCategoryBindings();
+
         // Raise the event to subscribed child windows.
         OnViewUpdated();
     }

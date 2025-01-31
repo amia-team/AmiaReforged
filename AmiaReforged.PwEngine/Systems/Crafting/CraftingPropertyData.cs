@@ -116,10 +116,10 @@ public class CraftingPropertyData
         properties.Add(SkillProperties.Advantageous);
 
         properties.Add(AbilityProperties.Abilities);
-        
+
         properties.Add(CastSpellProperties.FluffSpells);
         properties.Add(CastSpellProperties.BeneficialSpells);
-        
+
 
         Properties.TryAdd(NWScript.BASE_ITEM_AMULET, properties);
     }
@@ -133,6 +133,7 @@ public class CraftingPropertyData
         // These are also weapons...
         properties.Add(DamageProperties.GloveDamage);
         properties.Add(DamageProperties.MassiveCriticals);
+        properties.Add(MeleeOnHitProperties.OnHits);
 
         // Gauntlets have another tier of massive criticals.
         properties.Add(new CraftingCategory("massive_criticals")
@@ -173,10 +174,10 @@ public class CraftingPropertyData
         properties.Add(SkillProperties.Advantageous);
 
         properties.Add(AbilityProperties.Abilities);
-        
+
         properties.Add(CastSpellProperties.FluffSpells);
         properties.Add(CastSpellProperties.BeneficialSpells);
-        
+
         properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
         properties.Add(BonusSpellSlotProperties.BardBonusSpells);
         properties.Add(BonusSpellSlotProperties.ClericBonusSpells);
@@ -185,7 +186,7 @@ public class CraftingPropertyData
         properties.Add(BonusSpellSlotProperties.RangerBonusSpells);
         properties.Add(BonusSpellSlotProperties.SorcererBonusSpells);
         properties.Add(BonusSpellSlotProperties.WizardBonusSpells);
-        
+
         properties.Add(SpellResistanceProperties.SpellResistances);
     }
 
@@ -230,6 +231,8 @@ public class CraftingPropertyData
 
         properties.Add(AbilityProperties.Abilities);
 
+        properties.Add(MeleeOnHitProperties.OnHits);
+
         properties.Add(VisualEffectConstants.VisualEffects);
     }
 
@@ -237,10 +240,11 @@ public class CraftingPropertyData
     {
         foreach (int weapon in ItemTypeConstants.ThrownWeapons())
         {
-            List<CraftingCategory> properties = new() { DamageProperties.OneHanders };
-
-            // Thrown Weapons have a different cost for Keen
-            properties.Add(GenericItemProperties.Other);
+            List<CraftingCategory> properties = new()
+            {
+                DamageProperties.OneHanders,
+                GenericItemProperties.Other
+            };
 
             AddSharedWeaponProperties(properties);
 
@@ -296,13 +300,14 @@ public class CraftingPropertyData
             List<CraftingCategory> properties = new()
             {
                 DamageProperties.Ammo,
-                GenericItemProperties.VampiricRegeneration
+                GenericItemProperties.VampiricRegeneration,
+                AmmoOnHitProperties.OnHits
             };
 
             Properties.TryAdd(ammo, properties);
         }
     }
-    
+
     public IReadOnlyList<CraftingProperty> UncategorizedPropertiesFor(int baseItemType)
     {
         List<CraftingProperty?> properties = new();
@@ -312,7 +317,7 @@ public class CraftingPropertyData
             properties.AddRange(category.Properties);
         }
 
-        return (IReadOnlyList<CraftingProperty>) properties;
+        return (IReadOnlyList<CraftingProperty>)properties;
     }
 
     public IReadOnlyList<CraftingProperty> UncategorizedPropertiesForNwItem(NwItem selection)

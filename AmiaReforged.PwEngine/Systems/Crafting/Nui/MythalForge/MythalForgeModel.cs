@@ -171,7 +171,7 @@ public class MythalForgeModel
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
                 ValidationResult operation =
-                    _validator.Validate(property, Item.ItemProperties, ChangeListModel.ChangeList());
+                    _validator.Validate(property, ActivePropertiesModel.GetVisibleProperties().Select(m => m.Internal.ItemProperty), ChangeListModel.ChangeList());
 
 
                 bool passesValidation = operation.Result == ValidationEnum.Valid;
@@ -212,7 +212,7 @@ public class MythalForgeModel
         {
             tooltip += "Craft Weapon";
         }
-        
+
         bool canCraft = CanMakeCheck();
         if (!canCraft) tooltip += " (You don't have the required skill rank)";
 
@@ -269,8 +269,25 @@ public class MythalForgeModel
 
     public void UndoRemoval(CraftingProperty property)
     {
+        List<ChangeListModel.ChangelistEntry> additions = ChangeListModel.ChangeList().Where(e =>
+            e.State != ChangeListModel.ChangeState.Removed && e.Property.ItemProperty.Property.PropertyType ==
+            property.ItemProperty.Property.PropertyType).ToList();
+
         ChangeListModel.UndoRemoval(property);
         ActivePropertiesModel.RevealProperty(property);
+        
+        foreach (ChangeListModel.ChangelistEntry entry in additions)
+        {
+            ValidationResult operation =
+                _validator.Validate(entry.Property, Item.ItemProperties, ChangeListModel.ChangeList());
+            
+            bool passesValidation = operation.Result == ValidationEnum.Valid;
+            
+            if (!passesValidation)
+            {
+                UndoAddition(entry.Property);
+            }
+        }
     }
 
     public string StatusMessageForApply()

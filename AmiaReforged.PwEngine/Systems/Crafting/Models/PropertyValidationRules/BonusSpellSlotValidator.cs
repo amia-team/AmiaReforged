@@ -15,12 +15,7 @@ public class BonusSpellSlotValidator : IValidationRule
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
-        ValidationEnum result = ValidationEnum.Valid;
-        string error = string.Empty;
-
         BonusSpellSlot incomingBonusSpellSlot = new(incoming);
-            
-        LogManager.GetCurrentClassLogger().Info($"{incomingBonusSpellSlot.Class} {incomingBonusSpellSlot.Level}");
 
         // Get all bonus spell slots on the item
         List<BonusSpellSlot> bonusSpellSlots = itemProperties
@@ -43,8 +38,10 @@ public class BonusSpellSlotValidator : IValidationRule
         int numberOfBonusSpellSlotsOfSameLevel = bonusSpellSlots
             .Count(x => x.Level == incomingBonusSpellSlot.Level && x.Class == incomingBonusSpellSlot.Class);
 
-        result = numberOfBonusSpellSlotsOfSameLevel >= 3 ? ValidationEnum.LimitReached : ValidationEnum.Valid;
-        error = numberOfBonusSpellSlotsOfSameLevel >= 3
+        ValidationEnum result = numberOfBonusSpellSlotsOfSameLevel >= 3
+            ? ValidationEnum.LimitReached
+            : ValidationEnum.Valid;
+        string error = numberOfBonusSpellSlotsOfSameLevel >= 3
             ? $"No more than three bonus spell slots of level {incomingBonusSpellSlot.Level} can be added to an item."
             : string.Empty;
 

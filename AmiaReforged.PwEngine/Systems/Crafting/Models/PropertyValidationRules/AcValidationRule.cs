@@ -15,9 +15,11 @@ public class AcValidationRule : IValidationRule
         if(incoming.ItemProperty.Property.PropertyType == ItemPropertyType.AcBonus)
         {
             bool anyAcBonus = itemProperties.Any(x => x.Property.PropertyType == ItemPropertyType.AcBonus);
+            bool acBonusNotRemoved = !changelistProperties.Any(e =>
+                e is { BasePropertyType: ItemPropertyType.AcBonus, State: ChangeListModel.ChangeState.Removed });
             bool anyInChangelist = changelistProperties.Any(e => e.BasePropertyType == ItemPropertyType.AcBonus && e.State != ChangeListModel.ChangeState.Removed);
             
-            @enum = anyAcBonus || anyInChangelist ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid;
+            @enum = anyAcBonus && acBonusNotRemoved || anyInChangelist ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid;
             errorMessage = "AC Bonus already exists on this item.";
         }
         

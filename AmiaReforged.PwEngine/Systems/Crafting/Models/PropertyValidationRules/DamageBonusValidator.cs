@@ -25,16 +25,15 @@ public class DamageBonusValidator : IValidationRule
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
-        ValidationEnum result = ValidationEnum.Valid;
-        string error = string.Empty;
-
         // We just don't want it to already exist on the item or in the changelist
         bool alreadyExists = itemProperties.Any(x => x.Property.PropertyType == ItemPropertyType.DamageBonus);
+        bool anyRemoved = changelistProperties.Any(e =>
+            e is { BasePropertyType: ItemPropertyType.DamageBonus, State: ChangeListModel.ChangeState.Removed });
         bool inChangelist = changelistProperties.Any(x =>
             x.BasePropertyType == ItemPropertyType.DamageBonus && x.State != ChangeListModel.ChangeState.Removed);
 
-        result = alreadyExists || inChangelist ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid;
-        error = result == ValidationEnum.PropertyNeverStacks
+        ValidationEnum result = alreadyExists && anyRemoved || inChangelist ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid;
+        string error = result == ValidationEnum.PropertyNeverStacks
             ? "Damage Bonus already exists on this item."
             : string.Empty;
 

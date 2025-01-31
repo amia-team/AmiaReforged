@@ -12,9 +12,6 @@ public class SpecificSavingThrowValidator : IValidationRule
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
-        ValidationEnum result = ValidationEnum.Valid;
-        string error = string.Empty;
-
         SavingThrow savingThrow = new(incoming);
         
         // Get all of the saving throw bonuses on the item
@@ -31,10 +28,10 @@ public class SpecificSavingThrowValidator : IValidationRule
         
         // Check if the saving throw already exists on the item
         bool onItem = savingThrows.Any(x => x.ThrowType == savingThrow.ThrowType);
-        
+
         // The bonus is irrelevant, we just don't want it to already exist on the item or in the changelist
-        result = onItem ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        error = onItem ? $"{savingThrow.ThrowType} saving throw already exists on this item." : string.Empty;
+        ValidationEnum result = onItem ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
+        string error = onItem ? $"{savingThrow.ThrowType} saving throw already exists on this item." : string.Empty;
 
         return new ValidationResult
         {
