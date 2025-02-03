@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using Anvil.API;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 
@@ -259,6 +260,13 @@ public static class MeleeOnHitProperties
                 GuiLabel = "Wounding: DC 22, 50%/2 rounds",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
+            },
+            new CraftingProperty
+            {
+                ItemProperty = NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_FREEZE, 10)!,
+                GuiLabel = "Freeze (Slow 3 rounds,  CL 10)",
+                PowerCost = 6,
+                CraftingTier = CraftingTier.Unattainable
             },
         },
     };
