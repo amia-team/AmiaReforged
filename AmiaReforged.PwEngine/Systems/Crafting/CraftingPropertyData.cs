@@ -64,35 +64,40 @@ public class CraftingPropertyData
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(1)!,
                         GuiLabel = "+1 AC",
-                        CraftingTier = CraftingTier.Minor
+                        CraftingTier = CraftingTier.Minor,
+                        GoldCost = GenericItemProperties.AcCost1
                     },
                     new CraftingProperty
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(2)!,
                         GuiLabel = "+2 AC",
-                        CraftingTier = CraftingTier.Lesser
+                        CraftingTier = CraftingTier.Lesser,
+                        GoldCost = GenericItemProperties.AcCost2
                     },
                     new CraftingProperty
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(3)!,
                         GuiLabel = "+3 AC",
-                        CraftingTier = CraftingTier.Intermediate
+                        CraftingTier = CraftingTier.Intermediate,
+                        GoldCost = GenericItemProperties.AcCost3
                     },
                     new CraftingProperty
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(4)!,
                         GuiLabel = "+4 AC",
-                        CraftingTier = CraftingTier.Greater
+                        CraftingTier = CraftingTier.Greater,
+                        GoldCost = GenericItemProperties.AcCost4
                     },
                     new CraftingProperty
                     {
                         PowerCost = 2,
                         ItemProperty = NWScript.ItemPropertyACBonus(5)!,
                         GuiLabel = "+5 AC",
-                        CraftingTier = CraftingTier.Flawless
+                        CraftingTier = CraftingTier.Flawless,
+                        GoldCost = GenericItemProperties.AcCost5
                     }
                 }
             }
@@ -111,10 +116,10 @@ public class CraftingPropertyData
         properties.Add(SkillProperties.Advantageous);
 
         properties.Add(AbilityProperties.Abilities);
-        
+
         properties.Add(CastSpellProperties.FluffSpells);
         properties.Add(CastSpellProperties.BeneficialSpells);
-        
+
 
         Properties.TryAdd(NWScript.BASE_ITEM_AMULET, properties);
     }
@@ -126,8 +131,9 @@ public class CraftingPropertyData
         AddEquippedItemProperties(properties);
 
         // These are also weapons...
-        properties.Add(DamageProperties.OneHanders);
+        properties.Add(DamageProperties.GloveDamage);
         properties.Add(DamageProperties.MassiveCriticals);
+        properties.Add(MeleeOnHitProperties.OnHits);
 
         // Gauntlets have another tier of massive criticals.
         properties.Add(new CraftingCategory("massive_criticals")
@@ -140,7 +146,8 @@ public class CraftingPropertyData
                     PowerCost = 1,
                     ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                     GuiLabel = "2d6 Massive Criticals",
-                    CraftingTier = CraftingTier.Flawless
+                    CraftingTier = CraftingTier.Flawless,
+                    GoldCost = 20000
                 }
             }
         });
@@ -167,10 +174,10 @@ public class CraftingPropertyData
         properties.Add(SkillProperties.Advantageous);
 
         properties.Add(AbilityProperties.Abilities);
-        
+
         properties.Add(CastSpellProperties.FluffSpells);
         properties.Add(CastSpellProperties.BeneficialSpells);
-        
+
         properties.Add(BonusSpellSlotProperties.AssassinBonusSpells);
         properties.Add(BonusSpellSlotProperties.BardBonusSpells);
         properties.Add(BonusSpellSlotProperties.ClericBonusSpells);
@@ -179,6 +186,8 @@ public class CraftingPropertyData
         properties.Add(BonusSpellSlotProperties.RangerBonusSpells);
         properties.Add(BonusSpellSlotProperties.SorcererBonusSpells);
         properties.Add(BonusSpellSlotProperties.WizardBonusSpells);
+
+        properties.Add(SpellResistanceProperties.SpellResistances);
     }
 
     private void Setup1HMeleeWeapons()
@@ -222,6 +231,8 @@ public class CraftingPropertyData
 
         properties.Add(AbilityProperties.Abilities);
 
+        properties.Add(MeleeOnHitProperties.OnHits);
+
         properties.Add(VisualEffectConstants.VisualEffects);
     }
 
@@ -229,10 +240,11 @@ public class CraftingPropertyData
     {
         foreach (int weapon in ItemTypeConstants.ThrownWeapons())
         {
-            List<CraftingCategory> properties = new() { DamageProperties.OneHanders };
-
-            // Thrown Weapons have a different cost for Keen
-            properties.Add(GenericItemProperties.Other);
+            List<CraftingCategory> properties = new()
+            {
+                DamageProperties.OneHanders,
+                GenericItemProperties.Other
+            };
 
             AddSharedWeaponProperties(properties);
 
@@ -264,14 +276,14 @@ public class CraftingPropertyData
                             PowerCost = 1,
                             ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
                             GuiLabel = "1d12 Massive Criticals",
-                            CraftingTier = CraftingTier.DreamCoin
+                            CraftingTier = CraftingTier.Wondrous
                         },
                         new CraftingProperty
                         {
                             PowerCost = 2,
                             ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d12)!,
                             GuiLabel = "2d12 Massive Criticals",
-                            CraftingTier = CraftingTier.DreamCoin
+                            CraftingTier = CraftingTier.Wondrous
                         }
                     }
                 }
@@ -288,13 +300,14 @@ public class CraftingPropertyData
             List<CraftingCategory> properties = new()
             {
                 DamageProperties.Ammo,
-                GenericItemProperties.VampiricRegeneration
+                GenericItemProperties.VampiricRegeneration,
+                AmmoOnHitProperties.OnHits
             };
 
             Properties.TryAdd(ammo, properties);
         }
     }
-    
+
     public IReadOnlyList<CraftingProperty> UncategorizedPropertiesFor(int baseItemType)
     {
         List<CraftingProperty?> properties = new();
@@ -304,7 +317,7 @@ public class CraftingPropertyData
             properties.AddRange(category.Properties);
         }
 
-        return (IReadOnlyList<CraftingProperty>) properties;
+        return (IReadOnlyList<CraftingProperty>)properties;
     }
 
     public IReadOnlyList<CraftingProperty> UncategorizedPropertiesForNwItem(NwItem selection)

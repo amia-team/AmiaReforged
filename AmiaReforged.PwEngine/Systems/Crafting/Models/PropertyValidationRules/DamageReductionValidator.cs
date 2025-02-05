@@ -10,10 +10,15 @@ public class DamageReductionValidator : IValidationRule
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
         // Only care that it doesn't already exist on the item
-        bool alreadyExists = itemProperties.Any(x => x.Property.PropertyType == ItemPropertyType.DamageReduction) ||
-                             changelistProperties.Any(x =>
-                                 x.BasePropertyType == ItemPropertyType.DamageReduction &&
-                                 x.State != ChangeListModel.ChangeState.Removed);
+        bool alreadyRemoved = changelistProperties.Any(e =>
+            e is { BasePropertyType: ItemPropertyType.DamageReduction, State: ChangeListModel.ChangeState.Removed });
+        bool onItem = itemProperties.Any(x => x.Property.PropertyType == ItemPropertyType.DamageReduction);
+        bool hasBeenAdded = changelistProperties.Any(x =>
+            x.BasePropertyType == ItemPropertyType.DamageReduction &&
+            x.State != ChangeListModel.ChangeState.Removed);
+        
+        bool alreadyExists = onItem && !alreadyRemoved ||
+                             hasBeenAdded;
 
         return new ValidationResult()
         {

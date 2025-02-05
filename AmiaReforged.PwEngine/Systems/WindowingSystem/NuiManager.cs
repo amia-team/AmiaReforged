@@ -10,19 +10,19 @@ public sealed class NuiManager : IDisposable
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private readonly InjectionService injectionService;
-    private readonly WindowAutoCloseService windowAutoCloseService;
+    private readonly InjectionService _injectionService;
+    private readonly WindowAutoCloseService _windowAutoCloseService;
 
-    private readonly List<INuiView> NuiViews;
+    private readonly List<INuiView> _nuiViews;
 
-    private readonly Dictionary<NwPlayer, List<INuiController>> NuiControllers = new();
+    private readonly Dictionary<NwPlayer, List<INuiController>> _nuiControllers = new();
 
     public NuiManager(InjectionService injectionService, WindowAutoCloseService windowAutoCloseService,
-        IEnumerable<INuiView> NuiViews)
+        IEnumerable<INuiView> nuiViews)
     {
-        this.injectionService = injectionService;
-        this.windowAutoCloseService = windowAutoCloseService;
-        this.NuiViews = NuiViews.OrderBy(view => view.Title).ToList();
+        this._injectionService = injectionService;
+        this._windowAutoCloseService = windowAutoCloseService;
+        this._nuiViews = nuiViews.OrderBy(view => view.Title).ToList();
 
         NwModule.Instance.OnNuiEvent += OnNuiEvent;
         NwModule.Instance.OnClientLeave += OnClientLeave;
@@ -43,7 +43,7 @@ public sealed class NuiManager : IDisposable
         TView view = (TView)GetWindowFromType(typeof(TView));
         if (view != null && player.TryCreateNuiWindow(view.WindowTemplate, out NuiWindowToken token))
         {
-            TController? controller = injectionService.Inject(new TController
+            TController? controller = _injectionService.Inject(new TController
             {
                 View = view,
                 Token = token,
@@ -85,13 +85,13 @@ public sealed class NuiManager : IDisposable
             return;
         }
 
-        injectionService.Inject(controller);
+        _injectionService.Inject(controller);
         InitController(controller, player);
     }
 
     private INuiView GetWindowFromType(Type windowType)
     {
-        foreach (INuiView view in NuiViews)
+        foreach (INuiView view in _nuiViews)
         {
             if (view.GetType() == windowType)
             {
@@ -107,16 +107,16 @@ public sealed class NuiManager : IDisposable
     {
         if (controller.AutoClose)
         {
-            windowAutoCloseService.RegisterWindowForAutoClose(controller);
+            _windowAutoCloseService.RegisterWindowForAutoClose(controller);
         }
 
         controller.Init();
-        NuiControllers.AddElement(player, controller);
+        _nuiControllers.AddElement(player, controller);
     }
 
     private void OnNuiEvent(ModuleEvents.OnNuiEvent eventData)
     {
-        if (NuiControllers.TryGetValue(eventData.Player, out List<INuiController> playerControllers))
+        if (_nuiControllers.TryGetValue(eventData.Player, out List<INuiController> playerControllers))
         {
             INuiController controller = null;
             int index;
@@ -147,20 +147,20 @@ public sealed class NuiManager : IDisposable
 
     private void OnClientLeave(ModuleEvents.OnClientLeave eventData)
     {
-        if (NuiControllers.TryGetValue(eventData.Player, out List<INuiController> playerControllers))
+        if (_nuiControllers.TryGetValue(eventData.Player, out List<INuiController> playerControllers))
         {
             foreach (INuiController controller in playerControllers)
             {
                 controller.Close();
             }
 
-            NuiControllers.Remove(eventData.Player);
+            _nuiControllers.Remove(eventData.Player);
         }
     }
 
     void IDisposable.Dispose()
     {
-        foreach (List<INuiController> controllers in NuiControllers.Values)
+        foreach (List<INuiController> controllers in _nuiControllers.Values)
         {
             foreach (INuiController controller in controllers)
             {
@@ -168,12 +168,12 @@ public sealed class NuiManager : IDisposable
             }
         }
 
-        NuiControllers.Clear();
+        _nuiControllers.Clear();
     }
 
     public bool WindowIsOpen(NwPlayer player, Type type)
     {
-        NuiControllers.TryGetValue(player, out List<INuiController>? playerControllers);
+        _nuiControllers.TryGetValue(player, out List<INuiController>? playerControllers);
 
         return playerControllers != null && playerControllers.Any(controller => controller.GetType() == type);
     }

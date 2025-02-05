@@ -18,7 +18,6 @@ public class CasterWeaponForge
         Spell.Restoration,
         Spell.IsaacsLesserMissileStorm,
         Spell.IsaacsGreaterMissileStorm,
-        Spell.FlameStrike,
         Spell.HealingCircle
     };
 
@@ -66,7 +65,11 @@ public class CasterWeaponForge
             .WithPlayer(player)
             .WithTitle("Caster Weapon Forge")
             .WithMessage(
-                "You can turn a blank weapon into a caster weapon here by casting Restoration, any Missile Storm, Flame Strike, or Healing Circle. One-handed weapons have 12 powers, Two-handed weapons have 20.")
+                "You can turn a blank weapon into a caster weapon here by casting Restoration, any Missile Storm,"
+                + " or Healing Circle."
+                + " This will prevent any typical weapon properties from being placed on the item. These weapons will not "
+                + "accept any greater magic weapon or flame weapon enchantments."
+                + " One-handed weapons have 12 powers, Two-handed weapons have 20.")
             .EnableIgnoreButton("ignore_caster_forge")
             .Open();
     }
@@ -81,7 +84,7 @@ public class CasterWeaponForge
         if (!_spellWhiteList.Contains(obj.Spell.SpellType))
         {
             player.SendServerMessage(
-                "You can only enchant weapons here with: Restoration, Isaac's Lesser Missile Storm, Isaac's Greater Missile, Flame Strike, or Healing Circle.");
+                "You can only enchant weapons here with: Restoration, Isaac's Lesser Missile Storm, Isaac's Greater Missile, or Healing Circle.");
             return;
         }
 
@@ -97,9 +100,9 @@ public class CasterWeaponForge
         // combines weapons
         List<int> weapons = ItemTypeConstants.MeleeWeapons();
         List<int> melee2HWeapons = ItemTypeConstants.Melee2HWeapons();
-        
+
         weapons.AddRange(melee2HWeapons);
-        
+
         if (!weapons.Contains(baseItemType))
         {
             player.SendServerMessage("You can only enchant one-handed or two-handed melee weapons.");

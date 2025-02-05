@@ -24,15 +24,24 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         /// Gets the binding for the item name.
         /// </summary>
         public NuiBind<string> ItemName { get; } = new("item_name");
-        
+
         public NuiBind<string> MaxPowers { get; } = new("max_powers");
         public NuiBind<string> RemainingPowers { get; } = new("remaining_powers");
         public NuiBind<bool> ApplyEnabled { get; } = new("apply_enabled");
+        
+        public NuiBind<bool> EncourageDifficulty { get; } = new("encourage_difficulty");
+        public NuiBind<bool> EncourageGold { get; } = new("encourage_gold");
+        
         public NuiBind<string> GoldCost { get; } = new("gold_cost");
         public NuiBind<Color> GoldCostColor { get; } = new("gold_cost_color");
-        
+        public NuiBind<string> GoldCostTooltip { get; } = new("gold_cost_tooltip");
+
+
         public NuiBind<string> DifficultyClass { get; } = new("difficulty_class");
-        public NuiBind<string> SkillName { get; } = new("skill_name");
+        
+        public NuiBind<Color> SkillColor { get; } = new("dc_color");
+        public NuiBind<string> SkillTooltip { get; } = new("skill_name");
+
 
         /// <summary>
         /// Gets the category view for the Mythal Forge. Public so that the presenter can access it.
@@ -42,6 +51,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         public readonly ActivePropertiesView ActivePropertiesView;
         public readonly ChangelistView ChangelistView;
 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MythalForgeView"/> class. Initializes the presenter and sub-views.
         /// </summary>
@@ -49,10 +59,12 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         /// <param name="budget">The crafting budget service.</param>
         /// <param name="item">The item being crafted.</param>
         /// <param name="player">The player performing the crafting.</param>
+        /// <param name="validator"></param>
+        /// <param name="dcCalculator"></param>
         public MythalForgeView(CraftingPropertyData propertyData, CraftingBudgetService budget, NwItem item,
-            NwPlayer player, PropertyValidator validator)
+            NwPlayer player, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
         {
-            Presenter = new MythalForgePresenter(this, propertyData, budget, item, player, validator);
+            Presenter = new MythalForgePresenter(this, propertyData, budget, item, player, validator, dcCalculator);
 
             CategoryView = new MythalCategoryView(Presenter);
             ActivePropertiesView = new ActivePropertiesView(Presenter);
@@ -85,15 +97,22 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                 Height = 60f,
                             },
                             new NuiSpacer(),
-                            new NuiLabel("Max Powers:"),
-                            new NuiGroup
+                            new NuiRow
                             {
-                                Element = new NuiLabel(MaxPowers),
-                                Border = true,
-                                Width = 50f,
-                                Height = 50f,
-                                Margin = 2f
+                                Children =
+                                {
+                                    new NuiLabel("Max Powers:"),
+                                    new NuiGroup
+                                    {
+                                        Element = new NuiLabel(MaxPowers),
+                                        Border = true,
+                                        Width = 50f,
+                                        Height = 50f,
+                                        Margin = 2f
+                                    },
+                                }
                             },
+                            
                             new NuiLabel("Remaining Powers:"),
                             new NuiGroup
                             {
@@ -102,7 +121,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                 Width = 50f,
                                 Height = 50f,
                                 Margin = 2f
-                            }
+                            },
                         }
                     },
                     new NuiRow
@@ -129,7 +148,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                 Id = ApplyChanges,
                                 Width = 200f,
                                 Height = 60f,
-                                Enabled = ApplyEnabled
+                                Enabled = ApplyEnabled,
                             },
                             new NuiGroup()
                             {
@@ -141,7 +160,9 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                         new NuiGroup()
                                         {
                                             Element = new NuiLabel(DifficultyClass),
-                                            Tooltip = SkillName
+                                            Tooltip = SkillTooltip,
+                                            Encouraged = EncourageDifficulty,
+                                            ForegroundColor = SkillColor,
                                         }
                                     }
                                 }
@@ -159,7 +180,9 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                                             {
                                                 ForegroundColor = GoldCostColor,
                                                 HorizontalAlign = NuiHAlign.Center,
-                                                VerticalAlign = NuiVAlign.Middle
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Tooltip = GoldCostTooltip,
+                                                Encouraged = EncourageGold
                                             }
                                         }
                                     }

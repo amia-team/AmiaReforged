@@ -259,11 +259,11 @@ public static class GenericItemProperties
         BaseDifficulty = 18
     };
 
-    private const int AcCost1 = 2000;
-    private const int AcCost2 = 6000;
-    private const int AcCost3 = 12000;
-    private const int AcCost4 = 20000;
-    private const int AcCost5 = 30000;
+    public const int AcCost1 = 2000;
+    public const int AcCost2 = 6000;
+    public const int AcCost3 = 12000;
+    public const int AcCost4 = 20000;
+    public const int AcCost5 = 30000;
 
     public static readonly CraftingCategory Armor = new("armor")
     {
@@ -331,7 +331,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyVampiricRegeneration(1)!,
-                GuiLabel = "+1",
+                GuiLabel = "+1 Vampiric Regeneration",
                 GoldCost = MythalCostVregen1,
                 CraftingTier = CraftingTier.Intermediate
             },
@@ -340,7 +340,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyVampiricRegeneration(2)!,
-                GuiLabel = "+2",
+                GuiLabel = "+2 Vampiric Regeneration",
                 GoldCost = MythalCostVregen2,
                 CraftingTier = CraftingTier.Greater
             },
@@ -349,7 +349,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 3,
                 ItemProperty = NWScript.ItemPropertyVampiricRegeneration(3)!,
-                GuiLabel = "+3",
+                GuiLabel = "+3 Vampiric Regeneration",
                 GoldCost = MythalCostVregen3,
                 CraftingTier = CraftingTier.Flawless
             },
@@ -371,7 +371,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyRegeneration(1)!,
-                GuiLabel = "+1",
+                GuiLabel = "+1 Regeneration",
                 GoldCost = MythalCostRegen1,
                 CraftingTier = CraftingTier.Intermediate
             },
@@ -380,7 +380,7 @@ public static class GenericItemProperties
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyRegeneration(2)!,
-                GuiLabel = "+2",
+                GuiLabel = "+2 Regeneration",
                 GoldCost = MythalCostRegen2,
                 CraftingTier = CraftingTier.Greater
             },
@@ -389,9 +389,18 @@ public static class GenericItemProperties
             {
                 PowerCost = 6,
                 ItemProperty = NWScript.ItemPropertyRegeneration(3)!,
-                GuiLabel = "+3",
+                GuiLabel = "+3 Regeneration",
                 GoldCost = MythalCostRegen3,
-                CraftingTier = CraftingTier.Flawless
+                CraftingTier = CraftingTier.Wondrous
+            },
+            // Unattainable, +4 costs 8.
+            new CraftingProperty
+            {
+                PowerCost = 8,
+                ItemProperty = NWScript.ItemPropertyRegeneration(4)!,
+                GuiLabel = "+4 Regeneration",
+                GoldCost = MythalCostRegen3,
+                CraftingTier = CraftingTier.Wondrous
             },
         },
         BaseDifficulty = 6

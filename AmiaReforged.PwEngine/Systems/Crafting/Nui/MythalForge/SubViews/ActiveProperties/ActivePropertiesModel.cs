@@ -7,17 +7,12 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.Active
 
 public class ActivePropertiesModel
 {
-    private readonly NwItem _item;
-    private readonly NwPlayer _player;
-
     public readonly List<CraftingProperty> Hidden = new();
     public readonly List<CraftingProperty> Visible = new();
 
 
-    public ActivePropertiesModel(NwItem item, NwPlayer player, IReadOnlyList<CraftingCategory> categories)
+    public ActivePropertiesModel(NwItem item, IReadOnlyList<CraftingCategory> categories)
     {
-        _item = item;
-        _player = player;
 
         List<CraftingProperty> properties = categories.SelectMany(c => c.Properties).ToList();
 

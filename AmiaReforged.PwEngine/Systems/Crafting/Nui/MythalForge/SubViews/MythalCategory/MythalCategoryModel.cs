@@ -14,6 +14,15 @@ public class MythalCategoryModel
 
     public List<MythalCategory> Categories { get; }
     public Dictionary<string, MythalProperty> PropertyMap { get; } = new();
+    
+  
+    public string MinorMythals => _mythals.Map[CraftingTier.Minor].ToString();
+    public string LesserMythals => _mythals.Map[CraftingTier.Lesser].ToString();
+    public string GreaterMythals => _mythals.Map[CraftingTier.Greater].ToString();
+    public string IntermediateMythals => _mythals.Map[CraftingTier.Intermediate].ToString();
+    public string PerfectMythals => _mythals.Map[CraftingTier.Perfect].ToString();
+    public string FlawlessMythals => _mythals.Map[CraftingTier.Flawless].ToString();
+    public string DivineMythals => _mythals.Map[CraftingTier.Divine].ToString();
 
     private readonly MythalMap _mythals;
     private readonly IReadOnlyList<CraftingCategory> _categories;

@@ -277,14 +277,14 @@ public static class SavingThrowProperties
                 PowerCost = 10,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_UNIVERSAL, 5)!,
                 GuiLabel = "+5 Universal",
-                CraftingTier = CraftingTier.DreamCoin
+                CraftingTier = CraftingTier.Wondrous
             },
             new CraftingProperty
             {
                 PowerCost = 12,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_UNIVERSAL, 6)!,
                 GuiLabel = "+6 Universal",
-                CraftingTier = CraftingTier.DreamCoin
+                CraftingTier = CraftingTier.Wondrous
             }
         },
         BaseDifficulty = 10

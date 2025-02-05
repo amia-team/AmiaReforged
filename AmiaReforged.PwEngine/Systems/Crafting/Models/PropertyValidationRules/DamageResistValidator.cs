@@ -10,9 +10,6 @@ public class DamageResistValidator : IValidationRule
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
-        ValidationEnum result = ValidationEnum.Valid;
-        string error = string.Empty;
-
         Resistance resistance = new(incoming.ItemProperty);
 
         // Get all resistances in the changelist and on the item
@@ -26,14 +23,20 @@ public class DamageResistValidator : IValidationRule
             .Where(x => x.Property.PropertyType == ItemPropertyType.DamageResistance)
             .Select(p => new Resistance(p))
             .ToList();
-        
+
         // Just combine them
         List<Resistance> allResistances = resistancesInChangelist.Concat(resistancesInItem).ToList();
-        
+
         // Now we only care if the same type exists in the item or the changelist
+        bool removed = changelistProperties
+            .Where(e => e is
+                { BasePropertyType: ItemPropertyType.DamageResistance, State: ChangeListModel.ChangeState.Removed })
+            .Select(e => new Resistance(e.Property)).Any(r => r.ResistanceType == resistance.ResistanceType);
         bool alreadyExists = allResistances.Any(x => x.ResistanceType == resistance.ResistanceType);
-        result = alreadyExists ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        error = alreadyExists ? $"{resistance.ResistanceType} Resistance already exists on this item." : string.Empty;
+        ValidationEnum result = alreadyExists && !removed ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
+        string error = alreadyExists
+            ? $"{resistance.ResistanceType} Resistance already exists on this item."
+            : string.Empty;
 
         return new ValidationResult
         {
@@ -52,7 +55,7 @@ public class DamageResistValidator : IValidationRule
             };
 
             ResistanceType = incoming.SubTypeName;
-            
+
             // Splits Resist_5/- into its constituent parts and selects the numeric component
             ResistanceValue = int.Parse(incoming.PropertyBonus.Split("_")[1].Split("/")[0]);
         }

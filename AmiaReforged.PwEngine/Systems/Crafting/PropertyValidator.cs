@@ -15,28 +15,29 @@ public class PropertyValidator
     public PropertyValidator()
     {
         _validationRules = new Dictionary<ItemPropertyType, IValidationRule>();
-        
+
         LoadValidationRules();
     }
 
     private void LoadValidationRules()
     {
         IEnumerable<Type> validationRuleTypes = Assembly.GetExecutingAssembly().GetTypes()
-            .Where(t => t.GetCustomAttribute<ValidationRuleFor>() != null && typeof(IValidationRule).IsAssignableFrom(t));
+            .Where(t => t.GetCustomAttribute<ValidationRuleFor>() != null
+                        && typeof(IValidationRule).IsAssignableFrom(t));
 
         foreach (Type type in validationRuleTypes)
         {
             ValidationRuleFor? attribute = type.GetCustomAttribute<ValidationRuleFor>();
             if (attribute == null) continue;
-            
+
             IValidationRule? instance = (IValidationRule)Activator.CreateInstance(type);
-            
+
             if (instance == null) continue;
-            
+
             _validationRules[attribute.Property] = instance;
         }
     }
-    
+
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {

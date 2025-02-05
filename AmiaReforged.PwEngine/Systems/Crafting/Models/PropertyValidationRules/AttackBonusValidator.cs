@@ -13,9 +13,11 @@ public class AttackBonusValidator : IValidationRule
         
         // We just don't want it to already exist on the item or in the changelist
         bool alreadyExists = itemProperties.Any(x => x.Property.PropertyType == ItemPropertyType.AttackBonus);
+        bool anyRemoved = changelistProperties.Any(e =>
+            e is { BasePropertyType: ItemPropertyType.AttackBonus, State: ChangeListModel.ChangeState.Removed });
         bool inChangelist = changelistProperties.Any(x => x.BasePropertyType == ItemPropertyType.AttackBonus && x.State != ChangeListModel.ChangeState.Removed);
         
-        result = alreadyExists || inChangelist ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid;
+        result = alreadyExists && !anyRemoved || inChangelist ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid;
         error = result == ValidationEnum.PropertyNeverStacks ? "Attack Bonus already exists on this item." : string.Empty;
         
         return new ValidationResult

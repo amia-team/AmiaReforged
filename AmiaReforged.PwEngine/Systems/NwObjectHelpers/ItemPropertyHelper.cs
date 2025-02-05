@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 using AmiaReforged.PwEngine.Systems.Crafting;
 using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
@@ -58,7 +59,7 @@ public static class ItemPropertyHelper
             ItemProperty = ip,
             GuiLabel = GameLabel(ip),
             PowerCost = 2,
-            CraftingTier = CraftingTier.DreamCoin,
+            CraftingTier = CraftingTier.Wondrous,
             Removable = CanBeRemoved(ip)
         };
     }
@@ -140,20 +141,70 @@ public static class ItemPropertyHelper
             { CraftingTier.Perfect, "mythal6" },
             { CraftingTier.Divine, "mythal7" },
         };
-        
+
         tierMap.TryGetValue(tier, out string? t);
-        
+
         return t ?? "";
     }
 
     public static bool PropertiesAreSame(ItemProperty property1, ItemProperty property2)
     {
-        return property1.Property == property2.Property &&
-               property1.SubType == property2.SubType &&
-               property1.CostTableValue == property2.CostTableValue &&
-               property1.Param1TableValue == property2.Param1TableValue;
+        string label1 = GameLabel(property1);
+        string label2 = GameLabel(property2);
+        bool propertiesAreSame = label1 == label2;
+        if (property1.Property.PropertyType == ItemPropertyType.OnHitProperties &&
+            property2.Property.PropertyType == ItemPropertyType.OnHitProperties
+            || property1.Property.PropertyType == ItemPropertyType.OnHitCastSpell &&
+            property2.Property.PropertyType == ItemPropertyType.OnHitCastSpell)
+        {
+            LogManager.GetCurrentClassLogger().Info("Comparing OnHit properties.");
+            NwArea? systemArea = NwModule.Instance.Areas.FirstOrDefault(a => a.Name.Contains("Area to Rest"));
+
+            if (systemArea == null)
+            {
+                LogManager.GetCurrentClassLogger().Info("System area not found.");
+                return false;
+            }
+
+            Location? arbitraryWaypoint = systemArea.FindObjectsOfTypeInArea<NwWaypoint>().First().Location;
+            
+            if(arbitraryWaypoint == null)
+            {
+                LogManager.GetCurrentClassLogger().Info("Arbitrary waypoint not found.");
+                return false;
+            }
+
+            NwItem dummy = NwItem.Create("nw_wswls001", arbitraryWaypoint);
+            if (dummy == null)
+            {
+                // log this error
+                LogManager.GetCurrentClassLogger().Info("Dummy item not created.");
+                return false;
+            }
+
+            if (!property1.Valid || !property2.Valid)
+            {
+                LogManager.GetCurrentClassLogger().Info("An item property was not valid. Check the definitions in PropertyConstants for errors.");
+                return false;
+            }
+
+            dummy.AddItemProperty(property1, EffectDuration.Permanent);
+            dummy.AddItemProperty(property2, EffectDuration.Permanent);
+            ItemProperty[] properties = dummy.ItemProperties.ToArray();
+            LogManager.GetCurrentClassLogger().Info($"Comparing {properties.Length} properties.");
+            
+            // Uses regex to remove the +X% from the labels for comparison purposes
+            string l1 = Regex.Replace(GameLabel(properties[0]), @"\d+%", string.Empty).TrimEnd();
+            string l2 = Regex.Replace(GameLabel(properties[1]), @"\d+%", string.Empty).TrimEnd();
+            propertiesAreSame = l1 == l2;
+            LogManager.GetCurrentClassLogger().Info($"Properties are the same: {propertiesAreSame}. {l1} == {l2}");
+            dummy.Destroy();
+        }
+
+
+        return propertiesAreSame;
     }
-    
+
     public static string FullPropertyDescription(ItemProperty property)
     {
         StringBuilder description = new("");
@@ -167,8 +218,8 @@ public static class ItemPropertyHelper
 
         int subtypepepe = NWScript.GetItemPropertySubType(property);
         description.Append($"Subtype Debug: {subtypepepe}");
-        
-        
+
+
         ItemPropertySubTypeTableEntry? subType = property.SubType;
         if (subType != null)
         {

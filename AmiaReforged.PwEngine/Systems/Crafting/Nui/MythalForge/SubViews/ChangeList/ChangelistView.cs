@@ -36,20 +36,39 @@ public class ChangelistView : IScryView
             new NuiListTemplateCell(new NuiGroup
             {
                 Element = new NuiLabel(CostString)
-            }),
-            new NuiListTemplateCell(new NuiButton("X")
-            {
-                Id = RemoveFromChangeList
+                {
+                    HorizontalAlign = NuiHAlign.Center,
+                    VerticalAlign = NuiVAlign.Middle,
+                },
+                Aspect = 1f
             })
+            {
+                Width = 30f,
+                VariableSize = false
+            },
+            new NuiListTemplateCell(new NuiButtonImage("ir_abort")
+            {
+                Id = RemoveFromChangeList,
+                Aspect = 1f
+            })
+            {
+                Width = 30f,
+                VariableSize = false
+            }
         };
         return new NuiColumn
         {
             Children =
             {
                 new NuiList(cells, ChangeCount)
+                {
+                    RowHeight = 30f,
+                    Scrollbars = NuiScrollbars.None
+                }
             },
             Width = 400f,
-            Height = 400f
+            Height = 400f,
+
         };
     }
 }

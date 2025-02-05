@@ -53,7 +53,6 @@ public class CraftingBudgetService
             NWScript.BASE_ITEM_SHORTSPEAR => 8,
             NWScript.BASE_ITEM_QUARTERSTAFF => 8,
             // 1h weapons are 6
-            NWScript.BASE_ITEM_MAGICSTAFF => 6,
             NWScript.BASE_ITEM_BASTARDSWORD => 6,
             NWScript.BASE_ITEM_BATTLEAXE => 6,
             NWScript.BASE_ITEM_CLUB => 6,
@@ -75,6 +74,8 @@ public class CraftingBudgetService
             NWScript.BASE_ITEM_TRIDENT => 6,
             NWScript.BASE_ITEM_WARHAMMER => 6,
             NWScript.BASE_ITEM_WHIP => 6,
+            // Magic staves still need to be imbued with a spell to be a caster weapon
+            NWScript.BASE_ITEM_MAGICSTAFF => 6,
             //Thrown Weapons are 5
             NWScript.BASE_ITEM_SHURIKEN => 5,
             NWScript.BASE_ITEM_DART => 5,
@@ -90,8 +91,8 @@ public class CraftingBudgetService
             NWScript.BASE_ITEM_BOLT => 4,
             NWScript.BASE_ITEM_BULLET => 4,
             // Special case where there isn't actually a set base item type
-            CraftingPropertyData.CasterWeapon1H => 12,
-            CraftingPropertyData.CasterWeapon2H => 20,
+            CraftingPropertyData.CasterWeapon1H => 6,
+            CraftingPropertyData.CasterWeapon2H => 16,
             _ => 0
         };
     }

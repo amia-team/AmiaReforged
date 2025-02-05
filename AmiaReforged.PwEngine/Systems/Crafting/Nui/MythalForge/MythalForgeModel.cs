@@ -17,35 +17,40 @@ public class MythalForgeModel
     public MythalCategoryModel MythalCategoryModel { get; }
     public ActivePropertiesModel ActivePropertiesModel { get; }
 
+
     public NwItem Item { get; }
     private readonly CraftingBudgetService _budget;
     private readonly NwPlayer _player;
     private readonly PropertyValidator _validator;
+    private readonly DifficultyClassCalculator _dcCalculator;
 
     public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player,
-        PropertyValidator validator)
+        PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
         Item = item;
         _budget = budget;
         _player = player;
         _validator = validator;
+        _dcCalculator = dcCalculator;
 
         int baseType = NWScript.GetBaseItemType(item);
-        
+
         // Is it a caster weapon?
         bool casterWeapon = NWScript.GetLocalInt(item, ItemTypeConstants.CasterWeaponVar) == NWScript.TRUE;
-        if(casterWeapon)
+        if (casterWeapon)
         {
-            baseType = ItemTypeConstants.Melee2HWeapons().Contains(baseType) ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+            baseType = ItemTypeConstants.Melee2HWeapons().Contains(baseType)
+                ? CraftingPropertyData.CasterWeapon2H
+                : CraftingPropertyData.CasterWeapon1H;
         }
-        
+
         LogManager.GetCurrentClassLogger().Info("Base type: " + baseType);
-        
+
         IReadOnlyList<CraftingCategory> categories = data.Properties[baseType];
 
         MythalCategoryModel = new MythalCategoryModel(item, player, categories);
         ChangeListModel = new ChangeListModel();
-        ActivePropertiesModel = new ActivePropertiesModel(item, player, categories);
+        ActivePropertiesModel = new ActivePropertiesModel(item, categories);
     }
 
     public int MaxBudget => _budget.MythalBudgetForNwItem(Item);
@@ -83,7 +88,21 @@ public class MythalForgeModel
             return 0;
         }
 
-        int craftingDifficulty = ChangeListModel.ChangeList().Select(c => c.Difficulty).Max();
+        int craftingDifficulty = 0;
+
+        List<CraftingProperty> changelistProperties =
+            ChangeListModel.ChangeList()
+                .Where(e => e.State != ChangeListModel.ChangeState.Removed)
+                .Select(p => p.Property)
+                .ToList();
+
+
+        foreach (CraftingProperty craftingProperty in changelistProperties)
+        {
+            int newDifficulty = _dcCalculator.ComputeDifficulty(craftingProperty);
+
+            craftingDifficulty = newDifficulty > craftingDifficulty ? newDifficulty : craftingDifficulty;
+        }
 
         return craftingDifficulty;
     }
@@ -114,9 +133,15 @@ public class MythalForgeModel
 
         if (failed)
         {
+            _player.SendServerMessage(
+                "For some reason, we couldn't find the properties to remove. Please try again."
+                + " If the problem persists, contact the team on Discord.",
+                ColorConstants.Red);
             return;
         }
 
+        // Only remove properties after we've checked that we can remove them all.
+        // Invalid or null properties means that the "transaction" failed.
         foreach (ItemProperty property in propertiesToRemove)
         {
             Item.RemoveItemProperty(property);
@@ -131,6 +156,9 @@ public class MythalForgeModel
             }
         }
 
+        int goldCost = ChangeListModel.TotalGpCost();
+        _player.LoginCreature?.TakeGold(goldCost);
+
         MythalCategoryModel.DestroyMythals(_player);
     }
 
@@ -143,9 +171,9 @@ public class MythalForgeModel
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
                 ValidationResult operation =
-                    _validator.Validate(property, Item.ItemProperties, ChangeListModel.ChangeList());
+                    _validator.Validate(property, ActivePropertiesModel.GetVisibleProperties().Select(m => m.Internal.ItemProperty), ChangeListModel.ChangeList());
 
-                
+
                 bool passesValidation = operation.Result == ValidationEnum.Valid;
                 bool canAfford = property.Internal.PowerCost <= RemainingPowers;
                 bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
@@ -163,34 +191,32 @@ public class MythalForgeModel
         }
     }
 
-    public string GetSkillName()
+    public string SkillToolTip()
     {
         int baseType = NWScript.GetBaseItemType(Item);
+        string tooltip = "Skill: ";
         if (ItemTypeConstants.EquippableItems().Contains(baseType))
         {
-            return baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
+            tooltip += baseType is NWScript.BASE_ITEM_ARMOR or NWScript.BASE_ITEM_SMALLSHIELD
                 or NWScript.BASE_ITEM_LARGESHIELD or NWScript.BASE_ITEM_TOWERSHIELD or NWScript.BASE_ITEM_GLOVES
                 or NWScript.BASE_ITEM_BRACER or NWScript.BASE_ITEM_BELT
                 ? "Craft Armor"
                 : "Spellcraft";
         }
 
-        if (ItemTypeConstants.RangedWeapons().Contains(baseType))
+        if (ItemTypeConstants.RangedWeapons().Contains(baseType) ||
+            ItemTypeConstants.ThrownWeapons().Contains(baseType) ||
+            ItemTypeConstants.Ammo().Contains(baseType) ||
+            ItemTypeConstants.Melee2HWeapons().Contains(baseType) ||
+            ItemTypeConstants.MeleeWeapons().Contains(baseType))
         {
-            return "Craft Weapon";
+            tooltip += "Craft Weapon";
         }
 
-        if (ItemTypeConstants.ThrownWeapons().Contains(baseType))
-        {
-            return "Craft Weapon";
-        }
+        bool canCraft = CanMakeCheck();
+        if (!canCraft) tooltip += " (You don't have the required skill rank)";
 
-        if (ItemTypeConstants.Ammo().Contains(baseType))
-        {
-            return "Craft Weapon";
-        }
-
-        return "Spellcraft";
+        return tooltip;
     }
 
     private int GetSkill()
@@ -243,8 +269,34 @@ public class MythalForgeModel
 
     public void UndoRemoval(CraftingProperty property)
     {
+        List<ChangeListModel.ChangelistEntry> additions = ChangeListModel.ChangeList().Where(e =>
+            e.State != ChangeListModel.ChangeState.Removed && e.Property.ItemProperty.Property.PropertyType ==
+            property.ItemProperty.Property.PropertyType).ToList();
+
         ChangeListModel.UndoRemoval(property);
         ActivePropertiesModel.RevealProperty(property);
+        
+        foreach (ChangeListModel.ChangelistEntry entry in additions)
+        {
+            ValidationResult operation =
+                _validator.Validate(entry.Property, Item.ItemProperties, ChangeListModel.ChangeList());
+            
+            bool passesValidation = operation.Result == ValidationEnum.Valid;
+            
+            if (!passesValidation)
+            {
+                UndoAddition(entry.Property);
+            }
+        }
+    }
+
+    public string StatusMessageForApply()
+    {
+        string status = "";
+        bool canAfford = ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
+        if (!canAfford) status += "You don't have enough gold. ";
+
+        return status;
     }
 }
 
