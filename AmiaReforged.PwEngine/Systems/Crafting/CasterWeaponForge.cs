@@ -64,9 +64,8 @@ public class CasterWeaponForge
             .WithPlayer(player)
             .WithTitle("Caster Weapon Forge")
             .WithMessage(
-                "You can turn a blank weapon into a caster weapon here by casting Restoration, Lightning Bolt,"
-                + " or Healing Circle."
-                + " This will prevent any typical weapon properties from being placed on the item. These weapons will not "
+                "You can turn a blank weapon into a caster weapon here by casting any level 3 or higher spell on it. "
+                + "This will prevent any typical weapon properties from being placed on the item. These weapons will not "
                 + "accept any greater magic weapon or flame weapon enchantments."
                 + " One-handed weapons have 12 powers, Two-handed weapons have 20.")
             .EnableIgnoreButton("ignore_caster_forge")
@@ -80,10 +79,9 @@ public class CasterWeaponForge
             return;
         }
 
-        if (!_spellWhiteList.Contains(obj.Spell.SpellType))
+        if (obj.Spell.InnateSpellLevel < 3) // Only allow level 3 spells
         {
-            player.SendServerMessage(
-                "You can only enchant weapons here with: Restoration, Isaac's Lesser Missile Storm, Isaac's Greater Missile, or Healing Circle.");
+            player.SendServerMessage("You can only enchant weapons with level 3 spells.");
             return;
         }
 
