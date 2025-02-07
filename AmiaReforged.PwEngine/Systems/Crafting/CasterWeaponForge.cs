@@ -16,8 +16,7 @@ public class CasterWeaponForge
     private List<Spell> _spellWhiteList = new List<Spell>
     {
         Spell.Restoration,
-        Spell.IsaacsLesserMissileStorm,
-        Spell.IsaacsGreaterMissileStorm,
+        Spell.LightningBolt,
         Spell.HealingCircle
     };
 
@@ -65,7 +64,7 @@ public class CasterWeaponForge
             .WithPlayer(player)
             .WithTitle("Caster Weapon Forge")
             .WithMessage(
-                "You can turn a blank weapon into a caster weapon here by casting Restoration, any Missile Storm,"
+                "You can turn a blank weapon into a caster weapon here by casting Restoration, Lightning Bolt,"
                 + " or Healing Circle."
                 + " This will prevent any typical weapon properties from being placed on the item. These weapons will not "
                 + "accept any greater magic weapon or flame weapon enchantments."
@@ -122,6 +121,8 @@ public class CasterWeaponForge
             return;
         }
 
+        Effect visualEffect = Effect.VisualEffect(VfxType.ImpBlindDeafM);
+        obj.Placeable.ApplyEffect(EffectDuration.Instant, visualEffect);
         NWScript.SetLocalInt(weapon, "CASTER_WEAPON", 1);
     }
 }
