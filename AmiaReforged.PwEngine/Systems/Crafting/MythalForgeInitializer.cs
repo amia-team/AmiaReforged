@@ -111,7 +111,7 @@ public class MythalForgeInitializer
         
         if (NWScript.GetLocalInt(character, CanUseForge) != 1 || NWScript.GetLocalInt(character, ForgeIsClosing) == 1)
         {
-            player.FloatingTextString("Wait a moment before using the forge again.", false);
+            player.FloatingTextString("Get closer to the forge.", false);
             return;
         }
 
