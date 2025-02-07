@@ -2,9 +2,13 @@
 
 namespace AmiaReforged.PwEngine.Systems.Crafting;
 
+/// <summary>
+/// A static class to naively categorize item types. This is used to determine what items can be used in crafting recipes.
+/// </summary>
 public static class ItemTypeConstants
 {
     public const string CasterWeaponVar = "CASTER_WEAPON";
+
     public static List<int> MeleeWeapons()
     {
         return new List<int>
@@ -70,7 +74,7 @@ public static class ItemTypeConstants
             NWScript.BASE_ITEM_BULLET
         };
     }
-    
+
     public static List<int> RangedWeapons()
     {
         return new List<int>
@@ -83,6 +87,11 @@ public static class ItemTypeConstants
         };
     }
 
+    /// <summary>
+    /// All equippable items that can be used in crafting recipes. Certain special items were left commented out for
+    /// documentation purposes.
+    /// </summary>
+    /// <returns></returns>
     public static List<int> EquippableItems()
     {
         return new List<int>
