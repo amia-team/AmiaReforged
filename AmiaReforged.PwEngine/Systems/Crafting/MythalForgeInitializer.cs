@@ -18,6 +18,8 @@ public class MythalForgeInitializer
 {
     private const string TargetingModeMythalForge = "mythal_forge";
     private const string LvarTargetingMode = "targeting_mode";
+    private const string CanUseForge = "CAN_USE_FORGE";
+    private const string ForgeIsClosing = "CLOSING_FORGE";
 
     private readonly WindowDirector _windowSystem;
     private readonly CraftingPropertyData _propertyData;
@@ -45,19 +47,71 @@ public class MythalForgeInitializer
         {
             nwPlaceable.OnUsed += OpenForge;
         }
+
+        IEnumerable<NwTrigger> forgeTriggers = NwObject.FindObjectsWithTag<NwTrigger>("mythal_trigger");
+
+        foreach (NwTrigger trigger in forgeTriggers)
+        {
+            trigger.OnEnter += EnableForgeUse;
+            trigger.OnExit += DisableForgeUse;
+        }
+    }
+
+    /// <summary>
+    /// Sets a local int on the player's character to indicate they are near a forge, so they can use it.
+    /// </summary>
+    /// <param name="obj"></param>
+    private void EnableForgeUse(TriggerEvents.OnEnter obj)
+    {
+        if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
+
+        NwCreature? character = player.LoginCreature;
+        if (character == null) return;
+
+        NWScript.SetLocalInt(character, CanUseForge, 1);
+    }
+
+    /// <summary>
+    /// Unsets the local int on the player's character to indicate they are no longer near a forge.
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <exception cref="NotImplementedException"></exception>
+    private void DisableForgeUse(TriggerEvents.OnExit obj)
+    {
+        if (!obj.ExitingObject.IsPlayerControlled(out NwPlayer? player)) return;
+
+        NwCreature? character = player.LoginCreature;
+        if (character == null) return;
+
+        NWScript.DeleteLocalInt(character, CanUseForge);
+        NWScript.SetLocalInt(character, ForgeIsClosing, 1);
+        if (_windowSystem.IsWindowOpen(player, typeof(MythalForgePresenter)))
+        {
+            _windowSystem.CloseWindow(player, typeof(MythalForgePresenter));
+        }
+        NWScript.DeleteLocalInt(character, ForgeIsClosing);
     }
 
     private void OpenForge(PlaceableEvents.OnUsed obj)
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
-        
-        if(environment == "live") return;
-        
+
+        if (environment == "live") return;
+
         if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
 
         if (_windowSystem.IsWindowOpen(player, typeof(MythalForgePresenter)))
         {
             _windowSystem.CloseWindow(player, typeof(MythalForgePresenter));
+            return;
+        }
+        
+        NwCreature? character = player.LoginCreature;
+        if (character == null) return;
+        
+        if (NWScript.GetLocalInt(character, CanUseForge) != 1 || NWScript.GetLocalInt(character, ForgeIsClosing) == 1)
+        {
+            player.FloatingTextString("Wait a moment before using the forge again.", false);
             return;
         }
 
@@ -85,17 +139,16 @@ public class MythalForgeInitializer
 
         int isCasterWeapon = NWScript.GetLocalInt(item, "CASTER_WEAPON");
         int baseItemType = NWScript.GetBaseItemType(item);
-        
+
         bool is2H = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
         if (isCasterWeapon == NWScript.TRUE)
         {
             baseItemType = is2H ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
         }
-        
 
-        bool notFound =
+        bool itemListingNotFound =
             !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
-        if (notFound)
+        if (itemListingNotFound)
         {
             GenericWindow.Builder()
                 .For()
