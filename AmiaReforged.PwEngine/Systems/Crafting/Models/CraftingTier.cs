@@ -1,4 +1,4 @@
-﻿namespace AmiaReforged.PwEngine.Systems.Crafting;
+﻿namespace AmiaReforged.PwEngine.Systems.Crafting.Models;
 
 public enum CraftingTier
 {
