@@ -110,10 +110,9 @@ public class CasterWeaponForge
         NwItem weapon = obj.Placeable.Inventory.Items.ToArray()[0];
         int baseItemType = NWScript.GetBaseItemType(weapon);
 
-        // combines weapons
         List<int> weapons = ItemTypeConstants.MeleeWeapons();
         List<int> melee2HWeapons = ItemTypeConstants.Melee2HWeapons();
-
+        
         weapons.AddRange(melee2HWeapons);
 
         if (!weapons.Contains(baseItemType))
@@ -144,7 +143,6 @@ public class CasterWeaponForge
             return;
         }
 
-        // No properties may be present on the weapon
         // TODO: Factor in material, quality, and other flavor properties
         if (weapon.ItemProperties.Any())
         {
