@@ -81,13 +81,29 @@ public class CasterWeaponForge
 
         if (obj.Spell.InnateSpellLevel < 3) // Only allow level 3 spells
         {
-            player.SendServerMessage("You can only enchant weapons with level 3 spells.");
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("Caster Weapon Forge")
+                .WithMessage("You must cast a level 3 or higher spell.")
+                .Open();
+
             return;
         }
 
         if (obj.Placeable.Inventory.Items.Count() != 1)
         {
-            player.SendServerMessage("You can only enchant one weapon at a time.");
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("Caster Weapon Forge")
+                .WithMessage("You can only enchant one weapon at a time.")
+                .Open();
+
             return;
         }
 
@@ -102,20 +118,45 @@ public class CasterWeaponForge
 
         if (!weapons.Contains(baseItemType))
         {
-            player.SendServerMessage("You can only enchant one-handed or two-handed melee weapons.");
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("Caster Weapon Forge")
+                .WithMessage("You can only enchant melee weapons.")
+                .Open();
+            
             return;
         }
 
         if (NWScript.GetLocalInt(weapon, "CASTER_WEAPON") == 1)
         {
-            player.SendServerMessage("This weapon is already enchanted.");
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("Caster Weapon Forge")
+                .WithMessage("This weapon is already enchanted.")
+                .Open();
+            
             return;
         }
 
         // No properties may be present on the weapon
+        // TODO: Factor in material, quality, and other flavor properties
         if (weapon.ItemProperties.Any())
         {
-            player.SendServerMessage("This weapon already has properties.");
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("Caster Weapon Forge")
+                .WithMessage("You cannot enchant a weapon that already has properties on it.")
+                .Open();
+            
             return;
         }
 
