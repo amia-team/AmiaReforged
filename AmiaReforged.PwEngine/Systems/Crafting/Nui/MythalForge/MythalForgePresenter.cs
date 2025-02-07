@@ -147,6 +147,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             return;
         }
 
+        if (eventData.ElementId == MythalForgeView.Cancel)
+        {
+            Close();
+            return;
+        }
+
         UpdateView();
     }
 

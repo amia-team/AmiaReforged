@@ -19,10 +19,13 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 [ServiceBinding(typeof(MythalForgeInitializer))]
 public class MythalForgeInitializer
 {
-    private const string TargetingModeMythalForge = "mythal_forge";
+    private const string TargetingModeMythalForge = MythalForgeTag;
     private const string LvarTargetingMode = "targeting_mode";
     private const string CanUseForge = "CAN_USE_FORGE";
     private const string ForgeIsClosing = "CLOSING_FORGE";
+    
+    private const string MythalForgeTag = "mythal_forge";
+    private const string MythalTriggerTag = "mythal_trigger";
 
     private readonly WindowDirector _windowSystem;
     private readonly CraftingPropertyData _propertyData;
@@ -55,14 +58,14 @@ public class MythalForgeInitializer
     /// </summary>
     private void InitForges()
     {
-        IEnumerable<NwPlaceable> forges = NwObject.FindObjectsWithTag<NwPlaceable>("mythal_forge");
+        IEnumerable<NwPlaceable> forges = NwObject.FindObjectsWithTag<NwPlaceable>(MythalForgeTag);
 
         foreach (NwPlaceable nwPlaceable in forges)
         {
             nwPlaceable.OnUsed += OpenForge;
         }
 
-        IEnumerable<NwTrigger> forgeTriggers = NwObject.FindObjectsWithTag<NwTrigger>("mythal_trigger");
+        IEnumerable<NwTrigger> forgeTriggers = NwObject.FindObjectsWithTag<NwTrigger>(MythalTriggerTag);
 
         foreach (NwTrigger trigger in forgeTriggers)
         {
