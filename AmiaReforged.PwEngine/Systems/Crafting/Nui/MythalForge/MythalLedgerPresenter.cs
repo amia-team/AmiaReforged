@@ -47,7 +47,7 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
         return _token;
     }
 
-    public override void Initialize()
+    public override void InitBefore()
     {
         _window = new NuiWindow(View.RootLayout(), "Mythal Ledger")
         {
@@ -62,7 +62,7 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
     {
         if (_window == null)
         {
-            Initialize();
+            InitBefore();
         }
 
         if (_window == null)

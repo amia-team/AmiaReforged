@@ -1,5 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

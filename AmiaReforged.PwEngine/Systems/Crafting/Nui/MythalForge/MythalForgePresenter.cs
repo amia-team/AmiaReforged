@@ -3,7 +3,6 @@ using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using NLog;
@@ -86,7 +85,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         _player.LoginCreature.AcquireItem(obj.Item);
     }
 
-    public override void HandleInput(ModuleEvents.OnNuiEvent obj)
+    public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
     {
         switch (obj.EventType)
         {
@@ -172,7 +171,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <summary>
     /// Initializes the presenter and sets up initial data.
     /// </summary>
-    public override void Initialize()
+    public override void InitBefore()
     {
         // N.B: Other things can happen here, so if you're following this as an example
         // you can do more than just create the window here. The window is supposed to be created here, but you might
@@ -319,7 +318,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         if (_window == null)
         {
             // Try to create the window if it doesn't exist.
-            Initialize();
+            InitBefore();
         }
 
         // If the window wasn't created, then tell the user we screwed up.
