@@ -7,6 +7,7 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.DiceRoll;
 
 public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToolWindow
 {
+    public bool RequiresPersistedCharacter { get; }
     public string Id => "playertools.diceroll";
     public string Title => "Dice Roll";
     public bool ListInPlayerTools => true;

@@ -1,5 +1,6 @@
 using AmiaReforged.Core.Services;
 using AmiaReforged.Core.UserInterface;
+using AmiaReforged.PwEngine.Systems.Player.PlayerId;
 using AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.CreateSpellbook;
 using AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.OpenSpellbook;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
@@ -16,6 +17,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
 {
     [Inject] private Lazy<WindowDirector> WindowDirector { get; set; } = null!;
     [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; } = null!;
+    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; set; } = null!;
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -78,7 +80,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
             return;
         }
 
-        Guid characterId = PcKeyUtils.GetPcKey(Token().Player);
+        Guid characterId = PlayerIdService.Value.GetPlayerKey(Token().Player);
 
         if (characterId == Guid.Empty)
         {

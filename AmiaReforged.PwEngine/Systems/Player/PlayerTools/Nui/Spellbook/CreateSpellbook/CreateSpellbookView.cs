@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
+using Anvil.Services;
 using NuiUtils = AmiaReforged.PwEngine.Systems.WindowingSystem.NuiUtils;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.CreateSpellbook;
@@ -8,11 +9,13 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.CreateS
 public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWindow
 {
     public  string Id => "playertools.createspellbook";
+    public bool RequiresPersistedCharacter => true;
     public  string Title => "Create Spellbook";
-    public string CategoryTag { get; }
+    public string CategoryTag { get; } = null!;
+
     public IScryPresenter MakeWindow(NwPlayer player)
     {
-        throw new NotImplementedException();
+        return Presenter;
     }
 
     public  bool ListInPlayerTools => false;
@@ -24,17 +27,19 @@ public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWind
 
     public readonly NuiBind<List<NuiComboEntry>> ClassNames = new("class_names");
 
-    public NuiButton CreateButton;
-    public NuiCombo ClassComboBox;
-    public NuiButton CancelButton;
+    public NuiButton CreateButton = null!;
+    public NuiCombo ClassComboBox = null!;
+    public NuiButton CancelButton = null!;
 
 
     public CreateSpellbookView(NwPlayer player)
     {
         Presenter = new CreateSpellbookPresenter(this, player);
+        InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
+        injector.Inject(Presenter);
     }
 
-    public override CreateSpellbookPresenter Presenter { get; protected set; }
+    public sealed override CreateSpellbookPresenter Presenter { get; protected set; }
     public override NuiLayout RootLayout()
     {
         NuiColumn root = new()

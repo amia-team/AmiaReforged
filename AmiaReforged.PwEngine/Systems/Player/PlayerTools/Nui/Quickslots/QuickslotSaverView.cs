@@ -105,4 +105,6 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
 
         return root;
     }
+
+    public bool RequiresPersistedCharacter => true;
 }

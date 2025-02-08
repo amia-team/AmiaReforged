@@ -6,7 +6,7 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui;
 public class PlayerToolsModel
 {
     public List<IToolWindow> VisibleWindows { get; private set; } = new();
-
+    public bool CharacterIsPersisted { get; set; }
 
     private readonly NwPlayer _player;
     private string _searchTerm = string.Empty;
@@ -40,6 +40,11 @@ public class PlayerToolsModel
         {
             if (Activator.CreateInstance(type, _player) is IToolWindow { ListInPlayerTools: true } window)
             {
+                if(window.RequiresPersistedCharacter && !CharacterIsPersisted)
+                {
+                    continue;
+                }
+                
                 windows.Add(window);
             }
         }

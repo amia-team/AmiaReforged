@@ -12,7 +12,6 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools;
 public class PlayerToolsService
 {
     private readonly WindowDirector _windowManager;
-    private readonly InjectionService _di;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private const string EntryAreaTag = "welcometotheeete";
     private const int PlayerToolsFeatId = 1337;

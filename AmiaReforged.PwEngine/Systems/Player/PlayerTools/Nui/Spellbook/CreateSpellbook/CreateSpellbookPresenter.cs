@@ -2,6 +2,7 @@ using System.Text.Json;
 using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Services;
 using AmiaReforged.Core.UserInterface;
+using AmiaReforged.PwEngine.Systems.Player.PlayerId;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
@@ -16,6 +17,7 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
     private readonly NwPlayer _player;
     [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; }
     [Inject] private Lazy<CharacterService> CharacterService { get; set; }
+    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; set; }
 
     private NuiWindowToken _token = default;
     private NuiWindow? _window;
@@ -50,6 +52,7 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
             return;
         }
 
+        _player.TryCreateNuiWindow(_window, out _token);
         List<string> classnames = (from creatureClass in Token().Player.LoginCreature?.Classes
             where creatureClass.Class.IsSpellCaster
             select creatureClass.Class.Name.ToString()).ToList();
@@ -83,9 +86,11 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
+        Log.Info("Handling NUI event");
         switch (eventData.EventType)
         {
             case NuiEventType.Click:
+                Log.Info("Handling NUI click event");
                 HandleButtonClick(eventData);
                 break;
         }
@@ -93,6 +98,7 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
     private async void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
+        Log.Info($"{eventData.ElementId}");
         if (eventData.ElementId == View.CreateButton.Id)
         {
             if (Token().GetBindValue(View.SpellbookName) == string.Empty)
@@ -117,20 +123,22 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
     private async Task SaveSpellbookToDb()
     {
         string spellbookName = Token().GetBindValue(View.SpellbookName);
-        
+
         // Save spellbook to database
         NwCreature? character = Token().Player.LoginCreature;
         if (character == null)
         {
+            Log.Error("Character is null.");
             return;
         }
 
-        string pcIdString = NWScript.GetLocalString(character, "pc_guid");
-        Guid pcId = Guid.Parse(pcIdString);
+        Guid pcId = PlayerIdService.Value.GetPlayerKey(Token().Player);
 
+        Log.Info($"Got player ID: {pcId}");
+        
         bool characterExists = await CharacterService.Value.CharacterExists(pcId);
         await NwTask.SwitchToMainThread();
-
+        Log.Info($"Character exists: {characterExists}");
         // TODO: Refactor whatever the fuck this mess is supposed to be.
         if (spellbookName != null && pcId != Guid.Empty && characterExists)
         {

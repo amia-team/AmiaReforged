@@ -10,6 +10,7 @@ public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWi
     public string Id => "playertools.quickslotscreate";
     public string Title => "Create Saved Quickslots";
     public string CategoryTag { get; } = null!;
+    public bool RequiresPersistedCharacter { get; }
 
     public IScryPresenter MakeWindow(NwPlayer player)
     {

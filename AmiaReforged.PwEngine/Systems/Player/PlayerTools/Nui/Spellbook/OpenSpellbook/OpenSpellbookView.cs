@@ -14,7 +14,9 @@ public sealed class OpenSpellbookView : ScryView<OpenSpellbookPresenter>, IToolW
     {
         throw new NotImplementedException();
     }
-    
+
+    public bool RequiresPersistedCharacter => true;
+
     public readonly NuiBind<string> SpellbookName = new("spellbook_name");
     public readonly NuiBind<string> SpellbookClass = new("spellbook_class");
 

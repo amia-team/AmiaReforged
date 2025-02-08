@@ -17,6 +17,8 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
         return Presenter;
     }
 
+    public bool RequiresPersistedCharacter => true;
+
     // Value binds.
     public readonly NuiBind<string> Search = new("search_val");
     public readonly NuiBind<string> SpellbookNames = new("win_names");

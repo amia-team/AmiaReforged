@@ -1,3 +1,5 @@
+using AmiaReforged.Core.Services;
+using AmiaReforged.PwEngine.Systems.Player.PlayerId;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
@@ -10,6 +12,8 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     [Inject] private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
+    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; init; } = null!;
+    [Inject] private Lazy<CharacterService> CharacterService { get; init; } = null!;
 
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
@@ -39,7 +43,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
         };
     }
 
-    public override void Create()
+    public async override void Create()
     {
         // Create the window if it's null.
         if (_window == null)
@@ -57,6 +61,15 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+        Guid characterId = PlayerIdService.Value.GetPlayerKey(Token().Player);
+        bool isPersisted = await CharacterService.Value.CharacterExists(characterId);
+        await NwTask.SwitchToMainThread();
+        Model.CharacterIsPersisted = isPersisted;
+
+        if (!isPersisted)
+        {
+            Token().Player.FloatingTextString("You haven't gone through the entry area yet. You'll want to do this if you want access to all functionality.", false);
+        }
         
         RefreshWindowList();
     }
