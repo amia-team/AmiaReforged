@@ -25,6 +25,11 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
     public  NuiButton ReportsButton;
 
     public override DiceRollWindowPresenter Presenter { get; protected set; }
+
+    public DiceRollWindowView(NwPlayer player)
+    {
+        Presenter = new DiceRollWindowPresenter(this, player);
+    }
     public override NuiLayout RootLayout()
     {
         RollGroup = new NuiGroup()
