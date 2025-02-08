@@ -1,6 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -53,7 +52,7 @@ public sealed class WindowDirector : IDisposable
                 break;
             default:
                 _tokens.TryGetValue(obj.Token, out IScryPresenter? presenter);
-                presenter?.HandleInput(obj);
+                presenter?.ProcessEvent(obj);
                 break;
         }
     }
@@ -83,7 +82,7 @@ public sealed class WindowDirector : IDisposable
     /// <param name="window">The window presenter to be opened.</param>
     public void OpenWindow(IScryPresenter window)
     {
-        window.Initialize();
+        window.InitBefore();
         window.Create();
 
         _tokens.TryAdd(window.Token(), window);

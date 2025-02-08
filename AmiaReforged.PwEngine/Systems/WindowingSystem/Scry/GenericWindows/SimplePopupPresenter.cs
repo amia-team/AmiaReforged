@@ -1,5 +1,4 @@
-﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core;
 
@@ -20,7 +19,7 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
     }
 
 
-    public override void HandleInput(ModuleEvents.OnNuiEvent obj)
+    public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
     {
         if (obj.EventType != NuiEventType.Click) return;
         if (obj.ElementId == "ok_button")
@@ -50,7 +49,7 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
 
     public override SimplePopupView View { get; }
 
-    public override void Initialize()
+    public override void InitBefore()
     {
         _window = new NuiWindow(View.RootLayout(), _title)
         {
@@ -66,7 +65,7 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
 
     public override void Create()
     {
-        Initialize();
+        InitBefore();
         _player.TryCreateNuiWindow(_window!, out _token);
         
         Token().SetBindValue(View.IgnoreButtonVisible, View.IgnoreButton);

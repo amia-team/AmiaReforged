@@ -23,13 +23,13 @@ public abstract class ScryPresenter<TView> : IScryPresenter where TView : IScryV
     /// <summary>
     /// Initializes the presenter, setting up any necessary state or resources.
     /// </summary>
-    public abstract void Initialize();
+    public abstract void InitBefore();
 
     /// <summary>
     /// Handles input events from the module, which are passed to the presenter by <see cref="WindowDirector"/>.
     /// </summary>
     /// <param name="obj">The event object containing details about the input event.</param>
-    public virtual void HandleInput(ModuleEvents.OnNuiEvent obj)
+    public virtual void ProcessEvent(ModuleEvents.OnNuiEvent obj)
     {
         // Default implementation does nothing.
     }
