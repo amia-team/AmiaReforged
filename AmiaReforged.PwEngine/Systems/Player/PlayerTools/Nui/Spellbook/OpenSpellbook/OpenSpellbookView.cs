@@ -8,7 +8,7 @@ public sealed class OpenSpellbookView : ScryView<OpenSpellbookPresenter>, IToolW
 {
     public string Id => "playertools.openspellbook";
     public string Title => "Opened Spellbook";
-    public string CategoryTag { get; }
+    public string CategoryTag { get; } = null!;
 
     public IScryPresenter MakeWindow(NwPlayer player)
     {
@@ -33,8 +33,8 @@ public sealed class OpenSpellbookView : ScryView<OpenSpellbookPresenter>, IToolW
     public NuiGroup LevelEightSpells = new();
     public NuiGroup LevelNineSpells = new();
 
-    public NuiButton LoadSpellbookButton;
-    public NuiButton CloseSpellbookButton;
+    public NuiButton LoadSpellbookButton = null!;
+    public NuiButton CloseSpellbookButton = null!;
 
     public OpenSpellbookView(NwPlayer player)
     {

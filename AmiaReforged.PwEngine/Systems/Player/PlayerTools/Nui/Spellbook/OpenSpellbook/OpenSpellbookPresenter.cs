@@ -14,29 +14,53 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; }
 
+    private SpellbookViewModel _spellbook;
+    private readonly NwPlayer _player;
+    private NuiWindowToken _token;
+    private NuiWindow? _window;
+
     public OpenSpellbookPresenter(OpenSpellbookView view, NwPlayer player)
     {
         View = view;
         _player = player;
     }
+
     public override NuiWindowToken Token()
     {
-        throw new NotImplementedException();
+        return _token;
     }
 
     public override OpenSpellbookView View { get; }
 
-    public override void Create()
-    {
-        throw new NotImplementedException();
-    }
-
-
-    private SpellbookViewModel _spellbook;
-    private readonly NwPlayer _player;
 
     public override void InitBefore()
     {
+        _window = new NuiWindow(View.RootLayout(), View.Title)
+        {
+            Resizable = false,
+            Geometry = new NuiRect(500f, 100f, 580f, 500f),
+        };
+    }
+
+    public override void Create()
+    {
+        // Create the window if it's null.
+        if (_window == null)
+        {
+            // Try to create the window if it doesn't exist.
+            InitBefore();
+        }
+
+        // If the window wasn't created, then tell the user we screwed up.
+        if (_window == null)
+        {
+            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+                ColorConstants.Orange);
+            return;
+        }
+        
+        _player.TryCreateNuiWindow(_window, out _token);
+        
         string spellbookIdString = NWScript.GetLocalString(Token().Player.LoginCreature, "selected_spellbook");
 
         long spellbookId = long.Parse(spellbookIdString);

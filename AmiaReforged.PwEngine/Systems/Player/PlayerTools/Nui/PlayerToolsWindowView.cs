@@ -65,6 +65,6 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
     public readonly NuiBind<int> WindowCount = new NuiBind<int>("window_count");
     
     // Buttons.
-    public NuiButtonImage SearchButton;
-    public NuiButtonImage OpenWindowButton;
+    public NuiButtonImage SearchButton = null!;
+    public NuiButtonImage OpenWindowButton = null!;
 }

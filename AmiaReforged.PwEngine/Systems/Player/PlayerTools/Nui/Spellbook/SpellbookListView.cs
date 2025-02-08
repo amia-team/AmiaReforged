@@ -24,16 +24,17 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
 
 
     // Buttons.
-    public NuiButtonImage SearchButton;
-    public NuiButtonImage OpenSpellbookButton;
-    public NuiButtonImage CreateSpellbookButton;
-    public NuiButtonImage DeleteSpellbookButton;
+    public NuiButtonImage SearchButton = null!;
+    public NuiButtonImage OpenSpellbookButton = null!;
+    public NuiButtonImage CreateSpellbookButton = null!;
+    public NuiButtonImage DeleteSpellbookButton = null!;
+
+    public sealed override SpellbookListPresenter Presenter { get; protected set; }
 
     public SpellbookListView(NwPlayer player)
     {
+        Presenter = new SpellbookListPresenter(this, player);
     }
-
-    public override SpellbookListPresenter Presenter { get; protected set; }
 
     public override NuiLayout RootLayout()
     {

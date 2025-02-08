@@ -16,31 +16,40 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
     private readonly NwPlayer _player;
     [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; }
     [Inject] private Lazy<CharacterService> CharacterService { get; set; }
-    
+
+    private NuiWindowToken _token = default;
+    private NuiWindow? _window;
+
     public CreateSpellbookPresenter(CreateSpellbookView view, NwPlayer player)
     {
         View = view;
         _player = player;
     }
+
     public override NuiWindowToken Token()
     {
-        throw new NotImplementedException();
+        return _token;
     }
 
     public override CreateSpellbookView View { get; }
 
     public override void Create()
     {
-        throw new NotImplementedException();
-    }
+        // Create the window if it's null.
+        if (_window == null)
+        {
+            // Try to create the window if it doesn't exist.
+            InitBefore();
+        }
 
-    [Inject] private Lazy<WindowManager> WindowManager { get; set; }
+        // If the window wasn't created, then tell the user we screwed up.
+        if (_window == null)
+        {
+            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+                ColorConstants.Orange);
+            return;
+        }
 
-
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
-    public override void InitBefore()
-    {
         List<string> classnames = (from creatureClass in Token().Player.LoginCreature?.Classes
             where creatureClass.Class.IsSpellCaster
             select creatureClass.Class.Name.ToString()).ToList();
@@ -55,6 +64,21 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
         Token().SetBindValue(View.Selection, classnamesCombo[0].Value);
         Token().SetBindValue(View.SpellbookName, string.Empty);
         Token().SetUserData(classNameDict);
+    }
+
+    [Inject] private Lazy<WindowManager> WindowManager { get; set; }
+
+
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
+    public override void InitBefore()
+    {
+        _window = new NuiWindow(View.RootLayout(), View.Title)
+        {
+            Geometry = new NuiRect(0, 0, 400, 300),
+            Closable = true,
+            Resizable = false
+        };
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -93,8 +117,15 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
     private async Task SaveSpellbookToDb()
     {
         string spellbookName = Token().GetBindValue(View.SpellbookName);
+        
         // Save spellbook to database
-        string pcIdString = NWScript.GetLocalString(Token().Player.LoginCreature, "pc_guid");
+        NwCreature? character = Token().Player.LoginCreature;
+        if (character == null)
+        {
+            return;
+        }
+
+        string pcIdString = NWScript.GetLocalString(character, "pc_guid");
         Guid pcId = Guid.Parse(pcIdString);
 
         bool characterExists = await CharacterService.Value.CharacterExists(pcId);
@@ -121,7 +152,7 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
                 Dictionary<byte, IReadOnlyList<PreparedSpellModel>> preparedSpells = new();
 
-                CreatureClassInfo creatureClassInfo = Token().Player.LoginCreature.Classes
+                CreatureClassInfo creatureClassInfo = character.Classes
                     .Where(c => c.Class.Name.ToString() == selectedName).FirstOrDefault();
                 Log.Info($"Found selected class: {creatureClassInfo.Class.Name.ToString()}");
                 for (byte i = 0; i <= 9; i++)
@@ -154,7 +185,7 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
                     preparedSpells.TryAdd(i, preparedSpellsForLevel);
                 }
 
-                int classId = Token().Player.LoginCreature.Classes.ToList()
+                int classId = character.Classes.ToList()
                     .Find(c => c.Class.Name.ToString() == selectedName)!.Class.Id;
 
                 Log.Info($"Found classId: {classId}");

@@ -13,13 +13,17 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook;
 
 public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
 {
-    [Inject] private Lazy<WindowDirector> WindowDirector { get; set; }
-    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; }
+    [Inject] private Lazy<WindowDirector> WindowDirector { get; set; } = null!;
+    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; } = null!;
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private List<SpellbookViewModel?> _spellbooks;
+    private List<SpellbookViewModel?> _spellbooks = null!;
     private List<SpellbookViewModel?>? _visibleSpellbooks = new();
+    
+    private NuiWindowToken _token = default;
+    private NuiWindow? _window;
+    
     private readonly NwPlayer _player;
 
     public SpellbookListPresenter(SpellbookListView view, NwPlayer player)
@@ -29,6 +33,36 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
     }
     public override void InitBefore()
     {
+        _window = new NuiWindow(View.RootLayout(), View.Title)
+        {
+            Geometry = new NuiRect(0f, 100f, 400f, 600f),
+        };
+    }
+
+    public override NuiWindowToken Token()
+    {
+        return _token;
+    }
+
+    public override SpellbookListView View { get; }
+    public override void Create()
+    {
+        if (_window == null)
+        {
+            // Try to create the window if it doesn't exist.
+            InitBefore();
+        }
+
+        // If the window wasn't created, then tell the user we screwed up.
+        if (_window == null)
+        {
+            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        _player.TryCreateNuiWindow(_window, out _token);
+        
         NwCreature? character = Token().Player.LoginCreature;
 
         if (character == null)
@@ -55,17 +89,6 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         _spellbooks = SpellbookLoader.Value.LoadSpellbook(characterId);
 
         RefreshSpellbookList();
-    }
-
-    public override NuiWindowToken Token()
-    {
-        throw new NotImplementedException();
-    }
-
-    public override SpellbookListView View { get; }
-    public override void Create()
-    {
-        throw new NotImplementedException();
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
