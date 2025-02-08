@@ -8,7 +8,8 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
 {
     public string Id => "playertools.diceroll";
     public string Title => "Dice Roll";
-    
+    public bool ListInPlayerTools => true;
+    public string CategoryTag => "Roleplaying";
 
     public readonly NuiBind<List<NuiComboEntry>> ButtonGroupEntries = new("roll_button_group");
     public readonly NuiBind<int> Selection = new("selected_roll_button");
@@ -17,12 +18,12 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
 
     public NuiButton GoButton;
 
-    public  NuiButton SpecialRollButton;
-    public  NuiButton AbilityRollButton;
-    public  NuiButton SkillRollButton;
-    public  NuiButton NumberRollButton;
-    public  NuiButton SavingThrowRollButton;
-    public  NuiButton ReportsButton;
+    public NuiButton SpecialRollButton;
+    public NuiButton AbilityRollButton;
+    public NuiButton SkillRollButton;
+    public NuiButton NumberRollButton;
+    public NuiButton SavingThrowRollButton;
+    public NuiButton ReportsButton;
 
     public override DiceRollWindowPresenter Presenter { get; protected set; }
 
@@ -30,11 +31,12 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
     {
         Presenter = new DiceRollWindowPresenter(this, player);
     }
+
     public override NuiLayout RootLayout()
     {
-        RollGroup = new NuiGroup()
+        RollGroup = new NuiGroup
         {
-            Element = new NuiColumn()
+            Element = new NuiColumn
             {
                 Children = new List<NuiElement>
                 {
@@ -62,29 +64,25 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
         };
         NuiColumn root = new()
         {
-            Children = new List<NuiElement>()
+            Children = new List<NuiElement>
             {
-                new NuiGroup()
+                new NuiGroup
                 {
-                    Element = new NuiColumn()
+                    Element = new NuiColumn
                     {
                         Children = new List<NuiElement>
                         {
-                            new NuiRow()
+                            new NuiRow
                             {
                                 Children = new List<NuiElement>
                                 {
                                     new NuiButton("Numbered Die")
                                     {
-                                        Id = "numbered_die",
-                                        Width = 114f,
-                                        Height = 37f
+                                        Id = "numbered_die", Width = 114f, Height = 37f
                                     }.Assign(out NumberRollButton),
                                     new NuiButton("Saving Throw")
                                     {
-                                        Id = "save_throw",
-                                        Width = 114f,
-                                        Height = 37f
+                                        Id = "save_throw", Width = 114f, Height = 37f
                                     }.Assign(out SavingThrowRollButton),
                                 }
                             },
@@ -94,15 +92,11 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
                                 {
                                     new NuiButton("Skill Check")
                                     {
-                                        Id = "skill_check",
-                                        Width = 114f,
-                                        Height = 37f
+                                        Id = "skill_check", Width = 114f, Height = 37f
                                     }.Assign(out SkillRollButton),
                                     new NuiButton("Ability Check")
                                     {
-                                        Id = "ability_check",
-                                        Width = 114f,
-                                        Height = 37f
+                                        Id = "ability_check", Width = 114f, Height = 37f
                                     }.Assign(out AbilityRollButton),
                                 }
                             },
@@ -112,15 +106,11 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
                                 {
                                     new NuiButton("Special Roll")
                                     {
-                                        Id = "special_roll",
-                                        Width = 114f,
-                                        Height = 37f
+                                        Id = "special_roll", Width = 114f, Height = 37f
                                     }.Assign(out SpecialRollButton),
                                     new NuiButton("Reports")
                                     {
-                                        Id = "reports",
-                                        Width = 114f,
-                                        Height = 37f
+                                        Id = "reports", Width = 114f, Height = 37f
                                     }.Assign(out ReportsButton)
                                 }
                             }
@@ -129,17 +119,14 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
                     Height = 170f,
                     Width = 251f
                 },
-                RollGroup!, // Will never be null because it is initialized by the controller.
+                RollGroup
             }
         };
         return root;
     }
 
-    public bool ListInPlayerTools { get; }
-    public string CategoryTag { get; }
     public IScryPresenter MakeWindow(NwPlayer player)
     {
         return new DiceRollWindowPresenter(this, player);
     }
-
 }
