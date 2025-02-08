@@ -18,6 +18,13 @@ public static class PcKeyUtils
         }
 
         string pckeyGuid = pcKey.Name.Split('_')[1];
-        return Guid.Parse(pckeyGuid);
+        
+        if (!Guid.TryParse(pckeyGuid, out Guid pcKeyParsed))
+        {
+            player.SendServerMessage("Your PC key is invalid. Please contact a DM.", ColorConstants.Orange);
+            return Guid.Empty;
+        }
+        
+        return pcKeyParsed;
     }
 }

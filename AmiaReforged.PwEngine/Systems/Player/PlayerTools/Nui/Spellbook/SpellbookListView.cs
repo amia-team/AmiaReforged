@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook;
 
@@ -13,7 +14,7 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
 
     public IScryPresenter MakeWindow(NwPlayer player)
     {
-        return new SpellbookListPresenter(this, player);
+        return Presenter;
     }
 
     // Value binds.
@@ -34,6 +35,9 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
     public SpellbookListView(NwPlayer player)
     {
         Presenter = new SpellbookListPresenter(this, player);
+        
+        InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
+        injector.Inject(Presenter);
     }
 
     public override NuiLayout RootLayout()

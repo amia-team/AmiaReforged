@@ -3,6 +3,7 @@ using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.CreateSpellbook;
 using AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.OpenSpellbook;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -76,8 +77,8 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
             Token().Close();
             return;
         }
-        string idString = NWScript.GetLocalString(character, "pc_guid");
-        Guid characterId = Guid.Parse(idString);
+
+        Guid characterId = PcKeyUtils.GetPcKey(Token().Player);
 
         if (characterId == Guid.Empty)
         {
@@ -134,7 +135,17 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         Log.Info($"Stored spellbook id: {selectedSpellbook.Id}");
         
         OpenSpellbookView view = new(Token().Player);
-        WindowDirector.Value.OpenWindow(view.Presenter);
+        OpenSpellbookPresenter presenter = view.Presenter;
+        InjectionService? injector = AnvilCore.GetService<InjectionService>();
+        if (injector is null)
+        {
+            Token().Player.SendServerMessage("Failed to load the spellbook due to missing DI container. Screenshot this and report it as a bug.");
+            return;
+        }
+        
+        injector.Inject(presenter);
+        
+        WindowDirector.Value.OpenWindow(presenter);
         Token().Close();
     }
 
@@ -160,7 +171,17 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
     private void OpenCreateSpellbookWindow()
     {
         CreateSpellbookView view = new(_player);
-        WindowDirector.Value.OpenWindow(view.Presenter);
+
+        CreateSpellbookPresenter presenter = view.Presenter;
+        InjectionService? injector = AnvilCore.GetService<InjectionService>();
+        if (injector is null)
+        {
+            _player.SendServerMessage("Failed to load the spellbook creator due to missing DI container. Screenshot this and report it as a bug.");
+            return;
+        }
+        
+        injector.Inject(presenter);
+        WindowDirector.Value.OpenWindow(presenter);
         Token().Close();
     }
 
