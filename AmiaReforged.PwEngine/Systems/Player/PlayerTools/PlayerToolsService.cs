@@ -38,9 +38,24 @@ public class PlayerToolsService
         if (obj.Feat.Id != PlayerToolsFeatId) return;
 
         if (!obj.Creature.IsPlayerControlled(out NwPlayer? player)) return;
-
+        
+        if(_windowManager.IsWindowOpen(player, typeof(PlayerToolsWindowPresenter)))
+        {
+            player.FloatingTextString("Player Tools window is already open.", false);
+            return;
+        }
+        
+        InjectionService? injector = Anvil.AnvilCore.GetService<InjectionService>();
+        if (injector is null)
+        {
+            player.FloatingTextString("Failed to load the player tools due to missing DI container. Screenshot this and report it as a bug.", false);
+            return;
+        }
         PlayerToolsWindowView window = new(player);
-        _windowManager.OpenWindow(window.Presenter);
+        PlayerToolsWindowPresenter presenter = window.Presenter;
+
+        injector.Inject(presenter);
+        _windowManager.OpenWindow(presenter);
     }
 
     private void AddPlayerToolsFeat(AreaEvents.OnEnter obj)

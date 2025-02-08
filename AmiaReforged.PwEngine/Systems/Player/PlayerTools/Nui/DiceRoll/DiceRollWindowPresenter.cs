@@ -15,7 +15,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     private Dictionary<int, string> RollButtonIds;
 
     private NuiWindowToken _token;
-    private NuiWindow _window;
+    private NuiWindow? _window;
     private readonly NwPlayer _player;
 
     public DiceRollWindowPresenter(DiceRollWindowView view, NwPlayer player)
@@ -51,6 +51,21 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     public override void Create()
     {
+        if (_window == null)
+        {
+            // Try to create the window if it doesn't exist.
+            InitBefore();
+        }
+
+        // If the window wasn't created, then tell the user we screwed up.
+        if (_window == null)
+        {
+            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+                ColorConstants.Orange);
+            return;
+        }
+        
+        _player.TryCreateNuiWindow(_window, out _token);
         SetDiceRollMode(DiceRollMode.SpecialRoll);
         Token().SetBindValue(View.Selection, 0);
     }

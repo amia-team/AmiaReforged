@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.DiceRoll;
 
@@ -14,22 +15,24 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
     public readonly NuiBind<List<NuiComboEntry>> ButtonGroupEntries = new("roll_button_group");
     public readonly NuiBind<int> Selection = new("selected_roll_button");
 
-    public NuiGroup RollGroup;
+    public NuiGroup RollGroup = null!;
 
-    public NuiButton GoButton;
+    public NuiButton GoButton = null!;
 
-    public NuiButton SpecialRollButton;
-    public NuiButton AbilityRollButton;
-    public NuiButton SkillRollButton;
-    public NuiButton NumberRollButton;
-    public NuiButton SavingThrowRollButton;
-    public NuiButton ReportsButton;
+    public NuiButton SpecialRollButton = null!;
+    public NuiButton AbilityRollButton = null!;
+    public NuiButton SkillRollButton = null!;
+    public NuiButton NumberRollButton = null!;
+    public NuiButton SavingThrowRollButton = null!;
+    public NuiButton ReportsButton = null!;
 
     public override DiceRollWindowPresenter Presenter { get; protected set; }
 
     public DiceRollWindowView(NwPlayer player)
     {
         Presenter = new DiceRollWindowPresenter(this, player);
+        InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
+        injector.Inject(Presenter);
     }
 
     public override NuiLayout RootLayout()
@@ -127,6 +130,11 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
 
     public IScryPresenter MakeWindow(NwPlayer player)
     {
-        return new DiceRollWindowPresenter(this, player);
+        InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
+        DiceRollWindowPresenter diceRollWindowPresenter = new DiceRollWindowPresenter(this, player);
+        
+        injector.Inject(diceRollWindowPresenter);
+        
+        return diceRollWindowPresenter;
     }
 }
