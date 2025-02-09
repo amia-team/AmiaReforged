@@ -2,7 +2,7 @@ using AmiaReforged.Test.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 
-namespace AmiaReforged.Test.Classes.Monk.Effects;
+namespace AmiaReforged.Classes.Monk.Effects;
 
 public static class ElementsPathEffects
 {
