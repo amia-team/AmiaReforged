@@ -1,8 +1,8 @@
-using AmiaReforged.Classes.Monk.Types;
+using AmiaReforged.Test.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 
-namespace AmiaReforged.Classes.Monk.Effects;
+namespace AmiaReforged.Test.Classes.Monk.Effects;
 
 public static class ElementsPathEffects
 {
@@ -10,13 +10,24 @@ public static class ElementsPathEffects
     {
         switch (technique)
         {
+            case TechniqueType.Stunning : ApplyEffectsToStunning(attackData);
+                break;
+            case TechniqueType.Quivering : ApplyEffectsToQuivering(castData);
+                break;
             case TechniqueType.Axiomatic : ApplyEffectsToAxiomatic(attackData);
                 break;
             case TechniqueType.KiBarrier : ApplyEffectsToKiBarrier(castData);
                 break;
             case TechniqueType.KiShout : ApplyEffectsToKiShout(castData);
                 break;
+                
         }
+    }
+    private static void ApplyEffectsToStunning(OnCreatureAttack attackData)
+    {
+    }
+    private static void ApplyEffectsToQuivering(OnSpellCast castData)
+    {
     }
     private static void ApplyEffectsToAxiomatic(OnCreatureAttack attackData)
     {
