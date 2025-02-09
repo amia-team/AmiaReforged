@@ -1,4 +1,4 @@
-using AmiaReforged.Test.Classes.Monk.Types;
+using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 
