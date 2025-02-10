@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Quickslots;
 
@@ -12,7 +13,7 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
     public string CategoryTag { get; }
     public IScryPresenter MakeWindow(NwPlayer player)
     {
-        return new QuickslotSaverPresenter(this, player);
+        return Presenter;
     }
 
     public  NuiWindow? WindowTemplate { get; }
@@ -34,6 +35,8 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
     public QuickslotSaverView(NwPlayer player)
     {
         Presenter = new QuickslotSaverPresenter(this, player);
+        InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
+        injector.Inject(Presenter);
     }
 
     public override QuickslotSaverPresenter Presenter { get; protected set; }
