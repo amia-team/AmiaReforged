@@ -18,7 +18,7 @@ public abstract class ScryPresenter<TView> : IScryPresenter where TView : IScryV
     /// <summary>
     /// Gets the view associated with the presenter.
     /// </summary>
-    public abstract TView View { get; }
+    public abstract TView ToolView { get; }
 
     /// <summary>
     /// Initializes the presenter, setting up any necessary state or resources.

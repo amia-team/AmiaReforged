@@ -14,7 +14,7 @@ public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWi
 
     public IScryPresenter MakeWindow(NwPlayer player)
     {
-        return Presenter;
+        return ToolPresenter;
     }
 
     public bool ListInPlayerTools => false;
@@ -29,10 +29,10 @@ public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWi
 
     public CreateQuickslotsView(NwPlayer player)
     {
-        Presenter = new CreateQuickSlotsPresenter(this, player);
+        ToolPresenter = new CreateQuickSlotsPresenter(this, player);
     }
 
-    public sealed override CreateQuickSlotsPresenter Presenter { get; protected set; }
+    public sealed override CreateQuickSlotsPresenter ToolPresenter { get; protected set; }
     public override NuiLayout RootLayout()
     {
         NuiColumn root = new()

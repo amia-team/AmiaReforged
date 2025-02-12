@@ -22,9 +22,9 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
     private NuiWindowToken _token = default;
     private NuiWindow? _window;
 
-    public CreateSpellbookPresenter(CreateSpellbookView view, NwPlayer player)
+    public CreateSpellbookPresenter(CreateSpellbookView toolView, NwPlayer player)
     {
-        View = view;
+        ToolView = toolView;
         _player = player;
     }
 
@@ -33,7 +33,7 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
         return _token;
     }
 
-    public override CreateSpellbookView View { get; }
+    public override CreateSpellbookView ToolView { get; }
 
     public override void Create()
     {
@@ -63,9 +63,9 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
             classNameDict.Add(i, classnames[i]);
         }
 
-        Token().SetBindValue(View.ClassNames, classnamesCombo);
-        Token().SetBindValue(View.Selection, classnamesCombo[0].Value);
-        Token().SetBindValue(View.SpellbookName, string.Empty);
+        Token().SetBindValue(ToolView.ClassNames, classnamesCombo);
+        Token().SetBindValue(ToolView.Selection, classnamesCombo[0].Value);
+        Token().SetBindValue(ToolView.SpellbookName, string.Empty);
         Token().SetUserData(classNameDict);
     }
 
@@ -76,7 +76,7 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new NuiWindow(ToolView.RootLayout(), ToolView.Title)
         {
             Geometry = new NuiRect(0, 0, 400, 300),
             Closable = true,
@@ -99,9 +99,9 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
     private async void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
         Log.Info($"{eventData.ElementId}");
-        if (eventData.ElementId == View.CreateButton.Id)
+        if (eventData.ElementId == ToolView.CreateButton.Id)
         {
-            if (Token().GetBindValue(View.SpellbookName) == string.Empty)
+            if (Token().GetBindValue(ToolView.SpellbookName) == string.Empty)
             {
                 Token().Player.SendServerMessage("You must enter a name for the spellbook.", ColorConstants.Red);
                 return;
@@ -110,19 +110,19 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
             await SaveSpellbookToDb();
             await NwTask.SwitchToMainThread();
 
-            Token().SetBindValue(View.SpellbookName, string.Empty);
+            Token().SetBindValue(ToolView.SpellbookName, string.Empty);
             Token().Close();
         }
-        else if (eventData.ElementId == View.CancelButton.Id)
+        else if (eventData.ElementId == ToolView.CancelButton.Id)
         {
-            Token().SetBindValue(View.SpellbookName, string.Empty);
+            Token().SetBindValue(ToolView.SpellbookName, string.Empty);
             Token().Close();
         }
     }
 
     private async Task SaveSpellbookToDb()
     {
-        string spellbookName = Token().GetBindValue(View.SpellbookName);
+        string spellbookName = Token().GetBindValue(ToolView.SpellbookName);
 
         // Save spellbook to database
         NwCreature? character = Token().Player.LoginCreature;
@@ -142,7 +142,7 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
         // TODO: Refactor whatever the fuck this mess is supposed to be.
         if (spellbookName != null && pcId != Guid.Empty && characterExists)
         {
-            int selectedClassIndex = Token().GetBindValue(View.Selection);
+            int selectedClassIndex = Token().GetBindValue(ToolView.Selection);
             Log.Info($"Selected class index: {selectedClassIndex}");
 
             Dictionary<int, string>? classNamesDict = Token().GetUserData<Dictionary<int, string>>();
@@ -226,6 +226,6 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
     public override void Close()
     {
-        Token().SetBindValue(View.SpellbookName, string.Empty);
+        Token().SetBindValue(ToolView.SpellbookName, string.Empty);
     }
 }

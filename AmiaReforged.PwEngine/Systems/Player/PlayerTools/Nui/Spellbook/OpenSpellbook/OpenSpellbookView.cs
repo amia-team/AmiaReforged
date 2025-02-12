@@ -40,10 +40,10 @@ public sealed class OpenSpellbookView : ScryView<OpenSpellbookPresenter>, IToolW
 
     public OpenSpellbookView(NwPlayer player)
     {
-        Presenter = new OpenSpellbookPresenter(this, player);
+        ToolPresenter = new OpenSpellbookPresenter(this, player);
     }
 
-    public override OpenSpellbookPresenter Presenter { get; protected set; }
+    public override OpenSpellbookPresenter ToolPresenter { get; protected set; }
 
     public override NuiLayout RootLayout()
     {

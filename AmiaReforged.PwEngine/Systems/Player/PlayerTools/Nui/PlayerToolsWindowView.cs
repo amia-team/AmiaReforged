@@ -7,10 +7,10 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui;
 public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
 {
     
-    public override PlayerToolsWindowPresenter Presenter { get; protected set; }
+    public override PlayerToolsWindowPresenter ToolPresenter { get; protected set; }
     public PlayerToolsWindowView(NwPlayer player)
     {
-        Presenter = new PlayerToolsWindowPresenter(this, player);
+        ToolPresenter = new PlayerToolsWindowPresenter(this, player);
     }
     public override NuiLayout RootLayout()
     {

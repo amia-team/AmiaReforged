@@ -19,9 +19,9 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
-    public OpenSpellbookPresenter(OpenSpellbookView view, NwPlayer player)
+    public OpenSpellbookPresenter(OpenSpellbookView toolView, NwPlayer player)
     {
-        View = view;
+        ToolView = toolView;
         _player = player;
     }
 
@@ -30,12 +30,12 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
         return _token;
     }
 
-    public override OpenSpellbookView View { get; }
+    public override OpenSpellbookView ToolView { get; }
 
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new NuiWindow(ToolView.RootLayout(), ToolView.Title)
         {
             Resizable = false,
             Geometry = new NuiRect(500f, 100f, 580f, 500f),
@@ -77,13 +77,13 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
         string className = Token().Player.LoginCreature!.Classes.Where(c => c.Class.Id == int.Parse(_spellbook.Class))
             .Select(c => c.Class.Name).FirstOrDefault().ToString();
 
-        Token().SetBindValue(View.SpellbookName, $"Spellbook: {_spellbook.Name}");
-        Token().SetBindValue(View.SpellbookClass, $"For Class: {className}");
+        Token().SetBindValue(ToolView.SpellbookName, $"Spellbook: {_spellbook.Name}");
+        Token().SetBindValue(ToolView.SpellbookClass, $"For Class: {className}");
 
 
         NuiColumn spells = ProcessSpellsToNuiColumn();
 
-        Token().SetGroupLayout(View.Spells, spells);
+        Token().SetGroupLayout(ToolView.Spells, spells);
     }
 
     private NuiColumn ProcessSpellsToNuiColumn()
@@ -265,17 +265,17 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (eventData.ElementId == View.CloseSpellbookButton.Id)
+        if (eventData.ElementId == ToolView.CloseSpellbookButton.Id)
         {
             Token().Close();
         }
-        else if (eventData.ElementId == View.LoadSpellbookButton.Id)
+        else if (eventData.ElementId == ToolView.LoadSpellbookButton.Id)
         {
             SpellbookMemorizer memorizer = new(_spellbook, Token().Player);
             memorizer.MemorizeSpellsToPlayer();
             Token().Close();
         }
-        else if (eventData.ElementId == View.CloseSpellbookButton.Id)
+        else if (eventData.ElementId == ToolView.CloseSpellbookButton.Id)
         {
             Token().Close();
         }

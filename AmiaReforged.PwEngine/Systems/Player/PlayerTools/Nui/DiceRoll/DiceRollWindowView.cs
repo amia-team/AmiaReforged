@@ -27,13 +27,13 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
     public NuiButton SavingThrowRollButton = null!;
     public NuiButton ReportsButton = null!;
 
-    public override DiceRollWindowPresenter Presenter { get; protected set; }
+    public override DiceRollWindowPresenter ToolPresenter { get; protected set; }
 
     public DiceRollWindowView(NwPlayer player)
     {
-        Presenter = new DiceRollWindowPresenter(this, player);
+        ToolPresenter = new DiceRollWindowPresenter(this, player);
         InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
-        injector.Inject(Presenter);
+        injector.Inject(ToolPresenter);
     }
 
     public override NuiLayout RootLayout()

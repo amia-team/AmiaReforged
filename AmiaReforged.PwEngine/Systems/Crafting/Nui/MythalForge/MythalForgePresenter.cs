@@ -35,7 +35,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <summary>
     /// Gets the view associated with this presenter.
     /// </summary>
-    public override MythalForgeView View { get; }
+    public override MythalForgeView ToolView { get; }
 
     private MythalLedgerView _ledgerView;
 
@@ -48,17 +48,17 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <summary>
     /// Initializes a new instance of the <see cref="MythalForgePresenter"/> class.
     /// </summary>
-    /// <param name="view">The view associated with this presenter.</param>
+    /// <param name="toolView">The view associated with this presenter.</param>
     /// <param name="propertyData">The crafting property data.</param>
     /// <param name="budget">The crafting budget service.</param>
     /// <param name="item">The item being crafted.</param>
     /// <param name="player">The player performing the crafting.</param>
     /// <param name="validator"></param>
-    public MythalForgePresenter(MythalForgeView view, CraftingPropertyData propertyData, CraftingBudgetService budget,
+    public MythalForgePresenter(MythalForgeView toolView, CraftingPropertyData propertyData, CraftingBudgetService budget,
         NwItem item, NwPlayer player, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
         Model = new MythalForgeModel(item, propertyData, budget, player, validator, dcCalculator);
-        View = view;
+        ToolView = toolView;
         _player = player;
         _creating = false;
         
@@ -112,7 +112,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             if (ApplyName()) return;
         }
 
-        if (eventData.ElementId == View.ActivePropertiesView.RemoveProperty)
+        if (eventData.ElementId == ToolView.ActivePropertiesView.RemoveProperty)
         {
             int index = eventData.ArrayIndex;
             MythalCategoryModel.MythalProperty p = Model.ActivePropertiesModel.GetVisibleProperties()[index];
@@ -157,7 +157,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private bool ApplyName()
     {
-        string? newName = _token.GetBindValue(View.ItemName);
+        string? newName = _token.GetBindValue(ToolView.ItemName);
         if (string.IsNullOrEmpty(newName))
         {
             _player.SendServerMessage("The item name cannot be empty.", ColorConstants.Orange);
@@ -176,7 +176,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         // N.B: Other things can happen here, so if you're following this as an example
         // you can do more than just create the window here. The window is supposed to be created here, but you might
         // want to initialize other data that might not be present at construction time.
-        _window = new NuiWindow(View.RootLayout(), WindowTitle)
+        _window = new NuiWindow(ToolView.RootLayout(), WindowTitle)
         {
             Geometry = new NuiRect(400f, 400f, 1200f, 640f)
         };
@@ -201,14 +201,14 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private void UpdateNameField()
     {
-        Token().SetBindValue(View.ItemName, Model.Item.Name);
+        Token().SetBindValue(ToolView.ItemName, Model.Item.Name);
     }
 
     private void UpdateItemPowerBindings()
     {
-        Token().SetBindValue(View.MaxPowers, Model.MaxBudget.ToString());
+        Token().SetBindValue(ToolView.MaxPowers, Model.MaxBudget.ToString());
         int remaining = Model.RemainingPowers;
-        Token().SetBindValue(View.RemainingPowers, remaining.ToString());
+        Token().SetBindValue(ToolView.RemainingPowers, remaining.ToString());
 
         if (_creating)
         {
@@ -240,10 +240,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
-                Token().SetBindValue(View.CategoryView.EnabledPropertyBindings[property.Id], property.Selectable);
-                Token().SetBindValue(View.CategoryView.EmphasizedProperties[property.Id], !property.Selectable);
-                Token().SetBindValue(View.CategoryView.PowerCostColors[property.Id], property.Color);
-                Token().SetBindValue(View.CategoryView.PowerCostTooltips[property.Id], property.CostLabelTooltip);
+                Token().SetBindValue(ToolView.CategoryView.EnabledPropertyBindings[property.Id], property.Selectable);
+                Token().SetBindValue(ToolView.CategoryView.EmphasizedProperties[property.Id], !property.Selectable);
+                Token().SetBindValue(ToolView.CategoryView.PowerCostColors[property.Id], property.Color);
+                Token().SetBindValue(ToolView.CategoryView.PowerCostTooltips[property.Id], property.CostLabelTooltip);
             }
         }
     }
@@ -253,29 +253,29 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         List<MythalCategoryModel.MythalProperty> visibleProperties = Model.VisibleProperties.ToList();
 
         int count = visibleProperties.Count;
-        Token().SetBindValue(View.ActivePropertiesView.PropertyCount, count);
+        Token().SetBindValue(ToolView.ActivePropertiesView.PropertyCount, count);
 
         List<string> labels = visibleProperties.Select(m => m.Label).ToList();
-        Token().SetBindValues(View.ActivePropertiesView.PropertyNames, labels);
+        Token().SetBindValues(ToolView.ActivePropertiesView.PropertyNames, labels);
 
         List<string> powerCosts = visibleProperties.Select(m => m.Internal.PowerCost.ToString()).ToList();
-        Token().SetBindValues(View.ActivePropertiesView.PropertyPowerCosts, powerCosts);
+        Token().SetBindValues(ToolView.ActivePropertiesView.PropertyPowerCosts, powerCosts);
 
         List<bool> removable = visibleProperties.Select(m => m.Internal.Removable).ToList();
-        Token().SetBindValues(View.ActivePropertiesView.Removable, removable);
+        Token().SetBindValues(ToolView.ActivePropertiesView.Removable, removable);
     }
 
     private void UpdateChangeListBindings()
     {
         int count = Model.ChangeListModel.ChangeList().Count;
-        Token().SetBindValue(View.ChangelistView.ChangeCount, count);
+        Token().SetBindValue(ToolView.ChangelistView.ChangeCount, count);
 
         List<string> entryLabels = Model.ChangeListModel.ChangeList().Select(m => m.Label).ToList();
-        Token().SetBindValues(View.ChangelistView.PropertyLabel, entryLabels);
+        Token().SetBindValues(ToolView.ChangelistView.PropertyLabel, entryLabels);
 
         List<string> entryCosts =
             Model.ChangeListModel.ChangeList().Select(m => m.Property.PowerCost.ToString()).ToList();
-        Token().SetBindValues(View.ChangelistView.CostString, entryCosts);
+        Token().SetBindValues(ToolView.ChangelistView.CostString, entryCosts);
 
         List<Color> entryColors = Model.ChangeListModel.ChangeList().Select(m => m.State switch
         {
@@ -284,28 +284,28 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             _ => ColorConstants.White
         }).ToList();
 
-        Token().SetBindValues(View.ChangelistView.Colors, entryColors);
+        Token().SetBindValues(ToolView.ChangelistView.Colors, entryColors);
     }
 
     private void UpdateGoldCost()
     {
-        Token().SetBindValue(View.GoldCost, Model.ChangeListModel.TotalGpCost().ToString());
+        Token().SetBindValue(ToolView.GoldCost, Model.ChangeListModel.TotalGpCost().ToString());
 
         bool canAfford = Model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
-        Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
-        Token().SetBindValue(View.GoldCostTooltip, canAfford ? "" : "You cannot afford this.");
+        Token().SetBindValue(ToolView.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
+        Token().SetBindValue(ToolView.GoldCostTooltip, canAfford ? "" : "You cannot afford this.");
         bool validAction = canAfford && Model.CanMakeCheck();
-        Token().SetBindValue(View.ApplyEnabled, validAction);
-        Token().SetBindValue(View.EncourageGold, !canAfford);
+        Token().SetBindValue(ToolView.ApplyEnabled, validAction);
+        Token().SetBindValue(ToolView.EncourageGold, !canAfford);
     }
 
     private void UpdateDifficultyClass()
     {
         bool canMakeCheck = Model.CanMakeCheck();
-        Token().SetBindValue(View.SkillColor, canMakeCheck ? ColorConstants.White : ColorConstants.Red);
-        Token().SetBindValue(View.DifficultyClass, Model.GetCraftingDifficulty().ToString());
-        Token().SetBindValue(View.SkillTooltip, Model.SkillToolTip());
-        Token().SetBindValue(View.EncourageDifficulty, !canMakeCheck);
+        Token().SetBindValue(ToolView.SkillColor, canMakeCheck ? ColorConstants.White : ColorConstants.Red);
+        Token().SetBindValue(ToolView.DifficultyClass, Model.GetCraftingDifficulty().ToString());
+        Token().SetBindValue(ToolView.SkillTooltip, Model.SkillToolTip());
+        Token().SetBindValue(ToolView.EncourageDifficulty, !canMakeCheck);
     }
 
     /// <summary>
@@ -331,7 +331,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         // This assigns out our token and renders the actual NUI window.
         _player.TryCreateNuiWindow(_window, out _token);
-        _ledgerView.Presenter.Create();
+        _ledgerView.ToolPresenter.Create();
 
         UpdateView();
 

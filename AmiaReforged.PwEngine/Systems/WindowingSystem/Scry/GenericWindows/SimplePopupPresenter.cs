@@ -11,11 +11,11 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
     private NuiWindow? _window;
     private readonly NwPlayer _player;
 
-    public SimplePopupPresenter(NwPlayer player, SimplePopupView view, string title)
+    public SimplePopupPresenter(NwPlayer player, SimplePopupView toolView, string title)
     {
         _player = player;
         _title = title;
-        View = view;
+        ToolView = toolView;
     }
 
 
@@ -47,11 +47,11 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
         return _token;
     }
 
-    public override SimplePopupView View { get; }
+    public override SimplePopupView ToolView { get; }
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), _title)
+        _window = new NuiWindow(ToolView.RootLayout(), _title)
         {
             Geometry = new NuiRect(500f, 500f, 400f, 300f),
             Resizable = false
@@ -68,7 +68,7 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
         InitBefore();
         _player.TryCreateNuiWindow(_window!, out _token);
         
-        Token().SetBindValue(View.IgnoreButtonVisible, View.IgnoreButton);
+        Token().SetBindValue(ToolView.IgnoreButtonVisible, ToolView.IgnoreButton);
     }
 
     public override void Close()

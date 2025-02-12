@@ -7,7 +7,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
 {
     public MythalForgePresenter Parent;
-    public sealed override MythalLedgerPresenter Presenter { get; protected set; }
+    public sealed override MythalLedgerPresenter ToolPresenter { get; protected set; }
 
     public NuiBind<string> MinorMythalCount = new("minor_mythals");
     public NuiBind<string> LesserMythalCount = new("lesser_mythals");
@@ -21,7 +21,7 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
     public MythalLedgerView(MythalForgePresenter parent, NwPlayer player)
     {
         Parent = parent;
-        Presenter = new MythalLedgerPresenter(parent, player, this);
+        ToolPresenter = new MythalLedgerPresenter(parent, player, this);
     }
 
     public override NuiLayout RootLayout()

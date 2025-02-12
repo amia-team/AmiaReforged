@@ -13,7 +13,7 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
     public string CategoryTag { get; }
     public IScryPresenter MakeWindow(NwPlayer player)
     {
-        return Presenter;
+        return ToolPresenter;
     }
 
     public  NuiWindow? WindowTemplate { get; }
@@ -34,12 +34,12 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
 
     public QuickslotSaverView(NwPlayer player)
     {
-        Presenter = new QuickslotSaverPresenter(this, player);
+        ToolPresenter = new QuickslotSaverPresenter(this, player);
         InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
-        injector.Inject(Presenter);
+        injector.Inject(ToolPresenter);
     }
 
-    public override QuickslotSaverPresenter Presenter { get; protected set; }
+    public override QuickslotSaverPresenter ToolPresenter { get; protected set; }
     public override NuiLayout RootLayout()
     {
         List<NuiListTemplateCell> rowTemplate = new()

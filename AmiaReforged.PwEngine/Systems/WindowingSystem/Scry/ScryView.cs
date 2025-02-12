@@ -12,7 +12,7 @@ public abstract class ScryView<TPresenter> : IScryView where TPresenter : IScryP
     /// <summary>
     /// Gets or sets the presenter associated with the view.
     /// </summary>
-    public abstract TPresenter Presenter { get; protected set; }
+    public abstract TPresenter ToolPresenter { get; protected set; }
 
     /// <summary>
     /// Gets the layout structure for the view.

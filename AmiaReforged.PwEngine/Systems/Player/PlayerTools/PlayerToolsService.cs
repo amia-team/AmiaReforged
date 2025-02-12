@@ -51,7 +51,7 @@ public class PlayerToolsService
             return;
         }
         PlayerToolsWindowView window = new(player);
-        PlayerToolsWindowPresenter presenter = window.Presenter;
+        PlayerToolsWindowPresenter presenter = window.ToolPresenter;
 
         injector.Inject(presenter);
         _windowManager.OpenWindow(presenter);

@@ -21,10 +21,10 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
 
     private PlayerToolsModel Model { get; init; }
 
-    public PlayerToolsWindowPresenter(PlayerToolsWindowView view, NwPlayer player)
+    public PlayerToolsWindowPresenter(PlayerToolsWindowView toolView, NwPlayer player)
     {
         _player = player;
-        View = view;
+        ToolView = toolView;
         Model = new PlayerToolsModel(player);
     }
 
@@ -33,11 +33,11 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
         return _token;
     }
 
-    public override PlayerToolsWindowView View { get; }
+    public override PlayerToolsWindowView ToolView { get; }
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), "Player Tools")
+        _window = new NuiWindow(ToolView.RootLayout(), "Player Tools")
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f),
         };
@@ -76,14 +76,14 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
 
     private void RefreshWindowList()
     {
-        string search = Token().GetBindValue(View.Search)!;
+        string search = Token().GetBindValue(ToolView.Search)!;
 
         Model.SetSearchTerm(search);
         Model.RefreshWindowList();
 
         List<string> windowNames = Model.VisibleWindows.Select(view => view.Title).ToList();
-        Token().SetBindValues(View.WindowNames, windowNames);
-        Token().SetBindValue(View.WindowCount, Model.VisibleWindows.Count);
+        Token().SetBindValues(ToolView.WindowNames, windowNames);
+        Token().SetBindValue(ToolView.WindowCount, Model.VisibleWindows.Count);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -98,11 +98,11 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (eventData.ElementId == View.SearchButton.Id)
+        if (eventData.ElementId == ToolView.SearchButton.Id)
         {
             RefreshWindowList();
         }
-        else if (eventData.ElementId == View.OpenWindowButton.Id &&
+        else if (eventData.ElementId == ToolView.OpenWindowButton.Id &&
                  eventData.ArrayIndex >= 0 && eventData.ArrayIndex < Model.VisibleWindows.Count)
         {
             IToolWindow window = Model.VisibleWindows[eventData.ArrayIndex];

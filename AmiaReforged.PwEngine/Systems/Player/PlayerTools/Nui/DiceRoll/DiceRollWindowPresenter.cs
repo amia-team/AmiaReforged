@@ -18,10 +18,10 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     private NuiWindow? _window;
     private readonly NwPlayer _player;
 
-    public DiceRollWindowPresenter(DiceRollWindowView view, NwPlayer player)
+    public DiceRollWindowPresenter(DiceRollWindowView toolView, NwPlayer player)
     {
         _player = player;
-        View = view;
+        ToolView = toolView;
     }
     public override NuiWindowToken Token()
     {
@@ -30,14 +30,14 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new NuiWindow(ToolView.RootLayout(), ToolView.Title)
         {
             Geometry = new NuiRect(0f, 100f, 271f, 400f),
             Resizable = false
         };
     }
 
-    public override DiceRollWindowView View { get; }
+    public override DiceRollWindowView ToolView { get; }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
@@ -67,7 +67,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
         
         _player.TryCreateNuiWindow(_window, out _token);
         SetDiceRollMode(DiceRollMode.SpecialRoll);
-        Token().SetBindValue(View.Selection, 0);
+        Token().SetBindValue(ToolView.Selection, 0);
     }
 
     public override void Close()
@@ -91,13 +91,13 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
         if (buttonIds.Contains(eventData.ElementId))
         {
-            Token().SetBindValue<List<NuiComboEntry>>(View.ButtonGroupEntries,
+            Token().SetBindValue<List<NuiComboEntry>>(ToolView.ButtonGroupEntries,
                 SetDiceRollMode(ModeFromButtonId(eventData.ElementId)));
         }
 
-        if (eventData.ElementId == View.GoButton.Id)
+        if (eventData.ElementId == ToolView.GoButton.Id)
         {
-            int selectedRoll = Token().GetBindValue(View.Selection);
+            int selectedRoll = Token().GetBindValue(ToolView.Selection);
 
             DiceRollType rollType = DiceRollTypeChooser.FromString(RollButtonIds[selectedRoll]);
 

@@ -15,7 +15,7 @@ public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWind
 
     public IScryPresenter MakeWindow(NwPlayer player)
     {
-        return Presenter;
+        return ToolPresenter;
     }
 
     public  bool ListInPlayerTools => false;
@@ -34,12 +34,12 @@ public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWind
 
     public CreateSpellbookView(NwPlayer player)
     {
-        Presenter = new CreateSpellbookPresenter(this, player);
+        ToolPresenter = new CreateSpellbookPresenter(this, player);
         InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
-        injector.Inject(Presenter);
+        injector.Inject(ToolPresenter);
     }
 
-    public sealed override CreateSpellbookPresenter Presenter { get; protected set; }
+    public sealed override CreateSpellbookPresenter ToolPresenter { get; protected set; }
     public override NuiLayout RootLayout()
     {
         NuiColumn root = new()

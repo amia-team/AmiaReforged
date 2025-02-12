@@ -13,7 +13,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
     /// <summary>
     /// Gets or sets the presenter for the Mythal Forge.
     /// </summary>
-    public override MythalForgePresenter Presenter { get; protected set; }
+    public override MythalForgePresenter ToolPresenter { get; protected set; }
 
     /// <summary>
     /// Gets a list of button IDs. Used for event handling.
@@ -40,11 +40,11 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
     /// <summary>
     /// Initializes a new instance of the <see cref="MythalCategoryView"/> class.
     /// </summary>
-    /// <param name="presenter">The presenter for the Mythal Forge.</param>
-    public MythalCategoryView(MythalForgePresenter presenter)
+    /// <param name="toolPresenter">The presenter for the Mythal Forge.</param>
+    public MythalCategoryView(MythalForgePresenter toolPresenter)
     {
-        Presenter = presenter;
-        _categories = presenter.MythalCategories;
+        ToolPresenter = toolPresenter;
+        _categories = toolPresenter.MythalCategories;
     }
 
     public override NuiLayout RootLayout()

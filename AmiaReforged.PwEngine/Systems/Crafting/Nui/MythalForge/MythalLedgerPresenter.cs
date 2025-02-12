@@ -9,11 +9,11 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
     private readonly NwPlayer _player;
     private readonly MythalForgePresenter _parent;
     private NuiWindowToken _token;
-    public override MythalLedgerView View { get; }
+    public override MythalLedgerView ToolView { get; }
 
-    public MythalLedgerPresenter(MythalForgePresenter parent, NwPlayer player, MythalLedgerView view)
+    public MythalLedgerPresenter(MythalForgePresenter parent, NwPlayer player, MythalLedgerView toolView)
     {
-        View = view;
+        ToolView = toolView;
         _parent = parent;
         _player = player;
 
@@ -33,13 +33,13 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
 
     private void UpdateLedgerBindings(MythalForgeModel senderModel)
     {
-        Token().SetBindValue(View.MinorMythalCount, senderModel.MythalCategoryModel.MinorMythals);
-        Token().SetBindValue(View.LesserMythalCount, senderModel.MythalCategoryModel.LesserMythals);
-        Token().SetBindValue(View.IntermediateMythalCount, senderModel.MythalCategoryModel.IntermediateMythals);
-        Token().SetBindValue(View.GreaterMythalCount, senderModel.MythalCategoryModel.GreaterMythals);
-        Token().SetBindValue(View.FlawlessMythalCount, senderModel.MythalCategoryModel.FlawlessMythals);
-        Token().SetBindValue(View.PerfectMythalCount, senderModel.MythalCategoryModel.PerfectMythals);
-        Token().SetBindValue(View.DivineMythalCount, senderModel.MythalCategoryModel.DivineMythals);
+        Token().SetBindValue(ToolView.MinorMythalCount, senderModel.MythalCategoryModel.MinorMythals);
+        Token().SetBindValue(ToolView.LesserMythalCount, senderModel.MythalCategoryModel.LesserMythals);
+        Token().SetBindValue(ToolView.IntermediateMythalCount, senderModel.MythalCategoryModel.IntermediateMythals);
+        Token().SetBindValue(ToolView.GreaterMythalCount, senderModel.MythalCategoryModel.GreaterMythals);
+        Token().SetBindValue(ToolView.FlawlessMythalCount, senderModel.MythalCategoryModel.FlawlessMythals);
+        Token().SetBindValue(ToolView.PerfectMythalCount, senderModel.MythalCategoryModel.PerfectMythals);
+        Token().SetBindValue(ToolView.DivineMythalCount, senderModel.MythalCategoryModel.DivineMythals);
     }
 
     public override NuiWindowToken Token()
@@ -49,7 +49,7 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), "Mythal Ledger")
+        _window = new NuiWindow(ToolView.RootLayout(), "Mythal Ledger")
         {
             Id = "mythal_ledger",
             Geometry = new NuiRect(1600, 500, 300, 300),

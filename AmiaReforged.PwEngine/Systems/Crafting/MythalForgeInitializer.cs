@@ -233,7 +233,7 @@ public class MythalForgeInitializer
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
         MythalForgeView itemWindow = new(_propertyData, _budget, item, obj.Player, _validator, _dcCalculator);
-        _windowSystem.OpenWindow(itemWindow.Presenter);
+        _windowSystem.OpenWindow(itemWindow.ToolPresenter);
 
         obj.Player.OpenInventory();
         obj.Player.OnPlayerTarget -= ValidateAndSelect;
