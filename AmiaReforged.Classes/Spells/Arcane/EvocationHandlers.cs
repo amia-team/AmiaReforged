@@ -44,7 +44,7 @@ public class EvocationHandlers
     /// Darkness impact script handler.
     /// </summary>
     /// <param name="info"></param>
-    [ScriptHandler("NW_S0_Darkness.nss")]
+    [ScriptHandler("NW_S0_Darkness")]
     public void DarknessHandler(CallInfo info)
     {
         if (info.ObjectSelf == null) return;
