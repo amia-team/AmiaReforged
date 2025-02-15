@@ -16,10 +16,59 @@ public class DarknessSpell : ISpell
     public const string DarknessBlindTag = "DARKNESS_BLIND";
     private readonly ScriptHandleFactory _handleFactory;
 
+    public List<NwAreaOfEffect> DarknessAreas = new();
 
-    public DarknessSpell(ScriptHandleFactory handleFactory)
+    public DarknessSpell(ScriptHandleFactory handleFactory, SchedulerService schedulerService)
     {
         _handleFactory = handleFactory;
+        NwModule.Instance.OnEffectApply += OnEffectApply;
+        NwModule.Instance.OnEffectRemove += OnEffectRemove;
+        
+        schedulerService.ScheduleRepeating(ClearInvalidArea, TimeSpan.FromSeconds(60));
+    }
+
+    private void OnEffectApply(OnEffectApply obj)
+    {
+        if (obj.Object is not NwCreature c) return;
+
+        if (obj.Effect.EffectType is not (EffectType.Ultravision or EffectType.TrueSeeing)) return;
+
+        if (!IsInDarknessAoE(obj.Object, out NwAreaOfEffect? aoe)) return;
+
+        // We remove the blindness effect from the creature.
+        Effect? darknessBlind = c.ActiveEffects.FirstOrDefault(e => e.Tag is DarknessBlindTag);
+            
+        if (darknessBlind is null) return;
+            
+        c.RemoveEffect(darknessBlind);
+    }
+
+    private void ClearInvalidArea()
+    {
+        foreach (NwAreaOfEffect area in DarknessAreas.ToList().Where(area => !area.IsValid))
+        {
+            DarknessAreas.Remove(area);
+        }
+    }
+
+    private void OnEffectRemove(OnEffectRemove obj)
+    {
+        if (obj.Object is not NwCreature c) return;
+
+        if (obj.Effect.EffectType is not (EffectType.Ultravision or EffectType.TrueSeeing)) return;
+
+        if (IsInDarknessAoE(obj.Object, out NwAreaOfEffect? aoe))
+        {
+            c.ApplyEffect(EffectDuration.Temporary, DarknessBlind(), TimeSpan.FromSeconds(OneRound));
+        }
+    }
+
+    private bool IsInDarknessAoE(NwObject objObject, out NwAreaOfEffect? aoe)
+    {
+        aoe = DarknessAreas.FirstOrDefault(darknessArea =>
+            darknessArea.GetObjectsInEffectArea<NwCreature>().Contains(objObject));
+
+        return aoe != null;
     }
 
 
@@ -74,6 +123,17 @@ public class DarknessSpell : ISpell
 
         float dur = NWScript.RoundsToSeconds(caster.CasterLevel);
         location.ApplyEffect(EffectDuration.Temporary, darkness, TimeSpan.FromSeconds(dur));
+
+        NwAreaOfEffect? darknessAoE = location.GetNearestObjectsByType<NwAreaOfEffect>().FirstOrDefault();
+
+        if (darknessAoE is null)
+        {
+            Log.Error("Failed to create darkness AoE");
+            return;
+        }
+
+        DarknessAreas.Add(darknessAoE);
+        
     }
 
     private ScriptHandleResult OnEnterDarkness(CallInfo arg)
@@ -108,14 +168,14 @@ public class DarknessSpell : ISpell
             {
                 Effect? darknessBlind = creature.ActiveEffects.FirstOrDefault(eff => eff.Tag is DarknessBlindTag);
 
-                if (darknessBlind is null)
-                {
-                    continue;
-                }
-
                 if (ImmuneToDarkness(creature))
                 {
+                    if (darknessBlind is null) continue;
                     creature.RemoveEffect(darknessBlind);
+                }
+                else
+                {
+                    creature.ApplyEffect(EffectDuration.Temporary, DarknessBlind(), TimeSpan.FromSeconds(OneRound));
                 }
             }
         }
@@ -126,16 +186,16 @@ public class DarknessSpell : ISpell
     private ScriptHandleResult OnExitDarkness(CallInfo arg)
     {
         AreaOfEffectEvents.OnExit eventData = new();
-        
+
         NwGameObject exitingObject = eventData.Exiting;
-        
+
         Effect? darknessBlind = exitingObject.ActiveEffects.FirstOrDefault(e => e.Tag is DarknessBlindTag);
-        if(darknessBlind is null)
+        if (darknessBlind is null)
         {
             // Exit early, don't need to do anything.
             return ScriptHandleResult.Handled;
         }
-        
+
         exitingObject.RemoveEffect(darknessBlind);
 
         return ScriptHandleResult.Handled;
