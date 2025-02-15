@@ -28,6 +28,8 @@ public class DarknessSpell : ISpell, IAreaOfEffect
         IntPtr darkness = EffectAreaOfEffect(AOE_PER_DARKNESS);
 
         float duration = RoundsToSeconds(GetCasterLevel(_caster));
+        
+        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, Effect.VisualEffect(VfxType.FnfFireball), _location);
 
         ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, darkness, _location, duration);
     }
