@@ -1,49 +1,27 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
+using Anvil.API.Events;
+using Anvil.Services;
+using NLog;
+using NWN.Core;
 using NWN.Core.NWNX;
-using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Arcane.SecondCircle.Evocation;
 
-public class DarknessSpell : ISpell, IAreaOfEffect
+[ServiceBinding(typeof(ISpell))]
+public class DarknessSpell : ISpell
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private const double OneRound = 7;
     public const string DarknessBlindTag = "DARKNESS_BLIND";
-    private readonly Location _location;
-    private readonly NwObject _caster;
+    private readonly ScriptHandleFactory _handleFactory;
 
-    public DarknessSpell(Location location, NwObject caster)
+
+    public DarknessSpell(ScriptHandleFactory handleFactory)
     {
-        _caster = caster;
-        _location = location;
+        _handleFactory = handleFactory;
     }
 
-    public DarknessSpell()
-    {
-        
-    }
-
-    public void Trigger()
-    {
-        IntPtr darkness = EffectAreaOfEffect(AOE_PER_DARKNESS);
-
-        float duration = RoundsToSeconds(GetCasterLevel(_caster));
-        
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, Effect.VisualEffect(VfxType.FnfFireball), _location);
-
-        ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, darkness, _location, duration);
-    }
-
-    public void TriggerOnEnter(NwCreature? enteringObject)
-    {
-        if(enteringObject.IsDMAvatar) return;
-        if(enteringObject.ActiveEffects.Any(e => e.EffectType is EffectType.Ultravision or EffectType.TrueSeeing)) return;
-        
-        
-        Effect blind = DarknessBlind();
-
-        enteringObject.ApplyEffect(EffectDuration.Temporary, blind, TimeSpan.FromSeconds(OneRound));
-    }
 
     private static Effect DarknessBlind()
     {
@@ -55,21 +33,111 @@ public class DarknessSpell : ISpell, IAreaOfEffect
         return blind;
     }
 
-    public void TriggerHeartbeat(NwCreature lingeringObject)
-    {
-        if(lingeringObject.ActiveEffects.Any(e => e.EffectType is EffectType.Ultravision or EffectType.TrueSeeing)) return;
 
-        Effect blind = DarknessBlind();
-        
-        lingeringObject.ApplyEffect(EffectDuration.Temporary, blind, TimeSpan.FromSeconds(OneRound));
+    public string ImpactScript => "NW_S0_Darkness";
+
+    public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
+    {
+        NwGameObject? caster = eventData.Caster;
+
+        if (caster is null)
+        {
+            Log.Error("Spell was cast, but the caster was not found?");
+            return;
+        }
+
+
+        PersistentVfxTableEntry? darknessTableEntry = PersistentVfxType.PerDarkness;
+        if (darknessTableEntry is null)
+        {
+            Log.Error($"Invalid entry value for spell: {eventData.Spell.Name}");
+            return;
+        }
+
+        Effect darkness = Effect.AreaOfEffect(darknessTableEntry, _handleFactory.CreateUniqueHandler(OnEnterDarkness),
+            _handleFactory.CreateUniqueHandler(OnHeartbeatDarkness),
+            _handleFactory.CreateUniqueHandler(OnExitDarkness));
+
+        Location? location = eventData.TargetLocation;
+
+        if (location is null)
+        {
+            Log.Error($"Invalid target");
+
+            if (eventData.Caster.IsPlayerControlled(out NwPlayer? player))
+            {
+                player.FloatingTextString("Invalid target", false);
+            }
+
+            return;
+        }
+
+        float dur = NWScript.RoundsToSeconds(caster.CasterLevel);
+        location.ApplyEffect(EffectDuration.Temporary, darkness, TimeSpan.FromSeconds(dur));
     }
 
-    public void TriggerOnExit(NwCreature exitingObject)
+    private ScriptHandleResult OnEnterDarkness(CallInfo arg)
     {
-        Effect? blind = exitingObject.ActiveEffects.FirstOrDefault(e => e.Tag == DarknessBlindTag);
+        AreaOfEffectEvents.OnEnter eventData = new();
+        NwGameObject enteringObject = eventData.Entering;
+
+        Effect darknessBlindness = DarknessBlind();
+
+        if (!ImmuneToDarkness(enteringObject))
+        {
+            enteringObject.ApplyEffect(EffectDuration.Temporary, darknessBlindness, TimeSpan.FromSeconds(OneRound));
+        }
+
+        return ScriptHandleResult.Handled;
+    }
+
+    private static bool ImmuneToDarkness(NwGameObject enteringObject) =>
+        enteringObject.ActiveEffects.Any(e => e.EffectType is EffectType.Ultravision or EffectType.TrueSeeing);
+
+    private ScriptHandleResult OnHeartbeatDarkness(CallInfo arg)
+    {
+        AreaOfEffectEvents.OnHeartbeat eventData = new();
+
+        NwGameObject effect = eventData.Effect;
+
+        if (effect is NwAreaOfEffect e)
+        {
+            List<NwCreature> creatures = e.GetObjectsInEffectArea<NwCreature>().ToList();
+
+            foreach (NwCreature creature in creatures)
+            {
+                Effect? darknessBlind = creature.ActiveEffects.FirstOrDefault(eff => eff.Tag is DarknessBlindTag);
+
+                if (darknessBlind is null)
+                {
+                    continue;
+                }
+
+                if (ImmuneToDarkness(creature))
+                {
+                    creature.RemoveEffect(darknessBlind);
+                }
+            }
+        }
+
+        return ScriptHandleResult.Handled;
+    }
+
+    private ScriptHandleResult OnExitDarkness(CallInfo arg)
+    {
+        AreaOfEffectEvents.OnExit eventData = new();
         
-        if(blind == null) return;
+        NwGameObject exitingObject = eventData.Exiting;
         
-        exitingObject.RemoveEffect(blind);
+        Effect? darknessBlind = exitingObject.ActiveEffects.FirstOrDefault(e => e.Tag is DarknessBlindTag);
+        if(darknessBlind is null)
+        {
+            // Exit early, don't need to do anything.
+            return ScriptHandleResult.Handled;
+        }
+        
+        exitingObject.RemoveEffect(darknessBlind);
+
+        return ScriptHandleResult.Handled;
     }
 }

@@ -1,19 +1,9 @@
-﻿namespace AmiaReforged.Classes.Spells;
+﻿using Anvil.API.Events;
+
+namespace AmiaReforged.Classes.Spells;
 
 public interface ISpell
 {
-    void Trigger();
-}
-
-public class SpellCastResult
-{
-    
-}
-
-public enum CastResultEnum
-{
-    Success,
-    Interrupted,
-    CriticalFailure,
-    SpellResisted,
+    string ImpactScript { get; }
+    void OnSpellImpact(SpellEvents.OnSpellCast eventData);
 }
