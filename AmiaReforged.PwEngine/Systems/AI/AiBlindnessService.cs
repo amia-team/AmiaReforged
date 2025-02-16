@@ -47,19 +47,27 @@ public class AiBlindnessService
             creature.SpeakString("DEBUG: I have a target already.");
             return;
         }
-        if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
 
+        if (creature.IsPlayerControlled || creature.IsDMAvatar)
+        {
+            creature.SpeakString("DEBUG: I am player controlled.");
+            return;
+        }
+
+        creature.SpeakString("DEBUG: I'm looking for a target.");
         List<NwCreature> nearbyHostiles = creature.GetNearestObjectsByType<NwCreature>()
             .Where(c => c.IsReactionTypeHostile(creature) && c.Distance(creature) <= 10f).ToList();
 
+        creature.SpeakString($"DEBUG: I metagamed the fuck out of {nearbyHostiles.Count} hostiles nearby.");
         List<NwCreature> hostilesWeCanHear = nearbyHostiles.Where(c => creature.IsCreatureHeard(c)).ToList();
+        
+        creature.SpeakString($"I can hear {hostilesWeCanHear.Count} hostiles nearby.");
 
         // Quicksort the list of hostiles by distance to the creature.
         hostilesWeCanHear.Sort((c1, c2) => c1.Distance(creature).CompareTo(c2.Distance(creature)));
 
         NwCreature? closestHostile = hostilesWeCanHear.FirstOrDefault();
-        
-        creature.SpeakString($"I can hear {hostilesWeCanHear.Count} hostiles nearby.");
+
 
         if (closestHostile is null) return;
 
