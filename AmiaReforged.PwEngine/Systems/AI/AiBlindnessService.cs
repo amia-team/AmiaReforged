@@ -19,6 +19,8 @@ public class AiBlindnessService
         if (obj.Object is not NwCreature creature) return;
 
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
+        
+        NWScript.DeleteLocalInt(creature, "AI_BLINDNESS");
         creature.OnCombatRoundStart -= FightSomething;
     }
 
@@ -28,6 +30,9 @@ public class AiBlindnessService
 
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
         
+        if(NWScript.GetLocalInt(creature, "AI_BLINDNESS") == 1) return;
+        
+        NWScript.SetLocalInt(creature, "AI_BLINDNESS", 1);
         creature.OnCombatRoundStart += FightSomething;
     }
 
