@@ -1,6 +1,7 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog.Fluent;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.AI;
@@ -33,16 +34,20 @@ public class AiBlindnessService
         if(NWScript.GetLocalInt(creature, "AI_BLINDNESS") == 1) return;
         
         NWScript.SetLocalInt(creature, "AI_BLINDNESS", 1);
+        creature.SpeakString("*flails around blindly*");
         creature.OnCombatRoundStart += FightSomething;
     }
 
     private void FightSomething(OnCombatRoundStart obj)
     {
         NwCreature creature = obj.Creature;
-        
-        if(creature.AttackTarget != null) return;
+
+        if (creature.AttackTarget != null)
+        {
+            creature.SpeakString("DEBUG: I have a target already.");
+            return;
+        }
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
-        creature.OnCombatRoundStart += FightSomething;
 
         List<NwCreature> nearbyHostiles = creature.GetNearestObjectsByType<NwCreature>()
             .Where(c => c.IsReactionTypeHostile(creature) && c.Distance(creature) <= 10f).ToList();
