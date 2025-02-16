@@ -48,6 +48,8 @@ public class AiBlindnessService
         hostilesWeCanHear.Sort((c1, c2) => c1.Distance(creature).CompareTo(c2.Distance(creature)));
 
         NwCreature? closestHostile = hostilesWeCanHear.FirstOrDefault();
+        
+        creature.SpeakString($"I can hear {hostilesWeCanHear.Count} hostiles nearby.");
 
         if (closestHostile is null) return;
 
