@@ -24,8 +24,7 @@ public class SpellCastingService
         {
             return ScriptHandleResult.NotHandled;
         }
-
-
+        
         SpellEvents.OnSpellCast eventData = new();
         spell.OnSpellImpact(eventData);
 

@@ -160,26 +160,28 @@ public class DarknessSpell : ISpell
 
         NwGameObject effect = eventData.Effect;
 
-        if (effect is NwAreaOfEffect e)
+        if (effect is not NwAreaOfEffect e)
         {
-            List<NwCreature> creatures = e.GetObjectsInEffectArea<NwCreature>().ToList();
+            return ScriptHandleResult.Handled;
+        }
+        
+        List<NwCreature> creatures = e.GetObjectsInEffectArea<NwCreature>().ToList();
 
-            foreach (NwCreature creature in creatures)
+        foreach (NwCreature creature in creatures)
+        {
+            Effect? darknessBlind = creature.ActiveEffects.FirstOrDefault(eff => eff.Tag is DarknessBlindTag);
+
+            if (ImmuneToDarkness(creature))
             {
-                Effect? darknessBlind = creature.ActiveEffects.FirstOrDefault(eff => eff.Tag is DarknessBlindTag);
-
-                if (ImmuneToDarkness(creature))
-                {
-                    if (darknessBlind is null) continue;
-                    creature.RemoveEffect(darknessBlind);
-                }
-                else
-                {
-                    creature.ApplyEffect(EffectDuration.Temporary, DarknessBlind(), TimeSpan.FromSeconds(OneRound));
-                }
+                if (darknessBlind is null) continue;
+                creature.RemoveEffect(darknessBlind);
+            }
+            else
+            {
+                creature.ApplyEffect(EffectDuration.Temporary, DarknessBlind(), TimeSpan.FromSeconds(OneRound));
             }
         }
-
+        
         return ScriptHandleResult.Handled;
     }
 
