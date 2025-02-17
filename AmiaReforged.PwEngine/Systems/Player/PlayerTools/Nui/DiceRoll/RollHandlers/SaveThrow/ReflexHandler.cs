@@ -12,12 +12,12 @@ public class ReflexHandler : IRollHandler
         if (playerCreature is null) return;
 
         int roll = NWScript.d20();
-        int fortitudeMod = playerCreature.GetSavingThrow(SavingThrow.Reflex);
+        int saveMod = playerCreature.GetSavingThrow(SavingThrow.Reflex);
 
-        int result = roll + fortitudeMod;
+        int result = roll + saveMod;
         const string saveName = "Reflex";
 
 
-        playerCreature.SpeakString(new SavingThrowString(saveName, roll, result).GetRollResult());
+        playerCreature.SpeakString(new SavingThrowString(saveName, roll, saveMod, result).GetRollResult());
     }
 }

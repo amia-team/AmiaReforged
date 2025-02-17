@@ -12,12 +12,12 @@ public class FortitudeHandler : IRollHandler
         if (playerCreature is null) return;
 
         int roll = NWScript.d20();
-        int fortitudeMod = playerCreature.GetSavingThrow(SavingThrow.Fortitude);
+        int saveMod = playerCreature.GetSavingThrow(SavingThrow.Fortitude);
 
-        int result = roll + fortitudeMod;
+        int result = roll + saveMod;
         const string saveName = "Fortitude";
 
 
-        playerCreature.SpeakString(new SavingThrowString(saveName, roll, result).GetRollResult());
+        playerCreature.SpeakString(new SavingThrowString(saveName, roll, saveMod, result).GetRollResult());
     }
 }

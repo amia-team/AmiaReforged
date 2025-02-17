@@ -12,12 +12,12 @@ public class WillHandler : IRollHandler
         if (playerCreature is null) return;
 
         int roll = NWScript.d20();
-        int fortitudeMod = playerCreature.GetSavingThrow(SavingThrow.Will);
+        int saveMod = playerCreature.GetSavingThrow(SavingThrow.Will);
 
-        int result = roll + fortitudeMod;
+        int result = roll + saveMod;
         const string saveName = "Will";
 
 
-        playerCreature.SpeakString(new SavingThrowString(saveName, roll, result).GetRollResult());
+        playerCreature.SpeakString(new SavingThrowString(saveName, roll, saveMod, result).GetRollResult());
     }
 }
