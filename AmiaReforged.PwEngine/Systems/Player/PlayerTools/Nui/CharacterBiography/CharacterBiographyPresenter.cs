@@ -13,7 +13,7 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
     public CharacterBiographyPresenter(CharacterBiographyView toolView, NwPlayer player)
     {
         _player = player;
-        ToolView = toolView;
+        View = toolView;
     }
 
     public override NuiWindowToken Token()
@@ -21,11 +21,11 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
         return _token;
     }
 
-    public override CharacterBiographyView ToolView { get; }
+    public override CharacterBiographyView View { get; }
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(ToolView.RootLayout(), ToolView.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(500f, 100f, 470, 560f),
             Resizable = false
@@ -51,7 +51,7 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
         _player.TryCreateNuiWindow(_window, out _token);
 
         string? characterBio = Token().Player.LoginCreature?.Description;
-        Token().SetBindValue(ToolView.CharacterBiography!, characterBio);
+        Token().SetBindValue(View.CharacterBiography!, characterBio);
     }
 
     public override void Close()
@@ -71,11 +71,11 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (eventData.ElementId == ToolView.SaveButton.Id)
+        if (eventData.ElementId == View.SaveButton.Id)
         {
             SaveCharacterBiography();
         }
-        else if (eventData.ElementId == ToolView.DiscardButton.Id)
+        else if (eventData.ElementId == View.DiscardButton.Id)
         {
             DiscardCharacterBiography();
         }
@@ -83,7 +83,7 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
 
     private void SaveCharacterBiography()
     {
-        string? characterBio = Token().GetBindValue(ToolView.CharacterBiography);
+        string? characterBio = Token().GetBindValue(View.CharacterBiography);
 
         NwCreature? character = Token().Player.LoginCreature;
         if (character != null && characterBio != null)

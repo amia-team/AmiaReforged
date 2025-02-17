@@ -6,7 +6,7 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.ChatTool;
 
 public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
 {
-    public sealed override ChatToolPresenter ToolPresenter { get; protected set; }
+    public sealed override ChatToolPresenter Presenter { get; protected set; }
 
     public string Id => "playertools.associatechat";
     public bool ListInPlayerTools => true;
@@ -24,7 +24,7 @@ public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
 
     public ChatToolView(NwPlayer player)
     {
-        ToolPresenter = new ChatToolPresenter(this, player);
+        Presenter = new ChatToolPresenter(this, player);
     }
 
     public override NuiLayout RootLayout()
@@ -109,6 +109,6 @@ public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
 
     public IScryPresenter MakeWindow(NwPlayer player)
     {
-        return ToolPresenter;
+        return Presenter;
     }
 }

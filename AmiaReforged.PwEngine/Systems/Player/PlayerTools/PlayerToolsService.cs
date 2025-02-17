@@ -30,6 +30,42 @@ public class PlayerToolsService
         entryArea.OnEnter += AddPlayerToolsFeat;
 
         NwModule.Instance.OnUseFeat += OnUsePlayerTools;
+        
+        NwModule.Instance.OnPlayerRest += OpenPlayerToolsWindow;
+    }
+
+    private void OpenPlayerToolsWindow(ModuleEvents.OnPlayerRest obj)
+    {
+        NwCreature? character = obj.Player.LoginCreature;
+        if (character is null)
+        {
+            Log.Error($"{obj.Player.PlayerName}'s Character not found.");
+            return;
+        }
+
+        bool canRest = character.GetObjectVariable<LocalVariableInt>("_RESTING").Value == 1;
+        bool shouldInterruptUser = character.IsInCombat || !canRest;
+        
+        if (!shouldInterruptUser) return;
+        
+        if(_windowManager.IsWindowOpen(obj.Player, typeof(PlayerToolsWindowPresenter)))
+        {
+            obj.Player.FloatingTextString("Player Tools window is already open.", false);
+            return;
+        }
+        
+        InjectionService? injector = Anvil.AnvilCore.GetService<InjectionService>();
+        if (injector is null)
+        {
+            obj.Player.FloatingTextString("Failed to load the player tools due to missing DI container. Screenshot this and report it as a bug.", false);
+            return;
+        }
+        
+        PlayerToolsWindowView window = new(obj.Player);
+        
+        PlayerToolsWindowPresenter presenter = window.Presenter;
+        
+        injector.Inject(presenter);
     }
 
     private void OnUsePlayerTools(OnUseFeat obj)
@@ -51,7 +87,7 @@ public class PlayerToolsService
             return;
         }
         PlayerToolsWindowView window = new(player);
-        PlayerToolsWindowPresenter presenter = window.ToolPresenter;
+        PlayerToolsWindowPresenter presenter = window.Presenter;
 
         injector.Inject(presenter);
         _windowManager.OpenWindow(presenter);

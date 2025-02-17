@@ -165,7 +165,7 @@ public sealed class WindowDirector : IDisposable
         }
 
         SimplePopupView view = new(nwPlayer, message, title, ignoreButton);
-        SimplePopupPresenter presenter = view.ToolPresenter;
+        SimplePopupPresenter presenter = view.Presenter;
 
         OpenWindow(presenter);
     }
@@ -173,7 +173,7 @@ public sealed class WindowDirector : IDisposable
     public void OpenPopup(NwPlayer nwPlayer, string title, string message, bool ignoreButton = false)
     {
         SimplePopupView view = new(nwPlayer, message, title, ignoreButton);
-        SimplePopupPresenter presenter = view.ToolPresenter;
+        SimplePopupPresenter presenter = view.Presenter;
 
         OpenWindow(presenter);
     }

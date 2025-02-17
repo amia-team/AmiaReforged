@@ -15,7 +15,7 @@ public sealed class CharacterBiographyView : ScryView<CharacterBiographyPresente
 
     public IScryPresenter MakeWindow(NwPlayer player)
     {
-        return ToolPresenter;
+        return Presenter;
     }
 
 
@@ -28,12 +28,12 @@ public sealed class CharacterBiographyView : ScryView<CharacterBiographyPresente
 
     public CharacterBiographyView(NwPlayer player)
     {
-        ToolPresenter = new CharacterBiographyPresenter(this, player);
+        Presenter = new CharacterBiographyPresenter(this, player);
         
         CategoryTag = "Character";
     }
 
-    public override CharacterBiographyPresenter ToolPresenter { get; protected set; }
+    public override CharacterBiographyPresenter Presenter { get; protected set; }
 
     public override NuiLayout RootLayout()
     {

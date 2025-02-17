@@ -20,7 +20,7 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
     public CreateQuickSlotsPresenter(CreateQuickslotsView toolView, NwPlayer player)
     {
         _player = player;
-        ToolView = toolView;
+        View = toolView;
     }
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
@@ -37,10 +37,10 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
         return _token;
     }
 
-    public override CreateQuickslotsView ToolView { get; }
+    public override CreateQuickslotsView View { get; }
     public override void InitBefore()
     {
-        _window = new NuiWindow(ToolView.RootLayout(), ToolView.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0, 0, 400, 300),
             Closable = true,
@@ -68,7 +68,7 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
 
         _player.TryCreateNuiWindow(_window, out _token);
 
-        Token().SetBindValue(ToolView.QuickslotName, string.Empty);
+        Token().SetBindValue(View.QuickslotName, string.Empty);
 
     }
 
@@ -76,12 +76,12 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
     {
         try
         {
-            if (eventData.ElementId == ToolView.CreateButton.Id)
+            if (eventData.ElementId == View.CreateButton.Id)
             {
                 await SaveQuickslots();
                 await NwTask.SwitchToMainThread();
             }
-            else if (eventData.ElementId == ToolView.CancelButton.Id)
+            else if (eventData.ElementId == View.CancelButton.Id)
             {
                 Token().Close();
             }
@@ -98,13 +98,13 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
         Guid playerId = PcKeyUtils.GetPcKey(tokenPlayer);
         byte[] serializedQuickbar = tokenPlayer.LoginCreature!.SerializeQuickbar()!;
         
-        if (Token().GetBindValue(ToolView.QuickslotName) == string.Empty)
+        if (Token().GetBindValue(View.QuickslotName) == string.Empty)
         {
             tokenPlayer.SendServerMessage("You must enter a name for the quickslot.", ColorConstants.Red);
             return;
         }
 
-        await QuickslotLoader.Value.SavePlayerQuickslots(Token().GetBindValue(ToolView.QuickslotName)!, serializedQuickbar, playerId);
+        await QuickslotLoader.Value.SavePlayerQuickslots(Token().GetBindValue(View.QuickslotName)!, serializedQuickbar, playerId);
         await NwTask.SwitchToMainThread();
 
         Token().Close();
@@ -112,6 +112,6 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
 
     public override void Close()
     {
-        Token().SetBindValue(ToolView.QuickslotName, string.Empty);
+        Token().SetBindValue(View.QuickslotName, string.Empty);
     }
 }

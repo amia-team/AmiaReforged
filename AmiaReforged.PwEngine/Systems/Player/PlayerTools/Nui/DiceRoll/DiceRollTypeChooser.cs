@@ -65,6 +65,9 @@ internal static class DiceRollTypeChooser
             DiceRollStringConstants.D12 => DiceRollType.D12,
             DiceRollStringConstants.D20 => DiceRollType.D20,
             DiceRollStringConstants.D100 => DiceRollType.D100,
+            DiceRollStringConstants.Reflex => DiceRollType.Reflex,
+            DiceRollStringConstants.Fortitude => DiceRollType.Fortitude,
+            DiceRollStringConstants.Will => DiceRollType.Will,
             _ => throw new ArgumentOutOfRangeException(nameof(rollButtonId), rollButtonId, null)
         };
     }

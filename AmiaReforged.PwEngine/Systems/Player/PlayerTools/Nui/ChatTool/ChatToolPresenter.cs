@@ -16,7 +16,7 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
 
     public ChatToolPresenter(ChatToolView toolView, NwPlayer player)
     {
-        ToolView = toolView;
+        View = toolView;
         _player = player;
         ToolModel = new ChatToolModel(player);
     }
@@ -25,10 +25,10 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
         return _token;
     }
 
-    public override ChatToolView ToolView { get; }
+    public override ChatToolView View { get; }
     public override void InitBefore()
     {
-        _window = new NuiWindow(ToolView.RootLayout(), ToolView.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(500f, 100f, 430, 610f),
             Resizable = false
@@ -47,9 +47,9 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent click)
     {
-        if (click.ElementId == ToolView.SpeakButton.Id)
+        if (click.ElementId == View.SpeakButton.Id)
         {
-            string? chatMessage = Token().GetBindValue(ToolView.ChatField);
+            string? chatMessage = Token().GetBindValue(View.ChatField);
             if (chatMessage.IsNullOrEmpty())
             {
                 _player.SendServerMessage("You must enter a message.", ColorConstants.Orange);
@@ -60,13 +60,13 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
             ToolModel.Speak();
             Update();
             
-            Token().SetBindValue(ToolView.ChatField, ""); // Clear the chat field.
+            Token().SetBindValue(View.ChatField, ""); // Clear the chat field.
             ToolModel.NextMessage = "";
             
             return;
         }
 
-        if (click.ElementId == ToolView.SelectButton.Id)
+        if (click.ElementId == View.SelectButton.Id)
         {
             _player.FloatingTextString("Pick an associate.", false);
 
@@ -113,20 +113,20 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
 
         _player.TryCreateNuiWindow(_window, out _token);
         
-        Token().SetBindValue(ToolView.ChatHistory, ToolModel.ChatHistory);
+        Token().SetBindValue(View.ChatHistory, ToolModel.ChatHistory);
 
-        Token().SetBindValue(ToolView.ChatField, "");
-        Token().SetBindValue(ToolView.SelectionName, "No selection");
-        Token().SetBindValue(ToolView.EmphasizeSelection, true);
+        Token().SetBindValue(View.ChatField, "");
+        Token().SetBindValue(View.SelectionName, "No selection");
+        Token().SetBindValue(View.EmphasizeSelection, true);
 
         Update();
     }
     
     private void Update()
     {
-        Token().SetBindValue(ToolView.ChatHistory, ToolModel.ChatHistory);
-        Token().SetBindValue(ToolView.SelectionName, ToolModel.Selection?.Name ?? "Nobody");
-        Token().SetBindValue(ToolView.EmphasizeSelection, ToolModel.Selection == null);
+        Token().SetBindValue(View.ChatHistory, ToolModel.ChatHistory);
+        Token().SetBindValue(View.SelectionName, ToolModel.Selection?.Name ?? "Nobody");
+        Token().SetBindValue(View.EmphasizeSelection, ToolModel.Selection == null);
     }
 
     public override void Close()

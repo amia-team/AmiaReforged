@@ -4,7 +4,10 @@ using Anvil.API.Events;
 namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 
 /// <summary>
-/// Represents an abstract base class for presenters in the Scry system.
+/// Responsible for handling user input. It should ask any models (regular objects with state and logic) to update their state, and then update the view.
+/// Best practice is to keep the presenter as thin as possible, with the majority of the logic in the model. This allows for easier debugging and testing.
+/// The View is directly referenced by the Presenter, and the Presenter is directly referenced by the View. This is allows for bidirectional communication between the two
+/// while maintaining a clean separation of concerns.
 /// </summary>
 /// <typeparam name="TView">The type of the view associated with the presenter.</typeparam>
 public abstract class ScryPresenter<TView> : IScryPresenter where TView : IScryView
@@ -13,12 +16,12 @@ public abstract class ScryPresenter<TView> : IScryPresenter where TView : IScryV
     /// Gets the NuiWindowToken associated with the presenter.
     /// </summary>
     /// <returns>A NuiWindowToken object.</returns>
-    public abstract NuiWindowToken Token(); 
-    
+    public abstract NuiWindowToken Token();
+
     /// <summary>
     /// Gets the view associated with the presenter.
     /// </summary>
-    public abstract TView ToolView { get; }
+    public abstract TView View { get; }
 
     /// <summary>
     /// Initializes the presenter, setting up any necessary state or resources.

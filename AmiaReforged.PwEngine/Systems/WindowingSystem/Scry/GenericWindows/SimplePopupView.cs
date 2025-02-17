@@ -5,7 +5,7 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
 public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
 {
     private readonly string _message;
-    public sealed override SimplePopupPresenter ToolPresenter { get; protected set; }
+    public sealed override SimplePopupPresenter Presenter { get; protected set; }
     public bool IgnoreButton { get; }
     public NuiBind<bool> IgnoreButtonVisible { get; } = new("ignore_button_visible");
 
@@ -13,7 +13,7 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
     {
         _message = message;
         IgnoreButton = ignoreButton;
-        ToolPresenter = new SimplePopupPresenter(player, this, title);
+        Presenter = new SimplePopupPresenter(player, this, title);
     }
 
     public override NuiLayout RootLayout()

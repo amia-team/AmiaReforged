@@ -14,7 +14,7 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
 
     public IScryPresenter MakeWindow(NwPlayer player)
     {
-        return ToolPresenter;
+        return Presenter;
     }
 
     public bool RequiresPersistedCharacter => true;
@@ -32,14 +32,14 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
     public NuiButtonImage CreateSpellbookButton = null!;
     public NuiButtonImage DeleteSpellbookButton = null!;
 
-    public sealed override SpellbookListPresenter ToolPresenter { get; protected set; }
+    public sealed override SpellbookListPresenter Presenter { get; protected set; }
 
     public SpellbookListView(NwPlayer player)
     {
-        ToolPresenter = new SpellbookListPresenter(this, player);
+        Presenter = new SpellbookListPresenter(this, player);
         
         InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
-        injector.Inject(ToolPresenter);
+        injector.Inject(Presenter);
     }
 
     public override NuiLayout RootLayout()

@@ -31,12 +31,12 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
 
     public SpellbookListPresenter(SpellbookListView toolView, NwPlayer player)
     {
-        ToolView = toolView;
+        View = toolView;
         _player = player;
     }
     public override void InitBefore()
     {
-        _window = new NuiWindow(ToolView.RootLayout(), ToolView.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f),
         };
@@ -47,7 +47,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         return _token;
     }
 
-    public override SpellbookListView ToolView { get; }
+    public override SpellbookListView View { get; }
     public override void Create()
     {
         if (_window == null)
@@ -106,20 +106,20 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
 
     private async void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (eventData.ElementId == ToolView.SearchButton.Id)
+        if (eventData.ElementId == View.SearchButton.Id)
         {
             RefreshSpellbookList();
         }
-        else if (eventData.ElementId == ToolView.CreateSpellbookButton.Id)
+        else if (eventData.ElementId == View.CreateSpellbookButton.Id)
         {
             OpenCreateSpellbookWindow();
         }
-        else if (eventData.ElementId == ToolView.DeleteSpellbookButton.Id)
+        else if (eventData.ElementId == View.DeleteSpellbookButton.Id)
         {
             DeleteSelectedSpellbook(eventData);
             RefreshSpellbookList();
         }
-        else if (eventData.ElementId == ToolView.OpenSpellbookButton.Id)
+        else if (eventData.ElementId == View.OpenSpellbookButton.Id)
         {
             OpenSelectedSpellbook(eventData);
         }
@@ -137,7 +137,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         Log.Info($"Stored spellbook id: {selectedSpellbook.Id}");
         
         OpenSpellbookView view = new(Token().Player);
-        OpenSpellbookPresenter presenter = view.ToolPresenter;
+        OpenSpellbookPresenter presenter = view.Presenter;
         InjectionService? injector = AnvilCore.GetService<InjectionService>();
         if (injector is null)
         {
@@ -174,7 +174,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
     {
         CreateSpellbookView view = new(_player);
 
-        CreateSpellbookPresenter presenter = view.ToolPresenter;
+        CreateSpellbookPresenter presenter = view.Presenter;
         InjectionService? injector = AnvilCore.GetService<InjectionService>();
         if (injector is null)
         {
@@ -189,7 +189,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
 
     private void RefreshSpellbookList()
     {
-        string search = Token().GetBindValue(ToolView.Search)!;
+        string search = Token().GetBindValue(View.Search)!;
         _visibleSpellbooks = _spellbooks.Where(book =>
                 book != null && book.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
             .ToList();
@@ -197,9 +197,9 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         List<string> spellbookNames = _visibleSpellbooks.Select(view => view!.Name).ToList();
         List<string> spellbookIds = _visibleSpellbooks.Select(view => view!.Id.ToString()).ToList();
 
-        Token().SetBindValues(ToolView.SpellbookNames, spellbookNames);
-        Token().SetBindValues(ToolView.SpellbookIds, spellbookIds);
-        Token().SetBindValue(ToolView.SpellbookCount, _visibleSpellbooks.Count);
+        Token().SetBindValues(View.SpellbookNames, spellbookNames);
+        Token().SetBindValues(View.SpellbookIds, spellbookIds);
+        Token().SetBindValue(View.SpellbookCount, _visibleSpellbooks.Count);
     }
 
     public override void Close()

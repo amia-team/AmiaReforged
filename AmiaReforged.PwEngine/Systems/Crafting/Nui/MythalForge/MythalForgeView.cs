@@ -19,7 +19,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         /// <summary>
         /// Gets the presenter associated with this view.
         /// </summary>
-        public override MythalForgePresenter ToolPresenter { get; protected set; }
+        public override MythalForgePresenter Presenter { get; protected set; }
 
         /// <summary>
         /// Gets the binding for the item name.
@@ -65,11 +65,11 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
         public MythalForgeView(CraftingPropertyData propertyData, CraftingBudgetService budget, NwItem item,
             NwPlayer player, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
         {
-            ToolPresenter = new MythalForgePresenter(this, propertyData, budget, item, player, validator, dcCalculator);
+            Presenter = new MythalForgePresenter(this, propertyData, budget, item, player, validator, dcCalculator);
 
-            CategoryView = new MythalCategoryView(ToolPresenter);
-            ActivePropertiesView = new ActivePropertiesView(ToolPresenter);
-            ChangelistView = new ChangelistView(ToolPresenter);
+            CategoryView = new MythalCategoryView(Presenter);
+            ActivePropertiesView = new ActivePropertiesView(Presenter);
+            ChangelistView = new ChangelistView(Presenter);
         }
 
         /// <summary>

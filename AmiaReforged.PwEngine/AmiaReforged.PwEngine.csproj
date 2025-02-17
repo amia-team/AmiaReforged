@@ -24,7 +24,6 @@
       <Folder Include="Migrations\" />
       <Folder Include="Systems\MiniGame\LiarsDice\Nui\" />
       <Folder Include="Systems\MiniGame\LiarsDice\Tests\" />
-      <Folder Include="Systems\Player\PlayerTools\Nui\DiceRoll\RollHandlers\SaveThrow\" />
     </ItemGroup>
 
     <ItemGroup>

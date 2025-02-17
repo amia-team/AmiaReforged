@@ -30,17 +30,17 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
     public QuickslotSaverPresenter(QuickslotSaverView toolView, NwPlayer player)
     {
         _player = player;
-        ToolView = toolView;
+        View = toolView;
     }
     public override NuiWindowToken Token()
     {
         return _token;
     }
 
-    public override QuickslotSaverView ToolView { get; }
+    public override QuickslotSaverView View { get; }
     public override void InitBefore()
     {
-        _window = new NuiWindow(ToolView.RootLayout(), ToolView.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f),
         };
@@ -91,16 +91,16 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
 
     private void RefreshQuickslotList()
     {
-        string search = Token().GetBindValue(ToolView.Search)!;
+        string search = Token().GetBindValue(View.Search)!;
         _visibleQuickslots = _quickslots.Where(q => q.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         List<string> quickslotNames = _visibleQuickslots.Select(q => q.Name).ToList();
         List<string> quickslotIds = _visibleQuickslots.Select(q => q.Id.ToString()).ToList();
 
-        Token().SetBindValues(ToolView.QuickslotNames, quickslotNames);
-        Token().SetBindValues(ToolView.QuickslotIds, quickslotIds);
-        Token().SetBindValue(ToolView.QuickslotCount, quickslotNames.Count);
+        Token().SetBindValues(View.QuickslotNames, quickslotNames);
+        Token().SetBindValues(View.QuickslotIds, quickslotIds);
+        Token().SetBindValue(View.QuickslotCount, quickslotNames.Count);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -115,19 +115,19 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (eventData.ElementId == ToolView.SearchButton.Id)
+        if (eventData.ElementId == View.SearchButton.Id)
         {
             RefreshQuickslotList();
         }
-        else if (eventData.ElementId == ToolView.ViewQuickslotsButton.Id)
+        else if (eventData.ElementId == View.ViewQuickslotsButton.Id)
         {
             LoadQuickSlot(eventData);
         }
-        else if (eventData.ElementId == ToolView.CreateQuickslotsButton.Id)
+        else if (eventData.ElementId == View.CreateQuickslotsButton.Id)
         {
             OpenQuickslotCreator();
         }
-        else if (eventData.ElementId == ToolView.DeleteQuickslotsButton.Id)
+        else if (eventData.ElementId == View.DeleteQuickslotsButton.Id)
         {
             DeleteConfiguration(eventData);
         }
@@ -150,7 +150,7 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
         InjectionService? injectionService = AnvilCore.GetService<InjectionService>();
         if(injectionService is null) return;
         CreateQuickslotsView view = new CreateQuickslotsView(_token.Player);
-        CreateQuickSlotsPresenter presenter = view.ToolPresenter;
+        CreateQuickSlotsPresenter presenter = view.Presenter;
         
         injectionService.Inject(presenter);
         
