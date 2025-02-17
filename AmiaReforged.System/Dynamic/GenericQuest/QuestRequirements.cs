@@ -1,9 +1,7 @@
-﻿using System.Globalization;
+﻿using System.Text.RegularExpressions;
 using static AmiaReforged.System.Dynamic.GenericQuest.QuestConstants;
 using Anvil.API;
-using NWN.Core;
 using static System.Int32;
-using static System.MemoryExtensions;
 
 namespace AmiaReforged.System.Dynamic.GenericQuest;
 
@@ -164,20 +162,21 @@ public static class QuestRequirements
     private static bool CheckRequiredQuests(NwCreature questGiver, NwCreature playerCharacter)
     {
         // set in the toolset as eg "[quest name 1] | [quest name 2]" or "[quest name 1] & [quest name 2]"
-        LocalVariableString requiredQuests = questGiver.GetObjectVariable<LocalVariableString>("required quests");
+        string? requiredQuests = questGiver.GetObjectVariable<LocalVariableString>("required quests").Value;
 
         // If no requirements are set, return true
-        if (requiredQuests.HasNothing)
+        if (requiredQuests is null)
             return true;
         
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.ResRef == "ds_pckey");
+        
 
         // If there is a quest requirement, check that the required quest has been completed to return true and allow
         // character to take on the quest; otherwise play rejection message, inform the player of the quest they need
         // to complete, and return false in the quest script to not start the quest
         
-        string[] requiredQuestsAny = requiredQuests.Value!.Split(" | ");
-        string[] requiredQuestsAll = requiredQuests.Value!.Split(" & ");
+        string[] requiredQuestsAny = QuestUtilFuncs.SanitizeAndSplit(requiredQuests, "||");
+        string[] requiredQuestsAll = QuestUtilFuncs.SanitizeAndSplit(requiredQuests, "&&");
 
         // If there's only one required quest, check for it first
         if (requiredQuestsAny.Length == 1)
