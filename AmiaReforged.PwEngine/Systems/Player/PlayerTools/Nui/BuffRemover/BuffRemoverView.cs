@@ -15,7 +15,7 @@ public class BuffRemoverView : ScryView<BuffRemoverPresenter>, IToolWindow
     public readonly NuiBind<int> BuffCount = new("buff_count");
 
     public string Id => "playertools.buffremover";
-    public bool ListInPlayerTools => true;
+    public bool ListInPlayerTools => false;
     public bool RequiresPersistedCharacter => false;
     public string Title => "Buff Remover";
     public string CategoryTag => "Character";
