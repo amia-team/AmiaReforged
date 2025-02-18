@@ -13,7 +13,7 @@ public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWind
     public  string Title => "Create Spellbook";
     public string CategoryTag { get; } = null!;
 
-    public IScryPresenter MakeWindow(NwPlayer player)
+    public IScryPresenter ForPlayer(NwPlayer player)
     {
         return Presenter;
     }

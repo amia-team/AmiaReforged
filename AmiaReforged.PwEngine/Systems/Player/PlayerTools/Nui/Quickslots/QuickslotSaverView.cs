@@ -11,7 +11,7 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
     public bool ListInPlayerTools => true;
     public  string Title => "Quickbar Loadouts";
     public string CategoryTag { get; }
-    public IScryPresenter MakeWindow(NwPlayer player)
+    public IScryPresenter ForPlayer(NwPlayer player)
     {
         return Presenter;
     }

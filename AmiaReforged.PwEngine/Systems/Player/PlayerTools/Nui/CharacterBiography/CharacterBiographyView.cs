@@ -13,7 +13,7 @@ public sealed class CharacterBiographyView : ScryView<CharacterBiographyPresente
     public string Title => "Character Biography";
     public string CategoryTag { get; }
 
-    public IScryPresenter MakeWindow(NwPlayer player)
+    public IScryPresenter ForPlayer(NwPlayer player)
     {
         return Presenter;
     }

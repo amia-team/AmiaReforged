@@ -12,7 +12,7 @@ public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWi
     public string CategoryTag { get; } = null!;
     public bool RequiresPersistedCharacter { get; }
 
-    public IScryPresenter MakeWindow(NwPlayer player)
+    public IScryPresenter ForPlayer(NwPlayer player)
     {
         return Presenter;
     }

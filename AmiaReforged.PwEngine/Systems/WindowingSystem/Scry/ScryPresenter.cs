@@ -1,5 +1,6 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
+using JetBrains.Annotations;
 
 namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 
@@ -10,6 +11,7 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 /// while maintaining a clean separation of concerns.
 /// </summary>
 /// <typeparam name="TView">The type of the view associated with the presenter.</typeparam>
+[MeansImplicitUse(ImplicitUseTargetFlags.Itself)]
 public abstract class ScryPresenter<TView> : IScryPresenter where TView : IScryView
 {
     /// <summary>

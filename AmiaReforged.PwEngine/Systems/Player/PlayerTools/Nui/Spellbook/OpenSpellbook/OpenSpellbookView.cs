@@ -10,7 +10,7 @@ public sealed class OpenSpellbookView : ScryView<OpenSpellbookPresenter>, IToolW
     public string Title => "Opened Spellbook";
     public string CategoryTag { get; } = null!;
 
-    public IScryPresenter MakeWindow(NwPlayer player)
+    public IScryPresenter ForPlayer(NwPlayer player)
     {
         throw new NotImplementedException();
     }

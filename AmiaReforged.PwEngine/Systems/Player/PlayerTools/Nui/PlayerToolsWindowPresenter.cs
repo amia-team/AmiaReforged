@@ -106,7 +106,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
                  eventData.ArrayIndex >= 0 && eventData.ArrayIndex < Model.VisibleWindows.Count)
         {
             IToolWindow window = Model.VisibleWindows[eventData.ArrayIndex];
-            IScryPresenter toolWindow = window.MakeWindow(Token().Player);
+            IScryPresenter toolWindow = window.ForPlayer(Token().Player);
             WindowDirector.Value.OpenWindow(toolWindow);
         }
     }

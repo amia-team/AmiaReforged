@@ -12,7 +12,7 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
     public string Title => "Your Spellbooks";
     public string CategoryTag => "Spellbooks";
 
-    public IScryPresenter MakeWindow(NwPlayer player)
+    public IScryPresenter ForPlayer(NwPlayer player)
     {
         return Presenter;
     }

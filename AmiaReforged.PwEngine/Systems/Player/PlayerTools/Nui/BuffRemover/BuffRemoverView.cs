@@ -60,7 +60,7 @@ public class BuffRemoverView : ScryView<BuffRemoverPresenter>, IToolWindow
         return root;
     }
 
-    public IScryPresenter MakeWindow(NwPlayer player)
+    public IScryPresenter ForPlayer(NwPlayer player)
     {
         return Presenter;
     }

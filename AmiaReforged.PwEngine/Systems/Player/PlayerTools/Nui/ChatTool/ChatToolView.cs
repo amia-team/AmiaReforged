@@ -107,7 +107,7 @@ public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
         return root;
     }
 
-    public IScryPresenter MakeWindow(NwPlayer player)
+    public IScryPresenter ForPlayer(NwPlayer player)
     {
         return Presenter;
     }

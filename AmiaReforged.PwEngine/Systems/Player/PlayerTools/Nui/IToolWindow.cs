@@ -13,5 +13,5 @@ public interface IToolWindow
     public string Title { get; }
     public string CategoryTag { get; }
 
-    public IScryPresenter MakeWindow(NwPlayer player);
+    public IScryPresenter ForPlayer(NwPlayer player);
 }

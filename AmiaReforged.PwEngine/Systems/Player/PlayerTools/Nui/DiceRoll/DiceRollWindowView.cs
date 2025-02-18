@@ -129,7 +129,7 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
         return root;
     }
 
-    public IScryPresenter MakeWindow(NwPlayer player)
+    public IScryPresenter ForPlayer(NwPlayer player)
     {
         InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
         DiceRollWindowPresenter diceRollWindowPresenter = new DiceRollWindowPresenter(this, player);
