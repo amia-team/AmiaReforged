@@ -6,7 +6,7 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.AI;
 
-[ServiceBinding(typeof(AiBlindnessService))]
+// [ServiceBinding(typeof(AiBlindnessService))]
 public class AiBlindnessService
 {
     public AiBlindnessService()
