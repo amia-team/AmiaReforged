@@ -5,7 +5,7 @@ using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.AI;
 
-[ServiceBinding(typeof(AiMasterService))]
+// [ServiceBinding(typeof(AiMasterService))]
 public class AiMasterService
 {
     private readonly Dictionary<string, IOnBlockedBehavior> _blockedHandlers = new();
