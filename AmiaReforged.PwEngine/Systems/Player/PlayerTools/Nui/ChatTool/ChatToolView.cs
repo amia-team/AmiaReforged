@@ -11,7 +11,7 @@ public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
     public string Id => "playertools.associatechat";
     public bool ListInPlayerTools => true;
     public bool RequiresPersistedCharacter => false;
-    public string Title => "Associate Chat";
+    public string Title => "Player Chat Tool (Beta)";
     public string CategoryTag => "Character";
 
     public readonly NuiBind<string> ChatHistory = new("chat_history");
