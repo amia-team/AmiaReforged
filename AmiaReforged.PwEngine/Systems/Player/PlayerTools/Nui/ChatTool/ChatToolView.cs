@@ -75,7 +75,7 @@ public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
                 {
                     Children =
                     {
-                        new NuiTextEdit("Enter a message", ChatField, 5000, true)
+                        new NuiTextEdit("Enter a message", ChatField, 1000, true)
                         {
                             Height = 100,
                         },
