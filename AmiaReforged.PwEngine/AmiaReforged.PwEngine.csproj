@@ -26,4 +26,13 @@
       <Folder Include="Systems\MiniGame\LiarsDice\Tests\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Systems\Player\AmiaPlayer.cs" />
+    </ItemGroup>
+
+
 </Project>

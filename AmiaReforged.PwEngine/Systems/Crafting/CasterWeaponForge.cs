@@ -1,5 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -16,8 +15,7 @@ public class CasterWeaponForge
     private List<Spell> _spellWhiteList = new List<Spell>
     {
         Spell.Restoration,
-        Spell.IsaacsLesserMissileStorm,
-        Spell.IsaacsGreaterMissileStorm,
+        Spell.LightningBolt,
         Spell.HealingCircle
     };
 
@@ -65,9 +63,8 @@ public class CasterWeaponForge
             .WithPlayer(player)
             .WithTitle("Caster Weapon Forge")
             .WithMessage(
-                "You can turn a blank weapon into a caster weapon here by casting Restoration, any Missile Storm,"
-                + " or Healing Circle."
-                + " This will prevent any typical weapon properties from being placed on the item. These weapons will not "
+                "You can turn a blank weapon into a caster weapon here by casting any level 3 or higher spell on it. "
+                + "This will prevent any typical weapon properties from being placed on the item. These weapons will not "
                 + "accept any greater magic weapon or flame weapon enchantments."
                 + " One-handed weapons have 12 powers, Two-handed weapons have 20.")
             .EnableIgnoreButton("ignore_caster_forge")
@@ -81,47 +78,87 @@ public class CasterWeaponForge
             return;
         }
 
-        if (!_spellWhiteList.Contains(obj.Spell.SpellType))
+        if (obj.Spell.InnateSpellLevel < 3) // Only allow level 3 spells
         {
-            player.SendServerMessage(
-                "You can only enchant weapons here with: Restoration, Isaac's Lesser Missile Storm, Isaac's Greater Missile, or Healing Circle.");
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("Caster Weapon Forge")
+                .WithMessage("You must cast a level 3 or higher spell.")
+                .Open();
+
             return;
         }
 
         if (obj.Placeable.Inventory.Items.Count() != 1)
         {
-            player.SendServerMessage("You can only enchant one weapon at a time.");
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("Caster Weapon Forge")
+                .WithMessage("You can only enchant one weapon at a time.")
+                .Open();
+
             return;
         }
 
         NwItem weapon = obj.Placeable.Inventory.Items.ToArray()[0];
         int baseItemType = NWScript.GetBaseItemType(weapon);
 
-        // combines weapons
         List<int> weapons = ItemTypeConstants.MeleeWeapons();
         List<int> melee2HWeapons = ItemTypeConstants.Melee2HWeapons();
-
+        
         weapons.AddRange(melee2HWeapons);
 
         if (!weapons.Contains(baseItemType))
         {
-            player.SendServerMessage("You can only enchant one-handed or two-handed melee weapons.");
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("Caster Weapon Forge")
+                .WithMessage("You can only enchant melee weapons.")
+                .Open();
+            
             return;
         }
 
         if (NWScript.GetLocalInt(weapon, "CASTER_WEAPON") == 1)
         {
-            player.SendServerMessage("This weapon is already enchanted.");
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("Caster Weapon Forge")
+                .WithMessage("This weapon is already enchanted.")
+                .Open();
+            
             return;
         }
 
-        // No properties may be present on the weapon
+        // TODO: Factor in material, quality, and other flavor properties
         if (weapon.ItemProperties.Any())
         {
-            player.SendServerMessage("This weapon already has properties.");
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("Caster Weapon Forge")
+                .WithMessage("You cannot enchant a weapon that already has properties on it.")
+                .Open();
+            
             return;
         }
 
+        Effect visualEffect = Effect.VisualEffect(VfxType.ImpBlindDeafM);
+        obj.Placeable.ApplyEffect(EffectDuration.Instant, visualEffect);
         NWScript.SetLocalInt(weapon, "CASTER_WEAPON", 1);
     }
 }

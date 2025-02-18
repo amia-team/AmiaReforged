@@ -17,9 +17,9 @@ public interface IScryPresenter
     /// <summary>
     /// Initializes the presenter, setting up any necessary state or resources.
     /// </summary>
-    public void Initialize();
+    public void InitBefore();
 
-    public void HandleInput(ModuleEvents.OnNuiEvent obj);
+    public void ProcessEvent(ModuleEvents.OnNuiEvent obj);
     
     /// <summary>
     /// Updates the view with any changes that need to be reflected in the user interface.

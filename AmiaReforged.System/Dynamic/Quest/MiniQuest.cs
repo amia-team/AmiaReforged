@@ -23,7 +23,8 @@ public class MiniQuest
 
         string questTurnInItem = NWScript.GetLocalString(_questGiver, DynamicQuestLocals.MiniQuest.QuestItem);
 
-        List<NwItem> questItems = _player.LoginCreature.Inventory.Items.Where(x => x.ResRef == questTurnInItem).ToList();
+        List<NwItem> questItems =
+            _player.LoginCreature.Inventory.Items.Where(x => x.ResRef == questTurnInItem).ToList();
 
         bool hasNoQuestItems = questItems.Count == 0;
         string speakString = hasNoQuestItems

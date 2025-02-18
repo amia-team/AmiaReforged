@@ -35,7 +35,7 @@ public class PillarOfPhantoms
     {
         if (obj.ObjectType != ObjectTypes.Placeable) return;
         if (obj.ResRef != PillarOfPhantomsTag) return;
-        if (obj.Area == null) return;
+       
         if (!_activeTraps.ContainsKey(obj.Area))
         {
             _activeTraps.Add(obj.Area, new List<NwPlaceable>());

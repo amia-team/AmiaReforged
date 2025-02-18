@@ -14,6 +14,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
     {
         public const string ApplyNameButtonId = "apply_name";
         public const string ApplyChanges = "apply_changes";
+        public const string? Cancel = "cancel";
 
         /// <summary>
         /// Gets the presenter associated with this view.
@@ -139,7 +140,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge
                         {
                             new NuiButton("Cancel")
                             {
-                                Id = "cancel",
+                                Id = Cancel,
                                 Width = 200f,
                                 Height = 60f
                             },

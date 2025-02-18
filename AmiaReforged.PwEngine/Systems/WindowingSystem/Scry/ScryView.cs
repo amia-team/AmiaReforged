@@ -1,4 +1,5 @@
 ﻿using Anvil.API;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
@@ -7,6 +8,7 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 /// Represents an abstract base class for views in the Scry system.
 /// </summary>
 /// <typeparam name="TPresenter">The type of the presenter associated with the view.</typeparam>
+[CreatedAtRuntime]
 public abstract class ScryView<TPresenter> : IScryView where TPresenter : IScryPresenter
 {
     /// <summary>
