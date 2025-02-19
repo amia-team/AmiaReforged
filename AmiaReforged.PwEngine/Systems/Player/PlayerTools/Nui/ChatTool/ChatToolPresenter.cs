@@ -3,6 +3,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using Microsoft.IdentityModel.Tokens;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.ChatTool;
 
@@ -91,6 +92,7 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
             _player.SendServerMessage("That creature is not an associate (or yourself).", ColorConstants.Orange);
             return;
         }
+        ToolModel.ChatHistory = NWScript.GetLocalString(creature, "CHAT_HISTORY");
         ToolModel.Selection = creature;
         Update();
     }

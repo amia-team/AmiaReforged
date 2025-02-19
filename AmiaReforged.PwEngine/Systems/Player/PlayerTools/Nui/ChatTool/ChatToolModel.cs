@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Anvil.API;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.ChatTool;
 
@@ -8,7 +9,7 @@ public partial class ChatToolModel
 {
     private readonly NwPlayer _player;
     public string? NextMessage { get; set; }
-    public string? ChatHistory { get; private set; }
+    public string? ChatHistory { get; set; }
 
     public NwCreature? Selection { get; set; }
 
@@ -63,11 +64,13 @@ public partial class ChatToolModel
         }
         
         ChatHistory += $"{Selection.Name}: {NextMessage}\n";
+        SaveToCreature();
     }
 
     private void SaveToCreature()
     {
         // We convert the list to JSON and save it to the creature as a local variable.
+        if (ChatHistory != null) NWScript.SetLocalString(Selection, "CHAT_HISTORY", ChatHistory);
     }
 
     public bool IsAnAssociate(NwCreature creature)
