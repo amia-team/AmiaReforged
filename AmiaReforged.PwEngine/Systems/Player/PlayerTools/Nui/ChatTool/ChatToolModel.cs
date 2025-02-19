@@ -4,7 +4,7 @@ using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.ChatTool;
 
-public class ChatToolModel
+public partial class ChatToolModel
 {
     private readonly NwPlayer _player;
     public string? NextMessage { get; set; }
@@ -53,10 +53,8 @@ public class ChatToolModel
         message = message.Trim();
         
         // Clean up any words separated by more than one space.
-        message = Regex.Replace(message, @"\s+", " ");
+        message = SpaceTrimmer().Replace(message, " ");
         
-        // Clean up excessive .'s and !'s, but allow for triplicates
-        message = Regex.Replace(message, @"[.]{4,}", "...");
         
         LogManager.GetCurrentClassLogger().Info($"{message}");
         return message;
@@ -80,9 +78,11 @@ public class ChatToolModel
     public bool IsAnAssociate(NwCreature creature)
     {
         bool isPlayer = creature == _player.ControlledCreature;
-        NwPlayer? controller = creature.ControllingPlayer;
-        bool isOwnedByPlayer = controller != null && controller == _player;
+        bool isOwnedByPlayer = _player.LoginCreature != null && _player.LoginCreature.Associates.Contains(creature);
            
         return isPlayer || isOwnedByPlayer;
     }
+
+    [GeneratedRegex("\\s+")]
+    private static partial Regex SpaceTrimmer();
 }
