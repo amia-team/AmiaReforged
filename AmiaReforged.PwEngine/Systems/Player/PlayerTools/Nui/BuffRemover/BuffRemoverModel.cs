@@ -104,7 +104,7 @@ public class BuffRemoverModel
 
         return character.ActiveEffects.Where(e =>
             e.SubType == EffectSubType.Magical && EffectWhitelist.Whitelist.Contains(e.EffectType) &&
-            e.LinkId.IsNullOrEmpty()).Concat(linkedEffects).ToList();
+            !e.LinkId.IsNullOrEmpty()).Concat(linkedEffects).ToList();
     }
 
 

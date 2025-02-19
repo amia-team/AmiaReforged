@@ -18,6 +18,6 @@ public static class EffectWhitelist
         EffectType.Immunity,
         EffectType.Invisibility,
         EffectType.Haste,
-        EffectType.Ethereal,
+        EffectType.Ethereal
     };
 }
