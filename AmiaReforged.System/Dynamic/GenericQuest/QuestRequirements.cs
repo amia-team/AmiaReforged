@@ -37,7 +37,7 @@ public static class QuestRequirements
 
     private static bool CheckRequiredSkills(NwCreature questGiver, NwCreature playerCharacter)
     {
-        // set as eg "perform 5 |  persuade 10" or "perform 5 & persuade 10"
+        // set as eg "perform 5 ||  persuade 10" or "perform 5 && persuade 10"
         LocalVariableString requiredSkills = questGiver.GetObjectVariable<LocalVariableString>("required skills");
 
         return false;
@@ -45,7 +45,7 @@ public static class QuestRequirements
 
     private static bool CheckRequiredAlignments(NwCreature questGiver, NwCreature playerCharacter)
     {
-        // set as eg "neutral | evil" or "neutral & evil"
+        // set as eg "neutral || evil" or "neutral && evil"
         LocalVariableString requiredAlignments =
             questGiver.GetObjectVariable<LocalVariableString>("required alignments");
 
@@ -54,7 +54,7 @@ public static class QuestRequirements
 
     private static bool CheckRequiredClasses(NwCreature questGiver, NwCreature playerCharacter)
     {
-        // set as eg "fighter 5 | barbarian 10" or "fighter 5 & barbarian 10"
+        // set as eg "fighter 5 || barbarian 10" or "fighter 5 && barbarian 10"
         LocalVariableString requiredClasses = questGiver.GetObjectVariable<LocalVariableString>("required classes");
         
         // If no requirements are set, return true
@@ -62,23 +62,31 @@ public static class QuestRequirements
             return true;
         
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.ResRef == "ds_pckey");
-        
-        
-        string[] requiredClassesAny = requiredClasses.Value!.Split(" | ");
-        string[] requiredClassesAll = requiredClasses.Value!.Split(" & ");
-        string[] requiredClassesNone = requiredClasses.Value!.Split('!');
+
+
+        string[] requiredClassesAny = QuestUtilFuncs.SanitizeAndSplit(requiredClasses!, "||");
+        string[] requiredClassesAll = QuestUtilFuncs.SanitizeAndSplit(requiredClasses!, "&&");
+        string[] requiredClassesNone = QuestUtilFuncs.SanitizeAndSplit(requiredClasses!, "!!");
         
         // Populate an int array with values from the requiredClasses string;
         // replace null values with 1s in case quest maker hasn't specified the class level
         int?[] requiredClassesAnyLevels = new int?[requiredClassesAny.Length];
         for (int i = 0; i < requiredClassesAny.Length; i++)
+        {
+            requiredClassesAny[i] = Regex.Match(requiredClassesAny[i], @"\d+").Value;
             requiredClassesAnyLevels[i] = 
-                (TryParse(requiredClassesAll[i], out int level) ? level : (int?)null) ?? 1;
+                TryParse(requiredClassesAny[i], out int level) ? level : (int?)null ?? 1;
+        }
+            
         
         int?[] requiredClassesAllLevels = new int?[requiredClassesAll.Length];
         for (int i = 0; i < requiredClassesAll.Length; i++)
+        {
+            requiredClassesAny[i] = Regex.Match(requiredClassesAny[i], @"\d+").Value;
             requiredClassesAllLevels[i] = 
-                (TryParse(requiredClassesAll[i], out int level) ? level : (int?)null) ?? 1;
+                TryParse(requiredClassesAll[i], out int level) ? level : (int?)null ?? 1;
+        }
+            
         
         if (requiredClasses is null)
             playerCharacter.ControllingPlayer!.SendServerMessage
