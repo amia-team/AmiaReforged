@@ -16,12 +16,7 @@ public partial class ChatToolModel
     {
         _player = player;
     }
-
-    private bool NotAnAssociate(NwCreature creature)
-    {
-        return false;
-    }
-
+    
     public void Speak()
     {
         if (Selection == null)
