@@ -115,7 +115,7 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
 
         _player.TryCreateNuiWindow(_window, out _token);
         
-        Token().SetBindValue(View.ChatHistory, ToolModel.ChatHistory);
+        Token().SetBindValue(View.ChatHistory!, ToolModel.ChatHistory);
 
         Token().SetBindValue(View.ChatField, "");
         Token().SetBindValue(View.SelectionName, "No selection");
