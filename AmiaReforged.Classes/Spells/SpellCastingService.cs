@@ -3,6 +3,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Spells;
 
@@ -38,12 +39,14 @@ public class SpellCastingService
         
         NwGameObject? caster = eventData.Caster;
         NwGameObject? target = eventData.TargetObject;
-        
+
+
         if(caster is not NwCreature casterCreature || target is not NwCreature targetCreature)
         {
             return ScriptHandleResult.Handled;
         }
 
+        DoCasterLevelOverride(casterCreature, eventData.Spell.SpellSchool);
         if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1)
         {
             NWScript.FloatingTextStringOnCreature("- You cannot cast magic in this area! -", casterCreature, NWScript.FALSE);
@@ -59,7 +62,33 @@ public class SpellCastingService
         spell.DoSpellResist(targetCreature, casterCreature);
 
         spell.OnSpellImpact(eventData);
+        
+        RevertCasterLevelOverride(casterCreature);
 
         return ScriptHandleResult.Handled;
+    }
+
+    private void DoCasterLevelOverride(NwCreature casterCreature, SpellSchool spellSpellSchool)
+    {
+        CreatureClassInfo? paleMaster = casterCreature.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.PaleMaster);
+        if (paleMaster is null) return;
+
+        int baseClassLevels = 0;
+        foreach (CreatureClassInfo charClass in casterCreature.Classes)
+        {
+            if (charClass.Class.ClassType is ClassType.Bard or ClassType.Assassin or ClassType.Wizard
+                or ClassType.Sorcerer)
+            {
+                baseClassLevels += charClass.Level;
+            }
+        }
+
+        int levels = paleMaster.Level + baseClassLevels;
+        CreaturePlugin.SetCasterLevelOverride(casterCreature, levels, 0);
+    }
+
+    private void RevertCasterLevelOverride(NwCreature casterCreature)
+    {
+        throw new NotImplementedException();
     }
 }
