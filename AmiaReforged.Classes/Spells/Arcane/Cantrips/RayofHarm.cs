@@ -40,4 +40,9 @@ public class RayofHarm : ISpell
     {
         Result = creature.CheckResistSpell(caster);
     }
+
+    public void SetResult(ResistSpellResult result)
+    {
+        Result = result;
+    }
 }

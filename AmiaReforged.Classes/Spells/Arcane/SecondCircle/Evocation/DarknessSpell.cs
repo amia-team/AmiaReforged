@@ -63,6 +63,11 @@ public class DarknessSpell : ISpell
         }
     }
 
+    public void SetResult(ResistSpellResult result)
+    {
+        Result = result;
+    }
+
     private bool IsInDarknessAoE(NwObject objObject, out NwAreaOfEffect? aoe)
     {
         aoe = DarknessAreas.FirstOrDefault(darknessArea =>

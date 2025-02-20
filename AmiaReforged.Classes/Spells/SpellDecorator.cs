@@ -16,7 +16,13 @@ public abstract class SpellDecorator : ISpell
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
         Result = creature.CheckResistSpell(caster);
-        Spell.Result = Result;
+        Spell.SetResult(Result);
+    }
+
+    public void SetResult(ResistSpellResult result)
+    {
+        Result = result;
+        Spell.SetResult(Result);
     }
 
     public virtual string ImpactScript => Spell.ImpactScript;

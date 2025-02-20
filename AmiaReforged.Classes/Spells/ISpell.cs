@@ -9,4 +9,5 @@ public interface ISpell
     void DoSpellResist(NwCreature creature, NwCreature caster);
     string ImpactScript { get; }
     void OnSpellImpact(SpellEvents.OnSpellCast eventData);
+    void SetResult(ResistSpellResult result);
 }
