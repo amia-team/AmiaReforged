@@ -19,6 +19,8 @@ public class DisruptUndead : ISpell
         if(target == null) return;
         
         if(target is not NwCreature creature) return;
+        
+        if(caster is not NwCreature casterCreature) return;
 
         Effect beam = Effect.Beam(VfxType.BeamHoly, caster, BodyNode.Hand);
         target.ApplyEffect(EffectDuration.Instant, beam);
@@ -29,7 +31,7 @@ public class DisruptUndead : ISpell
         }
 
         int numberOfDie = caster.CasterLevel / 2;
-        int damage = NWScript.d3(numberOfDie);
+        int damage = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Necromancy ? NWScript.d4(numberOfDie) : NWScript.d3(numberOfDie);
         
         Effect damageEffect = Effect.Damage(damage, DamageType.Positive);
 

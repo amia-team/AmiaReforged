@@ -31,12 +31,16 @@ public class DisruptUndeadFocusDecorator : SpellDecorator
         if (creature.Race == NwRace.FromRacialType(RacialType.Undead) && anyFocus)
         {
             int reductionAmount = hasNecroFocus ? 1 : hasGreaterNecroFocus ? 2 : hasEpicNecroFocus ? 3 : 0;
-            
+
             Effect acReduce = Effect.ACDecrease(reductionAmount);
             Effect abReduce = Effect.AttackDecrease(reductionAmount);
             abReduce = Effect.LinkEffects(abReduce, acReduce);
-            
-            target.ApplyEffect(EffectDuration.Temporary, abReduce, TimeSpan.FromSeconds(6));
+            ResistSpellResult result = creature.CheckResistSpell(caster);
+
+            if (result == ResistSpellResult.Failed)
+            {
+                target.ApplyEffect(EffectDuration.Temporary, abReduce, TimeSpan.FromSeconds(6));
+            }
         }
 
         Spell.OnSpellImpact(eventData);
