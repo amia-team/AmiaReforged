@@ -60,6 +60,7 @@ public class EmoteWindowView : ScryView<EmoteWindowPresenter>, IToolWindow
                 VariableSize = false
             }
         };
+
         NuiColumn root = new()
         {
             Children =
@@ -93,7 +94,7 @@ public class EmoteWindowView : ScryView<EmoteWindowPresenter>, IToolWindow
                 new NuiList(emoteCells, VisibleEmoteCount)
             }
         };
-        
+
         return root;
     }
 }

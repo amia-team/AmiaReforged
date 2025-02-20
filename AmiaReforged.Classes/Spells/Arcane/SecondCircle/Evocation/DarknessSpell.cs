@@ -75,13 +75,21 @@ public class DarknessSpell : ISpell
     private static Effect DarknessBlind()
     {
         Effect blind = Effect.Blindness();
+        
         blind.DurationType = EffectDuration.Temporary;
         blind.Tag = DarknessBlindTag;
         blind.IgnoreImmunity = true;
         blind.SubType = EffectSubType.Supernatural;
+        
         return blind;
     }
 
+
+    public ResistSpellResult Result { get; set; }
+    public void DoSpellResist(NwCreature creature, NwCreature caster)
+    {
+        Result = creature.CheckResistSpell(caster);
+    }
 
     public string ImpactScript => "NW_S0_Darkness";
 

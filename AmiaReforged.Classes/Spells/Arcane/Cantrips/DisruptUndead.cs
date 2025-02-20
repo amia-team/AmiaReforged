@@ -34,12 +34,16 @@ public class DisruptUndead : ISpell
         int damage = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Necromancy ? NWScript.d4(numberOfDie) : NWScript.d3(numberOfDie);
         
         Effect damageEffect = Effect.Damage(damage, DamageType.Positive);
-
-        ResistSpellResult result = creature.CheckResistSpell(caster);
-
-        if (result == ResistSpellResult.Failed)
+        
+        if (Result == ResistSpellResult.Failed)
         {
             target.ApplyEffect(EffectDuration.Instant, damageEffect);
         }
+    }
+
+    public ResistSpellResult Result { get; set; }
+    public void DoSpellResist(NwCreature creature, NwCreature caster)
+    {
+        Result = creature.CheckResistSpell(caster);
     }
 }

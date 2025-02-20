@@ -35,9 +35,8 @@ public class DisruptUndeadFocusDecorator : SpellDecorator
             Effect acReduce = Effect.ACDecrease(reductionAmount);
             Effect abReduce = Effect.AttackDecrease(reductionAmount);
             abReduce = Effect.LinkEffects(abReduce, acReduce);
-            ResistSpellResult result = creature.CheckResistSpell(caster);
 
-            if (result == ResistSpellResult.Failed)
+            if (Result == ResistSpellResult.Failed)
             {
                 target.ApplyEffect(EffectDuration.Temporary, abReduce, TimeSpan.FromSeconds(6));
             }
