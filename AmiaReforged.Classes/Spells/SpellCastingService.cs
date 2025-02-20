@@ -89,6 +89,5 @@ public class SpellCastingService
 
     private void RevertCasterLevelOverride(NwCreature casterCreature)
     {
-        throw new NotImplementedException();
     }
 }
