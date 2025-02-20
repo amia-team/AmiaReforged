@@ -32,13 +32,15 @@ public class DisruptUndeadFocusDecorator : SpellDecorator
         {
             int reductionAmount = hasNecroFocus ? 1 : hasGreaterNecroFocus ? 2 : hasEpicNecroFocus ? 3 : 0;
 
-            Effect acReduce = Effect.ACDecrease(reductionAmount);
-            Effect abReduce = Effect.AttackDecrease(reductionAmount);
-            abReduce = Effect.LinkEffects(abReduce, acReduce);
-
+            Effect saveDecrease = Effect.SavingThrowDecrease(SavingThrow.Will, reductionAmount);
+            saveDecrease.Tag = "DisruptUndeadFocusDecorator";
+            
+            Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "DisruptUndeadFocusDecorator");
+            if(existing != null) creature.RemoveEffect(existing);
+            
             if (Result == ResistSpellResult.Failed)
             {
-                target.ApplyEffect(EffectDuration.Temporary, abReduce, TimeSpan.FromSeconds(6));
+                target.ApplyEffect(EffectDuration.Temporary, saveDecrease, TimeSpan.FromSeconds(12));
             }
         }
 
