@@ -2,6 +2,7 @@
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells;
 
@@ -25,13 +26,11 @@ public class SpellCastingService
 
     private ScriptHandleResult HandleSpellImpact(CallInfo callInfo)
     {
-        Log.Info($"Handling spell impact for {callInfo.ScriptName}");
         if (!_spellImpactHandlers.TryGetValue(callInfo.ScriptName, out ISpell? spell))
         {
             return ScriptHandleResult.NotHandled;
         }
         
-        Log.Info($"Spell impact handler found for {callInfo.ScriptName}");
         
         spell = _decoratorFactory.ApplyDecorators(spell);
         
@@ -42,7 +41,18 @@ public class SpellCastingService
         
         if(caster is not NwCreature casterCreature || target is not NwCreature targetCreature)
         {
-            Log.Error("Caster or target is not a creature");
+            return ScriptHandleResult.Handled;
+        }
+
+        if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1)
+        {
+            NWScript.FloatingTextStringOnCreature("- You cannot cast magic in this area! -", casterCreature, NWScript.FALSE);
+            return ScriptHandleResult.Handled;
+        }
+
+        if (!targetCreature.IsReactionTypeHostile(casterCreature))
+        {
+            NWScript.SendMessageToPC(casterCreature, "You cannot target a friendly creature with this spell.");
             return ScriptHandleResult.Handled;
         }
         
