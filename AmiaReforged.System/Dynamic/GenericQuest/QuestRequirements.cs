@@ -23,8 +23,10 @@ public static class QuestRequirements
         {
                 
         }
-
-        if (CheckRequiredAlignments(questGiver, playerCharacter) is false)
+        
+        LocalVariableString requiredAlignments = questGiver.GetObjectVariable<LocalVariableString>("required alignments");
+        
+        if (CheckRequiredAlignments(playerCharacter, requiredAlignments) is false)
         {
                 
         }
@@ -48,33 +50,44 @@ public static class QuestRequirements
         return false;
     }
 
-    private static bool CheckRequiredAlignments(NwCreature questGiver, NwCreature playerCharacter)
+    private static bool CheckRequiredAlignments(NwCreature playerCharacter, LocalVariableString requiredAlignments)
     {
-        // set as eg "neutral || evil" or "chaotic evil || true neutral"
-        string? requiredAlignments =
-            questGiver.GetObjectVariable<LocalVariableString>("required alignments").Value;
-        
-        // If no requirements are set, return true
-        if (requiredAlignments is null) return true;
-        
-        string[] requiredAlignmentsAny = QuestUtil.SanitizeAndSplit(requiredAlignments, "||");
+        string[] requiredAlignmentsAny = QuestUtil.SanitizeAndSplit(requiredAlignments.Value!, "||");
 
-        foreach (string requiredAlignmentElement in requiredAlignmentsAny)
+        foreach (string requiredAlignmentString in requiredAlignmentsAny)
         {
-            Alignment? requiredAlignment = QuestUtil.GetRequiredAlignment(requiredAlignmentElement);
+            Alignment? requiredAlignment = QuestUtil.GetRequiredAlignment(requiredAlignmentString);
 
             if (requiredAlignment is null)
             {
-                playerCharacter.LoginPlayer!.SendServerMessage
-                    ($"DEBUG: Input \"{requiredAlignmentElement}\" for required alignment variable on the quest NPC is invalid.");
+                QuestUtil.SendQuestDebug(playerCharacter.LoginPlayer!, requiredAlignments.Name, requiredAlignmentString);
+                continue;
             }
+            
+            // check if there are two words in the variable like "neutral evil" instead of just "evil"
+            if (requiredAlignmentString.Contains(' '))
+            {
+                Alignment? requiredAlignmentLawChaos =
+                    QuestUtil.GetRequiredAlignment(requiredAlignmentString.Split(' ')[0]);
+                Alignment? requiredAlignmentGoodEvil = 
+                    QuestUtil.GetRequiredAlignment(requiredAlignmentString.Split(' ')[1]);
+                
+                if (requiredAlignmentLawChaos == playerCharacter.LawChaosAlignment 
+                    && requiredAlignmentGoodEvil == playerCharacter.GoodEvilAlignment)
+                    return true;
 
+                continue;
+            }
+            
             if (requiredAlignment == playerCharacter.GoodEvilAlignment ||
                 requiredAlignment == playerCharacter.LawChaosAlignment)
                 return true;
         }
 
         string requiredAlignmentsJoined = string.Join(", ", requiredAlignmentsAny);
+        
+        playerCharacter.LoginPlayer!.SendServerMessage
+            ($"This quest requires any of the following alignments:{requiredAlignmentsJoined}");
 
         return false;
     }
