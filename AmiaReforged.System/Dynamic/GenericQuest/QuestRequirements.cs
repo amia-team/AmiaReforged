@@ -104,8 +104,8 @@ public static class QuestRequirements
                 NwClass? requiredClass = QuestUtil.GetRequiredClass(requiredClassesAny[i]);
                 int? requiredLevel = requiredClassesAnyLevels[i];
                 
-                if (requiredClass is null) playerCharacter.LoginPlayer!.SendServerMessage
-                    ($"DEBUG: Required class \"{requiredClassesAny[i]}\" is an invalid input.");
+                if (requiredClass is null) 
+                    QuestUtil.SendQuestDebug(playerCharacter.LoginPlayer!, requiredClasses.Name, requiredClassesAny[i]);
                 
                 // If the class requirement has '!' in it, then that class is banned from taking the quest
                 if (requiredClassesAny[i].Contains('!') 
@@ -142,10 +142,9 @@ public static class QuestRequirements
             NwClass? requiredClass = QuestUtil.GetRequiredClass(requiredClassesAll[i]);
             int? requiredLevel = requiredClassesAllLevels[i];
             
-            if (requiredClass is null)
-                playerCharacter.LoginPlayer!.SendServerMessage
-                    ($"DEBUG: Required class \"{requiredClassesAll[i]}\" is an invalid input.");
-            
+            if (requiredClass is null) 
+                QuestUtil.SendQuestDebug(playerCharacter.LoginPlayer!, requiredClasses.Name, requiredClassesAll[i]);
+
             // Add required classes that the PC doesn't have to the naughty list
             if (playerCharacter.GetClassInfo(requiredClass)!.Level < requiredLevel)
                 requiredClassesList.Add(requiredClassesAll[i]);

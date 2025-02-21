@@ -25,6 +25,14 @@ public static class QuestUtil
         
         return questVarSplit;
     }
+    
+    /// <summary>
+    /// Sends a uniform debug message to the player for incorrect inputs to quest giver's local variables
+    /// </summary>
+    public static void SendQuestDebug(NwPlayer player, string varName, string varElement)
+    {
+        player.SendServerMessage($"DEBUG: Input \"{varElement}\" in quest NPC's local var {varName} is invalid.");
+    }
 
     public static NwClass? GetRequiredClass(string classRequirementVar)
     {
@@ -108,5 +116,25 @@ public static class QuestUtil
         };
         
         return NwClass.FromClassId(classId);
+    }
+    
+    public static Alignment? GetRequiredAlignment(string alignmentRequirementVar)
+    {
+        return alignmentRequirementVar switch
+        {
+            not null when alignmentRequirementVar.Contains("go", StringComparison.CurrentCultureIgnoreCase) 
+                => Alignment.Good,
+            not null when alignmentRequirementVar.Contains("ev", StringComparison.CurrentCultureIgnoreCase) 
+                => Alignment.Evil,
+            not null when alignmentRequirementVar.Contains("ne", StringComparison.CurrentCultureIgnoreCase) 
+                => Alignment.Neutral,
+            not null when alignmentRequirementVar.Contains("la", StringComparison.CurrentCultureIgnoreCase)
+                => Alignment.Lawful,
+            not null when alignmentRequirementVar.Contains("tr", StringComparison.CurrentCultureIgnoreCase) 
+                => Alignment.Neutral,
+            not null when alignmentRequirementVar.Contains("ch", StringComparison.CurrentCultureIgnoreCase)
+                => Alignment.Chaotic,
+            _ => null
+        };
     }
 }
