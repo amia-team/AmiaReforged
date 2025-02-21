@@ -6,7 +6,7 @@ using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells.Arcane.Cantrips;
 
-[ServiceBinding(typeof(ISpell))]
+// [ServiceBinding(typeof(ISpell))]
 public class ElectricJolt : ISpell
 {
     public ResistSpellResult Result { get; set; }

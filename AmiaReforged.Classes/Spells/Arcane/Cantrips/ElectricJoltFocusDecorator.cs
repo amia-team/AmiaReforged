@@ -5,7 +5,7 @@ using NLog.Fluent;
 
 namespace AmiaReforged.Classes.Spells.Arcane.Cantrips;
 
-[DecoratesSpell(typeof(ElectricJolt))]
+// [DecoratesSpell(typeof(ElectricJolt))]
 public class ElectricJoltFocusDecorator : SpellDecorator
 {
     private const double TwoRounds = 12;
