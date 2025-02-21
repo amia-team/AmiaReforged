@@ -193,10 +193,27 @@ public class DarknessSpell : ISpell
             {
                 creature.ApplyEffect(EffectDuration.Temporary, DarknessBlind(), TimeSpan.FromSeconds(OneRound));
             }
+            
+            creature.ApplyEffect(EffectDuration.Temporary, DarknessInvis(), TimeSpan.FromSeconds(OneRound));
+
         }
         
         return ScriptHandleResult.Handled;
     }
+
+    private Effect DarknessInvis()
+    {
+        Effect invis = Effect.Invisibility(InvisibilityType.Darkness);
+        
+        invis.DurationType = EffectDuration.Temporary;
+        invis.Tag = DarknessInvisTag;
+        invis.IgnoreImmunity = true;
+        invis.SubType = EffectSubType.Magical;
+        
+        return invis;
+    }
+
+    private static string DarknessInvisTag => "DARKNESS_INVIS";
 
     private ScriptHandleResult OnExitDarkness(CallInfo arg)
     {
