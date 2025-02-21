@@ -2,7 +2,6 @@
 using static AmiaReforged.System.Dynamic.GenericQuest.QuestConstants;
 using Anvil.API;
 using Microsoft.IdentityModel.Tokens;
-using NWN.Core;
 using static System.Int32;
 
 namespace AmiaReforged.System.Dynamic.GenericQuest;
@@ -11,12 +10,16 @@ public static class QuestRequirements
 {
     public static string? CheckQuestRequirements(NwCreature questGiver, NwCreature playerCharacter)
     {
-        if (CheckRequiredQuests(questGiver, playerCharacter) is false)
+        LocalVariableString requiredQuests = questGiver.GetObjectVariable<LocalVariableString>("required quests");
+        
+        if (requiredQuests.HasValue && CheckRequiredQuests(playerCharacter, requiredQuests) is false)
         {
             
         }
-
-        if (CheckRequiredClasses(questGiver, playerCharacter) is false)
+        
+        LocalVariableString requiredClasses = questGiver.GetObjectVariable<LocalVariableString>("required classes");
+        
+        if (requiredClasses.HasValue && CheckRequiredClasses(playerCharacter, requiredClasses) is false)
         {
                 
         }
@@ -47,24 +50,39 @@ public static class QuestRequirements
 
     private static bool CheckRequiredAlignments(NwCreature questGiver, NwCreature playerCharacter)
     {
-        // set as eg "neutral || evil" or "neutral && evil"
-        LocalVariableString requiredAlignments =
-            questGiver.GetObjectVariable<LocalVariableString>("required alignments");
+        // set as eg "neutral || evil" or "chaotic evil || true neutral"
+        string? requiredAlignments =
+            questGiver.GetObjectVariable<LocalVariableString>("required alignments").Value;
+        
+        // If no requirements are set, return true
+        if (requiredAlignments is null) return true;
+        
+        string[] requiredAlignmentsAny = QuestUtil.SanitizeAndSplit(requiredAlignments, "||");
+
+        foreach (string requiredAlignmentElement in requiredAlignmentsAny)
+        {
+            Alignment? requiredAlignment = QuestUtil.GetRequiredAlignment(requiredAlignmentElement);
+
+            if (requiredAlignment is null)
+            {
+                playerCharacter.LoginPlayer!.SendServerMessage
+                    ($"DEBUG: Input \"{requiredAlignmentElement}\" for required alignment variable on the quest NPC is invalid.");
+            }
+
+            if (requiredAlignment == playerCharacter.GoodEvilAlignment ||
+                requiredAlignment == playerCharacter.LawChaosAlignment)
+                return true;
+        }
+
+        string requiredAlignmentsJoined = string.Join(", ", requiredAlignmentsAny);
 
         return false;
     }
 
-    private static bool CheckRequiredClasses(NwCreature questGiver, NwCreature playerCharacter)
+    private static bool CheckRequiredClasses(NwCreature playerCharacter, LocalVariableString requiredClasses)
     {
-        // set as eg "fighter 5 || barbarian 10" or "fighter 5 && barbarian 10"
-        string? requiredClasses = questGiver.GetObjectVariable<LocalVariableString>("required classes").Value;
-        
-        // If no requirements are set, return true
-        if (requiredClasses is null)
-            return true;
-
-        string[] requiredClassesAny = QuestUtil.SanitizeAndSplit(requiredClasses, "||");
-        string[] requiredClassesAll = QuestUtil.SanitizeAndSplit(requiredClasses, "&&");
+        string[] requiredClassesAny = QuestUtil.SanitizeAndSplit(requiredClasses.Value!, "||");
+        string[] requiredClassesAll = QuestUtil.SanitizeAndSplit(requiredClasses.Value!, "&&");
 
         string requiredClassesJoined;
         
@@ -148,24 +166,16 @@ public static class QuestRequirements
     /// Checks that the quests required to pick up the new quest are completed
     /// </summary>
     /// <returns>True if required quests are completed, false if not</returns>
-    private static bool CheckRequiredQuests(NwCreature questGiver, NwCreature playerCharacter)
+    private static bool CheckRequiredQuests(NwCreature playerCharacter, LocalVariableString requiredQuests)
     {
-        // set in the toolset as eg "[quest name 1] | [quest name 2]" or "[quest name 1] & [quest name 2]"
-        string? requiredQuests = questGiver.GetObjectVariable<LocalVariableString>("required quests").Value;
-
-        // If no requirements are set, return true
-        if (requiredQuests is null)
-            return true;
-        
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.ResRef == "ds_pckey");
         
-
         // If there is a quest requirement, check that the required quest has been completed to return true and allow
         // character to take on the quest; otherwise play rejection message, inform the player of the quest they need
         // to complete, and return false in the quest script to not start the quest
         
-        string[] requiredQuestsAny = QuestUtil.SanitizeAndSplit(requiredQuests, "||");
-        string[] requiredQuestsAll = QuestUtil.SanitizeAndSplit(requiredQuests, "&&");
+        string[] requiredQuestsAny = QuestUtil.SanitizeAndSplit(requiredQuests.Value!, "||");
+        string[] requiredQuestsAll = QuestUtil.SanitizeAndSplit(requiredQuests.Value!, "&&");
 
         // If required quests are seperated by "||", character must have completed one of the required quests
         string requiredQuestsJoined;
