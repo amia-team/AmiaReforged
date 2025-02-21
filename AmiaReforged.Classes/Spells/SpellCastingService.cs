@@ -68,7 +68,7 @@ public class SpellCastingService
             return ScriptHandleResult.Handled;
         }
 
-        if (!targetCreature.IsReactionTypeHostile(casterCreature) && casterCreature.IsPlayerControlled)
+        if (!targetCreature.IsReactionTypeHostile(casterCreature) && eventData.Spell.IsHostileSpell && casterCreature.IsPlayerControlled)
         {
             NWScript.SendMessageToPC(casterCreature, "You cannot target a friendly creature with this spell.");
             return ScriptHandleResult.Handled;
