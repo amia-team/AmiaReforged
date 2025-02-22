@@ -11,7 +11,7 @@ public static class EffectWhitelist
         EffectType.SeeInvisible,
         EffectType.AcIncrease,
         EffectType.AttackIncrease,
-        EffectType.AbilityDecrease,
+        EffectType.AbilityIncrease,
         EffectType.DamageReduction,
         EffectType.DamageResistance,
         EffectType.DamageIncrease,
