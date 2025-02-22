@@ -32,25 +32,13 @@ public class Td_act_file_ex
         return MoveFile(target, destination, fname);
     }
 
-    public Boolean ArchiveFile(string cdkey, int index)
-    {
-        string fname = GetVaultFile(cdkey, index);
-        return ArchiveFile(cdkey, fname);
-    }
-
     public Boolean UnArchiveFile(string cdkey, string fname)
     {
         string target = VaultDir + cdkey + ArchiveDir;
         string destination = VaultDir + cdkey + "/";
         return MoveFile(target, destination, fname);
     }
-
-    public Boolean UnArchiveFile(string cdkey, int index)
-    {
-        string fname = GetArchiveFile(cdkey, index);
-        return ArchiveFile(cdkey, fname);
-    }
-
+    
     public Boolean RenameArchiveFile(string cdkey, string fname, string newname)
     {
         string target = VaultDir + cdkey + ArchiveDir + fname;
@@ -86,7 +74,7 @@ public class Td_act_file_ex
     public string[] GetVaultFiles(string cdkey)
     {
         string[] files = Directory.GetFiles(VaultDir + cdkey + "/");
-        return files;
+        return files.Where(f => f.EndsWith(".bic")).ToArray();
     }
 
     public int GetVaultSize(string cdkey)

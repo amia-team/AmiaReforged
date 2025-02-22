@@ -16,6 +16,7 @@ public class BuffRemoverModel
 
     public List<string> Labels { get; set; } = new();
     public List<Effect> RemovableEffects { get; private set; } = new();
+    private readonly Dictionary<string, Effect> _labelDict = new();
 
     private readonly NwPlayer _player;
 
@@ -26,31 +27,35 @@ public class BuffRemoverModel
 
     public List<string> GetEffectLabels()
     {
-        return RemovableEffects.Select(effect => "fx: " + EffectString(effect)).ToList();
+        List<string> effectLabels = new();
+        foreach (Effect effect in RemovableEffects)
+        {
+            effectLabels.Add(EffectString(effect));
+            _labelDict.TryAdd(EffectString(effect), effect);
+        }
+        
+        return effectLabels.Distinct().ToList();
     }
 
     private string EffectString(Effect effect)
     {
         StringBuilder labelBuilder = new();
 
-        labelBuilder.Append(effect.EffectType + ":");
+        string spellName = effect.Spell.Name.ToString();
 
-        foreach (string? param in effect.StringParams)
-        {
-            if (param.IsNullOrEmpty()) continue;
-            labelBuilder.Append(param + " ");
-        }
+        string effectLabel = spellName.IsNullOrEmpty() ? effect.EffectType.ToString() : spellName;
+        labelBuilder.Append(effectLabel + ":");
+
+        // foreach (string? param in effect.StringParams)
+        // {
+        //     if (param.IsNullOrEmpty()) continue;
+        //     labelBuilder.Append(param + " ");
+        // }
 
         foreach (int effectParam in effect.IntParams)
         {
             labelBuilder.Append(effectParam + " ");
         }
-
-        foreach (float effectParam in effect.FloatParams)
-        {
-            labelBuilder.Append(effectParam + " ");
-        }
-
 
         return labelBuilder.ToString();
     }
@@ -124,6 +129,7 @@ public class BuffRemoverModel
             return;
         }
 
-        character.RemoveEffect(RemovableEffects[clickArrayIndex]);
+        Effect effect = _labelDict[Labels[clickArrayIndex]];
+        character.RemoveEffect(effect);
     }
 }
