@@ -11,30 +11,30 @@ public static class QuestRequirements
 {
     public static string? CheckQuestRequirements(NwCreature questGiver, NwCreature playerCharacter)
     {
-        LocalVariableString requiredQuests = questGiver.GetObjectVariable<LocalVariableString>("required quests");
+        LocalVariableString? requiredQuests = QuestUtil.ValidateVarName(questGiver, "required quests") as LocalVariableString;
         
-        if (requiredQuests.HasValue && CheckRequiredQuests(playerCharacter, requiredQuests) is false)
+        if (requiredQuests is not null && CheckRequiredQuests(playerCharacter, requiredQuests) is false)
         {
             
         }
         
-        LocalVariableString requiredClasses = questGiver.GetObjectVariable<LocalVariableString>("required classes");
+        LocalVariableString? requiredClasses = QuestUtil.ValidateVarName(questGiver, "required classes") as LocalVariableString;
         
-        if (requiredClasses.HasValue && CheckRequiredClasses(playerCharacter, requiredClasses) is false)
+        if (requiredClasses is not null && CheckRequiredClasses(playerCharacter, requiredClasses) is false)
         {
                 
         }
         
-        LocalVariableString requiredAlignments = questGiver.GetObjectVariable<LocalVariableString>("required alignments");
+        LocalVariableString? requiredAlignments = QuestUtil.ValidateVarName(questGiver, "required alignments") as LocalVariableString;
         
-        if (requiredAlignments.HasValue && CheckRequiredAlignments(playerCharacter, requiredAlignments) is false)
+        if (requiredAlignments is not null && CheckRequiredAlignments(playerCharacter, requiredAlignments) is false)
         {
                 
         }
         
-        LocalVariableString requiredSkills = questGiver.GetObjectVariable<LocalVariableString>("required skills");
+        LocalVariableString? requiredSkills = QuestUtil.ValidateVarName(questGiver, "required skills") as LocalVariableString;
         
-        if (requiredSkills.HasValue && CheckRequiredSkills(playerCharacter, requiredSkills) is false)
+        if (requiredSkills is not null && CheckRequiredSkills(playerCharacter, requiredSkills) is false)
         {
                 
         }
