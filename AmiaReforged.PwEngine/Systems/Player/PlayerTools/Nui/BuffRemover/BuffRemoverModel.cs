@@ -26,17 +26,7 @@ public class BuffRemoverModel
 
     public List<string> GetEffectLabels()
     {
-        List<string> labels = new();
-        StringBuilder label = new();
-
-        foreach (Effect effect in RemovableEffects)
-        {
-            label.Append("fx: " + EffectString(effect));
-            labels.Add(label.ToString());
-            label.Clear();
-        }
-
-        return labels;
+        return RemovableEffects.Select(effect => "fx: " + EffectString(effect)).ToList();
     }
 
     private string EffectString(Effect effect)
