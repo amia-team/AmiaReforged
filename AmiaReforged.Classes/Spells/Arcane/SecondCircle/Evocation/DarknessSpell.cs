@@ -155,7 +155,9 @@ public class DarknessSpell : ISpell
         NwGameObject enteringObject = eventData.Entering;
 
         Effect darknessBlindness = DarknessBlind();
-
+        Effect invisibility = DarknessInvis();
+        enteringObject.ApplyEffect(EffectDuration.Temporary, invisibility, TimeSpan.FromSeconds(OneRound));
+        
         if (!ImmuneToDarkness(enteringObject))
         {
             enteringObject.ApplyEffect(EffectDuration.Temporary, darknessBlindness, TimeSpan.FromSeconds(OneRound));
@@ -183,7 +185,8 @@ public class DarknessSpell : ISpell
         foreach (NwCreature creature in creatures)
         {
             Effect? darknessBlind = creature.ActiveEffects.FirstOrDefault(eff => eff.Tag is DarknessBlindTag);
-
+            Effect? darknessInvis = creature.ActiveEffects.FirstOrDefault(eff => eff.Tag is DarknessInvisTag);
+            
             if (ImmuneToDarkness(creature))
             {
                 if (darknessBlind is null) continue;
@@ -191,18 +194,46 @@ public class DarknessSpell : ISpell
             }
             else
             {
+                // Remove the effect if it exists.
+                if (darknessBlind is not null) creature.RemoveEffect(darknessBlind);
+                
                 creature.ApplyEffect(EffectDuration.Temporary, DarknessBlind(), TimeSpan.FromSeconds(OneRound));
             }
+            
+            if(darknessInvis is not null) creature.RemoveEffect(darknessInvis);
+            creature.ApplyEffect(EffectDuration.Temporary, DarknessInvis(), TimeSpan.FromSeconds(OneRound));
+
         }
         
         return ScriptHandleResult.Handled;
     }
+
+    private Effect DarknessInvis()
+    {
+        Effect invis = Effect.Invisibility(InvisibilityType.Darkness);
+        
+        invis.DurationType = EffectDuration.Temporary;
+        invis.Tag = DarknessInvisTag;
+        invis.IgnoreImmunity = true;
+        invis.SubType = EffectSubType.Magical;
+        
+        return invis;
+    }
+
+    private const string DarknessInvisTag = "DARKNESS_INVIS";
 
     private ScriptHandleResult OnExitDarkness(CallInfo arg)
     {
         AreaOfEffectEvents.OnExit eventData = new();
 
         NwGameObject exitingObject = eventData.Exiting;
+        
+        Effect? darknessInvis = exitingObject.ActiveEffects.FirstOrDefault(e => e.Tag is DarknessInvisTag);
+        
+        if (darknessInvis is not null)
+        {
+            exitingObject.RemoveEffect(darknessInvis);            
+        }
 
         Effect? darknessBlind = exitingObject.ActiveEffects.FirstOrDefault(e => e.Tag is DarknessBlindTag);
         if (darknessBlind is null)

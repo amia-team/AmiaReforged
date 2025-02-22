@@ -31,11 +31,13 @@ public class BuffRemoverPresenter : ScryPresenter<BuffRemoverView>
 
     private void OnEffectRemove(OnEffectRemove obj)
     {
+        if(_window == null) return;
         UpdateView();
     }
 
     private void OnEffectApply(OnEffectApply obj)
     {
+        if(_window == null) return;
         UpdateView();
     }
 

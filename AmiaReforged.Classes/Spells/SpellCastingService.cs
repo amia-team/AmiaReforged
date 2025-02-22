@@ -39,25 +39,42 @@ public class SpellCastingService
         
         NwGameObject? caster = eventData.Caster;
         NwGameObject? target = eventData.TargetObject;
-
-
-        if(caster is not NwCreature casterCreature || target is not NwCreature targetCreature)
+        
+        if(caster is not NwCreature casterCreature)
         {
             return ScriptHandleResult.Handled;
         }
 
-        DoCasterLevelOverride(casterCreature, eventData.Spell.SpellSchool);
+        if(target is not NwCreature targetCreature)
+        {
+            // This is an AOE
+            if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1)
+            {
+                NWScript.FloatingTextStringOnCreature("- You cannot cast magic in this area! -", casterCreature, NWScript.FALSE);
+                return ScriptHandleResult.Handled;
+            }
+            
+            DoCasterLevelOverride(casterCreature, eventData.Spell.SpellSchool);
+
+            spell.OnSpellImpact(eventData);
+        
+            RevertCasterLevelOverride(casterCreature);
+            return ScriptHandleResult.Handled;
+        }
+
         if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1)
         {
             NWScript.FloatingTextStringOnCreature("- You cannot cast magic in this area! -", casterCreature, NWScript.FALSE);
             return ScriptHandleResult.Handled;
         }
 
-        if (!targetCreature.IsReactionTypeHostile(casterCreature) && casterCreature.IsPlayerControlled)
+        if (!targetCreature.IsReactionTypeHostile(casterCreature) && eventData.Spell.IsHostileSpell && casterCreature.IsPlayerControlled)
         {
             NWScript.SendMessageToPC(casterCreature, "You cannot target a friendly creature with this spell.");
             return ScriptHandleResult.Handled;
         }
+        
+        DoCasterLevelOverride(casterCreature, eventData.Spell.SpellSchool);
         
         spell.DoSpellResist(targetCreature, casterCreature);
 
