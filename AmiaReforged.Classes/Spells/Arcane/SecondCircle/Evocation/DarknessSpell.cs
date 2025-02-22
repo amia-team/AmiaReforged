@@ -215,7 +215,7 @@ public class DarknessSpell : ISpell
         invis.DurationType = EffectDuration.Temporary;
         invis.Tag = DarknessInvisTag;
         invis.IgnoreImmunity = true;
-        invis.SubType = EffectSubType.Magical;
+        invis.SubType = EffectSubType.Supernatural;
         
         return invis;
     }
