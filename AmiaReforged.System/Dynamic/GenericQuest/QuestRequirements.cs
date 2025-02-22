@@ -2,6 +2,7 @@
 using static AmiaReforged.System.Dynamic.GenericQuest.QuestConstants;
 using Anvil.API;
 using Microsoft.IdentityModel.Tokens;
+using NWN.Core;
 using static System.Int32;
 
 namespace AmiaReforged.System.Dynamic.GenericQuest;
@@ -56,7 +57,7 @@ public static class QuestRequirements
 
         foreach (string requiredAlignmentString in requiredAlignmentsAny)
         {
-            Alignment? requiredAlignment = QuestUtil.GetRequiredAlignment(requiredAlignmentString);
+            Alignment? requiredAlignment = GetRequiredAlignment(requiredAlignmentString);
 
             if (requiredAlignment is null)
             {
@@ -68,9 +69,9 @@ public static class QuestRequirements
             if (requiredAlignmentString.Contains(' '))
             {
                 Alignment? requiredAlignmentLawChaos =
-                    QuestUtil.GetRequiredAlignment(requiredAlignmentString.Split(' ')[0]);
+                    GetRequiredAlignment(requiredAlignmentString.Split(' ')[0]);
                 Alignment? requiredAlignmentGoodEvil = 
-                    QuestUtil.GetRequiredAlignment(requiredAlignmentString.Split(' ')[1]);
+                    GetRequiredAlignment(requiredAlignmentString.Split(' ')[1]);
                 
                 if (requiredAlignmentLawChaos == playerCharacter.LawChaosAlignment 
                     && requiredAlignmentGoodEvil == playerCharacter.GoodEvilAlignment)
@@ -90,6 +91,27 @@ public static class QuestRequirements
             ($"This quest requires any of the following alignments:{requiredAlignmentsJoined}");
 
         return false;
+        
+        // Local helper function to keep code more readable and shorter
+        Alignment? GetRequiredAlignment(string alignmentRequirementVar)
+        {
+            return alignmentRequirementVar switch
+            {
+                not null when alignmentRequirementVar.Contains("go", StringComparison.CurrentCultureIgnoreCase) 
+                    => Alignment.Good,
+                not null when alignmentRequirementVar.Contains("ev", StringComparison.CurrentCultureIgnoreCase) 
+                    => Alignment.Evil,
+                not null when alignmentRequirementVar.Contains("ne", StringComparison.CurrentCultureIgnoreCase) 
+                    => Alignment.Neutral,
+                not null when alignmentRequirementVar.Contains("la", StringComparison.CurrentCultureIgnoreCase)
+                    => Alignment.Lawful,
+                not null when alignmentRequirementVar.Contains("tr", StringComparison.CurrentCultureIgnoreCase) 
+                    => Alignment.Neutral,
+                not null when alignmentRequirementVar.Contains("ch", StringComparison.CurrentCultureIgnoreCase)
+                    => Alignment.Chaotic,
+                _ => null
+            };
+        }
     }
 
     private static bool CheckRequiredClasses(NwCreature playerCharacter, LocalVariableString requiredClasses)
@@ -114,7 +136,7 @@ public static class QuestRequirements
             
             for (int i = 0; i < requiredClassesAny.Length; i++)
             {
-                NwClass? requiredClass = QuestUtil.GetRequiredClass(requiredClassesAny[i]);
+                NwClass? requiredClass = GetRequiredClass(requiredClassesAny[i]);
                 int? requiredLevel = requiredClassesAnyLevels[i];
                 
                 if (requiredClass is null) 
@@ -152,7 +174,7 @@ public static class QuestRequirements
         
         for (int i = 0; i < requiredClassesAll.Length; i++)
         {
-            NwClass? requiredClass = QuestUtil.GetRequiredClass(requiredClassesAll[i]);
+            NwClass? requiredClass = GetRequiredClass(requiredClassesAll[i]);
             int? requiredLevel = requiredClassesAllLevels[i];
             
             if (requiredClass is null) 
@@ -172,6 +194,91 @@ public static class QuestRequirements
             ($"The following classes are required to take this quest: {requiredClassesJoined}");
         
         return false;
+        
+        // Local helper function to keep the actual code more readable and shorter
+        NwClass? GetRequiredClass(string classRequirementVar)
+            {
+                int classId = classRequirementVar switch
+                {
+                    not null when classRequirementVar.Contains("barb", StringComparison.CurrentCultureIgnoreCase) 
+                        => NWScript.CLASS_TYPE_BARBARIAN,
+                    not null when classRequirementVar.Contains("bard", StringComparison.CurrentCultureIgnoreCase) 
+                        => NWScript.CLASS_TYPE_BARD,
+                    not null when classRequirementVar.Contains("cler", StringComparison.CurrentCultureIgnoreCase) 
+                        => NWScript.CLASS_TYPE_CLERIC,
+                    not null when classRequirementVar.Contains("drui", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_DRUID,
+                    not null when classRequirementVar.Contains("fight", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_FIGHTER,
+                    not null when classRequirementVar.Contains("monk", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_MONK,
+                    not null when classRequirementVar.Contains("pala", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_PALADIN,
+                    not null when classRequirementVar.Contains("rang", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_RANGER,
+                    not null when classRequirementVar.Contains("rog", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_ROGUE,
+                    not null when classRequirementVar.Contains("sorc", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_SORCERER,
+                    not null when classRequirementVar.Contains("wiz", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_WIZARD,
+                    not null when classRequirementVar.Contains("shif", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_SHIFTER,
+                    not null when classRequirementVar.Contains("warl", StringComparison.CurrentCultureIgnoreCase)
+                        => Warlock,
+                    not null when classRequirementVar.Contains("ass", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_ASSASSIN,
+                    not null when classRequirementVar.Contains("arca", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_ARCANE_ARCHER,
+                    not null when classRequirementVar.Contains("blac", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_BLACKGUARD,
+                    not null when classRequirementVar.Contains("div", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_DIVINE_CHAMPION,
+                    not null when classRequirementVar.Contains("dra", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_DRAGON_DISCIPLE,
+                    not null when classRequirementVar.Contains("dwar", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_DWARVEN_DEFENDER,
+                    not null when classRequirementVar.Contains("knig", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_PURPLE_DRAGON_KNIGHT,
+                    not null when classRequirementVar.Contains("", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_BLACKGUARD,
+                    not null when classRequirementVar.Contains("pale", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_PALE_MASTER,
+                    not null when classRequirementVar.Contains("shado", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_SHADOWDANCER,
+                    not null when classRequirementVar.Contains("weap", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_WEAPON_MASTER,
+                    not null when classRequirementVar.Contains("scou", StringComparison.CurrentCultureIgnoreCase)
+                        => NWScript.CLASS_TYPE_HARPER,
+                    not null when classRequirementVar.Contains("bow", StringComparison.CurrentCultureIgnoreCase)
+                        => BowMaster,
+                    not null when classRequirementVar.Contains("cav", StringComparison.CurrentCultureIgnoreCase)
+                        => Cavalry,
+                    not null when classRequirementVar.Contains("def", StringComparison.CurrentCultureIgnoreCase)
+                        => Defender,
+                    not null when classRequirementVar.Contains("esc", StringComparison.CurrentCultureIgnoreCase)
+                        => EscapeArtist,
+                    not null when classRequirementVar.Contains("two", StringComparison.CurrentCultureIgnoreCase)
+                        => TwoWeaponFighter,
+                    not null when classRequirementVar.Contains("medi", StringComparison.CurrentCultureIgnoreCase)
+                        => CombatMedic,
+                    not null when classRequirementVar.Contains("arbal", StringComparison.CurrentCultureIgnoreCase)
+                        => Arbalest,
+                    not null when classRequirementVar.Contains("duel", StringComparison.CurrentCultureIgnoreCase)
+                        => Duelist,
+                    not null when classRequirementVar.Contains("lycan", StringComparison.CurrentCultureIgnoreCase)
+                        => Lycanthrope,
+                    not null when classRequirementVar.Contains("peer", StringComparison.CurrentCultureIgnoreCase)
+                        => Peerage,
+                    not null when classRequirementVar.Contains("corr", StringComparison.CurrentCultureIgnoreCase)
+                        => FiendishCorrupted,
+                    not null when classRequirementVar.Contains("bloo", StringComparison.CurrentCultureIgnoreCase)
+                        => Bloodsworn,
+                    _ => -1
+                };
+        
+                return NwClass.FromClassId(classId);
+            }
     }
 
     /// <summary>
