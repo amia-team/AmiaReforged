@@ -30,8 +30,10 @@ public class BuffRemoverModel
         List<string> effectLabels = new();
         foreach (Effect effect in RemovableEffects)
         {
-            effectLabels.Add(EffectString(effect));
-            _labelDict.TryAdd(EffectString(effect), effect);
+            string effectString = EffectString(effect);
+            LogManager.GetCurrentClassLogger().Info($"{effectString}");
+            effectLabels.Add(effectString);
+            _labelDict.TryAdd(effectString, effect);
         }
         
         return effectLabels.Distinct().ToList();
