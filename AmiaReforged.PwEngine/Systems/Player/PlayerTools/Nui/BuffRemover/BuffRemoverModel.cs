@@ -32,10 +32,14 @@ public class BuffRemoverModel
         {
             string effectString = EffectString(effect);
             LogManager.GetCurrentClassLogger().Info($"{effectString}");
+
+            if (effectLabels.Any(e => e.StartsWith(effect.Spell.Name.ToString()))) continue;
+
             effectLabels.Add(effectString);
+
             _labelDict.TryAdd(effectString, effect);
         }
-        
+
         return effectLabels.Distinct().ToList();
     }
 
@@ -45,7 +49,14 @@ public class BuffRemoverModel
 
         string spellName = effect.Spell.Name.ToString();
 
-        string effectLabel = spellName.IsNullOrEmpty() ? effect.EffectType.ToString() : spellName;
+        if (!spellName.IsNullOrEmpty())
+        {
+            labelBuilder.Append(spellName);
+
+            return labelBuilder.ToString();
+        }
+
+        string effectLabel = effect.EffectType.ToString();
         labelBuilder.Append(effectLabel + ":");
 
         // foreach (string? param in effect.StringParams)
@@ -54,10 +65,7 @@ public class BuffRemoverModel
         //     labelBuilder.Append(param + " ");
         // }
 
-        foreach (int effectParam in effect.IntParams)
-        {
-            labelBuilder.Append(effectParam + " ");
-        }
+        labelBuilder.Append(effect.IntParams[0]);
 
         return labelBuilder.ToString();
     }
@@ -86,7 +94,8 @@ public class BuffRemoverModel
         // only need to remove one to remove all linked effects.
         List<Effect> linkedEffects = new();
 
-        IEnumerable<Effect> linkedMagicalEffects = character.ActiveEffects.Where(e => e.SubType == EffectSubType.Magical && !e.LinkId.IsNullOrEmpty()).ToList();
+        IEnumerable<Effect> linkedMagicalEffects = character.ActiveEffects
+            .Where(e => e.SubType == EffectSubType.Magical && !e.LinkId.IsNullOrEmpty()).ToList();
         LogManager.GetCurrentClassLogger().Info($"Found {linkedMagicalEffects.Count()} linked effects...");
         foreach (Effect active in linkedMagicalEffects)
         {
