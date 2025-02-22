@@ -106,6 +106,8 @@ public class BuffRemoverPresenter : ScryPresenter<BuffRemoverView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+        
+        UpdateView();
     }
 
     public override void Close()
