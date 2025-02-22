@@ -84,6 +84,7 @@ public static class ItemPropertyHelper
             ItemPropertyType.UseLimitationAlignmentGroup => false,
             ItemPropertyType.UseLimitationRacialType => false,
             ItemPropertyType.UseLimitationSpecificAlignment => false,
+            ItemPropertyType.Additional => false,
             _ => true
         };
     }
