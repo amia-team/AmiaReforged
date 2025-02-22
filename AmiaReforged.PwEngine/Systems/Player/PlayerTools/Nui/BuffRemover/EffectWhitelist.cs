@@ -21,6 +21,8 @@ public static class EffectWhitelist
         EffectType.Ethereal,
         EffectType.Ultravision,
         EffectType.ElementalShield,
-        EffectType.Polymorph
+        EffectType.Polymorph,
+        EffectType.Sanctuary,
+        EffectType.Concealment,
     };
 }
