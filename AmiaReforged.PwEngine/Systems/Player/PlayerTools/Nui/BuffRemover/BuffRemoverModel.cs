@@ -141,6 +141,12 @@ public class BuffRemoverModel
         }
 
         Effect effect = _labelDict[Labels[clickArrayIndex]];
+        
+        List<Effect> spellEffectList = character.ActiveEffects
+            .Where(e => e.Spell.Name.ToString() == effect.Spell.Name.ToString() && !e.Spell.ToString().IsNullOrEmpty() && e != effect).ToList();
+        
+        spellEffectList.ForEach(e => character.RemoveEffect(e));
+        
         character.RemoveEffect(effect);
     }
 }
