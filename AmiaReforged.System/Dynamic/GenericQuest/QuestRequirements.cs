@@ -47,6 +47,7 @@ public static class QuestRequirements
 
     private static bool CheckRequiredSkills(NwCreature playerCharacter, LocalVariableString requiredSkills)
     {
+        // Required skills are set up in the local var as eg "open lock 10 || tumble 5" or "open lock 10 && tumble 5"
         string[] requiredSkillsAny = QuestUtil.SanitizeAndSplit(requiredSkills.Value!, "||");
         string[] requiredSkillsAll = QuestUtil.SanitizeAndSplit(requiredSkills.Value!, "&&");
 
@@ -54,7 +55,7 @@ public static class QuestRequirements
         
         if (requiredSkillsAny.Length >= requiredSkillsAll.Length)
         {
-            // Populate an int array with skill levels from the required skilles string;
+            // Populate an int array with skill levels from the required skills string;
             // replace null values with 1s in case quest maker hasn't specified the skill level
             
             int?[] requiredSkillsAnyRank = new int?[requiredSkillsAny.Length];
@@ -74,23 +75,14 @@ public static class QuestRequirements
                 if (requiredSkill is null) 
                     QuestUtil.SendQuestDebug(playerCharacter.LoginPlayer!, requiredSkills.Name, requiredSkillsAny[i]);
                 
-                // If the skill requirement has '!' in it, then that skill is banned from taking the quest
-                if (requiredSkillsAny[i].Contains('!') 
-                    && playerCharacter.GetSkillRank(requiredSkill) >= requiredRank)
-                {
-                    playerCharacter.LoginPlayer!.SendServerMessage
-                        ($"Skill {requiredSkillsAny[i]} cannot take this quest.");
-                    return false;
-                }
-
-                if (playerCharacter.GetSkillRank(requiredSkill) >= requiredRank)
+                if (playerCharacter.GetSkillRank(requiredSkill!) >= requiredRank)
                     return true;
             }
             
             requiredSkillsJoined = string.Join("; ", requiredSkillsAny);
             
             playerCharacter.LoginPlayer!.SendServerMessage
-                ($"One of the following skilles is required to take this quest: {requiredSkillsJoined}");
+                ($"One of the following skills is required to take this quest: {requiredSkillsJoined}");
             return false;
         }
         
@@ -113,23 +105,105 @@ public static class QuestRequirements
                 QuestUtil.SendQuestDebug(playerCharacter.LoginPlayer!, requiredSkills.Name, requiredSkillsAll[i]);
 
             // Add required skills that the PC doesn't have to the naughty list
-            if (playerCharacter.GetSkillRank(requiredSkill) < requiredRank)
+            if (playerCharacter.GetSkillRank(requiredSkill!) < requiredRank)
                 requiredSkillsList.Add(requiredSkillsAll[i]);
         }
         
         // If nothing was added to the naughty list, it means that PC has all required skills and quest can be taken 
         if (requiredSkillsList.IsNullOrEmpty()) return true;
         
-        requiredSkillsJoined = string.Join("; ", requiredSkillsList).ColorString(ColorConstants.Green);
+        requiredSkillsJoined = string.Join("; ", requiredSkillsList);
         
         playerCharacter.LoginPlayer!.SendServerMessage
             ($"The following skills are required to take this quest: {requiredSkillsJoined}");
         
         return false;
         
-        NwSkill? GetRequiredSkill(string p0)
+        NwSkill? GetRequiredSkill(string skillRequirementVar)
         {
-            throw new NotImplementedException();
+            Skill skillType = skillRequirementVar switch
+            {
+                not null when skillRequirementVar.Contains("an", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.AnimalEmpathy,
+                not null when skillRequirementVar.Contains("emp", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.AnimalEmpathy,
+                not null when skillRequirementVar.Contains("co", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Concentration,
+                not null when skillRequirementVar.Contains("disa", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.DisableTrap,
+                not null when skillRequirementVar.Contains("disc", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Discipline,
+                not null when skillRequirementVar.Contains("he", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Heal,
+                not null when skillRequirementVar.Contains("hi", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Hide,
+                not null when skillRequirementVar.Contains("lis", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Listen,
+                not null when skillRequirementVar.Contains("lor", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.AnimalEmpathy,
+                not null when skillRequirementVar.Contains("mov", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.MoveSilently,
+                not null when skillRequirementVar.Contains("si", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.MoveSilently,
+                not null when skillRequirementVar.Contains("ms", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.MoveSilently,
+                not null when skillRequirementVar.Contains("op", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.OpenLock,
+                not null when skillRequirementVar.Contains("loc", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.OpenLock,
+                not null when skillRequirementVar.Contains("par", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Parry,
+                not null when skillRequirementVar.Contains("perf", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Perform,
+                not null when skillRequirementVar.Contains("pers", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Persuade,
+                not null when skillRequirementVar.Contains("an", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.AnimalEmpathy,
+                not null when skillRequirementVar.Contains("an", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.AnimalEmpathy,
+                not null when skillRequirementVar.Contains("an", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.AnimalEmpathy,
+                not null when skillRequirementVar.Contains("pi", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.PickPocket,
+                not null when skillRequirementVar.Contains("poc", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.PickPocket,
+                not null when skillRequirementVar.Contains("sea", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Search,
+                not null when skillRequirementVar.Contains("set", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.SetTrap,
+                not null when skillRequirementVar.Contains("spe", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Spellcraft,
+                not null when skillRequirementVar.Contains("spo", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Spot,
+                not null when skillRequirementVar.Contains("tau", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Taunt,
+                not null when skillRequirementVar.Contains("us", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.UseMagicDevice,
+                not null when skillRequirementVar.Contains("mag", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.UseMagicDevice,
+                not null when skillRequirementVar.Contains("umd", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.UseMagicDevice,
+                not null when skillRequirementVar.Contains("app", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Appraise,
+                not null when skillRequirementVar.Contains("tu", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Tumble,
+                not null when skillRequirementVar.Contains("craft t", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.CraftTrap,
+                not null when skillRequirementVar.Contains("blu", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Bluff,
+                not null when skillRequirementVar.Contains("int", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Intimidate,
+                not null when skillRequirementVar.Contains("arm", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.CraftArmor,
+                not null when skillRequirementVar.Contains("we", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.CraftWeapon,
+                not null when skillRequirementVar.Contains("ri", StringComparison.CurrentCultureIgnoreCase)
+                    => Skill.Ride,
+                _ => Skill.AllSkills
+            };
+            if (skillType is Skill.AllSkills) return null;
+            
+            return NwSkill.FromSkillType(skillType);
         }
     }
 
@@ -270,7 +344,7 @@ public static class QuestRequirements
         // If nothing was added to the naughty list, it means that PC has all required classes and quest can be taken 
         if (requiredClassesList.IsNullOrEmpty()) return true;
         
-        requiredClassesJoined = string.Join("; ", requiredClassesList).ColorString(ColorConstants.Green);
+        requiredClassesJoined = string.Join("; ", requiredClassesList);
         
         playerCharacter.LoginPlayer!.SendServerMessage
             ($"The following classes are required to take this quest: {requiredClassesJoined}");
