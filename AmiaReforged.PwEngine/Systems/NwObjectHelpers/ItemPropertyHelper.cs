@@ -58,10 +58,30 @@ public static class ItemPropertyHelper
         {
             ItemProperty = ip,
             GuiLabel = GameLabel(ip),
-            PowerCost = 2,
+            PowerCost = GetPowerCost(ip),
             CraftingTier = CraftingTier.Wondrous,
             Removable = CanBeRemoved(ip)
         };
+    }
+
+    private static int GetPowerCost(ItemProperty ip)
+    {
+        List<ItemPropertyType> noCost = new()
+        {
+            ItemPropertyType.DecreasedAbilityScore,
+            ItemPropertyType.DecreasedAc,
+            ItemPropertyType.DecreasedSavingThrows,
+            ItemPropertyType.DecreasedSkillModifier,
+            ItemPropertyType.DecreasedDamage,
+            ItemPropertyType.DecreasedAttackModifier,
+            ItemPropertyType.WeightIncrease,
+            ItemPropertyType.Material,
+            ItemPropertyType.Quality,
+            ItemPropertyType.Trap,
+            ItemPropertyType.Additional
+        };
+        
+        return noCost.Any(it => it == ip.Property.PropertyType) ? 0 : 2;
     }
 
     public static bool CanBeRemoved(ItemProperty itemProperty)
