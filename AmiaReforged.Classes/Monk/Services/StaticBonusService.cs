@@ -64,12 +64,14 @@ public class StaticBonusesService
         NwItem? leftHandItem = monk.GetItemInSlot(InventorySlot.LeftHand);
         NwItem? armorItem = monk.GetItemInSlot(InventorySlot.Chest);
         
-        bool isNotArmor = eventData.Item.BaseACValue == 0;
+        bool isArmor = eventData.Item.BaseACValue > 0;
+        bool isShield = eventData.Item.BaseItem.Category is BaseItemCategory.Shield;
         bool hasNoArmor = armorItem?.BaseACValue == 0 || armorItem is null;
-        bool isNotShield = eventData.Item.BaseItem.Category is not BaseItemCategory.Shield;
         bool hasNoShield = leftHandItem?.BaseItem.Category is not BaseItemCategory.Shield || leftHandItem is null;
         
-        if (isNotArmor && hasNoShield || isNotShield && hasNoArmor)
+        // If unequipping armor while isn't wielding a shield, apply bonuses
+        // If unequipping shield while isn't wearing armor, apply bonuses
+        if (isArmor && hasNoShield || isShield && hasNoArmor)
         {
             Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
             monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
