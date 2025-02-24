@@ -11,6 +11,7 @@ namespace AmiaReforged.Classes.Monk.Services;
 [ServiceBinding(typeof(StaticBonusesService))]
 public class StaticBonusesService
 {
+    private const int StaticBonusLevel = 3;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public StaticBonusesService(EventService eventService)
@@ -26,7 +27,7 @@ public class StaticBonusesService
     private static void OnLoadAddBonuses(OnLoadCharacterFinish eventData)
     {
         if (eventData.Player.ControlledCreature is not NwCreature monk) return;
-        if (monk.GetClassInfo(ClassType.Monk)!.Level >= 3) return;
+        if (monk.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         if (monk.ActiveEffects.Any(effect => effect.Tag == "monk_staticeffects")) return;
 
         Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
@@ -35,7 +36,7 @@ public class StaticBonusesService
 
     private static void OnEquipRemoveBonuses(OnItemEquip eventData)
     {
-        if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level >= 3) return;
+        if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
 
         NwCreature monk = eventData.EquippedBy;
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
@@ -56,7 +57,7 @@ public class StaticBonusesService
 
     private static void OnUnequipAddBonuses(OnItemUnequip eventData)
     {
-        if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level >= 3) return;
+        if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         if (eventData.Creature.ActiveEffects.Any(effect => effect.Tag == "monk_staticeffects")) return;
 
         NwCreature monk = eventData.Creature;
@@ -80,7 +81,7 @@ public class StaticBonusesService
 
     private static void OnLevelUpCheckBonuses(OnLevelUp eventData)
     {
-        if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level  >= 3) return;
+        if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level  < StaticBonusLevel) return;
 
         NwCreature monk = eventData.Creature;
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
@@ -101,7 +102,7 @@ public class StaticBonusesService
 
         monk.RemoveEffect(monkEffects);
         
-        if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < 3) return;
+        if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
         monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
