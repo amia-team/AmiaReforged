@@ -49,12 +49,13 @@ public class StaticBonusesService
         if (isShield || isArmor)
         {
             monk.RemoveEffect(monkEffects);
-
-            if (isArmor) return;
-            
-            if (monk.IsPlayerControlled(out NwPlayer? player))
-                player.SendServerMessage("Equpping this shield has disabled your monk abilities.");
         }
+        
+        // Only send the server message for shield, because the game by default does it for armor
+        if (!isShield) return;
+        
+        if (monk.IsPlayerControlled(out NwPlayer? player))
+            player.SendServerMessage("Equipping this shield has disabled your monk abilities.");
     }
 
     private static void OnUnequipAddBonuses(OnItemUnequip eventData)
@@ -77,16 +78,15 @@ public class StaticBonusesService
         {
             Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
             monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
-
-            if (monk.IsPlayerControlled(out NwPlayer? player))
-            {
-                if (isArmor) 
-                    player.SendServerMessage ("Unequipping this armor has enabled your monk abilities.");
-                
-                if (isShield) 
-                    player.SendServerMessage("Unequipping this shield has enabled your monk abilities.");
-            }
         }
+
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
+        
+        if (isArmor && hasNoShield) 
+            player.SendServerMessage ("Unequipping this armor has enabled your monk abilities.");
+                
+        if (isShield && hasNoArmor) 
+            player.SendServerMessage("Unequipping this shield has enabled your monk abilities.");
     }
 
     private static void OnLevelUpCheckBonuses(OnLevelUp eventData)
