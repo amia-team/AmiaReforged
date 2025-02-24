@@ -16,7 +16,7 @@ public class StaticBonusesService
 
     public StaticBonusesService(EventService eventService)
     {
-        NwModule.Instance.OnLoadCharacterFinish += OnLoadAddBonuses;
+        eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(OnLoadAddBonuses, EventCallbackType.After);
         NwModule.Instance.OnItemEquip += OnEquipRemoveBonuses;
         NwModule.Instance.OnItemUnequip += OnUnequipAddBonuses;
         eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(OnLevelUpCheckBonuses, EventCallbackType.After);
