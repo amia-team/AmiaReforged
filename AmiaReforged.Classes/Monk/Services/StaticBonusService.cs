@@ -17,6 +17,7 @@ public class StaticBonusesService
     public StaticBonusesService(EventService eventService)
     {
         eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(OnLoadAddBonuses, EventCallbackType.After);
+        NwModule.Instance.OnItemEquip += OnEquipAddBonuses;
         NwModule.Instance.OnItemEquip += OnEquipRemoveBonuses;
         NwModule.Instance.OnItemUnequip += OnUnequipAddBonuses;
         eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(OnLevelUpCheckBonuses, EventCallbackType.After);
@@ -66,7 +67,41 @@ public class StaticBonusesService
         if (monk.IsPlayerControlled(out NwPlayer? player))
             player.SendServerMessage("Equipping this shield has disabled your monk abilities.");
     }
+    
+    /// <summary>
+    /// This is necessary because the game doesn't register replacing an equipped item as unequipping;
+    /// eg, if you have a shield in offhand and switch it into a kama, the game just reads it as an OnEquip event
+    /// and doesn't re-add the monk bonuses although you no longer have a shield to disqualify it
+    /// </summary>
+    private static void OnEquipAddBonuses(OnItemEquip eventData)
+    {
+        if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
+        if (eventData.EquippedBy.ActiveEffects.Any(effect => effect.Tag == "monk_staticeffects")) return;
 
+        NwCreature monk = eventData.EquippedBy;
+        NwItem? leftHandItem = monk.GetItemInSlot(InventorySlot.LeftHand);
+        NwItem? armorItem = monk.GetItemInSlot(InventorySlot.Chest);
+        
+        bool isArmor = eventData.Item.BaseACValue > 0;
+        bool isShield = eventData.Item.BaseItem.Category is BaseItemCategory.Shield;
+        bool hasNoArmor = armorItem?.BaseACValue == 0 || armorItem is null;
+        bool hasNoShield = leftHandItem?.BaseItem.Category is not BaseItemCategory.Shield || leftHandItem is null;
+        
+        if (!isArmor && hasNoShield || !isShield && hasNoArmor)
+        {
+            Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
+            monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        }
+
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
+        
+        if (isArmor && hasNoShield) 
+            player.SendServerMessage ("Unequipping this armor has enabled your monk abilities.");
+                
+        if (isShield && hasNoArmor) 
+            player.SendServerMessage("Unequipping this shield has enabled your monk abilities.");
+    }
+    
     private static void OnUnequipAddBonuses(OnItemUnequip eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
