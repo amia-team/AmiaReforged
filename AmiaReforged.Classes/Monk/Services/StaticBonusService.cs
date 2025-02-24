@@ -42,11 +42,16 @@ public class StaticBonusesService
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
         if (monkEffects is null) return;
 
-        if (eventData.Item.BaseACValue > 0 || eventData.Item.BaseItem.Category is BaseItemCategory.Shield)
+        bool isShield = eventData.Item.BaseItem.Category is BaseItemCategory.Shield;
+        bool isArmor = eventData.Item.BaseACValue > 0;
+
+        if (isShield || isArmor)
+        {
             monk.RemoveEffect(monkEffects);
 
-        if (monk.IsPlayerControlled(out NwPlayer? player))
-            player.SendServerMessage("Monk static bonuses removed.", MonkColors.MonkColorScheme);
+            if (monk.IsPlayerControlled(out NwPlayer? player))
+                player.SendServerMessage("Monk static bonuses removed.", MonkColors.MonkColorScheme);
+        }
     }
 
     private static void OnUnequipAddBonuses(OnItemUnequip eventData)
@@ -56,10 +61,14 @@ public class StaticBonusesService
 
         NwCreature monk = eventData.Creature;
         NwItem? leftHandItem = monk.GetItemInSlot(InventorySlot.LeftHand);
-        NwItem? armor = monk.GetItemInSlot(InventorySlot.Chest);
+        NwItem? armorItem = monk.GetItemInSlot(InventorySlot.Chest);
         
-        if ((eventData.Item.BaseACValue > 0 && (leftHandItem is null || leftHandItem.BaseItem.Category is not BaseItemCategory.Shield))
-            || (eventData.Item.BaseItem.Category is BaseItemCategory.Shield && (armor is null || armor.BaseACValue == 0)))
+        bool isNotArmor = eventData.Item.BaseACValue == 0;
+        bool hasNoArmor = armorItem?.BaseACValue == 0;
+        bool isNotShield = eventData.Item.BaseItem.Category is not BaseItemCategory.Shield;
+        bool hasNoShield = leftHandItem?.BaseItem.Category is not BaseItemCategory.Shield;
+        
+        if (isNotArmor && hasNoShield || isNotShield && hasNoArmor)
         {
             Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
             monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
