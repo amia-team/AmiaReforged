@@ -82,12 +82,12 @@ public class StaticBonusesService
         NwItem? leftHandItem = monk.GetItemInSlot(InventorySlot.LeftHand);
         NwItem? armorItem = monk.GetItemInSlot(InventorySlot.Chest);
         
-        bool isArmor = eventData.Item.BaseACValue > 0;
+        bool isClothArmor = eventData.Item.BaseACValue == 0;
         bool isShield = eventData.Item.BaseItem.Category is BaseItemCategory.Shield;
         bool hasNoArmor = armorItem?.BaseACValue == 0 || armorItem is null;
         bool hasNoShield = leftHandItem?.BaseItem.Category is not BaseItemCategory.Shield || leftHandItem is null;
         
-        if ((!isArmor && hasNoShield) || (!isShield && hasNoArmor))
+        if ((isClothArmor && hasNoShield) || (!isShield && hasNoArmor))
         {
             Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
             monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
@@ -95,7 +95,7 @@ public class StaticBonusesService
 
         if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
         
-        if (!isArmor && hasNoShield) 
+        if (isClothArmor && hasNoShield) 
             player.SendServerMessage ("Unequipping this armor has enabled your monk abilities.");
                 
         if (!isShield && hasNoArmor) 
