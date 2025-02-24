@@ -29,6 +29,15 @@ public class StaticBonusesService
         if (eventData.Player.ControlledCreature is not NwCreature monk) return;
         if (monk.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         if (monk.ActiveEffects.Any(effect => effect.Tag == "monk_staticeffects")) return;
+        
+        NwItem? leftHandItem = monk.GetItemInSlot(InventorySlot.LeftHand);
+        NwItem? armorItem = monk.GetItemInSlot(InventorySlot.Chest);
+        
+        bool hasArmor = armorItem?.BaseACValue > 0;
+        bool hasShield = leftHandItem?.BaseItem.Category is BaseItemCategory.Shield;
+
+        // Don't apply effects if the monk has armor or shield
+        if (hasArmor || hasShield) return;
 
         Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
