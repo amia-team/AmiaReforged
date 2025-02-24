@@ -65,9 +65,9 @@ public class StaticBonusesService
         NwItem? armorItem = monk.GetItemInSlot(InventorySlot.Chest);
         
         bool isNotArmor = eventData.Item.BaseACValue == 0;
-        bool hasNoArmor = armorItem?.BaseACValue == 0;
+        bool hasNoArmor = armorItem?.BaseACValue == 0 || armorItem is null;
         bool isNotShield = eventData.Item.BaseItem.Category is not BaseItemCategory.Shield;
-        bool hasNoShield = leftHandItem?.BaseItem.Category is not BaseItemCategory.Shield;
+        bool hasNoShield = leftHandItem?.BaseItem.Category is not BaseItemCategory.Shield || leftHandItem is null;
         
         if (isNotArmor && hasNoShield || isNotShield && hasNoArmor)
         {
