@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="JetBrains.Annotations" Version="2022.1.0" />
       <PackageReference Include="NUnit" Version="4.3.2" />
       <PackageReference Include="NWN.Anvil" Version="8193.36.1" />
       <PackageReference Include="NWN.Core" Version="8193.36.1" />
@@ -15,10 +16,6 @@
 
     <ItemGroup>
       <None Remove="Jenkinsfile" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Spells\Arcane\" />
     </ItemGroup>
 
 </Project>

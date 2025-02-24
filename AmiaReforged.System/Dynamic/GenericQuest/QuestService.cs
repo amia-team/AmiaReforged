@@ -6,6 +6,10 @@ using NLog;
 
 namespace AmiaReforged.System.Dynamic.GenericQuest;
 
+/// <summary>
+/// This code injects new and improved behaviour and setup for the old ee_generic_quest script.
+/// The old ee_generic_quest script is kept unchanged, so people preferring that method can use it.
+/// </summary>
 [ServiceBinding(typeof(QuestService))]
 public class QuestService
 {
@@ -22,100 +26,46 @@ public class QuestService
         
         CreatureEvents.OnConversation eventData = new();
         
-        // Indexing for the quest variables starts at 1 for legacy reasons;
-        // non-indexed quest variables like "questname" are treated as "questname1"
-        
-        int index = 1;
-        
-        // START VARIABLE DECLARATION
+        // START VARIABLE DECLARATION FOR LEGACY VARIABLES
 
         NwCreature playerCharacter = eventData.PlayerSpeaker!.ControlledCreature!;
         NwCreature questGiver = eventData.Creature;
         
         NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.ResRef == "ds_pckey");
-
-        // The next three local vars must be found on any quest, so we give debug messages if they're not provided!
         
-        LocalVariableString questName = questGiver.GetObjectVariable<LocalVariableString>("questname"+index);
-        if (questName.HasNothing)
-        {
-            questName = questGiver.GetObjectVariable<LocalVariableString>("questname");
-            if (questName.HasNothing) playerCharacter.LoginPlayer!.SendServerMessage("DEBUG: No quest name found.");
-        }
+        LocalVariableString legacyQuestName = questGiver.GetObjectVariable<LocalVariableString>("questname");
+        LocalVariableString questNames = questGiver.GetObjectVariable<LocalVariableString>("quest names");
+        if (legacyQuestName.HasNothing && questNames.HasNothing)
+            playerCharacter.LoginPlayer!.SendServerMessage
+                ("DEBUG: No quest names found in quest NPC's local variables.");
         
-        LocalVariableString speechWithQuest = questGiver.GetObjectVariable<LocalVariableString>("speechwithquest"+index);
-        if (speechWithQuest.HasNothing)
-        {
-            speechWithQuest = questGiver.GetObjectVariable<LocalVariableString>("speechwithquest");
-            if (speechWithQuest.HasNothing) playerCharacter.LoginPlayer!.SendServerMessage("DEBUG: No speech with quest found.");
-        }
+        LocalVariableString legacySpeechWithQuest = questGiver.GetObjectVariable<LocalVariableString>("speechwithquest");
+        LocalVariableString messagesWithQuest = questGiver.GetObjectVariable<LocalVariableString>("messages with quest taken");
+        if (legacySpeechWithQuest.HasNothing && messagesWithQuest.HasNothing) 
+            playerCharacter.LoginPlayer!.SendServerMessage
+                ("DEBUG: No messages with quest taken found in quest NPC's local variables.");
         
-        LocalVariableString speechQuestDone = questGiver.GetObjectVariable<LocalVariableString>("speechquestdone"+index);
-        if (speechQuestDone.HasNothing)
-        {
-            speechQuestDone = questGiver.GetObjectVariable<LocalVariableString>("speechquestdone");
-            if (speechQuestDone.HasNothing) playerCharacter.LoginPlayer!.SendServerMessage("DEBUG: No speech quest done found.");
-        }
+        LocalVariableString legacySpeechQuestDone = questGiver.GetObjectVariable<LocalVariableString>("speechquestdone");
+        LocalVariableString messagesWithQuestDone = questGiver.GetObjectVariable<LocalVariableString>("messages with quest completed");
+        if (legacySpeechQuestDone.HasNothing && messagesWithQuestDone.HasNothing)
+            playerCharacter.LoginPlayer!.SendServerMessage
+                ("DEBUG: No messages with quest completed found in quest NPC's local variables.");
         
-        LocalVariableString questItemTag = questGiver.GetObjectVariable<LocalVariableString>("questitem"+index);
+        
+        LocalVariableString questItemTag = questGiver.GetObjectVariable<LocalVariableString>("questitem");
+        LocalVariableString questItemTags = questGiver.GetObjectVariable<LocalVariableString>("quest item tags");
+        if (questItemTag.HasNothing && questItemTags.HasNothing)
+            playerCharacter.LoginPlayer!.SendServerMessage
+                ("DEBUG: No quest item tags found in quest NPC's local variables.");
         
         NwItem questItem = playerCharacter.Inventory.Items.First(item => item.Tag == questItemTag);
         
         // END VARIABLE DECLARATION
-    
         questGiver.FaceToObject(playerCharacter);
         
-        CheckQuestRequirements(questGiver, playerCharacter);
+        QuestRequirements.CheckQuestRequirements(questGiver, playerCharacter);
 
     }
         
-    /// <summary>
-    /// Checks for class, skill, and prequel quest requirements when trying to take the quest and makes NPC say the gtfo message
-    /// </summary>
-    /// <returns>true if requirements are met; false if not</returns>
-    private static bool CheckQuestRequirements(NwCreature questGiver, NwCreature playerCharacter)
-    {
-        LocalVariableString questRequired  = questGiver.GetObjectVariable<LocalVariableString>("questrequired");
-        LocalVariableString classesRequired = questGiver.GetObjectVariable<LocalVariableString>("classesrequired");
-        LocalVariableInt classLevelRequired = questGiver.GetObjectVariable<LocalVariableInt>("classlevelrequired");
-        LocalVariableString skillsRequired = questGiver.GetObjectVariable<LocalVariableString>("skillsrequired");
-        LocalVariableInt skillRankRequired = questGiver.GetObjectVariable<LocalVariableInt>("skillrankrequired");
-        LocalVariableString rejectionMessage = questGiver.GetObjectVariable<LocalVariableString>("rejectionmessage");
-        
-        // Legacy restriction variables to keep existing quests functional
-        LocalVariableString classRestrictedOn = questGiver.GetObjectVariable<LocalVariableString>("classrestrictedon");
-        LocalVariableString skillRestrictedOn = questGiver.GetObjectVariable<LocalVariableString>("skillrestrictedon");
-        LocalVariableInt classRestricted = questGiver.GetObjectVariable<LocalVariableInt>("classrestricted");
-        LocalVariableInt skillRestricted = questGiver.GetObjectVariable<LocalVariableInt>("skillrestricted");
-        LocalVariableInt skillRestrictedPoints = questGiver.GetObjectVariable<LocalVariableInt>("skillrestrictedpoints");
-        LocalVariableInt skillRestrictedPointsBase = questGiver.GetObjectVariable<LocalVariableInt>("skillrestrictedpointsbase");
-        LocalVariableString speechQuestRequired = questGiver.GetObjectVariable<LocalVariableString>("speechquestrequired");
-        
-        // If no requirements are set, return to quest script
-        if (questRequired.HasNothing && classesRequired.HasNothing && skillsRequired.HasNothing
-            && classRestrictedOn.HasNothing && skillRestrictedOn.HasNothing) return true;
 
-        if (questRequired.HasValue)
-        {
-            NwItem pcKey = playerCharacter.Inventory.Items.First(item => item.ResRef == "ds_pckey");
-            int requiredQuestStatus = pcKey.GetObjectVariable<LocalVariableInt>(questRequired.Value!);
-
-            if (requiredQuestStatus is not QuestCompleted)
-            {
-                if (rejectionMessage.HasNothing) 
-                    playerCharacter.LoginPlayer!.SendServerMessage("DEBUG: No quest rejection message.");
-                else
-                    questGiver.SpeakString(rejectionMessage!);
-
-                string requiredQuestGreen = questRequired.Value!.ColorString(ColorConstants.Green);
-                playerCharacter.LoginPlayer!.SendServerMessage
-                    ($"You must complete {requiredQuestGreen} before you may begin this one.");
-
-                return false;
-            }
-        }
-        
-
-        return true;
-    }
 }

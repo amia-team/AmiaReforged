@@ -23,6 +23,7 @@ public class MiniQuestReward : IMiniQuestRewardStrategy
             questItems[i].Destroy();
         }
     }
+
     private void DoExperienceReward()
     {
         int xpReward = NWScript.GetLocalInt(_questGiver, DynamicQuestLocals.MiniQuest.XpReward);
@@ -39,8 +40,8 @@ public class MiniQuestReward : IMiniQuestRewardStrategy
     {
         string itemReward = NWScript.GetLocalString(_questGiver, DynamicQuestLocals.MiniQuest.ItemReward);
         if (itemReward != string.Empty)
-        { 
-            NwItem.Create(itemReward, _player!.LoginCreature); 
+        {
+            NwItem.Create(itemReward, _player!.LoginCreature);
         }
     }
 }

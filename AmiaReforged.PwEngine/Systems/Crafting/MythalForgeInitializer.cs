@@ -3,7 +3,6 @@ using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.StandaloneWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

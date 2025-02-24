@@ -40,11 +40,11 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
     /// <summary>
     /// Initializes a new instance of the <see cref="MythalCategoryView"/> class.
     /// </summary>
-    /// <param name="presenter">The presenter for the Mythal Forge.</param>
-    public MythalCategoryView(MythalForgePresenter presenter)
+    /// <param name="toolPresenter">The presenter for the Mythal Forge.</param>
+    public MythalCategoryView(MythalForgePresenter toolPresenter)
     {
-        Presenter = presenter;
-        _categories = presenter.MythalCategories;
+        Presenter = toolPresenter;
+        _categories = toolPresenter.MythalCategories;
     }
 
     public override NuiLayout RootLayout()

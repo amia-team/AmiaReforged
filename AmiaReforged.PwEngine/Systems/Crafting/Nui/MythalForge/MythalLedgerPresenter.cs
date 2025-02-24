@@ -11,9 +11,9 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
     private NuiWindowToken _token;
     public override MythalLedgerView View { get; }
 
-    public MythalLedgerPresenter(MythalForgePresenter parent, NwPlayer player, MythalLedgerView view)
+    public MythalLedgerPresenter(MythalForgePresenter parent, NwPlayer player, MythalLedgerView toolView)
     {
-        View = view;
+        View = toolView;
         _parent = parent;
         _player = player;
 
@@ -47,7 +47,7 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
         return _token;
     }
 
-    public override void Initialize()
+    public override void InitBefore()
     {
         _window = new NuiWindow(View.RootLayout(), "Mythal Ledger")
         {
@@ -62,7 +62,7 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
     {
         if (_window == null)
         {
-            Initialize();
+            InitBefore();
         }
 
         if (_window == null)

@@ -1,6 +1,6 @@
 using Anvil.API;
 
-namespace AmiaReforged.Core.UserInterface;
+namespace AmiaReforged.PwEngine.Systems.WindowingSystem;
 
 public static class NuiUtils
 {
