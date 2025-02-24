@@ -50,8 +50,10 @@ public class StaticBonusesService
         {
             monk.RemoveEffect(monkEffects);
 
+            if (isArmor) return;
+            
             if (monk.IsPlayerControlled(out NwPlayer? player))
-                player.SendServerMessage("Monk static bonuses removed.", MonkColors.MonkColorScheme);
+                player.SendServerMessage("Equpping this shield has disabled your monk abilities.");
         }
     }
 
@@ -75,9 +77,15 @@ public class StaticBonusesService
         {
             Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
             monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
-            
+
             if (monk.IsPlayerControlled(out NwPlayer? player))
-                player.SendServerMessage("Monk static bonuses applied.", MonkColors.MonkColorScheme);
+            {
+                if (isArmor) 
+                    player.SendServerMessage ("Unequipping this armor has enabled your monk abilities.");
+                
+                if (isShield) 
+                    player.SendServerMessage("Unequipping this shield has enabled your monk abilities.");
+            }
         }
     }
 
