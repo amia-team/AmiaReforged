@@ -15,13 +15,12 @@ public class StaticBonusesService
 
     public StaticBonusesService(EventService eventService)
     {
-    // Register method to listen for the OnSpellCast event.
-    NwModule.Instance.OnLoadCharacterFinish += OnLoadAddBonuses;
-    NwModule.Instance.OnItemEquip += OnEquipRemoveBonuses;
-    NwModule.Instance.OnItemUnequip += OnUnequipAddBonuses;
-    eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(OnLevelUpCheckBonuses, EventCallbackType.After);
-    eventService.SubscribeAll<OnLevelDown, OnLevelDown.Factory>(OnLevelDownCheckBonuses, EventCallbackType.After);
-    Log.Info("Monk Static Bonuses Service initialized.");
+        NwModule.Instance.OnLoadCharacterFinish += OnLoadAddBonuses;
+        NwModule.Instance.OnItemEquip += OnEquipRemoveBonuses;
+        NwModule.Instance.OnItemUnequip += OnUnequipAddBonuses;
+        eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(OnLevelUpCheckBonuses, EventCallbackType.After);
+        eventService.SubscribeAll<OnLevelDown, OnLevelDown.Factory>(OnLevelDownCheckBonuses, EventCallbackType.After);
+        Log.Info("Monk Static Bonuses Service initialized.");
     }
 
     private static void OnLoadAddBonuses(OnLoadCharacterFinish eventData)
@@ -40,6 +39,7 @@ public class StaticBonusesService
 
         NwCreature monk = eventData.EquippedBy;
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
+        
         if (monkEffects is null) return;
 
         bool isShield = eventData.Item.BaseItem.Category is BaseItemCategory.Shield;
@@ -83,8 +83,8 @@ public class StaticBonusesService
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level  >= 3) return;
 
         NwCreature monk = eventData.Creature;
-
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
+        
         if (monkEffects is null) return;
 
         monk.RemoveEffect(monkEffects);
@@ -96,6 +96,7 @@ public class StaticBonusesService
     {
         NwCreature monk = eventData.Creature;
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
+        
         if (monkEffects is null) return;
 
         monk.RemoveEffect(monkEffects);
