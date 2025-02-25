@@ -21,8 +21,8 @@ public class MartialTechniqueService
     // Register methods to listen for the events.
     NwModule.Instance.OnUseFeat += MartialTechniqueUseFeat;
     NwModule.Instance.OnCombatRoundStart += EnterMartialTechnique;
-    NwModule.Instance.OnEffectApply += ActivateMartialTechniqueIcon;
-    NwModule.Instance.OnEffectRemove += DeactivateMartialTechniqueIcon;
+    NwModule.Instance.OnEffectApply += CueMartialTechniqueActivated;
+    NwModule.Instance.OnEffectRemove += CueMartialTechniqueDeactivated;
     NwModule.Instance.OnCreatureAttack += OnHitApplyTechnique;
     Log.Info("Monk Martial Technique Service initialized.");
   }
@@ -133,9 +133,9 @@ public class MartialTechniqueService
   }
 
   /// <summary>
-  /// Activates the feat icon when the technique is activated
+  /// Cues the activation of the martial technique with a floaty text
   /// </summary>
-  private static void ActivateMartialTechniqueIcon(OnEffectApply eventData)
+  private static void CueMartialTechniqueActivated(OnEffectApply eventData)
   {
     if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
     if (eventData.Effect.Tag is null) return;
@@ -146,21 +146,21 @@ public class MartialTechniqueService
     switch (technique)
     {
       case StunningTag :
-        player.SetTextureOverride(StunningIconInactive, StunningIconActive);
+        player.FloatingTextString("*Stunning Strike Activated*", false, false);
         break;
       case EagleTag :
-        player.SetTextureOverride(EagleIconInactive, EagleIconActive);
+        player.FloatingTextString("*Eagle Strike Activated*", false, false);
         break;
       case AxiomaticTag :
-        player.SetTextureOverride(AxiomaticIconInactive, AxiomaticIconActive);
+        player.FloatingTextString("*Axiomatic Strike Activated*", false, false);
         break;
     }
   }
 
   /// <summary>
-  /// Deactivates the feat icon when the technique is deactivated
+  /// Cues the deactivation of the martial technique with a floaty text
   /// </summary>
-  private static void DeactivateMartialTechniqueIcon(OnEffectRemove eventData)
+  private static void CueMartialTechniqueDeactivated(OnEffectRemove eventData)
   {
     if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
     if (eventData.Effect.Tag is null) return;
@@ -171,13 +171,13 @@ public class MartialTechniqueService
     switch (technique)
     {
       case StunningTag :
-        player.SetTextureOverride(StunningIconActive, StunningIconInactive);
+        player.FloatingTextString("*Stunning Strike Deactivated*", false, false);
         break;
       case EagleTag :
-        player.SetTextureOverride(EagleIconActive, EagleIconInactive);
+        player.FloatingTextString("*Eagle Strike Deactivated*", false, false);
         break;
       case AxiomaticTag :
-        player.SetTextureOverride(AxiomaticIconActive, AxiomaticIconInactive);
+        player.FloatingTextString("*Axiomatic Strike Deactivated*", false, false);
         break;
     }
   }
