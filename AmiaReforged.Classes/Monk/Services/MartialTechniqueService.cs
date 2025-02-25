@@ -197,6 +197,10 @@ public class MartialTechniqueService
     Effect? technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is not null && effect.Tag.Contains(MartialTechnique));
     if (technique is null) return;
     
+    // On hit, apply technique effects and cooldown
+    bool isHit = attackData.AttackResult is AttackResult.Hit or AttackResult.AutomaticHit or AttackResult.CriticalHit;
+    if (!isHit) return;
+    
     // Apply technique effects
     switch (technique.Tag)
     {
@@ -210,12 +214,8 @@ public class MartialTechniqueService
         AxiomaticStrike.ApplyAxiomaticStrike(attackData);
         break;
     }
-
-    bool isHit = attackData.AttackResult is AttackResult.Hit or AttackResult.AutomaticHit or AttackResult.CriticalHit;
+    
     int eagleCounter = monk.GetObjectVariable<LocalVariableInt>(EagleStrikesCounter).Value;
-
-    // On hit, apply cooldown  for stunning and eagle
-    if (!isHit) return;
 
     Effect martialCooldownEffect = Effect.VisualEffect(VfxType.None);
     martialCooldownEffect.SubType = EffectSubType.Unyielding;
@@ -223,9 +223,11 @@ public class MartialTechniqueService
     
     if (technique.Tag is StunningTag)
       monk.ApplyEffect(EffectDuration.Permanent, martialCooldownEffect);
-
+    
     if (technique.Tag is not EagleTag) return;
+    
     eagleCounter++;
+    
     if (eagleCounter >= 2) 
       monk.ApplyEffect(EffectDuration.Permanent, martialCooldownEffect);
   }
