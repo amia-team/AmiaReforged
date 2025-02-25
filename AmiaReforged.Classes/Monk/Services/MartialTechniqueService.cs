@@ -48,7 +48,7 @@ public class MartialTechniqueService
           MonkFeat.StunningStrike => StunningValue,
           MonkFeat.EagleStrike => EagleValue,
           MonkFeat.AxiomaticStrike => AxiomaticValue,
-          _ => throw new NotImplementedException()
+          _ => -1
       };
     }
     // Else activate martial technique straight away
@@ -80,7 +80,6 @@ public class MartialTechniqueService
     
     NwCreature monk = eventData.Creature;
     LocalVariableInt queuedTechnique = monk.GetObjectVariable<LocalVariableInt>(MartialTechnique);
-    Effect? technique;
 
     //  If technique is queued up, activate it
     if (queuedTechnique.HasValue)
@@ -92,17 +91,14 @@ public class MartialTechniqueService
         AxiomaticValue => AxiomaticTag,
         _ => ""
       };
+      
       queuedTechnique.Delete();
       _martialEffect.SubType = EffectSubType.Unyielding;
       monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
-      technique = _martialEffect;
     }
-    else
-    {
-      technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag!.Contains(MartialTechnique));
-    }
-      
-    if (technique is null) return;
+    
+    Effect? technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag!.Contains(MartialTechnique));
+    
 
     string techniqueName = technique.Tag switch
     {
