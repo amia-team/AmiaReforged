@@ -54,10 +54,6 @@ public class MartialTechniqueService
     // Else activate martial technique straight away
     if (monk.IsInCombat) return;
     
-    // Deactivate previous martial technique
-    foreach (Effect effect in monk.ActiveEffects)
-      if (effect.Tag!.Contains(MartialTechnique)) monk.RemoveEffect(effect);
-      
     _martialEffect.Tag = technique.Id switch
     {
       MonkFeat.StunningStrike => StunningTag,
@@ -65,6 +61,21 @@ public class MartialTechniqueService
       MonkFeat.AxiomaticStrike => EagleTag,
       _ => ""
     };
+    
+    // If the same technique is being activated, just deactivate it and return; otherwise activate the new technique
+    foreach (Effect effect in monk.ActiveEffects)
+    {
+      if (effect.Tag == _martialEffect.Tag)
+      {
+        monk.RemoveEffect(effect);
+        return;
+      }
+
+      if (!effect.Tag!.Contains(MartialTechnique)) continue;
+      
+      monk.RemoveEffect(effect);
+      break;
+    }
     
     _martialEffect.SubType = EffectSubType.Unyielding;
     monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
