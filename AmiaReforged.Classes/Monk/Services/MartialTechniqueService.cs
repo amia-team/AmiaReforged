@@ -238,7 +238,7 @@ public class MartialTechniqueService
         break;
     }
     
-    int eagleCounter = monk.GetObjectVariable<LocalVariableInt>(EagleStrikesCounter);
+    LocalVariableInt eagleCounter = monk.GetObjectVariable<LocalVariableInt>(EagleStrikesCounter);
 
     Effect martialCooldownEffect = Effect.VisualEffect(VfxType.None);
     martialCooldownEffect.SubType = EffectSubType.Unyielding;
@@ -249,7 +249,7 @@ public class MartialTechniqueService
     
     if (technique.Tag is not EagleTag) return;
     
-    eagleCounter++;
+    eagleCounter.Value++;
     
     if (eagleCounter == 2) 
       monk.ApplyEffect(EffectDuration.Permanent, martialCooldownEffect);
