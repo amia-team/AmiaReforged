@@ -158,7 +158,7 @@ public class MartialTechniqueService
   }
 
   /// <summary>
-  /// Cues the activation of the martial technique with a floaty text and icon change
+  /// Cues the activation of the martial technique with a floaty text
   /// </summary>
   private static void CueMartialTechniqueActivated(OnEffectApply eventData)
   {
@@ -171,22 +171,19 @@ public class MartialTechniqueService
     switch (technique)
     {
       case StunningTag :
-        player.SetTextureOverride(StunningIconInactive, StunningIconActive);
         player.FloatingTextString("*Stunning Strike Activated*", false, false);
         break;
       case EagleTag :
-        player.SetTextureOverride(EagleIconInactive, EagleIconActive);
         player.FloatingTextString("*Eagle Strike Activated*", false, false);
         break;
       case AxiomaticTag :
-        player.SetTextureOverride(AxiomaticIconInactive, AxiomaticIconActive);
         player.FloatingTextString("*Axiomatic Strike Activated*", false, false);
         break;
     }
   }
 
   /// <summary>
-  /// Cues the deactivation of the martial technique with a floaty text and icon change
+  /// Cues the deactivation of the martial technique with a floaty text
   /// </summary>
   private static void CueMartialTechniqueDeactivated(OnEffectRemove eventData)
   {
@@ -199,15 +196,12 @@ public class MartialTechniqueService
     switch (technique)
     {
       case StunningTag :
-        player.SetTextureOverride(StunningIconActive, StunningIconInactive);
         player.FloatingTextString("*Stunning Strike Deactivated*", false, false);
         break;
       case EagleTag :
-        player.SetTextureOverride(EagleIconActive, EagleIconInactive);
         player.FloatingTextString("*Eagle Strike Deactivated*", false, false);
         break;
       case AxiomaticTag :
-        player.SetTextureOverride(AxiomaticIconActive, AxiomaticIconInactive);
         player.FloatingTextString("*Axiomatic Strike Deactivated*", false, false);
         break;
     }
