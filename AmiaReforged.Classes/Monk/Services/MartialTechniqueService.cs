@@ -103,13 +103,29 @@ public class MartialTechniqueService
         _ => ""
       };
       
+      // If the same technique is being activated, just deactivate it and return; otherwise activate the new technique
+      foreach (Effect effect in monk.ActiveEffects)
+      {
+        if (effect.Tag == _martialEffect.Tag)
+        {
+          monk.RemoveEffect(effect);
+          return;
+        }
+
+        if (!effect.Tag!.Contains(MartialTechnique)) continue;
+      
+        monk.RemoveEffect(effect);
+        break;
+      }
+      
       queuedTechnique.Delete();
       _martialEffect.SubType = EffectSubType.Unyielding;
       monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
     }
     
     Effect? technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag!.Contains(MartialTechnique));
-    
+
+    if (technique is null) return;
 
     string techniqueName = technique.Tag switch
     {
