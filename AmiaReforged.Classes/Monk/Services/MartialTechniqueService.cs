@@ -30,7 +30,7 @@ public class MartialTechniqueService
   /// <summary>
   /// Sets a martial technique for activation on next combat round, or instantly if out of combat
   /// </summary>
-  private void MartialTechniqueUseFeat(OnUseFeat eventData)
+  private async void MartialTechniqueUseFeat(OnUseFeat eventData)
   {
     bool isTechnique = eventData.Feat.Id is MonkFeat.StunningStrike or MonkFeat.EagleStrike or MonkFeat.AxiomaticStrike;
     if (!isTechnique) return;
@@ -77,7 +77,7 @@ public class MartialTechniqueService
       break;
     }
     
-    NwTask.Delay(TimeSpan.FromSeconds(0.1f));
+    await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
     _martialEffect.SubType = EffectSubType.Unyielding;
     monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
   }
@@ -85,7 +85,7 @@ public class MartialTechniqueService
   /// <summary>
   /// On combat round start switches into the active martial technique
   /// </summary>
-  private void EnterMartialTechnique(OnCombatRoundStart eventData)
+  private async void EnterMartialTechnique(OnCombatRoundStart eventData)
   {
     // Creature must be monk
     if (eventData.Creature.GetClassInfo(NwClass.FromClassType(ClassType.Monk)) is null) return;
@@ -119,7 +119,7 @@ public class MartialTechniqueService
         break;
       }
 
-      NwTask.Delay(TimeSpan.FromSeconds(0.1f));
+      await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
       queuedTechnique.Delete();
       _martialEffect.SubType = EffectSubType.Unyielding;
       monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
