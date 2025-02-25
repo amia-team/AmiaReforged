@@ -52,22 +52,22 @@ public class MartialTechniqueService
       };
     }
     // Else activate martial technique straight away
-    else
-    {
-      // Deactivate previous martial technique
-      foreach (Effect effect in monk.ActiveEffects)
-        if (effect.Tag is not null && effect.Tag.Contains(MartialTechnique)) monk.RemoveEffect(effect);
+    if (monk.IsInCombat) return;
+    
+    // Deactivate previous martial technique
+    foreach (Effect effect in monk.ActiveEffects)
+      if (effect.Tag!.Contains(MartialTechnique)) monk.RemoveEffect(effect);
       
-      _martialEffect.Tag = technique.Id switch
-      {
-        MonkFeat.StunningStrike => StunningTag,
-        MonkFeat.EagleStrike => EagleTag,
-        MonkFeat.AxiomaticStrike => EagleTag,
-        _ => throw new NotImplementedException()
-      };
-      _martialEffect.SubType = EffectSubType.Unyielding;
-      monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
-    }     
+    _martialEffect.Tag = technique.Id switch
+    {
+      MonkFeat.StunningStrike => StunningTag,
+      MonkFeat.EagleStrike => EagleTag,
+      MonkFeat.AxiomaticStrike => EagleTag,
+      _ => ""
+    };
+    
+    _martialEffect.SubType = EffectSubType.Unyielding;
+    monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
   }
 
   /// <summary>
@@ -99,7 +99,7 @@ public class MartialTechniqueService
     }
     else
     {
-      technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is not null && effect.Tag.Contains(MartialTechnique));
+      technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag!.Contains(MartialTechnique));
     }
       
     if (technique is null) return;
@@ -194,7 +194,7 @@ public class MartialTechniqueService
     // Can't have the cooldown active for martial technique procs
     if (monk.ActiveEffects.Any(effect => effect.Tag is MartialCooldownTag)) return;
   
-    Effect? technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is not null && effect.Tag.Contains(MartialTechnique));
+    Effect? technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag!.Contains(MartialTechnique));
     if (technique is null) return;
     
     // On hit, apply technique effects and cooldown
