@@ -74,10 +74,11 @@ public class MartialTechniqueService
       if (!effect.Tag!.Contains(MartialTechnique)) continue;
       
       monk.RemoveEffect(effect);
-      _martialEffect.SubType = EffectSubType.Unyielding;
-      monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
-      return;
+      break;
     }
+    
+    _martialEffect.SubType = EffectSubType.Unyielding;
+    monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
   }
 
   /// <summary>
