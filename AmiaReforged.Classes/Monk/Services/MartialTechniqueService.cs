@@ -58,7 +58,7 @@ public class MartialTechniqueService
     {
       MonkFeat.StunningStrike => StunningTag,
       MonkFeat.EagleStrike => EagleTag,
-      MonkFeat.AxiomaticStrike => EagleTag,
+      MonkFeat.AxiomaticStrike => AxiomaticTag,
       _ => ""
     };
     
