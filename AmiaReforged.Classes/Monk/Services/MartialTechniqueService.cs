@@ -16,13 +16,13 @@ public class MartialTechniqueService
 
   private static readonly Logger Log = LogManager.GetCurrentClassLogger();
   
-  public MartialTechniqueService(EventService eventService)
+  public MartialTechniqueService()
   {
     // Register methods to listen for the events.
     NwModule.Instance.OnUseFeat += MartialTechniqueUseFeat;
     NwModule.Instance.OnCombatRoundStart += EnterMartialTechnique;
     NwModule.Instance.OnEffectApply += CueMartialTechniqueActivated;
-    eventService.SubscribeAll<OnEffectRemove, OnEffectRemove.Factory>(CueMartialTechniqueDeactivated, EventCallbackType.After);
+    NwModule.Instance.OnEffectRemove += CueMartialTechniqueDeactivated;
     NwModule.Instance.OnCreatureAttack += OnHitApplyTechnique;
     Log.Info("Monk Martial Technique Service initialized.");
   }
