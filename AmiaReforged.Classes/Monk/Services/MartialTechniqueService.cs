@@ -77,6 +77,7 @@ public class MartialTechniqueService
       break;
     }
     
+    NwTask.Delay(TimeSpan.FromSeconds(0.1f));
     _martialEffect.SubType = EffectSubType.Unyielding;
     monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
   }
@@ -117,7 +118,8 @@ public class MartialTechniqueService
         monk.RemoveEffect(effect);
         break;
       }
-      
+
+      NwTask.Delay(TimeSpan.FromSeconds(0.1f));
       queuedTechnique.Delete();
       _martialEffect.SubType = EffectSubType.Unyielding;
       monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
