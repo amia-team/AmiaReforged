@@ -43,11 +43,15 @@ public class RayOfFrostFocusDecorator : SpellDecorator
                 Effect freeze = Effect.Slow();
                 freeze = Effect.LinkEffects(freeze, Effect.VisualEffect(VfxType.DurIceskin));
                 freeze.Tag = "RayOfFrostFocusDecorator";
+                Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "RayOfFrostFocusDecorator");
+                if(existing != null) creature.RemoveEffect(existing);
                 target.ApplyEffect(EffectDuration.Temporary, freeze, TimeSpan.FromSeconds(TwoRounds));
             }
 
             Effect savePenaltyEffect = Effect.SavingThrowDecrease(SavingThrow.All, savePenalty, SavingThrowType.Cold);
-
+            savePenaltyEffect.Tag = "RayOfFrostSavePenalty";
+            Effect? existingReduction = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "RayOfFrostSavePenalty");
+            if(existingReduction != null) creature.RemoveEffect(existingReduction);
             target.ApplyEffect(EffectDuration.Temporary, savePenaltyEffect, TimeSpan.FromSeconds(TwoRounds));
         }
 
