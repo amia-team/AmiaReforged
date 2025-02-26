@@ -38,9 +38,10 @@ public class ElectricJoltFocusDecorator : SpellDecorator
         if (isEvocationFocused && Result == ResistSpellResult.Failed)
         {
             int electricSavePenalty = epicFocus ? 3 : greaterFocus ? 2 : basicFocus ? 1 : 0;
-
+            int immunityReduction = epicFocus ? 5 : 0;
             Effect savePenalty =
                 Effect.SavingThrowDecrease(SavingThrow.All, electricSavePenalty, SavingThrowType.Electricity);
+            savePenalty = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Electrical, immunityReduction), savePenalty);
             savePenalty.Tag = "ElecJoltFocusDecorator";
             
             Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "ElecJoltFocusDecorator");
