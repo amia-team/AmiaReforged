@@ -54,10 +54,14 @@ public static class ItemPropertyHelper
 
     public static CraftingProperty ToCraftingProperty(ItemProperty ip)
     {
+        string gameLabel = GameLabel(ip);
+
+        gameLabel = gameLabel.Replace("_", " ");
+        
         return new CraftingProperty
         {
             ItemProperty = ip,
-            GuiLabel = GameLabel(ip),
+            GuiLabel = gameLabel,
             PowerCost = GetPowerCost(ip),
             CraftingTier = CraftingTier.Wondrous,
             Removable = CanBeRemoved(ip)
