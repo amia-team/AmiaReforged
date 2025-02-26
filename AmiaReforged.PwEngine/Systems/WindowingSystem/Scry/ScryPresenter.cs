@@ -56,4 +56,14 @@ public abstract class ScryPresenter<TView> : IScryPresenter where TView : IScryV
     /// Closes the presenter, cleaning up any resources or state.
     /// </summary>
     public abstract void Close();
+
+    public event IScryPresenter.PresenterClosedEventHandler? Closing;
+
+    /// <summary>
+    /// Tells the presenter to raise the close event. Always subscribed to by the window director.
+    /// </summary>
+    public void RaiseCloseEvent()
+    {
+        Closing?.Invoke(this, EventArgs.Empty);
+    }
 }

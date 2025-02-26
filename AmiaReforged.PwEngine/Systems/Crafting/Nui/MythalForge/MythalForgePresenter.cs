@@ -37,7 +37,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override MythalForgeView View { get; }
 
-    private MythalLedgerView _ledgerView;
+    private readonly MythalLedgerView _ledgerView;
 
     public readonly MythalForgeModel Model;
     private NuiWindowToken _token;
@@ -142,13 +142,15 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         {
             Model.ApplyChanges();
 
-            Close();
+            RaiseCloseEvent();
+            
             return;
         }
 
         if (eventData.ElementId == MythalForgeView.Cancel)
         {
-            Close();
+            RaiseCloseEvent();
+            
             return;
         }
 
@@ -350,6 +352,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         // Raise an event to child windows.
         OnForgeClosing();
         
+        // Raise an event to the system.
         _token.Close();
     }
 
