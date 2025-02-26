@@ -39,7 +39,7 @@ public class ElectricJolt : ISpell
         int numberOfDie = caster.CasterLevel / 2;
         bool isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Evocation;
         
-        int damage = isSpecialist ? NWScript.d4(numberOfDie) : NWScript.d3(numberOfDie);
+        int damage = NWScript.d3(numberOfDie);
 
         if (Result != ResistSpellResult.Failed) return;
         
