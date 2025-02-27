@@ -1,10 +1,11 @@
 // Called from the spirit technique handler when the technique is cast
+
+using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 
-
-namespace AmiaReforged.Classes.Monk.Techniques.Body;
+namespace AmiaReforged.Classes.Monk.Techniques.Spirit;
 
 public static class QuiveringPalm
 {
@@ -16,11 +17,18 @@ public static class QuiveringPalm
 
         if (path != null)
         {
-            PathEffectApplier.ApplyPathEffects(path, technique, castData);
+            AugmentationApplier.ApplyAugmentations(path, technique, castData);
             return;
         }
+        
+        DoQuiveringPalm(castData);
+    }
 
+    public static void DoQuiveringPalm(OnSpellCast castData)
+    {
         if (castData.TargetObject is not NwCreature targetCreature) return;
+        
+        NwCreature monk = (NwCreature)castData.Caster;
         
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
 
@@ -38,7 +46,6 @@ public static class QuiveringPalm
 
         if (savingThrowResult is SavingThrowResult.Success)
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
-            
         else
         {
             targetCreature.ApplyEffect(EffectDuration.Instant, quiveringEffect);

@@ -1,4 +1,6 @@
 // Called from the body technique handler when the technique is cast
+
+using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -16,10 +18,16 @@ public static class KiBarrier
 
         if (path != null)
         {
-            PathEffectApplier.ApplyPathEffects(path, technique, castData);
+            AugmentationApplier.ApplyAugmentations(path, technique, castData);
             return;
         }
+        
+        DoKiBarrier(castData);
+    }
 
+    public static void DoKiBarrier(OnSpellCast castData)
+    {
+        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int damageReductionAmount = 5;
         int totalAbsorb = monkLevel / 2 * 10;

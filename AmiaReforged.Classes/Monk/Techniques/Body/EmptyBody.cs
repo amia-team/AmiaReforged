@@ -1,4 +1,6 @@
 // Called from the body technique handler when the technique is cast
+
+using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -19,10 +21,16 @@ public static class EmptyBody
 
         if (path != null)
         {
-            PathEffectApplier.ApplyPathEffects(path, technique, castData);
+            AugmentationApplier.ApplyAugmentations(path, technique, castData);
             return;
         }
+        
+        DoEmptyBody(castData);
+    }
 
+    public static void DoEmptyBody(OnSpellCast castData)
+    {
+        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         Effect emptyBodyEffect = Effect.LinkEffects(Effect.Concealment(50), 
             Effect.VisualEffect(VfxType.DurInvisibility), Effect.VisualEffect(VfxType.DurCessatePositive));

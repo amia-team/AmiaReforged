@@ -2,43 +2,50 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using System.Numerics;
+using AmiaReforged.Classes.Monk.Techniques.Martial;
+using AmiaReforged.Classes.Monk.Techniques.Spirit;
 
-namespace AmiaReforged.Classes.Monk.Effects;
+namespace AmiaReforged.Classes.Monk.Augmentations;
 
-public static class HymnPathEffects
+public static class SwingingCenser
 {
     
     
-    public static void ApplyHymnsPathEffects(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
-            case TechniqueType.Eagle : ApplyEffectsToEagle(attackData);
+            case TechniqueType.Eagle : AugmentEagle(attackData);
                 break;
-            case TechniqueType.KiBarrier : ApplyEffectsToKiBarrier(castData);
+            case TechniqueType.KiBarrier : AugmentKiBarrier(castData);
                 break;
-            case TechniqueType.KiShout : ApplyEffectsToKiShout(castData);
+            case TechniqueType.KiShout : AugmentKiShout(castData);
                 break;
-            case TechniqueType.Wholeness : ApplyEffectsToWholeness(castData);
+            case TechniqueType.Wholeness : AugmentWholeness(castData);
                 break;
-            case TechniqueType.EmptyBody : ApplyEffectsToEmptyBody(castData);
+            case TechniqueType.EmptyBody : AugmentEmptyBody(castData);
                 break;
-                
+            case TechniqueType.Stunning: StunningStrike.DoStunningStrike(attackData);
+                break;
+            case TechniqueType.Axiomatic: AxiomaticStrike.DoAxiomaticStrike(attackData);
+                break;
+            case TechniqueType.Quivering: QuiveringPalm.DoQuiveringPalm(castData);
+                break;
         }
     }
-    private static void ApplyEffectsToEagle(OnCreatureAttack attackData)
+    private static void AugmentEagle(OnCreatureAttack attackData)
     {
        
     }
-    private static void ApplyEffectsToKiBarrier(OnSpellCast castData)
+    private static void AugmentKiBarrier(OnSpellCast castData)
     {
        
     }
-    private static void ApplyEffectsToKiShout(OnSpellCast castData)
+    private static void AugmentKiShout(OnSpellCast castData)
     {
         
     }
-    private static void ApplyEffectsToWholeness(OnSpellCast castData)
+    private static void AugmentWholeness(OnSpellCast castData)
     {   
         NwCreature monk = (NwCreature)castData.Caster;
         Location monkLocation = monk.Location;
@@ -113,7 +120,7 @@ public static class HymnPathEffects
             }
         
     }
-    private static void ApplyEffectsToEmptyBody(OnSpellCast castData)
+    private static void AugmentEmptyBody(OnSpellCast castData)
     {
        
     }

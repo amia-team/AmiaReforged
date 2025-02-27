@@ -1,4 +1,6 @@
 // The ability script called by the MartialTechniqueService
+
+using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -15,10 +17,16 @@ public static class StunningStrike
 
         if (path != null)
         {
-            PathEffectApplier.ApplyPathEffects(path, technique, null, attackData);
+            AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
             return;
         }
         
+        DoStunningStrike(attackData);
+    }
+
+    public static void DoStunningStrike(OnCreatureAttack attackData)
+    {
+        NwCreature monk = attackData.Attacker;
         Effect stunningStrikeEffect = Effect.LinkEffects(Effect.Stunned(), Effect.VisualEffect(VfxType.DurCessateNegative));
         stunningStrikeEffect.SubType = EffectSubType.Extraordinary;
         TimeSpan effectDuration = NwTimeSpan.FromRounds(1);

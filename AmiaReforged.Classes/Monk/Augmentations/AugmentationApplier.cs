@@ -1,10 +1,10 @@
 // Applies the path effects to the techniques
-using AmiaReforged.Classes.Monk.Effects;
+using AmiaReforged.Classes.Monk.Types;
 using Anvil.API.Events;
 
-namespace AmiaReforged.Classes.Monk.Types;
+namespace AmiaReforged.Classes.Monk.Augmentations;
 
-public static class PathEffectApplier
+public static class AugmentationApplier
 {
     /// <summary>
     /// This routes the event data to the correct path effects
@@ -14,11 +14,11 @@ public static class PathEffectApplier
     /// <param name="castData"></param> Use for body and spirit techniques
     /// <param name="attackData"></param> Use for martial techniques
 
-    public static void ApplyPathEffects(PathType? path, TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(PathType? path, TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (path)
         {
-            case PathType.Elements : ElementsPathEffects.ApplyElementsPathEffects(technique, castData, attackData);
+            case PathType.Elements : CrashingMeteor.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.Hymn : 
                 break;

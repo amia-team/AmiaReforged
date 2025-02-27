@@ -1,4 +1,6 @@
 // The ability script called by the MartialTechniqueService
+
+using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -15,10 +17,16 @@ public static class AxiomaticStrike
 
         if (path != null)
         {
-            PathEffectApplier.ApplyPathEffects(path, technique, null, attackData);
+            AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
             return;
         }
         
+        DoAxiomaticStrike(attackData);
+    }
+
+    public static void DoAxiomaticStrike(OnCreatureAttack attackData)
+    {
+        NwCreature monk = attackData.Attacker;
         DamageData<short> damageData = attackData.DamageData;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         short bludgeoningDamage = damageData.GetDamageByType(DamageType.Bludgeoning);

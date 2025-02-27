@@ -20,7 +20,7 @@ public class ElementalToggleHandler
 
     private static void ToggleElementalType(OnUseFeat eventData)
     {
-        if (eventData.Feat.Id is not MonkFeat.PathOfTheElements) return;
+        if (eventData.Feat.Id is not MonkFeat.CrashingMeteor) return;
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
         
         NwCreature monk = eventData.Creature;

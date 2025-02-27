@@ -45,7 +45,7 @@ public class SpellCastingService
             return ScriptHandleResult.Handled;
         }
 
-        if(target is not NwCreature targetCreature)
+        if(target is null)
         {
             // This is an AOE
             if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1)
@@ -60,6 +60,11 @@ public class SpellCastingService
         
             RevertCasterLevelOverride(casterCreature);
             return ScriptHandleResult.Handled;
+        }
+
+        if (target is not NwCreature targetCreature || target is not NwPlaceable || target is not NwDoor)
+        {
+            return ScriptHandleResult.NotHandled;
         }
 
         if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1)

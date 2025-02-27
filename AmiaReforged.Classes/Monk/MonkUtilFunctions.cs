@@ -12,19 +12,19 @@ public static class MonkUtilFunctions
     /// </summary>
     public static PathType? GetMonkPath(NwCreature monk)
     {
-        NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => feat.Id is MonkFeat.PathOfTheElements 
-            or MonkFeat.PathOfTheHymn or  MonkFeat.PathOfClarity or MonkFeat.PathOfTheMantle 
-            or MonkFeat.PathOfTheGolem or MonkFeat.PathOfTorment or MonkFeat.PathOfMists);
+        NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => feat.Id is MonkFeat.CrashingMeteor 
+            or MonkFeat.SwingingCenser or  MonkFeat.CrystalTides or MonkFeat.ChardalynSand 
+            or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley);
         
         return pathFeat?.Id switch
         {
-            MonkFeat.PathOfTheElements => PathType.Elements,
-            MonkFeat.PathOfTheHymn => PathType.Hymn,
-            MonkFeat.PathOfClarity => PathType.Clarity,
-            MonkFeat.PathOfTheMantle => PathType.Mantle,
-            MonkFeat.PathOfTheGolem => PathType.Golem,
-            MonkFeat.PathOfTorment => PathType.Torment,
-            MonkFeat.PathOfMists => PathType.Mists,
+            MonkFeat.CrashingMeteor => PathType.Elements,
+            MonkFeat.SwingingCenser => PathType.Hymn,
+            MonkFeat.CrystalTides => PathType.Clarity,
+            MonkFeat.ChardalynSand => PathType.Mantle,
+            MonkFeat.IroncladBull => PathType.Golem,
+            MonkFeat.CrackedVessel => PathType.Torment,
+            MonkFeat.EchoingValley => PathType.Mists,
             _ => null
         };
     }
