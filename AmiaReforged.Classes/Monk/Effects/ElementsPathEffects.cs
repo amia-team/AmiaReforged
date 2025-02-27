@@ -10,26 +10,26 @@ public static class ElementsPathEffects
     {
         switch (technique)
         {
-            case TechniqueType.Stunning : ApplyEffectsToStunning(attackData);
+            case TechniqueType.Stunning : AugmentStunning(attackData);
                 break;
-            case TechniqueType.Quivering : ApplyEffectsToQuivering(castData);
+            case TechniqueType.Quivering : AugmentQuivering(castData);
                 break;
-            case TechniqueType.Axiomatic : ApplyEffectsToAxiomatic(attackData);
+            case TechniqueType.Axiomatic : AugmentAxiomatic(attackData);
                 break;
-            case TechniqueType.KiBarrier : ApplyEffectsToKiBarrier(castData);
+            case TechniqueType.KiBarrier : AugmentKiBarrier(castData);
                 break;
-            case TechniqueType.KiShout : ApplyEffectsToKiShout(castData);
+            case TechniqueType.KiShout : AugmentKiShout(castData);
                 break;
                 
         }
     }
-    private static void ApplyEffectsToStunning(OnCreatureAttack attackData)
+    private static void AugmentStunning(OnCreatureAttack attackData)
     {
     }
-    private static void ApplyEffectsToQuivering(OnSpellCast castData)
+    private static void AugmentQuivering(OnSpellCast castData)
     {
     }
-    private static void ApplyEffectsToAxiomatic(OnCreatureAttack attackData)
+    private static void AugmentAxiomatic(OnCreatureAttack attackData)
     {
         NwCreature monk = attackData.Attacker;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
@@ -58,7 +58,7 @@ public static class ElementsPathEffects
         bludgeoningDamage += bonusDamageAxiomatic;
         damageData.SetDamageByType(DamageType.Bludgeoning, bludgeoningDamage);
     }
-    private static void ApplyEffectsToKiBarrier(OnSpellCast castData)
+    private static void AugmentKiBarrier(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
@@ -82,7 +82,7 @@ public static class ElementsPathEffects
         monk.ApplyEffect(EffectDuration.Temporary, kiBarrierEffect, effectDuration);
         monk.ApplyEffect(EffectDuration.Instant, kiBarrierVfx);
     }
-    private static void ApplyEffectsToKiShout(OnSpellCast castData)
+    private static void AugmentKiShout(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);

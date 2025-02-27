@@ -10,36 +10,36 @@ public static class MantlePathEffects
     {
         switch (technique)
         {
-            case TechniqueType.Stunning : ApplyEffectsToStunning(attackData);
+            case TechniqueType.Stunning : AugmentStunning(attackData);
                 break;
-            case TechniqueType.Axiomatic: ApplyEffectsToAxiomatic(attackData);
+            case TechniqueType.Axiomatic: AugmentAxiomatic(attackData);
                 break;
-            case TechniqueType.KiBarrier : ApplyEffectsToKiBarrier(castData);
+            case TechniqueType.KiBarrier : AugmentKiBarrier(castData);
                 break;
-            case TechniqueType.KiShout : ApplyEffectsToKiShout(castData);
+            case TechniqueType.KiShout : AugmentKiShout(castData);
                 break;
-            case TechniqueType.EmptyBody : ApplyEffectsToEmptyBody(castData);
+            case TechniqueType.EmptyBody : AugmentEmptyBody(castData);
                 break;
                 
         }
     }
-    private static void ApplyEffectsToStunning(OnCreatureAttack attackData)
+    private static void AugmentStunning(OnCreatureAttack attackData)
     {
        
     }
-    private static void ApplyEffectsToAxiomatic(OnCreatureAttack attackData)
+    private static void AugmentAxiomatic(OnCreatureAttack attackData)
     {
        
     }
-    private static void ApplyEffectsToKiBarrier(OnSpellCast castData)
+    private static void AugmentKiBarrier(OnSpellCast castData)
     {
        
     }
-    private static void ApplyEffectsToKiShout(OnSpellCast castData)
+    private static void AugmentKiShout(OnSpellCast castData)
     {
        
     }
-    private static void ApplyEffectsToEmptyBody(OnSpellCast castData)
+    private static void AugmentEmptyBody(OnSpellCast castData)
     {
         
     }

@@ -10,36 +10,36 @@ public static class ClarityPathEffects
     {
         switch (technique)
         {
-            case TechniqueType.Stunning: ApplyEffectsToStunning(attackData);
+            case TechniqueType.Stunning: AugmentStunning(attackData);
                 break;
-            case TechniqueType.Axiomatic: ApplyEffectsToAxiomatic(attackData);
+            case TechniqueType.Axiomatic: AugmentAxiomatic(attackData);
                 break;
-            case TechniqueType.KiShout : ApplyEffectsToKiShout(castData);
+            case TechniqueType.KiShout : AugmentKiShout(castData);
                 break;
-            case TechniqueType.EmptyBody : ApplyEffectsToEmptyBody(castData);
+            case TechniqueType.EmptyBody : AugmentEmptyBody(castData);
                 break;
-            case TechniqueType.Quivering : ApplyEffectsToQuivering(castData);
+            case TechniqueType.Quivering : AugmentQuivering(castData);
                 break;
                 
         }
     }
-    private static void ApplyEffectsToStunning(OnCreatureAttack attackData)
+    private static void AugmentStunning(OnCreatureAttack attackData)
     {
        
     }
-    private static void ApplyEffectsToAxiomatic(OnCreatureAttack attackData)
+    private static void AugmentAxiomatic(OnCreatureAttack attackData)
     {
        
     }
-    private static void ApplyEffectsToKiShout(OnSpellCast castData)
+    private static void AugmentKiShout(OnSpellCast castData)
     {
        
     }
-    private static void ApplyEffectsToEmptyBody(OnSpellCast castData)
+    private static void AugmentEmptyBody(OnSpellCast castData)
     {
         
     }
-    private static void ApplyEffectsToQuivering(OnSpellCast castData)
+    private static void AugmentQuivering(OnSpellCast castData)
     {
 
     }

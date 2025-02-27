@@ -13,32 +13,32 @@ public static class HymnPathEffects
     {
         switch (technique)
         {
-            case TechniqueType.Eagle : ApplyEffectsToEagle(attackData);
+            case TechniqueType.Eagle : AugmentEagle(attackData);
                 break;
-            case TechniqueType.KiBarrier : ApplyEffectsToKiBarrier(castData);
+            case TechniqueType.KiBarrier : AugmentKiBarrier(castData);
                 break;
-            case TechniqueType.KiShout : ApplyEffectsToKiShout(castData);
+            case TechniqueType.KiShout : AugmentKiShout(castData);
                 break;
-            case TechniqueType.Wholeness : ApplyEffectsToWholeness(castData);
+            case TechniqueType.Wholeness : AugmentWholeness(castData);
                 break;
-            case TechniqueType.EmptyBody : ApplyEffectsToEmptyBody(castData);
+            case TechniqueType.EmptyBody : AugmentEmptyBody(castData);
                 break;
                 
         }
     }
-    private static void ApplyEffectsToEagle(OnCreatureAttack attackData)
+    private static void AugmentEagle(OnCreatureAttack attackData)
     {
        
     }
-    private static void ApplyEffectsToKiBarrier(OnSpellCast castData)
+    private static void AugmentKiBarrier(OnSpellCast castData)
     {
        
     }
-    private static void ApplyEffectsToKiShout(OnSpellCast castData)
+    private static void AugmentKiShout(OnSpellCast castData)
     {
         
     }
-    private static void ApplyEffectsToWholeness(OnSpellCast castData)
+    private static void AugmentWholeness(OnSpellCast castData)
     {   
         NwCreature monk = (NwCreature)castData.Caster;
         Location monkLocation = monk.Location;
@@ -113,7 +113,7 @@ public static class HymnPathEffects
             }
         
     }
-    private static void ApplyEffectsToEmptyBody(OnSpellCast castData)
+    private static void AugmentEmptyBody(OnSpellCast castData)
     {
        
     }
