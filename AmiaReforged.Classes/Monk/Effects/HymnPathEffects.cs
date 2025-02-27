@@ -94,20 +94,24 @@ public static class HymnPathEffects
         Effect wholenessVfx = Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f);
         Effect aoeVfx = Effect.VisualEffect(VfxType.ImpPulseHoly, false, 1.0f);
         
-        monk.ApplyEffect(EffectDuration.Instant,aoeVfx); // AoE fire at the base of the Monk
 
         for (int i = 0; i < pulseAmount; i++) // Pulse amount
-        {
+        { 
+            monk.ApplyEffect(EffectDuration.Instant,aoeVfx); // AoE fire at the base of the Monk  
+        }
             foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, false))
             {
                 NwCreature creatureInShape = (NwCreature)nwObject;
                 if (monk.IsReactionTypeFriendly(creatureInShape)) continue;
                 creatureInShape.ApplyEffect(EffectDuration.Temporary,wholenessRegen,effectTime);
                 creatureInShape.ApplyEffect(EffectDuration.Temporary,wholenessConcealment,effectTime);
-                creatureInShape.ApplyEffect(EffectDuration.Instant,wholenessEffect);
-                creatureInShape.ApplyEffect(EffectDuration.Instant,wholenessVfx);
+                for (int e = 0; e < pulseAmount; e++) // Pulse amount
+                {
+                    creatureInShape.ApplyEffect(EffectDuration.Instant, wholenessEffect);
+                    creatureInShape.ApplyEffect(EffectDuration.Instant, wholenessVfx);
+                }
             }
-        }
+        
     }
     private static void ApplyEffectsToEmptyBody(OnSpellCast castData)
     {
