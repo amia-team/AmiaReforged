@@ -1,3 +1,5 @@
+using AmiaReforged.Classes.Monk.Techniques.Body;
+using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -20,7 +22,12 @@ public static class ElementsPathEffects
                 break;
             case TechniqueType.KiShout : AugmentKiShout(castData);
                 break;
-                
+            case TechniqueType.Eagle: EagleStrike.DoEagleStrike(attackData);
+                break;
+            case TechniqueType.Wholeness: WholenessOfBody.DoWholenessOfBody(castData);
+                break;
+            case TechniqueType.EmptyBody: EmptyBody.DoEmptyBody(castData);
+                break;
         }
     }
     private static void AugmentStunning(OnCreatureAttack attackData)

@@ -1,3 +1,5 @@
+using AmiaReforged.Classes.Monk.Techniques.Body;
+using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -20,7 +22,14 @@ public static class TormentPathEffects
                 break;
             case TechniqueType.Wholeness : AugmentWholeness(castData);
                 break;
-                
+            case TechniqueType.Stunning: StunningStrike.DoStunningStrike(attackData);
+                break;
+            case TechniqueType.Eagle: EagleStrike.DoEagleStrike(attackData);
+                break;
+            case TechniqueType.KiBarrier: KiBarrier.DoKiBarrier(castData);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(technique), technique, null);
         }
     }
     private static void AugmentAxiomatic(OnCreatureAttack attackData)

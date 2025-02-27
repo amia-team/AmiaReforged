@@ -2,6 +2,8 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using System.Numerics;
+using AmiaReforged.Classes.Monk.Techniques.Martial;
+using AmiaReforged.Classes.Monk.Techniques.Spirit;
 
 namespace AmiaReforged.Classes.Monk.Effects;
 
@@ -23,7 +25,12 @@ public static class HymnPathEffects
                 break;
             case TechniqueType.EmptyBody : AugmentEmptyBody(castData);
                 break;
-                
+            case TechniqueType.Stunning: StunningStrike.DoStunningStrike(attackData);
+                break;
+            case TechniqueType.Axiomatic: AxiomaticStrike.DoAxiomaticStrike(attackData);
+                break;
+            case TechniqueType.Quivering: QuiveringPalm.DoQuiveringPalm(castData);
+                break;
         }
     }
     private static void AugmentEagle(OnCreatureAttack attackData)

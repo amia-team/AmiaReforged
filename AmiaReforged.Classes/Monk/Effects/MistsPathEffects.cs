@@ -1,3 +1,5 @@
+using AmiaReforged.Classes.Monk.Techniques.Body;
+using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -21,7 +23,12 @@ public static class MistsPathEffects
                 break;
             case TechniqueType.Quivering : AugmentQuivering(castData);
                 break;
-                
+            case TechniqueType.Eagle: EagleStrike.DoEagleStrike(attackData);
+                break;
+            case TechniqueType.Wholeness: WholenessOfBody.DoWholenessOfBody(castData);
+                break;
+            case TechniqueType.KiBarrier: KiBarrier.DoKiBarrier(castData);
+                break;
         }
     }
     private static void AugmentAxiomatic(OnCreatureAttack attackData)

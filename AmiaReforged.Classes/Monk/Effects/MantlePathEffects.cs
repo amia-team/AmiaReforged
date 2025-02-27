@@ -1,3 +1,6 @@
+using AmiaReforged.Classes.Monk.Techniques.Body;
+using AmiaReforged.Classes.Monk.Techniques.Martial;
+using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -20,7 +23,12 @@ public static class MantlePathEffects
                 break;
             case TechniqueType.EmptyBody : AugmentEmptyBody(castData);
                 break;
-                
+            case TechniqueType.Eagle: EagleStrike.DoEagleStrike(attackData);
+                break;
+            case TechniqueType.Wholeness: WholenessOfBody.DoWholenessOfBody(castData);
+                break;
+            case TechniqueType.Quivering: QuiveringPalm.DoQuiveringPalm(castData);
+                break;
         }
     }
     private static void AugmentStunning(OnCreatureAttack attackData)
