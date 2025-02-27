@@ -19,6 +19,12 @@ public static class AxiomaticStrike
             return;
         }
         
+        DoAxiomaticStrike(attackData);
+    }
+
+    public static void DoAxiomaticStrike(OnCreatureAttack attackData)
+    {
+        NwCreature monk = attackData.Attacker;
         DamageData<short> damageData = attackData.DamageData;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         short bludgeoningDamage = damageData.GetDamageByType(DamageType.Bludgeoning);

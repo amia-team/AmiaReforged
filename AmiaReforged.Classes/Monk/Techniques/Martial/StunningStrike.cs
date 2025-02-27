@@ -19,6 +19,12 @@ public static class StunningStrike
             return;
         }
         
+        DoStunningStrike(attackData);
+    }
+
+    public static void DoStunningStrike(OnCreatureAttack attackData)
+    {
+        NwCreature monk = attackData.Attacker;
         Effect stunningStrikeEffect = Effect.LinkEffects(Effect.Stunned(), Effect.VisualEffect(VfxType.DurCessateNegative));
         stunningStrikeEffect.SubType = EffectSubType.Extraordinary;
         TimeSpan effectDuration = NwTimeSpan.FromRounds(1);

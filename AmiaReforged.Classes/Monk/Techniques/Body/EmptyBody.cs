@@ -22,7 +22,13 @@ public static class EmptyBody
             PathEffectApplier.ApplyPathEffects(path, technique, castData);
             return;
         }
+        
+        DoEmptyBody(castData);
+    }
 
+    public static void DoEmptyBody(OnSpellCast castData)
+    {
+        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         Effect emptyBodyEffect = Effect.LinkEffects(Effect.Concealment(50), 
             Effect.VisualEffect(VfxType.DurInvisibility), Effect.VisualEffect(VfxType.DurCessatePositive));

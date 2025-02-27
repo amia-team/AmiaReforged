@@ -22,7 +22,13 @@ public static class WholenessOfBody
             PathEffectApplier.ApplyPathEffects(path, technique, castData);
             return;
         }
+        
+        DoWholenessOfBody(castData);
+    }
 
+    public static void DoWholenessOfBody(OnSpellCast castData)
+    {
+        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int healAmount = monkLevel*2;
         Effect wholenessEffect = Effect.Heal(healAmount);

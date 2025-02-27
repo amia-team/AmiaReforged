@@ -19,7 +19,13 @@ public static class KiBarrier
             PathEffectApplier.ApplyPathEffects(path, technique, castData);
             return;
         }
+        
+        DoKiBarrier(castData);
+    }
 
+    public static void DoKiBarrier(OnSpellCast castData)
+    {
+        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int damageReductionAmount = 5;
         int totalAbsorb = monkLevel / 2 * 10;

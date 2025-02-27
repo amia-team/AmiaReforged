@@ -19,8 +19,15 @@ public static class QuiveringPalm
             PathEffectApplier.ApplyPathEffects(path, technique, castData);
             return;
         }
+        
+        DoQuiveringPalm(castData);
+    }
 
+    public static void DoQuiveringPalm(OnSpellCast castData)
+    {
         if (castData.TargetObject is not NwCreature targetCreature) return;
+        
+        NwCreature monk = (NwCreature)castData.Caster;
         
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
 
@@ -38,7 +45,6 @@ public static class QuiveringPalm
 
         if (savingThrowResult is SavingThrowResult.Success)
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
-            
         else
         {
             targetCreature.ApplyEffect(EffectDuration.Instant, quiveringEffect);

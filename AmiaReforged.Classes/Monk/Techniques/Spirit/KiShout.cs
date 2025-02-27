@@ -19,7 +19,13 @@ public static class KiShout
             PathEffectApplier.ApplyPathEffects(path, technique, castData);
             return;
         }
+        
+        DoKiShout(castData);
+    }
 
+    public static void DoKiShout(OnSpellCast castData)
+    {
+        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         Effect kiShoutEffect = Effect.LinkEffects(Effect.Stunned(), Effect.VisualEffect(VfxType.DurCessateNegative));
@@ -33,19 +39,20 @@ public static class KiShout
             NwCreature creatureInShape = (NwCreature)nwObject;
             if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
 
-            CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.AbilityQuiveringPalm)!);
+            CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape,
+                NwSpell.FromSpellType(Spell.AbilityQuiveringPalm)!);
 
             int damageAmount = Random.Shared.Roll(4, monkLevel);
-            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, DamageType.Sonic), 
+            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, DamageType.Sonic),
                 Effect.VisualEffect(VfxType.ImpSonic));
 
             creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
-            SavingThrowResult savingThrowResult = 
+            SavingThrowResult savingThrowResult =
                 creatureInShape.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
-            
+
             if (savingThrowResult is SavingThrowResult.Success)
                 creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
-            
+
             if (savingThrowResult is SavingThrowResult.Failure)
                 creatureInShape.ApplyEffect(EffectDuration.Temporary, kiShoutEffect, effectDuration);
         }
