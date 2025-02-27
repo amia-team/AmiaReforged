@@ -66,7 +66,7 @@ public class PersistPLCSpawner
             string tempPLCName = temp.PLCName;
             string areaResRef = temp.AreaResRef;
             int realResRefIndex = serverAreaResref.FindIndex(x => x.Contains(areaResRef)); 
-            if (realResRefIndex == -1)
+            if (realResRefIndex == -1 || realResRefIndex >= serverAreas.Count)
             {
                 continue;
             }
