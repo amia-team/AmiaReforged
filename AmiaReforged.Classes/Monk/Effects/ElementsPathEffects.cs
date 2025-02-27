@@ -18,13 +18,13 @@ public static class ElementsPathEffects
                 break;
             case TechniqueType.Axiomatic : AugmentAxiomatic(attackData);
                 break;
-            case TechniqueType.KiBarrier : AugmentKiBarrier(castData);
-                break;
             case TechniqueType.KiShout : AugmentKiShout(castData);
                 break;
-            case TechniqueType.Eagle: EagleStrike.DoEagleStrike(attackData);
+            case TechniqueType.Wholeness: AugmentWholeness(castData);
                 break;
-            case TechniqueType.Wholeness: WholenessOfBody.DoWholenessOfBody(castData);
+            case TechniqueType.KiBarrier: KiBarrier.DoKiBarrier(castData);
+                break;
+            case TechniqueType.Eagle: EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.EmptyBody: EmptyBody.DoEmptyBody(castData);
                 break;
@@ -38,12 +38,14 @@ public static class ElementsPathEffects
     }
     private static void AugmentAxiomatic(OnCreatureAttack attackData)
     {
+        // First do Axiomatic, then add the path stuff
+        AxiomaticStrike.DoAxiomaticStrike(attackData);
+        
         NwCreature monk = attackData.Attacker;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
         DamageData<short> damageData = attackData.DamageData;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         short elementalDamage = damageData.GetDamageByType(elementalType);
-        short bludgeoningDamage = damageData.GetDamageByType(DamageType.Bludgeoning); 
         short bonusDamageElemental = monkLevel switch
         {
             >= 10 and <= 19 => 2,
@@ -51,43 +53,13 @@ public static class ElementsPathEffects
             30 => 4,
             _ => 1
         };
-        short bonusDamageAxiomatic = monkLevel switch
-        {
-            >= 10 and <= 19 => 2,
-            >= 20 and <= 29 => 3,
-            30 => 4,
-            _ => 1
-        };
-        
         // Apply elemental and axiomatic damage
         elementalDamage += bonusDamageElemental;
         damageData.SetDamageByType(elementalType, elementalDamage);
-        bludgeoningDamage += bonusDamageAxiomatic;
-        damageData.SetDamageByType(DamageType.Bludgeoning, bludgeoningDamage);
     }
-    private static void AugmentKiBarrier(OnSpellCast castData)
+    private static void AugmentWholeness(OnSpellCast castData)
     {
-        NwCreature monk = (NwCreature)castData.Caster;
-        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int damageReductionAmount = 5;
-        int totalAbsorb = monkLevel / 2 * 10;
-
-        Effect kiBarrierEffect = Effect.LinkEffects(Effect.DamageReduction(damageReductionAmount, DamagePower.Plus20, totalAbsorb),
-            Effect.DamageResistance(elementalType, 10), Effect.VisualEffect(VfxType.DurCessatePositive));
-        kiBarrierEffect.SubType = EffectSubType.Supernatural;
-        Effect kiBarrierVfx = elementalType switch
-        {
-            DamageType.Fire => Effect.VisualEffect(VfxType.ImpFlameM),
-            DamageType.Cold => Effect.VisualEffect(VfxType.ImpFrostL),
-            DamageType.Electrical => Effect.VisualEffect(VfxType.FnfElectricExplosion, false, 0.3f),
-            DamageType.Acid => Effect.VisualEffect(VfxType.FnfGasExplosionAcid),
-            _ => Effect.VisualEffect(VfxType.ImpFlameM)
-        };
-        TimeSpan effectDuration = NwTimeSpan.FromTurns(monkLevel);
-
-        monk.ApplyEffect(EffectDuration.Temporary, kiBarrierEffect, effectDuration);
-        monk.ApplyEffect(EffectDuration.Instant, kiBarrierVfx);
+        
     }
     private static void AugmentKiShout(OnSpellCast castData)
     {
