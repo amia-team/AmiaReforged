@@ -1,5 +1,6 @@
 // Static bonus effects called by StaticBonusService
 using Anvil.API;
+using static AmiaReforged.Classes.Monk.Constants.MonkLevel;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
@@ -28,9 +29,9 @@ public static class StaticBonusesEffect
 
         int kiStrikeBonusAmount = monkLevel switch
         {
-            >= 10 and <= 17 => 1,
-            >= 18 and <= 25 => 2,
-            >= 26 => 3,
+            >= KiFocusILevel and <= KiFocusIILevel => 1,
+            >= KiFocusIILevel and <= KiFocusIIILevel => 2,
+            >= KiFocusIIILevel => 3,
             _ => 0
         };
         Effect kiStrike = Effect.AttackIncrease(kiStrikeBonusAmount);
