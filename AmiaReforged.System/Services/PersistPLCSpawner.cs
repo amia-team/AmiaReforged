@@ -66,6 +66,10 @@ public class PersistPLCSpawner
             string tempPLCName = temp.PLCName;
             string areaResRef = temp.AreaResRef;
             int realResRefIndex = serverAreaResref.FindIndex(x => x.Contains(areaResRef)); 
+            if (realResRefIndex == -1)
+            {
+                continue;
+            }
             uint realArea = serverAreas[realResRefIndex];
             string PLCResRef = temp.PLCResRef;
             Vector3 vector = NWScript.Vector(temp.X,temp.Y,temp.Z);
