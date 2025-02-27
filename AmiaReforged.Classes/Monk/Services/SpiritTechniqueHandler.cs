@@ -1,5 +1,5 @@
-using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

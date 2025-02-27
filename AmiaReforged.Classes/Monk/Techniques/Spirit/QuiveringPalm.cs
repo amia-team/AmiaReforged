@@ -1,10 +1,10 @@
 // Called from the spirit technique handler when the technique is cast
+
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 
-
-namespace AmiaReforged.Classes.Monk.Techniques.Body;
+namespace AmiaReforged.Classes.Monk.Techniques.Spirit;
 
 public static class QuiveringPalm
 {

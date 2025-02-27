@@ -4,7 +4,7 @@ using Anvil.API;
 using Anvil.API.Events;
 
 
-namespace AmiaReforged.Classes.Monk.Techniques.Body;
+namespace AmiaReforged.Classes.Monk.Techniques.Spirit;
 
 public static class KiShout
 {
