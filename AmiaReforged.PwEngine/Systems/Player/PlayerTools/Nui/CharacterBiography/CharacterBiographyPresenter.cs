@@ -90,7 +90,8 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
         {
             character.Description = characterBio;
         }
-
+        
+        RaiseCloseEvent();
         Token().Player.ExportCharacter();
         Token().Close();
     }
