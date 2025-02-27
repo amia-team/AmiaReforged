@@ -7,7 +7,7 @@ using NLog;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(BodyTechniqueHandler))]
+// [ServiceBinding(typeof(BodyTechniqueHandler))]
 public class BodyTechniqueHandler
 {
   private static readonly Logger Log = LogManager.GetCurrentClassLogger();

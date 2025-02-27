@@ -7,7 +7,7 @@ using NLog;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(SpiritTechniqueHandler))]
+// [ServiceBinding(typeof(SpiritTechniqueHandler))]
 public class SpiritTechniqueHandler
 {
   private static readonly Logger Log = LogManager.GetCurrentClassLogger();

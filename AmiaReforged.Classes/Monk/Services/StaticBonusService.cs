@@ -6,7 +6,7 @@ using NLog;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(StaticBonusesService))]
+// [ServiceBinding(typeof(StaticBonusesService))]
 public class StaticBonusesService
 {
     private const int StaticBonusLevel = 3;

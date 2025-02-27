@@ -7,7 +7,7 @@ using NLog;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(MonkAbilityHandler))]
+// [ServiceBinding(typeof(MonkAbilityHandler))]
 public class MonkAbilityHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

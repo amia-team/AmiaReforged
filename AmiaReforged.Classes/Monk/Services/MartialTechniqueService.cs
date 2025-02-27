@@ -9,7 +9,7 @@ using NLog;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(MartialTechniqueService))]
+// [ServiceBinding(typeof(MartialTechniqueService))]
 public class MartialTechniqueService
 {
   private readonly Effect _martialEffect = Effect.VisualEffect(VfxType.None);

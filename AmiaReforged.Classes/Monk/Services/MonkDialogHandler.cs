@@ -7,7 +7,7 @@ using NWN.Core;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(MonkDialogHandler))]
+// [ServiceBinding(typeof(MonkDialogHandler))]
 public class MonkDialogHandler
 { 
     private readonly Logger Log = LogManager.GetCurrentClassLogger();

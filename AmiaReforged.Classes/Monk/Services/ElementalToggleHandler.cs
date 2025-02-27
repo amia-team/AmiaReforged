@@ -7,7 +7,7 @@ using NLog;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(ElementalToggleHandler))]
+// [ServiceBinding(typeof(ElementalToggleHandler))]
 public class ElementalToggleHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
