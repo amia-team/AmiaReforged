@@ -1,4 +1,6 @@
 // The ability script called by the MartialTechniqueService
+
+using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -15,7 +17,7 @@ public static class AxiomaticStrike
 
         if (path != null)
         {
-            PathEffectApplier.ApplyPathEffects(path, technique, null, attackData);
+            AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
             return;
         }
         

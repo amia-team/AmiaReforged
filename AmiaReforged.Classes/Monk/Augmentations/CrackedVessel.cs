@@ -4,16 +4,14 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 
-namespace AmiaReforged.Classes.Monk.Effects;
+namespace AmiaReforged.Classes.Monk.Augmentations;
 
-public static class ClarityPathEffects
-{
-    public static void ApplyClarityPathEffects(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+public static class CrackedVessel
+{  
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
-            case TechniqueType.Stunning: AugmentStunning(attackData);
-                break;
             case TechniqueType.Axiomatic: AugmentAxiomatic(attackData);
                 break;
             case TechniqueType.KiShout : AugmentKiShout(castData);
@@ -22,17 +20,17 @@ public static class ClarityPathEffects
                 break;
             case TechniqueType.Quivering : AugmentQuivering(castData);
                 break;
-            case TechniqueType.Eagle: EagleStrike.DoEagleStrike(attackData);
+            case TechniqueType.Wholeness : AugmentWholeness(castData);
                 break;
-            case TechniqueType.Wholeness: WholenessOfBody.DoWholenessOfBody(castData);
+            case TechniqueType.Stunning: StunningStrike.DoStunningStrike(attackData);
+                break;
+            case TechniqueType.Eagle: EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.KiBarrier: KiBarrier.DoKiBarrier(castData);
                 break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(technique), technique, null);
         }
-    }
-    private static void AugmentStunning(OnCreatureAttack attackData)
-    {
-       
     }
     private static void AugmentAxiomatic(OnCreatureAttack attackData)
     {
@@ -48,7 +46,10 @@ public static class ClarityPathEffects
     }
     private static void AugmentQuivering(OnSpellCast castData)
     {
-
+    }
+    private static void AugmentWholeness(OnSpellCast castData)
+    {
+       
     }
     
 }

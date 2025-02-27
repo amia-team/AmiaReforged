@@ -4,11 +4,11 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 
-namespace AmiaReforged.Classes.Monk.Effects;
+namespace AmiaReforged.Classes.Monk.Augmentations;
 
-public static class GolemPathEffects
+public static class IroncladBull
 {
-    public static void ApplyGolemPathEffects(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {

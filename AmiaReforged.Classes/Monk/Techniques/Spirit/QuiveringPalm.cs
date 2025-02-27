@@ -1,5 +1,6 @@
 // Called from the spirit technique handler when the technique is cast
 
+using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -16,7 +17,7 @@ public static class QuiveringPalm
 
         if (path != null)
         {
-            PathEffectApplier.ApplyPathEffects(path, technique, castData);
+            AugmentationApplier.ApplyAugmentations(path, technique, castData);
             return;
         }
         

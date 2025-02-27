@@ -5,13 +5,13 @@ using System.Numerics;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
 
-namespace AmiaReforged.Classes.Monk.Effects;
+namespace AmiaReforged.Classes.Monk.Augmentations;
 
-public static class HymnPathEffects
+public static class SwingingCenser
 {
     
     
-    public static void ApplyHymnsPathEffects(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {

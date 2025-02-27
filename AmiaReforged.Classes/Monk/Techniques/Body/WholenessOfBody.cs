@@ -1,4 +1,6 @@
 // Called from the body technique handler when the technique is cast
+
+using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -19,7 +21,7 @@ public static class WholenessOfBody
 
         if (path != null)
         {
-            PathEffectApplier.ApplyPathEffects(path, technique, castData);
+            AugmentationApplier.ApplyAugmentations(path, technique, castData);
             return;
         }
         

@@ -30,9 +30,9 @@ public class MonkDialogHandler
     if (eventData.Feat.Id is not MonkFeat.PathOfEnlightenment) return;
     if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
-    if (eventData.Creature.Feats.Any(feat => feat.Id is MonkFeat.PathOfTheElements
-          or MonkFeat.PathOfTheHymn or MonkFeat.PathOfClarity or MonkFeat.PathOfTheMantle
-          or MonkFeat.PathOfTheGolem or MonkFeat.PathOfTorment or MonkFeat.PathOfMists)) return;
+    if (eventData.Creature.Feats.Any(feat => feat.Id is MonkFeat.CrashingMeteor
+          or MonkFeat.SwingingCenser or MonkFeat.CrystalTides or MonkFeat.ChardalynSand
+          or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley)) return;
 
     await player.ActionStartConversation
         (eventData.Creature, "mont_path_dlg", true, false);
@@ -98,48 +98,48 @@ public class MonkDialogHandler
 
         if (localInt("ds_check1").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PathOfClarity)!);
-            return NwFeat.FromFeatId(MonkFeat.PathOfClarity)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.CrystalTides)!);
+            return NwFeat.FromFeatId(MonkFeat.CrystalTides)!.Name.ToString();
         }
 
 
         if (localInt("ds_check2").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PathOfMists)!);
-            return NwFeat.FromFeatId(MonkFeat.PathOfMists)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.EchoingValley)!);
+            return NwFeat.FromFeatId(MonkFeat.EchoingValley)!.Name.ToString();
         }
 
 
         if (localInt("ds_check3").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PathOfTorment)!);
-            return NwFeat.FromFeatId(MonkFeat.PathOfTorment)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.CrackedVessel)!);
+            return NwFeat.FromFeatId(MonkFeat.CrackedVessel)!.Name.ToString();
         }
 
 
         if (localInt("ds_check4").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PathOfTheElements)!);
-            return NwFeat.FromFeatId(MonkFeat.PathOfTheElements)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.CrashingMeteor)!);
+            return NwFeat.FromFeatId(MonkFeat.CrashingMeteor)!.Name.ToString();
         }
 
 
         if (localInt("ds_check5").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PathOfTheGolem)!);
-            return NwFeat.FromFeatId(MonkFeat.PathOfTheGolem)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.IroncladBull)!);
+            return NwFeat.FromFeatId(MonkFeat.IroncladBull)!.Name.ToString();
         }
 
         if (localInt("ds_check6").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PathOfTheHymn)!);
-            return NwFeat.FromFeatId(MonkFeat.PathOfTheHymn)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.SwingingCenser)!);
+            return NwFeat.FromFeatId(MonkFeat.SwingingCenser)!.Name.ToString();
         }
 
         if (localInt("ds_check7").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PathOfTheMantle)!);
-            return NwFeat.FromFeatId(MonkFeat.PathOfTheMantle)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.ChardalynSand)!);
+            return NwFeat.FromFeatId(MonkFeat.ChardalynSand)!.Name.ToString();
         }
         
         return "";
