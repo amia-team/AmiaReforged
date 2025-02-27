@@ -35,4 +35,10 @@ public interface IScryPresenter
     /// Closes the presenter, cleaning up any resources or state.
     /// </summary>
     public void Close();
+
+    public delegate void PresenterClosedEventHandler(IScryPresenter sender, EventArgs e);
+
+    public event PresenterClosedEventHandler Closing;
+
+    public void RaiseCloseEvent();
 }

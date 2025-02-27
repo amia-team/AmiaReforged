@@ -18,34 +18,15 @@ public static class EagleStrike
             PathEffectApplier.ApplyPathEffects(path, technique, null, attackData);
             return;
         }
-
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        short bonusDamage = monkLevel switch
-        {
-            >= 10 and <= 19 => 2,
-            >= 20 and <= 29 => 3,
-            30 => 4,
-            _ => 1
-        };
-        int acDecreaseAmount = monkLevel switch
-        {
-            >= 10 and <= 19 => 2,
-            >= 20 and <= 29 => 3,
-            30 => 4,
-            _ => 1
-        };
-        Effect eagleStrikeEffect = Effect.ACDecrease(acDecreaseAmount);
+        
+        TimeSpan effectDuration = NwTimeSpan.FromTurns(1);
+        int acDecreaseAmount = 2;
+        int effectDc = MonkUtilFunctions.CalculateMonkDc(monk);
+        Effect eagleStrikeEffect = Effect.LinkEffects(Effect.ACDecrease(acDecreaseAmount), 
+            Effect.VisualEffect(VfxType.DurCessateNegative));
+        Effect eagleStrikeVfx = Effect.VisualEffect(VfxType.ComBloodSparkLarge);
         eagleStrikeEffect.Tag = "eaglestrike_effect";
         eagleStrikeEffect.SubType = EffectSubType.Extraordinary;
-        TimeSpan effectDuration = NwTimeSpan.FromTurns(1);
-        int effectDc = MonkUtilFunctions.CalculateMonkDc(monk);
-        Effect eagleStrikeVfx = Effect.VisualEffect(VfxType.ImpPdkWrath);
-
-        // Apply eagle's bonus damage
-        DamageData<short> damageData = attackData.DamageData;
-        short piercingDamage = damageData.GetDamageByType(DamageType.Piercing);
-        piercingDamage += bonusDamage;
-        damageData.SetDamageByType(DamageType.Piercing, piercingDamage);
 
         // DC check for eagle effect
         if (attackData.Target is not NwCreature targetCreature) return;

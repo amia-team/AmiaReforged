@@ -19,7 +19,7 @@ public class SpellCastingService
         _decoratorFactory = decoratorFactory;
         foreach (ISpell spell in spells)
         {
-            Log.Info($"Registering spell impact handler for {spell.ImpactScript}");
+            Log.Info($"Registering spell for script: {spell.ImpactScript}");
             _spellImpactHandlers.Add(spell.ImpactScript, spell);
             scriptHandleFactory.RegisterScriptHandler(spell.ImpactScript, HandleSpellImpact);
         }

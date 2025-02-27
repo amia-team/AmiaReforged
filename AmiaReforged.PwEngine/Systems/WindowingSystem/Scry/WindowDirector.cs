@@ -1,5 +1,4 @@
-﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
+﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -88,8 +87,9 @@ public sealed class WindowDirector : IDisposable
         _tokens.TryAdd(window.Token(), window);
         _activeWindows.TryGetValue(window.Token().Player, out List<IScryPresenter>? playerWindows);
         _linkedTokens.TryAdd(window.Token(), new List<NuiWindowToken>());
-
+        
         playerWindows?.Add(window);
+        window.Closing += (_, _) => CloseWindow(window.Token().Player, window.GetType());
     }
 
     /// <summary>
@@ -107,6 +107,7 @@ public sealed class WindowDirector : IDisposable
 
         if (window != null)
         {
+            Log.Info($"Closing {window.Token().Token} for {player.PlayerName}");
             _linkedTokens.TryGetValue(window.Token(), out List<NuiWindowToken>? linkedTokens);
 
             linkedTokens?.ForEach(t =>

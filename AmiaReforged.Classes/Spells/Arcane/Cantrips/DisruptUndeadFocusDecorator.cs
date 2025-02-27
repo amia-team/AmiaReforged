@@ -28,11 +28,13 @@ public class DisruptUndeadFocusDecorator : SpellDecorator
 
         bool anyFocus = hasNecroFocus || hasGreaterNecroFocus || hasEpicNecroFocus;
 
-        if (creature.Race == NwRace.FromRacialType(RacialType.Undead) && anyFocus)
+        if (creature.Race.RacialType == RacialType.Undead && anyFocus)
         {
             int reductionAmount = hasNecroFocus ? 1 : hasGreaterNecroFocus ? 2 : hasEpicNecroFocus ? 3 : 0;
+            int immunityReduction = hasEpicNecroFocus ? 5 : 0;
 
             Effect saveDecrease = Effect.SavingThrowDecrease(SavingThrow.Will, reductionAmount);
+            saveDecrease = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Positive, immunityReduction), saveDecrease);
             saveDecrease.Tag = "DisruptUndeadFocusDecorator";
             
             Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "DisruptUndeadFocusDecorator");

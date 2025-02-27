@@ -19,9 +19,9 @@ public static class StunningStrike
             return;
         }
         
-        Effect stunningStrikeEffect = Effect.LinkEffects(Effect.Stunned());
+        Effect stunningStrikeEffect = Effect.LinkEffects(Effect.Stunned(), Effect.VisualEffect(VfxType.DurCessateNegative));
         stunningStrikeEffect.SubType = EffectSubType.Extraordinary;
-        TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
+        TimeSpan effectDuration = NwTimeSpan.FromRounds(1);
         int effectDc = MonkUtilFunctions.CalculateMonkDc(monk);
 
         // DC check for stunning effect
