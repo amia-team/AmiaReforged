@@ -31,10 +31,6 @@ public class ElectricJolt : ISpell
         if(target == null) return;
         if(target is not NwCreature creature) return;
         
-        caster.SpeakString("I'm casting Electric Jolt!");
-        
-        LogManager.GetCurrentClassLogger().Info("Electric Jolt");
-
         Effect beam = Effect.Beam(VfxType.BeamLightning, casterCreature, BodyNode.Hand);
         creature.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1.1));
         
