@@ -1,8 +1,9 @@
 // Static bonus effects called by StaticBonusService
+
 using Anvil.API;
 using static AmiaReforged.Classes.Monk.Constants.MonkLevel;
 
-namespace AmiaReforged.Classes.Monk.Services;
+namespace AmiaReforged.Classes.Monk;
 
 public static class StaticBonusesEffect
 {
