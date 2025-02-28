@@ -4,16 +4,21 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-// [ServiceBinding(typeof(ElementalToggleHandler))]
+[ServiceBinding(typeof(ElementalToggleHandler))]
 public class ElementalToggleHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public ElementalToggleHandler()
     {
+        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
+
+        if (environment == "live") return;
+        
         NwModule.Instance.OnUseFeat += ToggleElementalType;
         Log.Info("Monk Elemental Toggle Handler initialized.");
     }

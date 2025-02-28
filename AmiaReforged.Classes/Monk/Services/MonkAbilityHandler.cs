@@ -4,16 +4,21 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-// [ServiceBinding(typeof(MonkAbilityHandler))]
+[ServiceBinding(typeof(MonkAbilityHandler))]
 public class MonkAbilityHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public MonkAbilityHandler()
     {
+        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
+
+        if (environment == "live") return;
+        
         NwModule.Instance.OnUseFeat += PreventWhenArmored;
         NwModule.Instance.OnUseFeat += PreventHostileActionToFriendly;
         NwModule.Instance.OnUseFeat += PreventAbilityInNoCastingArea;

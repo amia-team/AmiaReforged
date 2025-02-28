@@ -4,16 +4,21 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-// [ServiceBinding(typeof(SpiritTechniqueHandler))]
+[ServiceBinding(typeof(SpiritTechniqueHandler))]
 public class SpiritTechniqueHandler
 {
   private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
   public SpiritTechniqueHandler()
   {
+    string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
+
+    if (environment == "live") return;
+    
     // Register method to listen for the OnSpellCast event.
     NwModule.Instance.OnSpellCast += CastSpiritTechnique;
     Log.Info("Monk Spirit Technique Handler initialized.");

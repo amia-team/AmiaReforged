@@ -3,11 +3,11 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-// [ServiceBinding(typeof(MonkDialogHandler))]
+[ServiceBinding(typeof(MonkDialogHandler))]
 public class MonkDialogHandler
 { 
     private readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -15,11 +15,15 @@ public class MonkDialogHandler
     [Inject] private DialogService DialogService { get; init; }
     public MonkDialogHandler(DialogService dialogService)
     { 
-      //Register method to listen for the event.
-      DialogService = dialogService;
-      NwModule.Instance.OnUseFeat += OpenPathDialog;
-      NwModule.Instance.OnUseFeat += OpenEyeGlowDialog;
-      Log.Info("Monk Eye Glow Feat Handler initialized.");
+        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE"); 
+
+        if (environment == "live") return;
+        
+        //Register method to listen for the event.
+        DialogService = dialogService;
+        NwModule.Instance.OnUseFeat += OpenPathDialog;
+        NwModule.Instance.OnUseFeat += OpenEyeGlowDialog;
+        Log.Info("Monk Eye Glow Feat Handler initialized.");
     }
 
     /// <summary>

@@ -4,16 +4,21 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-// [ServiceBinding(typeof(BodyTechniqueHandler))]
+[ServiceBinding(typeof(BodyTechniqueHandler))]
 public class BodyTechniqueHandler
 {
   private static readonly Logger Log = LogManager.GetCurrentClassLogger();
   
   public BodyTechniqueHandler()
   {
+    string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
+
+    if (environment == "live") return;
+    
     // Register method to listen for the OnSpellCast event.
     NwModule.Instance.OnSpellCast += CastBodyTechnique;
     Log.Info("Monk Body Technique Handler initialized.");

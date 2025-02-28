@@ -3,10 +3,11 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-// [ServiceBinding(typeof(StaticBonusesService))]
+[ServiceBinding(typeof(StaticBonusesService))]
 public class StaticBonusesService
 {
     private const int StaticBonusLevel = 3;
@@ -14,6 +15,10 @@ public class StaticBonusesService
 
     public StaticBonusesService(EventService eventService)
     {
+        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
+
+        if (environment == "live") return;
+        
         eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(OnLoadAddBonuses, EventCallbackType.After);
         NwModule.Instance.OnItemEquip += OnEquipAddBonuses;
         NwModule.Instance.OnItemEquip += OnEquipRemoveBonuses;

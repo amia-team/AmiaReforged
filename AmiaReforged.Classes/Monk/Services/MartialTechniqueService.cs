@@ -6,10 +6,11 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-// [ServiceBinding(typeof(MartialTechniqueService))]
+[ServiceBinding(typeof(MartialTechniqueService))]
 public class MartialTechniqueService
 {
   private readonly Effect _martialEffect = Effect.VisualEffect(VfxType.None);
@@ -18,6 +19,10 @@ public class MartialTechniqueService
   
   public MartialTechniqueService()
   {
+    string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
+
+    if (environment == "live") return;
+    
     // Register methods to listen for the events.
     NwModule.Instance.OnUseFeat += MartialTechniqueUseFeat;
     NwModule.Instance.OnCombatRoundStart += EnterMartialTechnique;
