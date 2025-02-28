@@ -2,6 +2,7 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using System.Numerics;
+using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
 
@@ -54,20 +55,20 @@ public static class SwingingCenser
         double level30Heal = healAmount * 1.5;
         
         // Wholeness is gained at 7
-        if (monkLevel == 30) 
+        if (monkLevel == MonkLevel.KiFocusIIILevel) 
         {
             pulseAmount = 3;
             healAmount = (int)level30Heal;
         }
-        else if (monkLevel >= 24)
+        else if (monkLevel >= MonkLevel.KiFocusIILevel)
         {
             pulseAmount = 3; 
         }
-        else if (monkLevel >= 18)
+        else if (monkLevel >= MonkLevel.KiFocusILevel)
         {
             pulseAmount = 2; 
         }
-        else if (monkLevel >= 12)
+        else if (monkLevel >= MonkLevel.PathOfEnlightenmentLevel)
         {
             pulseAmount = 1; 
         }
@@ -120,22 +121,22 @@ public static class SwingingCenser
         TimeSpan effectTime = TimeSpan.FromSeconds(monkLevel*6); // Adjust as appropriate. 1 round per monk level.
         
         // Wholeness is gained at 7
-        if (monkLevel == 30) 
+        if (monkLevel == MonkLevel.KiFocusIIILevel) 
         {
             regen = 7;
             concealment = 55;
         }
-        else if (monkLevel >= 24)
+        else if (monkLevel >= MonkLevel.KiFocusIILevel)
         {
             regen = 5;
             concealment = 45;
         }
-        else if (monkLevel >= 18)
+        else if (monkLevel >= MonkLevel.KiFocusILevel)
         {
             regen = 4;
             concealment = 35;
         }
-        else if (monkLevel >= 12)
+        else if (monkLevel >= MonkLevel.PathOfEnlightenmentLevel)
         {
             regen = 2;
             concealment = 25;
