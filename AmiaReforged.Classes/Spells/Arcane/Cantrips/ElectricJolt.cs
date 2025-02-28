@@ -37,17 +37,20 @@ public class ElectricJolt : ISpell
         target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1));
         
         int numberOfDie = caster.CasterLevel / 2;
-        bool isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Evocation;
-        
         int damage = NWScript.d3(numberOfDie);
-
+        
         if (Result != ResistSpellResult.Failed) return;
         
         Effect damageEffect = Effect.Damage(damage, DamageType.Electrical);
         target.ApplyEffect(EffectDuration.Instant, damageEffect);
 
         // The jolt will jump to the nearest enemy within 5m of the target.
-        if (!isSpecialist) return;
+        JumpToEnemyIfSpecialized(casterCreature, creature, damage);
+    }
+
+    private void JumpToEnemyIfSpecialized(NwCreature casterCreature, NwCreature creature, int damage)
+    {
+        if (!IsSpecialist(casterCreature)) return;
         
         Effect jumpBeam = Effect.Beam(VfxType.BeamLightning, creature, BodyNode.Chest);
         NwCreature? nearestEnemy = creature.GetNearestCreatures().FirstOrDefault(c => c.IsReactionTypeHostile(casterCreature) && c.Distance(creature) <= 5);
@@ -62,5 +65,11 @@ public class ElectricJolt : ISpell
                     
         nearestEnemy.ApplyEffect(EffectDuration.Instant, jumpBeam);
         nearestEnemy.ApplyEffect(EffectDuration.Instant, jumpDamage);
+    }
+
+    private static bool IsSpecialist(NwCreature casterCreature)
+    {
+        bool isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Evocation;
+        return isSpecialist;
     }
 }
