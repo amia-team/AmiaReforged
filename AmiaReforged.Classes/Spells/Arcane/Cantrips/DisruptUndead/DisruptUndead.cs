@@ -21,10 +21,7 @@ public class DisruptUndead : ISpell
 
         ApplyBeam(caster, target);
 
-        if (NWScript.GetRacialType(target) != NWScript.RACIAL_TYPE_UNDEAD)
-        {
-            return;
-        }
+        if (NWScript.GetRacialType(target) != NWScript.RACIAL_TYPE_UNDEAD) return;
 
         ApplyDamage(caster, casterCreature, target);
     }
