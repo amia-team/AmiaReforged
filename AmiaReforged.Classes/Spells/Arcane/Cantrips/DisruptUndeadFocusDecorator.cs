@@ -22,30 +22,51 @@ public class DisruptUndeadFocusDecorator : SpellDecorator
         if (target is not NwCreature creature) return;
         if (caster is not NwCreature casterCreature) return;
 
-        bool hasNecroFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusNecromancy);
-        bool hasGreaterNecroFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.GreaterSpellFocusNecromancy);
-        bool hasEpicNecroFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.EpicSpellFocusNecromancy);
+        bool hasNecroFocus = HasAnyFocus(casterCreature, out bool hasGreaterNecroFocus, out bool hasEpicNecroFocus, out bool anyFocus);
 
-        bool anyFocus = hasNecroFocus || hasGreaterNecroFocus || hasEpicNecroFocus;
+        Effect saveDecrease = CreatePenaltyEffect(hasNecroFocus, hasGreaterNecroFocus, hasEpicNecroFocus);
+
 
         if (creature.Race.RacialType == RacialType.Undead && anyFocus)
         {
-            int reductionAmount = hasNecroFocus ? 1 : hasGreaterNecroFocus ? 2 : hasEpicNecroFocus ? 3 : 0;
-            int immunityReduction = hasEpicNecroFocus ? 5 : 0;
-
-            Effect saveDecrease = Effect.SavingThrowDecrease(SavingThrow.Will, reductionAmount);
-            saveDecrease = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Positive, immunityReduction), saveDecrease);
-            saveDecrease.Tag = "DisruptUndeadFocusDecorator";
-            
-            Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "DisruptUndeadFocusDecorator");
-            if(existing != null) creature.RemoveEffect(existing);
-            
-            if (Result == ResistSpellResult.Failed)
-            {
-                target.ApplyEffect(EffectDuration.Temporary, saveDecrease, TimeSpan.FromSeconds(12));
-            }
+            ApplyPenalty(creature, target, saveDecrease);
         }
 
         Spell.OnSpellImpact(eventData);
+    }
+
+    private static bool HasAnyFocus(NwCreature casterCreature, out bool hasGreaterNecroFocus, out bool hasEpicNecroFocus,
+        out bool anyFocus)
+    {
+        bool hasNecroFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusNecromancy);
+        hasGreaterNecroFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.GreaterSpellFocusNecromancy);
+        hasEpicNecroFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.EpicSpellFocusNecromancy);
+        anyFocus = hasNecroFocus || hasGreaterNecroFocus || hasEpicNecroFocus;
+        return hasNecroFocus;
+    }
+
+    private static Effect CreatePenaltyEffect(bool hasNecroFocus, bool hasGreaterNecroFocus, bool hasEpicNecroFocus)
+    {
+        int reductionAmount = hasNecroFocus ? 1 : hasGreaterNecroFocus ? 2 : hasEpicNecroFocus ? 3 : 0;
+        int immunityReduction = hasEpicNecroFocus ? 5 : 0;
+        Effect saveDecrease = Effect.SavingThrowDecrease(SavingThrow.Will, reductionAmount);
+        saveDecrease = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Positive, immunityReduction), saveDecrease);
+        saveDecrease.Tag = "DisruptUndeadFocusDecorator";
+        return saveDecrease;
+    }
+
+    private void ApplyPenalty(NwCreature creature, NwGameObject target, Effect saveDecrease)
+    {
+        if (Result == ResistSpellResult.Failed)
+        {
+            RemoveExistingEffect(creature);
+            target.ApplyEffect(EffectDuration.Temporary, saveDecrease, TimeSpan.FromSeconds(12));
+        }
+    }
+
+    private static void RemoveExistingEffect(NwCreature creature)
+    {
+        Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "DisruptUndeadFocusDecorator");
+        if(existing != null) creature.RemoveEffect(existing);
     }
 }
