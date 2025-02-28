@@ -18,18 +18,26 @@ public class DisruptUndead : ISpell
         NwGameObject? target = eventData.TargetObject;
         if(target == null) return;
         
-        if(target is not NwCreature creature) return;
-        
         if(caster is not NwCreature casterCreature) return;
 
-        Effect beam = Effect.Beam(VfxType.BeamHoly, caster, BodyNode.Hand);
-        target.ApplyEffect(EffectDuration.Instant, beam);
-        
+        ApplyBeam(caster, target);
+
         if (NWScript.GetRacialType(target) != NWScript.RACIAL_TYPE_UNDEAD)
         {
             return;
         }
 
+        ApplyDamage(caster, casterCreature, target);
+    }
+
+    private static void ApplyBeam(NwGameObject caster, NwGameObject target)
+    {
+        Effect beam = Effect.Beam(VfxType.BeamHoly, caster, BodyNode.Hand);
+        target.ApplyEffect(EffectDuration.Instant, beam);
+    }
+
+    private void ApplyDamage(NwGameObject caster, NwCreature casterCreature, NwGameObject target)
+    {
         int numberOfDie = caster.CasterLevel / 2;
         int damage = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Necromancy ? NWScript.d4(numberOfDie) : NWScript.d3(numberOfDie);
         
