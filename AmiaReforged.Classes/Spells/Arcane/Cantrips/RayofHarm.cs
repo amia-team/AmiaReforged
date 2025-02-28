@@ -17,18 +17,33 @@ public class RayofHarm : ISpell
         
         NwGameObject? target = eventData.TargetObject;
         if(target == null) return;
-        if(target is not NwCreature creature) return;
         
-        Effect beam = Effect.Beam(VfxType.BeamBlack, caster, BodyNode.Hand);
-        target.ApplyEffect(EffectDuration.Instant, beam);
-        
+        ApplyBeam(caster, target);
+
+        int damage = CalculateDamage(caster, casterCreature);
+
+        Effect damageEffect = Effect.Damage(damage, DamageType.Negative);
+
+        ApplyDamage(target, damageEffect);
+    }
+
+    private static int CalculateDamage(NwGameObject caster, NwCreature casterCreature)
+    {
         int numberOfDie = caster.CasterLevel / 2;
         
         bool isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Necromancy;
         int damage = isSpecialist ? NWScript.d4(numberOfDie) : NWScript.d3(numberOfDie);
-                
-        Effect damageEffect = Effect.Damage(damage, DamageType.Negative);
+        return damage;
+    }
 
+    private static void ApplyBeam(NwGameObject caster, NwGameObject target)
+    {
+        Effect beam = Effect.Beam(VfxType.BeamBlack, caster, BodyNode.Hand);
+        target.ApplyEffect(EffectDuration.Instant, beam);
+    }
+
+    private void ApplyDamage(NwGameObject target, Effect damageEffect)
+    {
         if (Result == ResistSpellResult.Failed)
         {
             target.ApplyEffect(EffectDuration.Instant, damageEffect);
