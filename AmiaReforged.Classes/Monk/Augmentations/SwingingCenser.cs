@@ -90,7 +90,8 @@ public static class SwingingCenser
                 // If monk is dead or monk isn't valid, return
                 if (monk.IsDead || !monk.IsValid) return;
                 
-                monk.ApplyEffect(EffectDuration.Instant,aoeVfx); // AoE Holy Pulse fire at the base of the Monk  
+                // AoE Holy Pulse fire at the base of the Monk  
+                monk.ApplyEffect(EffectDuration.Instant,aoeVfx); 
                 
                 foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, false))
                 {
@@ -109,18 +110,15 @@ public static class SwingingCenser
 
     private static void AugmentEmptyBody(OnSpellCast castData)
     { 
-        
-        // WIP 
-        
         NwCreature monk = (NwCreature)castData.Caster;
-        Location monkLocation = monk.Location;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int regen = 1;
         int concealment = 25;
         TimeSpan regenTime = TimeSpan.FromSeconds(6);
-        TimeSpan effectTime = TimeSpan.FromSeconds(monkLevel*6); // Adjust as appropriate. 1 round per monk level.
         
-        // Wholeness is gained at 7
+        // Adjust as appropriate. 1 round per monk level.
+        TimeSpan effectTime = TimeSpan.FromSeconds(monkLevel*6); 
+        
         if (monkLevel == MonkLevel.KiFocusIIILevel) 
         {
             regen = 7;
@@ -141,9 +139,16 @@ public static class SwingingCenser
             regen = 2;
             concealment = 25;
         }
-        Effect wholenessRegen = Effect.Regenerate(regen,regenTime);
-        Effect wholenessConcealment = Effect.Concealment(concealment, MissChanceType.Normal);
-       
+        Effect emptyBodyRegen = Effect.Regenerate(regen,regenTime);
+        Effect emptyBodyConcealment = Effect.Concealment(concealment, MissChanceType.Normal);
+        // Stand in VFX, change as appropriate
+        Effect emptyBodyVfx = Effect.VisualEffect(VfxType.DurBlur);
+        Effect emptyLink = Effect.LinkEffects(emptyBodyConcealment, emptyBodyRegen, emptyBodyVfx);
+        // Tag for later tracking
+        emptyLink.Tag = "EmptyBody2";
+        
+        monk.ApplyEffect(EffectDuration.Temporary, emptyLink,effectTime);
+
     }
     
 }
