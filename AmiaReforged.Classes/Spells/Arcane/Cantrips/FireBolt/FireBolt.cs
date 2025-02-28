@@ -3,7 +3,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
 
-namespace AmiaReforged.Classes.Spells.Arcane.FireBolt;
+namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.FireBolt;
 
 [ServiceBinding(typeof(ISpell))]
 public class FireBolt : ISpell
