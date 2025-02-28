@@ -40,7 +40,7 @@ public class SpellCastingService
 
         NwGameObject? caster = eventData.Caster;
         NwGameObject? target = eventData.TargetObject;
-        
+
         if (caster is not NwCreature casterCreature)
         {
             Log.Info($"Caster for {spell.ImpactScript} is not a creature");
@@ -84,7 +84,7 @@ public class SpellCastingService
             }
 
             PVPSetting? areaPvpSetting = casterCreature.Area?.PVPSetting;
-            
+
             spell.DoSpellResist(targetCreature, casterCreature);
 
 
@@ -98,6 +98,12 @@ public class SpellCastingService
             {
                 NWScript.SendMessageToPC(casterCreature, "PVP is not allowed in this area.");
                 return ScriptHandleResult.Handled;
+            }
+
+            if (eventData.Spell.IsHostileSpell)
+            {
+                if (!targetCreature.PlotFlag || !targetCreature.Immortal)
+                    NWScript.AdjustReputation(caster, target, -100);
             }
 
             spell.DoSpellResist(targetCreature, casterCreature);
