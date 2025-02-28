@@ -1,8 +1,7 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
-using NWN.Core;
 
-namespace AmiaReforged.Classes.Spells.Arcane.Cantrips;
+namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.DisruptUndead;
 
 [DecoratesSpell(typeof(DisruptUndead))]
 public class DisruptUndeadFocusDecorator : SpellDecorator

@@ -1,10 +1,9 @@
 using Anvil.API;
 using Anvil.API.Events;
-using Anvil.Services;
 using NLog;
 using NWN.Core;
 
-namespace AmiaReforged.Classes.Spells.Arcane.Cantrips;
+namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.ElectricJolt;
 
 // [ServiceBinding(typeof(ISpell))]
 public class ElectricJolt : ISpell

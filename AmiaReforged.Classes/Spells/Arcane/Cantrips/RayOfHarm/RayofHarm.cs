@@ -3,7 +3,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
 
-namespace AmiaReforged.Classes.Spells.Arcane.Cantrips;
+namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.RayOfHarm;
 
 [ServiceBinding(typeof(RayofHarm))]
 public class RayofHarm : ISpell

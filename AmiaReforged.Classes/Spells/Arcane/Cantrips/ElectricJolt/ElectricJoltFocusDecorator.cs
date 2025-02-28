@@ -1,9 +1,8 @@
 using Anvil.API;
 using Anvil.API.Events;
 using NLog;
-using NLog.Fluent;
 
-namespace AmiaReforged.Classes.Spells.Arcane.Cantrips;
+namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.ElectricJolt;
 
 [DecoratesSpell(typeof(ElectricJolt))]
 public class ElectricJoltFocusDecorator : SpellDecorator

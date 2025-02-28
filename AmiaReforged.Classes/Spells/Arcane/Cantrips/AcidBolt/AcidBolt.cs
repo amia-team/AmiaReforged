@@ -3,7 +3,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
 
-namespace AmiaReforged.Classes.Spells.Arcane.Cantrips;
+namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.AcidBolt;
 
 /// <summary>
 /// Acid splash has been replaced with Acid Bolt.
