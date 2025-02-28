@@ -48,13 +48,10 @@ public static class SwingingCenser
     private static void AugmentWholeness(OnSpellCast castData)
     {   
         NwCreature monk = (NwCreature)castData.Caster;
-        Location monkLocation = monk.Location;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int pulseAmount = 1;
         int healAmount = monkLevel*2;
         double level30Heal = healAmount * 1.5;
-        TimeSpan regenTime = TimeSpan.FromSeconds(6);
-        TimeSpan effectTime = TimeSpan.FromSeconds(monkLevel*6); // Adjust as appropriate. 1 round per monk level.
         
         // Wholeness is gained at 7
         if (monkLevel == 30) 
