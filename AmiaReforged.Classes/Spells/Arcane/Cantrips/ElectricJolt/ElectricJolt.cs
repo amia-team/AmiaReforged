@@ -1,11 +1,12 @@
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.ElectricJolt;
 
-// [ServiceBinding(typeof(ISpell))]
+[ServiceBinding(typeof(ISpell))]
 public class ElectricJolt : ISpell
 {
     public ResistSpellResult Result { get; set; }
@@ -30,10 +31,12 @@ public class ElectricJolt : ISpell
         if(target == null) return;
         if(target is not NwCreature creature) return;
         
+        caster.SpeakString("I'm casting Electric Jolt!");
+        
         LogManager.GetCurrentClassLogger().Info("Electric Jolt");
 
-        Effect beam = Effect.Beam(VfxType.BeamLightning, caster, BodyNode.Hand);
-        target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1));
+        Effect beam = Effect.Beam(VfxType.BeamLightning, casterCreature, BodyNode.Hand);
+        creature.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1.1));
         
         int numberOfDie = caster.CasterLevel / 2;
         int damage = NWScript.d3(numberOfDie);
