@@ -27,16 +27,16 @@ public class FireBoltSpecializationDecorator : SpellDecorator
 
         if (hasEvocationSpecialization)
         {
-            Effect attackBonus = Effect.AttackIncrease(1);
+            Effect attackBonus = Effect.AttackDecrease(1);
             attackBonus.Tag = "FireBoltSpecializationDecorator";
             
-            ApplyAttackBonus(creature, attackBonus);
+            ApplyPenalty(creature, attackBonus);
         }
 
         Spell.OnSpellImpact(eventData);
     }
 
-    private void ApplyAttackBonus(NwCreature creature, Effect attackBonus)
+    private void ApplyPenalty(NwCreature creature, Effect attackBonus)
     {
         Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "FireBoltSpecializationDecorator");
         

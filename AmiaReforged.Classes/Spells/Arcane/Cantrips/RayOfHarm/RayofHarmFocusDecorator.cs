@@ -33,7 +33,7 @@ public class RayofHarmFocusDecorator : SpellDecorator
         
         if (isNecromancyFocused && Result == ResistSpellResult.Failed)
         {
-            int reducedDamageAmount = epicFocus ? 3 : greaterFocus ? 2 : basicFocus ? 1 : 0;
+            int reducedDamageAmount = epicFocus ? 6 : greaterFocus ? 4 : basicFocus ? 2 : 0;
             
             Effect decreasedDamage = Effect.DamageDecrease(reducedDamageAmount, DamageType.BaseWeapon);
             
