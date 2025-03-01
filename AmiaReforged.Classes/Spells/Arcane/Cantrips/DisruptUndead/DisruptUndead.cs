@@ -9,6 +9,8 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.DisruptUndead;
 public class DisruptUndead : ISpell
 {
     public string ImpactScript => "am_s_disruptun";
+    public ResistSpellResult Result { get; set; }
+
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         NwGameObject? caster = eventData.Caster;
@@ -45,7 +47,6 @@ public class DisruptUndead : ISpell
         }
     }
 
-    public ResistSpellResult Result { get; set; }
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
         Result = creature.CheckResistSpell(caster);
