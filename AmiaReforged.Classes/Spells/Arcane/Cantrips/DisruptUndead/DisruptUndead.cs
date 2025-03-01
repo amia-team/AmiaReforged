@@ -29,7 +29,7 @@ public class DisruptUndead : ISpell
     private static void ApplyBeam(NwGameObject caster, NwGameObject target)
     {
         Effect beam = Effect.Beam(VfxType.BeamHoly, caster, BodyNode.Hand);
-        target.ApplyEffect(EffectDuration.Instant, beam);
+        target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1.1));
     }
 
     private void ApplyDamage(NwGameObject caster, NwCreature casterCreature, NwGameObject target)
