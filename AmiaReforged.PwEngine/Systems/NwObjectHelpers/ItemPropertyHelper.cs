@@ -57,7 +57,7 @@ public static class ItemPropertyHelper
         string gameLabel = GameLabel(ip);
 
         gameLabel = gameLabel.Replace("_", " ");
-        
+
         return new CraftingProperty
         {
             ItemProperty = ip,
@@ -82,9 +82,14 @@ public static class ItemPropertyHelper
             ItemPropertyType.Material,
             ItemPropertyType.Quality,
             ItemPropertyType.Trap,
-            ItemPropertyType.Additional
+            ItemPropertyType.Additional,
+            ItemPropertyType.UseLimitationClass,
+            ItemPropertyType.UseLimitationAlignmentGroup,
+            ItemPropertyType.UseLimitationRacialType,
+            ItemPropertyType.UseLimitationSpecificAlignment,
+            ItemPropertyType.NoDamage
         };
-        
+
         return noCost.Any(it => it == ip.Property.PropertyType) ? 0 : 2;
     }
 
@@ -192,8 +197,8 @@ public static class ItemPropertyHelper
             }
 
             Location? arbitraryWaypoint = systemArea.FindObjectsOfTypeInArea<NwWaypoint>().First().Location;
-            
-            if(arbitraryWaypoint == null)
+
+            if (arbitraryWaypoint == null)
             {
                 LogManager.GetCurrentClassLogger().Info("Arbitrary waypoint not found.");
                 return false;
@@ -209,7 +214,8 @@ public static class ItemPropertyHelper
 
             if (!property1.Valid || !property2.Valid)
             {
-                LogManager.GetCurrentClassLogger().Info("An item property was not valid. Check the definitions in PropertyConstants for errors.");
+                LogManager.GetCurrentClassLogger()
+                    .Info("An item property was not valid. Check the definitions in PropertyConstants for errors.");
                 return false;
             }
 
@@ -217,7 +223,7 @@ public static class ItemPropertyHelper
             dummy.AddItemProperty(property2, EffectDuration.Permanent);
             ItemProperty[] properties = dummy.ItemProperties.ToArray();
             LogManager.GetCurrentClassLogger().Info($"Comparing {properties.Length} properties.");
-            
+
             // Uses regex to remove the +X% from the labels for comparison purposes
             string l1 = Regex.Replace(GameLabel(properties[0]), @"\d+%", string.Empty).TrimEnd();
             string l2 = Regex.Replace(GameLabel(properties[1]), @"\d+%", string.Empty).TrimEnd();
