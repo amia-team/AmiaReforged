@@ -21,13 +21,13 @@ public class AbilityRestrictionsHandler
 
         if (environment == "live") return;
         
-        NwModule.Instance.OnUseFeat += ApplyTechniqueRestrictions;
-        NwModule.Instance.OnUseFeat += PreventHostileActionToFriendly;
-        NwModule.Instance.OnUseFeat += PreventAbilityInNoCastingArea;
+        NwModule.Instance.OnUseFeat += EnforceTechniqueRestrictions;
+        NwModule.Instance.OnUseFeat += PreventHostileTechniqueToFriendly;
+        NwModule.Instance.OnUseFeat += PreventTechniqueInNoCastingArea;
         Log.Info("Monk Ability Restrictions Handler initialized.");
     }
     
-    private static void ApplyTechniqueRestrictions(OnUseFeat eventData)
+    private static void EnforceTechniqueRestrictions(OnUseFeat eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk) is null) return;
         
@@ -58,7 +58,7 @@ public class AbilityRestrictionsHandler
         if (isWieldingFocusWithoutUnarmed)
             player.SendServerMessage("Having equipped a focus without being unarmed has disabled your monk abilities.");
     }
-    private static void PreventHostileActionToFriendly(OnUseFeat eventData)
+    private static void PreventHostileTechniqueToFriendly(OnUseFeat eventData)
     {
         // If monk and targets friendly with a hostile ability
         if (eventData.Creature.GetClassInfo(ClassType.Monk) is null) return;
@@ -70,7 +70,7 @@ public class AbilityRestrictionsHandler
             player.SendServerMessage("You cannot perform that action on a friendly target due to PvP settings");
     }
 
-    private static void PreventAbilityInNoCastingArea(OnUseFeat eventData)
+    private static void PreventTechniqueInNoCastingArea(OnUseFeat eventData)
     {
         // If monk, in a no-cast area, and uses a monk ability
         if (eventData.Creature.GetClassInfo(ClassType.Monk) is null) return;
