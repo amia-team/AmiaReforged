@@ -136,23 +136,12 @@ public class MartialTechniqueService
 
     string techniqueName = technique.Tag switch
     {
-      StunningTag => "StunningValue Strike",
+      StunningTag => "Stunning Strike",
       EagleTag => "Eagle Strike",
-      AxiomaticTag  => "AxiomaticValue Strike",
+      AxiomaticTag  => "Axiomatic Strike",
       _ => ""
     };
-
-    // Technique can only be used unarmored
-    bool isArmored = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
-    bool isWieldingShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
-    if (isArmored || isWieldingShield)
-    {
-      if (monk.IsPlayerControlled(out NwPlayer? player)) 
-          player.SendServerMessage($"{techniqueName} can only be used while unarmored.", MonkColors.MonkColorScheme);
-
-      return;
-    }
-
+    
     // Remove martial technique from cooldown to allow hits to proc again
     foreach (Effect effect in monk.ActiveEffects)
       if (effect.Tag is MartialCooldownTag) monk.RemoveEffect(effect);
