@@ -29,7 +29,7 @@ public class AbilityRestrictionsHandler
 
         if (environment == "live") return;
         
-        NwModule.Instance.OnModuleStart += HideDefaultFeedback;
+        NwModule.Instance.OnModuleLoad += HideDefaultFeedback;
         NwModule.Instance.OnUseFeat += EnforceTechniqueRestrictions;
         NwModule.Instance.OnEffectApply += DeactivateMartialTechnique;
         NwModule.Instance.OnEffectApply += DeactivateStaticBonuses;
@@ -37,7 +37,7 @@ public class AbilityRestrictionsHandler
         NwModule.Instance.OnUseFeat += PreventTechniqueInNoCastingArea;
         Log.Info("Monk Ability Restrictions Handler initialized.");
     }
-    private static void HideDefaultFeedback(ModuleEvents.OnModuleStart eventData)
+    private static void HideDefaultFeedback(ModuleEvents.OnModuleLoad eventData)
     {
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_MONK_ABILITIES, NWScript.TRUE);
     }
