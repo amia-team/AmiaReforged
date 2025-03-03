@@ -74,7 +74,6 @@ public class Percussion : ISpell
             foreach (NwCreature nwCreature in eventData.Effect.GetNearestObjectsByType<NwCreature>()
                          .Where(c => c.Distance(eventData.Effect) <= 5))
             {
-                nwCreature.SpeakString("Boom boom boom!");
                 if (nwCreature.IsFriend(creator) || nwCreature == creator)
                 {
                     nwCreature.ApplyEffect(EffectDuration.Temporary,
