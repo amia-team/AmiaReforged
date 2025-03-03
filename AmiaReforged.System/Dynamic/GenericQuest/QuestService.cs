@@ -10,7 +10,7 @@ namespace AmiaReforged.System.Dynamic.GenericQuest;
 /// This code injects new and improved behaviour and setup for the old ee_generic_quest script.
 /// The old ee_generic_quest script is kept unchanged, so people preferring that method can use it.
 /// </summary>
-[ServiceBinding(typeof(QuestService))]
+// [ServiceBinding(typeof(QuestService))]
 public class QuestService
 {
     // Gets the server log. By default, this reports to "anvil.log"
