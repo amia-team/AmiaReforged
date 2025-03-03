@@ -5,9 +5,9 @@ using static AmiaReforged.Classes.Monk.Constants.MonkLevel;
 
 namespace AmiaReforged.Classes.Monk;
 
-public static class StaticBonusesEffect
+public static class StaticBonuses
 {
-    public static Effect GetStaticBonusesEffect(NwCreature monk)
+    public static Effect GetEffect(NwCreature monk)
     {   
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int wisMod = monk.GetAbilityModifier(Ability.Wisdom);

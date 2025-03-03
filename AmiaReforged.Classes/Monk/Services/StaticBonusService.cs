@@ -33,7 +33,7 @@ public class StaticBonusesService
         if (monk.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         if (monk.ActiveEffects.Any(effect => effect.Tag == "monk_staticeffects")) return;
         
-        Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
+        Effect monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
     
@@ -53,7 +53,7 @@ public class StaticBonusesService
 
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
         
-        monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
+        monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
     
@@ -71,7 +71,7 @@ public class StaticBonusesService
         
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
             
-        monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
+        monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
 
@@ -85,7 +85,7 @@ public class StaticBonusesService
         if (monkEffects is null) return;
 
         monk.RemoveEffect(monkEffects);
-        monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
+        monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
 
@@ -100,7 +100,7 @@ public class StaticBonusesService
         
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
-        monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
+        monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
 }
