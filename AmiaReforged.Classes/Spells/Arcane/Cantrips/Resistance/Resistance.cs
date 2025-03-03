@@ -8,6 +8,7 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.Resistance;
 public class Resistance : ISpell
 {
     public ResistSpellResult Result { get; set; }
+
     public string ImpactScript { get; }
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
@@ -23,35 +24,33 @@ public class Resistance : ISpell
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
 
-        if (caster is not NwCreature casterCreature) return;
-        
-        bool spellFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusAbjuration);
-        bool greaterFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.GreaterSpellFocusAbjuration);
-        bool epicFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.EpicSpellFocusAbjuration);
-        
-        bool isAbjurationFocused = spellFocus || greaterFocus || epicFocus;
+        bool spellFocus = false;
+        bool greaterFocus = false;
+        bool epicFocus = false;
+        bool isSpecialist = false;
 
+        if (caster is NwCreature casterCreature)
+        {
+            spellFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusAbjuration);
+            greaterFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.GreaterSpellFocusAbjuration);
+            epicFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.EpicSpellFocusAbjuration);
+            isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==
+                           SpellSchool.Abjuration;
+        }
+        
         int bonusTurns = spellFocus ? 1 : greaterFocus ? 2 : epicFocus ? 3 : 0;
         int turns = 2 + bonusTurns;
-        
-        bool isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Abjuration;
-        
-        if (isAbjurationFocused)
-        {
-            Effect saveIncrease = Effect.SavingThrowIncrease(SavingThrow.All, 1);
-            saveIncrease.Tag = "Resistance";
-            
-            Effect saveIncreaseSpecialist = Effect.SavingThrowIncrease(SavingThrow.All, 2, SavingThrowType.Spell);
-            
-            if(isSpecialist) saveIncrease = Effect.LinkEffects(saveIncrease, saveIncreaseSpecialist);
-            
-            Effect? existing = target.ActiveEffects.FirstOrDefault(e => e.Tag == "Resistance");
-            
-            if(existing != null) target.RemoveEffect(existing);
-            
-            target.ApplyEffect(EffectDuration.Temporary, saveIncrease, TimeSpan.FromMinutes(turns));
-        }
 
+        Effect saveIncrease = Effect.SavingThrowIncrease(SavingThrow.All, 1);
+        saveIncrease.Tag = "Resistance";
+
+        Effect saveIncreaseSpecialist = Effect.SavingThrowIncrease(SavingThrow.All, 2, SavingThrowType.Spell);
+
+        if (isSpecialist) saveIncrease = Effect.LinkEffects(saveIncrease, saveIncreaseSpecialist);
+
+        Effect? existing = target.ActiveEffects.FirstOrDefault(e => e.Tag == "Resistance");
+        if (existing != null) target.RemoveEffect(existing);
+        target.ApplyEffect(EffectDuration.Temporary, saveIncrease, TimeSpan.FromMinutes(turns));
     }
 
     public void SetResult(ResistSpellResult result)
