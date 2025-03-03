@@ -41,6 +41,7 @@ public class PillarOfPhantoms
             _activeTraps.Add(obj.Area, new List<NwPlaceable>());
         }
 
+        obj.SpawnedObject.SpeakString("OOooOo bitch");
         RegisterNewTraps(obj.Area);
     }
 
