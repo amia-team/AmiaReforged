@@ -20,8 +20,8 @@ public class AbilityRestrictionsHandler
         if (environment == "live") return;
         
         NwModule.Instance.OnUseFeat += PreventWhenArmored;
-        /*NwModule.Instance.OnUseFeat += PreventHostileActionToFriendly;
-        NwModule.Instance.OnUseFeat += PreventAbilityInNoCastingArea;*/
+        NwModule.Instance.OnUseFeat += PreventHostileActionToFriendly;
+        NwModule.Instance.OnUseFeat += PreventAbilityInNoCastingArea;
         Log.Info("Monk Ability Restrictions Handler initialized.");
     }
     
