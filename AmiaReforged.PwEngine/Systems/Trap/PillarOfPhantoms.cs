@@ -10,7 +10,7 @@ public class PillarOfPhantoms
 {
     private const string PillarOfPhantomsTag = "ghostpillar";
     private const string PillarPhantomTag = "pillarphantom";
-    private readonly Dictionary<NwArea, List<NwPlaceable>> _activeTraps = new();
+    private Dictionary<NwArea, List<NwPlaceable>> _activeTraps = new();
 
     public PillarOfPhantoms()
     {
@@ -66,6 +66,7 @@ public class PillarOfPhantoms
         List<NwCreature> creatures = obj.Placeable.Area.FindObjectsOfTypeInArea<NwCreature>()
             .Where(c => c.IsPlayerControlled && c.Distance(obj.Placeable) <= 10f).ToList();
 
+        obj.Placeable.SpeakString("OooOOOoo");
         foreach (NwCreature unused in creatures)
         {
             // Pick a random, valid location within 4 meters of the trap
