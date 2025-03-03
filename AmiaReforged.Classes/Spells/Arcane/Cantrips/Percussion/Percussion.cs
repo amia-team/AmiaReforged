@@ -78,7 +78,7 @@ public class Percussion : ISpell
                 if (nwCreature.IsFriend(creator) || nwCreature == creator)
                 {
                     nwCreature.ApplyEffect(EffectDuration.Temporary,
-                        Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Perform)!, 2));
+                        Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Perform)!, 2), TimeSpan.FromSeconds(6));
                 }
             }
         }
