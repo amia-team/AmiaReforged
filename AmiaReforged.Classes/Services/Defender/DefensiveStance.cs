@@ -59,14 +59,7 @@ public class DefensiveStance
         {
             return;
         }
-        
-        bool isAlreadyBeingApplied = _currentlyBeingApplied.ContainsKey(player);
-        
-        if (isAlreadyBeingApplied)
-        {
-            return;
-        }
-        
+
         _currentlyBeingApplied.Add(player, true);
         // You cannot always guarantee that their character is in a valid state (ie they crashed after activating it).
         NwCreature? character = player.LoginCreature;
@@ -74,13 +67,8 @@ public class DefensiveStance
         Effect? defensiveEffect = character.ActiveEffects.FirstOrDefault(e => e.Tag == DefensiveStanceEffectTag);
         
         if(defensiveEffect != null) return;
+
         
-        if (NWScript.GetLocalInt(character, DefensiveStanceVar) == 1)
-        {
-            return;
-        }
-        
-        NWScript.SetLocalInt(character, DefensiveStanceVar, 1);
         
         player.FloatingTextString("*Squares up their stance.*");
         
@@ -132,7 +120,6 @@ public class DefensiveStance
         defensiveStance.SubType = EffectSubType.Supernatural;
         
         // Apply it to the character.
-        _currentlyBeingApplied.Remove(player);
         character.ApplyEffect(EffectDuration.Permanent, defensiveStance);
     }
 
