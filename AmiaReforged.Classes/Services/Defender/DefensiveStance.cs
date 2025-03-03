@@ -16,6 +16,7 @@ public class DefensiveStance
     private const int EventsDefensiveStanceConst = 11;
     private const string CombatModeId = "COMBAT_MODE_ID";
     private const string DefensiveStanceEffectTag = "DEFENIVE_STANCE";
+    private const string DefensiveStanceVar = "ApplyingDefensiveStance";
 
     public DefensiveStance(EventService eventService)
     {
@@ -63,6 +64,12 @@ public class DefensiveStance
         Effect? defensiveEffect = character.ActiveEffects.FirstOrDefault(e => e.Tag == DefensiveStanceEffectTag);
         
         if(defensiveEffect != null) return;
+        if (NWScript.GetLocalInt(character, DefensiveStanceVar) == 1)
+        {
+            return;
+        }
+        
+        NWScript.SetLocalInt(character, DefensiveStanceVar, 1);
         
         player.FloatingTextString("*Squares up their stance.*");
         
@@ -110,6 +117,7 @@ public class DefensiveStance
         
         // Apply it to the character.
         character.ApplyEffect(EffectDuration.Permanent, defensiveStance);
+        NWScript.SetLocalInt(character, DefensiveStanceVar, 0);
     }
 
     [ScriptHandler("stance_defdr_off")]
