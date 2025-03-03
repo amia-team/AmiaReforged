@@ -40,7 +40,7 @@ public class Percussion : ISpell
             existingSound.Destroy();
         }
 
-        NwSound? sound = NwSound.Create("percussion", caster.Location);
+        NwSound? sound = NwSound.Create("wardrum1", caster.Location);
         if (sound == null) return;
         sound.Tag = soundTag;
         Effect aoe = Effect.AreaOfEffect(PersistentVfxType.MobCircchaos!,
