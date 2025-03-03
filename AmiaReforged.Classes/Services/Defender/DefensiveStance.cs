@@ -16,14 +16,11 @@ public class DefensiveStance
     private const int EventsDefensiveStanceConst = 11;
     private const string CombatModeId = "COMBAT_MODE_ID";
     private const string DefensiveStanceEffectTag = "DEFENIVE_STANCE";
-    private const string DefensiveStanceVar = "ApplyingDefensiveStance";
-    
-    private Dictionary<NwPlayer, bool> _currentlyBeingApplied = new();
 
     public DefensiveStance(EventService eventService)
     {
         _eventService = eventService;
-    
+
         EventsPlugin.SubscribeEvent(EventsPlugin.NWNX_ON_COMBAT_MODE_OFF, "stance_defdr_off");
         EventsPlugin.SubscribeEvent(EventsPlugin.NWNX_ON_COMBAT_MODE_ON, "stance_defdr_on");
         
@@ -60,20 +57,16 @@ public class DefensiveStance
             return;
         }
 
-        _currentlyBeingApplied.Add(player, true);
         // You cannot always guarantee that their character is in a valid state (ie they crashed after activating it).
         NwCreature? character = player.LoginCreature;
         if (character == null) return;
         Effect? defensiveEffect = character.ActiveEffects.FirstOrDefault(e => e.Tag == DefensiveStanceEffectTag);
         
         if(defensiveEffect != null) return;
-
-        
         
         player.FloatingTextString("*Squares up their stance.*");
         
         int defenderLevel = character.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.DwarvenDefender)?.Level ?? 0;
-        character.SpeakString($"I am a level {defenderLevel} Dwarven Defender.");
 
         // If the character has at least 20 constitution and is an epic defender, they gain 1/4 of their constitution modifier as an attack bonus.
         // Otherwise, they gain no attack bonus.
@@ -88,25 +81,21 @@ public class DefensiveStance
         // Applies the strength bonus, inclusive of capstone bonus... ie 1 + 20/5 = 5.
         int str = 1 + defenderLevel / 5;
         Effect strengthBonus = Effect.AbilityIncrease(Ability.Strength, str);
-        character.SpeakString($"My strength is increased by {str}.");
 
         // Clamps the base temporary hit points between 10 and 30, then applies the capstone bonus if relevant.
         int baseTempHp = Math.Clamp(10 + defenderLevel / 7 * 10, 10, 30);
         int capstoneBonus = defenderLevel >= 20 ? 10 : 0;
         int tempHp = baseTempHp + capstoneBonus;
-        character.SpeakString($"My temporary hit points are increased by {tempHp}.");
         Effect tempHpBonus = Effect.TemporaryHitpoints(tempHp);
         
         // Resistance bonus.
         int resistanceCap = defenderLevel >= 20 ? 7 : 5;
         int resistanceCapstone = defenderLevel >= 20 ? 2 : 0;
         int resistance = Math.Clamp(1 + defenderLevel / 4 + resistanceCapstone, 0, resistanceCap);
-        character.SpeakString($"My saving throw bonus is increased by {resistance}.");
         Effect savingThrowBonus = Effect.SavingThrowIncrease(SavingThrow.All, resistance);
         
         int acCapstone = defenderLevel >= 20 ? 1 : 0;
         int ac = 1 + defenderLevel / 5 + acCapstone;
-        character.SpeakString($"My armor class is increased by {ac}.");
         Effect acBonus = Effect.ACIncrease(ac);
 
         // Link the effects so they are all joined together.
