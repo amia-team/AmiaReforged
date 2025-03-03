@@ -19,7 +19,6 @@ public class FireBoltFocusDecorator : SpellDecorator
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
 
-        if (target is not NwCreature creature) return;
         if (caster is not NwCreature casterCreature) return;
 
         bool basicFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusEvocation);
@@ -36,9 +35,9 @@ public class FireBoltFocusDecorator : SpellDecorator
             savePenalty = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Fire, extraVulnerability), savePenalty);
             savePenalty.Tag = "FireBoltFocusDecorator";
             
-            Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "FireBoltFocusDecorator");
+            Effect? existing = target.ActiveEffects.FirstOrDefault(e => e.Tag == "FireBoltFocusDecorator");
             
-            if(existing != null) creature.RemoveEffect(existing);
+            if(existing != null) target.RemoveEffect(existing);
             
             target.ApplyEffect(EffectDuration.Temporary, savePenalty, TimeSpan.FromSeconds(12));
         }
