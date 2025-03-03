@@ -16,6 +16,7 @@ public class DefensiveStance
     private const int EventsDefensiveStanceConst = 11;
     private const string CombatModeId = "COMBAT_MODE_ID";
     private const string DefensiveStanceEffectTag = "DEFENIVE_STANCE";
+    private const string DefensiveStanceVar = "ApplyingDefensiveStance";
 
     public DefensiveStance(EventService eventService)
     {
@@ -63,6 +64,12 @@ public class DefensiveStance
         Effect? defensiveEffect = character.ActiveEffects.FirstOrDefault(e => e.Tag == DefensiveStanceEffectTag);
         
         if(defensiveEffect != null) return;
+        if (NWScript.GetLocalInt(character, DefensiveStanceVar) == 1)
+        {
+            return;
+        }
+        
+        NWScript.SetLocalInt(character, DefensiveStanceVar, 1);
         
         player.FloatingTextString("*Squares up their stance.*");
         
@@ -89,8 +96,9 @@ public class DefensiveStance
         Effect tempHpBonus = Effect.TemporaryHitpoints(tempHp);
         
         // Resistance bonus.
+        int resistanceCap = defenderLevel >= 20 ? 7 : 5;
         int resistanceCapstone = defenderLevel >= 20 ? 2 : 0;
-        int resistance = 1 + defenderLevel / 4 + resistanceCapstone;
+        int resistance = Math.Clamp(1 + defenderLevel / 4 + resistanceCapstone, 0, resistanceCap);
         Effect savingThrowBonus = Effect.SavingThrowIncrease(SavingThrow.All, resistance);
         
         int acCapstone = defenderLevel >= 20 ? 1 : 0;
@@ -109,6 +117,7 @@ public class DefensiveStance
         
         // Apply it to the character.
         character.ApplyEffect(EffectDuration.Permanent, defensiveStance);
+        NWScript.SetLocalInt(character, DefensiveStanceVar, 0);
     }
 
     [ScriptHandler("stance_defdr_off")]
