@@ -17,11 +17,13 @@ public class DefensiveStance
     private const string CombatModeId = "COMBAT_MODE_ID";
     private const string DefensiveStanceEffectTag = "DEFENIVE_STANCE";
     private const string DefensiveStanceVar = "ApplyingDefensiveStance";
+    
+    private Dictionary<NwPlayer, bool> _currentlyBeingApplied = new();
 
     public DefensiveStance(EventService eventService)
     {
         _eventService = eventService;
-
+    
         EventsPlugin.SubscribeEvent(EventsPlugin.NWNX_ON_COMBAT_MODE_OFF, "stance_defdr_off");
         EventsPlugin.SubscribeEvent(EventsPlugin.NWNX_ON_COMBAT_MODE_ON, "stance_defdr_on");
         
@@ -57,13 +59,22 @@ public class DefensiveStance
         {
             return;
         }
-
+        
+        bool isAlreadyBeingApplied = _currentlyBeingApplied.ContainsKey(player);
+        
+        if (isAlreadyBeingApplied)
+        {
+            return;
+        }
+        
+        _currentlyBeingApplied.Add(player, true);
         // You cannot always guarantee that their character is in a valid state (ie they crashed after activating it).
         NwCreature? character = player.LoginCreature;
         if (character == null) return;
         Effect? defensiveEffect = character.ActiveEffects.FirstOrDefault(e => e.Tag == DefensiveStanceEffectTag);
         
         if(defensiveEffect != null) return;
+        
         if (NWScript.GetLocalInt(character, DefensiveStanceVar) == 1)
         {
             return;
@@ -116,8 +127,8 @@ public class DefensiveStance
         defensiveStance.SubType = EffectSubType.Supernatural;
         
         // Apply it to the character.
+        _currentlyBeingApplied.Remove(player);
         character.ApplyEffect(EffectDuration.Permanent, defensiveStance);
-        NWScript.SetLocalInt(character, DefensiveStanceVar, 0);
     }
 
     [ScriptHandler("stance_defdr_off")]
