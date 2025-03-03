@@ -85,6 +85,7 @@ public class DefensiveStance
         player.FloatingTextString("*Squares up their stance.*");
         
         int defenderLevel = character.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.DwarvenDefender)?.Level ?? 0;
+        character.SpeakString($"I am a level {defenderLevel} Dwarven Defender.");
 
         // If the character has at least 20 constitution and is an epic defender, they gain 1/4 of their constitution modifier as an attack bonus.
         // Otherwise, they gain no attack bonus.
@@ -99,21 +100,25 @@ public class DefensiveStance
         // Applies the strength bonus, inclusive of capstone bonus... ie 1 + 20/5 = 5.
         int str = 1 + defenderLevel / 5;
         Effect strengthBonus = Effect.AbilityIncrease(Ability.Strength, str);
+        character.SpeakString($"My strength is increased by {str}.");
 
         // Clamps the base temporary hit points between 10 and 30, then applies the capstone bonus if relevant.
         int baseTempHp = Math.Clamp(10 + defenderLevel / 7 * 10, 10, 30);
         int capstoneBonus = defenderLevel >= 20 ? 10 : 0;
         int tempHp = baseTempHp + capstoneBonus;
+        character.SpeakString($"My temporary hit points are increased by {tempHp}.");
         Effect tempHpBonus = Effect.TemporaryHitpoints(tempHp);
         
         // Resistance bonus.
         int resistanceCap = defenderLevel >= 20 ? 7 : 5;
         int resistanceCapstone = defenderLevel >= 20 ? 2 : 0;
         int resistance = Math.Clamp(1 + defenderLevel / 4 + resistanceCapstone, 0, resistanceCap);
+        character.SpeakString($"My saving throw bonus is increased by {resistance}.");
         Effect savingThrowBonus = Effect.SavingThrowIncrease(SavingThrow.All, resistance);
         
         int acCapstone = defenderLevel >= 20 ? 1 : 0;
         int ac = 1 + defenderLevel / 5 + acCapstone;
+        character.SpeakString($"My armor class is increased by {ac}.");
         Effect acBonus = Effect.ACIncrease(ac);
 
         // Link the effects so they are all joined together.
