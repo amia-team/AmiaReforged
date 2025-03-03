@@ -8,12 +8,12 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(MonkAbilityHandler))]
-public class MonkAbilityHandler
+[ServiceBinding(typeof(AbilityRestrictionsHandler))]
+public class AbilityRestrictionsHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public MonkAbilityHandler()
+    public AbilityRestrictionsHandler()
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
 
@@ -22,7 +22,7 @@ public class MonkAbilityHandler
         NwModule.Instance.OnUseFeat += PreventWhenArmored;
         NwModule.Instance.OnUseFeat += PreventHostileActionToFriendly;
         NwModule.Instance.OnUseFeat += PreventAbilityInNoCastingArea;
-        Log.Info("Monk Ability Handler initialized.");
+        Log.Info("Monk Ability Restrictions Handler initialized.");
     }
     
     private static void PreventWhenArmored(OnUseFeat eventData)
