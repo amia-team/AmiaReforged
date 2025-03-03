@@ -35,7 +35,7 @@ public static class MonkUtilFunctions
     /// <returns>The monk ability DC</returns>
     public static int CalculateMonkDc(NwCreature monk)
     {
-        return 10 + monk.GetClassInfo(ClassType.Monk)!.Level / 2 + monk.GetAbilityModifier(Ability.Wisdom);
+        return 10 + monk.GetClassInfo(ClassType.Monk)!.Level / 3 + monk.GetAbilityModifier(Ability.Wisdom);
     }
 
     /// <summary>
