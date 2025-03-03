@@ -38,7 +38,7 @@ public class Resistance : ISpell
         
         if (isAbjurationFocused)
         {
-            Effect saveIncrease = Effect.SavingThrowIncrease(SavingThrow.All, 1, SavingThrowType.All);
+            Effect saveIncrease = Effect.SavingThrowIncrease(SavingThrow.All, 1);
             saveIncrease.Tag = "Resistance";
             
             Effect saveIncreaseSpecialist = Effect.SavingThrowIncrease(SavingThrow.All, 2, SavingThrowType.Spell);

@@ -22,13 +22,24 @@ public class RayOfFrostFocusDecorator : SpellDecorator
         if (caster == null) return;
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
-        if (target is not NwCreature creature) return;
 
-        if (caster is not NwCreature casterCreature) return;
+        bool immuneToSlow = false;
 
-        bool hasFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusEvocation);
-        bool hasGreaterFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.GreaterSpellFocusEvocation);
-        bool hasEpicFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.EpicSpellFocusEvocation);
+        if (target is NwCreature creature)
+        {
+            immuneToSlow = !creature.IsImmuneTo(ImmunityType.Slow);
+        }
+
+        bool hasFocus = false;
+        bool hasGreaterFocus = false;
+        bool hasEpicFocus = false;
+        if (caster is NwCreature casterCreature)
+        {
+            hasFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusEvocation);
+            hasGreaterFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.GreaterSpellFocusEvocation);
+            hasEpicFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.EpicSpellFocusEvocation);
+        }
+
 
         bool anyFocus = hasFocus || hasGreaterFocus || hasEpicFocus;
 
@@ -38,20 +49,20 @@ public class RayOfFrostFocusDecorator : SpellDecorator
             int freezeChance = hasEpicFocus ? 10 : 0;
             int rollPercentile = NWScript.d100();
 
-            if (rollPercentile <= freezeChance && !creature.IsImmuneTo(ImmunityType.Slow))
+            if (rollPercentile <= freezeChance && !immuneToSlow)
             {
                 Effect freeze = Effect.Slow();
                 freeze = Effect.LinkEffects(freeze, Effect.VisualEffect(VfxType.DurIceskin));
                 freeze.Tag = "RayOfFrostFocusDecorator";
-                Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "RayOfFrostFocusDecorator");
-                if(existing != null) creature.RemoveEffect(existing);
+                Effect? existing = target.ActiveEffects.FirstOrDefault(e => e.Tag == "RayOfFrostFocusDecorator");
+                if (existing != null) target.RemoveEffect(existing);
                 target.ApplyEffect(EffectDuration.Temporary, freeze, TimeSpan.FromSeconds(TwoRounds));
             }
 
             Effect savePenaltyEffect = Effect.SavingThrowDecrease(SavingThrow.All, savePenalty, SavingThrowType.Cold);
             savePenaltyEffect.Tag = "RayOfFrostSavePenalty";
-            Effect? existingReduction = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "RayOfFrostSavePenalty");
-            if(existingReduction != null) creature.RemoveEffect(existingReduction);
+            Effect? existingReduction = target.ActiveEffects.FirstOrDefault(e => e.Tag == "RayOfFrostSavePenalty");
+            if (existingReduction != null) target.RemoveEffect(existingReduction);
             target.ApplyEffect(EffectDuration.Temporary, savePenaltyEffect, TimeSpan.FromSeconds(TwoRounds));
         }
 

@@ -43,7 +43,6 @@ public class SpellCastingService
 
         if (caster is not NwCreature casterCreature)
         {
-            Log.Info($"Caster for {spell.ImpactScript} is not a creature");
             return ScriptHandleResult.Handled;
         }
 
@@ -57,7 +56,7 @@ public class SpellCastingService
                 return ScriptHandleResult.Handled;
             }
 
-            DoCasterLevelOverride(casterCreature, eventData.Spell.SpellSchool);
+            DoCasterLevelOverride(casterCreature);
 
             spell.OnSpellImpact(eventData);
 
@@ -109,7 +108,7 @@ public class SpellCastingService
             spell.DoSpellResist(targetCreature, casterCreature);
         }
 
-        DoCasterLevelOverride(casterCreature, eventData.Spell.SpellSchool);
+        DoCasterLevelOverride(casterCreature);
 
         spell.OnSpellImpact(eventData);
 
@@ -118,7 +117,7 @@ public class SpellCastingService
         return ScriptHandleResult.Handled;
     }
 
-    private void DoCasterLevelOverride(NwCreature casterCreature, SpellSchool spellSpellSchool)
+    private void DoCasterLevelOverride(NwCreature casterCreature)
     {
         CreatureClassInfo? paleMaster =
             casterCreature.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.PaleMaster);
@@ -135,7 +134,7 @@ public class SpellCastingService
         }
 
         int levels = paleMaster.Level + baseClassLevels;
-        CreaturePlugin.SetCasterLevelOverride(casterCreature, levels, 0);
+        CreaturePlugin.SetCasterLevelOverride(casterCreature, NWScript.CLASS_TYPE_PALE_MASTER, levels);
     }
 
     private void RevertCasterLevelOverride(NwCreature casterCreature)

@@ -29,10 +29,9 @@ public class ElectricJolt : ISpell
         
         NwGameObject? target = eventData.TargetObject;
         if(target == null) return;
-        if(target is not NwCreature creature) return;
         
         Effect beam = Effect.Beam(VfxType.BeamLightning, casterCreature, BodyNode.Hand);
-        creature.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1.1));
+        target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1.1));
         
         int numberOfDie = caster.CasterLevel / 2;
         int damage = NWScript.d3(numberOfDie);
@@ -43,10 +42,10 @@ public class ElectricJolt : ISpell
         target.ApplyEffect(EffectDuration.Instant, damageEffect);
 
         // The jolt will jump to the nearest enemy within 5m of the target.
-        JumpToEnemyIfSpecialized(casterCreature, creature, damage);
+        JumpToEnemyIfSpecialized(casterCreature, target, damage);
     }
 
-    private void JumpToEnemyIfSpecialized(NwCreature casterCreature, NwCreature creature, int damage)
+    private void JumpToEnemyIfSpecialized(NwCreature casterCreature, NwGameObject creature, int damage)
     {
         if (!IsSpecialist(casterCreature)) return;
         

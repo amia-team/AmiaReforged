@@ -25,7 +25,6 @@ public class ElectricJoltFocusDecorator : SpellDecorator
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
 
-        if (target is not NwCreature creature) return;
         if (caster is not NwCreature casterCreature) return;
 
         LogManager.GetCurrentClassLogger().Info("Electric Jolt focus decorator");
@@ -47,9 +46,9 @@ public class ElectricJoltFocusDecorator : SpellDecorator
             savePenalty = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Electrical, immunityReduction), savePenalty);
             savePenalty.Tag = "ElecJoltFocusDecorator";
             
-            Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "ElecJoltFocusDecorator");
+            Effect? existing = target.ActiveEffects.FirstOrDefault(e => e.Tag == "ElecJoltFocusDecorator");
             
-            if(existing != null) creature.RemoveEffect(existing);
+            if(existing != null) target.RemoveEffect(existing);
             
             target.ApplyEffect(EffectDuration.Temporary, savePenalty, TimeSpan.FromSeconds(TwoRounds));
         }

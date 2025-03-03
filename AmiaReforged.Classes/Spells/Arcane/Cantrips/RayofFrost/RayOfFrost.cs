@@ -23,7 +23,6 @@ public class RayOfFrost : ISpell
         
         NwGameObject? target = eventData.TargetObject;
         if(target == null) return;
-        if(target is not NwCreature creature) return;
         
         Effect beam = Effect.Beam(VfxType.BeamCold, caster, BodyNode.Hand);
         target.ApplyEffect(EffectDuration.Instant, beam);

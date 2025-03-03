@@ -22,9 +22,7 @@ public class RayOfFrostSpecializationDecorator : SpellDecorator
         if (caster == null) return;
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
-        if (target is not NwCreature creature) return;
-
-
+        
         if (caster is not NwCreature casterCreature) return;
 
         bool isConjurer = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==
@@ -38,7 +36,7 @@ public class RayOfFrostSpecializationDecorator : SpellDecorator
                 .Where(c => c.IsReactionTypeHostile(casterCreature) && c.Distance(target) <= AoERadius)
                 .ToList();
 
-            creature.ApplyEffect(EffectDuration.Instant, coldBoom);
+            target.ApplyEffect(EffectDuration.Instant, coldBoom);
 
             int diceRoll = NWScript.d3(casterCreature.CasterLevel / 2);
 
