@@ -78,10 +78,19 @@ public class Percussion : ISpell
     {
         AreaOfEffectEvents.OnHeartbeat eventData = new();
 
-        foreach (NwCreature nwCreature in eventData.Effect.GetNearestObjectsByType<NwCreature>()
-                     .Where(c => c.Distance(eventData.Effect) <= 5))
+
+        if (eventData.Effect.Creator is NwCreature creator)
         {
-            nwCreature.SpeakString("Boom boom boom!");
+            foreach (NwCreature nwCreature in eventData.Effect.GetNearestObjectsByType<NwCreature>()
+                         .Where(c => c.Distance(eventData.Effect) <= 5))
+            {
+                nwCreature.SpeakString("Boom boom boom!");
+                if (nwCreature.IsFriend(creator) || nwCreature == creator)
+                {
+                    nwCreature.ApplyEffect(EffectDuration.Temporary,
+                        Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Perform)!, 2));
+                }
+            }
         }
 
         return ScriptHandleResult.Handled;
