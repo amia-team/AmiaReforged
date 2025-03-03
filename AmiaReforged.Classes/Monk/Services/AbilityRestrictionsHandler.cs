@@ -46,7 +46,7 @@ public class AbilityRestrictionsHandler
                 player.SendServerMessage($"{eventData.Feat.Name} can only be used while unarmored.", MonkColors.MonkColorScheme);
         }
     }
-    /*private static void PreventHostileActionToFriendly(OnUseFeat eventData)
+    private static void PreventHostileActionToFriendly(OnUseFeat eventData)
     {
         // If monk and targets friendly with a hostile ability
         if (eventData.Creature.GetClassInfo(ClassType.Monk) is null) return;
@@ -73,5 +73,5 @@ public class AbilityRestrictionsHandler
         eventData.PreventFeatUse = true;
         if (eventData.Creature.IsPlayerControlled(out NwPlayer? player))
             player.SendServerMessage("- You cannot cast magic in this area! -");
-    }*/
+    }
 }
