@@ -11,8 +11,10 @@ namespace AmiaReforged.Classes.Monk.Services;
 [ServiceBinding(typeof(AbilityRestrictionsHandler))]
 public class AbilityRestrictionsHandler
 {
+    private const int Focus = 222;
+    
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
+    
     public AbilityRestrictionsHandler()
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
@@ -28,23 +30,33 @@ public class AbilityRestrictionsHandler
     private static void ApplyTechniqueRestrictions(OnUseFeat eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk) is null) return;
+        
         int feat = eventData.Feat.Id;
+        
         bool isMonkAbility = feat is MonkFeat.EmptyBody or MonkFeat.KiBarrier or MonkFeat.KiShout 
             or MonkFeat.WholenessOfBody or MonkFeat.QuiveringPalm or MonkFeat.StunningStrike 
             or MonkFeat.EagleStrike or MonkFeat.AxiomaticStrike;
+        
         if (!isMonkAbility) return;
 
         NwCreature monk = eventData.Creature;
         
-        // Technique can only be used unarmored
         bool isArmored = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool isWieldingShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
+        bool isWieldingFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand).IsValid
+                                             && monk.GetItemInSlot(InventorySlot.LeftHand).BaseItem.Id == Focus;
+            
         if (isArmored || isWieldingShield)
-        {
             eventData.PreventFeatUse = true;
-            if (monk.IsPlayerControlled(out NwPlayer? player)) 
-                player.SendServerMessage($"{eventData.Feat.Name} can only be used while unarmored.", MonkColors.MonkColorScheme);
-        }
+        
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
+            
+        if (isArmored)
+            player.SendServerMessage("Having equipped an armor has disabled your monk abilities.");
+        if (isWieldingShield)
+            player.SendServerMessage("Having equipped a shield has disabled your monk abilities.");
+        if (isWieldingFocusWithoutUnarmed)
+            player.SendServerMessage("Having equipped a focus without being unarmed has disabled your monk abilities.");
     }
     private static void PreventHostileActionToFriendly(OnUseFeat eventData)
     {
