@@ -19,56 +19,22 @@ public class StaticBonusesService
 
         if (environment == "live") return;
         
-        eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(OnLoadAddBonuses, EventCallbackType.After);
-        NwModule.Instance.OnItemEquip += OnEquipAddBonuses;
-        NwModule.Instance.OnItemEquip += OnEquipRemoveBonuses;
-        NwModule.Instance.OnItemUnequip += OnUnequipAddBonuses;
+        eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(OnLoadApplyBonuses, EventCallbackType.After);
+        NwModule.Instance.OnItemEquip += OnEquipApplyBonuses;
+        NwModule.Instance.OnItemUnequip += OnUnequipApplyBonuses;
         eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(OnLevelUpCheckBonuses, EventCallbackType.After);
         eventService.SubscribeAll<OnLevelDown, OnLevelDown.Factory>(OnLevelDownCheckBonuses, EventCallbackType.After);
         Log.Info("Monk Static Bonuses Service initialized.");
     }
 
-    private static void OnLoadAddBonuses(OnLoadCharacterFinish eventData)
+    private static void OnLoadApplyBonuses(OnLoadCharacterFinish eventData)
     {
         if (eventData.Player.ControlledCreature is not NwCreature monk) return;
         if (monk.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         if (monk.ActiveEffects.Any(effect => effect.Tag == "monk_staticeffects")) return;
         
-        NwItem? leftHandItem = monk.GetItemInSlot(InventorySlot.LeftHand);
-        NwItem? armorItem = monk.GetItemInSlot(InventorySlot.Chest);
-        
-        bool hasArmor = armorItem?.BaseACValue > 0;
-        bool hasShield = leftHandItem?.BaseItem.Category is BaseItemCategory.Shield;
-
-        // Don't apply effects if the monk has armor or shield
-        if (hasArmor || hasShield) return;
-
         Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
-    }
-
-    private static void OnEquipRemoveBonuses(OnItemEquip eventData)
-    {
-        if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
-
-        NwCreature monk = eventData.EquippedBy;
-        Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
-        
-        if (monkEffects is null) return;
-
-        bool isShield = eventData.Item.BaseItem.Category is BaseItemCategory.Shield;
-        bool isArmor = eventData.Item.BaseACValue > 0;
-
-        if (isShield || isArmor)
-        {
-            monk.RemoveEffect(monkEffects);
-        }
-        
-        // Only send the server message for shield, because the game by default does it for armor
-        if (!isShield) return;
-        
-        if (monk.IsPlayerControlled(out NwPlayer? player))
-            player.SendServerMessage("Equipping this shield has disabled your monk abilities.");
     }
     
     /// <summary>
@@ -76,64 +42,37 @@ public class StaticBonusesService
     /// eg, if you have a shield in offhand and switch it into a kama, the game just reads it as an OnEquip event
     /// and doesn't re-add the monk bonuses although you no longer have a shield to disqualify it
     /// </summary>
-    private static void OnEquipAddBonuses(OnItemEquip eventData)
+    private static void OnEquipApplyBonuses(OnItemEquip eventData)
     {
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
-        if (eventData.EquippedBy.ActiveEffects.Any(effect => effect.Tag == "monk_staticeffects")) return;
-
+        if (eventData.Slot is not (InventorySlot.RightHand or InventorySlot.LeftHand or InventorySlot.Chest)) return;
+        
         NwCreature monk = eventData.EquippedBy;
-        NwItem? leftHandItem = monk.GetItemInSlot(InventorySlot.LeftHand);
-        NwItem? armorItem = monk.GetItemInSlot(InventorySlot.Chest);
         
-        bool isClothArmor = eventData.Item.BaseACValue == 0;
-        bool isShield = eventData.Item.BaseItem.Category is BaseItemCategory.Shield;
-        bool hasNoArmor = armorItem?.BaseACValue == 0 || armorItem is null;
-        bool hasNoShield = leftHandItem?.BaseItem.Category is not BaseItemCategory.Shield || leftHandItem is null;
-        
-        if ((isClothArmor && hasNoShield) || (!isShield && hasNoArmor))
-        {
-            Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
-            monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
-        }
+        Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
 
-        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
+        if (monkEffects is not null) monk.RemoveEffect(monkEffects);
         
-        if (isClothArmor && hasNoShield) 
-            player.SendServerMessage ("Unequipping this armor has enabled your monk abilities.");
-                
-        if (!isShield && hasNoArmor) 
-            player.SendServerMessage("Unequipping this shield has enabled your monk abilities.");
+        monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
+        monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
     
-    private static void OnUnequipAddBonuses(OnItemUnequip eventData)
+    private static void OnUnequipApplyBonuses(OnItemUnequip eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
-        if (eventData.Creature.ActiveEffects.Any(effect => effect.Tag == "monk_staticeffects")) return;
-
+        
+        // NB! the focus base item is categorized as torches in baseitems.2da
+        if (eventData.Item.BaseItem.Category is not 
+            (BaseItemCategory.Armor or BaseItemCategory.Shield or BaseItemCategory.Torches)) return;
+        
         NwCreature monk = eventData.Creature;
-        NwItem? leftHandItem = monk.GetItemInSlot(InventorySlot.LeftHand);
-        NwItem? armorItem = monk.GetItemInSlot(InventorySlot.Chest);
         
-        bool isArmor = eventData.Item.BaseACValue > 0;
-        bool isShield = eventData.Item.BaseItem.Category is BaseItemCategory.Shield;
-        bool hasNoArmor = armorItem?.BaseACValue == 0 || armorItem is null;
-        bool hasNoShield = leftHandItem?.BaseItem.Category is not BaseItemCategory.Shield || leftHandItem is null;
+        Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
         
-        // If unequipping armor while isn't wielding a shield, apply bonuses
-        // If unequipping shield while isn't wearing armor, apply bonuses
-        if (isArmor && hasNoShield || isShield && hasNoArmor)
-        {
-            Effect monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
-            monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
-        }
-
-        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
-        
-        if (isArmor && hasNoShield) 
-            player.SendServerMessage ("Unequipping this armor has enabled your monk abilities.");
-                
-        if (isShield && hasNoArmor) 
-            player.SendServerMessage("Unequipping this shield has enabled your monk abilities.");
+        if (monkEffects is not null) monk.RemoveEffect(monkEffects);
+            
+        monkEffects = StaticBonusesEffect.GetStaticBonusesEffect(monk);
+        monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
 
     private static void OnLevelUpCheckBonuses(OnLevelUp eventData)

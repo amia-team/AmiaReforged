@@ -5,6 +5,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using Microsoft.VisualBasic;
 using NLog;
+using NWN.Core;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
@@ -12,7 +13,7 @@ namespace AmiaReforged.Classes.Monk.Services;
 [ServiceBinding(typeof(AbilityRestrictionsHandler))]
 public class AbilityRestrictionsHandler
 {
-    // Base item ID for base item focus
+    // Base item ID for base item "Focus"
     private const int FocusId = 222;
     // Recurring restriction booleans
     private static bool _hasArmor;
@@ -28,11 +29,17 @@ public class AbilityRestrictionsHandler
 
         if (environment == "live") return;
         
+        NwModule.Instance.OnModuleStart += HideDefaultFeedback;
         NwModule.Instance.OnUseFeat += EnforceTechniqueRestrictions;
         NwModule.Instance.OnEffectApply += DeactivateMartialTechnique;
+        NwModule.Instance.OnEffectApply += DeactivateStaticBonuses;
         NwModule.Instance.OnUseFeat += PreventHostileTechniqueToFriendly;
         NwModule.Instance.OnUseFeat += PreventTechniqueInNoCastingArea;
         Log.Info("Monk Ability Restrictions Handler initialized.");
+    }
+    private static void HideDefaultFeedback(ModuleEvents.OnModuleStart eventData)
+    {
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_MONK_ABILITIES, NWScript.TRUE);
     }
 
     private static void EnforceTechniqueRestrictions(OnUseFeat eventData)
@@ -51,8 +58,8 @@ public class AbilityRestrictionsHandler
         
         _hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         _hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
-        _hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand).IsValid
-                                             && monk.GetItemInSlot(InventorySlot.LeftHand).BaseItem.Id == FocusId;
+        _hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand)!.IsValid
+                                             && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
             
         if (_hasArmor || _hasShield || _hasFocusWithoutUnarmed)
             eventData.PreventFeatUse = true;
@@ -67,17 +74,19 @@ public class AbilityRestrictionsHandler
             player.SendServerMessage($"Having equipped a focus without being unarmed has prevented your {eventData.Feat.Name}.");
     }
     
-    private void DeactivateMartialTechnique(OnEffectApply eventData)
+    private static void DeactivateMartialTechnique(OnEffectApply eventData)
     {
         if (eventData.Object is not NwCreature monk) return;
+
+        if (eventData.Effect.Tag is null) return;
         
         // Effect must be a martial technique
-        if (eventData.Effect.Tag.Contains(MonkTechnique.MartialTechnique)) return;
+        if (!eventData.Effect.Tag.Contains(MonkTechnique.MartialTechnique)) return;
         
         _hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         _hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
-        _hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand).IsValid
-                                  && monk.GetItemInSlot(InventorySlot.LeftHand).BaseItem.Id == FocusId;
+        _hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand)!.IsValid
+                                  && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
         
         if (_hasArmor || _hasShield || _hasFocusWithoutUnarmed)
             monk.RemoveEffect(eventData.Effect);
@@ -99,6 +108,33 @@ public class AbilityRestrictionsHandler
         if (_hasFocusWithoutUnarmed)
             player.SendServerMessage($"Having equipped a focus without being unarmed has prevented your {techniqueName}.");
     }
+    private static void DeactivateStaticBonuses(OnEffectApply eventData)
+    {
+        if (eventData.Object is not NwCreature monk) return;
+        
+        if (eventData.Effect.Tag is null) return;
+        
+        // Effect must be a martial technique
+        if (eventData.Effect.Tag != "monk_staticeffects") return;
+        
+        _hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
+        _hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
+        _hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand)!.IsValid
+                                  && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
+        
+        if (_hasArmor || _hasShield || _hasFocusWithoutUnarmed)
+            monk.RemoveEffect(eventData.Effect);
+        
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
+        
+        if (_hasArmor)
+            player.SendServerMessage($"Equipping this armor has disabled your monk abilities.");
+        if (_hasShield)
+            player.SendServerMessage($"Equipping this shield has disabled your monk abilities.");
+        if (_hasFocusWithoutUnarmed)
+            player.SendServerMessage($"Equipping a focus without being unarmed has disabled your monk abilities.");
+    }
+    
     private static void PreventHostileTechniqueToFriendly(OnUseFeat eventData)
     {
         // If monk and targets friendly with a hostile ability
