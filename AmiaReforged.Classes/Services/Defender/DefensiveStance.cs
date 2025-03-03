@@ -89,8 +89,9 @@ public class DefensiveStance
         Effect tempHpBonus = Effect.TemporaryHitpoints(tempHp);
         
         // Resistance bonus.
+        int resistanceCap = defenderLevel >= 20 ? 7 : 5;
         int resistanceCapstone = defenderLevel >= 20 ? 2 : 0;
-        int resistance = 1 + defenderLevel / 4 + resistanceCapstone;
+        int resistance = Math.Clamp(1 + defenderLevel / 4 + resistanceCapstone, 0, resistanceCap);
         Effect savingThrowBonus = Effect.SavingThrowIncrease(SavingThrow.All, resistance);
         
         int acCapstone = defenderLevel >= 20 ? 1 : 0;

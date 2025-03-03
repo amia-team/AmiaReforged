@@ -10,7 +10,7 @@ public class PillarOfPhantoms
 {
     private const string PillarOfPhantomsTag = "ghostpillar";
     private const string PillarPhantomTag = "pillarphantom";
-    private Dictionary<NwArea, List<NwPlaceable>> _activeTraps = new();
+    private readonly Dictionary<NwArea, List<NwPlaceable>> _activeTraps = new();
 
     public PillarOfPhantoms()
     {
