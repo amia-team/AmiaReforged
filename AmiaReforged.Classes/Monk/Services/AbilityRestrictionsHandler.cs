@@ -23,13 +23,13 @@ public class AbilityRestrictionsHandler
     
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     
-    public AbilityRestrictionsHandler()
+    public AbilityRestrictionsHandler(EventService eventService)
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
 
         if (environment == "live") return;
         
-        NwModule.Instance.OnModuleStart += HideDefaultFeedback;
+        eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(HideDefaultFeedback, EventCallbackType.After);
         NwModule.Instance.OnUseFeat += EnforceTechniqueRestrictions;
         NwModule.Instance.OnEffectApply += DeactivateMartialTechnique;
         NwModule.Instance.OnEffectApply += DeactivateStaticBonuses;
@@ -37,9 +37,13 @@ public class AbilityRestrictionsHandler
         NwModule.Instance.OnUseFeat += PreventTechniqueInNoCastingArea;
         Log.Info("Monk Ability Restrictions Handler initialized.");
     }
-    private static void HideDefaultFeedback(ModuleEvents.OnModuleStart eventData)
+    private static void HideDefaultFeedback(OnLoadCharacterFinish eventData)
     {
-        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_MONK_ABILITIES, NWScript.TRUE);
+        if (eventData.Player.ControlledCreature is not NwCreature monk) return;
+        if (monk.GetClassInfo(ClassType.Monk) is null) return;
+        
+        FeedbackPlugin.SetFeedbackMessageHidden
+            (FeedbackPlugin.NWNX_FEEDBACK_EQUIP_MONK_ABILITIES, NWScript.TRUE, monk);
     }
 
     private static void EnforceTechniqueRestrictions(OnUseFeat eventData)
