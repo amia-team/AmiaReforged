@@ -17,7 +17,6 @@ public class AcidBoltSpecializationDecorator : SpellDecorator
         if (caster == null) return;
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
-        if (target is not NwCreature creature) return;
         
         if (caster is not NwCreature casterCreature) return;
         
@@ -25,24 +24,24 @@ public class AcidBoltSpecializationDecorator : SpellDecorator
         
         if (hasConjurationSpecialization)
         {
-            ApplyImpactVfx(creature);
+            ApplyImpactVfx(target);
 
             Effect corrosion = Effect.ACDecrease(2, ACBonus.ArmourEnchantment);
             corrosion.Tag = "AM_AcidBolt_Corrosion";
             
-            ApplyCorrosion(creature, corrosion);
+            ApplyCorrosion(target, corrosion);
         }
         
         Spell.OnSpellImpact(eventData);
     }
 
-    private static void ApplyImpactVfx(NwCreature creature)
+    private static void ApplyImpactVfx(NwGameObject creature)
     {
         Effect acidBoom = Effect.VisualEffect(VfxType.ImpDustExplosion);
         creature.ApplyEffect(EffectDuration.Instant, acidBoom);
     }
 
-    private void ApplyCorrosion(NwCreature creature, Effect corrosion)
+    private void ApplyCorrosion(NwGameObject creature, Effect corrosion)
     {
         if (Result == ResistSpellResult.Failed)
         {
@@ -51,7 +50,7 @@ public class AcidBoltSpecializationDecorator : SpellDecorator
         }
     }
 
-    private static void RemoveExistingEffect(NwCreature creature)
+    private static void RemoveExistingEffect(NwGameObject creature)
     {
         Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "AM_AcidBolt_Corrosion");
         if (existing != null) creature.RemoveEffect(existing);
