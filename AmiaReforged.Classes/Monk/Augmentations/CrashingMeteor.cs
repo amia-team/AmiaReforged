@@ -34,9 +34,8 @@ public static class CrashingMeteor
         }
     }
     /// <summary>
-    /// Stunning Strike deals 2d6 elemental damage in a medium area around the target. Every Ki Focus increases the
-    /// damage by an additional 2d6 to a maximum of 8d6 elemental damage. The damage isn’t multiplied by critical hits
-    /// and a successful reflex save halves the damage.
+    /// Stunning Strike deals 2d6 elemental damage in a medium area around the target. The damage isn’t multiplied by
+    /// critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental damage.
     /// </summary>
     private static void AugmentStunning(OnCreatureAttack attackData)
     {
@@ -123,7 +122,6 @@ public static class CrashingMeteor
     /// </summary>
     private static void AugmentAxiomatic(OnCreatureAttack attackData)
     {
-        // First do Axiomatic, then add the path stuff
         AxiomaticStrike.DoAxiomaticStrike(attackData);
         
         NwCreature monk = attackData.Attacker;
@@ -142,9 +140,88 @@ public static class CrashingMeteor
         elementalDamage += bonusDamageElemental;
         damageData.SetDamageByType(elementalType, elementalDamage);
     }
+    /// <summary>
+    /// Wholeness of Body deals 2d6 elemental damage in a medium area round the monk, with a successful reflex save
+    /// halving the damage. Each Ki Focus adds 2d6 damage to a maximum of 8d6 elemental damage. 
+    /// </summary>
+    /// <param name="castData"></param>
     private static void AugmentWholeness(OnSpellCast castData)
     {
+        WholenessOfBody.DoWholenessOfBody(castData);
         
+        NwCreature monk = (NwCreature)castData.Caster;
+        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
+        int monkLevel  = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
+        int diceAmount = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusII => 4,
+            >= MonkLevel.KiFocusII and < MonkLevel.KiFocusIII => 6,
+            MonkLevel.KiFocusIII => 8,
+            _ => 2
+        };
+        Effect elementalAoeVfx = elementalType switch
+        {
+            DamageType.Fire => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Medium),
+            DamageType.Cold => MonkUtilFunctions.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Medium),
+            DamageType.Electrical => MonkUtilFunctions.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Medium),
+            DamageType.Acid => MonkUtilFunctions.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Medium),
+            _ => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Medium)
+        };
+        Effect elementalDamageVfx = elementalType switch
+        {
+            DamageType.Fire => Effect.VisualEffect(VfxType.ImpFlameS),
+            DamageType.Cold => Effect.VisualEffect(VfxType.ImpFrostS),
+            DamageType.Electrical => Effect.VisualEffect(VfxType.ComHitElectrical),
+            DamageType.Acid => Effect.VisualEffect(VfxType.ImpAcidS),
+            _ => Effect.VisualEffect(VfxType.ImpFlameS)
+        };
+        SavingThrowType elementalSaveType = elementalType switch
+        {
+            DamageType.Fire => SavingThrowType.Fire,
+            DamageType.Cold => SavingThrowType.Cold,
+            DamageType.Electrical => SavingThrowType.Electricity,
+            DamageType.Acid => SavingThrowType.Acid,
+            _ => SavingThrowType.Fire
+        };
+        
+        monk.ApplyEffect(EffectDuration.Instant, elementalAoeVfx);
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true, 
+                     ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
+        {
+            NwCreature creatureInShape = (NwCreature)nwObject;
+            if (monk.IsReactionTypeFriendly(creatureInShape)) continue;
+
+            CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.Fireball)!);
+
+            bool hasEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.Evasion)!);
+            bool hasImprovedEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
+            
+            SavingThrowResult savingThrowResult = 
+                creatureInShape.RollSavingThrow(SavingThrow.Reflex, dc, elementalSaveType, monk);
+            
+            int damageAmount = Random.Shared.Roll(6, diceAmount);
+            
+            if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success) 
+                damageAmount /= 2;
+            
+            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, elementalType), elementalDamageVfx);
+
+            if (savingThrowResult == SavingThrowResult.Failure)
+            {
+                creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
+                continue;
+            }
+            
+            if (hasEvasion || hasImprovedEvasion)
+            {
+                creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
+                continue;
+            }
+                
+            creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
+            creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
+        }
     }
     private static void AugmentKiShout(OnSpellCast castData)
     {
