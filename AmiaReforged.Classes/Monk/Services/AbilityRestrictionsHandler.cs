@@ -86,9 +86,9 @@ public class AbilityRestrictionsHandler
         _hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
         _hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand)!.IsValid
                                   && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
-        
+
         if (_hasArmor || _hasShield || _hasFocusWithoutUnarmed)
-            monk.RemoveEffect(eventData.Effect);
+            eventData.PreventApply = true;
         
         string techniqueName = eventData.Effect.Tag switch
         {
@@ -122,7 +122,7 @@ public class AbilityRestrictionsHandler
                                   && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
         
         if (_hasArmor || _hasShield || _hasFocusWithoutUnarmed)
-            monk.RemoveEffect(eventData.Effect);
+            eventData.PreventApply = true;
         
         if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
         
