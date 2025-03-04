@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
+using NWN.Core;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Types.EssenceEffects;
@@ -11,12 +12,15 @@ public class VitriolicEssenceEffects : EssenceEffectApplier
 
     public override void ApplyEffects(int damage)
     {
+        int result = ResistSpell(Caster, Target);
+        if (result == 3) return;
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_ACID), Target);
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_ACID_S), Target);
 
         if (NwEffects.GetHasEffectByTag("wlk_vitriolic", Target) == TRUE) return;
 
         bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_ACID, Caster) == TRUE;
+
 
         if (passedFortSave)
         {
