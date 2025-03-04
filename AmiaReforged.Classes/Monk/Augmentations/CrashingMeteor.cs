@@ -48,11 +48,10 @@ public static class CrashingMeteor
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int diceAmount = monkLevel switch
         {
-            >= MonkLevel.PathOfEnlightenment and <= MonkLevel.KiFocusI => 2,
-            >= MonkLevel.KiFocusI and <= MonkLevel.KiFocusII => 4,
-            >= MonkLevel.KiFocusII and <= MonkLevel.KiFocusIII => 6,
-            >= MonkLevel.KiFocusIII => 8,
-            _ => 0
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusII => 4,
+            >= MonkLevel.KiFocusII and < MonkLevel.KiFocusIII => 6,
+            MonkLevel.KiFocusIII => 8,
+            _ => 2
         };
         Effect elementalAoeVfx = elementalType switch
         {
@@ -130,8 +129,8 @@ public static class CrashingMeteor
         short elementalDamage = damageData.GetDamageByType(elementalType);
         short bonusDamageElemental = monkLevel switch
         {
-            >= 10 and <= 19 => 2,
-            >= 20 and <= 29 => 3,
+            >= MonkLevel.PathOfEnlightenment and <= MonkLevel.KiFocusI => 1,
+            >= MonkLevel.KiFocusI and <= MonkLevel.KiFocusII => 2,
             30 => 4,
             _ => 1
         };
