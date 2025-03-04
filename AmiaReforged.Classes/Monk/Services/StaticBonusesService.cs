@@ -42,7 +42,7 @@ public class StaticBonusesService
     /// eg, if you have a shield in offhand and switch it into a kama, the game just reads it as an OnEquip event
     /// and doesn't re-add the monk bonuses although you no longer have a shield to disqualify it
     /// </summary>
-    private static async void OnEquipApplyBonuses(OnItemEquip eventData)
+    private static void OnEquipApplyBonuses(OnItemEquip eventData)
     {
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         if (eventData.Slot is not (InventorySlot.RightHand or InventorySlot.LeftHand or InventorySlot.Chest)) return;
@@ -52,14 +52,12 @@ public class StaticBonusesService
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
 
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
-
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
     
-    private static async void OnUnequipApplyBonuses(OnItemUnequip eventData)
+    private static void OnUnequipApplyBonuses(OnItemUnequip eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
@@ -72,8 +70,6 @@ public class StaticBonusesService
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticeffects");
         
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
-        
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
             
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
