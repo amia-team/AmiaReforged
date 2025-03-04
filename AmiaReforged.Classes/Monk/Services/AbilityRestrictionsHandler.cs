@@ -82,8 +82,7 @@ public class AbilityRestrictionsHandler
         // Effect must be a martial technique
         if (!eventData.Effect.Tag.Contains(MonkTechnique.MartialTechnique)) return;
         
-        _hasArmor = monk.GetItemInSlot(InventorySlot.Chest) is not null 
-                    && monk.GetItemInSlot(InventorySlot.Chest)!.BaseACValue != 0;
+        _hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         _hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
         _hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand)!.IsValid
                                   && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
@@ -117,8 +116,7 @@ public class AbilityRestrictionsHandler
         // Effect must be a martial technique
         if (eventData.Effect.Tag != "monk_staticeffects") return;
         
-        _hasArmor = monk.GetItemInSlot(InventorySlot.Chest) is not null 
-                    && monk.GetItemInSlot(InventorySlot.Chest)!.BaseACValue != 0;
+        _hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         _hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
         _hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand)!.IsValid
                                   && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
@@ -129,11 +127,11 @@ public class AbilityRestrictionsHandler
         if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
         
         if (_hasArmor)
-            player.SendServerMessage("Equipping this armor has disabled your monk abilities.");
+            player.SendServerMessage($"Equipping this armor has disabled your monk abilities.");
         if (_hasShield)
-            player.SendServerMessage("Equipping this shield has disabled your monk abilities.");
+            player.SendServerMessage($"Equipping this shield has disabled your monk abilities.");
         if (_hasFocusWithoutUnarmed)
-            player.SendServerMessage("Equipping a focus without being unarmed has disabled your monk abilities.");
+            player.SendServerMessage($"Equipping a focus without being unarmed has disabled your monk abilities.");
     }
     
     private static void PreventHostileTechniqueToFriendly(OnUseFeat eventData)
