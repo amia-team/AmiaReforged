@@ -20,8 +20,8 @@ public class StaticBonusesService
         if (environment == "live") return;
         
         eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(OnLoadApplyBonuses, EventCallbackType.After);
-        NwModule.Instance.OnItemEquip += OnEquipApplyBonuses;
-        NwModule.Instance.OnItemUnequip += OnUnequipApplyBonuses;
+        eventService.SubscribeAll<OnItemEquip, OnItemEquip.Factory>(OnEquipApplyBonuses, EventCallbackType.After);
+        eventService.SubscribeAll<OnItemUnequip, OnItemUnequip.Factory>(OnUnequipApplyBonuses, EventCallbackType.After);
         eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(OnLevelUpCheckBonuses, EventCallbackType.After);
         eventService.SubscribeAll<OnLevelDown, OnLevelDown.Factory>(OnLevelDownCheckBonuses, EventCallbackType.After);
         Log.Info("Monk Static Bonuses Service initialized.");
