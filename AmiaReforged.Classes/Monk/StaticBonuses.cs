@@ -40,7 +40,7 @@ public static class StaticBonuses
 
         Effect monkEffects = Effect.LinkEffects(monkAcBonus, monkSpeed, kiStrike);
         monkEffects.SubType = EffectSubType.Unyielding;
-        monkEffects.Tag = "monk_staticeffects";
+        monkEffects.Tag = "monk_staticbonuses";
         return monkEffects;
     }
 }
