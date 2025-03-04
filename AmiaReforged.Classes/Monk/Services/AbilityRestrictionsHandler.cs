@@ -127,11 +127,11 @@ public class AbilityRestrictionsHandler
         if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
         
         if (_hasArmor)
-            player.SendServerMessage("Equipping this armor has disabled your monk abilities.");
+            player.SendServerMessage($"Equipping this armor has disabled your monk abilities.");
         if (_hasShield)
-            player.SendServerMessage("Equipping this shield has disabled your monk abilities.");
+            player.SendServerMessage($"Equipping this shield has disabled your monk abilities.");
         if (_hasFocusWithoutUnarmed)
-            player.SendServerMessage("Equipping a focus without being unarmed has disabled your monk abilities.");
+            player.SendServerMessage($"Equipping a focus without being unarmed has disabled your monk abilities.");
     }
     
     private static void PreventHostileTechniqueToFriendly(OnUseFeat eventData)
