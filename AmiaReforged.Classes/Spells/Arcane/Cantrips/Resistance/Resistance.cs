@@ -9,7 +9,7 @@ public class Resistance : ISpell
 {
     public ResistSpellResult Result { get; set; }
 
-    public string ImpactScript { get; }
+    public string ImpactScript => "NW_S0_Resis";
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
