@@ -55,20 +55,20 @@ public static class SwingingCenser
         double level30Heal = healAmount * 1.5;
         
         // Wholeness is gained at 7
-        if (monkLevel == MonkLevel.KiFocusIIILevel) 
+        if (monkLevel == MonkLevel.KiFocusIII) 
         {
             pulseAmount = 3;
             healAmount = (int)level30Heal;
         }
-        else if (monkLevel >= MonkLevel.KiFocusIILevel)
+        else if (monkLevel >= MonkLevel.KiFocusII)
         {
             pulseAmount = 3; 
         }
-        else if (monkLevel >= MonkLevel.KiFocusILevel)
+        else if (monkLevel >= MonkLevel.KiFocusI)
         {
             pulseAmount = 2; 
         }
-        else if (monkLevel >= MonkLevel.PathOfEnlightenmentLevel)
+        else if (monkLevel >= MonkLevel.PathOfEnlightenment)
         {
             pulseAmount = 1; 
         }
@@ -119,22 +119,22 @@ public static class SwingingCenser
         // Adjust as appropriate. 1 round per monk level.
         TimeSpan effectTime = TimeSpan.FromSeconds(monkLevel*6); 
         
-        if (monkLevel == MonkLevel.KiFocusIIILevel) 
+        if (monkLevel == MonkLevel.KiFocusIII) 
         {
             regen = 7;
             concealment = 55;
         }
-        else if (monkLevel >= MonkLevel.KiFocusIILevel)
+        else if (monkLevel >= MonkLevel.KiFocusII)
         {
             regen = 5;
             concealment = 45;
         }
-        else if (monkLevel >= MonkLevel.KiFocusILevel)
+        else if (monkLevel >= MonkLevel.KiFocusI)
         {
             regen = 4;
             concealment = 35;
         }
-        else if (monkLevel >= MonkLevel.PathOfEnlightenmentLevel)
+        else if (monkLevel >= MonkLevel.PathOfEnlightenment)
         {
             regen = 2;
             concealment = 25;
