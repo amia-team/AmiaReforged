@@ -54,6 +54,7 @@ public class StaticBonusesService
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
         
         monkEffects = StaticBonuses.GetEffect(monk);
+        monkEffects.Tag = "monk_staticeffects";
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
     
@@ -72,6 +73,7 @@ public class StaticBonusesService
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
             
         monkEffects = StaticBonuses.GetEffect(monk);
+        monkEffects.Tag = "monk_staticeffects";
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
 
