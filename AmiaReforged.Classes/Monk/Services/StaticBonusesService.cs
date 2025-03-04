@@ -35,6 +35,9 @@ public class StaticBonusesService
         
         Effect monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        
+        OnEffectApply onEffectApply = new();
+        AbilityRestrictionsHandler.PreventStaticBonuses(onEffectApply);
     }
     
     /// <summary>
@@ -55,6 +58,9 @@ public class StaticBonusesService
         
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+
+        OnEffectApply onEffectApply = new();
+        AbilityRestrictionsHandler.PreventStaticBonuses(onEffectApply);
     }
     
     private static void OnUnequipApplyBonuses(OnItemUnequip eventData)
@@ -73,6 +79,9 @@ public class StaticBonusesService
             
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        
+        OnEffectApply onEffectApply = new();
+        AbilityRestrictionsHandler.PreventStaticBonuses(onEffectApply);
     }
 
     private static void OnLevelUpCheckBonuses(OnLevelUp eventData)
