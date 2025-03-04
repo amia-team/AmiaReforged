@@ -41,14 +41,17 @@ public static class MonkUtilFunctions
     /// <summary>
     /// Returns a vfx effect resized to your desired size
     /// </summary>
-    /// <param name="visualEffect"></param> The visual effect you want to resize
-    /// <param name="desiredSize"></param> The size you desire in meters (small 1.67, medium 3.33, large 5, huge 6.67, gargantuan 8.33, colossal 10)
+    /// <param name="visualEffect">The visual effect you want to resize</param> 
+    /// <param name="desiredSize">The size you desire in meters (small 1.67, medium 3.33, large 5, huge 6.67, gargantuan 8.33, colossal 10)</param> 
     /// <returns></returns>
     public static Effect ResizedVfx(VfxType visualEffect, float desiredSize)
     {
         float vfxDefaultSize = visualEffect switch
         {
+            VfxType.ImpFrostL or VfxType.ImpAcidS => 1f,
             VfxType.FnfLosEvil10 or (VfxType)1046 => RadiusSize.Medium,
+            VfxType.FnfFireball => RadiusSize.Huge,
+            VfxType.FnfElectricExplosion => RadiusSize.Gargantuan,
             VfxType.FnfHowlOdd or VfxType.FnfHowlMind => RadiusSize.Colossal,
             _ => RadiusSize.Large
         };
@@ -59,9 +62,9 @@ public static class MonkUtilFunctions
     /// <summary>
     /// A simpler version of NWN's spellsIsTarget() adjusted to Amia's difficulty setting. Don't use if it doesn't simplify AoE spell targeting.
     /// </summary>
-    /// <param name="creaturesOnly"></param> true if you want to only affect creatures
-    /// <param name="affectsSelf"></param> true if you want to affect yourself
-    /// <param name="alliesOnly"></param> true if you to affect only allies
+    /// <param name="creaturesOnly">true if you want to only affect creatures</param> 
+    /// <param name="affectsSelf">true if you want to affect yourself</param> 
+    /// <param name="alliesOnly">true if you to affect only allies</param> 
     /// <returns>Valid target for spell effect</returns>
     public static bool IsValidTarget(NwObject targetObject, NwCreature caster, bool creaturesOnly, bool affectsSelf, bool alliesOnly)
     {
