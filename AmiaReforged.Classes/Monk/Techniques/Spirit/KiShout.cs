@@ -30,7 +30,7 @@ public static class KiShout
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        Effect kiShoutEffect = Effect.LinkEffects(Effect.Stunned(), Effect.VisualEffect(VfxType.DurCessateNegative));
+        Effect kiShoutEffect = Effect.Stunned();
         kiShoutEffect.SubType = EffectSubType.Supernatural;
         Effect kiShoutVfx = Effect.VisualEffect(VfxType.FnfHowlMind);
         TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
