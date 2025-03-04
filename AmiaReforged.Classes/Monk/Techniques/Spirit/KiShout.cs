@@ -24,7 +24,11 @@ public static class KiShout
         
         DoKiShout(castData);
     }
-
+    
+    /// <summary>
+    /// Stuns enemies within colossal range for three rounds if they fail a will save. In addition,
+    /// all enemies take 1d4 sonic damage per monk level. Each use depletes a Spirit Ki Point.
+    /// </summary>
     public static void DoKiShout(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
