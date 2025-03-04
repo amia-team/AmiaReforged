@@ -45,6 +45,8 @@ public class Wilt : ISpell
 
         if(NWScript.GetLocalInt(target, $"wilt_{caster.Name}") == NWScript.TRUE) return;
         
+        if(NWScript.GetRacialType(target) == NWScript.RACIAL_TYPE_UNDEAD) return;
+        
         if (Result == ResistSpellResult.Failed)
         {
             NWScript.SetLocalInt(target, $"wilt_{caster.Name}", NWScript.TRUE);
