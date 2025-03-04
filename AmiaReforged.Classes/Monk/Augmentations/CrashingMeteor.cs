@@ -116,7 +116,11 @@ public static class CrashingMeteor
             creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
         }
     }
-
+    
+    /// <summary>
+    /// Axiomatic Strike deals +1 bonus elemental damage to the target, with an additional +1 for every Ki Focus,
+    /// to a maximum of +4 elemental damage.
+    /// </summary>
     private static void AugmentAxiomatic(OnCreatureAttack attackData)
     {
         // First do Axiomatic, then add the path stuff
@@ -129,12 +133,12 @@ public static class CrashingMeteor
         short elementalDamage = damageData.GetDamageByType(elementalType);
         short bonusDamageElemental = monkLevel switch
         {
-            >= MonkLevel.PathOfEnlightenment and <= MonkLevel.KiFocusI => 1,
-            >= MonkLevel.KiFocusI and <= MonkLevel.KiFocusII => 2,
-            30 => 4,
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusII => 2,
+            >= MonkLevel.KiFocusII and < MonkLevel.KiFocusIII => 3,
+            MonkLevel.KiFocusIII => 4,
             _ => 1
         };
-        // Apply elemental and axiomatic damage
+        
         elementalDamage += bonusDamageElemental;
         damageData.SetDamageByType(elementalType, elementalDamage);
     }
