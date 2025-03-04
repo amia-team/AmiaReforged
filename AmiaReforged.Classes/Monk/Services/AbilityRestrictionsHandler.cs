@@ -22,7 +22,7 @@ public class AbilityRestrictionsHandler
     
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     
-    public AbilityRestrictionsHandler()
+    public AbilityRestrictionsHandler(EventService eventService)
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
 
@@ -30,8 +30,8 @@ public class AbilityRestrictionsHandler
         
         NwModule.Instance.OnModuleLoad += HideDefaultFeedback;
         NwModule.Instance.OnUseFeat += EnforceTechniqueRestrictions;
-        NwModule.Instance.OnEffectApply += DeactivateMartialTechnique;
-        NwModule.Instance.OnEffectApply += DeactivateStaticBonuses;
+        eventService.SubscribeAll<OnEffectApply, OnEffectApply.Factory>(DeactivateMartialTechnique, EventCallbackType.After);
+        eventService.SubscribeAll<OnEffectApply, OnEffectApply.Factory>(DeactivateStaticBonuses, EventCallbackType.After);
         NwModule.Instance.OnUseFeat += PreventHostileTechniqueToFriendly;
         NwModule.Instance.OnUseFeat += PreventTechniqueInNoCastingArea;
         Log.Info("Monk Ability Restrictions Handler initialized.");
