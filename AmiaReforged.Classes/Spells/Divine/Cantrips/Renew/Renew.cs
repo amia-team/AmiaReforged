@@ -29,6 +29,8 @@ public class Renew : ISpell
         if (caster == null) return;
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
+        
+        if(NWScript.GetRacialType(target) == NWScript.RACIAL_TYPE_UNDEAD) return;
 
         if (caster is not NwCreature casterCreature) return;
 
