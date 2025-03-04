@@ -44,12 +44,13 @@ public class Renew : ISpell
 
         int durationInRounds = hasEpicFocus ? 2 : 3;
 
-        Effect effect = Effect.VisualEffect(VfxType.ImpHealingS);
-
         if (NWScript.GetLocalInt(target, $"renew_{caster.Name}") == NWScript.TRUE) return;
 
         int healing = NWScript.d3(numDice) / 2;
         int healingPerRound = healing / durationInRounds;
+        
+        Effect vfx = Effect.VisualEffect(VfxType.ImpHealingS);
+        target.ApplyEffect(EffectDuration.Instant, vfx);
 
         // Apply the first round of healing immediately.
         Effect healingEffect = Effect.Heal(healingPerRound);
