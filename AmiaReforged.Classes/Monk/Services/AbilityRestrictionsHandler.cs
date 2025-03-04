@@ -148,12 +148,7 @@ public class AbilityRestrictionsHandler
         _hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand)!.IsValid
                                   && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
         
-        if (_hasArmor || _hasShield || _hasFocusWithoutUnarmed)
-            eventData.PreventApply = true;
-        
         if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
-        
-        player.SendServerMessage("I got this far, problem's with the bools.");
         
         if (_hasArmor)
             player.SendServerMessage("Equipping this armor has disabled your monk abilities.");
@@ -161,5 +156,8 @@ public class AbilityRestrictionsHandler
             player.SendServerMessage("Equipping this shield has disabled your monk abilities.");
         if (_hasFocusWithoutUnarmed)
             player.SendServerMessage("Equipping a focus without being unarmed has disabled your monk abilities.");
+        
+        if (_hasArmor || _hasShield || _hasFocusWithoutUnarmed)
+            eventData.PreventApply = true;
     }
 }
