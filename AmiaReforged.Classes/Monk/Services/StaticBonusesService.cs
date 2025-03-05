@@ -43,8 +43,9 @@ public class StaticBonusesService
     {
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
-        // Only check for possible disqualifiers of monk bonuses
+        // First check for possible disqualifying mainhands, offhands, armors
         if (eventData.Slot is not (InventorySlot.Chest or InventorySlot.RightHand or InventorySlot.LeftHand))
+            // Then check for items with wisdom properties as they can increase the Wis AC
             if (!eventData.Item.ItemProperties.Any(ip => ip.IntParams[0] is not (int)Ability.Wisdom)) return;
         
         NwCreature monk = eventData.EquippedBy;
@@ -63,14 +64,16 @@ public class StaticBonusesService
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
-        // Only check for possible disqualifiers of monk bonuses
+        // These are hex-coded EquipableSlots from baseitems.2da to match EquipmentSlots for basic weapons
         const EquipmentSlots leftOrRight = EquipmentSlots.RightHand | EquipmentSlots.LeftHand;
         const EquipmentSlots leftOrRightOrCreature =  
             EquipmentSlots.RightHand | EquipmentSlots.LeftHand | EquipmentSlots.CreatureWeaponBite 
             | EquipmentSlots.CreatureWeaponLeft | EquipmentSlots.CreatureWeaponRight;
         
+        // First check for possible disqualifying mainhands, offhands, armors
         if (eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.Chest or EquipmentSlots.RightHand 
-                or EquipmentSlots.LeftHand or leftOrRight or leftOrRightOrCreature)) 
+                or EquipmentSlots.LeftHand or leftOrRight or leftOrRightOrCreature))
+            // Then check for items with wisdom properties as they can increase the Wis AC
             if (!eventData.Item.ItemProperties.Any(ip => ip.IntParams[0] is not (int)Ability.Wisdom)) return;
         
         NwCreature monk = eventData.Creature;
