@@ -45,7 +45,7 @@ public class StaticBonusesService
         
         // Only check for possible disqualifiers of monk bonuses
         if (eventData.Slot is not (InventorySlot.Chest or InventorySlot.RightHand or InventorySlot.LeftHand))
-            if (!eventData.Item.HasItemProperty(ItemPropertyType.AbilityBonus)) return;
+            if (!eventData.Item.ItemProperties.Any(ip => ip.IntParams[0] is not (int)Ability.Wisdom)) return;
         
         NwCreature monk = eventData.EquippedBy;
 
@@ -71,7 +71,7 @@ public class StaticBonusesService
         
         if (eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.Chest or EquipmentSlots.RightHand 
                 or EquipmentSlots.LeftHand or leftOrRight or leftOrRightOrCreature)) 
-            if (!eventData.Item.HasItemProperty(ItemPropertyType.AbilityBonus)) return;
+            if (!eventData.Item.ItemProperties.Any(ip => ip.IntParams[0] is not (int)Ability.Wisdom)) return;
         
         NwCreature monk = eventData.Creature;
         
