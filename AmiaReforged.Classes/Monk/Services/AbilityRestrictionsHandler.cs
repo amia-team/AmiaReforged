@@ -24,8 +24,7 @@ public class AbilityRestrictionsHandler
         if (environment == "live") return;
         
         NwModule.Instance.OnModuleLoad += HideDefaultFeedback;
-        NwModule.Instance.OnUseFeat += EnforceTechniqueRestrictions;
-        NwModule.Instance.OnEffectApply += PreventMartialTechnique;
+        NwModule.Instance.OnUseFeat += PreventTechnique;
         NwModule.Instance.OnEffectApply += PreventStaticBonuses;
         NwModule.Instance.OnUseFeat += PreventHostileTechniqueToFriendly;
         NwModule.Instance.OnUseFeat += PreventTechniqueInNoCastingArea;
@@ -36,7 +35,7 @@ public class AbilityRestrictionsHandler
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_EQUIP_MONK_ABILITIES, NWScript.TRUE);
     }
 
-    private static void EnforceTechniqueRestrictions(OnUseFeat eventData)
+    private static void PreventTechnique(OnUseFeat eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk) is null) return;
 
@@ -64,40 +63,6 @@ public class AbilityRestrictionsHandler
             player.SendServerMessage($"Having equipped a focus without being unarmed has prevented your {eventData.Feat.Name}.");
     }
     
-    private static void PreventMartialTechnique(OnEffectApply eventData)
-    {
-        if (eventData.Object is not NwCreature monk) return;
-        
-        // Effect must be a martial technique
-        if (eventData.Effect.Tag is not (MonkTechnique.StunningTag or MonkTechnique.EagleTag 
-            or MonkTechnique.AxiomaticTag)) return;
-        
-        bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
-        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
-        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null 
-                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Torches;
-        
-        string techniqueName = eventData.Effect.Tag switch
-        {
-            MonkTechnique.StunningTag => "Stunning Strike",
-            MonkTechnique.EagleTag => "Eagle Strike",
-            MonkTechnique.AxiomaticTag  => "Axiomatic Strike",
-            _ => ""
-        };
-        
-        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
-        
-        if (hasArmor)
-            player.SendServerMessage($"Having equipped an armor has prevented your {techniqueName}.");
-        if (hasShield)
-            player.SendServerMessage($"Having equipped a shield has prevented your {techniqueName}.");
-        if (hasFocusWithoutUnarmed)
-            player.SendServerMessage($"Having equipped a focus without being unarmed has prevented your {techniqueName}.");
-    }
-    
-    /// <summary>
-    /// This event function is called by the StaticBonusesService for checking equipment restrictions
-    /// </summary>
     private static void PreventStaticBonuses(OnEffectApply eventData)
     {
         if (eventData.Object is not NwCreature monk) return;
