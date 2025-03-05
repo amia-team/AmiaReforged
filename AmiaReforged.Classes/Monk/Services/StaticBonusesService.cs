@@ -122,8 +122,15 @@ public class StaticBonusesService
         
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
         
-            
-        monkEffects = StaticBonuses.GetEffect(monk);
-        monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        ApplyStaticBonuses();
+        
+        return;
+        
+        async void ApplyStaticBonuses()
+        {
+            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+            monkEffects = StaticBonuses.GetEffect(monk);
+            monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        }
     }
 }
