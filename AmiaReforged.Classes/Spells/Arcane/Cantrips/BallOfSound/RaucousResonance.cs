@@ -18,12 +18,14 @@ public class RaucousResonance : SpellDecorator
         if (eventData.Caster == null) return;
         if (eventData.TargetObject == null) return;
 
+        bool targetNotDeaf = eventData.TargetObject.ActiveEffects.All(e => e.EffectType != EffectType.Deaf);
+
         if (eventData.Caster is NwCreature casterCreature)
         {
             bool isSpecialized = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==
                                  SpellSchool.Transmutation;
 
-            if (isSpecialized)
+            if (isSpecialized && targetNotDeaf)
             {
                 Effect sonicVulnerability = Effect.DamageImmunityDecrease(DamageType.Sonic, 10);
                 sonicVulnerability.Tag = "RaucousResonance";
