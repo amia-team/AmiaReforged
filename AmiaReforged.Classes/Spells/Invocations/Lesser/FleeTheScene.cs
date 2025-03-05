@@ -18,7 +18,7 @@ public class FleeTheScene
         });
         IntPtr sanctuary = NwEffects.LinkEffectList(new List<IntPtr>
         {
-            EffectSanctuary(Warlock.CalculateDC(nwnObjectId)),
+            EffectSanctuary(WarlockConstants.CalculateDC(nwnObjectId)),
             EffectVisualEffect(VFX_DUR_SANCTUARY)
         });
 

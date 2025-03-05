@@ -11,7 +11,7 @@ public static class EldritchBlast
 
         SignalEvent(targetObject, EventSpellCastAt(nwnObjectId, 981));
         int damage = EldritchDamage.CalculateDamageAmount(nwnObjectId);
-        int touchAttackRanged = Warlock.RangedTouch(targetObject);
+        int touchAttackRanged = WarlockConstants.RangedTouch(targetObject);
 
         if (touchAttackRanged == FALSE) return;
 

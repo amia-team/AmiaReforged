@@ -5,7 +5,7 @@ namespace AmiaReforged.Classes.Types;
 
 // Constants are defined here for ease of use when calling in service handlers.
 
-public static class Warlock
+public static class WarlockConstants
 {
     /// <summary>
     ///     Warlock DC: Base 10 + Warlock levels / 3 + Charisma modidifer

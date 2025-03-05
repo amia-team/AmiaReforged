@@ -54,7 +54,7 @@ public class LightsCalling
                 }
                 if (GetRacialType(currentTarget) == RACIAL_TYPE_UNDEAD && NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
                 {
-                    bool passedWillSave = FortitudeSave(currentTarget, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
+                    bool passedWillSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
 
                     if (passedWillSave)
                     {
@@ -72,7 +72,7 @@ public class LightsCalling
                     continue;
                 }
 
-                bool passedFortSave = FortitudeSave(currentTarget, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
 
                 if (passedFortSave)
                 {
@@ -98,7 +98,7 @@ public class LightsCalling
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Shattered Guardian can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(WarlockConstants.String("Shattered Guardian can be summoned again."), caster, 0));
             // Summon
             float delay = NwEffects.RandomFloat(1, 2);
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectSummonCreature("wlkCelestial", -1, delay, 1), location, summonDuration);

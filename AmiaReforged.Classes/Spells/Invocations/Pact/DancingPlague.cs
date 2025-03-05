@@ -40,7 +40,7 @@ public class DancingPlague
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Dancing Partner can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(WarlockConstants.String("Dancing Partner can be summoned again."), caster, 0));
             // Summon new
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_FNF_SMOKE_PUFF), location, 2f);
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectSummonCreature("wlkfey", -1, 1), location, summonDuration);
@@ -61,7 +61,7 @@ public class DancingPlague
             return;
         }
 
-        bool passedFortSave = FortitudeSave(target, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
+        bool passedFortSave = FortitudeSave(target, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
 
         if (passedFortSave)
         {
@@ -92,7 +92,7 @@ public class DancingPlague
                     continue;
                 }
 
-                bool passedFortSave = FortitudeSave(currentTarget, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
 
                 if (passedFortSave)
                 {

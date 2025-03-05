@@ -10,7 +10,7 @@ public static class EldritchSpear
     {
         EssenceType essenceType = (EssenceType)GetLocalInt(GetItemPossessedBy(caster, "ds_pckey"), "warlock_essence");
 
-        int touchAttackRanged = Warlock.RangedTouch(targetObject);
+        int touchAttackRanged = WarlockConstants.RangedTouch(targetObject);
         IntPtr location = GetLocation(targetObject);
 
         int damage = EldritchDamage.CalculateDamageAmount(caster);
@@ -35,7 +35,7 @@ public static class EldritchSpear
 
                 bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
-                bool passedSave = ReflexSave(currentTarget, Warlock.CalculateDC(caster), 0, caster) == TRUE;
+                bool passedSave = ReflexSave(currentTarget, WarlockConstants.CalculateDC(caster), 0, caster) == TRUE;
 
                 if (passedSave)
                 {

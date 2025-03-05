@@ -72,7 +72,7 @@ public class PrimordialGust
             }
             if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
             {
-                bool passedReflexSave = ReflexSave(currentTarget, Warlock.CalculateDC(caster),
+                bool passedReflexSave = ReflexSave(currentTarget, WarlockConstants.CalculateDC(caster),
                 SAVING_THROW_TYPE_FIRE | SAVING_THROW_TYPE_COLD | SAVING_THROW_TYPE_ELECTRICITY, caster) == TRUE;
                 bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
@@ -112,7 +112,7 @@ public class PrimordialGust
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Mephits can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(WarlockConstants.String("Mephits can be summoned again."), caster, 0));
             SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkelemental", location, 0.5f, 2f, 0.5f, 1.5f);
             DelayCommand(1.6f, () => SummonUtility.SetSummonsFacing(summonCount, location));
         }

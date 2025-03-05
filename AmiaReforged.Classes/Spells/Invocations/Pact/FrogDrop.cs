@@ -66,7 +66,7 @@ public class FrogDrop
                     continue;
                 }
 
-                bool passedReflexSave = ReflexSave(currentTarget, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_CHAOS, caster) == TRUE;
+                bool passedReflexSave = ReflexSave(currentTarget, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_CHAOS, caster) == TRUE;
 
                 if (passedReflexSave)
                 {
@@ -89,7 +89,7 @@ public class FrogDrop
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Slaad can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(WarlockConstants.String("Slaad can be summoned again."), caster, 0));
 
             // Summon new
             DelayCommand(2.5f, () => ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, slaadSummon, location, summonDuration));

@@ -41,7 +41,7 @@ public class BindingOfMaggotsEnter
         {
             // Apply summonCooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Soul Larvae can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(WarlockConstants.String("Soul Larvae can be summoned again."), caster, 0));
             // Summon new
             SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkfiend", location, 0.3f, 2f, 1f, 3f);
         }
@@ -59,7 +59,7 @@ public class BindingOfMaggotsEnter
             return;
         }
 
-        bool passedWillSave = WillSave(enteringObject, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_EVIL, caster) == TRUE;
+        bool passedWillSave = WillSave(enteringObject, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_EVIL, caster) == TRUE;
 
         if (passedWillSave)
         {

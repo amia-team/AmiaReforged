@@ -64,7 +64,7 @@ public class LoudDecay
                     continue;
                 }
 
-                bool passedFortSave = FortitudeSave(currentTarget, Warlock.CalculateDC(caster), SAVING_THROW_TYPE_SONIC, caster) == TRUE;
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_SONIC, caster) == TRUE;
                 
                 if (passedFortSave) ApplyDelayedVFX(3f, currentTarget);
                 
@@ -89,7 +89,7 @@ public class LoudDecay
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(Warlock.String("Violet Fungi can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(WarlockConstants.String("Violet Fungi can be summoned again."), caster, 0));
             // Summon new
             SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkaberrant", location, 1f, 9f, 3f, 4f);
             DelayCommand(4.1f, () => SummonUtility.SetSummonsFacing(summonCount, location));
