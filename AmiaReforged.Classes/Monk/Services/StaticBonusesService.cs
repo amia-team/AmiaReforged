@@ -80,7 +80,7 @@ public class StaticBonusesService
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
 
-    private static void OnLevelUpCheckBonuses(OnLevelUp eventData)
+    private static async void OnLevelUpCheckBonuses(OnLevelUp eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level  < StaticBonusLevel) return;
 
@@ -95,7 +95,7 @@ public class StaticBonusesService
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
 
-    private static void OnLevelDownCheckBonuses(OnLevelDown eventData)
+    private static async void OnLevelDownCheckBonuses(OnLevelDown eventData)
     {
         NwCreature monk = eventData.Creature;
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
