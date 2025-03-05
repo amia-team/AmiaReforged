@@ -10,12 +10,12 @@ public class SearchSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int searchMod = playerCreature.GetSkillRank(Skill.Search!);
-        
+
         int result = roll + searchMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Search", roll, searchMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Search", roll, searchMod, result).GetRollResult());
     }
 }

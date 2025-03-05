@@ -10,12 +10,12 @@ public class LoreSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int loreMod = playerCreature.GetSkillRank(Skill.Lore!);
-        
+
         int result = roll + loreMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Lore", roll, loreMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Lore", roll, loreMod, result).GetRollResult());
     }
 }

@@ -6,51 +6,51 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.BuffRemover;
 
 public class BuffRemoverPresenter : ScryPresenter<BuffRemoverView>
 {
-    private BuffRemoverModel Model { get; }
+    private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
-    private readonly NwPlayer _player;
 
     public BuffRemoverPresenter(BuffRemoverView view, NwPlayer player)
     {
         View = view;
         _player = player;
-        Model = new BuffRemoverModel(player);
-        
+        Model = new(player);
+
         NwCreature? character = player.LoginCreature;
-        
+
         if (character == null)
         {
-            player.SendServerMessage("Character could not be found. Please relog.", ColorConstants.Orange);
+            player.SendServerMessage(message: "Character could not be found. Please relog.", ColorConstants.Orange);
             return;
         }
-        
+
         character.OnEffectApply += OnEffectApply;
         character.OnEffectRemove += OnEffectRemove;
     }
 
+    private BuffRemoverModel Model { get; }
+
+    public override BuffRemoverView View { get; }
+
     private void OnEffectRemove(OnEffectRemove obj)
     {
-        if(_window == null) return;
+        if (_window == null) return;
         UpdateView();
     }
 
     private void OnEffectApply(OnEffectApply obj)
     {
-        if(_window == null) return;
+        if (_window == null) return;
         UpdateView();
     }
 
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
+    public override NuiWindowToken Token() => _token;
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(400, 400, 250f, 500f),
+            Geometry = new NuiRect(400, 400, 250f, 500f)
             // Resizable = false TODO: Uncomment when UX is done
         };
     }
@@ -67,16 +67,16 @@ public class BuffRemoverPresenter : ScryPresenter<BuffRemoverView>
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent click)
     {
-        if(click.ElementId == View.RemoveAllButton.Id)
+        if (click.ElementId == View.RemoveAllButton.Id)
         {
-            _player.SendServerMessage("Removing all effects.", ColorConstants.Orange);
+            _player.SendServerMessage(message: "Removing all effects.", ColorConstants.Orange);
             Model.RemoveAllEffects();
             UpdateView();
 
             return;
         }
-        
-        if(click.ElementId == "remove_effect")
+
+        if (click.ElementId == "remove_effect")
         {
             Model.RemoveEffectAt(click.ArrayIndex);
             UpdateView();
@@ -86,27 +86,25 @@ public class BuffRemoverPresenter : ScryPresenter<BuffRemoverView>
     public override void UpdateView()
     {
         Model.UpdateEffectList();
-        
+
         Token().SetBindValues(View.EffectLabels, Model.Labels);
         Token().SetBindValue(View.BuffCount, Model.Labels.Count);
     }
 
     public override void Create()
     {
-        if (_window == null)
-        {
-            InitBefore();
-        }
+        if (_window == null) InitBefore();
 
         if (_window == null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+            _player.SendServerMessage(
+                message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
-        
+
         UpdateView();
     }
 
@@ -115,13 +113,11 @@ public class BuffRemoverPresenter : ScryPresenter<BuffRemoverView>
         NwCreature? character = _player.LoginCreature;
         if (character == null)
         {
-            _player.SendServerMessage("Character could not be found. Please relog.", ColorConstants.Orange);
+            _player.SendServerMessage(message: "Character could not be found. Please relog.", ColorConstants.Orange);
             return;
         }
-        
+
         character.OnEffectApply -= OnEffectApply;
         character.OnEffectRemove -= OnEffectRemove;
     }
-
-    public override BuffRemoverView View { get; }
 }

@@ -1,52 +1,39 @@
-﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
+﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
 using Anvil.API.Events;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
 /// <summary>
-/// Represents the presenter for the Mythal Forge view.
+///     Represents the presenter for the Mythal Forge view.
 /// </summary>
 public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 {
+    public delegate void ForgeClosingEventHandler(MythalForgePresenter sender, EventArgs e);
 
     /// <summary>
-    /// An event raised every time Update is called.
+    ///     An event raised every time Update is called.
     /// </summary>
     public delegate void ViewUpdatedEventHandler(MythalForgePresenter sender, EventArgs e);
-    
-    // Event using the delegate.
-    public event ViewUpdatedEventHandler? ViewUpdated;
-    
-    public delegate void ForgeClosingEventHandler(MythalForgePresenter sender, EventArgs e);
-    
-    public event ForgeClosingEventHandler? ForgeClosing;
-    
+
     /// <summary>
-    /// The title of the Mythal Forge window.
+    ///     The title of the Mythal Forge window.
     /// </summary>
     private const string WindowTitle = "Mythal Forge";
 
-    /// <summary>
-    /// Gets the view associated with this presenter.
-    /// </summary>
-    public override MythalForgeView View { get; }
-
     private readonly MythalLedgerView _ledgerView;
+    private readonly NwPlayer _player;
 
     public readonly MythalForgeModel Model;
-    private NuiWindowToken _token;
-    private readonly NwPlayer _player;
-    private NuiWindow? _window;
     private bool _creating;
+    private NuiWindowToken _token;
+    private NuiWindow? _window;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MythalForgePresenter"/> class.
+    ///     Initializes a new instance of the <see cref="MythalForgePresenter" /> class.
     /// </summary>
     /// <param name="toolView">The view associated with this presenter.</param>
     /// <param name="propertyData">The crafting property data.</param>
@@ -54,30 +41,46 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// <param name="item">The item being crafted.</param>
     /// <param name="player">The player performing the crafting.</param>
     /// <param name="validator"></param>
-    public MythalForgePresenter(MythalForgeView toolView, CraftingPropertyData propertyData, CraftingBudgetService budget,
+    public MythalForgePresenter(MythalForgeView toolView, CraftingPropertyData propertyData,
+        CraftingBudgetService budget,
         NwItem item, NwPlayer player, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
-        Model = new MythalForgeModel(item, propertyData, budget, player, validator, dcCalculator);
+        Model = new(item, propertyData, budget, player, validator, dcCalculator);
         View = toolView;
         _player = player;
         _creating = false;
-        
-        _ledgerView = new MythalLedgerView(this, player);
+
+        _ledgerView = new(this, player);
 
         if (player.LoginCreature != null) player.LoginCreature.OnUnacquireItem += PreventMunchkins;
     }
 
+    /// <summary>
+    ///     Gets the view associated with this presenter.
+    /// </summary>
+    public override MythalForgeView View { get; }
+
+    /// <summary>
+    ///     Gets the list of Mythal categories from the model.
+    /// </summary>
+    public IReadOnlyList<MythalCategoryModel.MythalCategory> MythalCategories => Model.MythalCategoryModel.Categories;
+
+    // Event using the delegate.
+    public event ViewUpdatedEventHandler? ViewUpdated;
+
+    public event ForgeClosingEventHandler? ForgeClosing;
+
     private void PreventMunchkins(ModuleEvents.OnUnacquireItem obj)
     {
-        if (!obj.Item.ResRef.Contains("mythal")) return;
+        if (!obj.Item.ResRef.Contains(value: "mythal")) return;
 
         GenericWindow
             .Builder()
             .For()
             .SimplePopup()
             .WithPlayer(Token().Player)
-            .WithTitle("Don't Try That")
-            .WithMessage("Don't try to game the system by dropping the mythals. You will lose all progress.")
+            .WithTitle(title: "Don't Try That")
+            .WithMessage(message: "Don't try to game the system by dropping the mythals. You will lose all progress.")
             .OpenWithParent(Token());
 
         NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName +
@@ -96,21 +99,18 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
-    /// Handles button click events. Gets passed in from the Window Director.
+    ///     Handles button click events. Gets passed in from the Window Director.
     /// </summary>
     /// <param name="eventData">The event data for the button click.</param>
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
         if (Model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
                 out MythalCategoryModel.MythalProperty? property))
-        {
             Model.AddNewProperty(property);
-        }
 
         if (eventData.ElementId == MythalForgeView.ApplyNameButtonId)
-        {
-            if (ApplyName()) return;
-        }
+            if (ApplyName())
+                return;
 
         if (eventData.ElementId == View.ActivePropertiesView.RemoveProperty)
         {
@@ -135,7 +135,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                     Model.UndoRemoval(e.Property);
                     break;
             }
-            
         }
 
         if (eventData.ElementId == MythalForgeView.ApplyChanges)
@@ -143,14 +142,14 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             Model.ApplyChanges();
 
             RaiseCloseEvent();
-            
+
             return;
         }
 
         if (eventData.ElementId == MythalForgeView.Cancel)
         {
             RaiseCloseEvent();
-            
+
             return;
         }
 
@@ -162,7 +161,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         string? newName = _token.GetBindValue(View.ItemName);
         if (string.IsNullOrEmpty(newName))
         {
-            _player.SendServerMessage("The item name cannot be empty.", ColorConstants.Orange);
+            _player.SendServerMessage(message: "The item name cannot be empty.", ColorConstants.Orange);
             return true;
         }
 
@@ -171,21 +170,21 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
-    /// Initializes the presenter and sets up initial data.
+    ///     Initializes the presenter and sets up initial data.
     /// </summary>
     public override void InitBefore()
     {
         // N.B: Other things can happen here, so if you're following this as an example
         // you can do more than just create the window here. The window is supposed to be created here, but you might
         // want to initialize other data that might not be present at construction time.
-        _window = new NuiWindow(View.RootLayout(), WindowTitle)
+        _window = new(View.RootLayout(), WindowTitle)
         {
             Geometry = new NuiRect(400f, 400f, 1200f, 640f)
         };
     }
 
     /// <summary>
-    /// Updates the view with the latest data.
+    ///     Updates the view with the latest data.
     /// </summary>
     public override void UpdateView()
     {
@@ -212,26 +211,22 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         int remaining = Model.RemainingPowers;
         Token().SetBindValue(View.RemainingPowers, remaining.ToString());
 
-        if (_creating)
-        {
-            DisplayPopupIfOverBudget(remaining);
-        }
+        if (_creating) DisplayPopupIfOverBudget(remaining);
     }
 
     private void DisplayPopupIfOverBudget(int remaining)
     {
         if (remaining < 0)
-        {
             GenericWindow
                 .Builder()
                 .For()
                 .SimplePopup()
                 .WithPlayer(_player)
-                .WithTitle("Mythal Forge: WARNING!!!!")
+                .WithTitle(title: "Mythal Forge: WARNING!!!!")
                 .WithMessage(
+                    message:
                     "This item is stronger than what a Mythal Forge can create. Take care not to weaken the item when editing it!")
                 .OpenWithParent(Token());
-        }
     }
 
     private void UpdateCategoryBindings()
@@ -311,22 +306,21 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
-    /// Creates the NUI window if it does not already exist.
+    ///     Creates the NUI window if it does not already exist.
     /// </summary>
     public override void Create()
     {
         _creating = true;
         // Create the window if it's null.
         if (_window == null)
-        {
             // Try to create the window if it doesn't exist.
             InitBefore();
-        }
 
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+            _player.SendServerMessage(
+                message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
@@ -343,32 +337,24 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
-    /// Closes the NUI window.
+    ///     Closes the NUI window.
     /// </summary>
     public override void Close()
     {
         if (_player.LoginCreature != null) _player.LoginCreature.OnUnacquireItem -= PreventMunchkins;
-        
+
         // Raise an event to child windows.
         OnForgeClosing();
-        
+
         // Raise an event to the system.
         _token.Close();
     }
 
     /// <summary>
-    /// Gets the NUI window token, creating the window if necessary.
+    ///     Gets the NUI window token, creating the window if necessary.
     /// </summary>
     /// <returns>The NUI window token.</returns>
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
-
-    /// <summary>
-    /// Gets the list of Mythal categories from the model.
-    /// </summary>
-    public IReadOnlyList<MythalCategoryModel.MythalCategory> MythalCategories => Model.MythalCategoryModel.Categories;
+    public override NuiWindowToken Token() => _token;
 
     private void OnViewUpdated()
     {

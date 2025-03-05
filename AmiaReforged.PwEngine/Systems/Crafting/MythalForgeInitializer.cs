@@ -1,19 +1,18 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
-using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NLog;
 using NWN.Core;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting;
 
 /// <summary>
-/// Initializes the Mythal Forge system at startup. Responsible for listening to player interactions with the forge and its triggers.
+///     Initializes the Mythal Forge system at startup. Responsible for listening to player interactions with the forge and
+///     its triggers.
 /// </summary>
 [ServiceBinding(typeof(MythalForgeInitializer))]
 public class MythalForgeInitializer
@@ -22,18 +21,18 @@ public class MythalForgeInitializer
     private const string LvarTargetingMode = "targeting_mode";
     private const string CanUseForge = "CAN_USE_FORGE";
     private const string ForgeIsClosing = "CLOSING_FORGE";
-    
+
     private const string MythalForgeTag = "mythal_forge";
     private const string MythalTriggerTag = "mythal_trigger";
+    private readonly CraftingBudgetService _budget;
+    private readonly DifficultyClassCalculator _dcCalculator;
+    private readonly CraftingPropertyData _propertyData;
+    private readonly PropertyValidator _validator;
 
     private readonly WindowDirector _windowSystem;
-    private readonly CraftingPropertyData _propertyData;
-    private readonly CraftingBudgetService _budget;
-    private readonly PropertyValidator _validator;
-    private readonly DifficultyClassCalculator _dcCalculator;
 
     /// <summary>
-    /// Dependency injected by the DI container. Do not use this constructor directly.
+    ///     Dependency injected by the DI container. Do not use this constructor directly.
     /// </summary>
     /// <param name="windowSystem"></param>
     /// <param name="propertyData"></param>
@@ -53,7 +52,7 @@ public class MythalForgeInitializer
     }
 
     /// <summary>
-    /// Looks for all forges and triggers in the module and sets up event listeners.
+    ///     Looks for all forges and triggers in the module and sets up event listeners.
     /// </summary>
     private void InitForges()
     {
@@ -74,7 +73,7 @@ public class MythalForgeInitializer
     }
 
     /// <summary>
-    /// Sets a local int on the player's character to indicate they are near a forge, so they can use it.
+    ///     Sets a local int on the player's character to indicate they are near a forge, so they can use it.
     /// </summary>
     /// <param name="obj"></param>
     private void EnableForgeUse(TriggerEvents.OnEnter obj)
@@ -88,7 +87,7 @@ public class MythalForgeInitializer
     }
 
     /// <summary>
-    /// Unsets the local int on the player's character to indicate they are no longer near a forge.
+    ///     Unsets the local int on the player's character to indicate they are no longer near a forge.
     /// </summary>
     /// <param name="obj"></param>
     /// <exception cref="NotImplementedException"></exception>
@@ -102,20 +101,18 @@ public class MythalForgeInitializer
         NWScript.DeleteLocalInt(character, CanUseForge);
         NWScript.SetLocalInt(character, ForgeIsClosing, 1);
         if (_windowSystem.IsWindowOpen(player, typeof(MythalForgePresenter)))
-        {
             _windowSystem.CloseWindow(player, typeof(MythalForgePresenter));
-        }
 
         NWScript.DeleteLocalInt(character, ForgeIsClosing);
     }
 
     /// <summary>
-    /// Sets up the targeting mode for the player to select an item from their inventory to use with the forge.
+    ///     Sets up the targeting mode for the player to select an item from their inventory to use with the forge.
     /// </summary>
     /// <param name="obj"></param>
     private void OpenForge(PlaceableEvents.OnUsed obj)
     {
-        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
 
         if (environment == "live") return;
 
@@ -132,7 +129,7 @@ public class MythalForgeInitializer
 
         if (NWScript.GetLocalInt(character, CanUseForge) != 1 || NWScript.GetLocalInt(character, ForgeIsClosing) == 1)
         {
-            player.FloatingTextString("Get closer to the forge.", false);
+            player.FloatingTextString(message: "Get closer to the forge.", false);
             return;
         }
 
@@ -144,20 +141,23 @@ public class MythalForgeInitializer
     }
 
     /// <summary>
-    /// Officially enters the targeting mode for the player to select an item from their inventory. Sets a local string on the player's character to indicate they are in the Mythal Forge targeting mode.
+    ///     Officially enters the targeting mode for the player to select an item from their inventory. Sets a local string on
+    ///     the player's character to indicate they are in the Mythal Forge targeting mode.
     /// </summary>
     /// <param name="player"></param>
     private void EnterTargetingMode(NwPlayer player)
     {
-        player.FloatingTextString("Pick an Item from your inventory.", false);
+        player.FloatingTextString(message: "Pick an Item from your inventory.", false);
         player.OpenInventory();
         NWScript.EnterTargetingMode(player.LoginCreature, NWScript.OBJECT_TYPE_ITEM);
         NWScript.SetLocalString(player.LoginCreature, LvarTargetingMode, TargetingModeMythalForge);
     }
 
     /// <summary>
-    /// Targeting mode listener for the player to select an item from their inventory. Validates the item and opens the Mythal Forge window.
-    /// Makes sure to check if the player is still in the Mythal Forge targeting mode to avoid conflicts with other systems that use targeting mode.
+    ///     Targeting mode listener for the player to select an item from their inventory. Validates the item and opens the
+    ///     Mythal Forge window.
+    ///     Makes sure to check if the player is still in the Mythal Forge targeting mode to avoid conflicts with other systems
+    ///     that use targeting mode.
     /// </summary>
     /// <param name="obj"></param>
     private void ValidateAndSelect(ModuleEvents.OnPlayerTarget obj)
@@ -167,14 +167,12 @@ public class MythalForgeInitializer
 
         if (NWScript.GetLocalString(obj.Player.LoginCreature, LvarTargetingMode) != TargetingModeMythalForge) return;
 
-        int isCasterWeapon = NWScript.GetLocalInt(item, "CASTER_WEAPON");
+        int isCasterWeapon = NWScript.GetLocalInt(item, sVarName: "CASTER_WEAPON");
         int baseItemType = NWScript.GetBaseItemType(item);
 
         bool is2H = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
         if (isCasterWeapon == NWScript.TRUE)
-        {
             baseItemType = is2H ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
-        }
 
         bool itemListingNotFound =
             !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
@@ -184,8 +182,8 @@ public class MythalForgeInitializer
                 .For()
                 .SimplePopup()
                 .WithPlayer(obj.Player)
-                .WithTitle("Mythal Forge: Notice")
-                .WithMessage("Item not supported by Mythal forge")
+                .WithTitle(title: "Mythal Forge: Notice")
+                .WithMessage(message: "Item not supported by Mythal forge")
                 .Open();
 
             obj.Player.OnPlayerTarget -= ValidateAndSelect;
@@ -204,8 +202,8 @@ public class MythalForgeInitializer
                 .For()
                 .SimplePopup()
                 .WithPlayer(obj.Player)
-                .WithTitle("Mythal Forge: Notice")
-                .WithMessage("That doesn't belong to you. Pick an item from your inventory.")
+                .WithTitle(title: "Mythal Forge: Notice")
+                .WithMessage(message: "That doesn't belong to you. Pick an item from your inventory.")
                 .Open();
             obj.Player.OpenInventory();
             return;
@@ -217,8 +215,9 @@ public class MythalForgeInitializer
                 .For()
                 .SimplePopup()
                 .WithPlayer(obj.Player)
-                .WithTitle("Mythal Forge: Error")
+                .WithTitle(title: "Mythal Forge: Error")
                 .WithMessage(
+                    message:
                     "Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.")
                 .Open();
 

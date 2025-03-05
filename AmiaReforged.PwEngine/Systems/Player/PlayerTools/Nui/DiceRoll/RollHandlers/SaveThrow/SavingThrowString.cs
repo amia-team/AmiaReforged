@@ -5,10 +5,10 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.DiceRoll.RollHand
 
 public class SavingThrowString
 {
-    private readonly string _saveName;
-    private readonly int _roll;
-    private readonly int _result;
     private readonly int _modifier;
+    private readonly int _result;
+    private readonly int _roll;
+    private readonly string _saveName;
 
     public SavingThrowString(string saveName, int roll, int modifier, int result)
     {

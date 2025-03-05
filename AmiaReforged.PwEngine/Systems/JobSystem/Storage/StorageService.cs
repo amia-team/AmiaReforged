@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage;
 
 /// <summary>
-/// Handles access and authorization of item storage.
+///     Handles access and authorization of item storage.
 /// </summary>
 [ServiceBinding(typeof(StorageService))]
 public class StorageService
@@ -14,8 +14,8 @@ public class StorageService
     private readonly PwContextFactory _ctxFactory;
 
     /// <summary>
-    /// This service requires a PwContextFactory to create a database context.
-    /// Should be handled by the DI container. Only instantiate for testing.
+    ///     This service requires a PwContextFactory to create a database context.
+    ///     Should be handled by the DI container. Only instantiate for testing.
     /// </summary>
     /// <param name="factory"></param>
     public StorageService(PwContextFactory factory)
@@ -31,7 +31,7 @@ public class StorageService
     }
 
     /// <summary>
-    /// Gets the storage container if the character has access
+    ///     Gets the storage container if the character has access
     /// </summary>
     /// <param name="characterId">Database ID of the character</param>
     /// <param name="storageId">Database ID of the storage the character wishes to access</param>

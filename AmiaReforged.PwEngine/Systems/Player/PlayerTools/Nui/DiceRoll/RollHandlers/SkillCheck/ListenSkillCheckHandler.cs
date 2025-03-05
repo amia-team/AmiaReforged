@@ -10,12 +10,12 @@ public class ListenSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int listenMod = playerCreature.GetSkillRank(Skill.Listen!);
-        
+
         int result = roll + listenMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Listen", roll, listenMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Listen", roll, listenMod, result).GetRollResult());
     }
 }

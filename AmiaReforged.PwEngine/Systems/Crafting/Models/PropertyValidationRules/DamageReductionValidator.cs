@@ -16,11 +16,11 @@ public class DamageReductionValidator : IValidationRule
         bool hasBeenAdded = changelistProperties.Any(x =>
             x.BasePropertyType == ItemPropertyType.DamageReduction &&
             x.State != ChangeListModel.ChangeState.Removed);
-        
+
         bool alreadyExists = onItem && !alreadyRemoved ||
                              hasBeenAdded;
 
-        return new ValidationResult()
+        return new()
         {
             Result = alreadyExists ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid,
             ErrorMessage = alreadyExists ? "Damage Reduction already exists on this item." : string.Empty

@@ -8,7 +8,7 @@ using NWN.Core;
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
 /// <summary>
-/// Maps job system items to their respective entities.
+///     Maps job system items to their respective entities.
 /// </summary>
 [ServiceBinding(typeof(JobSystemMappingService))]
 public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
@@ -29,14 +29,14 @@ public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
     {
         IPQuality nwnQuality = GetQualityFromitem(item);
         QualityEnum quality = _qualityMapper.MapFrom(nwnQuality);
-        
+
         const string replacement = "";
         string itemName = MyRegex().Replace(item.Name, replacement);
-        
+
         MaterialEnum material = GetMaterialFromItem(item);
-        
-        long madeBy = long.TryParse(NWScript.GetLocalString(item, "MadeBy"), out long result) ? result : 0;
-        
+
+        long madeBy = long.TryParse(NWScript.GetLocalString(item, sVarName: "MadeBy"), out long result) ? result : 0;
+
         return JobItemBuilder.CreateJobItem()
             .WithName(itemName)
             .WithDescription(item.Description)
@@ -51,6 +51,13 @@ public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
             .WithIconResRef(item.PortraitResRef)
             .WithSerializedData(item.Serialize()!)
             .Build();
+    }
+
+    public NwItem? MapTo(JobItem item)
+    {
+        NwItem? nwItem = NwItem.Deserialize(item.SerializedData);
+
+        return nwItem;
     }
 
     private static IPQuality GetQualityFromitem(NwItem item)
@@ -73,13 +80,6 @@ public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
             : (MaterialEnum)materialProperty.SubType!.RowIndex;
         return material;
     }
-    
-    public NwItem? MapTo(JobItem item)
-    {
-        NwItem? nwItem = NwItem.Deserialize(item.SerializedData);
-
-        return nwItem;
-    }
 
     private static ItemProperty FromQuality(QualityEnum itemQuality)
     {
@@ -100,6 +100,6 @@ public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
         };
     }
 
-    [GeneratedRegex("<.*?>")]
+    [GeneratedRegex(pattern: "<.*?>")]
     private static partial Regex MyRegex();
 }

@@ -1,21 +1,35 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 using NLog;
-using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 
 public class MythalCategoryModel
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly IReadOnlyList<CraftingCategory> _categories;
     private readonly NwItem _item;
+
+    private readonly MythalMap _mythals;
+    private readonly NwPlayer _player;
+
+    public MythalCategoryModel(NwItem item, NwPlayer player, IReadOnlyList<CraftingCategory> categories)
+    {
+        _item = item;
+        _categories = categories;
+
+        _mythals = new(player);
+        _player = player;
+        Categories = new();
+
+        SetupCategories();
+    }
 
     public List<MythalCategory> Categories { get; }
     public Dictionary<string, MythalProperty> PropertyMap { get; } = new();
-    
-  
+
+
     public string MinorMythals => _mythals.Map[CraftingTier.Minor].ToString();
     public string LesserMythals => _mythals.Map[CraftingTier.Lesser].ToString();
     public string GreaterMythals => _mythals.Map[CraftingTier.Greater].ToString();
@@ -24,22 +38,6 @@ public class MythalCategoryModel
     public string FlawlessMythals => _mythals.Map[CraftingTier.Flawless].ToString();
     public string DivineMythals => _mythals.Map[CraftingTier.Divine].ToString();
 
-    private readonly MythalMap _mythals;
-    private readonly IReadOnlyList<CraftingCategory> _categories;
-    private readonly NwPlayer _player;
-
-    public MythalCategoryModel(NwItem item, NwPlayer player, IReadOnlyList<CraftingCategory> categories)
-    {
-        _item = item;
-        _categories = categories;
-
-        _mythals = new MythalMap(player);
-        _player = player;
-        Categories = new List<MythalCategory>();
-
-        SetupCategories();
-    }
-
     private void SetupCategories()
     {
         IReadOnlyList<CraftingCategory> internalCategories = _categories;
@@ -47,19 +45,18 @@ public class MythalCategoryModel
         {
             if (_player.LoginCreature is null)
             {
-                Log.Info("Player login creature is null.");
+                Log.Info(message: "Player login creature is null.");
                 return;
             }
-            
+
             // Ignore this category if it is exclusive to a class and the player does not have that class
             if (category.ExclusiveToClass)
-            {
-                if(_player.LoginCreature.Classes.All(c => c.Class.ClassType != category.ExclusiveClass)) continue;
-            }
+                if (_player.LoginCreature.Classes.All(c => c.Class.ClassType != category.ExclusiveClass))
+                    continue;
             MythalCategory modelCategory = new()
             {
                 Label = category.Label,
-                Properties = new List<MythalProperty>(),
+                Properties = new(),
                 BaseDifficulty = category.BaseDifficulty
             };
 
@@ -81,10 +78,7 @@ public class MythalCategoryModel
                 PropertyMap.Add(modelProperty.Id, modelProperty);
             }
 
-            if (modelCategory.Properties.Count > 0)
-            {
-                Categories.Add(modelCategory);
-            }
+            if (modelCategory.Properties.Count > 0) Categories.Add(modelCategory);
         }
 
         // sort categories alphabetically
@@ -118,17 +112,14 @@ public class MythalCategoryModel
 
     public void RefundMythal(CraftingTier tier)
     {
-        if (_mythals.Map.ContainsKey(tier))
-        {
-            _mythals.Map[tier] += 1;
-        }
+        if (_mythals.Map.ContainsKey(tier)) _mythals.Map[tier] += 1;
     }
 
     public void DestroyMythals(NwPlayer player)
     {
         if (player.LoginCreature is null)
         {
-            Log.Info("Player login creature is null.");
+            Log.Info(message: "Player login creature is null.");
             return;
         }
 
@@ -156,15 +147,9 @@ public class MythalCategoryModel
         }
     }
 
-    public bool IsMythal(NwItem item)
-    {
-        return item.ResRef.Contains("mythal");
-    }
+    public bool IsMythal(NwItem item) => item.ResRef.Contains(value: "mythal");
 
-    public bool HasMythals(CraftingTier internalPropertyCraftingTier)
-    {
-        return _mythals.Map[internalPropertyCraftingTier] > 0;
-    }
+    public bool HasMythals(CraftingTier internalPropertyCraftingTier) => _mythals.Map[internalPropertyCraftingTier] > 0;
 
     public class MythalCategory
     {
@@ -185,9 +170,6 @@ public class MythalCategoryModel
         public int Difficulty { get; set; }
 
         // operator for converting to crafting property
-        public static implicit operator CraftingProperty(MythalProperty property)
-        {
-            return property.Internal;
-        }
+        public static implicit operator CraftingProperty(MythalProperty property) => property.Internal;
     }
 }

@@ -10,9 +10,9 @@ public class D20RollHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
-        
-        playerCreature.SpeakString(new NumericDieString("D20", roll).GetRollResult());
+
+        playerCreature.SpeakString(new NumericDieString(rollType: "D20", roll).GetRollResult());
     }
 }

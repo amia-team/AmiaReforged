@@ -10,10 +10,11 @@ public class ConstitutionCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int conMod = playerCreature.GetAbilityModifier(Ability.Constitution);
-        
-        playerCreature.SpeakString(new AbilityCheckString("Constitution", roll, conMod).GetAbilityCheckString());
+
+        playerCreature.SpeakString(new AbilityCheckString(abilityName: "Constitution", roll, conMod)
+            .GetAbilityCheckString());
     }
 }

@@ -1,6 +1,5 @@
 using Anvil.API;
 using NLog;
-using NLog.Fluent;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.DifficultyClassCalculation;
 

@@ -16,7 +16,7 @@ public static class DiceRollStringConstants
     public const string ReportRegularAc = "Report Regular AC";
     public const string ReportAlignment = "Report your Alignment";
     public const string ReportCharacterLevel = "Report your Character Level";
-    
+
     // Numbered
     public const string D2 = "d2";
     public const string D3 = "d3";
@@ -27,12 +27,12 @@ public static class DiceRollStringConstants
     public const string D12 = "d12";
     public const string D20 = "d20";
     public const string D100 = "d100";
-    
+
     // Saving Throws
     public const string Fortitude = "Fortitude";
     public const string Reflex = "Reflex";
     public const string Will = "Will";
-    
+
     // Abilities
     public const string Strength = "Strength";
     public const string Dexterity = "Dexterity";

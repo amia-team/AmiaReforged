@@ -9,15 +9,10 @@ public class JobItemBuilder : IJobItemBuilder
     private JobItemBuilder()
     {
         // Prevent instantiation of this fluent builder.
-        _jobItem = new JobItem();
+        _jobItem = new();
     }
-    
-    public static IJobItemNamingStep CreateJobItem()
-    {
-        return new JobItemBuilder();
-    }
-    
-    
+
+
     public IJobItemDescriptionStep WithName(string name)
     {
         _jobItem.Name = name;
@@ -90,8 +85,7 @@ public class JobItemBuilder : IJobItemBuilder
         return this;
     }
 
-    public JobItem Build()
-    {  
-        return _jobItem;
-    }
+    public JobItem Build() => _jobItem;
+
+    public static IJobItemNamingStep CreateJobItem() => new JobItemBuilder();
 }

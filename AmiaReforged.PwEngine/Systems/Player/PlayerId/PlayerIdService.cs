@@ -19,33 +19,30 @@ public class PlayerIdService
 
     private void ClearPlayerFromCache(ModuleEvents.OnClientLeave obj)
     {
-        if(obj.Player.IsDM) return;
+        if (obj.Player.IsDM) return;
         _playerKeys.Remove(obj.Player);
     }
 
     private void ReCache(ModuleEvents.OnAcquireItem obj)
     {
         NwItem? objItem = obj.Item;
-        if(objItem == null) return;
-        if(objItem.Tag != "ds_pckey") return;
-        if(!obj.AcquiredBy.IsPlayerControlled(out NwPlayer? player)) return;
-        
+        if (objItem == null) return;
+        if (objItem.Tag != "ds_pckey") return;
+        if (!obj.AcquiredBy.IsPlayerControlled(out NwPlayer? player)) return;
+
         Guid key = PcKeyUtils.GetPcKey(player);
-        
+
         _playerKeys[player] = key;
     }
 
     private void CachePcKey(ModuleEvents.OnClientEnter obj)
     {
-        if(obj.Player.IsDM) return;
-        
+        if (obj.Player.IsDM) return;
+
         Guid key = PcKeyUtils.GetPcKey(obj.Player);
 
         _playerKeys.TryAdd(obj.Player, key);
     }
 
-    public Guid GetPlayerKey(NwPlayer player)
-    {
-        return _playerKeys[player];
-    }
+    public Guid GetPlayerKey(NwPlayer player) => _playerKeys[player];
 }

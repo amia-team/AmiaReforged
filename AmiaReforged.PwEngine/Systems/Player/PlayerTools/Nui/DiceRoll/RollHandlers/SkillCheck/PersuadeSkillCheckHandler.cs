@@ -10,12 +10,13 @@ public class PersuadeSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int persuadeMod = playerCreature.GetSkillRank(Skill.Persuade!);
-        
+
         int result = roll + persuadeMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Persuade", roll, persuadeMod, result).GetRollResult());
+
+        playerCreature.SpeakString(
+            new SkillCheckString(skillName: "Persuade", roll, persuadeMod, result).GetRollResult());
     }
 }

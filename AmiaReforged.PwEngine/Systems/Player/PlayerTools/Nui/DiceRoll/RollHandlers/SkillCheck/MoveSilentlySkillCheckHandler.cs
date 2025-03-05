@@ -10,12 +10,13 @@ public class MoveSilentlySkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int moveSilentlyMod = playerCreature.GetSkillRank(Skill.MoveSilently!);
-        
+
         int result = roll + moveSilentlyMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Move Silently", roll, moveSilentlyMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Move Silently", roll, moveSilentlyMod, result)
+            .GetRollResult());
     }
 }

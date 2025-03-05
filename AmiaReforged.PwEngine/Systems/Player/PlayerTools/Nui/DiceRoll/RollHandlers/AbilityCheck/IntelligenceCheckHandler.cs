@@ -10,10 +10,11 @@ public class IntelligenceCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int intMod = playerCreature.GetAbilityModifier(Ability.Intelligence);
-        
-        playerCreature.SpeakString(new AbilityCheckString("Intelligence", roll, intMod).GetAbilityCheckString());
+
+        playerCreature.SpeakString(new AbilityCheckString(abilityName: "Intelligence", roll, intMod)
+            .GetAbilityCheckString());
     }
 }

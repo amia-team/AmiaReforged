@@ -6,7 +6,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 public static class VisualEffectConstants
 {
     private const int VfxCost = 10000;
-    public static readonly CraftingCategory VisualEffects = new("vfx")
+
+    public static readonly CraftingCategory VisualEffects = new(categoryId: "vfx")
     {
         Label = "Visual Effects",
         Properties = new[]
@@ -67,6 +68,6 @@ public static class VisualEffectConstants
                 GoldCost = VfxCost,
                 CraftingTier = CraftingTier.Greater
             }
-        },
+        }
     };
 }

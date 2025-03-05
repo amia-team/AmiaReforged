@@ -5,9 +5,4 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem;
 [ServiceBinding(typeof(JobSystemManager))]
 public class JobSystemManager
 {
-    
-    public JobSystemManager()
-    {
-    }
-    
 }

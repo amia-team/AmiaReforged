@@ -11,14 +11,20 @@ public static class DamageProperties
     private const int MythalCost1D8 = 50000;
     private const int MythalCost2D4 = 100000;
 
+    private const int GloveCost1 = 1000;
+    private const int GloveCost2 = 5000;
+    private const int GloveCost3 = 10000;
+    private const int GloveCost4 = 20000;
+    private const int GloveCost5 = 50000;
+
 
     /// <summary>
-    /// Generic one-handed weapon damage properties.
+    ///     Generic one-handed weapon damage properties.
     /// </summary>
     /// <summary>
-    /// Generic one-handed weapon damage properties.
+    ///     Generic one-handed weapon damage properties.
     /// </summary>
-    public static readonly CraftingCategory OneHanders = new("one_handers_damage")
+    public static readonly CraftingCategory OneHanders = new(categoryId: "one_handers_damage")
     {
         Label = "Damage Bonus",
         // +1 (minor)
@@ -251,9 +257,9 @@ public static class DamageProperties
     };
 
     /// <summary>
-    /// Two-handed weapon damage properties.
+    ///     Two-handed weapon damage properties.
     /// </summary>
-    public static readonly CraftingCategory TwoHanders = new("two_handers_damage")
+    public static readonly CraftingCategory TwoHanders = new(categoryId: "two_handers_damage")
     {
         Label = "Damage Bonus",
         // +1 (minor)
@@ -485,16 +491,10 @@ public static class DamageProperties
         BaseDifficulty = 15
     };
 
-    private const int GloveCost1 = 1000;
-    private const int GloveCost2 = 5000;
-    private const int GloveCost3 = 10000;
-    private const int GloveCost4 = 20000;
-    private const int GloveCost5 = 50000;
-
     /// <summary>
-    /// Gloves damage properties.
+    ///     Gloves damage properties.
     /// </summary>
-    public static readonly CraftingCategory GloveDamage = new("glove_damage")
+    public static readonly CraftingCategory GloveDamage = new(categoryId: "glove_damage")
     {
         Label = "Damage Bonus",
         // 1d2 (minor)
@@ -524,7 +524,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "1d2 Electrical",
-                CraftingTier = CraftingTier.Minor,
+                CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
             {
@@ -782,7 +782,7 @@ public static class DamageProperties
     };
 
 
-    public static readonly CraftingCategory MassiveCriticals = new("massive_crits_damage")
+    public static readonly CraftingCategory MassiveCriticals = new(categoryId: "massive_crits_damage")
     {
         Label = "Massive Criticals",
         Properties = new[]
@@ -800,15 +800,15 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Massive Criticals",
                 CraftingTier = CraftingTier.Greater
-            },
+            }
         },
         BaseDifficulty = 15
     };
 
     /// <summary>
-    /// See https://lexicon.nwn.wiki/index.php/ItemPropertyMaxRangeStrengthMod for more information.
+    ///     See https://lexicon.nwn.wiki/index.php/ItemPropertyMaxRangeStrengthMod for more information.
     /// </summary>
-    public static readonly CraftingCategory Mighty = new("mighty_damage")
+    public static readonly CraftingCategory Mighty = new(categoryId: "mighty_damage")
     {
         Label = "Mighty",
         Properties = new[]
@@ -852,7 +852,7 @@ public static class DamageProperties
         BaseDifficulty = 15
     };
 
-    public static readonly CraftingCategory Ammo = new("ammo_damage")
+    public static readonly CraftingCategory Ammo = new(categoryId: "ammo_damage")
     {
         Label = "Damage Bonus",
         // +1 (minor)

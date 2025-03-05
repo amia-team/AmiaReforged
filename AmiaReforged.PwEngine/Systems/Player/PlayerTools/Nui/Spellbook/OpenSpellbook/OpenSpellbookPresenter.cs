@@ -12,10 +12,9 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.OpenSpe
 public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; }
+    private readonly NwPlayer _player;
 
     private SpellbookViewModel _spellbook;
-    private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
@@ -25,20 +24,19 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
         _player = player;
     }
 
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
+    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; }
 
     public override OpenSpellbookView View { get; }
+
+    public override NuiWindowToken Token() => _token;
 
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new(View.RootLayout(), View.Title)
         {
             Resizable = false,
-            Geometry = new NuiRect(500f, 100f, 580f, 500f),
+            Geometry = new NuiRect(500f, 100f, 580f, 500f)
         };
     }
 
@@ -46,22 +44,22 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
     {
         // Create the window if it's null.
         if (_window == null)
-        {
             // Try to create the window if it doesn't exist.
             InitBefore();
-        }
 
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+            _player.SendServerMessage(
+                message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
-        
+
         _player.TryCreateNuiWindow(_window, out _token);
-        
-        string spellbookIdString = NWScript.GetLocalString(Token().Player.LoginCreature, "selected_spellbook");
+
+        string spellbookIdString =
+            NWScript.GetLocalString(Token().Player.LoginCreature, sVarName: "selected_spellbook");
 
         long spellbookId = long.Parse(spellbookIdString);
 
@@ -92,7 +90,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
 
         List<NuiRow> spellRows = PopulateSpellRows(_spellbook.SpellBook, spellLevelIcons);
 
-        NuiColumn spells = new NuiColumn()
+        NuiColumn spells = new()
         {
             Height = 500f
         };
@@ -110,11 +108,10 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
         return spells;
     }
 
-    private static List<NuiImage> SpellbookLayout()
-    {
-        return new()
+    private static List<NuiImage> SpellbookLayout() =>
+        new()
         {
-            new NuiImage("ir_level789")
+            new(resRef: "ir_level789")
             {
                 Tooltip = "Cantrips",
                 Height = 40f,
@@ -123,7 +120,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 HorizontalAlign = NuiHAlign.Center,
                 VerticalAlign = NuiVAlign.Middle
             },
-            new NuiImage("ir_level1")
+            new(resRef: "ir_level1")
             {
                 Tooltip = "Level 1",
                 Height = 40f,
@@ -132,7 +129,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 HorizontalAlign = NuiHAlign.Center,
                 VerticalAlign = NuiVAlign.Middle
             },
-            new NuiImage("ir_level2")
+            new(resRef: "ir_level2")
             {
                 Tooltip = "Level 2",
                 Height = 40f,
@@ -141,7 +138,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 HorizontalAlign = NuiHAlign.Center,
                 VerticalAlign = NuiVAlign.Middle
             },
-            new NuiImage("ir_level3")
+            new(resRef: "ir_level3")
             {
                 Tooltip = "Level 3",
                 Height = 40f,
@@ -150,7 +147,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 HorizontalAlign = NuiHAlign.Center,
                 VerticalAlign = NuiVAlign.Middle
             },
-            new NuiImage("ir_level4")
+            new(resRef: "ir_level4")
             {
                 Tooltip = "Level 4",
                 Height = 40f,
@@ -159,7 +156,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 HorizontalAlign = NuiHAlign.Center,
                 VerticalAlign = NuiVAlign.Middle
             },
-            new NuiImage("ir_level5")
+            new(resRef: "ir_level5")
             {
                 Tooltip = "Level 5",
                 Height = 40f,
@@ -168,7 +165,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 HorizontalAlign = NuiHAlign.Center,
                 VerticalAlign = NuiVAlign.Middle
             },
-            new NuiImage("ir_level6")
+            new(resRef: "ir_level6")
             {
                 Tooltip = "Level 6",
                 Height = 40f,
@@ -177,7 +174,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 HorizontalAlign = NuiHAlign.Center,
                 VerticalAlign = NuiVAlign.Middle
             },
-            new NuiImage("ir_level789")
+            new(resRef: "ir_level789")
             {
                 Tooltip = "Level 7",
                 Height = 40f,
@@ -186,7 +183,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 HorizontalAlign = NuiHAlign.Center,
                 VerticalAlign = NuiVAlign.Middle
             },
-            new NuiImage("ir_level789")
+            new(resRef: "ir_level789")
             {
                 Tooltip = "Level 8",
                 Height = 40f,
@@ -195,7 +192,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 HorizontalAlign = NuiHAlign.Center,
                 VerticalAlign = NuiVAlign.Middle
             },
-            new NuiImage("ir_level789")
+            new(resRef: "ir_level789")
             {
                 Tooltip = "Level 9",
                 Height = 40f,
@@ -205,27 +202,26 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 VerticalAlign = NuiVAlign.Middle
             }
         };
-    }
 
     private static List<NuiRow> PopulateSpellRows(Dictionary<byte, List<PreparedSpellModel>>? preparedSpells,
         List<NuiImage> spellLevelIcons)
     {
-        if (preparedSpells == null) return new List<NuiRow>();
-        Dictionary<int, List<NuiImage>> spellRow = new Dictionary<int, List<NuiImage>>();
-        List<NuiRow> spellRows = new List<NuiRow>();
+        if (preparedSpells == null) return new();
+        Dictionary<int, List<NuiImage>> spellRow = new();
+        List<NuiRow> spellRows = new();
         for (byte f = 0; f <= 9; f++)
         {
             Log.Info($"Iteration {f}");
-            spellRows.Add(new NuiRow());
+            spellRows.Add(new());
             if (!preparedSpells.ContainsKey(f)) break;
             Log.Info($"Spell level {f} has {preparedSpells[f].Count} spells.");
-            spellRow.TryAdd(f, new List<NuiImage>());
+            spellRow.TryAdd(f, new());
             spellRow[f].Add(spellLevelIcons[f]);
 
             foreach (PreparedSpellModel s in preparedSpells[f])
             {
                 string spellIconResRef = s.IconResRef == "" ? "ir_tmp_spawn" : s.IconResRef;
-                
+
 
                 Log.Info($"Processing spell {s.SpellName} with icon {spellIconResRef}");
 
@@ -242,11 +238,11 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
                 spellRow[f].Add(prep);
             }
 
-            spellRows[f] = new NuiRow
+            spellRows[f] = new()
             {
                 Height = 50f,
                 Visible = true,
-                Children = new List<NuiElement>(spellRow[f])
+                Children = new(spellRow[f])
             };
         }
 
@@ -279,8 +275,6 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
         {
             Token().Close();
         }
-
-        return;
     }
 
     public override void Close()
@@ -291,9 +285,9 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
 
 public sealed class SpellbookMemorizer
 {
-    private readonly SpellbookViewModel _spellbook;
-    private readonly NwPlayer _player;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly NwPlayer _player;
+    private readonly SpellbookViewModel _spellbook;
 
     public SpellbookMemorizer(SpellbookViewModel spellbook, NwPlayer player)
     {
@@ -322,7 +316,7 @@ public sealed class SpellbookMemorizer
                 spellSlot.ClearMemorizedSpell();
             }
 
-            Log.Info("Cleared spell slots.");
+            Log.Info(message: "Cleared spell slots.");
         }
 
         for (byte spellLevel = 0; spellLevel <= 9; spellLevel++)
@@ -334,7 +328,7 @@ public sealed class SpellbookMemorizer
             {
                 if (spellSlot > spells.Count)
                 {
-                    Log.Info("No more spells to memorize.");
+                    Log.Info(message: "No more spells to memorize.");
                     break;
                 }
 
@@ -346,7 +340,7 @@ public sealed class SpellbookMemorizer
 
                 if (currentSpell == null)
                 {
-                    Log.Info("Spell is not a valid spell.");
+                    Log.Info(message: "Spell is not a valid spell.");
                     continue;
                 }
 

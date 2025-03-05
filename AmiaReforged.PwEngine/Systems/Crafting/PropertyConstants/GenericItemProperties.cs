@@ -1,5 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
@@ -12,7 +11,23 @@ public static class GenericItemProperties
     private const int ResistanceCost4 = 40000;
     private const int ResistanceCost5 = 50000;
 
-    public static readonly CraftingCategory ElementalResistances = new("elemental_resists")
+    public const int AcCost1 = 2000;
+    public const int AcCost2 = 6000;
+    public const int AcCost3 = 12000;
+    public const int AcCost4 = 20000;
+    public const int AcCost5 = 30000;
+
+    private const int MythalCostVregen1 = 2000;
+    private const int MythalCostVregen2 = 15000;
+    private const int MythalCostVregen3 = 75000;
+
+    private const int MythalCostRegen1 = 20000;
+    private const int MythalCostRegen2 = 30000;
+    private const int MythalCostRegen3 = 50000;
+
+    private const int MythalKeenCost = 50000;
+
+    public static readonly CraftingCategory ElementalResistances = new(categoryId: "elemental_resists")
     {
         Label = "Elemental Resistances",
         Properties = new[]
@@ -21,7 +36,8 @@ public static class GenericItemProperties
             {
                 PowerCost = 1,
                 ItemProperty =
-                    NWScript.ItemPropertyDamageResistance(NWScript.IP_CONST_DAMAGETYPE_ACID, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                    NWScript.ItemPropertyDamageResistance(NWScript.IP_CONST_DAMAGETYPE_ACID,
+                        NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Acid",
                 GoldCost = ResistanceCost1,
                 CraftingTier = CraftingTier.Greater
@@ -30,7 +46,8 @@ public static class GenericItemProperties
             {
                 PowerCost = 1,
                 ItemProperty =
-                    NWScript.ItemPropertyDamageResistance(NWScript.IP_CONST_DAMAGETYPE_COLD, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                    NWScript.ItemPropertyDamageResistance(NWScript.IP_CONST_DAMAGETYPE_COLD,
+                        NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Cold",
                 GoldCost = ResistanceCost1,
                 CraftingTier = CraftingTier.Greater
@@ -48,7 +65,8 @@ public static class GenericItemProperties
             {
                 PowerCost = 1,
                 ItemProperty =
-                    NWScript.ItemPropertyDamageResistance(NWScript.IP_CONST_DAMAGETYPE_FIRE, NWScript.IP_CONST_DAMAGERESIST_5)!,
+                    NWScript.ItemPropertyDamageResistance(NWScript.IP_CONST_DAMAGETYPE_FIRE,
+                        NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Fire",
                 GoldCost = ResistanceCost1,
                 CraftingTier = CraftingTier.Greater
@@ -160,15 +178,15 @@ public static class GenericItemProperties
                 GuiLabel = "15/- Sonic",
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
-            },
+            }
         },
         BaseDifficulty = 13
     };
 
     /// <summary>
-    /// Physical damage resistance category
+    ///     Physical damage resistance category
     /// </summary>
-    public static readonly CraftingCategory PhysicalDamageResistances = new("physical_resists")
+    public static readonly CraftingCategory PhysicalDamageResistances = new(categoryId: "physical_resists")
     {
         Label = "Physical Damage Resistance",
         Properties = new[]
@@ -201,16 +219,16 @@ public static class GenericItemProperties
                 GuiLabel = "5/- Slashing",
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
-            },
+            }
         },
         BaseDifficulty = 18
     };
 
 
     /// <summary>
-    /// Damage reduction category
+    ///     Damage reduction category
     /// </summary>
-    public static readonly CraftingCategory DamageReductions = new("damage_reduction")
+    public static readonly CraftingCategory DamageReductions = new(categoryId: "damage_reduction")
     {
         Label = "Damage Reduction",
         Properties = new[]
@@ -259,13 +277,7 @@ public static class GenericItemProperties
         BaseDifficulty = 18
     };
 
-    public const int AcCost1 = 2000;
-    public const int AcCost2 = 6000;
-    public const int AcCost3 = 12000;
-    public const int AcCost4 = 20000;
-    public const int AcCost5 = 30000;
-
-    public static readonly CraftingCategory Armor = new("armor")
+    public static readonly CraftingCategory Armor = new(categoryId: "armor")
     {
         Label = "Armor Class",
         Properties = new[]
@@ -314,14 +326,10 @@ public static class GenericItemProperties
         BaseDifficulty = 9
     };
 
-    private const int MythalCostVregen1 = 2000;
-    private const int MythalCostVregen2 = 15000;
-    private const int MythalCostVregen3 = 75000;
-
     /// <summary>
-    /// Vampiric regeneration category.
+    ///     Vampiric regeneration category.
     /// </summary>
-    public static readonly CraftingCategory VampiricRegeneration = new("vampiric_regeneration")
+    public static readonly CraftingCategory VampiricRegeneration = new(categoryId: "vampiric_regeneration")
     {
         Label = "Vampiric Regeneration",
         Properties = new[]
@@ -352,16 +360,12 @@ public static class GenericItemProperties
                 GuiLabel = "+3 Vampiric Regeneration",
                 GoldCost = MythalCostVregen3,
                 CraftingTier = CraftingTier.Flawless
-            },
+            }
         },
         BaseDifficulty = 10
     };
 
-    private const int MythalCostRegen1 = 20000;
-    private const int MythalCostRegen2 = 30000;
-    private const int MythalCostRegen3 = 50000;
-
-    public static readonly CraftingCategory Regeneration = new("regeneration")
+    public static readonly CraftingCategory Regeneration = new(categoryId: "regeneration")
     {
         Label = "Regeneration",
         Properties = new[]
@@ -401,14 +405,12 @@ public static class GenericItemProperties
                 GuiLabel = "+4 Regeneration",
                 GoldCost = MythalCostRegen3,
                 CraftingTier = CraftingTier.Wondrous
-            },
+            }
         },
         BaseDifficulty = 6
     };
 
-    private const int MythalKeenCost = 50000;
-
-    public static readonly CraftingCategory Other = new("others")
+    public static readonly CraftingCategory Other = new(categoryId: "others")
     {
         Label = "Keen",
         Properties = new[]

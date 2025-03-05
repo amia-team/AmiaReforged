@@ -10,10 +10,10 @@ public class WisdomCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int wisMod = playerCreature.GetAbilityModifier(Ability.Wisdom);
-        
-        playerCreature.SpeakString(new AbilityCheckString("Wisdom", roll, wisMod).GetAbilityCheckString());
+
+        playerCreature.SpeakString(new AbilityCheckString(abilityName: "Wisdom", roll, wisMod).GetAbilityCheckString());
     }
 }

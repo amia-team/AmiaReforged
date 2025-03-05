@@ -5,13 +5,13 @@ using static AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping.JobSystemRe
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
 /// <summary>
-///  Maps legacy job system items to a material enum.
+///     Maps legacy job system items to a material enum.
 /// </summary>
 [ServiceBinding(typeof(MaterialResRefMapper))]
 public class MaterialResRefMapper : IMapAtoB<MaterialEnum, string>
 {
     /// <summary>
-    /// Takes some resref and tries to resolve a material enum from it.
+    ///     Takes some resref and tries to resolve a material enum from it.
     /// </summary>
     /// <param name="resRef">The blueprint resRef of the job system item to map from</param>
     /// <returns>an enum used to identify the material of the job system item in the database</returns>

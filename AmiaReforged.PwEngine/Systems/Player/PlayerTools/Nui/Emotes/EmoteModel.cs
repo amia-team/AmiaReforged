@@ -1,22 +1,22 @@
 using AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Emotes.EmoteDefinitions;
 using Anvil.API;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Emotes;
 
 public class EmoteModel
 {
     private readonly NwPlayer _player;
-    public Dictionary<string, IEmote> Emotes { get; } = new();
 
     public EmoteModel(NwPlayer player)
     {
         _player = player;
     }
 
+    public Dictionary<string, IEmote> Emotes { get; } = new();
+
     /// <summary>
-    /// Uses reflection to fetch all registered emotes and then creates a row with a button for each emote.
-    /// Emotes are defined in <see cref="AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Emotes.EmoteDefinitions"/>
+    ///     Uses reflection to fetch all registered emotes and then creates a row with a button for each emote.
+    ///     Emotes are defined in <see cref="AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Emotes.EmoteDefinitions" />
     /// </summary>
     public void InitAllEmotes()
     {
@@ -28,9 +28,9 @@ public class EmoteModel
         {
             // Create an instance of the emote
             IEmote? emote = (IEmote)Activator.CreateInstance(emoteType);
-            
+
             if (emote == null) continue;
-            
+
             Emotes.TryAdd(emote.Id, emote);
         }
     }

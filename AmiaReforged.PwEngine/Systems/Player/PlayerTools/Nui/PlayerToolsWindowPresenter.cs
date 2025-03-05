@@ -11,51 +11,48 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui;
 public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindowView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    [Inject] private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
-    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; init; } = null!;
-    [Inject] private Lazy<CharacterService> CharacterService { get; init; } = null!;
 
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
-    private PlayerToolsModel Model { get; init; }
-
     public PlayerToolsWindowPresenter(PlayerToolsWindowView toolView, NwPlayer player)
     {
         _player = player;
         View = toolView;
-        Model = new PlayerToolsModel(player);
+        Model = new(player);
     }
 
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
+    [Inject] private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
+    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; init; } = null!;
+    [Inject] private Lazy<CharacterService> CharacterService { get; init; } = null!;
+
+    private PlayerToolsModel Model { get; }
 
     public override PlayerToolsWindowView View { get; }
 
+    public override NuiWindowToken Token() => _token;
+
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), "Player Tools")
+        _window = new(View.RootLayout(), title: "Player Tools")
         {
-            Geometry = new NuiRect(0f, 100f, 400f, 600f),
+            Geometry = new NuiRect(0f, 100f, 400f, 600f)
         };
     }
 
-    public async override void Create()
+    public override async void Create()
     {
         // Create the window if it's null.
         if (_window == null)
-        {
             // Try to create the window if it doesn't exist.
             InitBefore();
-        }
 
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+            _player.SendServerMessage(
+                message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
@@ -67,10 +64,12 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
         Model.CharacterIsPersisted = isPersisted;
 
         if (!isPersisted)
-        {
-            Token().Player.FloatingTextString("You haven't gone through the entry area yet. You'll want to do this if you want access to all functionality.", false);
-        }
-        
+            Token().Player
+                .FloatingTextString(
+                    message:
+                    "You haven't gone through the entry area yet. You'll want to do this if you want access to all functionality.",
+                    false);
+
         RefreshWindowList();
     }
 

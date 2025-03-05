@@ -5,27 +5,24 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui;
 
 public class PlayerToolsModel
 {
-    public List<IToolWindow> VisibleWindows { get; private set; } = new();
-    public bool CharacterIsPersisted { get; set; }
-
     private readonly NwPlayer _player;
     private string _searchTerm = string.Empty;
-
-    private List<IToolWindow> GetVisibleWindows()
-    {
-        List<IToolWindow> windows = GetAvailableWindows();
-        if (_searchTerm == string.Empty)
-        {
-            return windows;
-        }
-
-        return windows.FindAll(w => w.Title.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
-    }
 
 
     public PlayerToolsModel(NwPlayer player)
     {
         _player = player;
+    }
+
+    public List<IToolWindow> VisibleWindows { get; private set; } = new();
+    public bool CharacterIsPersisted { get; set; }
+
+    private List<IToolWindow> GetVisibleWindows()
+    {
+        List<IToolWindow> windows = GetAvailableWindows();
+        if (_searchTerm == string.Empty) return windows;
+
+        return windows.FindAll(w => w.Title.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
     }
 
     private List<IToolWindow> GetAvailableWindows()
@@ -40,11 +37,8 @@ public class PlayerToolsModel
         {
             if (Activator.CreateInstance(type, _player) is IToolWindow { ListInPlayerTools: true } window)
             {
-                if(window.RequiresPersistedCharacter && !CharacterIsPersisted)
-                {
-                    continue;
-                }
-                
+                if (window.RequiresPersistedCharacter && !CharacterIsPersisted) continue;
+
                 windows.Add(window);
             }
         }

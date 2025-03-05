@@ -10,10 +10,11 @@ public class DexterityCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int dexMod = playerCreature.GetAbilityModifier(Ability.Dexterity);
-        
-        playerCreature.SpeakString(new AbilityCheckString("Dexterity", roll, dexMod).GetAbilityCheckString());
+
+        playerCreature.SpeakString(
+            new AbilityCheckString(abilityName: "Dexterity", roll, dexMod).GetAbilityCheckString());
     }
 }

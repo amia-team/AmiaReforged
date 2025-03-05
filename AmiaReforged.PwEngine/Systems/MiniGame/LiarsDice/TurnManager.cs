@@ -7,14 +7,11 @@ public class TurnManager
 
     public TurnManager(List<DicePlayer> players)
     {
-        this._players = players;
+        _players = players;
         _currentPlayerIndex = 0;
     }
 
-    public DicePlayer GetCurrentPlayer()
-    {
-        return _players[_currentPlayerIndex];
-    }
+    public DicePlayer GetCurrentPlayer() => _players[_currentPlayerIndex];
 
     public void NextTurn()
     {

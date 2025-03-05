@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using Anvil;
 using Anvil.API;
 using Anvil.Services;
 
@@ -7,46 +8,55 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.DiceRoll;
 
 public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToolWindow
 {
+    public readonly NuiBind<List<NuiComboEntry>> ButtonGroupEntries = new(key: "roll_button_group");
+    public readonly NuiBind<int> Selection = new(key: "selected_roll_button");
+    public NuiButton AbilityRollButton = null!;
+
+    public NuiButton GoButton = null!;
+    public NuiButton NumberRollButton = null!;
+    public NuiButton ReportsButton = null!;
+
+    public NuiGroup RollGroup = null!;
+    public NuiButton SavingThrowRollButton = null!;
+    public NuiButton SkillRollButton = null!;
+
+    public NuiButton SpecialRollButton = null!;
+
+    public DiceRollWindowView(NwPlayer player)
+    {
+        Presenter = new(this, player);
+        InjectionService injector = AnvilCore.GetService<InjectionService>()!;
+        injector.Inject(Presenter);
+    }
+
+    public override DiceRollWindowPresenter Presenter { get; protected set; }
     public bool RequiresPersistedCharacter { get; }
     public string Id => "playertools.diceroll";
     public string Title => "Dice Roll";
     public bool ListInPlayerTools => true;
     public string CategoryTag => "Roleplaying";
 
-    public readonly NuiBind<List<NuiComboEntry>> ButtonGroupEntries = new("roll_button_group");
-    public readonly NuiBind<int> Selection = new("selected_roll_button");
-
-    public NuiGroup RollGroup = null!;
-
-    public NuiButton GoButton = null!;
-
-    public NuiButton SpecialRollButton = null!;
-    public NuiButton AbilityRollButton = null!;
-    public NuiButton SkillRollButton = null!;
-    public NuiButton NumberRollButton = null!;
-    public NuiButton SavingThrowRollButton = null!;
-    public NuiButton ReportsButton = null!;
-
-    public override DiceRollWindowPresenter Presenter { get; protected set; }
-
-    public DiceRollWindowView(NwPlayer player)
+    public IScryPresenter ForPlayer(NwPlayer player)
     {
-        Presenter = new DiceRollWindowPresenter(this, player);
-        InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
-        injector.Inject(Presenter);
+        InjectionService injector = AnvilCore.GetService<InjectionService>()!;
+        DiceRollWindowPresenter diceRollWindowPresenter = new(this, player);
+
+        injector.Inject(diceRollWindowPresenter);
+
+        return diceRollWindowPresenter;
     }
 
     public override NuiLayout RootLayout()
     {
-        RollGroup = new NuiGroup
+        RollGroup = new()
         {
             Element = new NuiColumn
             {
-                Children = new List<NuiElement>
+                Children = new()
                 {
                     new NuiRow
                     {
-                        Children = new List<NuiElement>
+                        Children = new()
                         {
                             new NuiCombo
                             {
@@ -58,61 +68,61 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
                     },
                     new NuiRow
                     {
-                        Children = new List<NuiElement>
+                        Children = new()
                         {
-                            new NuiButton("Roll!") { Id = "go_button" }.Assign(out GoButton)
-                        },
+                            new NuiButton(label: "Roll!") { Id = "go_button" }.Assign(out GoButton)
+                        }
                     }
                 }
             }
         };
         NuiColumn root = new()
         {
-            Children = new List<NuiElement>
+            Children = new()
             {
                 new NuiGroup
                 {
                     Element = new NuiColumn
                     {
-                        Children = new List<NuiElement>
+                        Children = new()
                         {
                             new NuiRow
                             {
-                                Children = new List<NuiElement>
+                                Children = new()
                                 {
-                                    new NuiButton("Numbered Die")
+                                    new NuiButton(label: "Numbered Die")
                                     {
                                         Id = "numbered_die", Width = 114f, Height = 37f
                                     }.Assign(out NumberRollButton),
-                                    new NuiButton("Saving Throw")
+                                    new NuiButton(label: "Saving Throw")
                                     {
                                         Id = "save_throw", Width = 114f, Height = 37f
-                                    }.Assign(out SavingThrowRollButton),
+                                    }.Assign(out SavingThrowRollButton)
                                 }
                             },
                             new NuiRow
                             {
-                                Children = new List<NuiElement>
+                                Children = new()
                                 {
-                                    new NuiButton("Skill Check")
+                                    new NuiButton(label: "Skill Check")
                                     {
                                         Id = "skill_check", Width = 114f, Height = 37f
                                     }.Assign(out SkillRollButton),
-                                    new NuiButton("Ability Check")
+                                    new NuiButton(label: "Ability Check")
                                     {
                                         Id = "ability_check", Width = 114f, Height = 37f
-                                    }.Assign(out AbilityRollButton),
+                                    }.Assign(out AbilityRollButton)
                                 }
                             },
                             new NuiRow
                             {
-                                Children = new List<NuiElement>
+                                Children = new()
                                 {
-                                    new NuiButton("Special Roll")
+                                    new NuiButton(label: "Special Roll")
                                     {
                                         Id = "special_roll", Width = 114f, Height = 37f
                                     }.Assign(out SpecialRollButton),
-                                    new NuiButton("Reports")
+                                    new NuiButton(label: "Reports")
                                     {
                                         Id = "reports", Width = 114f, Height = 37f
                                     }.Assign(out ReportsButton)
@@ -127,15 +137,5 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
             }
         };
         return root;
-    }
-
-    public IScryPresenter ForPlayer(NwPlayer player)
-    {
-        InjectionService injector = Anvil.AnvilCore.GetService<InjectionService>()!;
-        DiceRollWindowPresenter diceRollWindowPresenter = new DiceRollWindowPresenter(this, player);
-        
-        injector.Inject(diceRollWindowPresenter);
-        
-        return diceRollWindowPresenter;
     }
 }

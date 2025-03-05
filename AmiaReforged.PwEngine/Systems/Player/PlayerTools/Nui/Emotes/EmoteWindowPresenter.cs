@@ -6,30 +6,28 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Emotes;
 public class EmoteWindowPresenter : ScryPresenter<EmoteWindowView>
 {
     private readonly NwPlayer _player;
-    private EmoteModel Model { get; }
+    private NuiWindowToken _token;
 
     private NuiWindow? _window;
-    private NuiWindowToken _token;
 
     public EmoteWindowPresenter(EmoteWindowView emoteWindowView, NwPlayer player)
     {
         View = emoteWindowView;
         _player = player;
-        Model = new EmoteModel(player);
+        Model = new(player);
     }
+
+    private EmoteModel Model { get; }
 
     public override EmoteWindowView View { get; }
 
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
+    public override NuiWindowToken Token() => _token;
 
     public override void InitBefore()
     {
         Model.InitAllEmotes();
         // View.PopulateEmoteLayout(Model.Emotes.Values);
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(300, 300, 400, 500)
         };
@@ -37,14 +35,11 @@ public class EmoteWindowPresenter : ScryPresenter<EmoteWindowView>
 
     public override void Create()
     {
-        if (_window == null)
-        {
-            InitBefore();
-        }
+        if (_window == null) InitBefore();
 
         if (_window == null)
         {
-            _player.FloatingTextString("Failed to create window. Send a bug report.", false);
+            _player.FloatingTextString(message: "Failed to create window. Send a bug report.", false);
             return;
         }
 

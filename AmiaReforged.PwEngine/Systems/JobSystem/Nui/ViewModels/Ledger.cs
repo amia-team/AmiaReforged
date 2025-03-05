@@ -8,7 +8,7 @@ public class Ledger
     public List<LedgerEntry> Entries { get; set; }
 
     public int TotalValue => Entries.Sum(e => e.TotalValue);
-    
+
     // to string method
     public override string ToString()
     {

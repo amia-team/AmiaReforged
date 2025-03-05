@@ -2,7 +2,6 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.AI.Behaviors.Generic;
 
@@ -22,11 +21,7 @@ public class GenericOnCombatRoundEnd : IOnCombatRoundEndBehavior
         if (currentTarget is null) return;
 
 
-        if (currentTarget.GetObjectVariable<LocalVariableInt>("guardCD") == 1)
-        {
+        if (currentTarget.GetObjectVariable<LocalVariableInt>(name: "guardCD") == 1)
             eventData.Creature.ClearActionQueue();
-        }
-
-
     }
 }

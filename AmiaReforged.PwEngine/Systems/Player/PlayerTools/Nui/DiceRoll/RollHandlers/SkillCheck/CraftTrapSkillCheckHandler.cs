@@ -10,12 +10,13 @@ public class CraftTrapSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int craftTrapMod = playerCreature.GetSkillRank(Skill.CraftTrap!);
-        
+
         int result = roll + craftTrapMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Craft Trap", roll, craftTrapMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Craft Trap", roll, craftTrapMod, result)
+            .GetRollResult());
     }
 }

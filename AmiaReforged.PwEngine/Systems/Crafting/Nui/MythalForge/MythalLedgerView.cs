@@ -1,92 +1,90 @@
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
-using Anvil.API.Events;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
 public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
 {
-    public MythalForgePresenter Parent;
-    public sealed override MythalLedgerPresenter Presenter { get; protected set; }
+    public NuiBind<string> DivineMythalCount = new(key: "divine_mythals");
+    public NuiBind<string> FlawlessMythalCount = new(key: "flawless_mythals");
+    public NuiBind<string> GreaterMythalCount = new(key: "greater_mythals");
+    public NuiBind<string> IntermediateMythalCount = new(key: "intermediate_mythals");
+    public NuiBind<string> LesserMythalCount = new(key: "lesser_mythals");
 
-    public NuiBind<string> MinorMythalCount = new("minor_mythals");
-    public NuiBind<string> LesserMythalCount = new("lesser_mythals");
-    public NuiBind<string> IntermediateMythalCount = new("intermediate_mythals");
-    public NuiBind<string> GreaterMythalCount = new("greater_mythals");
-    public NuiBind<string> FlawlessMythalCount = new("flawless_mythals");
-    public NuiBind<string> PerfectMythalCount = new("perfect_mythals");
-    public NuiBind<string> DivineMythalCount = new("divine_mythals");
+    public NuiBind<string> MinorMythalCount = new(key: "minor_mythals");
+    public MythalForgePresenter Parent;
+    public NuiBind<string> PerfectMythalCount = new(key: "perfect_mythals");
 
 
     public MythalLedgerView(MythalForgePresenter parent, NwPlayer player)
     {
         Parent = parent;
-        Presenter = new MythalLedgerPresenter(parent, player, this);
+        Presenter = new(parent, player, this);
     }
 
-    public override NuiLayout RootLayout()
-    {
-        return new NuiColumn()
+    public override MythalLedgerPresenter Presenter { get; protected set; }
+
+    public override NuiLayout RootLayout() =>
+        new NuiColumn
         {
             Children =
             {
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel("Minor:"),
+                        new NuiLabel(label: "Minor:"),
                         new NuiLabel(MinorMythalCount)
                     }
                 },
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel("Lesser:"),
+                        new NuiLabel(label: "Lesser:"),
                         new NuiLabel(LesserMythalCount)
                     }
                 },
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel("Intermediate:"),
+                        new NuiLabel(label: "Intermediate:"),
                         new NuiLabel(IntermediateMythalCount)
                     }
                 },
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel("Greater:"),
+                        new NuiLabel(label: "Greater:"),
                         new NuiLabel(GreaterMythalCount)
                     }
                 },
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel("Flawless:"),
+                        new NuiLabel(label: "Flawless:"),
                         new NuiLabel(FlawlessMythalCount)
                     }
                 },
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel("Perfect:"),
+                        new NuiLabel(label: "Perfect:"),
                         new NuiLabel(PerfectMythalCount)
                     }
                 },
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     {
-                        new NuiLabel("Divine:"),
+                        new NuiLabel(label: "Divine:"),
                         new NuiLabel(DivineMythalCount)
                     }
                 }
             }
         };
-    }
 }

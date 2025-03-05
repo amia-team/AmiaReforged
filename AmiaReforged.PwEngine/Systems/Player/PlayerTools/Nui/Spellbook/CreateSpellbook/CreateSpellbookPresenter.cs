@@ -8,18 +8,15 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.CreateSpellbook;
 
 public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly NwPlayer _player;
-    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; }
-    [Inject] private Lazy<CharacterService> CharacterService { get; set; }
-    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; set; }
 
-    private NuiWindowToken _token = default;
+    private NuiWindowToken _token;
     private NuiWindow? _window;
 
     public CreateSpellbookPresenter(CreateSpellbookView toolView, NwPlayer player)
@@ -28,26 +25,28 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
         _player = player;
     }
 
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
+    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; }
+    [Inject] private Lazy<CharacterService> CharacterService { get; set; }
+    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; set; }
 
     public override CreateSpellbookView View { get; }
+
+    [Inject] private Lazy<WindowManager> WindowManager { get; set; }
+
+    public override NuiWindowToken Token() => _token;
 
     public override void Create()
     {
         // Create the window if it's null.
         if (_window == null)
-        {
             // Try to create the window if it doesn't exist.
             InitBefore();
-        }
 
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+            _player.SendServerMessage(
+                message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
@@ -69,14 +68,9 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
         Token().SetUserData(classNameDict);
     }
 
-    [Inject] private Lazy<WindowManager> WindowManager { get; set; }
-
-
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0, 0, 400, 300),
             Closable = true,
@@ -86,11 +80,11 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
-        Log.Info("Handling NUI event");
+        Log.Info(message: "Handling NUI event");
         switch (eventData.EventType)
         {
             case NuiEventType.Click:
-                Log.Info("Handling NUI click event");
+                Log.Info(message: "Handling NUI click event");
                 HandleButtonClick(eventData);
                 break;
         }
@@ -103,7 +97,8 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
         {
             if (Token().GetBindValue(View.SpellbookName) == string.Empty)
             {
-                Token().Player.SendServerMessage("You must enter a name for the spellbook.", ColorConstants.Red);
+                Token().Player.SendServerMessage(message: "You must enter a name for the spellbook.",
+                    ColorConstants.Red);
                 return;
             }
 
@@ -128,14 +123,14 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
         NwCreature? character = Token().Player.LoginCreature;
         if (character == null)
         {
-            Log.Error("Character is null.");
+            Log.Error(message: "Character is null.");
             return;
         }
 
         Guid pcId = PlayerIdService.Value.GetPlayerKey(Token().Player);
 
         Log.Info($"Got player ID: {pcId}");
-        
+
         bool characterExists = await CharacterService.Value.CharacterExists(pcId);
         await NwTask.SwitchToMainThread();
         Log.Info($"Character exists: {characterExists}");
@@ -152,10 +147,10 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
             if (selectedName != null)
             {
                 Log.Info($"Selected Name: {selectedName}");
-                ClassPreparedSpells classPreparedSpells = new ClassPreparedSpells
+                ClassPreparedSpells classPreparedSpells = new()
                 {
                     Class = selectedName,
-                    IsInnate = false,
+                    IsInnate = false
                 };
 
                 Dictionary<byte, IReadOnlyList<PreparedSpellModel>> preparedSpells = new();
@@ -198,7 +193,7 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
                 Log.Info($"Found classId: {classId}");
 
-                SavedSpellbook savedSpellbook = new SavedSpellbook
+                SavedSpellbook savedSpellbook = new()
                 {
                     SpellbookName = spellbookName,
                     PlayerCharacterId = pcId,
@@ -213,11 +208,12 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
                 await SpellbookLoader.Value.SaveSpellbook(savedSpellbook);
                 await NwTask.SwitchToMainThread();
-                Log.Info("Done saving spells.");
+                Log.Info(message: "Done saving spells.");
             }
             else
             {
                 Token().Player.SendServerMessage(
+                    message:
                     "ERROR: Could not resolve class name for spellbook. Screenshot this and report it to the team.",
                     ColorConstants.Red);
             }

@@ -10,12 +10,12 @@ public class HealSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int healMod = playerCreature.GetSkillRank(Skill.Heal!);
-        
+
         int result = roll + healMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Heal", roll, healMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Heal", roll, healMod, result).GetRollResult());
     }
 }

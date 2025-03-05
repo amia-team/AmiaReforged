@@ -10,12 +10,13 @@ public class DisableTrapSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int disableTrapMod = playerCreature.GetSkillRank(Skill.DisableTrap!);
-        
+
         int result = roll + disableTrapMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Disable Trap", roll, disableTrapMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Disable Trap", roll, disableTrapMod, result)
+            .GetRollResult());
     }
 }

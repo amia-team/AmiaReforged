@@ -12,7 +12,7 @@ public class CasterWeaponForge
 {
     private const string ForgeTag = "caster_weapon_forge";
 
-    private List<Spell> _spellWhiteList = new List<Spell>
+    private List<Spell> _spellWhiteList = new()
     {
         Spell.Restoration,
         Spell.LightningBolt,
@@ -32,14 +32,11 @@ public class CasterWeaponForge
 
     private void OpenPopup(PlaceableEvents.OnOpen obj)
     {
-        if (!obj.OpenedBy.IsPlayerControlled(out NwPlayer? player))
-        {
-            return;
-        }
+        if (!obj.OpenedBy.IsPlayerControlled(out NwPlayer? player)) return;
 
         if (player.LoginCreature == null)
         {
-            LogManager.GetCurrentClassLogger().Info("Player login creature is null.");
+            LogManager.GetCurrentClassLogger().Info(message: "Player login creature is null.");
             return;
         }
 
@@ -47,36 +44,30 @@ public class CasterWeaponForge
 
         if (pcKey == null)
         {
-            LogManager.GetCurrentClassLogger().Info("PC key is null.");
+            LogManager.GetCurrentClassLogger().Info(message: "PC key is null.");
             return;
         }
 
-        if (NWScript.GetLocalInt(pcKey, "ignore_caster_forge") == 1)
-        {
-            return;
-        }
+        if (NWScript.GetLocalInt(pcKey, sVarName: "ignore_caster_forge") == 1) return;
 
         GenericWindow
             .Builder()
             .For()
             .SimplePopup()
             .WithPlayer(player)
-            .WithTitle("Caster Weapon Forge")
+            .WithTitle(title: "Caster Weapon Forge")
             .WithMessage(
                 "You can turn a blank weapon into a caster weapon here by casting any level 3 or higher spell on it. "
                 + "This will prevent any typical weapon properties from being placed on the item. These weapons will not "
                 + "accept any greater magic weapon or flame weapon enchantments."
                 + " One-handed weapons have 12 powers, Two-handed weapons have 20.")
-            .EnableIgnoreButton("ignore_caster_forge")
+            .EnableIgnoreButton(ignoreTag: "ignore_caster_forge")
             .Open();
     }
 
     private void EnchantWeapon(PlaceableEvents.OnSpellCastAt obj)
     {
-        if (!obj.Caster.IsPlayerControlled(out NwPlayer? player))
-        {
-            return;
-        }
+        if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
 
         if (obj.Spell.InnateSpellLevel < 3) // Only allow level 3 spells
         {
@@ -85,8 +76,8 @@ public class CasterWeaponForge
                 .For()
                 .SimplePopup()
                 .WithPlayer(player)
-                .WithTitle("Caster Weapon Forge")
-                .WithMessage("You must cast a level 3 or higher spell.")
+                .WithTitle(title: "Caster Weapon Forge")
+                .WithMessage(message: "You must cast a level 3 or higher spell.")
                 .Open();
 
             return;
@@ -99,8 +90,8 @@ public class CasterWeaponForge
                 .For()
                 .SimplePopup()
                 .WithPlayer(player)
-                .WithTitle("Caster Weapon Forge")
-                .WithMessage("You can only enchant one weapon at a time.")
+                .WithTitle(title: "Caster Weapon Forge")
+                .WithMessage(message: "You can only enchant one weapon at a time.")
                 .Open();
 
             return;
@@ -111,7 +102,7 @@ public class CasterWeaponForge
 
         List<int> weapons = ItemTypeConstants.MeleeWeapons();
         List<int> melee2HWeapons = ItemTypeConstants.Melee2HWeapons();
-        
+
         weapons.AddRange(melee2HWeapons);
 
         if (!weapons.Contains(baseItemType))
@@ -121,24 +112,24 @@ public class CasterWeaponForge
                 .For()
                 .SimplePopup()
                 .WithPlayer(player)
-                .WithTitle("Caster Weapon Forge")
-                .WithMessage("You can only enchant melee weapons.")
+                .WithTitle(title: "Caster Weapon Forge")
+                .WithMessage(message: "You can only enchant melee weapons.")
                 .Open();
-            
+
             return;
         }
 
-        if (NWScript.GetLocalInt(weapon, "CASTER_WEAPON") == 1)
+        if (NWScript.GetLocalInt(weapon, sVarName: "CASTER_WEAPON") == 1)
         {
             GenericWindow
                 .Builder()
                 .For()
                 .SimplePopup()
                 .WithPlayer(player)
-                .WithTitle("Caster Weapon Forge")
-                .WithMessage("This weapon is already enchanted.")
+                .WithTitle(title: "Caster Weapon Forge")
+                .WithMessage(message: "This weapon is already enchanted.")
                 .Open();
-            
+
             return;
         }
 
@@ -150,15 +141,15 @@ public class CasterWeaponForge
                 .For()
                 .SimplePopup()
                 .WithPlayer(player)
-                .WithTitle("Caster Weapon Forge")
-                .WithMessage("You cannot enchant a weapon that already has properties on it.")
+                .WithTitle(title: "Caster Weapon Forge")
+                .WithMessage(message: "You cannot enchant a weapon that already has properties on it.")
                 .Open();
-            
+
             return;
         }
 
         Effect visualEffect = Effect.VisualEffect(VfxType.ImpBlindDeafM);
         obj.Placeable.ApplyEffect(EffectDuration.Instant, visualEffect);
-        NWScript.SetLocalInt(weapon, "CASTER_WEAPON", 1);
+        NWScript.SetLocalInt(weapon, sVarName: "CASTER_WEAPON", 1);
     }
 }

@@ -12,6 +12,6 @@ public class D2RollHandler : IRollHandler
         if (playerCreature is null) return;
 
         int roll = NWScript.d2();
-        playerCreature.SpeakString(new NumericDieString("D2", roll).GetRollResult());
+        playerCreature.SpeakString(new NumericDieString(rollType: "D2", roll).GetRollResult());
     }
 }

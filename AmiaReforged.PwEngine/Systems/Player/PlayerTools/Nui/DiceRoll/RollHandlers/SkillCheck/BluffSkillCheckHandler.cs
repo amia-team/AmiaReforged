@@ -10,12 +10,12 @@ public class BluffSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int bluffMod = playerCreature.GetSkillRank(Skill.Bluff!);
-        
+
         int result = roll + bluffMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Bluff", roll, bluffMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Bluff", roll, bluffMod, result).GetRollResult());
     }
 }

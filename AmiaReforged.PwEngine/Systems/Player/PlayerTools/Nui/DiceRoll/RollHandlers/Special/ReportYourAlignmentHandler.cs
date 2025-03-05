@@ -10,10 +10,11 @@ public class ReportYourAlignmentHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         string alignment = playerCreature.LawChaosAlignment + " " + playerCreature.GoodEvilAlignment;
-        string message = $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> My alignment is:</c> {alignment} <c{AmiaLime.ToColorToken()}>[?]</c>";
-        
+        string message =
+            $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> My alignment is:</c> {alignment} <c{AmiaLime.ToColorToken()}>[?]</c>";
+
         playerCreature.SpeakString(message);
     }
 }

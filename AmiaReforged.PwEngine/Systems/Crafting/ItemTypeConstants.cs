@@ -3,15 +3,15 @@
 namespace AmiaReforged.PwEngine.Systems.Crafting;
 
 /// <summary>
-/// A static class to naively categorize item types. This is used to determine what items can be used in crafting recipes.
+///     A static class to naively categorize item types. This is used to determine what items can be used in crafting
+///     recipes.
 /// </summary>
 public static class ItemTypeConstants
 {
     public const string CasterWeaponVar = "CASTER_WEAPON";
 
-    public static List<int> MeleeWeapons()
-    {
-        return new List<int>
+    public static List<int> MeleeWeapons() =>
+        new()
         {
             NWScript.BASE_ITEM_BASTARDSWORD,
             NWScript.BASE_ITEM_BATTLEAXE,
@@ -36,11 +36,9 @@ public static class ItemTypeConstants
             NWScript.BASE_ITEM_WHIP,
             NWScript.BASE_ITEM_MAGICSTAFF
         };
-    }
 
-    public static List<int> Melee2HWeapons()
-    {
-        return new List<int>
+    public static List<int> Melee2HWeapons() =>
+        new()
         {
             NWScript.BASE_ITEM_HEAVYFLAIL,
             NWScript.BASE_ITEM_TWOBLADEDSWORD,
@@ -51,33 +49,27 @@ public static class ItemTypeConstants
             NWScript.BASE_ITEM_DOUBLEAXE,
             NWScript.BASE_ITEM_SCYTHE,
             NWScript.BASE_ITEM_SHORTSPEAR,
-            NWScript.BASE_ITEM_QUARTERSTAFF,
+            NWScript.BASE_ITEM_QUARTERSTAFF
         };
-    }
 
-    public static List<int> ThrownWeapons()
-    {
-        return new List<int>
+    public static List<int> ThrownWeapons() =>
+        new()
         {
             NWScript.BASE_ITEM_SHURIKEN,
             NWScript.BASE_ITEM_DART,
-            NWScript.BASE_ITEM_THROWINGAXE,
+            NWScript.BASE_ITEM_THROWINGAXE
         };
-    }
 
-    public static List<int> Ammo()
-    {
-        return new List<int>
+    public static List<int> Ammo() =>
+        new()
         {
             NWScript.BASE_ITEM_ARROW,
             NWScript.BASE_ITEM_BOLT,
             NWScript.BASE_ITEM_BULLET
         };
-    }
 
-    public static List<int> RangedWeapons()
-    {
-        return new List<int>
+    public static List<int> RangedWeapons() =>
+        new()
         {
             NWScript.BASE_ITEM_LONGBOW,
             NWScript.BASE_ITEM_SHORTBOW,
@@ -85,16 +77,14 @@ public static class ItemTypeConstants
             NWScript.BASE_ITEM_HEAVYCROSSBOW,
             NWScript.BASE_ITEM_SLING
         };
-    }
 
     /// <summary>
-    /// All equippable items that can be used in crafting recipes. Certain special items were left commented out for
-    /// documentation purposes.
+    ///     All equippable items that can be used in crafting recipes. Certain special items were left commented out for
+    ///     documentation purposes.
     /// </summary>
     /// <returns></returns>
-    public static List<int> EquippableItems()
-    {
-        return new List<int>
+    public static List<int> EquippableItems() =>
+        new()
         {
             // NWScript.BASE_ITEM_AMULET, SPECIAL CASE, HANDLED SEPARATELY
             NWScript.BASE_ITEM_ARMOR,
@@ -110,5 +100,4 @@ public static class ItemTypeConstants
             NWScript.BASE_ITEM_SMALLSHIELD,
             NWScript.BASE_ITEM_TOWERSHIELD
         };
-    }
 }

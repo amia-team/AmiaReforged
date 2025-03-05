@@ -8,10 +8,7 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.DiceRoll.RollHand
 [DiceRoll(DiceRollType.CounterIntimidate)]
 public class CounterIntimidateHandler : IRollHandler
 {
-    /// 
     /// Counter Intimidate using 3.0 rules
-    /// 
-    /// 
     public void RollDice(NwPlayer player)
     {
         int roll = NWScript.d20();
@@ -19,9 +16,11 @@ public class CounterIntimidateHandler : IRollHandler
         int wisMod = NWScript.GetAbilityModifier(NWScript.ABILITY_WISDOM, player.LoginCreature);
 
         string charIntimidate =
-            $"<c{AmiaColors.AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> Counter Intimidate Skill Check = D20: </c>{roll}<c{LightBlue.ToColorToken()}>";
-        string characterLevel = $" + Character Level: ( </c><c{Yellow.ToColorToken()}>{modifier}</c><c{LightBlue.ToColorToken()}> )";
-        string wisdomMod = $" + Wisdom Modifier ( </c><c{Yellow.ToColorToken()}>{wisMod}</c><c{LightBlue.ToColorToken()}> )";
+            $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> Counter Intimidate Skill Check = D20: </c>{roll}<c{LightBlue.ToColorToken()}>";
+        string characterLevel =
+            $" + Character Level: ( </c><c{Yellow.ToColorToken()}>{modifier}</c><c{LightBlue.ToColorToken()}> )";
+        string wisdomMod =
+            $" + Wisdom Modifier ( </c><c{Yellow.ToColorToken()}>{wisMod}</c><c{LightBlue.ToColorToken()}> )";
 
         if (player.LoginCreature == null) return;
 

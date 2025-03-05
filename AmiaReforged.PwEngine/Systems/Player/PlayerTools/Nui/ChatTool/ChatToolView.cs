@@ -6,6 +6,20 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.ChatTool;
 
 public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
 {
+    public readonly NuiBind<string> ChatField = new(key: "chat_field");
+
+    public readonly NuiBind<string> ChatHistory = new(key: "chat_history");
+    public readonly NuiBind<bool> EmphasizeSelection = new(key: "emphasize_selection");
+    public readonly NuiBind<string> SelectionName = new(key: "selection_name");
+    public NuiButtonImage SelectButton = null!;
+
+    public NuiButtonImage SpeakButton = null!;
+
+    public ChatToolView(NwPlayer player)
+    {
+        Presenter = new(this, player);
+    }
+
     public sealed override ChatToolPresenter Presenter { get; protected set; }
 
     public string Id => "playertools.associatechat";
@@ -14,18 +28,7 @@ public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
     public string Title => "Player Chat Tool (Beta)";
     public string CategoryTag => "Character";
 
-    public readonly NuiBind<string> ChatHistory = new("chat_history");
-    public readonly NuiBind<string> ChatField = new("chat_field");
-    public readonly NuiBind<string> SelectionName = new("selection_name");
-    public readonly NuiBind<bool> EmphasizeSelection = new("emphasize_selection");
-
-    public NuiButtonImage SpeakButton = null!;
-    public NuiButtonImage SelectButton = null!;
-
-    public ChatToolView(NwPlayer player)
-    {
-        Presenter = new ChatToolPresenter(this, player);
-    }
+    public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 
     public override NuiLayout RootLayout()
     {
@@ -33,22 +36,22 @@ public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
         {
             Children =
             {
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     {
-                        new NuiGroup()
+                        new NuiGroup
                         {
-                            Element = new NuiLabel("Talking As:")
+                            Element = new NuiLabel(label: "Talking As:")
                             {
                                 VerticalAlign = NuiVAlign.Middle,
                                 HorizontalAlign = NuiHAlign.Center
                             },
                             Height = 40f,
                             Width = 200f,
-                            Border = true,
+                            Border = true
                         },
-                        new NuiGroup()
+                        new NuiGroup
                         {
                             Element = new NuiLabel(SelectionName)
                             {
@@ -57,58 +60,53 @@ public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
                             },
                             Height = 40f,
                             Width = 200f,
-                            Border = true,
+                            Border = true
                         }
                     }
                 },
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     {
                         new NuiText(ChatHistory)
                         {
                             Height = 400f
-                        },
+                        }
                     }
                 },
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     {
-                        new NuiTextEdit("Enter a message", ChatField, 1000, true)
+                        new NuiTextEdit(label: "Enter a message", ChatField, 1000, true)
                         {
-                            Height = 100,
+                            Height = 100
                         },
-                        new NuiColumn()
+                        new NuiColumn
                         {
                             Children =
                             {
-                                new NuiButtonImage("ir_assoc_action")
+                                new NuiButtonImage(resRef: "ir_assoc_action")
                                 {
                                     Id = "select",
                                     Encouraged = EmphasizeSelection,
                                     Width = 45f,
                                     Height = 45f
                                 }.Assign(out SelectButton),
-                                new NuiButtonImage("ir_chat")
+                                new NuiButtonImage(resRef: "ir_chat")
                                 {
                                     Id = "Speak",
                                     Aspect = 1f,
                                     Width = 45f,
-                                    Height = 45f,
+                                    Height = 45f
                                 }.Assign(out SpeakButton)
                             }
                         }
                     }
-                },
+                }
             }
         };
 
         return root;
-    }
-
-    public IScryPresenter ForPlayer(NwPlayer player)
-    {
-        return Presenter;
     }
 }

@@ -10,10 +10,11 @@ public class StrengthCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int strMod = playerCreature.GetAbilityModifier(Ability.Strength);
-        
-        playerCreature.SpeakString(new AbilityCheckString("Strength", roll, strMod).GetAbilityCheckString());
+
+        playerCreature.SpeakString(
+            new AbilityCheckString(abilityName: "Strength", roll, strMod).GetAbilityCheckString());
     }
 }

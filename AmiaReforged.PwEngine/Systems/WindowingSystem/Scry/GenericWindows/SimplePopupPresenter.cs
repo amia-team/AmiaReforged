@@ -6,10 +6,10 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
 
 public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
 {
+    private readonly NwPlayer _player;
     private readonly string _title;
     private NuiWindowToken _token;
     private NuiWindow? _window;
-    private readonly NwPlayer _player;
 
     public SimplePopupPresenter(NwPlayer player, SimplePopupView toolView, string title)
     {
@@ -17,6 +17,8 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
         _title = title;
         View = toolView;
     }
+
+    public override SimplePopupView View { get; }
 
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
@@ -27,31 +29,22 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
             Close();
             return;
         }
-        
+
         if (obj.ElementId == "ignore_button")
         {
             NwItem? pcKey = _player.LoginCreature?.Inventory.Items.FirstOrDefault(i => i.ResRef == "ds_pckey");
-            if (pcKey == null)
-            {
-                return;
-            }
-            
-            NWScript.SetLocalInt(pcKey, "ignore_caster_forge", 1);
+            if (pcKey == null) return;
+
+            NWScript.SetLocalInt(pcKey, sVarName: "ignore_caster_forge", 1);
             Close();
         }
-
     }
 
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
-
-    public override SimplePopupView View { get; }
+    public override NuiWindowToken Token() => _token;
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), _title)
+        _window = new(View.RootLayout(), _title)
         {
             Geometry = new NuiRect(500f, 500f, 400f, 300f),
             Resizable = false
@@ -67,7 +60,7 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
     {
         InitBefore();
         _player.TryCreateNuiWindow(_window!, out _token);
-        
+
         Token().SetBindValue(View.IgnoreButtonVisible, View.IgnoreButton);
     }
 

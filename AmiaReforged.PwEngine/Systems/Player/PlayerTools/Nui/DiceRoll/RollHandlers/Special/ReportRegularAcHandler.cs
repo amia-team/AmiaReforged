@@ -11,7 +11,7 @@ public class ReportRegularAcHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
 
-        playerCreature?.SpeakString($"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> My AC is:</c> {NWScript.GetAC(playerCreature)} <c{AmiaLime.ToColorToken()}>[?]</c>");
-
+        playerCreature?.SpeakString(
+            $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> My AC is:</c> {NWScript.GetAC(playerCreature)} <c{AmiaLime.ToColorToken()}>[?]</c>");
     }
 }

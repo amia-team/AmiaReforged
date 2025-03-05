@@ -11,10 +11,10 @@ public interface IRollHandler
 [MeansImplicitUse(ImplicitUseTargetFlags.Itself)]
 public class DiceRollAttribute : Attribute
 {
-    public DiceRollType RollType { get; }
-
     public DiceRollAttribute(DiceRollType rollType)
     {
         RollType = rollType;
     }
+
+    public DiceRollType RollType { get; }
 }

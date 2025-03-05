@@ -10,12 +10,13 @@ public class DisciplineSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int disciplineMod = playerCreature.GetSkillRank(Skill.Discipline!);
-        
+
         int result = roll + disciplineMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Discipline", roll, disciplineMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Discipline", roll, disciplineMod, result)
+            .GetRollResult());
     }
 }

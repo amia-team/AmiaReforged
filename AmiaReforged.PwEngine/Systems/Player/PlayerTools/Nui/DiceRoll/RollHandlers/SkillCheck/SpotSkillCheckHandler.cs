@@ -10,12 +10,12 @@ public class SpotSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int spotMod = playerCreature.GetSkillRank(Skill.Spot!);
-        
+
         int result = roll + spotMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Spot", roll, spotMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Spot", roll, spotMod, result).GetRollResult());
     }
 }

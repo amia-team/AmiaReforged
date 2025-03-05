@@ -6,7 +6,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 
 public static class AmmoOnHitProperties
 {
-    public static readonly CraftingCategory OnHits = new("ammo_onhits")
+    public static readonly CraftingCategory OnHits = new(categoryId: "ammo_onhits")
     {
         Label = "On Hit",
         Properties = new[]
@@ -121,7 +121,7 @@ public static class AmmoOnHitProperties
             },
             new CraftingProperty
             {
-                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC16, HitEffect.LevelDrain(1)),
+                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC16, HitEffect.LevelDrain()),
                 GuiLabel = "Level Drain: DC 16",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
@@ -222,7 +222,8 @@ public static class AmmoOnHitProperties
             },
             new CraftingProperty
             {
-                ItemProperty = NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_FLESH_TO_STONE, 10)!,
+                ItemProperty =
+                    NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_FLESH_TO_STONE, 10)!,
                 GuiLabel = "Flesh to Stone (CL 10)",
                 PowerCost = 6,
                 CraftingTier = CraftingTier.Wondrous
@@ -236,7 +237,8 @@ public static class AmmoOnHitProperties
             },
             new CraftingProperty
             {
-                ItemProperty = NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_GREATER_DISPELLING, 10)!,
+                ItemProperty =
+                    NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_GREATER_DISPELLING, 10)!,
                 GuiLabel = "Greater Dispelling (CL 20)",
                 PowerCost = 6,
                 CraftingTier = CraftingTier.Wondrous

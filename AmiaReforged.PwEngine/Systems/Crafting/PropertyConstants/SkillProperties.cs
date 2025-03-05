@@ -4,7 +4,7 @@ using NWN.Core;
 namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 
 /// <summary>
-/// Constants for advantageous and RP flavor (Personal) skills. 
+///     Constants for advantageous and RP flavor (Personal) skills.
 /// </summary>
 public static class SkillProperties
 {
@@ -13,9 +13,9 @@ public static class SkillProperties
     private const int SkillCost2 = 10000;
 
     /// <summary>
-    /// Advantageous skills that can be added to items.
+    ///     Advantageous skills that can be added to items.
     /// </summary>
-    public static readonly CraftingCategory Advantageous = new("advantageous")
+    public static readonly CraftingCategory Advantageous = new(categoryId: "advantageous")
     {
         Label = "Beneficial Skills",
         Properties = new[]
@@ -461,13 +461,13 @@ public static class SkillProperties
                 CraftingTier = CraftingTier.Lesser
             }
         },
-        BaseDifficulty = 8,
+        BaseDifficulty = 8
     };
 
     /// <summary>
-    /// Personal skills that can be added to items.
+    ///     Personal skills that can be added to items.
     /// </summary>
-    public static readonly CraftingCategory Personal = new("personal")
+    public static readonly CraftingCategory Personal = new(categoryId: "personal")
     {
         Label = "Roleplay/Personal Skills",
         Properties = new[]
@@ -633,6 +633,6 @@ public static class SkillProperties
                 CraftingTier = CraftingTier.Greater
             }
         },
-        BaseDifficulty = 8,
+        BaseDifficulty = 8
     };
 }

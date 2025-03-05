@@ -5,10 +5,10 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.DiceRoll.RollHand
 
 public class SkillCheckString
 {
-    private string _skillName;
-    private int _roll;
-    private int _modifier;
-    private int _result;
+    private readonly int _modifier;
+    private readonly int _result;
+    private readonly int _roll;
+    private readonly string _skillName;
 
     public SkillCheckString(string skillName, int roll, int modifier, int result)
     {

@@ -16,7 +16,7 @@ public static class BonusSpellSlotProperties
     private const int MythalCostBslot8 = 80000;
     private const int MythalCostBslot9 = 90000;
 
-    public static readonly CraftingCategory AssassinBonusSpells = new("assassin_bonus_spells")
+    public static readonly CraftingCategory AssassinBonusSpells = new(categoryId: "assassin_bonus_spells")
     {
         Label = "Assassin Bonus Spells",
         Properties = new[]
@@ -59,7 +59,7 @@ public static class BonusSpellSlotProperties
         BaseDifficulty = 25
     };
 
-    public static readonly CraftingCategory BardBonusSpells = new("bard_bonus_spells")
+    public static readonly CraftingCategory BardBonusSpells = new(categoryId: "bard_bonus_spells")
     {
         Label = "Bard Bonus Spells",
         Properties = new[]
@@ -126,7 +126,7 @@ public static class BonusSpellSlotProperties
         BaseDifficulty = 25
     };
 
-    public static readonly CraftingCategory BlackguardBonusSpells = new("blackguard_bonus_spells")
+    public static readonly CraftingCategory BlackguardBonusSpells = new(categoryId: "blackguard_bonus_spells")
     {
         Label = "Blackguard Bonus Spells",
         Properties = new[]
@@ -169,7 +169,7 @@ public static class BonusSpellSlotProperties
         BaseDifficulty = 25
     };
 
-    public static readonly CraftingCategory ClericBonusSpells = new("cleric_bonus_spells")
+    public static readonly CraftingCategory ClericBonusSpells = new(categoryId: "cleric_bonus_spells")
     {
         Label = "Cleric Bonus Spells",
         Properties = new[]
@@ -260,7 +260,7 @@ public static class BonusSpellSlotProperties
         BaseDifficulty = 25
     };
 
-    public static readonly CraftingCategory DruidBonusSpells = new("druid_bonus_spells")
+    public static readonly CraftingCategory DruidBonusSpells = new(categoryId: "druid_bonus_spells")
     {
         Label = "Druid Bonus Spells",
         Properties = new[]
@@ -351,7 +351,7 @@ public static class BonusSpellSlotProperties
         BaseDifficulty = 25
     };
 
-    public static readonly CraftingCategory PaladinBonusSpells = new("paladin_bonus_spells")
+    public static readonly CraftingCategory PaladinBonusSpells = new(categoryId: "paladin_bonus_spells")
     {
         Label = "Paladin Bonus Spells",
         Properties = new[]
@@ -394,7 +394,7 @@ public static class BonusSpellSlotProperties
         BaseDifficulty = 25
     };
 
-    public static readonly CraftingCategory RangerBonusSpells = new("ranger_bonus_spells")
+    public static readonly CraftingCategory RangerBonusSpells = new(categoryId: "ranger_bonus_spells")
     {
         Label = "Ranger Bonus Spells",
         Properties = new[]
@@ -437,7 +437,7 @@ public static class BonusSpellSlotProperties
         BaseDifficulty = 25
     };
 
-    public static readonly CraftingCategory SorcererBonusSpells = new("sorcerer_bonus_spells")
+    public static readonly CraftingCategory SorcererBonusSpells = new(categoryId: "sorcerer_bonus_spells")
     {
         Label = "Sorcerer Bonus Spells",
         Properties = new[]
@@ -528,7 +528,7 @@ public static class BonusSpellSlotProperties
         BaseDifficulty = 25
     };
 
-    public static readonly CraftingCategory WizardBonusSpells = new("wizard_bonus_spells")
+    public static readonly CraftingCategory WizardBonusSpells = new(categoryId: "wizard_bonus_spells")
     {
         Label = "Wizard Bonus Spells",
         Properties = new[]
