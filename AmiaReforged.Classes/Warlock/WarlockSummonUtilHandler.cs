@@ -1,12 +1,10 @@
 using Anvil.API;
-using Anvil.Services;
 using Anvil.API.Events;
-using NWN.Core;
+using Anvil.Services;
 using NLog;
-using System.Buffers;
-using NUnit.Framework.Constraints;
+using NWN.Core;
 
-namespace AmiaReforged.Classes.Services;
+namespace AmiaReforged.Classes.Warlock;
 
 [ServiceBinding(typeof(WarlockSummonUtilHandler))]
 public class WarlockSummonUtilHandler
