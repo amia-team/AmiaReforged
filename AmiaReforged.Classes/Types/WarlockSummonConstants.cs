@@ -4,7 +4,7 @@ namespace AmiaReforged.Classes.Types;
 
 // Constants are defined here for ease of use when calling in service handlers.
 
-public static class SummonConstants
+public static class WarlockSummonConstants
 {
     /// <summary>
     ///     immune to mind-affecting spells, +1 damage effect acid (bypasses resistance, visual flair)

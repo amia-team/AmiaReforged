@@ -139,7 +139,7 @@ public class WarlockSummonStatsHandler
         summon.Size = CreatureSize.Medium;
         summon.MovementRate = MovementRate.Normal;
 
-        Effect aberrationEffects = SummonConstants.aberrationEffects;
+        Effect aberrationEffects = WarlockSummonConstants.aberrationEffects;
         aberrationEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, aberrationEffects);
 
@@ -281,7 +281,7 @@ public class WarlockSummonStatsHandler
         summon.Size = CreatureSize.Medium;
 
         Effect damage = Effect.DamageIncrease((int)DamageBonus.Plus1d4, DamageType.BaseWeapon);
-        Effect celestialEffects = SummonConstants.CelestialEffects(concealment);
+        Effect celestialEffects = WarlockSummonConstants.CelestialEffects(concealment);
         celestialEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, celestialEffects);
         summon.ApplyEffect(EffectDuration.Permanent, damage);
@@ -577,7 +577,7 @@ public class WarlockSummonStatsHandler
         
         summon.Size = CreatureSize.Medium;
 
-        Effect feyEffects = SummonConstants.FeyEffects(concealment);
+        Effect feyEffects = WarlockSummonConstants.FeyEffects(concealment);
         feyEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, feyEffects);
 
@@ -853,7 +853,7 @@ public class WarlockSummonStatsHandler
             _ => 2
         };
 
-        Effect slaadEffects = SummonConstants.SlaadEffects(regen); 
+        Effect slaadEffects = WarlockSummonConstants.SlaadEffects(regen); 
         slaadEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, slaadEffects);
 
