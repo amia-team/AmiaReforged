@@ -35,7 +35,7 @@ public static class EldritchSpear
 
                 bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
-                bool passedSave = ReflexSave(currentTarget, WarlockConstants.CalculateDC(caster), 0, caster) == TRUE;
+                bool passedSave = ReflexSave(currentTarget, WarlockConstants.CalculateDc(caster), 0, caster) == TRUE;
 
                 if (passedSave)
                 {

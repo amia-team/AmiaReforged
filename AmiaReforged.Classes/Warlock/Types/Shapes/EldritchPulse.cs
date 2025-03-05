@@ -40,7 +40,7 @@ public static class EldritchPulse
 
                 EssenceEffectApplier aoeApplier = EssenceEffectFactory.CreateEssenceEffect(essence, currentTarget, caster);
 
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDC(caster), 0, caster) == TRUE;
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDc(caster), 0, caster) == TRUE;
                 if (passedFortSave) ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), currentTarget);
 
                 int aoeDamage = EldritchDamage.CalculateDamageAmount(caster);

@@ -24,7 +24,7 @@ public class FrightfulEssenceEffects : EssenceEffectApplier
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), Target);
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_MAGBLUE), Target);
 
-        bool passedWillSave = WillSave(Target, CalculateDC(), SAVING_THROW_TYPE_MIND_SPELLS, Caster) == TRUE;
+        bool passedWillSave = WillSave(Target, CalculateDc(), SAVING_THROW_TYPE_MIND_SPELLS, Caster) == TRUE;
 
         if (passedWillSave)
         {

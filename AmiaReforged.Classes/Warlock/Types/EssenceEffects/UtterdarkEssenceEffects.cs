@@ -24,7 +24,7 @@ public class UtterdarkEssenceEffects : EssenceEffectApplier
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_NEGATIVE), Target);
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_NEGATIVE_ENERGY), Target);
 
-        bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_NEGATIVE, Caster) == TRUE;
+        bool passedFortSave = FortitudeSave(Target, CalculateDc(), SAVING_THROW_TYPE_NEGATIVE, Caster) == TRUE;
 
         if (passedFortSave)
         {

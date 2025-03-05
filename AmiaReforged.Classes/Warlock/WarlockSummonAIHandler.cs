@@ -5,12 +5,12 @@ using NLog;
 
 namespace AmiaReforged.Classes.Warlock;
 
-[ServiceBinding(typeof(WarlockSummonAIHandler))]
-public class WarlockSummonAIHandler
+[ServiceBinding(typeof(WarlockSummonAiHandler))]
+public class WarlockSummonAiHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public WarlockSummonAIHandler()
+    public WarlockSummonAiHandler()
     {
         NwModule.Instance.OnAssociateAdd += OnSummonAttackNearest;
         

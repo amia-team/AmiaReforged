@@ -59,7 +59,7 @@ public class BindingOfMaggotsEnter
             return;
         }
 
-        bool passedWillSave = WillSave(enteringObject, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_EVIL, caster) == TRUE;
+        bool passedWillSave = WillSave(enteringObject, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_EVIL, caster) == TRUE;
 
         if (passedWillSave)
         {

@@ -14,7 +14,7 @@ public class PrimordialGust
         int warlockLevels = GetLevelByClass(57, caster);
 
         // Impact VFX onhit
-        IntPtr primordialVFX = NwEffects.LinkEffectList(new List<IntPtr>
+        IntPtr primordialVfx = NwEffects.LinkEffectList(new List<IntPtr>
         {
                  EffectVisualEffect(VFX_COM_HIT_FROST),
                  EffectVisualEffect(VFX_COM_HIT_ELECTRICAL),
@@ -59,7 +59,7 @@ public class PrimordialGust
             if (GetObjectType(currentTarget) == OBJECT_TYPE_DOOR || GetObjectType(currentTarget) == OBJECT_TYPE_PLACEABLE)
             {
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialDamage, currentTarget);
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialVFX, currentTarget);
+                ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialVfx, currentTarget);
                 currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, OBJECT_TYPE_CREATURE);
                 continue;
             }
@@ -72,7 +72,7 @@ public class PrimordialGust
             }
             if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
             {
-                bool passedReflexSave = ReflexSave(currentTarget, WarlockConstants.CalculateDC(caster),
+                bool passedReflexSave = ReflexSave(currentTarget, WarlockConstants.CalculateDc(caster),
                 SAVING_THROW_TYPE_FIRE | SAVING_THROW_TYPE_COLD | SAVING_THROW_TYPE_ELECTRICITY, caster) == TRUE;
                 bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
@@ -98,7 +98,7 @@ public class PrimordialGust
                         EffectDamage(damage, DAMAGE_TYPE_FIRE)
                 });
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialDamage, currentTarget);
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialVFX, currentTarget);
+                ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialVfx, currentTarget);
             }
             currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, validObjectTypes);
         }

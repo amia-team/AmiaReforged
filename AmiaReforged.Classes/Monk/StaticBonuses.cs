@@ -30,9 +30,9 @@ public static class StaticBonuses
 
         int kiStrikeBonusAmount = monkLevel switch
         {
-            >= KiFocusI and <= KiFocusII => 1,
-            >= KiFocusII and <= KiFocusIII => 2,
-            >= KiFocusIII => 3,
+            >= KiFocusI and <= KiFocusIi => 1,
+            >= KiFocusIi and <= KiFocusIii => 2,
+            >= KiFocusIii => 3,
             _ => 0
         };
         Effect kiStrike = Effect.AttackIncrease(kiStrikeBonusAmount);

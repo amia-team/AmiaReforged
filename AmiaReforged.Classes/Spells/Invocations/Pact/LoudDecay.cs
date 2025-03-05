@@ -13,7 +13,7 @@ public class LoudDecay
 
         // Declaring variables for the damage part of the spell
         int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        IntPtr loudVFX = EffectVisualEffect(2133); // VFX_FNF_LOUD_DECAY
+        IntPtr loudVfx = EffectVisualEffect(2133); // VFX_FNF_LOUD_DECAY
 
         // Declaring variables for the summon part of the spell
         uint summon = GetObjectByTag("wlkAberrant");
@@ -39,7 +39,7 @@ public class LoudDecay
         // * HOSTILE SPELL EFFECT
         //---------------------------
 
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, loudVFX, location);
+        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, loudVfx, location);
         uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_COLOSSAL, location, FALSE, OBJECT_TYPE_CREATURE);
 
         while (GetIsObjectValid(currentTarget) == TRUE)
@@ -64,9 +64,9 @@ public class LoudDecay
                     continue;
                 }
 
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_SONIC, caster) == TRUE;
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_SONIC, caster) == TRUE;
                 
-                if (passedFortSave) ApplyDelayedVFX(3f, currentTarget);
+                if (passedFortSave) ApplyDelayedVfx(3f, currentTarget);
                 
                 damage = passedFortSave ? damage / 2 : damage;
                 IntPtr loudDamage = NwEffects.LinkEffectList(new List<IntPtr>
@@ -99,7 +99,7 @@ public class LoudDecay
     {
         DelayCommand(delay, () => ApplyEffectToObject(DURATION_TYPE_INSTANT, loudDamage, currentTarget));
     }
-    private void ApplyDelayedVFX(float delay, uint currentTarget)
+    private void ApplyDelayedVfx(float delay, uint currentTarget)
     {
         DelayCommand(delay, () => ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), currentTarget));
     }

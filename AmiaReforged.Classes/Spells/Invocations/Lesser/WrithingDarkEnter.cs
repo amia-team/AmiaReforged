@@ -24,7 +24,7 @@ public class WrithingDarkEnter
         
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), enteringObject);
 
-        bool passedWillSave = WillSave(enteringObject, WarlockConstants.CalculateDC(caster), 0, caster) == TRUE;
+        bool passedWillSave = WillSave(enteringObject, WarlockConstants.CalculateDc(caster), 0, caster) == TRUE;
         if (passedWillSave) ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), enteringObject);
         if (!passedWillSave)
         {

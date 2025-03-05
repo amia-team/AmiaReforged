@@ -54,7 +54,7 @@ public class LightsCalling
                 }
                 if (GetRacialType(currentTarget) == RACIAL_TYPE_UNDEAD && NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
                 {
-                    bool passedWillSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
+                    bool passedWillSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
 
                     if (passedWillSave)
                     {
@@ -72,7 +72,7 @@ public class LightsCalling
                     continue;
                 }
 
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_GOOD, caster) == TRUE;
 
                 if (passedFortSave)
                 {

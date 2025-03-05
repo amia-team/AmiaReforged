@@ -47,9 +47,9 @@ public static class CrashingMeteor
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int diceAmount = monkLevel switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusII => 4,
-            >= MonkLevel.KiFocusII and < MonkLevel.KiFocusIII => 6,
-            MonkLevel.KiFocusIII => 8,
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
+            MonkLevel.KiFocusIii => 8,
             _ => 2
         };
         Effect elementalAoeVfx = elementalType switch
@@ -131,9 +131,9 @@ public static class CrashingMeteor
         short elementalDamage = damageData.GetDamageByType(elementalType);
         short bonusDamageElemental = monkLevel switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusII => 2,
-            >= MonkLevel.KiFocusII and < MonkLevel.KiFocusIII => 3,
-            MonkLevel.KiFocusIII => 4,
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
+            MonkLevel.KiFocusIii => 4,
             _ => 1
         };
         
@@ -155,9 +155,9 @@ public static class CrashingMeteor
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int diceAmount = monkLevel switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusII => 4,
-            >= MonkLevel.KiFocusII and < MonkLevel.KiFocusIII => 6,
-            MonkLevel.KiFocusIII => 8,
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
+            MonkLevel.KiFocusIii => 8,
             _ => 2
         };
         Effect elementalAoeVfx = elementalType switch
@@ -235,9 +235,9 @@ public static class CrashingMeteor
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int vulnerabilityPct = monkLevel switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusII => 20,
-            >= MonkLevel.KiFocusII and < MonkLevel.KiFocusIII => 30,
-            MonkLevel.KiFocusIII => 40,
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 20,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 30,
+            MonkLevel.KiFocusIii => 40,
             _ => 10
         };
         VfxType elementalVfx = elementalType switch

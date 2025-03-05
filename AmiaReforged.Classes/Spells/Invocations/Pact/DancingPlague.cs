@@ -6,7 +6,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
 public class DancingPlague
 {
-    private static readonly IntPtr _partyVfx = EffectVisualEffect(VFX_DUR_PIXIEDUST, FALSE, 1.4f);
+    private static readonly IntPtr PartyVfx = EffectVisualEffect(VFX_DUR_PIXIEDUST, FALSE, 1.4f);
 
     public void CastDancingPlague(uint nwnObjectId)
     {
@@ -61,7 +61,7 @@ public class DancingPlague
             return;
         }
 
-        bool passedFortSave = FortitudeSave(target, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
+        bool passedFortSave = FortitudeSave(target, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
 
         if (passedFortSave)
         {
@@ -92,7 +92,7 @@ public class DancingPlague
                     continue;
                 }
 
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
 
                 if (passedFortSave)
                 {
@@ -120,7 +120,7 @@ public class DancingPlague
     private void DelayedMakeDance(float delay, uint target, float effectDuration)
     {
         DelayCommand(delay, () => SetLocalInt(target, "has_danced", 1));
-        DelayCommand(delay, () => ApplyEffectToObject(DURATION_TYPE_TEMPORARY, _partyVfx, target, effectDuration));
+        DelayCommand(delay, () => ApplyEffectToObject(DURATION_TYPE_TEMPORARY, PartyVfx, target, effectDuration));
         DelayCommand(delay, () => AssignCommand(target, () => MakeDance(target, effectDuration)));
         DelayCommand(delay + effectDuration, () => SetCommandable(TRUE, target));
         DelayCommand(delay + effectDuration, () => DeleteLocalInt(target, "has_danced"));

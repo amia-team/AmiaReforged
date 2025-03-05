@@ -55,12 +55,12 @@ public static class SwingingCenser
         double level30Heal = healAmount * 1.5;
         
         // Wholeness is gained at 7
-        if (monkLevel == MonkLevel.KiFocusIII) 
+        if (monkLevel == MonkLevel.KiFocusIii) 
         {
             pulseAmount = 3;
             healAmount = (int)level30Heal;
         }
-        else if (monkLevel >= MonkLevel.KiFocusII)
+        else if (monkLevel >= MonkLevel.KiFocusIi)
         {
             pulseAmount = 3; 
         }
@@ -119,12 +119,12 @@ public static class SwingingCenser
         // Adjust as appropriate. 1 round per monk level.
         TimeSpan effectTime = TimeSpan.FromSeconds(monkLevel*6); 
         
-        if (monkLevel == MonkLevel.KiFocusIII) 
+        if (monkLevel == MonkLevel.KiFocusIii) 
         {
             regen = 7;
             concealment = 55;
         }
-        else if (monkLevel >= MonkLevel.KiFocusII)
+        else if (monkLevel >= MonkLevel.KiFocusIi)
         {
             regen = 5;
             concealment = 45;

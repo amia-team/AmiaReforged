@@ -70,12 +70,12 @@ public class DevourMagic
             }
             if (GetObjectType(currentTarget) == OBJECT_TYPE_AREA_OF_EFFECT)
             {
-                int aoeCreatorCL = GetCasterLevel(GetAreaOfEffectCreator(currentTarget));
+                int aoeCreatorCl = GetCasterLevel(GetAreaOfEffectCreator(currentTarget));
                 bool isAura = GetSubString(GetTag(currentTarget), 0, 7) == "VFX_MOB";
                 if (!isAura)
                 {
                     if (GetAreaOfEffectCreator(currentTarget) == TRUE) DestroyObject(currentTarget);
-                    if (NwEffects.DispelCheck(warlockLevels, aoeCreatorCL) == TRUE) DestroyObject (currentTarget);
+                    if (NwEffects.DispelCheck(warlockLevels, aoeCreatorCl) == TRUE) DestroyObject (currentTarget);
                 }
                 currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location, FALSE, objectTypes);
                 continue;

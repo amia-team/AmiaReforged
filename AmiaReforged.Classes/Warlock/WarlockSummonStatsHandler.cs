@@ -139,7 +139,7 @@ public class WarlockSummonStatsHandler
         summon.Size = CreatureSize.Medium;
         summon.MovementRate = MovementRate.Normal;
 
-        Effect aberrationEffects = WarlockSummonConstants.aberrationEffects;
+        Effect aberrationEffects = WarlockSummonConstants.AberrationEffects;
         aberrationEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, aberrationEffects);
 

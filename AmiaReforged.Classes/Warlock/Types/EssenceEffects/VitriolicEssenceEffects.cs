@@ -18,7 +18,7 @@ public class VitriolicEssenceEffects : EssenceEffectApplier
 
         if (NwEffects.GetHasEffectByTag("wlk_vitriolic", Target) == TRUE) return;
 
-        bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_ACID, Caster) == TRUE;
+        bool passedFortSave = FortitudeSave(Target, CalculateDc(), SAVING_THROW_TYPE_ACID, Caster) == TRUE;
 
 
         if (passedFortSave)

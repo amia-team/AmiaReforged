@@ -11,7 +11,7 @@ public static class WarlockConstants
     ///     Warlock DC: Base 10 + Warlock levels / 3 + Charisma modidifer
     /// </summary>
 
-    public static int CalculateDC(uint caster)
+    public static int CalculateDc(uint caster)
     {
         return 10 + (GetLevelByClass(57, caster) / 3) + GetAbilityModifier(ABILITY_CHARISMA, caster);
     }

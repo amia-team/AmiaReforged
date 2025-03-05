@@ -104,7 +104,7 @@ public static class NwEffects
     }
 
     // Warlock DC helper function
-    public static int CalculateDC(uint caster)
+    public static int CalculateDc(uint caster)
     {
         return (GetLevelByClass(57, caster) / 3) + GetAbilityModifier(ABILITY_CHARISMA, caster) + 10;
     }
@@ -157,7 +157,7 @@ public static class NwEffects
         return (float)(randomInt / 100 + minFloat);
     }
 
-    public static int GetXPForLevel(int level)
+    public static int GetXpForLevel(int level)
     {
         return level * (level-1) * 500;
     }
@@ -173,7 +173,7 @@ public static class NwEffects
         }
         return effectCount;
     }
-    public static IntPtr GetHighestCLMagicEffect(uint  target)
+    public static IntPtr GetHighestClMagicEffect(uint  target)
     {
         int effectCount = GetEffectCount( target);
 
@@ -199,16 +199,16 @@ public static class NwEffects
         return default;
     }
 
-    public static int DispelCheck(int dispelCL, int  targetEffectCL)
+    public static int DispelCheck(int dispelCl, int  targetEffectCl)
     {
-        int dispelCheck = d20() + dispelCL -  targetEffectCL + 11;
+        int dispelCheck = d20() + dispelCl -  targetEffectCl + 11;
         if (dispelCheck >= 0) return TRUE;
         return FALSE;
     }
 
-    const int SPELL_TARGET_ALLALLIES = 1;
-    const int SPELL_TARGET_STANDARDHOSTILE = 2;
-    const int SPELL_TARGET_SELECTIVEHOSTILE = 3;
+    const int SpellTargetAllallies = 1;
+    const int SpellTargetStandardhostile = 2;
+    const int SpellTargetSelectivehostile = 3;
 
     public static bool IsValidSpellTarget(uint  target, int  targetType, uint caster)
     {
@@ -224,7 +224,7 @@ public static class NwEffects
         {
             // * this kind of spell will affect all friendlies and anyone in my
             // * party, even if we are upset with each other currently.
-            case SPELL_TARGET_ALLALLIES:
+            case SpellTargetAllallies:
             {
                 if(GetIsReactionTypeFriendly(target,caster) == TRUE || GetFactionEqual(target,caster) == TRUE)
                 {
@@ -232,17 +232,17 @@ public static class NwEffects
                 }
                 break;
             }
-            case SPELL_TARGET_STANDARDHOSTILE:
+            case SpellTargetStandardhostile:
             {
                 //SpawnScriptDebugger();
-                bool isPC = GetIsPC(target) == TRUE;
+                bool isPc = GetIsPC(target) == TRUE;
                 bool isNotFriend = GetIsReactionTypeFriendly(target, caster) == FALSE;
 
                 // * Local Override is just an out for end users who want
                 // * the area effect spells to hurt 'neutrals'
                 if (GetLocalInt(GetModule(), "X0_G_ALLOWSPELLSTOHURT") == 10)
                 {
-                    isPC = true;
+                    isPc = true;
                 }
 
                 int isSelfTarget = FALSE;
@@ -290,7 +290,7 @@ public static class NwEffects
                 {
                     returnBool = true;         // Targetting Self (set above)?
                 }
-                else if (isPC && isNotFriend)
+                else if (isPc && isNotFriend)
                 {
                     returnBool = true;         // Enemy PC
                 }
@@ -306,7 +306,7 @@ public static class NwEffects
             // * only harms enemies, ever
             // * current list:call lightning, isaac missiles, firebrand, chain lightning, dirge, Nature's balance,
             // * Word of Faith
-            case SPELL_TARGET_SELECTIVEHOSTILE:
+            case SpellTargetSelectivehostile:
             {
                 if(GetIsEnemy( target,caster) == TRUE)
                 {

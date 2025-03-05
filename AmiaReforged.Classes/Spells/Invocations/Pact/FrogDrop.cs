@@ -66,7 +66,7 @@ public class FrogDrop
                     continue;
                 }
 
-                bool passedReflexSave = ReflexSave(currentTarget, WarlockConstants.CalculateDC(caster), SAVING_THROW_TYPE_CHAOS, caster) == TRUE;
+                bool passedReflexSave = ReflexSave(currentTarget, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_CHAOS, caster) == TRUE;
 
                 if (passedReflexSave)
                 {

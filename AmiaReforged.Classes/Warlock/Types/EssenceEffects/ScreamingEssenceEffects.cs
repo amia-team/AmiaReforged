@@ -24,7 +24,7 @@ public class ScreamingEssenceEffects : EssenceEffectApplier
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_SONIC), Target);
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_SONIC), Target);
 
-        bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_SONIC, Caster) == TRUE;
+        bool passedFortSave = FortitudeSave(Target, CalculateDc(), SAVING_THROW_TYPE_SONIC, Caster) == TRUE;
 
         if (passedFortSave)
         {

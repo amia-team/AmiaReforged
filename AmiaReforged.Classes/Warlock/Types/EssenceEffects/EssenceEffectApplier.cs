@@ -15,7 +15,7 @@ public abstract class EssenceEffectApplier
 
     public abstract void ApplyEffects(int damage);
 
-    protected int CalculateDC()
+    protected int CalculateDc()
     {
         return (NWScript.GetLevelByClass(57, Caster) / 3) + NWScript.GetAbilityModifier(NWScript.ABILITY_CHARISMA, Caster) + 10;
     }

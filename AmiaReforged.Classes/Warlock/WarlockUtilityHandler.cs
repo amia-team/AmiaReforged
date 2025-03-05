@@ -305,7 +305,7 @@ public class WarlockUtilityHandler
             CreatureLevelInfo levelInfo = obj.UsedBy.GetLevelStats(level);
             if (levelInfo.ClassInfo.Class.Id == 57)
             {
-                int xpDelevel = NwEffects.GetXPForLevel(level) - 1;
+                int xpDelevel = NwEffects.GetXpForLevel(level) - 1;
                 int xpRelevel = NWScript.GetLocalInt(obj.Item, "warlockxp_releveltoken");
                 obj.Item.Destroy();
                 obj.UsedBy.Xp = xpDelevel;

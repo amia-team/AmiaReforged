@@ -10,7 +10,7 @@ namespace AmiaReforged.Classes.Monk.Services;
 [ServiceBinding(typeof(MonkDialogHandler))]
 public class MonkDialogHandler
 { 
-    private readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly Logger _log = LogManager.GetCurrentClassLogger();
 
     [Inject] private DialogService DialogService { get; init; }
     public MonkDialogHandler(DialogService dialogService)
@@ -23,7 +23,7 @@ public class MonkDialogHandler
         DialogService = dialogService;
         NwModule.Instance.OnUseFeat += OpenPathDialog;
         NwModule.Instance.OnUseFeat += OpenEyeGlowDialog;
-        Log.Info("Monk Eye Glow Feat Handler initialized.");
+        _log.Info("Monk Eye Glow Feat Handler initialized.");
     }
 
     /// <summary>

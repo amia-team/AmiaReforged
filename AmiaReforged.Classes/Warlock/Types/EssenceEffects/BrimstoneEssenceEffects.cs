@@ -26,7 +26,7 @@ public class BrimstoneEssenceEffects : EssenceEffectApplier
 
         if (NwEffects.GetHasEffectByTag("wlk_brimstone", Target) == TRUE) return;
 
-        bool passedReflexSave = ReflexSave(Target, CalculateDC(), SAVING_THROW_TYPE_FIRE, Caster) == TRUE;
+        bool passedReflexSave = ReflexSave(Target, CalculateDc(), SAVING_THROW_TYPE_FIRE, Caster) == TRUE;
 
         if (passedReflexSave)
         {
