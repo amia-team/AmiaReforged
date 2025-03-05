@@ -26,7 +26,7 @@ public class MartialTechniqueService
         // Register methods to listen for the events.
         NwModule.Instance.OnUseFeat += MartialTechniqueUseFeat;
         NwModule.Instance.OnCombatRoundStart += EnterMartialTechnique;
-        NwModule.Instance.OnEffectApply += CheckAndCueMartialTechniqueActivated;
+        NwModule.Instance.OnEffectApply += CueMartialTechniqueActivated;
         NwModule.Instance.OnEffectRemove += CueMartialTechniqueDeactivated;
         NwModule.Instance.OnCreatureAttack += OnHitApplyTechnique;
         Log.Info(message: "Monk Martial Technique Service initialized.");
@@ -37,12 +37,15 @@ public class MartialTechniqueService
     /// </summary>
     private async void MartialTechniqueUseFeat(OnUseFeat eventData)
     {
-        bool isTechnique =
-            eventData.Feat.Id is MonkFeat.StunningStrike or MonkFeat.EagleStrike or MonkFeat.AxiomaticStrike;
-        if (!isTechnique) return;
+        if (eventData.Feat.Id is not (MonkFeat.StunningStrike or MonkFeat.EagleStrike or MonkFeat.AxiomaticStrike))
+            return;
 
         NwFeat technique = eventData.Feat;
         NwCreature monk = eventData.Creature;
+
+        bool techniquePrevented = AbilityRestrictionsHandler.PreventMartialTechnique(monk, technique);
+
+        if (techniquePrevented) return;
 
         // If monk is in combat, queue martial technique change for next combat round
         if (monk.IsInCombat)
@@ -127,7 +130,7 @@ public class MartialTechniqueService
                 break;
             }
 
-            await NwTask.Delay(TimeSpan.FromMilliseconds(1f));
+            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
             queuedTechnique.Delete();
             _martialEffect.SubType = EffectSubType.Unyielding;
             monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
@@ -154,17 +157,11 @@ public class MartialTechniqueService
     }
 
     /// <summary>
-    ///     Checks if the technique should be prevented due to gear restrictions and
-    ///     cues the activation of the martial technique with a floaty text
+    ///     Cues the activation of the martial technique with a floaty text
     /// </summary>
-    private static void CheckAndCueMartialTechniqueActivated(OnEffectApply eventData)
+    private static void CueMartialTechniqueActivated(OnEffectApply eventData)
     {
         if (eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
-
-        // Check if technique is prevented
-        bool techniquePrevented = AbilityRestrictionsHandler.PreventMartialTechnique(eventData);
-
-        if (techniquePrevented) return;
 
         if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
 
