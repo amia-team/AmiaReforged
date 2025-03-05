@@ -23,6 +23,8 @@ public class CureMinorWounds : ISpell
         if(eventData.TargetObject == null) return;
         
         Task<TouchAttackResult> result = casterCreature.TouchAttackRanged(eventData.TargetObject, true);
+        
+        
     }
 
     public void SetSpellResistResult(ResistSpellResult result)
