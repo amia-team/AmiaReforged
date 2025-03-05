@@ -14,12 +14,12 @@ public class RayofHarm : ISpell
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         NwGameObject? caster = eventData.Caster;
-        if(caster == null) return;
-        if(caster is not NwCreature casterCreature) return;
-        
+        if (caster == null) return;
+        if (caster is not NwCreature casterCreature) return;
+
         NwGameObject? target = eventData.TargetObject;
-        if(target == null) return;
-        
+        if (target == null) return;
+
         ApplyBeam(caster, target);
 
         int damage = CalculateDamage(caster, casterCreature);
@@ -29,11 +29,22 @@ public class RayofHarm : ISpell
         ApplyDamage(target, damageEffect);
     }
 
+    public void DoSpellResist(NwCreature creature, NwCreature caster)
+    {
+        Result = creature.CheckResistSpell(caster);
+    }
+
+    public void SetSpellResistResult(ResistSpellResult result)
+    {
+        Result = result;
+    }
+
     private static int CalculateDamage(NwGameObject caster, NwCreature casterCreature)
     {
         int numberOfDie = caster.CasterLevel / 2;
-        
-        bool isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Necromancy;
+
+        bool isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==
+                            SpellSchool.Necromancy;
         int damage = isSpecialist ? NWScript.d4(numberOfDie) : NWScript.d3(numberOfDie);
         return damage;
     }
@@ -46,19 +57,6 @@ public class RayofHarm : ISpell
 
     private void ApplyDamage(NwGameObject target, Effect damageEffect)
     {
-        if (Result == ResistSpellResult.Failed)
-        {
-            target.ApplyEffect(EffectDuration.Instant, damageEffect);
-        }
-    }
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        Result = creature.CheckResistSpell(caster);
-    }
-
-    public void SetSpellResistResult(ResistSpellResult result)
-    {
-        Result = result;
+        if (Result == ResistSpellResult.Failed) target.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 }

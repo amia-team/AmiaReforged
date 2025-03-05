@@ -10,7 +10,7 @@ public class CureMinorWounds : ISpell
 {
     public ResistSpellResult Result { get; set; }
     public string ImpactScript => "NW_S0_CurMinW";
-    
+
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
         Result = creature.CheckResistSpell(caster);
@@ -30,10 +30,15 @@ public class CureMinorWounds : ISpell
 
 
         int healAmount = CalculateHealAmount(casterCreature);
-        
+
         if (Result != ResistSpellResult.Failed || !skipTouchAttack) return;
-        
+
         ApplyEffect(eventData, healAmount);
+    }
+
+    public void SetSpellResistResult(ResistSpellResult result)
+    {
+        Result = result;
     }
 
     private int CalculateHealAmount(NwCreature casterCreature)
@@ -54,17 +59,12 @@ public class CureMinorWounds : ISpell
         Effect effectBasedOnType = NWScript.GetRacialType(eventData.TargetObject) == NWScript.RACIAL_TYPE_UNDEAD
             ? Effect.Damage(healAmount, DamageType.Negative)
             : Effect.Heal(healAmount);
-        
+
         Effect vfx = NWScript.GetRacialType(eventData.TargetObject) == NWScript.RACIAL_TYPE_UNDEAD
             ? Effect.VisualEffect(VfxType.ComHitDivine)
             : Effect.VisualEffect(VfxType.ImpHealingS);
-        
+
         eventData.TargetObject!.ApplyEffect(EffectDuration.Instant, effectBasedOnType);
         eventData.TargetObject!.ApplyEffect(EffectDuration.Instant, vfx);
-    }
-
-    public void SetSpellResistResult(ResistSpellResult result)
-    {
-        Result = result;
     }
 }

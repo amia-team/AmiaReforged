@@ -11,16 +11,13 @@ public class DefendersDuty
     private const float DefenderDamage = 0.25f;
     private const int OneRound = 1;
 
-    private NwPlayer Defender { get; }
-    private NwCreature Target { get; }
-
     private readonly SchedulerService _scheduler;
 
     private ScheduledTask? _deleteSoakDamageTask;
 
     /// <summary>
-    /// Do not construct directly. Use <see cref="DefendersDutyFactory"/> to create this object. Scheduler service
-    /// is injected by Anvil at runtime.
+    ///     Do not construct directly. Use <see cref="DefendersDutyFactory" /> to create this object. Scheduler service
+    ///     is injected by Anvil at runtime.
     /// </summary>
     public DefendersDuty(NwPlayer defender, NwCreature target, SchedulerService scheduler)
     {
@@ -28,6 +25,9 @@ public class DefendersDuty
         Target = target;
         _scheduler = scheduler;
     }
+
+    private NwPlayer Defender { get; }
+    private NwCreature Target { get; }
 
     public void Apply()
     {
@@ -51,16 +51,13 @@ public class DefendersDuty
         Defender.OnClientLeave += CancelDuty;
 
         Defender.LoginCreature?.JumpToObject(Target);
-        Defender.LoginCreature?.SpeakString("*jumps to protecc fren :)))))*");
+        Defender.LoginCreature?.SpeakString(message: "*jumps to protecc fren :)))))*");
 
         _deleteSoakDamageTask =
             _scheduler.Schedule(() =>
             {
                 Target.OnCreatureDamage -= SoakDamage;
-                if (otherPlayer != null)
-                {
-                    otherPlayer.OnClientLeave -= CancelDuty;
-                }
+                if (otherPlayer != null) otherPlayer.OnClientLeave -= CancelDuty;
 
                 Defender.OnClientLeave -= CancelDuty;
             }, TimeSpan.FromSeconds(duration));
@@ -71,17 +68,18 @@ public class DefendersDuty
         // Set up the effect and difficulty class.
         IntPtr stunEffect = NWScript.EffectStunned();
         int difficulty = 10 +
-                         (Defender.LoginCreature!.Classes.Single(c => c.Class.ClassType == ClassType.DwarvenDefender)
-                             .Level / 2) + NWScript.GetAbilityModifier(NWScript.ABILITY_CONSTITUTION);
-        
+                         Defender.LoginCreature!.Classes.Single(c => c.Class.ClassType == ClassType.DwarvenDefender)
+                             .Level / 2 + NWScript.GetAbilityModifier(NWScript.ABILITY_CONSTITUTION);
+
         // The stun should only last one round. 6 seconds is a very long time in PVP and PVE.
         float stunDur = NWScript.RoundsToSeconds(OneRound);
-        
+
         // NWScript's internal library is used here to make it easier for non-C# devs to understand the 
         // way that this effect is applied. Anvil actually has its own Object Oriented way of doing things, but it was
         // felt that this is a good way to introduce new developers.
         uint objectInShape =
-            NWScript.GetFirstObjectInShape(NWScript.SHAPE_SPHERE, NWScript.RADIUS_SIZE_LARGE, NWScript.GetLocation(Defender.LoginCreature));
+            NWScript.GetFirstObjectInShape(NWScript.SHAPE_SPHERE, NWScript.RADIUS_SIZE_LARGE,
+                NWScript.GetLocation(Defender.LoginCreature));
         while (NWScript.GetIsObjectValid(objectInShape) == NWScript.TRUE)
         {
             if (objectInShape == Defender.LoginCreature || objectInShape == Target) continue;
@@ -91,14 +89,13 @@ public class DefendersDuty
             if (isEnemy == NWScript.TRUE)
             {
                 bool failed = NWScript.WillSave(objectInShape, difficulty, NWScript.SAVING_THROW_TYPE_LAW) == 0;
-                
+
                 if (failed)
-                {
                     NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_TEMPORARY, stunEffect, objectInShape, stunDur);
-                }
             }
 
-            objectInShape = NWScript.GetNextObjectInShape(NWScript.SHAPE_SPHERE, NWScript.RADIUS_SIZE_LARGE, NWScript.FALSE,
+            objectInShape = NWScript.GetNextObjectInShape(NWScript.SHAPE_SPHERE, NWScript.RADIUS_SIZE_LARGE,
+                NWScript.FALSE,
                 NWScript.OBJECT_TYPE_CREATURE);
         }
     }
@@ -109,7 +106,7 @@ public class DefendersDuty
 
         _deleteSoakDamageTask?.Cancel();
     }
-    
+
     private void SoakDamage(OnCreatureDamage obj)
     {
         // NWN splits damage up into its core damage components then sums the net damage together after resistances
@@ -127,7 +124,7 @@ public class DefendersDuty
             iFire = (int)(obj.DamageData.GetDamageByType(DamageType.Fire) * DefenderDamage),
             iNegative = (int)(obj.DamageData.GetDamageByType(DamageType.Negative) * DefenderDamage),
             iPositive = (int)(obj.DamageData.GetDamageByType(DamageType.Positive) * DefenderDamage),
-            iSonic = (int)(obj.DamageData.GetDamageByType(DamageType.Sonic) * DefenderDamage),
+            iSonic = (int)(obj.DamageData.GetDamageByType(DamageType.Sonic) * DefenderDamage)
         };
 
         // This is a call to the NWNX Damage Plugin.

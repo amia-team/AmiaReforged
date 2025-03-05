@@ -14,7 +14,7 @@ public class FireBolt : ISpell
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-       Result = creature.CheckResistSpell(caster); 
+        Result = creature.CheckResistSpell(caster);
     }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -27,12 +27,17 @@ public class FireBolt : ISpell
         if (target == null) return;
 
         ApplyBolt(target);
-        
+
         int damage = CalculateDamage(caster);
-        
+
         if (Result != ResistSpellResult.Failed) return;
 
         ApplyDamage(damage, target);
+    }
+
+    public void SetSpellResistResult(ResistSpellResult result)
+    {
+        Result = result;
     }
 
     private void ApplyBolt(NwGameObject target)
@@ -51,12 +56,7 @@ public class FireBolt : ISpell
     {
         int numDie = caster.CasterLevel / 2;
         int damage = NWScript.d3(numDie);
-        
-        return damage;
-    }
 
-    public void SetSpellResistResult(ResistSpellResult result)
-    {
-        Result = result;
+        return damage;
     }
 }

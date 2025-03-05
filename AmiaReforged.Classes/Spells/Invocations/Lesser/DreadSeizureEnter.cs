@@ -18,21 +18,20 @@ public class DreadSeizureEnter
             EffectMovementSpeedDecrease(20),
             EffectAttackDecrease(2)
         });
-        debuffs = TagEffect(debuffs, "dreadseizure");
+        debuffs = TagEffect(debuffs, sNewTag: "dreadseizure");
 
         bool passedFortSave = FortitudeSave(enteringObject, WarlockConstants.CalculateDc(caster), 0, caster) == TRUE;
 
         // Apply if creature is hostile to the warlock.
-        if(NwEffects.IsValidSpellTarget(enteringObject, 3, caster))
+        if (NwEffects.IsValidSpellTarget(enteringObject, 3, caster))
         {
-            if(enteringObject == caster) return;
+            if (enteringObject == caster) return;
             SignalEvent(enteringObject, EventSpellCastAt(caster, 987));
-            if(GetHasSpellEffect(987, enteringObject) == TRUE) return;
-            if(NwEffects.ResistSpell(caster, enteringObject)) return;
+            if (GetHasSpellEffect(987, enteringObject) == TRUE) return;
+            if (NwEffects.ResistSpell(caster, enteringObject)) return;
             if (passedFortSave)
-            {
-                ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), enteringObject);
-            }
+                ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE),
+                    enteringObject);
             if (!passedFortSave)
             {
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_HEAD_EVIL), enteringObject);

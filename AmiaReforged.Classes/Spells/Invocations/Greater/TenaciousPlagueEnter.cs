@@ -21,7 +21,8 @@ public class TenaciousPlagueEnter
 
         float delayForEffects = (float)new Random().NextDouble() * (9.0f - 1.0f) + 1.0f;
 
-        ApplyEffectToObject(DURATION_TYPE_PERMANENT, TagEffect(EffectMovementSpeedDecrease(50), "tenacious_plague"),
+        ApplyEffectToObject(DURATION_TYPE_PERMANENT,
+            TagEffect(EffectMovementSpeedDecrease(50), sNewTag: "tenacious_plague"),
             enteringObject);
         DelayCommand(delayForEffects, () => ApplyEffectToObject(DURATION_TYPE_INSTANT, bloodEffect, enteringObject));
         DelayCommand(delayForEffects,

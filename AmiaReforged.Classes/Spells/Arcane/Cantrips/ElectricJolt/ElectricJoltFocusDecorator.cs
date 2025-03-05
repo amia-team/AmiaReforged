@@ -27,14 +27,15 @@ public class ElectricJoltFocusDecorator : SpellDecorator
 
         if (caster is not NwCreature casterCreature) return;
 
-        LogManager.GetCurrentClassLogger().Info("Electric Jolt focus decorator");
+        LogManager.GetCurrentClassLogger().Info(message: "Electric Jolt focus decorator");
 
         bool basicFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusEvocation);
         bool greaterFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.GreaterSpellFocusEvocation);
         bool epicFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.EpicSpellFocusEvocation);
 
         bool isEvocationFocused = basicFocus || greaterFocus || epicFocus;
-        bool isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Evocation;
+        bool isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==
+                            SpellSchool.Evocation;
 
         if (isEvocationFocused && Result == ResistSpellResult.Failed)
         {
@@ -43,13 +44,14 @@ public class ElectricJoltFocusDecorator : SpellDecorator
             int immunityReduction = epicFocus ? EpicEvocationVulnerabilityPercentage + extraVulnerability : 0;
             Effect savePenalty =
                 Effect.SavingThrowDecrease(SavingThrow.All, electricSavePenalty, SavingThrowType.Electricity);
-            savePenalty = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Electrical, immunityReduction), savePenalty);
+            savePenalty = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Electrical, immunityReduction),
+                savePenalty);
             savePenalty.Tag = "ElecJoltFocusDecorator";
-            
+
             Effect? existing = target.ActiveEffects.FirstOrDefault(e => e.Tag == "ElecJoltFocusDecorator");
-            
-            if(existing != null) target.RemoveEffect(existing);
-            
+
+            if (existing != null) target.RemoveEffect(existing);
+
             target.ApplyEffect(EffectDuration.Temporary, savePenalty, TimeSpan.FromSeconds(TwoRounds));
         }
 

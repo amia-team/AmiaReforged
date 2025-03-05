@@ -9,13 +9,14 @@ namespace AmiaReforged.Classes.Spells.Divine.Cantrips.Renew;
 public class Renew : ISpell
 {
     private readonly SchedulerService _schedulerService;
-    public ResistSpellResult Result { get; set; }
-    public string ImpactScript => "am_s_renew";
 
     public Renew(SchedulerService schedulerService)
     {
         _schedulerService = schedulerService;
     }
+
+    public ResistSpellResult Result { get; set; }
+    public string ImpactScript => "am_s_renew";
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
@@ -29,8 +30,8 @@ public class Renew : ISpell
         if (caster == null) return;
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
-        
-        if(NWScript.GetRacialType(target) == NWScript.RACIAL_TYPE_UNDEAD) return;
+
+        if (NWScript.GetRacialType(target) == NWScript.RACIAL_TYPE_UNDEAD) return;
 
         if (caster is not NwCreature casterCreature) return;
 
@@ -48,7 +49,7 @@ public class Renew : ISpell
 
         int healing = NWScript.d3(numDice) / 2;
         int healingPerRound = healing / durationInRounds;
-        
+
         Effect vfx = Effect.VisualEffect(VfxType.ImpHealingS);
         target.ApplyEffect(EffectDuration.Instant, vfx);
 

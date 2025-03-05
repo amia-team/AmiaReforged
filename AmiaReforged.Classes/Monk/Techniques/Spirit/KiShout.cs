@@ -5,7 +5,6 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 
-
 namespace AmiaReforged.Classes.Monk.Techniques.Spirit;
 
 public static class KiShout
@@ -21,13 +20,13 @@ public static class KiShout
             AugmentationApplier.ApplyAugmentations(path, technique, castData);
             return;
         }
-        
+
         DoKiShout(castData);
     }
-    
+
     /// <summary>
-    /// Stuns enemies within colossal range for three rounds if they fail a will save. In addition,
-    /// all enemies take 1d4 sonic damage per monk level. Each use depletes a Spirit Ki Point.
+    ///     Stuns enemies within colossal range for three rounds if they fail a will save. In addition,
+    ///     all enemies take 1d4 sonic damage per monk level. Each use depletes a Spirit Ki Point.
     /// </summary>
     public static void DoKiShout(OnSpellCast castData)
     {
@@ -52,7 +51,7 @@ public static class KiShout
                 Effect.VisualEffect(VfxType.ImpSonic));
 
             creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
-            
+
             SavingThrowResult savingThrowResult =
                 creatureInShape.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
 
@@ -61,7 +60,7 @@ public static class KiShout
                 creatureInShape.ApplyEffect(EffectDuration.Temporary, kiShoutEffect, effectDuration);
                 continue;
             }
-            
+
             creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
         }
     }

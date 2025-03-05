@@ -338,7 +338,7 @@ public static class EssenceVfx
                     EssenceType.Binding => EffectVisualEffect(VFX_DUR_AURA_PURPLE),
                     EssenceType.Bewitching => EffectVisualEffect(VFX_DUR_AURA_PURPLE),
                     _ => EffectVisualEffect(VFX_DUR_AURA_PURPLE)
-                },
+                }
             };
     }
 }

@@ -31,6 +31,7 @@ public class DrainingEssenceEffects : EssenceEffectApplier
             ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), Target);
             return;
         }
+
         if (!passedWillSave)
         {
             int warlockLevels = GetLevelByClass(57, Caster);

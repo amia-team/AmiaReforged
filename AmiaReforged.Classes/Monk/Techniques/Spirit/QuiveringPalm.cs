@@ -20,32 +20,34 @@ public static class QuiveringPalm
             AugmentationApplier.ApplyAugmentations(path, technique, castData);
             return;
         }
-        
+
         DoQuiveringPalm(castData);
     }
 
     public static void DoQuiveringPalm(OnSpellCast castData)
     {
         if (castData.TargetObject is not NwCreature targetCreature) return;
-        
+
         NwCreature monk = (NwCreature)castData.Caster;
-        
+
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
 
         Effect quiveringEffect = Effect.Death(true);
         Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpDeath, false, 0.7f);
-        
+
         TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature).Result;
-        
+
         CreatureEvents.OnSpellCastAt.Signal(monk, targetCreature, castData.Spell!);
 
         if (touchAttackResult is TouchAttackResult.Miss) return;
-        
-        SavingThrowResult savingThrowResult = 
+
+        SavingThrowResult savingThrowResult =
             targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Death, monk);
 
         if (savingThrowResult is SavingThrowResult.Success)
+        {
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+        }
         else
         {
             targetCreature.ApplyEffect(EffectDuration.Instant, quiveringEffect);

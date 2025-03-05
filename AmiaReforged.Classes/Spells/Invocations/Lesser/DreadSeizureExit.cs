@@ -11,13 +11,16 @@ public class DreadSeizureExit
 
         while (GetIsEffectValid(debuffs) == TRUE)
         {
-            if (GetEffectTag(debuffs) == "dreadseizure"){
+            if (GetEffectTag(debuffs) == "dreadseizure")
+            {
                 RemoveEffect(exitingObject, debuffs);
-                ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE), exitingObject, 0.1f);
+                ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE),
+                    exitingObject, 0.1f);
             }
 
             debuffs = GetNextEffect(exitingObject);
         }
+
         return 0;
     }
 }

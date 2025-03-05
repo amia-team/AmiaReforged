@@ -29,7 +29,8 @@ public class BindingEssenceEffects : EssenceEffectApplier
 
         bool passedWillSave = WillSave(Target, CalculateDc(), SAVING_THROW_TYPE_MIND_SPELLS, Caster) == TRUE;
 
-        if (passedWillSave) ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), Target);
+        if (passedWillSave)
+            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), Target);
         if (!passedWillSave) ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectStunned(), Target, essenceDuration);
     }
 }

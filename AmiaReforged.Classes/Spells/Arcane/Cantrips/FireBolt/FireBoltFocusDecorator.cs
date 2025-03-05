@@ -7,10 +7,10 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.FireBolt;
 public class FireBoltFocusDecorator : SpellDecorator
 {
     public FireBoltFocusDecorator(ISpell spell) : base(spell)
-    { 
+    {
         Spell = spell;
     }
-    
+
     // Applies a reduction to saves vs fire, vulnerability based on spell focus feats.
     public override void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -32,13 +32,14 @@ public class FireBoltFocusDecorator : SpellDecorator
             int fireSavePenalty = epicFocus ? 3 : greaterFocus ? 2 : basicFocus ? 1 : 0;
             int extraVulnerability = epicFocus ? 5 : 0;
             Effect savePenalty = Effect.SavingThrowDecrease(SavingThrow.All, fireSavePenalty, SavingThrowType.Fire);
-            savePenalty = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Fire, extraVulnerability), savePenalty);
+            savePenalty = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Fire, extraVulnerability),
+                savePenalty);
             savePenalty.Tag = "FireBoltFocusDecorator";
-            
+
             Effect? existing = target.ActiveEffects.FirstOrDefault(e => e.Tag == "FireBoltFocusDecorator");
-            
-            if(existing != null) target.RemoveEffect(existing);
-            
+
+            if (existing != null) target.RemoveEffect(existing);
+
             target.ApplyEffect(EffectDuration.Temporary, savePenalty, TimeSpan.FromSeconds(12));
         }
 

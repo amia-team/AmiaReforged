@@ -9,13 +9,14 @@ namespace AmiaReforged.Classes.Spells.Divine.Cantrips.Wilt;
 public class Wilt : ISpell
 {
     private readonly SchedulerService _schedulerService;
-    public ResistSpellResult Result { get; set; }
-    public string ImpactScript => "am_s_wilt";
 
     public Wilt(SchedulerService schedulerService)
     {
         _schedulerService = schedulerService;
     }
+
+    public ResistSpellResult Result { get; set; }
+    public string ImpactScript => "am_s_wilt";
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
@@ -43,16 +44,16 @@ public class Wilt : ISpell
         Effect effect = Effect.VisualEffect(VfxType.ComBloodCrtRed);
         target.ApplyEffect(EffectDuration.Instant, effect);
 
-        if(NWScript.GetLocalInt(target, $"wilt_{caster.Name}") == NWScript.TRUE) return;
-        
-        if(NWScript.GetRacialType(target) == NWScript.RACIAL_TYPE_UNDEAD) return;
-        
+        if (NWScript.GetLocalInt(target, $"wilt_{caster.Name}") == NWScript.TRUE) return;
+
+        if (NWScript.GetRacialType(target) == NWScript.RACIAL_TYPE_UNDEAD) return;
+
         if (Result == ResistSpellResult.Failed)
         {
             NWScript.SetLocalInt(target, $"wilt_{caster.Name}", NWScript.TRUE);
             int damage = NWScript.d3(numDice) / 2;
             int damagePerRound = damage / durationInRounds;
-            
+
             // Apply the first round of damage immediately.
             Effect damageEffect = Effect.Damage(damagePerRound);
             target.ApplyEffect(EffectDuration.Instant, damageEffect);
@@ -64,9 +65,10 @@ public class Wilt : ISpell
                     TimeSpan.FromSeconds(i * 6));
             }
         }
-        
+
         // Removes the local int after the duration has passed.
-        _schedulerService.Schedule(() => NWScript.DeleteLocalInt(target, $"wilt_{caster.Name}"), TimeSpan.FromSeconds(durationInRounds * 6));
+        _schedulerService.Schedule(() => NWScript.DeleteLocalInt(target, $"wilt_{caster.Name}"),
+            TimeSpan.FromSeconds(durationInRounds * 6));
     }
 
     public void SetSpellResistResult(ResistSpellResult result)

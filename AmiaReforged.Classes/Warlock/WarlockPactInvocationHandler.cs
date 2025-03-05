@@ -12,52 +12,52 @@ public class WarlockPactInvocationHandler
 
     public WarlockPactInvocationHandler()
     {
-        Log.Info("Warlock Pact Invocation Script Handler initialized.");
+        Log.Info(message: "Warlock Pact Invocation Script Handler initialized.");
     }
 
-    [ScriptHandler("wlk_louddecay")]
+    [ScriptHandler(scriptName: "wlk_louddecay")]
     public void OnLoudDecay(CallInfo info)
     {
         LoudDecay script = new();
         script.CastLoudDecay(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_lightscall")]
+    [ScriptHandler(scriptName: "wlk_lightscall")]
     public void OnLightsCalling(CallInfo info)
     {
         LightsCalling script = new();
         script.CastLightsCalling(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_dancingplag")]
+    [ScriptHandler(scriptName: "wlk_dancingplag")]
     public void OnDancingPlague(CallInfo info)
     {
         DancingPlague script = new();
         script.CastDancingPlague(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_bindingmag")]
+    [ScriptHandler(scriptName: "wlk_bindingmag")]
     public void OnBindingOfMaggots(CallInfo info)
     {
         BindingOfMaggots script = new();
         script.CastBindingOfMaggots(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_bindingent")]
+    [ScriptHandler(scriptName: "wlk_bindingent")]
     public void OnBindingOfMaggotsEnter(CallInfo info)
     {
         BindingOfMaggotsEnter script = new();
         script.BindingOfMaggotsEnterEffects(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_primordial")]
+    [ScriptHandler(scriptName: "wlk_primordial")]
     public void OnPrimordialGust(CallInfo info)
     {
         PrimordialGust script = new();
         script.CastPrimordialGust(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_frogdrop")]
+    [ScriptHandler(scriptName: "wlk_frogdrop")]
     public void OnFrogDrop(CallInfo info)
     {
         FrogDrop script = new();

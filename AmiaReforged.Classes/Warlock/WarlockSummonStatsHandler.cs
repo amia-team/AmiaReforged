@@ -9,7 +9,6 @@ using NWN.Core;
 namespace AmiaReforged.Classes.Warlock;
 
 [ServiceBinding(typeof(WarlockSummonStatsHandler))]
-
 public class WarlockSummonStatsHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -22,7 +21,7 @@ public class WarlockSummonStatsHandler
         NwModule.Instance.OnAssociateAdd += OnSummonAdjustFey;
         NwModule.Instance.OnAssociateAdd += OnSummonAdjustFiend;
         NwModule.Instance.OnAssociateAdd += OnSummonAdjustSlaad;
-        Log.Info("Warlock Summon Stats Handler initialized.");
+        Log.Info(message: "Warlock Summon Stats Handler initialized.");
     }
 
     private void OnSummonAdjustAberration(OnAssociateAdd obj)
@@ -37,10 +36,14 @@ public class WarlockSummonStatsHandler
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
         Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
 
-        switch(summonTier)
+        switch (summonTier)
         {
             case 1:
-                for (int i = 1; i < 1; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                for (int i = 1; i < 1; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                }
+
                 summon.MaxHP = 30;
                 summon.HP = 30;
                 summon.BaseAC = 0;
@@ -48,10 +51,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 4);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 4);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 4);
-            break;
-            
+                break;
+
             case 2:
-                for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                for (int i = 1; i < 5; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                }
+
                 summon.MaxHP = 60;
                 summon.HP = 60;
                 summon.BaseAC = 6;
@@ -62,10 +69,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 8);
-            break;
+                break;
 
             case 3:
-                for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                for (int i = 1; i < 10; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                }
+
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
@@ -76,10 +87,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 12);
-            break;
+                break;
 
             case 4:
-                for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                for (int i = 1; i < 15; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                }
+
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
@@ -90,10 +105,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 16);
-            break;
+                break;
 
             case 5:
-                for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                for (int i = 1; i < 20; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                }
+
                 summon.MaxHP = 120;
                 summon.HP = 120;
                 summon.BaseAC = 18;
@@ -104,10 +123,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 20);
-            break;
+                break;
 
             case 6:
-                for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                for (int i = 1; i < 25; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                }
+
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
@@ -118,10 +141,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 24);
-            break;
+                break;
 
             case 7:
-                for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                for (int i = 1; i < 30; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
+                }
+
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
@@ -132,9 +159,9 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 28);
-            break;
+                break;
         }
-        
+
         summon.BaseAttackCount = 1;
         summon.Size = CreatureSize.Medium;
         summon.MovementRate = MovementRate.Normal;
@@ -145,8 +172,8 @@ public class WarlockSummonStatsHandler
 
         damageIncrease.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
-        
-        foreach (NwFeat feat in summon.Feats) 
+
+        foreach (NwFeat feat in summon.Feats)
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
             summon.RemoveFeat(feat);
@@ -166,10 +193,14 @@ public class WarlockSummonStatsHandler
         Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
         int concealment = default;
 
-        switch(summonTier)
+        switch (summonTier)
         {
             case 1:
-                for (int i = 1; i < 1; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                for (int i = 1; i < 1; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
+
                 summon.MaxHP = 30;
                 summon.HP = 30;
                 summon.BaseAC = 0;
@@ -179,10 +210,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 4);
                 summon.BaseAttackCount = 1;
                 concealment = 20;
-            break;
+                break;
 
             case 2:
-                for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                for (int i = 1; i < 5; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
+
                 summon.MaxHP = 60;
                 summon.HP = 60;
                 summon.BaseAC = 6;
@@ -195,10 +230,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 8);
                 summon.BaseAttackCount = 1;
                 concealment = 25;
-            break;
+                break;
 
             case 3:
-                for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                for (int i = 1; i < 10; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
+
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
@@ -211,10 +250,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 12);
                 summon.BaseAttackCount = 1;
                 concealment = 30;
-            break;
+                break;
 
             case 4:
-                for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                for (int i = 1; i < 15; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
+
                 summon.MaxHP = 120;
                 summon.HP = 120;
                 summon.BaseAC = 18;
@@ -227,10 +270,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 16);
                 summon.BaseAttackCount = 2;
                 concealment = 35;
-            break;
+                break;
 
             case 5:
-                for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                for (int i = 1; i < 20; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
+
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
@@ -243,10 +290,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 20);
                 summon.BaseAttackCount = 2;
                 concealment = 40;
-            break;
+                break;
 
             case 6:
-                for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                for (int i = 1; i < 25; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
+
                 summon.MaxHP = 180;
                 summon.HP = 180;
                 summon.BaseAC = 30;
@@ -259,10 +310,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 24);
                 summon.BaseAttackCount = 3;
                 concealment = 45;
-            break;
+                break;
 
             case 7:
-                for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                for (int i = 1; i < 30; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
+
                 summon.MaxHP = 210;
                 summon.HP = 210;
                 summon.BaseAC = 36;
@@ -275,7 +330,7 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 28);
                 summon.BaseAttackCount = 3;
                 concealment = 50;
-            break;
+                break;
         }
 
         summon.Size = CreatureSize.Medium;
@@ -288,8 +343,8 @@ public class WarlockSummonStatsHandler
 
         damageIncrease.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
-        
-        foreach (NwFeat feat in summon.Feats) 
+
+        foreach (NwFeat feat in summon.Feats)
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
             summon.RemoveFeat(feat);
@@ -308,10 +363,14 @@ public class WarlockSummonStatsHandler
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
         Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
 
-        switch(summonTier)
+        switch (summonTier)
         {
             case 1:
-                for (int i = 1; i < 1; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                for (int i = 1; i < 1; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                }
+
                 summon.MaxHP = 30;
                 summon.HP = 30;
                 summon.BaseAC = 0;
@@ -319,10 +378,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 4);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 4);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 4);
-            break;
-            
+                break;
+
             case 2:
-                for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                for (int i = 1; i < 5; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                }
+
                 summon.MaxHP = 60;
                 summon.HP = 60;
                 summon.BaseAC = 6;
@@ -333,10 +396,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 8);
-            break;
+                break;
 
             case 3:
-                for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                for (int i = 1; i < 10; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                }
+
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
@@ -347,10 +414,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 12);
-            break;
+                break;
 
             case 4:
-                for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                for (int i = 1; i < 15; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                }
+
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
@@ -361,10 +432,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 16);
-            break;
+                break;
 
             case 5:
-                for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                for (int i = 1; i < 20; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                }
+
                 summon.MaxHP = 120;
                 summon.HP = 120;
                 summon.BaseAC = 18;
@@ -375,10 +450,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 20);
-            break;
+                break;
 
             case 6:
-                for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                for (int i = 1; i < 25; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                }
+
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
@@ -389,10 +468,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 24);
-            break;
+                break;
 
             case 7:
-                for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                for (int i = 1; i < 30; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
+                }
+
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
@@ -403,7 +486,7 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 28);
-            break;
+                break;
         }
 
         summon.BaseAttackCount = 1;
@@ -417,6 +500,7 @@ public class WarlockSummonStatsHandler
             summon.Appearance = NwGameTables.AppearanceTable.GetRow(109);
             summon.Name = "Summoned Fire Mephit";
         }
+
         if (summon.Tag.Contains('2'))
         {
             element = DamageType.Cold;
@@ -424,10 +508,12 @@ public class WarlockSummonStatsHandler
             summon.PortraitResRef = "po_mepwater_";
             summon.Name = "Summoned Water Mephit";
         }
+
         if (summon.Tag.Contains('3'))
         {
             element = DamageType.Fire;
-            Effect coldElement = Effect.LinkEffects(Effect.DamageIncrease(1, DamageType.Cold), Effect.DamageImmunityIncrease(DamageType.Cold, 100));
+            Effect coldElement = Effect.LinkEffects(Effect.DamageIncrease(1, DamageType.Cold),
+                Effect.DamageImmunityIncrease(DamageType.Cold, 100));
             coldElement.SubType = EffectSubType.Supernatural;
             summon.ApplyEffect(EffectDuration.Permanent, coldElement);
             summon.Appearance = NwGameTables.AppearanceTable.GetRow(113);
@@ -435,19 +521,19 @@ public class WarlockSummonStatsHandler
             summon.Name = "Summoned Steam Mephit";
         }
 
-        Effect elementalEffects = Effect.LinkEffects(Effect.DamageIncrease(1, element), Effect.DamageImmunityIncrease(element, 100));
+        Effect elementalEffects =
+            Effect.LinkEffects(Effect.DamageIncrease(1, element), Effect.DamageImmunityIncrease(element, 100));
         elementalEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, elementalEffects);
-        
+
         damageIncrease.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
-        
-        foreach (NwFeat feat in summon.Feats) 
+
+        foreach (NwFeat feat in summon.Feats)
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
             summon.RemoveFeat(feat);
         }
-
     }
 
     private void OnSummonAdjustFey(OnAssociateAdd obj)
@@ -463,10 +549,14 @@ public class WarlockSummonStatsHandler
         Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
         int concealment = default;
 
-        switch(summonTier)
+        switch (summonTier)
         {
             case 1:
-                for (int i = 1; i < 1; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                for (int i = 1; i < 1; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                }
+
                 summon.MaxHP = 30;
                 summon.HP = 30;
                 summon.BaseAC = 0;
@@ -476,10 +566,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 4);
                 summon.BaseAttackCount = 1;
                 concealment = 20;
-            break;
+                break;
 
             case 2:
-                for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                for (int i = 1; i < 5; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                }
+
                 summon.MaxHP = 60;
                 summon.HP = 60;
                 summon.BaseAC = 6;
@@ -491,11 +585,15 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 8);
                 summon.BaseAttackCount = 1;
-                concealment = 25;            
-            break;
+                concealment = 25;
+                break;
 
             case 3:
-                for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                for (int i = 1; i < 10; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                }
+
                 summon.MaxHP = 90;
                 summon.HP = 90;
                 summon.BaseAC = 12;
@@ -508,10 +606,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 12);
                 summon.BaseAttackCount = 1;
                 concealment = 30;
-            break;
+                break;
 
             case 4:
-                for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                for (int i = 1; i < 15; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                }
+
                 summon.MaxHP = 120;
                 summon.HP = 120;
                 summon.BaseAC = 18;
@@ -524,10 +626,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 16);
                 summon.BaseAttackCount = 2;
                 concealment = 35;
-            break;
+                break;
 
             case 5:
-                for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                for (int i = 1; i < 20; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                }
+
                 summon.MaxHP = 150;
                 summon.HP = 150;
                 summon.BaseAC = 24;
@@ -540,10 +646,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 20);
                 summon.BaseAttackCount = 2;
                 concealment = 40;
-            break;
+                break;
 
             case 6:
-                for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                for (int i = 1; i < 25; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                }
+
                 summon.MaxHP = 180;
                 summon.HP = 180;
                 summon.BaseAC = 30;
@@ -556,10 +666,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 24);
                 summon.BaseAttackCount = 3;
                 concealment = 45;
-            break;
+                break;
 
             case 7:
-                for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                for (int i = 1; i < 30; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
+                }
+
                 summon.MaxHP = 210;
                 summon.HP = 210;
                 summon.BaseAC = 36;
@@ -572,9 +686,9 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Will, 28);
                 summon.BaseAttackCount = 3;
                 concealment = 50;
-            break;
+                break;
         }
-        
+
         summon.Size = CreatureSize.Medium;
 
         Effect feyEffects = WarlockSummonConstants.FeyEffects(concealment);
@@ -583,8 +697,8 @@ public class WarlockSummonStatsHandler
 
         damageIncrease.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
-        
-        foreach (NwFeat feat in summon.Feats) 
+
+        foreach (NwFeat feat in summon.Feats)
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
             summon.RemoveFeat(feat);
@@ -603,10 +717,14 @@ public class WarlockSummonStatsHandler
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
         Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
 
-        switch(summonTier)
+        switch (summonTier)
         {
             case 1:
-                for (int i = 1; i < 1; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                for (int i = 1; i < 1; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                }
+
                 summon.MaxHP = 30;
                 summon.HP = 30;
                 summon.BaseAC = 0;
@@ -614,10 +732,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 4);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 4);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 4);
-            break;
+                break;
 
             case 2:
-                for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                for (int i = 1; i < 5; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                }
+
                 summon.MaxHP = 35;
                 summon.HP = 35;
                 summon.BaseAC = 2;
@@ -628,10 +750,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 8);
-            break;
+                break;
 
             case 3:
-                for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                for (int i = 1; i < 10; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                }
+
                 summon.MaxHP = 40;
                 summon.HP = 40;
                 summon.BaseAC = 4;
@@ -642,10 +768,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 12);
-            break;
+                break;
 
             case 4:
-                for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                for (int i = 1; i < 15; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                }
+
                 summon.MaxHP = 45;
                 summon.HP = 45;
                 summon.BaseAC = 6;
@@ -656,10 +786,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 16);
-            break;
+                break;
 
             case 5:
-                for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                for (int i = 1; i < 20; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                }
+
                 summon.MaxHP = 50;
                 summon.HP = 50;
                 summon.BaseAC = 8;
@@ -670,10 +804,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 20);
-            break;
+                break;
 
             case 6:
-                for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                for (int i = 1; i < 25; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                }
+
                 summon.MaxHP = 55;
                 summon.HP = 55;
                 summon.BaseAC = 10;
@@ -684,10 +822,14 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 24);
-            break;
+                break;
 
             case 7:
-                for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                for (int i = 1; i < 30; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
+                }
+
                 summon.MaxHP = 60;
                 summon.HP = 60;
                 summon.BaseAC = 12;
@@ -698,7 +840,7 @@ public class WarlockSummonStatsHandler
                 summon.SetBaseSavingThrow(SavingThrow.Fortitude, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Reflex, 28);
                 summon.SetBaseSavingThrow(SavingThrow.Will, 28);
-            break;
+                break;
         }
 
         summon.BaseAttackCount = 1;
@@ -710,8 +852,8 @@ public class WarlockSummonStatsHandler
 
         damageIncrease.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
-        
-        foreach (NwFeat feat in summon.Feats) 
+
+        foreach (NwFeat feat in summon.Feats)
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
             summon.RemoveFeat(feat);
@@ -721,21 +863,26 @@ public class WarlockSummonStatsHandler
     private void OnSummonAdjustSlaad(OnAssociateAdd obj)
     {
         if (NWScript.GetLevelByClass(57, obj.Owner) <= 0) return;
-        bool isSlaad = obj.Associate.ResRef == "wlkslaadred" || obj.Associate.ResRef == "wlkslaadblue" || obj.Associate.ResRef == "wlkslaadgreen" 
-            || obj.Associate.ResRef == "wlkslaadgray";
+        bool isSlaad = obj.Associate.ResRef == "wlkslaadred" || obj.Associate.ResRef == "wlkslaadblue" ||
+                       obj.Associate.ResRef == "wlkslaadgreen"
+                       || obj.Associate.ResRef == "wlkslaadgray";
         if (!isSlaad) return;
         if (obj.AssociateType != AssociateType.Summoned) return;
 
         NwCreature summon = obj.Associate;
         NwCreature warlock = obj.Owner;
-        
+
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
         Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
         string slaadTier = summon.ResRef;
 
         if (summonTier == 1 && slaadTier == "wlkslaadred")
         {
-            for (int i = 1; i < 1; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            for (int i = 1; i < 1; i++)
+            {
+                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            }
+
             summon.MaxHP = 30;
             summon.HP = 30;
             summon.BaseAC = 0;
@@ -746,9 +893,14 @@ public class WarlockSummonStatsHandler
             summon.BaseAttackCount = 1;
             summon.VisualTransform.Scale = 0.7f;
         }
+
         if (summonTier >= 2 && slaadTier == "wlkslaadred")
         {
-            for (int i = 1; i < 5; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            for (int i = 1; i < 5; i++)
+            {
+                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            }
+
             summon.MaxHP = 60;
             summon.HP = 60;
             summon.BaseAC = 6;
@@ -762,9 +914,14 @@ public class WarlockSummonStatsHandler
             summon.BaseAttackCount = 1;
             summon.VisualTransform.Scale = 0.7f;
         }
+
         if (summonTier == 3 && slaadTier == "wlkslaadblue")
         {
-            for (int i = 1; i < 10; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            for (int i = 1; i < 10; i++)
+            {
+                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            }
+
             summon.MaxHP = 90;
             summon.HP = 90;
             summon.BaseAC = 12;
@@ -778,9 +935,14 @@ public class WarlockSummonStatsHandler
             summon.BaseAttackCount = 1;
             summon.VisualTransform.Scale = 0.8f;
         }
+
         if (summonTier >= 4 && slaadTier == "wlkslaadblue")
         {
-            for (int i = 1; i < 15; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            for (int i = 1; i < 15; i++)
+            {
+                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            }
+
             summon.MaxHP = 120;
             summon.HP = 120;
             summon.BaseAC = 18;
@@ -794,9 +956,14 @@ public class WarlockSummonStatsHandler
             summon.BaseAttackCount = 2;
             summon.VisualTransform.Scale = 0.8f;
         }
+
         if (summonTier == 5 && slaadTier == "wlkslaadgreen")
         {
-            for (int i = 1; i < 20; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            for (int i = 1; i < 20; i++)
+            {
+                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            }
+
             summon.MaxHP = 150;
             summon.HP = 150;
             summon.BaseAC = 24;
@@ -810,9 +977,14 @@ public class WarlockSummonStatsHandler
             summon.BaseAttackCount = 2;
             summon.VisualTransform.Scale = 0.9f;
         }
+
         if (summonTier >= 6 && slaadTier == "wlkslaadgreen")
         {
-            for (int i = 1; i < 25; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            for (int i = 1; i < 25; i++)
+            {
+                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            }
+
             summon.MaxHP = 180;
             summon.HP = 180;
             summon.BaseAC = 30;
@@ -826,9 +998,14 @@ public class WarlockSummonStatsHandler
             summon.BaseAttackCount = 3;
             summon.VisualTransform.Scale = 0.9f;
         }
+
         if (summonTier == 7 && slaadTier == "wlkslaadgray")
         {
-            for (int i = 1; i < 30; i++) summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            for (int i = 1; i < 30; i++)
+            {
+                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+            }
+
             summon.MaxHP = 210;
             summon.HP = 210;
             summon.BaseAC = 36;
@@ -841,9 +1018,9 @@ public class WarlockSummonStatsHandler
             summon.SetBaseSavingThrow(SavingThrow.Will, 28);
             summon.BaseAttackCount = 3;
         }
-        
+
         summon.Size = CreatureSize.Medium;
-        
+
         int regen = slaadTier switch
         {
             "wlkslaadred" => 2,
@@ -853,14 +1030,14 @@ public class WarlockSummonStatsHandler
             _ => 2
         };
 
-        Effect slaadEffects = WarlockSummonConstants.SlaadEffects(regen); 
+        Effect slaadEffects = WarlockSummonConstants.SlaadEffects(regen);
         slaadEffects.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, slaadEffects);
 
         damageIncrease.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
-        
-        foreach (NwFeat feat in summon.Feats) 
+
+        foreach (NwFeat feat in summon.Feats)
         {
             if (feat.Id == 289 || feat.Id == 226) continue;
             summon.RemoveFeat(feat);
@@ -870,15 +1047,16 @@ public class WarlockSummonStatsHandler
         // for subsequent slaadi spawning in WarlockSummonUtilHandler => OnFrogDeathRussianDoll
         foreach (Effect effect in warlock.ActiveEffects)
         {
-            if(effect.Tag == "frogduration")
-            {
-                if (effect.DurationRemaining != 
-                    NWScript.RoundsToSeconds(SummonUtility.PactSummonDuration(warlock))) return;
-            }
+            if (effect.Tag == "frogduration")
+                if (effect.DurationRemaining !=
+                    NWScript.RoundsToSeconds(SummonUtility.PactSummonDuration(warlock)))
+                    return;
         }
+
         Effect durationEffect = Effect.VisualEffect(VfxType.None);
         durationEffect.SubType = EffectSubType.Supernatural;
         durationEffect.Tag = "frogduration";
-        warlock.ApplyEffect(EffectDuration.Temporary, durationEffect, NwTimeSpan.FromRounds(SummonUtility.PactSummonDuration(warlock)));
+        warlock.ApplyEffect(EffectDuration.Temporary, durationEffect,
+            NwTimeSpan.FromRounds(SummonUtility.PactSummonDuration(warlock)));
     }
 }

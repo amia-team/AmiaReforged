@@ -31,7 +31,7 @@ public class WarlockAbilityHandler
         [1021] = EssenceType.Hellrime,
         [1022] = EssenceType.Screaming,
         [1023] = EssenceType.Utterdark,
-        [1024] = EssenceType.Vitriolic,
+        [1024] = EssenceType.Vitriolic
     };
 
     public WarlockAbilityHandler()
@@ -43,7 +43,7 @@ public class WarlockAbilityHandler
         NwModule.Instance.OnSpellCast += OnInvocationCast;
         NwModule.Instance.OnSpellAction += OnInvocationCastAction;
         NwModule.Instance.OnSpellInterrupt += OnInvocationInterrupt;
-        Log.Info("Warlock Ability Script Handler initialized.");
+        Log.Info(message: "Warlock Ability Script Handler initialized.");
     }
 
     private void OnRemoveEldritchEssence(OnUseFeat obj)
@@ -52,10 +52,12 @@ public class WarlockAbilityHandler
         if (!RemoveEssence.ContainsKey(featId)) return;
 
         NwItem item = obj.Creature.Inventory.Items.First(i => i.Tag == "ds_pckey");
-        NWScript.SetLocalInt(item, "warlock_essence", (ushort)RemoveEssence[featId]);
+        NWScript.SetLocalInt(item, sVarName: "warlock_essence", (ushort)RemoveEssence[featId]);
 
-        if (obj.Creature.IsPlayerControlled(out NwPlayer? player)) player.SendServerMessage(WarlockConstants.String("Eldritch Essence removed."));
+        if (obj.Creature.IsPlayerControlled(out NwPlayer? player))
+            player.SendServerMessage(WarlockConstants.String(message: "Eldritch Essence removed."));
     }
+
     private void OnEldritchEssence(OnSpellAction obj)
     {
         int spellId = obj.Spell.Id;
@@ -64,10 +66,10 @@ public class WarlockAbilityHandler
         obj.PreventSpellCast = true;
 
         NwItem item = obj.Caster.Inventory.Items.First(i => i.Tag == "ds_pckey");
-        NWScript.SetLocalInt(item, "warlock_essence", (int)Essences[spellId]);
+        NWScript.SetLocalInt(item, sVarName: "warlock_essence", (int)Essences[spellId]);
 
         if (obj.Caster.IsPlayerControlled(out NwPlayer? player))
-        player.SendServerMessage(WarlockConstants.String($"Essence type set to {Essences[spellId].ToString()}."));
+            player.SendServerMessage(WarlockConstants.String($"Essence type set to {Essences[spellId].ToString()}."));
     }
 
     private void OnInvocationCast(OnSpellCast obj)
@@ -88,20 +90,21 @@ public class WarlockAbilityHandler
 
         obj.PreventSpellCast = true;
         if (obj.Caster.IsPlayerControlled(out NwPlayer? player))
-            player.SendServerMessage("You cannot perform that action on a friendly target due to PvP settings");
+            player.SendServerMessage(
+                message: "You cannot perform that action on a friendly target due to PvP settings");
     }
 
     private void OnIllegalCast(OnSpellCast obj)
     {
         if (NWScript.GetLevelByClass(57, obj.Caster) <= 0) return;
-        if (NWScript.GetLocalInt(NWScript.GetArea(obj.Caster), "NoCasting") == 0) return;
-        if (!(obj.Spell.UserType == SpellUserType.Spells || 
-            obj.Spell.UserType == SpellUserType.CreaturePower)) return;
-        
+        if (NWScript.GetLocalInt(NWScript.GetArea(obj.Caster), sVarName: "NoCasting") == 0) return;
+        if (!(obj.Spell.UserType == SpellUserType.Spells ||
+              obj.Spell.UserType == SpellUserType.CreaturePower)) return;
+
         obj.PreventSpellCast = true;
 
         if (obj.Caster.IsPlayerControlled(out NwPlayer? player))
-            player.SendServerMessage("- You cannot cast magic in this area! -");
+            player.SendServerMessage(message: "- You cannot cast magic in this area! -");
     }
 
     private void OnInvocationInterrupt(OnSpellInterrupt obj)
@@ -120,7 +123,7 @@ public class WarlockAbilityHandler
         NWScript.SetActionMode(obj.Caster, NWScript.ACTION_MODE_IMPROVED_EXPERTISE, NWScript.FALSE);
     }
 
-    [ScriptHandler("wlk_el_blst")]
+    [ScriptHandler(scriptName: "wlk_el_blst")]
     public void OnEldritchBlasts(CallInfo info)
     {
         EldritchBlasts attack = new();

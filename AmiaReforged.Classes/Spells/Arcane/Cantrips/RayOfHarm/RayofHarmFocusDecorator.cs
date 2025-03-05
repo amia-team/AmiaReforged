@@ -11,9 +11,9 @@ public class RayofHarmFocusDecorator : SpellDecorator
     {
         Spell = spell;
     }
-    
+
     public override string ImpactScript => Spell.ImpactScript;
-    
+
     // Each spell focus reduces the target's physical damage by 1
     public override void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -30,19 +30,19 @@ public class RayofHarmFocusDecorator : SpellDecorator
         bool epicFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.EpicSpellFocusNecromancy);
 
         bool isNecromancyFocused = basicFocus || greaterFocus || epicFocus;
-        
+
         if (isNecromancyFocused && Result == ResistSpellResult.Failed)
         {
             int reducedDamageAmount = epicFocus ? 6 : greaterFocus ? 4 : basicFocus ? 2 : 0;
-            
+
             Effect decreasedDamage = Effect.DamageDecrease(reducedDamageAmount, DamageType.BaseWeapon);
-            
+
             Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "RayofHarmFocusDecorator");
-         
-            if(existing != null) creature.RemoveEffect(existing);
+
+            if (existing != null) creature.RemoveEffect(existing);
             target.ApplyEffect(EffectDuration.Temporary, decreasedDamage, TimeSpan.FromSeconds(12));
         }
 
         Spell.OnSpellImpact(eventData);
-    }    
+    }
 }

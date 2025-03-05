@@ -5,37 +5,47 @@ using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
-using NLog.Targets;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class CrashingMeteor
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null,
+        OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
-            case TechniqueType.Stunning : AugmentStunning(attackData);
+            case TechniqueType.Stunning:
+                AugmentStunning(attackData);
                 break;
-            case TechniqueType.Axiomatic : AugmentAxiomatic(attackData);
+            case TechniqueType.Axiomatic:
+                AugmentAxiomatic(attackData);
                 break;
-            case TechniqueType.KiShout : AugmentKiShout(castData);
+            case TechniqueType.KiShout:
+                AugmentKiShout(castData);
                 break;
-            case TechniqueType.Wholeness: AugmentWholeness(castData);
+            case TechniqueType.Wholeness:
+                AugmentWholeness(castData);
                 break;
-            case TechniqueType.KiBarrier: KiBarrier.DoKiBarrier(castData);
+            case TechniqueType.KiBarrier:
+                KiBarrier.DoKiBarrier(castData);
                 break;
-            case TechniqueType.Eagle: EagleStrike.DoEagleStrike(attackData);
+            case TechniqueType.Eagle:
+                EagleStrike.DoEagleStrike(attackData);
                 break;
-            case TechniqueType.EmptyBody: EmptyBody.DoEmptyBody(castData);
+            case TechniqueType.EmptyBody:
+                EmptyBody.DoEmptyBody(castData);
                 break;
-            case TechniqueType.Quivering : QuiveringPalm.DoQuiveringPalm(castData);
+            case TechniqueType.Quivering:
+                QuiveringPalm.DoQuiveringPalm(castData);
                 break;
         }
     }
+
     /// <summary>
-    /// Stunning Strike deals 2d6 elemental damage in a medium area around the target. The damage isn’t multiplied by
-    /// critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental damage.
+    ///     Stunning Strike deals 2d6 elemental damage in a medium area around the target. The damage isn’t multiplied by
+    ///     critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental
+    ///     damage.
     /// </summary>
     private static void AugmentStunning(OnCreatureAttack attackData)
     {
@@ -43,7 +53,7 @@ public static class CrashingMeteor
 
         NwCreature monk = attackData.Attacker;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int monkLevel  = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int diceAmount = monkLevel switch
         {
@@ -76,9 +86,9 @@ public static class CrashingMeteor
             DamageType.Acid => SavingThrowType.Acid,
             _ => SavingThrowType.Fire
         };
-        
+
         attackData.Target.ApplyEffect(EffectDuration.Instant, elementalAoeVfx);
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true, 
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
@@ -88,15 +98,15 @@ public static class CrashingMeteor
 
             bool hasEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.Evasion)!);
             bool hasImprovedEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
-            
-            SavingThrowResult savingThrowResult = 
+
+            SavingThrowResult savingThrowResult =
                 creatureInShape.RollSavingThrow(SavingThrow.Reflex, dc, elementalSaveType, monk);
-            
+
             int damageAmount = Random.Shared.Roll(6, diceAmount);
-            
-            if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success) 
+
+            if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
                 damageAmount /= 2;
-            
+
             Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, elementalType), elementalDamageVfx);
 
             if (savingThrowResult == SavingThrowResult.Failure)
@@ -104,26 +114,26 @@ public static class CrashingMeteor
                 creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
                 continue;
             }
-            
+
             if (hasEvasion || hasImprovedEvasion)
             {
                 creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
                 continue;
             }
-                
+
             creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
             creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
         }
     }
-    
+
     /// <summary>
-    /// Axiomatic Strike deals +1 bonus elemental damage to the target, with an additional +1 for every Ki Focus,
-    /// to a maximum of +4 elemental damage.
+    ///     Axiomatic Strike deals +1 bonus elemental damage to the target, with an additional +1 for every Ki Focus,
+    ///     to a maximum of +4 elemental damage.
     /// </summary>
     private static void AugmentAxiomatic(OnCreatureAttack attackData)
     {
         AxiomaticStrike.DoAxiomaticStrike(attackData);
-        
+
         NwCreature monk = attackData.Attacker;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
         DamageData<short> damageData = attackData.DamageData;
@@ -136,22 +146,23 @@ public static class CrashingMeteor
             MonkLevel.KiFocusIii => 4,
             _ => 1
         };
-        
+
         elementalDamage += bonusDamageElemental;
         damageData.SetDamageByType(elementalType, elementalDamage);
     }
+
     /// <summary>
-    /// Wholeness of Body deals 2d6 elemental damage in a medium area round the monk, with a successful reflex save
-    /// halving the damage. Each Ki Focus adds 2d6 damage to a maximum of 8d6 elemental damage. 
+    ///     Wholeness of Body deals 2d6 elemental damage in a medium area round the monk, with a successful reflex save
+    ///     halving the damage. Each Ki Focus adds 2d6 damage to a maximum of 8d6 elemental damage.
     /// </summary>
     /// <param name="castData"></param>
     private static void AugmentWholeness(OnSpellCast castData)
     {
         WholenessOfBody.DoWholenessOfBody(castData);
-        
+
         NwCreature monk = (NwCreature)castData.Caster;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int monkLevel  = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int diceAmount = monkLevel switch
         {
@@ -184,9 +195,9 @@ public static class CrashingMeteor
             DamageType.Acid => SavingThrowType.Acid,
             _ => SavingThrowType.Fire
         };
-        
+
         monk.ApplyEffect(EffectDuration.Instant, elementalAoeVfx);
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true, 
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
@@ -196,15 +207,15 @@ public static class CrashingMeteor
 
             bool hasEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.Evasion)!);
             bool hasImprovedEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
-            
-            SavingThrowResult savingThrowResult = 
+
+            SavingThrowResult savingThrowResult =
                 creatureInShape.RollSavingThrow(SavingThrow.Reflex, dc, elementalSaveType, monk);
-            
+
             int damageAmount = Random.Shared.Roll(6, diceAmount);
-            
-            if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success) 
+
+            if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
                 damageAmount /= 2;
-            
+
             Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, elementalType), elementalDamageVfx);
 
             if (savingThrowResult == SavingThrowResult.Failure)
@@ -212,20 +223,22 @@ public static class CrashingMeteor
                 creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
                 continue;
             }
-            
+
             if (hasEvasion || hasImprovedEvasion)
             {
                 creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
                 continue;
             }
-                
+
             creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
             creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
         }
     }
+
     /// <summary>
-    /// Ki Shout changes the damage from sonic to the chosen element. In addition, all enemies receive 10% vulnerability
-    /// to the element for three rounds, with every Ki Focus increasing it by 10%, to a maximum of 40% elemental damage vulnerability.
+    ///     Ki Shout changes the damage from sonic to the chosen element. In addition, all enemies receive 10% vulnerability
+    ///     to the element for three rounds, with every Ki Focus increasing it by 10%, to a maximum of 40% elemental damage
+    ///     vulnerability.
     /// </summary>
     private static void AugmentKiShout(OnSpellCast castData)
     {
@@ -277,21 +290,21 @@ public static class CrashingMeteor
             CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.AbilityHowlSonic)!);
 
             int damageAmount = Random.Shared.Roll(4, monkLevel);
-            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, elementalType), 
+            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, elementalType),
                 Effect.VisualEffect(elementalDamageVfx));
 
             creatureInShape.ApplyEffect(EffectDuration.Temporary, elementalEffect, effectDuration);
             creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
 
-            SavingThrowResult savingThrowResult = 
+            SavingThrowResult savingThrowResult =
                 creatureInShape.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
-            
+
             if (savingThrowResult is SavingThrowResult.Failure)
             {
                 creatureInShape.ApplyEffect(EffectDuration.Temporary, kiShoutEffect, effectDuration);
                 continue;
             }
-            
+
             creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
         }
     }

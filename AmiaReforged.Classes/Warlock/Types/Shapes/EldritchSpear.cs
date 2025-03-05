@@ -6,9 +6,11 @@ namespace AmiaReforged.Classes.Warlock.Types.Shapes;
 
 public static class EldritchSpear
 {
-    public static void CastEldritchSpear(uint caster, uint targetObject, EssenceType essence, EssenceEffectApplier effectApplier)
+    public static void CastEldritchSpear(uint caster, uint targetObject, EssenceType essence,
+        EssenceEffectApplier effectApplier)
     {
-        EssenceType essenceType = (EssenceType)GetLocalInt(GetItemPossessedBy(caster, "ds_pckey"), "warlock_essence");
+        EssenceType essenceType = (EssenceType)GetLocalInt(GetItemPossessedBy(caster, sItemTag: "ds_pckey"),
+            sVarName: "warlock_essence");
 
         int touchAttackRanged = WarlockConstants.RangedTouch(targetObject);
         IntPtr location = GetLocation(targetObject);
@@ -21,9 +23,11 @@ public static class EldritchSpear
         SignalEvent(targetObject, EventSpellCastAt(caster, 982));
 
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfx.Beam(essence, caster), targetObject, 1.1f);
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectBeam(VFX_BEAM_SILENT_LIGHTNING, caster, BODY_NODE_HAND), targetObject, 1.1f);
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectBeam(VFX_BEAM_SILENT_LIGHTNING, caster, BODY_NODE_HAND),
+            targetObject, 1.1f);
 
-        uint currentTarget = GetFirstObjectInShape(SHAPE_SPELLCYLINDER, 40f, location, TRUE, OBJECT_TYPE_CREATURE, GetPosition(caster));
+        uint currentTarget = GetFirstObjectInShape(SHAPE_SPELLCYLINDER, 40f, location, TRUE, OBJECT_TYPE_CREATURE,
+            GetPosition(caster));
 
         while (GetIsObjectValid(currentTarget) == TRUE)
         {
@@ -31,7 +35,8 @@ public static class EldritchSpear
             {
                 SignalEvent(targetObject, EventSpellCastAt(caster, 982));
 
-                EssenceEffectApplier aoeEffectApplier = EssenceEffectFactory.CreateEssenceEffect(essenceType, currentTarget, caster);
+                EssenceEffectApplier aoeEffectApplier =
+                    EssenceEffectFactory.CreateEssenceEffect(essenceType, currentTarget, caster);
 
                 bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
@@ -39,10 +44,12 @@ public static class EldritchSpear
 
                 if (passedSave)
                 {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REFLEX_SAVE_THROW_USE), currentTarget);
+                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REFLEX_SAVE_THROW_USE),
+                        currentTarget);
                     if (hasEvasion || hasImpEvasion)
                     {
-                        currentTarget = GetNextObjectInShape(SHAPE_SPELLCYLINDER, 40f, location, TRUE, OBJECT_TYPE_CREATURE, GetPosition(caster));
+                        currentTarget = GetNextObjectInShape(SHAPE_SPELLCYLINDER, 40f, location, TRUE,
+                            OBJECT_TYPE_CREATURE, GetPosition(caster));
                         continue;
                     }
                 }
@@ -52,7 +59,8 @@ public static class EldritchSpear
                 aoeEffectApplier.ApplyEffects(damage);
             }
 
-            currentTarget = GetNextObjectInShape(SHAPE_SPELLCYLINDER, 40f, location, TRUE, OBJECT_TYPE_CREATURE, GetPosition(caster));
+            currentTarget = GetNextObjectInShape(SHAPE_SPELLCYLINDER, 40f, location, TRUE, OBJECT_TYPE_CREATURE,
+                GetPosition(caster));
         }
     }
 }

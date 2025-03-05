@@ -11,7 +11,7 @@ public class CausticMire
 
         IntPtr location = GetSpellTargetLocation();
         float duration = RoundsToSeconds(GetCasterLevel(nwnObjectId));
-        NwEffects.RemoveAoeWithTag(location, nwnObjectId, "VFX_PER_CAUSTMIRE", RADIUS_SIZE_COLOSSAL);
+        NwEffects.RemoveAoeWithTag(location, nwnObjectId, aoeTag: "VFX_PER_CAUSTMIRE", RADIUS_SIZE_COLOSSAL);
         ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, mire, location, duration);
         return 0;
     }

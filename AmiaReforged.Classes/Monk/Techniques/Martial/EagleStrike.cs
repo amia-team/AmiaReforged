@@ -20,7 +20,7 @@ public static class EagleStrike
             AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
             return;
         }
-        
+
         DoEagleStrike(attackData);
     }
 
@@ -46,11 +46,13 @@ public static class EagleStrike
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
 
         if (savingThrowResult is not SavingThrowResult.Failure) return;
-        
+
         // Prevent stacking, instead refresh effect
         foreach (Effect effect in targetCreature.ActiveEffects)
+        {
             if (effect.Tag == "eaglestrike_effect")
                 targetCreature.RemoveEffect(effect);
+        }
 
         // Apply effect
         targetCreature.ApplyEffect(EffectDuration.Temporary, eagleStrikeEffect, effectDuration);

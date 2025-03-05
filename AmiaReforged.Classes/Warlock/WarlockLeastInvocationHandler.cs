@@ -12,38 +12,38 @@ public class WarlockLeastInvocationHandler
 
     public WarlockLeastInvocationHandler()
     {
-        Log.Info("Warlock Least Invocation Script Handler initialized.");
+        Log.Info(message: "Warlock Least Invocation Script Handler initialized.");
     }
 
-    [ScriptHandler("wlk_boundluck")]
+    [ScriptHandler(scriptName: "wlk_boundluck")]
     public void OnBoundLuck(CallInfo info)
     {
         BoundOnesLuck script = new();
         script.CastBoundOnesLuck(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_leapsbounds")]
+    [ScriptHandler(scriptName: "wlk_leapsbounds")]
     public void OnLeapsAndBounds(CallInfo info)
     {
         LeapsAndBounds script = new();
         script.CastLeapsAndBounds(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_othrwrldwhis")]
+    [ScriptHandler(scriptName: "wlk_othrwrldwhis")]
     public void OnOtherworldyWhispers(CallInfo info)
     {
         OtherworldlyWhispers script = new();
         script.CastOtherworldlyWhispers(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_repelhail")]
+    [ScriptHandler(scriptName: "wlk_repelhail")]
     public void OnRepelTheHail(CallInfo info)
     {
         RepelTheHail script = new();
         script.CastRepelTheHail(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_see_unseen")]
+    [ScriptHandler(scriptName: "wlk_see_unseen")]
     public void OnSeeTheUnseen(CallInfo info)
     {
         SeeTheUnseen script = new();

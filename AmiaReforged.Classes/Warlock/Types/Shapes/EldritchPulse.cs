@@ -6,7 +6,8 @@ namespace AmiaReforged.Classes.Warlock.Types.Shapes;
 
 public static class EldritchPulse
 {
-    public static void CastEldritchPulse(uint caster, uint targetObject, EssenceType essence, EssenceEffectApplier effectApplier)
+    public static void CastEldritchPulse(uint caster, uint targetObject, EssenceType essence,
+        EssenceEffectApplier effectApplier)
     {
         int damage = EldritchDamage.CalculateDamageAmount(caster);
 
@@ -21,6 +22,7 @@ public static class EldritchPulse
 
         DelayCommand(3.0f, () => Pulse(caster, targetObject, essence));
     }
+
     private static void Pulse(uint caster, uint targetObject, EssenceType essence)
     {
         IntPtr location = GetLocation(targetObject);
@@ -34,14 +36,19 @@ public static class EldritchPulse
                 currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_MEDIUM, location, TRUE);
                 continue;
             }
+
             if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
             {
                 SignalEvent(currentTarget, EventSpellCastAt(caster, 1004));
 
-                EssenceEffectApplier aoeApplier = EssenceEffectFactory.CreateEssenceEffect(essence, currentTarget, caster);
+                EssenceEffectApplier aoeApplier =
+                    EssenceEffectFactory.CreateEssenceEffect(essence, currentTarget, caster);
 
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDc(caster), 0, caster) == TRUE;
-                if (passedFortSave) ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), currentTarget);
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDc(caster), 0, caster) ==
+                                      TRUE;
+                if (passedFortSave)
+                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE),
+                        currentTarget);
 
                 int aoeDamage = EldritchDamage.CalculateDamageAmount(caster);
                 aoeDamage = passedFortSave ? aoeDamage / 2 : aoeDamage;

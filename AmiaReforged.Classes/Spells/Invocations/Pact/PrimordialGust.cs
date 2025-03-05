@@ -16,9 +16,9 @@ public class PrimordialGust
         // Impact VFX onhit
         IntPtr primordialVfx = NwEffects.LinkEffectList(new List<IntPtr>
         {
-                 EffectVisualEffect(VFX_COM_HIT_FROST),
-                 EffectVisualEffect(VFX_COM_HIT_ELECTRICAL),
-                 EffectVisualEffect(VFX_COM_HIT_FIRE)
+            EffectVisualEffect(VFX_COM_HIT_FROST),
+            EffectVisualEffect(VFX_COM_HIT_ELECTRICAL),
+            EffectVisualEffect(VFX_COM_HIT_FIRE)
         });
 
         // Declaring variables for the summon part of the spell
@@ -31,11 +31,12 @@ public class PrimordialGust
         };
         float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)), "wlk_summon_cd");
+        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)),
+            sNewTag: "wlk_summon_cd");
 
         if (NwEffects.IsPolymorphed(nwnObjectId))
         {
-            SendMessageToPC(nwnObjectId, "You cannot cast while polymorphed.");
+            SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
             return;
         }
 
@@ -48,32 +49,35 @@ public class PrimordialGust
         while (GetIsObjectValid(currentTarget) == TRUE)
         {
             // Damage variable
-            int damage = d4(warlockLevels/3);
+            int damage = d4(warlockLevels / 3);
             IntPtr primordialDamage = NwEffects.LinkEffectList(new List<IntPtr>
             {
-                    EffectDamage(damage, DAMAGE_TYPE_COLD),
-                    EffectDamage(damage, DAMAGE_TYPE_ELECTRICAL),
-                    EffectDamage(damage, DAMAGE_TYPE_FIRE)
+                EffectDamage(damage, DAMAGE_TYPE_COLD),
+                EffectDamage(damage, DAMAGE_TYPE_ELECTRICAL),
+                EffectDamage(damage, DAMAGE_TYPE_FIRE)
             });
-            
-            if (GetObjectType(currentTarget) == OBJECT_TYPE_DOOR || GetObjectType(currentTarget) == OBJECT_TYPE_PLACEABLE)
+
+            if (GetObjectType(currentTarget) == OBJECT_TYPE_DOOR ||
+                GetObjectType(currentTarget) == OBJECT_TYPE_PLACEABLE)
             {
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialDamage, currentTarget);
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialVfx, currentTarget);
-                currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, OBJECT_TYPE_CREATURE);
+                currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE);
                 continue;
             }
+
             if (GetResRef(currentTarget) == "wlkelemental")
             {
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_HEAD_FIRE), currentTarget);
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectHeal(damage), currentTarget);
-                currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, OBJECT_TYPE_CREATURE);
+                currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE);
                 continue;
             }
+
             if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
             {
                 bool passedReflexSave = ReflexSave(currentTarget, WarlockConstants.CalculateDc(caster),
-                SAVING_THROW_TYPE_FIRE | SAVING_THROW_TYPE_COLD | SAVING_THROW_TYPE_ELECTRICITY, caster) == TRUE;
+                    SAVING_THROW_TYPE_FIRE | SAVING_THROW_TYPE_COLD | SAVING_THROW_TYPE_ELECTRICITY, caster) == TRUE;
                 bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;
 
@@ -81,7 +85,8 @@ public class PrimordialGust
 
                 if (passedReflexSave)
                 {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REFLEX_SAVE_THROW_USE), currentTarget);
+                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REFLEX_SAVE_THROW_USE),
+                        currentTarget);
 
                     if (hasEvasion || hasImpEvasion)
                     {
@@ -89,17 +94,19 @@ public class PrimordialGust
                         continue;
                     }
                 }
-                damage = d4(warlockLevels/3);
+
+                damage = d4(warlockLevels / 3);
                 damage = passedReflexSave || hasImpEvasion ? damage / 2 : damage;
                 primordialDamage = NwEffects.LinkEffectList(new List<IntPtr>
                 {
-                        EffectDamage(damage, DAMAGE_TYPE_COLD),
-                        EffectDamage(damage, DAMAGE_TYPE_ELECTRICAL),
-                        EffectDamage(damage, DAMAGE_TYPE_FIRE)
+                    EffectDamage(damage, DAMAGE_TYPE_COLD),
+                    EffectDamage(damage, DAMAGE_TYPE_ELECTRICAL),
+                    EffectDamage(damage, DAMAGE_TYPE_FIRE)
                 });
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialDamage, currentTarget);
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, primordialVfx, currentTarget);
             }
+
             currentTarget = GetNextObjectInShape(SHAPE_SPELLCONE, 11f, location, TRUE, validObjectTypes);
         }
 
@@ -108,12 +115,15 @@ public class PrimordialGust
         //---------------------------
 
         // If summonCooldown is off and spell has hit a valid target, summon; else don't summon
-        if (NwEffects.GetHasEffectByTag("wlk_summon_cd", caster) == FALSE)
+        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) == FALSE)
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(WarlockConstants.String("Mephits can be summoned again."), caster, 0));
-            SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkelemental", location, 0.5f, 2f, 0.5f, 1.5f);
+            DelayCommand(summonCooldown,
+                () => FloatingTextStringOnCreature(WarlockConstants.String(message: "Mephits can be summoned again."),
+                    caster, 0));
+            SummonUtility.SummonMany(caster, summonDuration, summonCount, summonResRef: "wlkelemental", location, 0.5f,
+                2f, 0.5f, 1.5f);
             DelayCommand(1.6f, () => SummonUtility.SetSummonsFacing(summonCount, location));
         }
     }

@@ -19,7 +19,8 @@ public class WrithingDarkHeartbeat
             {
                 SignalEvent(current, EventSpellCastAt(nwnObjectId, 998));
 
-                if (NwEffects.ResistSpell(caster, current) || GetHasSpellEffect(EFFECT_TYPE_ULTRAVISION, current) == TRUE || 
+                if (NwEffects.ResistSpell(caster, current) ||
+                    GetHasSpellEffect(EFFECT_TYPE_ULTRAVISION, current) == TRUE ||
                     GetHasSpellEffect(EFFECT_TYPE_TRUESEEING, current) == TRUE)
                 {
                     current = GetNextInPersistentObject(nwnObjectId);
@@ -32,10 +33,12 @@ public class WrithingDarkHeartbeat
 
                 if (passedWillSave)
                 {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), current);
+                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE),
+                        current);
                     current = GetNextInPersistentObject(nwnObjectId);
                     continue;
                 }
+
                 if (!passedWillSave)
                 {
                     ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectBlindness(), current, 6f);

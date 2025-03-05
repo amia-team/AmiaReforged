@@ -31,6 +31,7 @@ public class ScreamingEssenceEffects : EssenceEffectApplier
             ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), Target);
             return;
         }
+
         if (!passedFortSave)
         {
             int warlockLevels = GetLevelByClass(57, Caster);

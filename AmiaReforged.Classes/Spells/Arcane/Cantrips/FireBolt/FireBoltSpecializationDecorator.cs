@@ -7,12 +7,12 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.FireBolt;
 public class FireBoltSpecializationDecorator : SpellDecorator
 {
     private const int TwoRounds = 12;
-    
+
     public FireBoltSpecializationDecorator(ISpell spell) : base(spell)
     {
         Spell = spell;
     }
-    
+
     public override void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         NwGameObject? caster = eventData.Caster;
@@ -23,13 +23,14 @@ public class FireBoltSpecializationDecorator : SpellDecorator
         if (target is not NwCreature creature) return;
         if (caster is not NwCreature casterCreature) return;
 
-        bool hasEvocationSpecialization = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Evocation;
+        bool hasEvocationSpecialization = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==
+                                          SpellSchool.Evocation;
 
         if (hasEvocationSpecialization)
         {
             Effect attackBonus = Effect.AttackDecrease(1);
             attackBonus.Tag = "FireBoltSpecializationDecorator";
-            
+
             ApplyPenalty(creature, attackBonus);
         }
 
@@ -39,9 +40,9 @@ public class FireBoltSpecializationDecorator : SpellDecorator
     private void ApplyPenalty(NwCreature creature, Effect attackBonus)
     {
         Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "FireBoltSpecializationDecorator");
-        
-        if(existing != null) creature.RemoveEffect(existing);
-        
+
+        if (existing != null) creature.RemoveEffect(existing);
+
         creature.ApplyEffect(EffectDuration.Temporary, attackBonus, TimeSpan.FromSeconds(TwoRounds));
     }
 }

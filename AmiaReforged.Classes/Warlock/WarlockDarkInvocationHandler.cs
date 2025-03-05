@@ -12,31 +12,31 @@ public class WarlockDarkInvocationHandler
 
     public WarlockDarkInvocationHandler()
     {
-        Log.Info("Warlock Dark Invocation Script Handler initialized.");
+        Log.Info(message: "Warlock Dark Invocation Script Handler initialized.");
     }
 
-    [ScriptHandler("wlk_darksight")]
+    [ScriptHandler(scriptName: "wlk_darksight")]
     public void OnDarkForesight(CallInfo info)
     {
         DarkForesight script = new();
         script.CastDarkForesight(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_devourmagic")]
+    [ScriptHandler(scriptName: "wlk_devourmagic")]
     public void OnDevourMagic(CallInfo info)
     {
         DevourMagic script = new();
         script.CastDevourMagic(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_retinvis")]
+    [ScriptHandler(scriptName: "wlk_retinvis")]
     public void OnShadowShape(CallInfo info)
     {
         ShadowShape script = new();
         script.CastShadowShape(info.ObjectSelf);
     }
 
-    [ScriptHandler("wlk_wordchange")]
+    [ScriptHandler(scriptName: "wlk_wordchange")]
     public void OnWordOfChanging(CallInfo info)
     {
         WordOfChanging script = new();

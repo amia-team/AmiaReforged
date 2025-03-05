@@ -10,13 +10,15 @@ public static class EldritchChain
     private static EssenceEffectApplier? _applier;
     private static EssenceType _essenceType;
 
-    public static void CastEldritchChain(uint caster, uint targetObject, EssenceType essence, EssenceEffectApplier effectApplier)
+    public static void CastEldritchChain(uint caster, uint targetObject, EssenceType essence,
+        EssenceEffectApplier effectApplier)
     {
         int touchAttackRanged = WarlockConstants.RangedTouch(targetObject);
         if (touchAttackRanged == FALSE) return;
 
         _applier = effectApplier;
-        _essenceType = (EssenceType)GetLocalInt(GetItemPossessedBy(caster, "ds_pckey"), "warlock_essence");
+        _essenceType = (EssenceType)GetLocalInt(GetItemPossessedBy(caster, sItemTag: "ds_pckey"),
+            sVarName: "warlock_essence");
 
         SignalEvent(targetObject, EventSpellCastAt(caster, 1005));
 
@@ -44,10 +46,10 @@ public static class EldritchChain
             if (NwEffects.IsValidSpellTarget(current, 3, caster))
             {
                 ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfx.Beam(essence, source), current, 1.1f);
-                
+
                 _damageAmount = EldritchDamage.CalculateDamageAmount(caster) * touchAttackRanged;
                 _applier = EssenceEffectFactory.CreateEssenceEffect(_essenceType, current, caster);
-                _applier.ApplyEffects(_damageAmount/2);
+                _applier.ApplyEffects(_damageAmount / 2);
 
                 source = current;
                 chains++;

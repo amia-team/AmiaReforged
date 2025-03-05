@@ -37,7 +37,7 @@ public class Resistance : ISpell
             isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==
                            SpellSchool.Abjuration;
         }
-        
+
         int bonusTurns = spellFocus ? 1 : greaterFocus ? 2 : epicFocus ? 3 : 0;
         int turns = 2 + bonusTurns;
 

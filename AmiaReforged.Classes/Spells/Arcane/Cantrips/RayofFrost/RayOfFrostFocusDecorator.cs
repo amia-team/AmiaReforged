@@ -25,10 +25,7 @@ public class RayOfFrostFocusDecorator : SpellDecorator
 
         bool immuneToSlow = false;
 
-        if (target is NwCreature creature)
-        {
-            immuneToSlow = !creature.IsImmuneTo(ImmunityType.Slow);
-        }
+        if (target is NwCreature creature) immuneToSlow = !creature.IsImmuneTo(ImmunityType.Slow);
 
         bool hasFocus = false;
         bool hasGreaterFocus = false;

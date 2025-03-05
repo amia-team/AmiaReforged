@@ -22,7 +22,7 @@ public class RayOfFrostSpecializationDecorator : SpellDecorator
         if (caster == null) return;
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
-        
+
         if (caster is not NwCreature casterCreature) return;
 
         bool isConjurer = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==

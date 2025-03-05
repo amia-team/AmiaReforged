@@ -11,17 +11,19 @@ public class EldritchBlasts
     public void CastEldritchBlasts(uint nwnObjectId)
     {
         int spellId = GetSpellId();
-        EssenceType essence = (EssenceType)GetLocalInt(GetItemPossessedBy(nwnObjectId, "ds_pckey"), "warlock_essence");
+        EssenceType essence = (EssenceType)GetLocalInt(GetItemPossessedBy(nwnObjectId, sItemTag: "ds_pckey"),
+            sVarName: "warlock_essence");
         uint targetObject = GetSpellTargetObject();
         bool hasEldritchMastery = GetHasFeat(1298, nwnObjectId) == TRUE;
 
         if (NwEffects.IsPolymorphed(nwnObjectId))
         {
-            SendMessageToPC(nwnObjectId, "You cannot cast while polymorphed.");
+            SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
             return;
         }
 
-        EssenceEffectApplier essenceEffects = EssenceEffectFactory.CreateEssenceEffect(essence, targetObject, nwnObjectId);
+        EssenceEffectApplier essenceEffects =
+            EssenceEffectFactory.CreateEssenceEffect(essence, targetObject, nwnObjectId);
 
         switch (spellId)
         {

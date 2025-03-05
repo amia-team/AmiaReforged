@@ -11,8 +11,8 @@ namespace AmiaReforged.Classes.Spells;
 public class SpellCastingService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly Dictionary<string, ISpell> _spellImpactHandlers = new();
     private readonly SpellDecoratorFactory _decoratorFactory;
+    private readonly Dictionary<string, ISpell> _spellImpactHandlers = new();
 
     public SpellCastingService(ScriptHandleFactory scriptHandleFactory, SpellDecoratorFactory decoratorFactory,
         IEnumerable<ISpell> spells)
@@ -29,9 +29,7 @@ public class SpellCastingService
     private ScriptHandleResult HandleSpellImpact(CallInfo callInfo)
     {
         if (!_spellImpactHandlers.TryGetValue(callInfo.ScriptName, out ISpell? spell))
-        {
             return ScriptHandleResult.NotHandled;
-        }
 
 
         spell = _decoratorFactory.ApplyDecorators(spell);
@@ -41,17 +39,15 @@ public class SpellCastingService
         NwGameObject? caster = eventData.Caster;
         NwGameObject? target = eventData.TargetObject;
 
-        if (caster is not NwCreature casterCreature)
-        {
-            return ScriptHandleResult.Handled;
-        }
+        if (caster is not NwCreature casterCreature) return ScriptHandleResult.Handled;
 
         if (target is null)
         {
             // This is an AOE
-            if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1)
+            if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
             {
-                NWScript.FloatingTextStringOnCreature("- You cannot cast magic in this area! -", casterCreature,
+                NWScript.FloatingTextStringOnCreature(sStringToDisplay: "- You cannot cast magic in this area! -",
+                    casterCreature,
                     NWScript.FALSE);
                 return ScriptHandleResult.Handled;
             }
@@ -64,9 +60,10 @@ public class SpellCastingService
             return ScriptHandleResult.Handled;
         }
 
-        if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>("NoCasting").Value == 1)
+        if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
         {
-            NWScript.FloatingTextStringOnCreature("- You cannot cast magic in this area! -", casterCreature,
+            NWScript.FloatingTextStringOnCreature(sStringToDisplay: "- You cannot cast magic in this area! -",
+                casterCreature,
                 NWScript.FALSE);
             return ScriptHandleResult.Handled;
         }
@@ -77,10 +74,8 @@ public class SpellCastingService
             bool targetIsInParty = false;
 
             if (casterCreature.IsPlayerControlled(out NwPlayer? player))
-            {
                 targetIsInParty = player.PartyMembers.Any(p => p.LoginCreature == targetCreature) ||
                                   casterCreature.Associates.Any(a => a == targetCreature);
-            }
 
             PVPSetting? areaPvpSetting = casterCreature.Area?.PVPSetting;
 
@@ -89,21 +84,20 @@ public class SpellCastingService
 
             if (targetIsInParty)
             {
-                NWScript.SendMessageToPC(casterCreature, "You cannot target a friendly creature with this spell.");
+                NWScript.SendMessageToPC(casterCreature,
+                    szMessage: "You cannot target a friendly creature with this spell.");
                 return ScriptHandleResult.Handled;
             }
 
             if (targetCreature.IsPlayerControlled && areaPvpSetting == PVPSetting.None)
             {
-                NWScript.SendMessageToPC(casterCreature, "PVP is not allowed in this area.");
+                NWScript.SendMessageToPC(casterCreature, szMessage: "PVP is not allowed in this area.");
                 return ScriptHandleResult.Handled;
             }
 
             if (eventData.Spell.IsHostileSpell)
-            {
                 if (!targetCreature.PlotFlag || !targetCreature.Immortal)
                     NWScript.AdjustReputation(caster, target, -100);
-            }
 
             spell.DoSpellResist(targetCreature, casterCreature);
         }
@@ -128,9 +122,7 @@ public class SpellCastingService
         {
             if (charClass.Class.ClassType is ClassType.Bard or ClassType.Assassin or ClassType.Wizard
                 or ClassType.Sorcerer)
-            {
                 baseClassLevels += charClass.Level;
-            }
         }
 
         int levels = paleMaster.Level + baseClassLevels;

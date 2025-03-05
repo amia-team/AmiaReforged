@@ -22,11 +22,13 @@ public class BeshadowedEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), Target);
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_FNF_GAS_EXPLOSION_GREASE), GetLocation(Target));
+        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_FNF_GAS_EXPLOSION_GREASE),
+            GetLocation(Target));
 
         bool passedFortSave = FortitudeSave(Target, CalculateDc(), SAVING_THROW_TYPE_SPELL, Caster) == TRUE;
 
-        if (passedFortSave) ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), Target);
+        if (passedFortSave)
+            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), Target);
         if (!passedFortSave)
         {
             int warlockLevels = GetLevelByClass(57, Caster);

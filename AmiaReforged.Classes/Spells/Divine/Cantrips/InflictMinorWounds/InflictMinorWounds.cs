@@ -35,6 +35,11 @@ public class InflictMinorWounds : ISpell
         ApplyEffect(eventData, damage);
     }
 
+    public void SetSpellResistResult(ResistSpellResult result)
+    {
+        Result = result;
+    }
+
     private int CalculateDamage(NwCreature casterCreature)
     {
         bool hasFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusNecromancy);
@@ -60,10 +65,5 @@ public class InflictMinorWounds : ISpell
 
         eventData.TargetObject!.ApplyEffect(EffectDuration.Instant, effectBasedOnType);
         eventData.TargetObject!.ApplyEffect(EffectDuration.Instant, vfx);
-    }
-
-    public void SetSpellResistResult(ResistSpellResult result)
-    {
-        Result = result;
     }
 }

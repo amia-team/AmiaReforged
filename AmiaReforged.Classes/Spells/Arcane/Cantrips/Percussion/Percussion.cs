@@ -1,15 +1,14 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.Percussion;
 
 [ServiceBinding(typeof(ISpell))]
 public class Percussion : ISpell
 {
-    private readonly SchedulerService _scheduler;
     private readonly ScriptHandleFactory _handleFactory;
+    private readonly SchedulerService _scheduler;
 
     public Percussion(ScriptHandleFactory handleFactory, SchedulerService scheduler)
     {
@@ -35,12 +34,9 @@ public class Percussion : ISpell
         // Just plays a single looping drum for now.
         string soundTag = $"Percussion_{caster.Name}";
         NwSound? existingSound = caster.GetNearestObjectsByType<NwSound>().FirstOrDefault(s => s.Tag == soundTag);
-        if (existingSound != null)
-        {
-            existingSound.Destroy();
-        }
+        if (existingSound != null) existingSound.Destroy();
 
-        NwSound? sound = NwSound.Create("wardrum1", caster.Location);
+        NwSound? sound = NwSound.Create(template: "wardrum1", caster.Location);
         if (sound == null) return;
         sound.Tag = soundTag;
         Effect aoe = Effect.AreaOfEffect(PersistentVfxType.MobCircchaos!,
@@ -59,10 +55,15 @@ public class Percussion : ISpell
         _scheduler.Schedule(() => sound.Destroy(), TimeSpan.FromSeconds(roundsToSeconds));
     }
 
+    public void SetSpellResistResult(ResistSpellResult result)
+    {
+        Result = result;
+    }
+
     private ScriptHandleResult OnEnterPercussion(CallInfo arg)
     {
         AreaOfEffectEvents.OnEnter eventData = new();
-        eventData.Entering.SpeakString("You hear a drumming sound.");
+        eventData.Entering.SpeakString(message: "You hear a drumming sound.");
         return ScriptHandleResult.Handled;
     }
 
@@ -70,17 +71,13 @@ public class Percussion : ISpell
     {
         AreaOfEffectEvents.OnHeartbeat eventData = new();
         if (eventData.Effect.Creator is NwCreature creator)
-        {
             foreach (NwCreature nwCreature in eventData.Effect.GetNearestObjectsByType<NwCreature>()
                          .Where(c => c.Distance(eventData.Effect) <= 5))
             {
                 if (nwCreature.IsFriend(creator) || nwCreature == creator)
-                {
                     nwCreature.ApplyEffect(EffectDuration.Temporary,
                         Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Perform)!, 2), TimeSpan.FromSeconds(6));
-                }
             }
-        }
 
         return ScriptHandleResult.Handled;
     }
@@ -88,12 +85,7 @@ public class Percussion : ISpell
     private ScriptHandleResult OnExitPercussion(CallInfo arg)
     {
         AreaOfEffectEvents.OnExit eventData = new();
-        eventData.Exiting.SpeakString("The drumming sound fades away.");
+        eventData.Exiting.SpeakString(message: "The drumming sound fades away.");
         return ScriptHandleResult.Handled;
-    }
-
-    public void SetSpellResistResult(ResistSpellResult result)
-    {
-        Result = result;
     }
 }

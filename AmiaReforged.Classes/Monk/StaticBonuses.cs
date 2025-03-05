@@ -8,10 +8,10 @@ namespace AmiaReforged.Classes.Monk;
 public static class StaticBonuses
 {
     public static Effect GetEffect(NwCreature monk)
-    {   
+    {
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int wisMod = monk.GetAbilityModifier(Ability.Wisdom);
-        
+
         int monkAcBonusAmount = monkLevel >= wisMod ? wisMod : monkLevel;
         Effect monkAcBonus = Effect.ACIncrease(monkAcBonusAmount, ACBonus.ShieldEnchantment);
         monkAcBonus.ShowIcon = false;

@@ -5,14 +5,13 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 
-
 namespace AmiaReforged.Classes.Monk.Techniques.Body;
 
 /// <summary>
-/// The monk can heal damage equal to twice her class level. Using this technique spends one body ki point.
+///     The monk can heal damage equal to twice her class level. Using this technique spends one body ki point.
 /// </summary>
 public static class WholenessOfBody
-{   
+{
     public static void CastWholenessOfBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
@@ -24,7 +23,7 @@ public static class WholenessOfBody
             AugmentationApplier.ApplyAugmentations(path, technique, castData);
             return;
         }
-        
+
         DoWholenessOfBody(castData);
     }
 
@@ -32,7 +31,7 @@ public static class WholenessOfBody
     {
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int healAmount = monkLevel*2;
+        int healAmount = monkLevel * 2;
         Effect wholenessEffect = Effect.Heal(healAmount);
         Effect wholenessVfx = Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f);
 

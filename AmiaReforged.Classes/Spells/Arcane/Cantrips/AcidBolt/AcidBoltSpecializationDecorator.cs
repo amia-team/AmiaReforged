@@ -10,28 +10,29 @@ public class AcidBoltSpecializationDecorator : SpellDecorator
     {
         Spell = spell;
     }
-    
+
     public override void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         NwGameObject? caster = eventData.Caster;
         if (caster == null) return;
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
-        
+
         if (caster is not NwCreature casterCreature) return;
-        
-        bool hasConjurationSpecialization = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) == SpellSchool.Conjuration;
-        
+
+        bool hasConjurationSpecialization = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==
+                                            SpellSchool.Conjuration;
+
         if (hasConjurationSpecialization)
         {
             ApplyImpactVfx(target);
 
             Effect corrosion = Effect.ACDecrease(2, ACBonus.ArmourEnchantment);
             corrosion.Tag = "AM_AcidBolt_Corrosion";
-            
+
             ApplyCorrosion(target, corrosion);
         }
-        
+
         Spell.OnSpellImpact(eventData);
     }
 

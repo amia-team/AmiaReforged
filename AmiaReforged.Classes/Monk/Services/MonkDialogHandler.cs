@@ -9,58 +9,59 @@ namespace AmiaReforged.Classes.Monk.Services;
 
 [ServiceBinding(typeof(MonkDialogHandler))]
 public class MonkDialogHandler
-{ 
+{
     private readonly Logger _log = LogManager.GetCurrentClassLogger();
 
-    [Inject] private DialogService DialogService { get; init; }
     public MonkDialogHandler(DialogService dialogService)
-    { 
-        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE"); 
+    {
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
 
         if (environment == "live") return;
-        
+
         //Register method to listen for the event.
         DialogService = dialogService;
         NwModule.Instance.OnUseFeat += OpenPathDialog;
         NwModule.Instance.OnUseFeat += OpenEyeGlowDialog;
-        _log.Info("Monk Eye Glow Feat Handler initialized.");
+        _log.Info(message: "Monk Eye Glow Feat Handler initialized.");
     }
 
+    [Inject] private DialogService DialogService { get; init; }
+
     /// <summary>
-    /// Opens the dialog menu for choosing the Path of Enlightenment
+    ///     Opens the dialog menu for choosing the Path of Enlightenment
     /// </summary>
     private static async void OpenPathDialog(OnUseFeat eventData)
     {
-    if (eventData.Feat.Id is not MonkFeat.PathOfEnlightenment) return;
-    if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
+        if (eventData.Feat.Id is not MonkFeat.PathOfEnlightenment) return;
+        if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
-    if (eventData.Creature.Feats.Any(feat => feat.Id is MonkFeat.CrashingMeteor
-          or MonkFeat.SwingingCenser or MonkFeat.CrystalTides or MonkFeat.ChardalynSand
-          or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley)) return;
+        if (eventData.Creature.Feats.Any(feat => feat.Id is MonkFeat.CrashingMeteor
+                or MonkFeat.SwingingCenser or MonkFeat.CrystalTides or MonkFeat.ChardalynSand
+                or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley)) return;
 
-    await player.ActionStartConversation
-        (eventData.Creature, "mont_path_dlg", true, false);
+        await player.ActionStartConversation
+            (eventData.Creature, dialogResRef: "mont_path_dlg", true, false);
     }
 
     /// <summary>
-    /// Opens the dialog menu to set the eye glow color
+    ///     Opens the dialog menu to set the eye glow color
     /// </summary>
     private static async void OpenEyeGlowDialog(OnUseFeat eventData)
     {
-    if (eventData.Feat.FeatType is not Feat.PerfectSelf) return; 
-    if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
+        if (eventData.Feat.FeatType is not Feat.PerfectSelf) return;
+        if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
-    await player.ActionStartConversation
-        (eventData.Creature, "monk_eye_dlg", true, false);
+        await player.ActionStartConversation
+            (eventData.Creature, dialogResRef: "monk_eye_dlg", true, false);
     }
 
-    [ScriptHandler("monk_path_dlg")]
+    [ScriptHandler(scriptName: "monk_path_dlg")]
     private void PathDialog(CallInfo info)
     {
         DialogEvents.AppearsWhen eventData = new();
-        
+
         if (eventData.PlayerSpeaker?.ControlledCreature is null) return;
-        
+
         NwCreature monk = eventData.PlayerSpeaker.ControlledCreature;
         NodeType nodeType = DialogService.CurrentNodeType;
 
@@ -71,81 +72,75 @@ public class MonkDialogHandler
         }
     }
 
-    [ScriptHandler("monk_eye_dlg")]
+    [ScriptHandler(scriptName: "monk_eye_dlg")]
     private void EyeGlowDialog(CallInfo info)
     {
         DialogEvents.AppearsWhen eventData = new();
 
         if (eventData.PlayerSpeaker?.ControlledCreature is null) return;
-        
+
         NwCreature monk = eventData.PlayerSpeaker.ControlledCreature;
         NodeType nodeType = DialogService.CurrentNodeType;
-        
 
-        if (nodeType == NodeType.StartingNode)
-        {
-            DialogService.SetCurrentNodeText("Select eye glow color.");
-        }
-        if (nodeType == NodeType.ReplyNode)
-        {
-            ApplyEyeGlow(monk);
-        }
+
+        if (nodeType == NodeType.StartingNode) DialogService.SetCurrentNodeText(text: "Select eye glow color.");
+        if (nodeType == NodeType.ReplyNode) ApplyEyeGlow(monk);
     }
-    
+
     /// <summary>
-    /// Selects the monk path based on dialog option
+    ///     Selects the monk path based on dialog option
     /// </summary>
     /// <returns>Path name</returns>
     private static string GivePathFeat(NwCreature monk)
     {
         Func<string, LocalVariableInt> localInt = monk.GetObjectVariable<LocalVariableInt>;
 
-        if (localInt("ds_check1").HasValue)
+        if (localInt(arg: "ds_check1").HasValue)
         {
             monk.AddFeat(NwFeat.FromFeatId(MonkFeat.CrystalTides)!);
             return NwFeat.FromFeatId(MonkFeat.CrystalTides)!.Name.ToString();
         }
 
 
-        if (localInt("ds_check2").HasValue)
+        if (localInt(arg: "ds_check2").HasValue)
         {
             monk.AddFeat(NwFeat.FromFeatId(MonkFeat.EchoingValley)!);
             return NwFeat.FromFeatId(MonkFeat.EchoingValley)!.Name.ToString();
         }
 
 
-        if (localInt("ds_check3").HasValue)
+        if (localInt(arg: "ds_check3").HasValue)
         {
             monk.AddFeat(NwFeat.FromFeatId(MonkFeat.CrackedVessel)!);
             return NwFeat.FromFeatId(MonkFeat.CrackedVessel)!.Name.ToString();
         }
 
 
-        if (localInt("ds_check4").HasValue)
+        if (localInt(arg: "ds_check4").HasValue)
         {
             monk.AddFeat(NwFeat.FromFeatId(MonkFeat.CrashingMeteor)!);
             return NwFeat.FromFeatId(MonkFeat.CrashingMeteor)!.Name.ToString();
         }
 
 
-        if (localInt("ds_check5").HasValue)
+        if (localInt(arg: "ds_check5").HasValue)
         {
             monk.AddFeat(NwFeat.FromFeatId(MonkFeat.IroncladBull)!);
             return NwFeat.FromFeatId(MonkFeat.IroncladBull)!.Name.ToString();
         }
 
-        if (localInt("ds_check6").HasValue)
+        if (localInt(arg: "ds_check6").HasValue)
         {
             monk.AddFeat(NwFeat.FromFeatId(MonkFeat.SwingingCenser)!);
             return NwFeat.FromFeatId(MonkFeat.SwingingCenser)!.Name.ToString();
         }
 
-        if (localInt("ds_check7").HasValue)
+        if (localInt(arg: "ds_check7").HasValue)
         {
             monk.AddFeat(NwFeat.FromFeatId(MonkFeat.ChardalynSand)!);
             return NwFeat.FromFeatId(MonkFeat.ChardalynSand)!.Name.ToString();
         }
-        
+
         return "";
     }
 
@@ -158,7 +153,7 @@ public class MonkDialogHandler
     }
 
     /// <summary>
-    /// Helper that returns the vfx effect for monk eye glow
+    ///     Helper that returns the vfx effect for monk eye glow
     /// </summary>
     private static Effect GetMonkEyeVfx(NwCreature monk)
     {
@@ -167,9 +162,9 @@ public class MonkDialogHandler
         AppearanceTableEntry appearanceType = monk.Appearance;
         Gender gender = monk.Gender;
         float scale = monk.VisualTransform.Scale;
-        
+
         // CYAN
-        if (localInt("ds_check1").HasValue)
+        if (localInt(arg: "ds_check1").HasValue)
             eyeGlowVfx = (gender, appearanceType.RowIndex) switch
             {
                 (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType.EyesCynHumanMale,
@@ -187,11 +182,12 @@ public class MonkDialogHandler
                 _ => eyeGlowVfx
             };
         // GREEN
-        if (localInt("ds_check2").HasValue)
+        if (localInt(arg: "ds_check2").HasValue)
             eyeGlowVfx = (gender, appearanceType.RowIndex) switch
             {
                 (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType.EyesGreenHumanMale,
-                (Gender.Female, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType.EyesGreenHumanFemale,
+                (Gender.Female, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType
+                    .EyesGreenHumanFemale,
                 (Gender.Male, (int)AppearanceType.HalfOrc) => VfxType.EyesGreenHalforcMale,
                 (Gender.Female, (int)AppearanceType.HalfOrc) => VfxType.EyesGreenHumanFemale,
                 (Gender.Male, (int)AppearanceType.Halfling) => VfxType.EyesGreenHalflingMale,
@@ -205,7 +201,7 @@ public class MonkDialogHandler
                 _ => eyeGlowVfx
             };
         // YELLOW
-        if (localInt("ds_check3").HasValue)
+        if (localInt(arg: "ds_check3").HasValue)
             eyeGlowVfx = (gender, appearanceType.RowIndex) switch
             {
                 (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType.EyesYelHumanMale,
@@ -223,7 +219,7 @@ public class MonkDialogHandler
                 _ => eyeGlowVfx
             };
         // WHITE
-        if (localInt("ds_check4").HasValue)
+        if (localInt(arg: "ds_check4").HasValue)
             eyeGlowVfx = (gender, appearanceType.RowIndex) switch
             {
                 (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType.EyesWhtHumanMale,
@@ -241,7 +237,7 @@ public class MonkDialogHandler
                 _ => eyeGlowVfx
             };
         // ORANGE
-        if (localInt("ds_check5").HasValue)
+        if (localInt(arg: "ds_check5").HasValue)
             eyeGlowVfx = (gender, appearanceType.RowIndex) switch
             {
                 (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType.EyesOrgHumanMale,
@@ -259,7 +255,7 @@ public class MonkDialogHandler
                 _ => eyeGlowVfx
             };
         // PURPLE
-        if (localInt("ds_check6").HasValue)
+        if (localInt(arg: "ds_check6").HasValue)
             eyeGlowVfx = (gender, appearanceType.RowIndex) switch
             {
                 (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType.EyesPurHumanMale,
@@ -277,11 +273,13 @@ public class MonkDialogHandler
                 _ => eyeGlowVfx
             };
         // RED FLAME
-        if (localInt("ds_check7").HasValue) 
+        if (localInt(arg: "ds_check7").HasValue)
             eyeGlowVfx = (gender, appearanceType.RowIndex) switch
             {
-                (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType.EyesRedFlameHumanMale,
-                (Gender.Female, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType.EyesRedFlameHumanFemale,
+                (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) =>
+                    VfxType.EyesRedFlameHumanMale,
+                (Gender.Female, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => VfxType
+                    .EyesRedFlameHumanFemale,
                 (Gender.Male, (int)AppearanceType.HalfOrc) => VfxType.EyesRedFlameHalforcMale,
                 (Gender.Female, (int)AppearanceType.HalfOrc) => VfxType.EyesRedFlameHumanFemale,
                 (Gender.Male, (int)AppearanceType.Halfling) => VfxType.EyesRedFlameHalflingMale,
@@ -295,7 +293,7 @@ public class MonkDialogHandler
                 _ => eyeGlowVfx
             };
         // BLUE
-        
+
         const VfxType eyesBlueHumanMale = (VfxType)324;
         const VfxType eyesBlueHumanFemale = (VfxType)325;
         const VfxType eyesBlueDwarfMale = (VfxType)326;
@@ -308,8 +306,8 @@ public class MonkDialogHandler
         const VfxType eyesBlueHalflingFemale = (VfxType)333;
         const VfxType eyesBlueHalfOrcMale = (VfxType)334;
         const VfxType eyesBlueHalfOrcFemale = (VfxType)335;
-        
-        if (localInt("ds_check8").HasValue)
+
+        if (localInt(arg: "ds_check8").HasValue)
             eyeGlowVfx = (gender, appearanceType.RowIndex) switch
             {
                 (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => eyesBlueHumanMale,
@@ -326,17 +324,15 @@ public class MonkDialogHandler
                 (Gender.Female, (int)AppearanceType.Elf) => eyesBlueElfFemale,
                 _ => eyeGlowVfx
             };
-        
+
         // REMOVE AND RETURN
-        if (localInt("ds_check9").HasValue)
-        {
+        if (localInt(arg: "ds_check9").HasValue)
             foreach (Effect effect in monk.ActiveEffects)
             {
-                if (effect.Tag is "monk_eye_glow_vfx") 
+                if (effect.Tag is "monk_eye_glow_vfx")
                     monk.RemoveEffect(effect);
             }
-        }
-        
+
         return Effect.VisualEffect(eyeGlowVfx, false, scale);
     }
 }

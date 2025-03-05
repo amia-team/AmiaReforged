@@ -21,20 +21,19 @@ public class DisruptUndeadFocusDecorator : SpellDecorator
         if (target is not NwCreature creature) return;
         if (caster is not NwCreature casterCreature) return;
 
-        bool hasNecroFocus = HasAnyFocus(casterCreature, out bool hasGreaterNecroFocus, out bool hasEpicNecroFocus, out bool anyFocus);
+        bool hasNecroFocus = HasAnyFocus(casterCreature, out bool hasGreaterNecroFocus, out bool hasEpicNecroFocus,
+            out bool anyFocus);
 
         Effect saveDecrease = CreatePenaltyEffect(hasNecroFocus, hasGreaterNecroFocus, hasEpicNecroFocus);
 
 
-        if (creature.Race.RacialType == RacialType.Undead && anyFocus)
-        {
-            ApplyPenalty(creature, target, saveDecrease);
-        }
+        if (creature.Race.RacialType == RacialType.Undead && anyFocus) ApplyPenalty(creature, target, saveDecrease);
 
         Spell.OnSpellImpact(eventData);
     }
 
-    private static bool HasAnyFocus(NwCreature casterCreature, out bool hasGreaterNecroFocus, out bool hasEpicNecroFocus,
+    private static bool HasAnyFocus(NwCreature casterCreature, out bool hasGreaterNecroFocus,
+        out bool hasEpicNecroFocus,
         out bool anyFocus)
     {
         bool hasNecroFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusNecromancy);
@@ -49,7 +48,8 @@ public class DisruptUndeadFocusDecorator : SpellDecorator
         int reductionAmount = hasNecroFocus ? 1 : hasGreaterNecroFocus ? 2 : hasEpicNecroFocus ? 3 : 0;
         int immunityReduction = hasEpicNecroFocus ? 5 : 0;
         Effect saveDecrease = Effect.SavingThrowDecrease(SavingThrow.Will, reductionAmount);
-        saveDecrease = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Positive, immunityReduction), saveDecrease);
+        saveDecrease = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Positive, immunityReduction),
+            saveDecrease);
         saveDecrease.Tag = "DisruptUndeadFocusDecorator";
         return saveDecrease;
     }
@@ -66,6 +66,6 @@ public class DisruptUndeadFocusDecorator : SpellDecorator
     private static void RemoveExistingEffect(NwCreature creature)
     {
         Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "DisruptUndeadFocusDecorator");
-        if(existing != null) creature.RemoveEffect(existing);
+        if (existing != null) creature.RemoveEffect(existing);
     }
 }

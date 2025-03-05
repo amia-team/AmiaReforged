@@ -43,12 +43,13 @@ public class ViciousMockery : ISpell
 
         if (target == caster)
         {
-            NWScript.FloatingTextStringOnCreature("You can't mock yourself!", targetCreature, NWScript.FALSE);
+            NWScript.FloatingTextStringOnCreature(sStringToDisplay: "You can't mock yourself!", targetCreature,
+                NWScript.FALSE);
             return;
         }
 
         int focusDice = hasFocus ? 1 : hasGreaterFocus ? 2 : hasEpicFocus ? 3 : 0;
-        int damage = NWScript.d4((caster.CasterLevel / 3) + focusDice);
+        int damage = NWScript.d4(caster.CasterLevel / 3 + focusDice);
 
         const int concentrationPenalty = 10;
 
@@ -61,11 +62,9 @@ public class ViciousMockery : ISpell
             target.ApplyEffect(EffectDuration.Instant, damageEffect);
 
 
-            Effect? existingSkillPenalty = targetCreature.ActiveEffects.SingleOrDefault(e => e.Tag == "VICIOUS_MOCKERY");
-            if (existingSkillPenalty != null)
-            {
-                targetCreature.RemoveEffect(existingSkillPenalty);
-            }
+            Effect? existingSkillPenalty =
+                targetCreature.ActiveEffects.SingleOrDefault(e => e.Tag == "VICIOUS_MOCKERY");
+            if (existingSkillPenalty != null) targetCreature.RemoveEffect(existingSkillPenalty);
 
             if (hasEpicFocus)
             {
@@ -77,9 +76,7 @@ public class ViciousMockery : ISpell
                     10 + caster.CasterLevel + chaMod, SavingThrowType.Spell);
 
                 if (result == SavingThrowResult.Failure)
-                {
                     targetCreature.ApplyEffect(EffectDuration.Temporary, skillPenalty, TimeSpan.FromSeconds(18));
-                }
             }
         }
     }

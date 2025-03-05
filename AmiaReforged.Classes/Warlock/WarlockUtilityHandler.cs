@@ -23,7 +23,7 @@ public class WarlockUtilityHandler
         NwModule.Instance.OnItemUse += TokenGiveEnergyFeats;
         NwModule.Instance.OnItemUse += TokenRelevel;
         NwModule.Instance.OnEffectRemove += RemoveCustomShape;
-        Log.Info("Warlock Utility Handler initialized.");
+        Log.Info(message: "Warlock Utility Handler initialized.");
     }
 
     private void GiveFeats(ModuleEvents.OnClientEnter obj)
@@ -35,61 +35,61 @@ public class WarlockUtilityHandler
         if (NWScript.GetLevelByClass(57, warlock) >= 1 && NWScript.GetHasFeat(1307, warlock) == 0)
         {
             warlock.AddFeat(NwFeat.FromFeatId(1307));
-            obj.Player.SendServerMessage(WarlockConstants.String("Armored Caster feat added."));
+            obj.Player.SendServerMessage(WarlockConstants.String(message: "Armored Caster feat added."));
         }
+
         if (NWScript.GetLevelByClass(57, warlock) >= 3 && NWScript.GetHasFeat(1308, warlock) == 0)
         {
             warlock.AddFeat(NwFeat.FromFeatId(1308));
-            obj.Player.SendServerMessage(WarlockConstants.String("Damage Reduction feat added."));
+            obj.Player.SendServerMessage(WarlockConstants.String(message: "Damage Reduction feat added."));
         }
+
         if (NWScript.GetLevelByClass(57, warlock) >= 8 && NWScript.GetHasFeat(1297, warlock) == 0)
         {
             warlock.AddFeat(NwFeat.FromFeatId(1297));
-            obj.Player.SendServerMessage(WarlockConstants.String("Otherworldly Resilience feat added."));
+            obj.Player.SendServerMessage(WarlockConstants.String(message: "Otherworldly Resilience feat added."));
         }
     }
+
     private void RemoveIllegalFeats(OnLevelDown obj)
     {
         // Check if character has potential illegal feats, return if not
         if (!obj.Creature.IsPlayerControlled) return;
-        if (!obj.Creature.Feats.Any(feat => feat.Id == 1297 || (feat.Id >= 1307 && feat.Id <= 1319))) return;
+        if (!obj.Creature.Feats.Any(feat => feat.Id == 1297 || feat.Id >= 1307 && feat.Id <= 1319)) return;
 
         if (NWScript.GetLevelByClass(57, obj.Creature) < 1 && NWScript.GetHasFeat(1307) == 1)
         {
             obj.Creature.RemoveFeat(NwFeat.FromFeatId(1307));
-            obj.Creature.LoginPlayer.SendServerMessage(WarlockConstants.String("Armored Caster feat removed."));
+            obj.Creature.LoginPlayer.SendServerMessage(
+                WarlockConstants.String(message: "Armored Caster feat removed."));
         }
+
         if (NWScript.GetLevelByClass(57, obj.Creature) < 3 && NWScript.GetHasFeat(1308) == 1)
         {
             obj.Creature.RemoveFeat(NwFeat.FromFeatId(1308));
-            obj.Creature.LoginPlayer.SendServerMessage(WarlockConstants.String("Damage Reduction feat removed."));
+            obj.Creature.LoginPlayer.SendServerMessage(
+                WarlockConstants.String(message: "Damage Reduction feat removed."));
         }
+
         if (NWScript.GetLevelByClass(57, obj.Creature) < 8 && NWScript.GetHasFeat(1297) == 0)
         {
             obj.Creature.AddFeat(NwFeat.FromFeatId(1297));
-            obj.Creature.LoginPlayer.SendServerMessage(WarlockConstants.String("Otherworldly Resilience feat removed."));
+            obj.Creature.LoginPlayer.SendServerMessage(
+                WarlockConstants.String(message: "Otherworldly Resilience feat removed."));
         }
 
         if (NWScript.GetLevelByClass(57, obj.Creature) < 10)
-        {
             foreach (Effect effect in obj.Creature.ActiveEffects)
             {
-                if (effect.Tag == "warlock_resistfeat")
-                {
-                obj.Creature.RemoveEffect(effect);
-                }
+                if (effect.Tag == "warlock_resistfeat") obj.Creature.RemoveEffect(effect);
             }
-        }
+
         if (NWScript.GetLevelByClass(57, obj.Creature) < 20)
-        {
             foreach (Effect effect in obj.Creature.ActiveEffects)
             {
-                if (effect.Tag == "warlock_epicresistfeat")
-                {
-                obj.Creature.RemoveEffect(effect);
-                }
+                if (effect.Tag == "warlock_epicresistfeat") obj.Creature.RemoveEffect(effect);
             }
-        }
+
         if (NWScript.GetLevelByClass(57, obj.Creature) <= 0
             && obj.Creature.Feats.Any(feat => feat.Id >= 1314 && feat.Id <= 1319))
         {
@@ -99,7 +99,7 @@ public class WarlockUtilityHandler
             obj.Creature.RemoveFeat(NwFeat.FromFeatId(1317));
             obj.Creature.RemoveFeat(NwFeat.FromFeatId(1318));
             obj.Creature.RemoveFeat(NwFeat.FromFeatId(1319));
-            obj.Creature.LoginPlayer.SendServerMessage(WarlockConstants.String("Pact feat removed."));
+            obj.Creature.LoginPlayer.SendServerMessage(WarlockConstants.String(message: "Pact feat removed."));
         }
     }
 
@@ -130,18 +130,21 @@ public class WarlockUtilityHandler
         bool knowsPactFeat = obj.Player.LoginCreature.Feats.Any(feat => feat.Id >= 1314 && feat.Id <= 1319);
         bool isValidLvlWarlock = NWScript.GetLevelByClass(57, obj.Player.LoginCreature) > 1;
         bool hasToken = obj.Player.LoginCreature.Inventory.Items.Any(item => item.ResRef == "utilitytoken");
-        bool hasInventorySpace = obj.Player.LoginCreature.Inventory.CheckFit(NwBaseItem.FromItemType(BaseItemType.Bullet));
+        bool hasInventorySpace =
+            obj.Player.LoginCreature.Inventory.CheckFit(NwBaseItem.FromItemType(BaseItemType.Bullet));
 
         if (!isValidLvlWarlock) return;
         if (knowsPactFeat) return;
         if (hasToken) return;
         if (!hasInventorySpace) return;
 
-        NwItem.Create("utilitytoken", obj.Player.LoginCreature, 1, "utility_token_pactfeat");
-        NwItem utilityToken = obj.Player.LoginCreature.Inventory.Items.First(item => item.Tag == "utility_token_pactfeat");
+        NwItem.Create(template: "utilitytoken", obj.Player.LoginCreature, 1, newTag: "utility_token_pactfeat");
+        NwItem utilityToken =
+            obj.Player.LoginCreature.Inventory.Items.First(item => item.Tag == "utility_token_pactfeat");
         utilityToken.Description = "Warlock: Use this token to get your pact sorted!";
         utilityToken.Name = "Warlock Pact Feat Token";
-        obj.Player.SendServerMessage(WarlockConstants.String("Warlock Pact Feat Token added to inventory, examine it!"));
+        obj.Player.SendServerMessage(
+            WarlockConstants.String(message: "Warlock Pact Feat Token added to inventory, examine it!"));
     }
 
     private void GiveEnergyToken(ModuleEvents.OnClientEnter obj)
@@ -149,33 +152,42 @@ public class WarlockUtilityHandler
         bool knowsEnergyFeat = obj.Player.LoginCreature.Feats.Any(feat => feat.Id >= 1309 && feat.Id <= 1313);
         bool isValidLvlWarlock = NWScript.GetLevelByClass(57, obj.Player.LoginCreature) > 10;
         bool hasToken = obj.Player.LoginCreature.Inventory.Items.Any(item => item.ResRef == "utilitytoken");
-        bool hasInventorySpace = obj.Player.LoginCreature.Inventory.CheckFit(NwBaseItem.FromItemType(BaseItemType.Bullet));
+        bool hasInventorySpace =
+            obj.Player.LoginCreature.Inventory.CheckFit(NwBaseItem.FromItemType(BaseItemType.Bullet));
 
         if (!isValidLvlWarlock) return;
         if (knowsEnergyFeat) return;
         if (hasToken) return;
         if (!hasInventorySpace) return;
 
-        NwItem.Create("utilitytoken", obj.Player.LoginCreature, 1, "utility_token_energyfeat");
-        NwItem utilityToken = obj.Player.LoginCreature.Inventory.Items.First(item => item.Tag == "utility_token_energyfeat");
+        NwItem.Create(template: "utilitytoken", obj.Player.LoginCreature, 1, newTag: "utility_token_energyfeat");
+        NwItem utilityToken =
+            obj.Player.LoginCreature.Inventory.Items.First(item => item.Tag == "utility_token_energyfeat");
         utilityToken.Description = "Warlock: Use this token to get your energy feats sorted.";
         utilityToken.Name = "Warlock Energy Feat Token";
-        obj.Player.SendServerMessage(WarlockConstants.String("Warlock Energy Feat Token added to inventory, examine it!"));
+        obj.Player.SendServerMessage(
+            WarlockConstants.String(message: "Warlock Energy Feat Token added to inventory, examine it!"));
     }
 
     private void GiveRelevelToken(ModuleEvents.OnClientEnter obj)
     {
         bool isValidLvlWarlock = NWScript.GetLevelByClass(57, obj.Player.LoginCreature) > 1;
         bool hasToken = obj.Player.LoginCreature.Inventory.Items.Any(item => item.ResRef == "utilitytoken");
-        bool hasInventorySpace = obj.Player.LoginCreature.Inventory.CheckFit(NwBaseItem.FromItemType(BaseItemType.Bullet));
+        bool hasInventorySpace =
+            obj.Player.LoginCreature.Inventory.CheckFit(NwBaseItem.FromItemType(BaseItemType.Bullet));
 
         NwCreature warlock = obj.Player.LoginCreature;
 
-        bool knowsEssenceInvocation = warlock.HasSpellUse(NwSpell.FromSpellId(1015)) || warlock.HasSpellUse(NwSpell.FromSpellId(1016)) || 
-        warlock.HasSpellUse(NwSpell.FromSpellId(1017)) || warlock.HasSpellUse(NwSpell.FromSpellId(1018)) ||
-        warlock.HasSpellUse(NwSpell.FromSpellId(1019)) || warlock.HasSpellUse(NwSpell.FromSpellId(1020)) ||
-        warlock.HasSpellUse(NwSpell.FromSpellId(1021)) || warlock.HasSpellUse(NwSpell.FromSpellId(1022)) ||
-        warlock.HasSpellUse(NwSpell.FromSpellId(1023)) || warlock.HasSpellUse(NwSpell.FromSpellId(1024));
+        bool knowsEssenceInvocation = warlock.HasSpellUse(NwSpell.FromSpellId(1015)) ||
+                                      warlock.HasSpellUse(NwSpell.FromSpellId(1016)) ||
+                                      warlock.HasSpellUse(NwSpell.FromSpellId(1017)) ||
+                                      warlock.HasSpellUse(NwSpell.FromSpellId(1018)) ||
+                                      warlock.HasSpellUse(NwSpell.FromSpellId(1019)) ||
+                                      warlock.HasSpellUse(NwSpell.FromSpellId(1020)) ||
+                                      warlock.HasSpellUse(NwSpell.FromSpellId(1021)) ||
+                                      warlock.HasSpellUse(NwSpell.FromSpellId(1022)) ||
+                                      warlock.HasSpellUse(NwSpell.FromSpellId(1023)) ||
+                                      warlock.HasSpellUse(NwSpell.FromSpellId(1024));
 
         bool baseChaOver11 = NWScript.GetAbilityScore(warlock, NWScript.ABILITY_CHARISMA, 1) >= 11;
 
@@ -185,13 +197,17 @@ public class WarlockUtilityHandler
         if (knowsEssenceInvocation) return;
         if (!baseChaOver11) return;
 
-        NwItem.Create("utilitytoken", obj.Player.LoginCreature, 1, "utility_token_warlockrelevel");
-        NwItem utilityToken = obj.Player.LoginCreature.Inventory.Items.First(item => item.Tag == "utility_token_warlockrelevel");
-        NWScript.SetLocalInt(utilityToken, "warlockxp_releveltoken", obj.Player.LoginCreature.Xp);
-        utilityToken.Description = "Warlock: Use this token to get your invocations sorted. Using the token relevels you to the level you were when you gained this token.";
+        NwItem.Create(template: "utilitytoken", obj.Player.LoginCreature, 1, newTag: "utility_token_warlockrelevel");
+        NwItem utilityToken =
+            obj.Player.LoginCreature.Inventory.Items.First(item => item.Tag == "utility_token_warlockrelevel");
+        NWScript.SetLocalInt(utilityToken, sVarName: "warlockxp_releveltoken", obj.Player.LoginCreature.Xp);
+        utilityToken.Description =
+            "Warlock: Use this token to get your invocations sorted. Using the token relevels you to the level you were when you gained this token.";
         utilityToken.Name = "Warlock Relevel Token";
-        obj.Player.SendServerMessage(WarlockConstants.String("Warlock Relevel Token added to inventory, examine it!"));
+        obj.Player.SendServerMessage(
+            WarlockConstants.String(message: "Warlock Relevel Token added to inventory, examine it!"));
     }
+
     private void TokenGivePactFeat(OnItemUse obj)
     {
         if (!obj.UsedBy.IsPlayerControlled) return;
@@ -202,39 +218,53 @@ public class WarlockUtilityHandler
         if (knowsPactFeat)
         {
             obj.Item.Destroy();
-            obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String("You already have a pact feat! Relog to see if you qualify for other utility tokens."));
-            obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpElementalProtection));
+            obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(
+                message: "You already have a pact feat! Relog to see if you qualify for other utility tokens."));
+            obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant,
+                Effect.VisualEffect(VfxType.ImpElementalProtection));
             return;
         }
-        int pactFeatInt = NWScript.GetLocalInt(obj.UsedBy, "pactfeat_int");
+
+        int pactFeatInt = NWScript.GetLocalInt(obj.UsedBy, sVarName: "pactfeat_int");
         if (pactFeatInt == 0)
         {
             obj.UsedBy.ClearActionQueue();
-            NWScript.AssignCommand(obj.UsedBy, () => NWScript.ActionStartConversation(obj.UsedBy, "pactfeat_select", 1, 0));
+            NWScript.AssignCommand(obj.UsedBy,
+                () => NWScript.ActionStartConversation(obj.UsedBy, sDialogResRef: "pactfeat_select", 1, 0));
             return;
         }
+
         obj.UsedBy.AddFeat(NwFeat.FromFeatId(pactFeatInt));
         obj.Item.Destroy();
         string pactFeatName = NWScript.IntToString(pactFeatInt);
         switch (pactFeatName)
         {
-            case "1314" : pactFeatName = "Aberrant";
-            break;
-            case "1315" : pactFeatName = "Celestial";
-            break;
-            case "1316" : pactFeatName = "Fey";
-            break;
-            case "1317" : pactFeatName = "Fiend";
-            break;
-            case "1318" : pactFeatName = "Elemental";
-            break;
-            case "1319" : pactFeatName = "Slaad";
-            break;
+            case "1314":
+                pactFeatName = "Aberrant";
+                break;
+            case "1315":
+                pactFeatName = "Celestial";
+                break;
+            case "1316":
+                pactFeatName = "Fey";
+                break;
+            case "1317":
+                pactFeatName = "Fiend";
+                break;
+            case "1318":
+                pactFeatName = "Elemental";
+                break;
+            case "1319":
+                pactFeatName = "Slaad";
+                break;
         }
-        obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(pactFeatName+" Pact feat added. Relog to see if you qualify for other utility tokens."));
+
+        obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(pactFeatName +
+                                                                               " Pact feat added. Relog to see if you qualify for other utility tokens."));
         obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpElementalProtection));
-        NWScript.DeleteLocalInt(obj.UsedBy, "pactfeat_int");
+        NWScript.DeleteLocalInt(obj.UsedBy, sVarName: "pactfeat_int");
     }
+
     private void TokenGiveEnergyFeats(OnItemUse obj)
     {
         if (!obj.UsedBy.IsPlayerControlled) return;
@@ -245,54 +275,74 @@ public class WarlockUtilityHandler
         if (knowsEnergyFeats)
         {
             obj.Item.Destroy();
-            obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String("You already have energy feats! Relog to see if you qualify for other utility tokens."));
-            obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpElementalProtection));
+            obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(
+                message: "You already have energy feats! Relog to see if you qualify for other utility tokens."));
+            obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant,
+                Effect.VisualEffect(VfxType.ImpElementalProtection));
             return;
         }
-        int energyFeatInt1 = NWScript.GetLocalInt(obj.UsedBy, "energyfeat_int1");
-        int energyFeatInt2 = NWScript.GetLocalInt(obj.UsedBy, "energyfeat_int2");
+
+        int energyFeatInt1 = NWScript.GetLocalInt(obj.UsedBy, sVarName: "energyfeat_int1");
+        int energyFeatInt2 = NWScript.GetLocalInt(obj.UsedBy, sVarName: "energyfeat_int2");
         if (energyFeatInt1 == 0 || energyFeatInt2 == 0)
         {
             obj.UsedBy.ClearActionQueue();
-            NWScript.AssignCommand(obj.UsedBy, () => NWScript.ActionStartConversation(obj.UsedBy, "energyfeat_selec", 1, 0));
+            NWScript.AssignCommand(obj.UsedBy,
+                () => NWScript.ActionStartConversation(obj.UsedBy, sDialogResRef: "energyfeat_selec", 1, 0));
             return;
         }
+
         obj.UsedBy.AddFeat(NwFeat.FromFeatId(energyFeatInt1));
         obj.UsedBy.AddFeat(NwFeat.FromFeatId(energyFeatInt2));
         obj.Item.Destroy();
         string energyFeat1Name = NWScript.IntToString(energyFeatInt1);
         switch (energyFeat1Name)
         {
-            case "1309" : energyFeat1Name = "Acid";
-            break;
-            case "1310" : energyFeat1Name = "Cold";
-            break;
-            case "1311" : energyFeat1Name = "Electrical";
-            break;
-            case "1312" : energyFeat1Name = "Fire";
-            break;
-            case "1313" : energyFeat1Name = "Sonic";
-            break;
+            case "1309":
+                energyFeat1Name = "Acid";
+                break;
+            case "1310":
+                energyFeat1Name = "Cold";
+                break;
+            case "1311":
+                energyFeat1Name = "Electrical";
+                break;
+            case "1312":
+                energyFeat1Name = "Fire";
+                break;
+            case "1313":
+                energyFeat1Name = "Sonic";
+                break;
         }
+
         string energyFeat2Name = NWScript.IntToString(energyFeatInt2);
         switch (energyFeat2Name)
         {
-            case "1309" : energyFeat2Name = "Acid";
-            break;
-            case "1310" : energyFeat2Name = "Cold";
-            break;
-            case "1311" : energyFeat2Name = "Electrical";
-            break;
-            case "1312" : energyFeat2Name = "Fire";
-            break;
-            case "1313" : energyFeat2Name = "Sonic";
-            break;
+            case "1309":
+                energyFeat2Name = "Acid";
+                break;
+            case "1310":
+                energyFeat2Name = "Cold";
+                break;
+            case "1311":
+                energyFeat2Name = "Electrical";
+                break;
+            case "1312":
+                energyFeat2Name = "Fire";
+                break;
+            case "1313":
+                energyFeat2Name = "Sonic";
+                break;
         }
-        obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(energyFeat1Name+" and "+energyFeat2Name+" Energy feats added. Relog to see if you qualify for other utility tokens."));
+
+        obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(energyFeat1Name + " and " +
+                                                                               energyFeat2Name +
+                                                                               " Energy feats added. Relog to see if you qualify for other utility tokens."));
         obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpElementalProtection));
-        NWScript.DeleteLocalInt(obj.UsedBy, "energyfeat_int1");
-        NWScript.DeleteLocalInt(obj.UsedBy, "energyfeat_int2");
+        NWScript.DeleteLocalInt(obj.UsedBy, sVarName: "energyfeat_int1");
+        NWScript.DeleteLocalInt(obj.UsedBy, sVarName: "energyfeat_int2");
     }
+
     private async void TokenRelevel(OnItemUse obj)
     {
         if (!obj.UsedBy.IsPlayerControlled) return;
@@ -300,18 +350,20 @@ public class WarlockUtilityHandler
 
         int level = obj.UsedBy.Level;
 
-        for(int i = level; i > 1; i--)
+        for (int i = level; i > 1; i--)
         {
             CreatureLevelInfo levelInfo = obj.UsedBy.GetLevelStats(level);
             if (levelInfo.ClassInfo.Class.Id == 57)
             {
                 int xpDelevel = NwEffects.GetXpForLevel(level) - 1;
-                int xpRelevel = NWScript.GetLocalInt(obj.Item, "warlockxp_releveltoken");
+                int xpRelevel = NWScript.GetLocalInt(obj.Item, sVarName: "warlockxp_releveltoken");
                 obj.Item.Destroy();
                 obj.UsedBy.Xp = xpDelevel;
                 await NwTask.Delay(TimeSpan.FromSeconds(1));
                 obj.UsedBy.Xp = xpRelevel;
-                obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String("Releveled to the last warlock level. Relog to see if you qualify for other utility tokens."));
+                obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(
+                    message:
+                    "Releveled to the last warlock level. Relog to see if you qualify for other utility tokens."));
                 return;
             }
         }
@@ -325,37 +377,37 @@ public class WarlockUtilityHandler
 
         NwItem pcKey = playerCharacter.Inventory.Items.First(i => i.Tag == "ds_pckey");
 
-        int originalGender = NWScript.GetLocalInt(pcKey, "original_gender");
-        int originalPheno = NWScript.GetLocalInt(pcKey, "original_pheno");
-        int originalAppearance = NWScript.GetLocalInt(pcKey, "original_appearance");
-        int originalSoundset = NWScript.GetLocalInt(pcKey, "original_soundset");
-        int originalPortrait = NWScript.GetLocalInt(pcKey, "original_portrait");
-        int originalTail = NWScript.GetLocalInt(pcKey, "original_tail");
-        int originalWings = NWScript.GetLocalInt(pcKey, "original_wings");
-        int originalRFoot = NWScript.GetLocalInt(pcKey, "original_rfoot");
-        int originalLFoot = NWScript.GetLocalInt(pcKey, "original_lfoot");
-        int originalRShin = NWScript.GetLocalInt(pcKey, "original_rshin");
-        int originalLShin = NWScript.GetLocalInt(pcKey, "original_lshin");
-        int originalRThigh = NWScript.GetLocalInt(pcKey, "original_rthigh");
-        int originalLThigh = NWScript.GetLocalInt(pcKey, "original_lthigh");
-        int originalPelvis = NWScript.GetLocalInt(pcKey, "original_pelvis");
-        int originalTorso = NWScript.GetLocalInt(pcKey, "original_torso");
-        int originalBelt = NWScript.GetLocalInt(pcKey, "original_belt");
-        int originalNeck = NWScript.GetLocalInt(pcKey, "original_neck");
-        int originalRFore = NWScript.GetLocalInt(pcKey, "original_rfore");
-        int originalLFore = NWScript.GetLocalInt(pcKey, "original_lfore");
-        int originalRBicep = NWScript.GetLocalInt(pcKey, "original_rbicep");
-        int originalLBicep = NWScript.GetLocalInt(pcKey, "original_lbicep");
-        int originalRShoulder = NWScript.GetLocalInt(pcKey, "original_rshoulder");
-        int originalLShoulder = NWScript.GetLocalInt(pcKey, "original_lshoulder");
-        int originalRHand = NWScript.GetLocalInt(pcKey, "original_rhand");
-        int originalLHand = NWScript.GetLocalInt(pcKey, "original_lhand");
-        int originalHead = NWScript.GetLocalInt(pcKey, "original_head");
-        int originalColorHair = NWScript.GetLocalInt(pcKey, "original_colorhair");
-        int originalColorSkin = NWScript.GetLocalInt(pcKey, "original_colorSkin");
-        int originalColorTattoo1 = NWScript.GetLocalInt(pcKey, "original_colortattoo1");
-        int originalColorTattoo2 = NWScript.GetLocalInt(pcKey, "original_colortattoo2");
-        float originalScale = NWScript.GetLocalFloat(pcKey, "original_scale");
+        int originalGender = NWScript.GetLocalInt(pcKey, sVarName: "original_gender");
+        int originalPheno = NWScript.GetLocalInt(pcKey, sVarName: "original_pheno");
+        int originalAppearance = NWScript.GetLocalInt(pcKey, sVarName: "original_appearance");
+        int originalSoundset = NWScript.GetLocalInt(pcKey, sVarName: "original_soundset");
+        int originalPortrait = NWScript.GetLocalInt(pcKey, sVarName: "original_portrait");
+        int originalTail = NWScript.GetLocalInt(pcKey, sVarName: "original_tail");
+        int originalWings = NWScript.GetLocalInt(pcKey, sVarName: "original_wings");
+        int originalRFoot = NWScript.GetLocalInt(pcKey, sVarName: "original_rfoot");
+        int originalLFoot = NWScript.GetLocalInt(pcKey, sVarName: "original_lfoot");
+        int originalRShin = NWScript.GetLocalInt(pcKey, sVarName: "original_rshin");
+        int originalLShin = NWScript.GetLocalInt(pcKey, sVarName: "original_lshin");
+        int originalRThigh = NWScript.GetLocalInt(pcKey, sVarName: "original_rthigh");
+        int originalLThigh = NWScript.GetLocalInt(pcKey, sVarName: "original_lthigh");
+        int originalPelvis = NWScript.GetLocalInt(pcKey, sVarName: "original_pelvis");
+        int originalTorso = NWScript.GetLocalInt(pcKey, sVarName: "original_torso");
+        int originalBelt = NWScript.GetLocalInt(pcKey, sVarName: "original_belt");
+        int originalNeck = NWScript.GetLocalInt(pcKey, sVarName: "original_neck");
+        int originalRFore = NWScript.GetLocalInt(pcKey, sVarName: "original_rfore");
+        int originalLFore = NWScript.GetLocalInt(pcKey, sVarName: "original_lfore");
+        int originalRBicep = NWScript.GetLocalInt(pcKey, sVarName: "original_rbicep");
+        int originalLBicep = NWScript.GetLocalInt(pcKey, sVarName: "original_lbicep");
+        int originalRShoulder = NWScript.GetLocalInt(pcKey, sVarName: "original_rshoulder");
+        int originalLShoulder = NWScript.GetLocalInt(pcKey, sVarName: "original_lshoulder");
+        int originalRHand = NWScript.GetLocalInt(pcKey, sVarName: "original_rhand");
+        int originalLHand = NWScript.GetLocalInt(pcKey, sVarName: "original_lhand");
+        int originalHead = NWScript.GetLocalInt(pcKey, sVarName: "original_head");
+        int originalColorHair = NWScript.GetLocalInt(pcKey, sVarName: "original_colorhair");
+        int originalColorSkin = NWScript.GetLocalInt(pcKey, sVarName: "original_colorSkin");
+        int originalColorTattoo1 = NWScript.GetLocalInt(pcKey, sVarName: "original_colortattoo1");
+        int originalColorTattoo2 = NWScript.GetLocalInt(pcKey, sVarName: "original_colortattoo2");
+        float originalScale = NWScript.GetLocalFloat(pcKey, sVarName: "original_scale");
 
         NWScript.SetGender(playerCharacter, originalGender);
         NWScript.SetCreatureAppearanceType(playerCharacter, originalAppearance);

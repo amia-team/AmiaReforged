@@ -24,7 +24,8 @@ public class BindingOfMaggotsEnter
         int summonCount = warlockLevels < 5 ? 1 : 1 + warlockLevels / 5;
         float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)), "wlk_summon_cd");
+        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)),
+            sNewTag: "wlk_summon_cd");
         IntPtr location = GetLocation(enteringObject);
 
         // Trigger only if a hostile creature enters
@@ -37,13 +38,16 @@ public class BindingOfMaggotsEnter
         //---------------------------
 
         // If summonCooldown is active, don't summon; else summon and set summonCooldown
-        if (NwEffects.GetHasEffectByTag("wlk_summon_cd", caster) == FALSE)
+        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) == FALSE)
         {
             // Apply summonCooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(WarlockConstants.String("Soul Larvae can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown,
+                () => FloatingTextStringOnCreature(
+                    WarlockConstants.String(message: "Soul Larvae can be summoned again."), caster, 0));
             // Summon new
-            SummonUtility.SummonMany(caster, summonDuration, summonCount, "wlkfiend", location, 0.3f, 2f, 1f, 3f);
+            SummonUtility.SummonMany(caster, summonDuration, summonCount, summonResRef: "wlkfiend", location, 0.3f, 2f,
+                1f, 3f);
         }
 
         //---------------------------
@@ -59,13 +63,17 @@ public class BindingOfMaggotsEnter
             return;
         }
 
-        bool passedWillSave = WillSave(enteringObject, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_EVIL, caster) == TRUE;
+        bool passedWillSave =
+            WillSave(enteringObject, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_EVIL, caster) == TRUE;
 
         if (passedWillSave)
         {
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), enteringObject);
+            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE),
+                enteringObject);
             return;
         }
-        if (!passedWillSave) ApplyEffectToObject(DURATION_TYPE_TEMPORARY, hostileEffects, enteringObject, effectDuration);
+
+        if (!passedWillSave)
+            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, hostileEffects, enteringObject, effectDuration);
     }
 }

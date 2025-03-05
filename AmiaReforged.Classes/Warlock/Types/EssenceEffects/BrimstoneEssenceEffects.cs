@@ -24,7 +24,7 @@ public class BrimstoneEssenceEffects : EssenceEffectApplier
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_FIRE), Target);
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FLAME_S), Target);
 
-        if (NwEffects.GetHasEffectByTag("wlk_brimstone", Target) == TRUE) return;
+        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_brimstone", Target) == TRUE) return;
 
         bool passedReflexSave = ReflexSave(Target, CalculateDc(), SAVING_THROW_TYPE_FIRE, Caster) == TRUE;
 
@@ -33,26 +33,28 @@ public class BrimstoneEssenceEffects : EssenceEffectApplier
             ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REFLEX_SAVE_THROW_USE), Target);
             return;
         }
+
         if (!passedReflexSave)
         {
             int warlockLevels = GetLevelByClass(57, Caster);
             int essenceRounds = warlockLevels / 5;
             float essenceDuration = warlockLevels < 5 ? RoundsToSeconds(1) : RoundsToSeconds(essenceRounds);
-            IntPtr burning = TagEffect(EffectVisualEffect(VFX_DUR_INFERNO_CHEST), "is_brimstone");
+            IntPtr burning = TagEffect(EffectVisualEffect(VFX_DUR_INFERNO_CHEST), sNewTag: "is_brimstone");
 
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, burning, Target, essenceDuration);
             Burn(essenceRounds);
         }
     }
+
     private void Burn(int essenceRounds)
     {
         float delay = 6f;
         for (int i = 0; i < essenceRounds; i++)
-            {
-                DelayCommand(delay,
-                    () => ApplyEffectToObject(DURATION_TYPE_INSTANT,
-                        EffectDamage(d6(2), DAMAGE_TYPE_FIRE), Target));
-                delay += 6.0f;
-            }
+        {
+            DelayCommand(delay,
+                () => ApplyEffectToObject(DURATION_TYPE_INSTANT,
+                    EffectDamage(d6(2), DAMAGE_TYPE_FIRE), Target));
+            delay += 6.0f;
+        }
     }
 }

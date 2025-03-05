@@ -8,7 +8,6 @@ namespace AmiaReforged.Classes.Spells;
 [ServiceBinding(typeof(CantripRenewalService))]
 public class CantripRenewalService
 {
-
     public CantripRenewalService()
     {
         NwModule.Instance.OnClientEnter += OnClientEnter;
@@ -26,17 +25,15 @@ public class CantripRenewalService
 
         Dictionary<string, int> allNewCantrips = new()
         {
-            { "am_s_rayofharm", 1039},
-            {"am_s_disruptun", 1040},
-            {"amx_csp_bsound", 867}
+            { "am_s_rayofharm", 1039 },
+            { "am_s_disruptun", 1040 },
+            { "amx_csp_bsound", 867 }
         };
-        
+
         foreach (string scriptResRef in allNewCantrips.Keys)
         {
-            if(wizard.KnownSpells[0].All(s => s.ImpactScript != scriptResRef))
-            {
+            if (wizard.KnownSpells[0].All(s => s.ImpactScript != scriptResRef))
                 CreaturePlugin.AddKnownSpell(creature, wizard.Class.Id, 1, allNewCantrips[scriptResRef]);
-            }
         }
     }
 }

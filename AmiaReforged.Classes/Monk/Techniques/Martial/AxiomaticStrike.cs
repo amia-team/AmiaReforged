@@ -20,7 +20,7 @@ public static class AxiomaticStrike
             AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
             return;
         }
-        
+
         DoAxiomaticStrike(attackData);
     }
 

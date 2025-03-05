@@ -1,4 +1,5 @@
 // Handles monk's elemental toggle ability on feat use
+
 using AmiaReforged.Classes.Monk.Constants;
 using Anvil.API;
 using Anvil.API.Events;
@@ -15,19 +16,19 @@ public class ElementalToggleHandler
 
     public ElementalToggleHandler()
     {
-        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
 
         if (environment == "live") return;
-        
+
         NwModule.Instance.OnUseFeat += ToggleElementalType;
-        Log.Info("Monk Elemental Toggle Handler initialized.");
+        Log.Info(message: "Monk Elemental Toggle Handler initialized.");
     }
 
     private static void ToggleElementalType(OnUseFeat eventData)
     {
         if (eventData.Feat.Id is not MonkFeat.CrashingMeteor) return;
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
-        
+
         NwCreature monk = eventData.Creature;
         int elementalType = monk.GetObjectVariable<LocalVariableInt>(MonkElemental.VarName).Value;
 
@@ -62,11 +63,11 @@ public class ElementalToggleHandler
             _ => ColorConstants.Orange
         };
 
-        string elementalString = $"Elemental type set to ";
+        string elementalString = "Elemental type set to ";
         elementalString.ColorString(MonkColors.MonkColorScheme);
         elementalName.ColorString(elementalColor);
         elementalString += elementalName;
-        
+
         monk.PlaySound(elementalSound);
         player.FloatingTextString(elementalString, false, false);
     }

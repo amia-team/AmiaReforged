@@ -8,8 +8,9 @@ public class FrogDrop
 {
     public void CastFrogDrop(uint nwnObjectId)
     {
-        if (NwEffects.IsPolymorphed(nwnObjectId)){
-            SendMessageToPC(nwnObjectId, "You cannot cast while polymorphed.");
+        if (NwEffects.IsPolymorphed(nwnObjectId))
+        {
+            SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
             return;
         }
 
@@ -22,8 +23,8 @@ public class FrogDrop
         // Impact VFX onhit
         IntPtr frogDrop = NwEffects.LinkEffectList(new List<IntPtr>
         {
-                 EffectVisualEffect(VFX_IMP_DAZED_S),
-                 EffectKnockdown()
+            EffectVisualEffect(VFX_IMP_DAZED_S),
+            EffectKnockdown()
         });
 
         // Declaring variables for summon effects
@@ -39,14 +40,15 @@ public class FrogDrop
         };
         float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)), "wlk_summon_cd");
+        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)),
+            sNewTag: "wlk_summon_cd");
         IntPtr slaadSummon = EffectSummonCreature(slaadTier, VFX_IMP_POLYMORPH);
-        
+
         //---------------------------
         // * HOSTILE SPELL EFFECT
         //---------------------------
         ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_FNF_GAS_EXPLOSION_NATURE), location);
-        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location, FALSE, OBJECT_TYPE_CREATURE);
+        uint currentTarget = GetFirstObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location);
         while (GetIsObjectValid(currentTarget) == TRUE)
         {
             if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
@@ -56,28 +58,32 @@ public class FrogDrop
                 if (GetHasSpellEffect(SPELL_PROTECTION__FROM_CHAOS, currentTarget) == TRUE)
                 {
                     ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_GLOBE_USE), currentTarget);
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location, FALSE, OBJECT_TYPE_CREATURE);
+                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location);
                     continue;
                 }
 
                 if (NwEffects.ResistSpell(caster, currentTarget))
                 {
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location, FALSE, OBJECT_TYPE_CREATURE);
+                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location);
                     continue;
                 }
 
-                bool passedReflexSave = ReflexSave(currentTarget, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_CHAOS, caster) == TRUE;
+                bool passedReflexSave = ReflexSave(currentTarget, WarlockConstants.CalculateDc(caster),
+                    SAVING_THROW_TYPE_CHAOS, caster) == TRUE;
 
                 if (passedReflexSave)
                 {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), currentTarget);
-                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location, FALSE, OBJECT_TYPE_CREATURE);
+                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE),
+                        currentTarget);
+                    currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location);
                     continue;
                 }
 
-                if (!passedReflexSave) ApplyEffectToObject(DURATION_TYPE_TEMPORARY, frogDrop, currentTarget, effectDuration);
+                if (!passedReflexSave)
+                    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, frogDrop, currentTarget, effectDuration);
             }
-            currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location, FALSE, OBJECT_TYPE_CREATURE);
+
+            currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_SMALL, location);
         }
 
         //---------------------------
@@ -85,14 +91,17 @@ public class FrogDrop
         //---------------------------
 
         // If summonCooldown is active, don't summon; else summon and set summonCooldown
-        if (NwEffects.GetHasEffectByTag("wlk_summon_cd", caster) == FALSE)
+        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) == FALSE)
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown, () => FloatingTextStringOnCreature(WarlockConstants.String("Slaad can be summoned again."), caster, 0));
+            DelayCommand(summonCooldown,
+                () => FloatingTextStringOnCreature(WarlockConstants.String(message: "Slaad can be summoned again."),
+                    caster, 0));
 
             // Summon new
-            DelayCommand(2.5f, () => ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, slaadSummon, location, summonDuration));
+            DelayCommand(2.5f,
+                () => ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, slaadSummon, location, summonDuration));
         }
     }
 }

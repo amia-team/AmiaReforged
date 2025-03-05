@@ -16,7 +16,7 @@ public static class EldritchDoom
             if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
             {
                 EssenceEffectApplier effectApplier =
-                EssenceEffectFactory.CreateEssenceEffect(essence, currentTarget, caster);
+                    EssenceEffectFactory.CreateEssenceEffect(essence, currentTarget, caster);
 
                 SignalEvent(currentTarget, EventSpellCastAt(caster, 1003));
 
@@ -26,7 +26,8 @@ public static class EldritchDoom
 
                 if (passedSave)
                 {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REFLEX_SAVE_THROW_USE), currentTarget);
+                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REFLEX_SAVE_THROW_USE),
+                        currentTarget);
                     if (hasEvasion || hasImpEvasion)
                     {
                         currentTarget = GetNextObjectInShape(SHAPE_SPHERE, RADIUS_SIZE_LARGE, location, TRUE);

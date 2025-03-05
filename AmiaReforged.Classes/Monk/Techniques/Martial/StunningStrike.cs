@@ -20,24 +20,26 @@ public static class StunningStrike
             AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
             return;
         }
-        
+
         DoStunningStrike(attackData);
     }
 
     public static void DoStunningStrike(OnCreatureAttack attackData)
     {
         NwCreature monk = attackData.Attacker;
-        Effect stunningStrikeEffect = Effect.LinkEffects(Effect.Stunned(), Effect.VisualEffect(VfxType.DurCessateNegative));
+        Effect stunningStrikeEffect =
+            Effect.LinkEffects(Effect.Stunned(), Effect.VisualEffect(VfxType.DurCessateNegative));
         stunningStrikeEffect.SubType = EffectSubType.Extraordinary;
         TimeSpan effectDuration = NwTimeSpan.FromRounds(1);
         int effectDc = MonkUtilFunctions.CalculateMonkDc(monk);
 
         // DC check for stunning effect
         if (attackData.Target is not NwCreature targetCreature) return;
-            
-        SavingThrowResult savingThrowResult = targetCreature.RollSavingThrow(SavingThrow.Fortitude, effectDc, SavingThrowType.None, monk);
 
-        if (savingThrowResult is SavingThrowResult.Success) 
+        SavingThrowResult savingThrowResult =
+            targetCreature.RollSavingThrow(SavingThrow.Fortitude, effectDc, SavingThrowType.None, monk);
+
+        if (savingThrowResult is SavingThrowResult.Success)
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
 
         if (savingThrowResult is SavingThrowResult.Failure)
