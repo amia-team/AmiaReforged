@@ -18,4 +18,9 @@
       <None Remove="Jenkinsfile" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Spells\Divine\Cantrips\CureMinorWounds\" />
+      <Folder Include="Spells\Divine\Cantrips\InflictMinorWounds\" />
+    </ItemGroup>
+
 </Project>

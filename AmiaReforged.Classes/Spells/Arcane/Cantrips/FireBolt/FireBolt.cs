@@ -28,7 +28,7 @@ public class FireBolt : ISpell
 
         ApplyBolt(target);
         
-        int damage = CalculateDamage(casterCreature, caster);
+        int damage = CalculateDamage(caster);
         
         if (Result != ResistSpellResult.Failed) return;
 
@@ -47,7 +47,7 @@ public class FireBolt : ISpell
         target.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 
-    private int CalculateDamage(NwCreature casterCreature, NwGameObject caster)
+    private int CalculateDamage(NwGameObject caster)
     {
         int numDie = caster.CasterLevel / 2;
         int damage = NWScript.d3(numDie);
