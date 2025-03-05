@@ -11,18 +11,14 @@ public class td_act_ffile_gpb
     private const bool DEBUG = true;
     private const string CRET_STRING = "csharp_return_string";
 
-    [ScriptHandler("td_act_ffile_gpb")]
+    [ScriptHandler(scriptName: "td_act_ffile_gpb")]
     public void FPlusGetArchiveFile(NwPlayer caller)
     {
         NwObject oPC = caller.LoginCreature!;
         string bic = caller.BicFileName;
-         
-        if (DEBUG)
-        {
-            NWScript.SendMessageToPC(oPC, "Player current bic file: " + bic);
-        }
+
+        if (DEBUG) NWScript.SendMessageToPC(oPC, "Player current bic file: " + bic);
 
         NWScript.SetLocalString(oPC, CRET_STRING, bic);
-
     }
 }

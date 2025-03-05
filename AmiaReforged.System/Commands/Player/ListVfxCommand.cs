@@ -4,10 +4,9 @@ using Anvil.Services;
 namespace AmiaReforged.System.Commands.Player;
 
 [ServiceBinding(typeof(IChatCommand))]
-
 public class ListVfx : IChatCommand
 {
-    public string Command => $"./listvfx";
+    public string Command => "./listvfx";
 
     public Task ExecuteCommand(NwPlayer caller, string message)
     {
@@ -15,57 +14,55 @@ public class ListVfx : IChatCommand
         int vfxId;
         string vfxLabel;
 
-        if (message.Split(' ')[1].Contains("inst"))
-        {
+        if (message.Split(' ')[1].Contains(value: "inst"))
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "F") continue;
-            
+
                 vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
                 vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
-        }
-        if (message.Split(' ')[1].Contains("dur"))
-        {
+
+        if (message.Split(' ')[1].Contains(value: "dur"))
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "D") continue;
-            
+
                 vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
                 vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
-        }
-        if (message.Split(' ')[1].Contains("proj"))
-        {
+
+        if (message.Split(' ')[1].Contains(value: "proj"))
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "P") continue;
-            
+
                 vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
                 vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
-        }
-        if (message.Split(' ')[1].Contains("beam"))
+
+        if (message.Split(' ')[1].Contains(value: "beam"))
         {
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "B") continue;
-            
+
                 vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
                 vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
         }
-        else 
+        else
         {
-            caller.SendServerMessage("Usage: \"./listvfx <vfx type>\". Valid types: duration, instant, projectile, beam.");
+            caller.SendServerMessage(
+                message: "Usage: \"./listvfx <vfx type>\". Valid types: duration, instant, projectile, beam.");
             return Task.CompletedTask;
         }
 
-        NwPlaceable helperObject = NwPlaceable.Create("ds_invis_obje001", caller.ControlledCreature.Location);
+        NwPlaceable helperObject = NwPlaceable.Create(template: "ds_invis_obje001", caller.ControlledCreature.Location);
         helperObject.Description = vfxList;
         caller.ActionExamine(helperObject);
         helperObject.Destroy();

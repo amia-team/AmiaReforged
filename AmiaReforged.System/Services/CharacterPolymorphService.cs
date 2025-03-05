@@ -3,7 +3,6 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NLog.Fluent;
 using NWN.Core;
 using NWN.Core.NWNX;
 
@@ -12,22 +11,23 @@ namespace AmiaReforged.System.Services;
 [ServiceBinding(typeof(CharacterPolymorphService))]
 public class CharacterPolymorphService
 {
-    private Dictionary<string, List<ClassPreparedSpells>?> SpellBooks { get; } = new();
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private const string Shapechange = "shapechange";
     private const string Polymorph = "polymorph";
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public CharacterPolymorphService(EventService eventService)
     {
-        Log.Info("CharacterPolymorphService initialized.");
-        Log.Info("Subscribing to polymorph events.");
+        Log.Info(message: "CharacterPolymorphService initialized.");
+        Log.Info(message: "Subscribing to polymorph events.");
 
 
         Action<OnSpellCast> spellCast = OnSpellCast;
-        eventService.SubscribeAll<OnSpellCast, OnSpellCast.Factory>(spellCast, EventCallbackType.Before);
-        EventsPlugin.SubscribeEvent(EventsPlugin.NWNX_ON_POLYMORPH_BEFORE, "polymorph_before");
-        EventsPlugin.SubscribeEvent(EventsPlugin.NWNX_ON_UNPOLYMORPH_AFTER, "unpolymorph_afte");
+        eventService.SubscribeAll<OnSpellCast, OnSpellCast.Factory>(spellCast);
+        EventsPlugin.SubscribeEvent(EventsPlugin.NWNX_ON_POLYMORPH_BEFORE, script: "polymorph_before");
+        EventsPlugin.SubscribeEvent(EventsPlugin.NWNX_ON_UNPOLYMORPH_AFTER, script: "unpolymorph_afte");
     }
+
+    private Dictionary<string, List<ClassPreparedSpells>?> SpellBooks { get; } = new();
 
     private void OnSpellCast(OnSpellCast obj)
     {
@@ -41,7 +41,6 @@ public class CharacterPolymorphService
 
         if (isPolymorphSelf || isShapeChange)
         {
-
             List<ClassPreparedSpells> spellBooks = new();
             foreach (CreatureClassInfo classInfo in player.LoginCreature.Classes)
             {
@@ -59,7 +58,7 @@ public class CharacterPolymorphService
     }
 
 
-    [ScriptHandler("polymorph_before")]
+    [ScriptHandler(scriptName: "polymorph_before")]
     private void OnPolymorphBefore(CallInfo info)
     {
         if (!info.ObjectSelf.IsPlayerControlled(out NwPlayer? player)) return;
@@ -93,7 +92,7 @@ public class CharacterPolymorphService
 
     private static ClassPreparedSpells SaveSpellbook(CreatureClassInfo classInfo)
     {
-        Log.Info("Saving memorized");
+        Log.Info(message: "Saving memorized");
         ClassPreparedSpells classPreparedSpells = new()
         {
             Class = classInfo.Class.NameLower.ToString()
@@ -119,7 +118,7 @@ public class CharacterPolymorphService
 
     private ClassPreparedSpells SaveInnateSpells(CreatureClassInfo classInfo)
     {
-        Log.Info("saving innate spellslslsls");
+        Log.Info(message: "saving innate spellslslsls");
         Dictionary<byte, byte> spellUses = new();
         for (byte i = 0; i <= 9; i++)
         {
@@ -141,7 +140,7 @@ public class CharacterPolymorphService
         return classPreparedSpells;
     }
 
-    [ScriptHandler("unpolymorph_afte")]
+    [ScriptHandler(scriptName: "unpolymorph_afte")]
     private void OnUnpolymorphAfter(CallInfo info)
     {
         if (!info.ObjectSelf.IsPlayerControlled(out NwPlayer? player)) return;

@@ -1,5 +1,4 @@
-﻿using AmiaReforged.Core;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.Services;
 
 namespace AmiaReforged.System.Services;
@@ -15,16 +14,17 @@ public class ShutdownManager
     }
 
     /// <summary>
-    /// Saves and boots all PCs, then schedules the server to be shutdown shortly after.
+    ///     Saves and boots all PCs, then schedules the server to be shutdown shortly after.
     /// </summary>
     public void InitiateShutdown()
     {
         NwModule.Instance.Players.ToList().ForEach(p =>
         {
             p.SendServerMessage(
+                message:
                 "-- Amia is shutting down now. Please do not try to log in until it is done or you will be booted. --");
             p.ExportCharacter();
-            p.BootPlayer("Server reset.");
+            p.BootPlayer(reason: "Server reset.");
         });
 
         _schedulerService.Schedule(NwServer.Instance.ShutdownServer, TimeSpan.FromSeconds(10));

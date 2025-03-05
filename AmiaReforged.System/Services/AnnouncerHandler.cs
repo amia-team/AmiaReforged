@@ -7,14 +7,11 @@ namespace AmiaReforged.System.Services;
 [ServiceBinding(typeof(AnnouncerHandler))]
 public class AnnouncerHandler
 {
-    [ScriptHandler("webhook_announce")]
+    [ScriptHandler(scriptName: "webhook_announce")]
     public void DiscordAnnouncer(CallInfo info)
     {
-        string message = NWScript.GetLocalString(NWScript.GetModule(), "announcerMessage");
-        if (string.Equals(message, ""))
-        {
-            message = "Empty Variable";
-        }
+        string message = NWScript.GetLocalString(NWScript.GetModule(), sVarName: "announcerMessage");
+        if (string.Equals(message, b: "")) message = "Empty Variable";
 
         var instance = new JoinWebhookService();
         _ = instance.LaunchDiscordMessage(message);

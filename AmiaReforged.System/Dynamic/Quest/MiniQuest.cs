@@ -5,15 +5,15 @@ namespace AmiaReforged.System.Dynamic.Quest;
 
 public class MiniQuest
 {
-    private readonly NwCreature? _questGiver;
-    private readonly NwPlayer? _player;
     private readonly MiniQuestReward _miniQuestReward;
+    private readonly NwPlayer? _player;
+    private readonly NwCreature? _questGiver;
 
     public MiniQuest(NwCreature? questGiver, NwPlayer? player)
     {
         _questGiver = questGiver;
         _player = player;
-        _miniQuestReward = new MiniQuestReward();
+        _miniQuestReward = new();
     }
 
     public void ProcessReward()

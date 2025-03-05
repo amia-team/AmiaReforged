@@ -12,19 +12,13 @@ public sealed class ResetTimeKeeperSingleton
     {
         get
         {
-            if (_instance == null)
-            {
-                _instance = new ResetTimeKeeperSingleton();
-            }
-            
+            if (_instance == null) _instance = new();
+
             return _instance;
         }
     }
-    
+
     public long ResetStartTime { get; set; }
 
-    public long Uptime()
-    {
-        return ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds() - ResetStartTime;
-    }
+    public long Uptime() => ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds() - ResetStartTime;
 }

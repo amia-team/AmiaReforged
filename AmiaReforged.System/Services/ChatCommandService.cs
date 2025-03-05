@@ -1,5 +1,4 @@
-﻿using AmiaReforged.Core.Helpers;
-using AmiaReforged.System.Commands;
+﻿using AmiaReforged.System.Commands;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -17,16 +16,16 @@ public class ChatCommandService
     {
         _commands = commands.ToList();
         NwModule.Instance.OnPlayerChat += HandleChatCommand;
-        Log.Info("Chat Command Service initialized.");
+        Log.Info(message: "Chat Command Service initialized.");
     }
 
     private void HandleChatCommand(ModuleEvents.OnPlayerChat eventInfo)
     {
         string message = eventInfo.Message;
-        if (!message.StartsWith("./")) return;
+        if (!message.StartsWith(value: "./")) return;
 
         eventInfo.Volume = TalkVolume.SilentShout;
-        
+
         ResolveCommandFromChatMessage(eventInfo, message);
     }
 

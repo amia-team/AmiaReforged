@@ -20,7 +20,7 @@ public class ResetMinutesCommand : IChatCommand
             NWScript.SendMessageToAllDMs(
                 $"{caller.PlayerName} tried changing the reset timer of the server and is not a DM.");
             caller.SendServerMessage(
-                "You must be a DM to use this command. This incident has been logged for posterity's sake.");
+                message: "You must be a DM to use this command. This incident has been logged for posterity's sake.");
             Log.Warn($"{caller.PlayerName} tried changing the reset time of the server and is not a DM.");
             return Task.CompletedTask;
         }
@@ -28,14 +28,14 @@ public class ResetMinutesCommand : IChatCommand
         if (message.Split(' ').Length <= 1)
         {
             caller.SendServerMessage(
-                "./resetminutes usage: \"./resetminutes <number>\" for example, \"./resetminutes 30\"");
+                message: "./resetminutes usage: \"./resetminutes <number>\" for example, \"./resetminutes 30\"");
             return Task.CompletedTask;
         }
 
         try
         {
             float newReset = float.Parse(message.Split(' ')[1]);
-            NWScript.SetLocalFloat(NwModule.Instance, "minutesToReset", newReset);
+            NWScript.SetLocalFloat(NwModule.Instance, sVarName: "minutesToReset", newReset);
             ResetTimeKeeperSingleton.Instance.ResetStartTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds();
 
             NwModule.Instance.SendMessageToAllDMs($"Amia reset timer has been changed to {newReset} minutes");
@@ -44,7 +44,7 @@ public class ResetMinutesCommand : IChatCommand
         {
             Log.Error(e.Message);
             caller.SendServerMessage(
-                "Invalid input. Please use a number and strict spacing. For example: ./resetminutes 30.");
+                message: "Invalid input. Please use a number and strict spacing. For example: ./resetminutes 30.");
         }
 
         return Task.CompletedTask;

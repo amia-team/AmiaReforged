@@ -20,7 +20,7 @@ public class EncounterService
             nwTrigger.OnEnter += SpawnTriggerOnEnter;
         }
 
-        Log.Info("Encounter service initialized.");
+        Log.Info(message: "Encounter service initialized.");
     }
 
     private static void SpawnTriggerOnEnter(TriggerEvents.OnEnter obj)

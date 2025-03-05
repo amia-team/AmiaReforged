@@ -16,7 +16,9 @@ public class OpenPlayerToolsCommand : IChatCommand
         if (caller.IsDM) return Task.CompletedTask;
 
         caller.SendServerMessage(
-            "This command has been deprecated. Use the Player Tools feat (has a wrench icon) from your class's radial menu instead.", ColorConstants.Yellow);
+            message:
+            "This command has been deprecated. Use the Player Tools feat (has a wrench icon) from your class's radial menu instead.",
+            ColorConstants.Yellow);
 
         return Task.CompletedTask;
     }

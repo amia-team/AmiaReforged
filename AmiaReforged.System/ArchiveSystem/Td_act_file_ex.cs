@@ -6,12 +6,9 @@ public class Td_act_file_ex
     private const string ArchiveDir = "/archive/";
     private const int PageSize = 10;
 
-    public Boolean MoveFile(string target, string destination, string fname)
+    public bool MoveFile(string target, string destination, string fname)
     {
-        if (!Directory.Exists(destination))
-        {
-            Directory.CreateDirectory(destination);
-        }
+        if (!Directory.Exists(destination)) Directory.CreateDirectory(destination);
 
         try
         {
@@ -25,21 +22,21 @@ public class Td_act_file_ex
         return true;
     }
 
-    public Boolean ArchiveFile(string cdkey, string fname)
+    public bool ArchiveFile(string cdkey, string fname)
     {
         string target = VaultDir + cdkey + "/";
         string destination = VaultDir + cdkey + ArchiveDir;
         return MoveFile(target, destination, fname);
     }
 
-    public Boolean UnArchiveFile(string cdkey, string fname)
+    public bool UnArchiveFile(string cdkey, string fname)
     {
         string target = VaultDir + cdkey + ArchiveDir;
         string destination = VaultDir + cdkey + "/";
         return MoveFile(target, destination, fname);
     }
-    
-    public Boolean RenameArchiveFile(string cdkey, string fname, string newname)
+
+    public bool RenameArchiveFile(string cdkey, string fname, string newname)
     {
         string target = VaultDir + cdkey + ArchiveDir + fname;
         string destination = VaultDir + cdkey + ArchiveDir + newname;
@@ -55,7 +52,7 @@ public class Td_act_file_ex
         return true;
     }
 
-    public Boolean RenameVaultFile(string cdkey, string fname, string newname)
+    public bool RenameVaultFile(string cdkey, string fname, string newname)
     {
         string target = VaultDir + cdkey + "/" + fname;
         string destination = VaultDir + cdkey + "/" + newname;
@@ -74,7 +71,7 @@ public class Td_act_file_ex
     public string[] GetVaultFiles(string cdkey)
     {
         string[] files = Directory.GetFiles(VaultDir + cdkey + "/");
-        return files.Where(f => f.EndsWith(".bic")).ToArray();
+        return files.Where(f => f.EndsWith(value: ".bic")).ToArray();
     }
 
     public int GetVaultSize(string cdkey)
@@ -95,11 +92,8 @@ public class Td_act_file_ex
         string[] fulllist = GetVaultFiles(cdkey);
         int size = fulllist.Length;
         int start = 10 * (page - 1);
-        int end = (10 * page) - 1;
-        if (end > size)
-        {
-            end = size;
-        }
+        int end = 10 * page - 1;
+        if (end > size) end = size;
 
         string[] listpage = fulllist[start..end];
         return listpage;
@@ -129,11 +123,8 @@ public class Td_act_file_ex
         string[] fulllist = GetArchiveFiles(cdkey);
         int size = fulllist.Length;
         int start = 10 * (page - 1);
-        int end = (10 * page) - 1;
-        if (end > size)
-        {
-            end = size;
-        }
+        int end = 10 * page - 1;
+        if (end > size) end = size;
 
         string[] listpage = fulllist[start..end];
         return listpage;
@@ -149,7 +140,7 @@ public class Td_act_file_ex
         }
     }
 
-    public Boolean RenameFile(string cdkey, int index, string newname, int isVault)
+    public bool RenameFile(string cdkey, int index, string newname, int isVault)
     {
         // TRUE
         if (isVault == 1)

@@ -16,10 +16,12 @@ public class ServerPanel : IChatCommand
             NWScript.SendMessageToAllDMs(
                 $"{caller.PlayerName} tried to access the server control panel and is not a DM.");
             caller.SendServerMessage(
-                "You must be a DM to use this command. This incident has been logged for posterity's sake.");
+                message: "You must be a DM to use this command. This incident has been logged for posterity's sake.");
             return Task.CompletedTask;
         }
-        caller.SendServerMessage("This command is not yet supported.", Color.FromRGBA("#8b0000"));
+
+        caller.SendServerMessage(message: "This command is not yet supported.",
+            Color.FromRGBA(rgbaHexString: "#8b0000"));
         return Task.CompletedTask;
     }
 }

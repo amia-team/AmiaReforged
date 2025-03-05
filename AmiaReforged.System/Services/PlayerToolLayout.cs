@@ -8,34 +8,34 @@ public class PlayerToolLayout
 {
     public Task<NuiLayout> CreateNuiLayout()
     {
-        NuiButton spellbooksButton = new NuiButton("Spellbooks")
+        NuiButton spellbooksButton = new(label: "Spellbooks")
         {
             Tooltip = "Click here to see your saved spellbooks.",
             Enabled = true,
             Id = "spellbooksButton"
         };
-        
-        NuiButton bioButton = new NuiButton("Bio")
+
+        NuiButton bioButton = new(label: "Bio")
         {
             Tooltip = "Click here to edit your character's biography.",
             Enabled = true,
             Id = "editBioButton"
         };
-        
-        NuiButton charactersButton = new NuiButton("Bio")
+
+        NuiButton charactersButton = new(label: "Bio")
         {
             Tooltip = "Debug: See characters.",
             Enabled = true,
             Id = "viewCharactersButton"
         };
-        
+
         NuiColumn root = new()
         {
-            Children = new List<NuiElement>
+            Children = new()
             {
                 new NuiRow
                 {
-                    Children = new List<NuiElement>
+                    Children = new()
                     {
                         spellbooksButton,
                         bioButton,
@@ -44,7 +44,7 @@ public class PlayerToolLayout
                 }
             }
         };
-        
+
         return Task.FromResult<NuiLayout>(root);
     }
 }

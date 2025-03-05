@@ -13,20 +13,18 @@ public class td_act_ffile_gvf
     private const string CARG_2 = "csharp_arg_2";
     private const string CRET_STRING = "csharp_return_string";
 
-    [ScriptHandler("td_act_ffile_gvf")]
+    [ScriptHandler(scriptName: "td_act_ffile_gvf")]
     public void FPlusGetArchiveFile(CallInfo cinfo)
     {
         NwObject oPC = cinfo.ObjectSelf!;
         string cdkey = cinfo.ScriptParams[CARG_1];
-        int index = Int32.Parse(cinfo.ScriptParams[CARG_2]);
+        int index = int.Parse(cinfo.ScriptParams[CARG_2]);
 
-        Td_act_file_ex archivesys = new Td_act_file_ex();
+        Td_act_file_ex archivesys = new();
         string filename = archivesys.GetVaultFile(cdkey, index);
 
         NWScript.SetLocalString(oPC, CRET_STRING, filename);
 
-        if (DEBUG_MODE) {
-            NWScript.SendMessageToPC(oPC, "DEBUG: File returned " + filename);
-        }
+        if (DEBUG_MODE) NWScript.SendMessageToPC(oPC, "DEBUG: File returned " + filename);
     }
 }

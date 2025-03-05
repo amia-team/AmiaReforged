@@ -22,9 +22,9 @@ public class CreatureSpawner
             // Return, here. No spawns is enabled, so don't spawn anything.
             return;
 
-        if (TriggerStillOnCooldown() && NWScript.GetLocalInt(_trigger, "on_cooldown") == NWScript.TRUE)
+        if (TriggerStillOnCooldown() && NWScript.GetLocalInt(_trigger, sVarName: "on_cooldown") == NWScript.TRUE)
         {
-            _player.SendServerMessage("You see signs of recent fighting here.");
+            _player.SendServerMessage(message: "You see signs of recent fighting here.");
             return;
         }
 
@@ -36,9 +36,9 @@ public class CreatureSpawner
 
         InitTriggerCooldown();
 
-        NWScript.SetLocalInt(_trigger, "on_cooldown", NWScript.TRUE);
+        NWScript.SetLocalInt(_trigger, sVarName: "on_cooldown", NWScript.TRUE);
         NWScript.DelayCommand(FifteenMinutesSeconds,
-            () => NWScript.SetLocalInt(_trigger, "on_cooldown", NWScript.FALSE));
+            () => NWScript.SetLocalInt(_trigger, sVarName: "on_cooldown", NWScript.FALSE));
     }
 
     private void DetermineDoubleSpawns(DayNightEncounterSpawner spawner)
@@ -46,22 +46,18 @@ public class CreatureSpawner
         IEnumerable<NwPlayer> partyMembers = _player.PartyMembers;
 
         if (partyMembers.Count(partyMember =>
-                NWScript.GetArea(partyMember.LoginCreature) == NWScript.GetArea(_player.LoginCreature)) > 6) spawner.IsDoubleSpawn = true;
+                NWScript.GetArea(partyMember.LoginCreature) == NWScript.GetArea(_player.LoginCreature)) >
+            6) spawner.IsDoubleSpawn = true;
     }
 
-    private bool TriggerStillOnCooldown()
-    {
-        return (int)DateTimeOffset.Now.ToUnixTimeSeconds() - GetTriggerCoolDownStart() <= FifteenMinutesSeconds;
-    }
+    private bool TriggerStillOnCooldown() => (int)DateTimeOffset.Now.ToUnixTimeSeconds() - GetTriggerCoolDownStart() <=
+                                             FifteenMinutesSeconds;
 
-    private int GetTriggerCoolDownStart()
-    {
-        return NWScript.GetLocalInt(_trigger, "cooldown_start");
-    }
+    private int GetTriggerCoolDownStart() => NWScript.GetLocalInt(_trigger, sVarName: "cooldown_start");
 
     private void InitTriggerCooldown()
     {
-        NWScript.SetLocalInt(_trigger, "cooldown_start", (int)DateTimeOffset.Now.ToUnixTimeSeconds());
-        NWScript.WriteTimestampedLogEntry($"{NWScript.GetLocalInt(_trigger, "cooldown_start")}");
+        NWScript.SetLocalInt(_trigger, sVarName: "cooldown_start", (int)DateTimeOffset.Now.ToUnixTimeSeconds());
+        NWScript.WriteTimestampedLogEntry($"{NWScript.GetLocalInt(_trigger, sVarName: "cooldown_start")}");
     }
 }

@@ -10,9 +10,9 @@ namespace AmiaReforged.System.Services;
 public class ResetService
 {
     private const string ResetTimerLVar = "minutesToReset";
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly SchedulerService _schedulerService;
     private readonly ShutdownManager _shutdownManager;
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public ResetService(SchedulerService schedulerService, ShutdownManager shutdownManager)
     {
@@ -25,7 +25,7 @@ public class ResetService
         NwModule.Instance.OnPlayerRest += DisplayResetTimer;
 
         Log.Info(
-            $"Reset Service initialized. ");
+            "Reset Service initialized. ");
     }
 
     private void ScheduleAutosaveAndReset()
@@ -46,7 +46,8 @@ public class ResetService
         // Tell everyone in the server how long until reset
         NwModule.Instance.Players.ToList().ForEach(p =>
         {
-            p.SendServerMessage($"Estimated time until reset: {(int)estimatedReset}", Color.FromRGBA("#e6e600"));
+            p.SendServerMessage($"Estimated time until reset: {(int)estimatedReset}",
+                Color.FromRGBA(rgbaHexString: "#e6e600"));
         });
     }
 
@@ -55,7 +56,7 @@ public class ResetService
         NWScript.SetLocalFloat(NwModule.Instance, ResetTimerLVar, 480.0f);
 
         ResetTimeKeeperSingleton.Instance.ResetStartTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds();
-        Log.Info($"Initial restart time: {NWScript.GetLocalInt(NwModule.Instance, "hoursToReset")} hours");
+        Log.Info($"Initial restart time: {NWScript.GetLocalInt(NwModule.Instance, sVarName: "hoursToReset")} hours");
     }
 
     private void DisplayResetTimer(ModuleEvents.OnPlayerRest obj)
@@ -66,7 +67,8 @@ public class ResetService
         float uptime = (float)ResetTimeKeeperSingleton.Instance.Uptime() / 60;
 
         float estimatedReset = resetAtMinutes - uptime;
-        obj.Player.SendServerMessage($"Estimated reset time: {(int)estimatedReset}", Color.FromRGBA("#5be9ffcc"));
+        obj.Player.SendServerMessage($"Estimated reset time: {(int)estimatedReset}",
+            Color.FromRGBA(rgbaHexString: "#5be9ffcc"));
     }
 
     private static void SavePCs()
@@ -75,18 +77,18 @@ public class ResetService
         {
             if (instancePlayer.IsDM)
             {
-                instancePlayer.SendServerMessage("-- DMs can't be saved. --");
+                instancePlayer.SendServerMessage(message: "-- DMs can't be saved. --");
                 continue;
             }
 
             if (instancePlayer.LoginCreature!.ActiveEffects.Any(e => e.EffectType == EffectType.Polymorph))
             {
                 instancePlayer.SendServerMessage(
-                    "-- Polymorphed PCs can't be saved. Please unpolymorph to save your PC. --");
+                    message: "-- Polymorphed PCs can't be saved. Please unpolymorph to save your PC. --");
                 continue;
             }
 
-            instancePlayer.SendServerMessage("-- Saving your PC now. --");
+            instancePlayer.SendServerMessage(message: "-- Saving your PC now. --");
             NWScript.ExportSingleCharacter(instancePlayer.LoginCreature);
         }
     }
@@ -95,8 +97,8 @@ public class ResetService
     {
         float uptime = (float)ResetTimeKeeperSingleton.Instance.Uptime() / 60;
         float resetAtMinutes = NWScript.GetLocalFloat(NwModule.Instance, ResetTimerLVar);
-        
-        Log.Info($"Time since reset timer began: {((double)uptime / 60):0.00}");
+
+        Log.Info($"Time since reset timer began: {(double)uptime / 60:0.00}");
 
         if (!(uptime >= resetAtMinutes)) return;
 

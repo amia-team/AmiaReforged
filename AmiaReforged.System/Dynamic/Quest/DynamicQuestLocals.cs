@@ -1,8 +1,7 @@
 ﻿namespace AmiaReforged.System.Dynamic.Quest;
 
-
 /// <summary>
-/// Holds static constants for accessing local variables relevant to the dynamic quest system
+///     Holds static constants for accessing local variables relevant to the dynamic quest system
 /// </summary>
 public static class DynamicQuestLocals
 {
