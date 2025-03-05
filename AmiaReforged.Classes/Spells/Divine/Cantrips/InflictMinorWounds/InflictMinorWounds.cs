@@ -28,7 +28,6 @@ public class InflictMinorWounds : ISpell
         Task<TouchAttackResult> result = casterCreature.TouchAttackRanged(eventData.TargetObject, true);
         
         if (result.Result == TouchAttackResult.Miss) return;
-        
             
         _hasFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusNecromancy);
         _hasGreaterFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.GreaterSpellFocusNecromancy);
