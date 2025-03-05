@@ -1,8 +1,9 @@
 using Anvil.API;
-using Anvil.Services;
 using Anvil.API.Events;
+using Anvil.Services;
 using NLog;
-namespace AmiaReforged.Classes.Services;
+
+namespace AmiaReforged.Classes.Warlock;
 
 [ServiceBinding(typeof(WarlockSummonAIHandler))]
 public class WarlockSummonAIHandler

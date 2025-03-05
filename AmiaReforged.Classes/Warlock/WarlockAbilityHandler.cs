@@ -8,7 +8,7 @@ using Anvil.Services;
 using NLog;
 using NWN.Core;
 
-namespace AmiaReforged.Classes.Services;
+namespace AmiaReforged.Classes.Warlock;
 
 [ServiceBinding(typeof(WarlockAbilityHandler))]
 public class WarlockAbilityHandler

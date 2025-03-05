@@ -1,12 +1,12 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Types;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
-using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Types;
 
-namespace AmiaReforged.Classes.Services;
+namespace AmiaReforged.Classes.Warlock;
 
 [ServiceBinding(typeof(WarlockUtilityHandler))]
 public class WarlockUtilityHandler
