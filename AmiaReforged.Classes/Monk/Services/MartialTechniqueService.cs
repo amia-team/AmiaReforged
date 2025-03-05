@@ -184,7 +184,7 @@ public class MartialTechniqueService
       _ => ""
     };
     
-    player.FloatingTextString($"*{techniqueName} Activated*", false, false);
+    player.FloatingTextString($"*{techniqueName} Deactivated*", false, false);
   }
 
   /// <summary>
