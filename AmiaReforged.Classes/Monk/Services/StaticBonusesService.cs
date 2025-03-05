@@ -43,7 +43,7 @@ public class StaticBonusesService
     {
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
-        // Only check for possible disqualifiers of monk bonuses or items with possible Wis bonus
+        // Only check for possible disqualifiers of monk bonuses
         if (eventData.Slot is not (InventorySlot.Chest or InventorySlot.RightHand or InventorySlot.LeftHand)) return;
         
         NwCreature monk = eventData.EquippedBy;
@@ -62,13 +62,9 @@ public class StaticBonusesService
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
-        // Only check for possible disqualifiers of monk bonuses or items with possible Wis bonus
+        // Only check for possible disqualifiers of monk bonuses
         if (eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.Chest or EquipmentSlots.RightHand 
                 or EquipmentSlots.LeftHand)) return;
-        
-        // NB! the focus base item is categorized as torches in baseitems.2da
-        if (eventData.Item.BaseItem.Category is not 
-            (BaseItemCategory.Armor or BaseItemCategory.Shield or BaseItemCategory.Torches)) return;
         
         NwCreature monk = eventData.Creature;
         
