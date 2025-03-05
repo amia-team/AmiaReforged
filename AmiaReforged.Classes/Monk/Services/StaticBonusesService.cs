@@ -42,18 +42,20 @@ public class StaticBonusesService
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
         // Only check for possible disqualifiers of monk bonuses or items with possible Wis bonus
-        if (eventData.Slot is not (InventorySlot.Chest or InventorySlot.RightHand or InventorySlot.LeftHand)) return;
-        
-        NwCreature monk = eventData.EquippedBy;
+        if (eventData.Slot is InventorySlot.Chest or InventorySlot.RightHand or InventorySlot.LeftHand
+            || eventData.Item.HasItemProperty(ItemPropertyType.AbilityBonus))
+        {
+            NwCreature monk = eventData.EquippedBy;
 
-        Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
+            Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
         
-        if (monkEffects is not null) monk.RemoveEffect(monkEffects);
+            if (monkEffects is not null) monk.RemoveEffect(monkEffects);
         
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
-        monkEffects = StaticBonuses.GetEffect(monk);
-        monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+            monkEffects = StaticBonuses.GetEffect(monk);
+            monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        }
     }
     
     private static async void OnUnequipApplyBonuses(OnItemUnequip eventData)
@@ -61,23 +63,20 @@ public class StaticBonusesService
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
         // Only check for possible disqualifiers of monk bonuses or items with possible Wis bonus
-        if (eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.Chest or EquipmentSlots.RightHand 
-                or EquipmentSlots.LeftHand)) return;
+        if (eventData.Item.BaseItem.EquipmentSlots is EquipmentSlots.Chest or EquipmentSlots.RightHand 
+                or EquipmentSlots.LeftHand || eventData.Item.HasItemProperty(ItemPropertyType.AbilityBonus))
+        {
+            NwCreature monk = eventData.Creature;
         
-        // NB! the focus base item is categorized as torches in baseitems.2da
-        if (eventData.Item.BaseItem.Category is not 
-            (BaseItemCategory.Armor or BaseItemCategory.Shield or BaseItemCategory.Torches)) return;
+            Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
         
-        NwCreature monk = eventData.Creature;
-        
-        Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
-        
-        if (monkEffects is not null) monk.RemoveEffect(monkEffects);
+            if (monkEffects is not null) monk.RemoveEffect(monkEffects);
 
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
             
-        monkEffects = StaticBonuses.GetEffect(monk);
-        monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+            monkEffects = StaticBonuses.GetEffect(monk);
+            monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        }
     }
 
     private static async void OnLevelUpCheckBonuses(OnLevelUp eventData)
