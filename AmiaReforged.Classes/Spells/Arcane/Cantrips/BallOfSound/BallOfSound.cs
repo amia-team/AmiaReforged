@@ -28,7 +28,7 @@ public class BallOfSound : ISpell
 
         int damage = CalculateDamage(casterCreature);
 
-        if (Result != ResistSpellResult.Failed) return;
+        if (Result != ResistSpellResult.Failed || eventData.TargetObject.ActiveEffects.Any(e => e.EffectType == EffectType.Deaf)) return;
 
         ApplyEffect(eventData, damage);
     }
