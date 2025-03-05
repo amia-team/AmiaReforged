@@ -139,7 +139,14 @@ public class MartialTechniqueService
         if (technique is null) return;
 
         // Remove martial technique from cooldown to allow hits to proc again
-        monk.RemoveEffect(monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == MartialCooldownTag)!);
+        foreach (Effect effect in monk.ActiveEffects)
+        {
+            if (effect.Tag is not MartialCooldownTag) continue;
+            
+            monk.RemoveEffect(effect);
+            break;
+        }
+
 
         // Remove eagle strike counter
         if (monk.GetObjectVariable<LocalVariableInt>(EagleStrikesCounter).HasValue)
