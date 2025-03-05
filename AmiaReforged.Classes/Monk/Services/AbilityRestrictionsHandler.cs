@@ -14,18 +14,6 @@ public class AbilityRestrictionsHandler
 {
     // Base item ID for base item "Focus"
     private const int FocusId = 222;
-    // Recurring restriction booleans
-    private static NwCreature? _monk;
-    
-    private static readonly bool HasArmor = _monk?.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
-    
-    private static readonly bool HasShield =
-        _monk?.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
-    
-    private static readonly bool HasFocusWithoutUnarmed = _monk?.GetItemInSlot(InventorySlot.RightHand) is not null
-                                                           && _monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
-     
-    
     
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     
@@ -56,33 +44,38 @@ public class AbilityRestrictionsHandler
             or MonkFeat.WholenessOfBody or MonkFeat.QuiveringPalm or MonkFeat.StunningStrike
             or MonkFeat.EagleStrike or MonkFeat.AxiomaticStrike)) return;
 
-        _monk = eventData.Creature;
-            
-        if (HasArmor || HasShield || HasFocusWithoutUnarmed)
+        NwCreature monk = eventData.Creature;
+        
+        bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
+        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
+        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
+                                      && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
+        
+        if (hasArmor || hasShield || hasFocusWithoutUnarmed)
             eventData.PreventFeatUse = true;
         
-        if (!_monk.IsPlayerControlled(out NwPlayer? player)) return;
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
             
-        if (HasArmor)
+        if (hasArmor)
             player.SendServerMessage($"Having equipped an armor has prevented your {eventData.Feat.Name}.");
-        if (HasShield)
+        if (hasShield)
             player.SendServerMessage($"Having equipped a shield has prevented your {eventData.Feat.Name}.");
-        if (HasFocusWithoutUnarmed)
+        if (hasFocusWithoutUnarmed)
             player.SendServerMessage($"Having equipped a focus without being unarmed has prevented your {eventData.Feat.Name}.");
     }
     
     private static void PreventMartialTechnique(OnEffectApply eventData)
     {
-        if (eventData.Object is not NwCreature creature) return;
+        if (eventData.Object is not NwCreature monk) return;
         
         // Effect must be a martial technique
         if (eventData.Effect.Tag is not (MonkTechnique.StunningTag or MonkTechnique.EagleTag 
             or MonkTechnique.AxiomaticTag)) return;
-
-        _monk = creature;
-
-        if (HasArmor || HasShield || HasFocusWithoutUnarmed)
-            eventData.PreventApply = true;
+        
+        bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
+        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
+        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
+                                      && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
         
         string techniqueName = eventData.Effect.Tag switch
         {
@@ -92,13 +85,13 @@ public class AbilityRestrictionsHandler
             _ => ""
         };
         
-        if (!_monk.IsPlayerControlled(out NwPlayer? player)) return;
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
         
-        if (HasArmor)
+        if (hasArmor)
             player.SendServerMessage($"Having equipped an armor has prevented your {techniqueName}.");
-        if (HasShield)
+        if (hasShield)
             player.SendServerMessage($"Having equipped a shield has prevented your {techniqueName}.");
-        if (HasFocusWithoutUnarmed)
+        if (hasFocusWithoutUnarmed)
             player.SendServerMessage($"Having equipped a focus without being unarmed has prevented your {techniqueName}.");
     }
     
@@ -107,22 +100,25 @@ public class AbilityRestrictionsHandler
     /// </summary>
     private static void PreventStaticBonuses(OnEffectApply eventData)
     {
-        if (eventData.Object is not NwCreature creature) return;
+        if (eventData.Object is not NwCreature monk) return;
         
         if (eventData.Effect.Tag is not "monk_staticbonuses") return;
-            
-        _monk = creature;
         
-        if (HasArmor || HasShield || HasFocusWithoutUnarmed)
+        bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
+        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
+        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
+                                      && monk.GetItemInSlot(InventorySlot.LeftHand)!.BaseItem.Id == FocusId;
+        
+        if (hasArmor || hasShield || hasFocusWithoutUnarmed)
             eventData.PreventApply = true;
         
-        if (!_monk.IsPlayerControlled(out NwPlayer? player)) return;
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
         
-        if (HasArmor)
+        if (hasArmor)
             player.SendServerMessage("Equipping this armor has disabled your monk abilities.");
-        if (HasShield)
+        if (hasShield)
             player.SendServerMessage("Equipping this shield has disabled your monk abilities.");
-        if (HasFocusWithoutUnarmed)
+        if (hasFocusWithoutUnarmed)
             player.SendServerMessage("Equipping a focus without being unarmed has disabled your monk abilities.");
     }
     
