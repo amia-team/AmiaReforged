@@ -139,7 +139,7 @@ public class MartialTechniqueService
         if (technique is null) return;
 
         // Remove martial technique from cooldown to allow hits to proc again
-        monk.RemoveEffect(monk.ActiveEffects.First(effect => effect.Tag == MartialCooldownTag));
+        monk.RemoveEffect(monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == MartialCooldownTag)!);
 
         // Remove eagle strike counter
         if (monk.GetObjectVariable<LocalVariableInt>(EagleStrikesCounter).HasValue)
@@ -147,7 +147,8 @@ public class MartialTechniqueService
     }
 
     /// <summary>
-    ///     Cues the activation of the martial technique with a floaty text
+    ///     Checks if the technique should be prevented due to gear restrictions and
+    ///     cues the activation of the martial technique with a floaty text
     /// </summary>
     private static void CheckAndCueMartialTechniqueActivated(OnEffectApply eventData)
     {
@@ -204,11 +205,13 @@ public class MartialTechniqueService
 
         Effect? technique =
             monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is StunningTag or EagleTag or AxiomaticTag);
+        
         if (technique is null) return;
 
         // On hit, apply technique effects and cooldown
         bool isHit =
             attackData.AttackResult is AttackResult.Hit or AttackResult.AutomaticHit or AttackResult.CriticalHit;
+        
         if (!isHit) return;
 
         // Apply technique effects
