@@ -1,7 +1,7 @@
 ﻿using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.Classes.Services.Defender;
+namespace AmiaReforged.Classes.Defender;
 
 [ServiceBinding(typeof(DefendersDutyFactory))]
 public class DefendersDutyFactory

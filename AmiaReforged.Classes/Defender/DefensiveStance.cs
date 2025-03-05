@@ -2,11 +2,9 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NLog.Fluent;
-using NWN.Core;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.Classes.Services.Defender;
+namespace AmiaReforged.Classes.Defender;
 
 [ServiceBinding(typeof(DefensiveStance))]
 public class DefensiveStance

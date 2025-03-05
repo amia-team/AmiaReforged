@@ -1,7 +1,6 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NUnit.Framework;
 using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells.Divine.Cantrips.CureMinorWounds;

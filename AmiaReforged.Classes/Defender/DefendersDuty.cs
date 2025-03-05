@@ -1,12 +1,10 @@
-﻿using AmiaReforged.Classes.EffectUtils;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NLog.Targets;
 using NWN.Core;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.Classes.Services.Defender;
+namespace AmiaReforged.Classes.Defender;
 
 public class DefendersDuty
 {

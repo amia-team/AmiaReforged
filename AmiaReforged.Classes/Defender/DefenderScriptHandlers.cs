@@ -1,11 +1,9 @@
 ﻿using Anvil.API;
-using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
-using NWN.Core.NWNX;
 
-namespace AmiaReforged.Classes.Services.Defender;
+namespace AmiaReforged.Classes.Defender;
 
 [ServiceBinding(typeof(DefenderScriptHandlers))]
 public class DefenderScriptHandlers
