@@ -24,7 +24,6 @@ public class StaticBonusesService
         eventService.SubscribeAll<OnItemUnequip, OnItemUnequip.Factory>(OnUnequipApplyBonuses, EventCallbackType.After);
         eventService.SubscribeAll<OnLevelUp, OnLevelUp.Factory>(OnLevelUpCheckBonuses, EventCallbackType.After);
         eventService.SubscribeAll<OnLevelDown, OnLevelDown.Factory>(OnLevelDownCheckBonuses, EventCallbackType.After);
-        NwModule.Instance.OnEffectApply += OnWisdomEffectCheckBonuses;
         Log.Info("Monk Static Bonuses Service initialized.");
     }
 
@@ -103,28 +102,10 @@ public class StaticBonusesService
         
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
         
-        if (monk.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
+        if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
         await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
-        monkEffects = StaticBonuses.GetEffect(monk);
-        monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
-    }
-    
-    private static async void OnWisdomEffectCheckBonuses(OnEffectApply eventData)
-    {
-        if (eventData.Object is not NwCreature monk) return;
-        if (monk.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
-
-        if (eventData.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease)
-            || eventData.Effect.IntParams[0] is not (int)Ability.Wisdom) return;
-        
-        Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
-        
-        if (monkEffects is not null) monk.RemoveEffect(monkEffects);
-
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-            
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
