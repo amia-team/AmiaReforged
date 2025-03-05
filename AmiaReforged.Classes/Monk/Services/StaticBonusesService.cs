@@ -37,7 +37,7 @@ public class StaticBonusesService
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
     
-    private static void OnEquipApplyBonuses(OnItemEquip eventData)
+    private static async void OnEquipApplyBonuses(OnItemEquip eventData)
     {
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
@@ -50,11 +50,13 @@ public class StaticBonusesService
         
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
         
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+        
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
     
-    private static void OnUnequipApplyBonuses(OnItemUnequip eventData)
+    private static async void OnUnequipApplyBonuses(OnItemUnequip eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
@@ -71,6 +73,8 @@ public class StaticBonusesService
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
         
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
             
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
