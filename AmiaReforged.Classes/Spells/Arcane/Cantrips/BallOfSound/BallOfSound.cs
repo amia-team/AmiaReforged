@@ -28,7 +28,14 @@ public class BallOfSound : ISpell
 
         int damage = CalculateDamage(casterCreature);
 
-        if (Result != ResistSpellResult.Failed || eventData.TargetObject.ActiveEffects.Any(e => e.EffectType == EffectType.Deaf)) return;
+        // Does more damage to petrified targets.
+        if (eventData.TargetObject.ActiveEffects.Any(e => e.EffectType == EffectType.Petrify))
+        {
+            damage += damage / 2;
+        }
+
+        if (Result != ResistSpellResult.Failed ||
+            eventData.TargetObject.ActiveEffects.Any(e => e.EffectType == EffectType.Deaf)) return;
 
         ApplyEffect(eventData, damage);
     }
@@ -37,7 +44,12 @@ public class BallOfSound : ISpell
     {
         int numDie = casterCreature.CasterLevel / 2;
 
-        return NWScript.d3(numDie);
+        bool hasFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.SpellFocusTransmutation);
+        bool hasGreaterFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.GreaterSpellFocusTransmutation);
+        bool hasEpicFocus = casterCreature.Feats.Any(f => f.Id == (ushort)Feat.EpicSpellFocusTransmutation);
+
+        int extraDamage = hasFocus ? 2 : hasGreaterFocus ? 4 : hasEpicFocus ? 6 : 0;
+        return NWScript.d3(numDie) + extraDamage;
     }
 
     private void ApplyEffect(SpellEvents.OnSpellCast eventData, int damage)
