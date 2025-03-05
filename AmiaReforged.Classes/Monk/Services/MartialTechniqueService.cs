@@ -117,6 +117,7 @@ public class MartialTechniqueService
                 if (effect.Tag == _martialEffect.Tag)
                 {
                     monk.RemoveEffect(effect);
+                    queuedTechnique.Delete();
                     return;
                 }
 
@@ -138,10 +139,7 @@ public class MartialTechniqueService
         if (technique is null) return;
 
         // Remove martial technique from cooldown to allow hits to proc again
-        foreach (Effect effect in monk.ActiveEffects)
-        {
-            if (effect.Tag is MartialCooldownTag) monk.RemoveEffect(effect);
-        }
+        monk.RemoveEffect(monk.ActiveEffects.First(effect => effect.Tag == MartialCooldownTag));
 
         // Remove eagle strike counter
         if (monk.GetObjectVariable<LocalVariableInt>(EagleStrikesCounter).HasValue)
