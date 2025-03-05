@@ -4,11 +4,11 @@ using Anvil.API.Events;
 namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.FireBolt;
 
 [DecoratesSpell(typeof(FireBolt))]
-public class FireBoltSpecializationDecorator : SpellDecorator
+public class Singed : SpellDecorator
 {
     private const int TwoRounds = 12;
 
-    public FireBoltSpecializationDecorator(ISpell spell) : base(spell)
+    public Singed(ISpell spell) : base(spell)
     {
         Spell = spell;
     }

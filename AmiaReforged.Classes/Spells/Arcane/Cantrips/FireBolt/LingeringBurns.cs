@@ -4,9 +4,9 @@ using Anvil.API.Events;
 namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.FireBolt;
 
 [DecoratesSpell(typeof(FireBolt))]
-public class FireBoltFocusDecorator : SpellDecorator
+public class LingeringBurns : SpellDecorator
 {
-    public FireBoltFocusDecorator(ISpell spell) : base(spell)
+    public LingeringBurns(ISpell spell) : base(spell)
     {
         Spell = spell;
     }
