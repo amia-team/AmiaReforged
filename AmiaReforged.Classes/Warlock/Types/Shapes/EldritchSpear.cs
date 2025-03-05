@@ -1,9 +1,8 @@
-﻿using AmiaReforged.Classes.Types.EssenceEffects;
-using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Warlock;
+﻿using AmiaReforged.Classes.EffectUtils;
+using AmiaReforged.Classes.Warlock.Types.EssenceEffects;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Types.Shapes;
+namespace AmiaReforged.Classes.Warlock.Types.Shapes;
 
 public static class EldritchSpear
 {

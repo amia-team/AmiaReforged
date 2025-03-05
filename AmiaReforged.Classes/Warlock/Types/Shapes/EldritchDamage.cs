@@ -1,7 +1,7 @@
 ﻿using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Types.Shapes;
+namespace AmiaReforged.Classes.Warlock.Types.Shapes;
 
 /// <summary>
 ///     Static class responsible for calculating damage done by Eldritch blasts.

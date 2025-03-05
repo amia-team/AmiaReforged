@@ -2,7 +2,7 @@
 using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Types.EssenceEffects;
+namespace AmiaReforged.Classes.Warlock.Types.EssenceEffects;
 
 public class BrimstoneEssenceEffects : EssenceEffectApplier
 {

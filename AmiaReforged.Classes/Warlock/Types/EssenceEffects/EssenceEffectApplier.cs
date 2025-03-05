@@ -1,6 +1,6 @@
 ﻿using NWN.Core;
 
-namespace AmiaReforged.Classes.Types.EssenceEffects;
+namespace AmiaReforged.Classes.Warlock.Types.EssenceEffects;
 
 public abstract class EssenceEffectApplier
 {

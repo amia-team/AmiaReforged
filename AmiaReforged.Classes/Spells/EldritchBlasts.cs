@@ -1,7 +1,7 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Types;
-using AmiaReforged.Classes.Types.EssenceEffects;
-using AmiaReforged.Classes.Types.Shapes;
+using AmiaReforged.Classes.Warlock.Types;
+using AmiaReforged.Classes.Warlock.Types.EssenceEffects;
+using AmiaReforged.Classes.Warlock.Types.Shapes;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells;

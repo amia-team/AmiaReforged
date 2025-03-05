@@ -1,5 +1,5 @@
 using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Types;
+using AmiaReforged.Classes.Warlock.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

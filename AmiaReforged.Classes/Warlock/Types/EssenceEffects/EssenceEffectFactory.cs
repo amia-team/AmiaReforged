@@ -1,4 +1,4 @@
-﻿namespace AmiaReforged.Classes.Types.EssenceEffects;
+﻿namespace AmiaReforged.Classes.Warlock.Types.EssenceEffects;
 
 public static class EssenceEffectFactory
 {

@@ -2,11 +2,11 @@
 using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Types.EssenceEffects;
+namespace AmiaReforged.Classes.Warlock.Types.EssenceEffects;
 
-public class BeshadowedEssenceEffects : EssenceEffectApplier
+public class FrightfulEssenceEffects : EssenceEffectApplier
 {
-    public BeshadowedEssenceEffects(uint target, uint caster) : base(target, caster)
+    public FrightfulEssenceEffects(uint target, uint caster) : base(target, caster)
     {
     }
 
@@ -22,22 +22,25 @@ public class BeshadowedEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), Target);
-        ApplyEffectAtLocation(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_FNF_GAS_EXPLOSION_GREASE), GetLocation(Target));
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_MAGBLUE), Target);
 
-        bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_SPELL, Caster) == TRUE;
+        bool passedWillSave = WillSave(Target, CalculateDC(), SAVING_THROW_TYPE_MIND_SPELLS, Caster) == TRUE;
 
-        if (passedFortSave) ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE), Target);
-        if (!passedFortSave)
+        if (passedWillSave)
+        {
+            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), Target);
+            return;
+        }
+        if (!passedWillSave)
         {
             int warlockLevels = GetLevelByClass(57, Caster);
             float essenceDuration = warlockLevels < 10 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 10);
             IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
             {
-                EffectBlindness(),
-                EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE)
+                EffectFrightened(),
+                EffectVisualEffect(VFX_DUR_PDK_FEAR)
             });
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_BLIND_DEAF_M), Target);
         }
     }
 }

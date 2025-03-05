@@ -1,4 +1,4 @@
-﻿namespace AmiaReforged.Classes.Types;
+﻿namespace AmiaReforged.Classes.Warlock.Types;
 
 // The player's essence choice is stored on their PC key. This is just a more human readable way to make it less
 // opaque to determine which essence has been activated.

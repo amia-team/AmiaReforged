@@ -1,5 +1,4 @@
-﻿using AmiaReforged.Classes.Types;
-using AmiaReforged.Classes.Warlock;
+﻿using AmiaReforged.Classes.Warlock;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Greater;

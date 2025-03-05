@@ -1,5 +1,4 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

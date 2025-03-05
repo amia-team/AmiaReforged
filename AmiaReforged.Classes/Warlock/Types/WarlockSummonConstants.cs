@@ -1,6 +1,6 @@
 using Anvil.API;
 
-namespace AmiaReforged.Classes.Types;
+namespace AmiaReforged.Classes.Warlock.Types;
 
 // Constants are defined here for ease of use when calling in service handlers.
 

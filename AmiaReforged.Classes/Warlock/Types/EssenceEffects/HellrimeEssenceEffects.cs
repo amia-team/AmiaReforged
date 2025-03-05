@@ -2,11 +2,11 @@
 using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Types.EssenceEffects;
+namespace AmiaReforged.Classes.Warlock.Types.EssenceEffects;
 
-public class UtterdarkEssenceEffects : EssenceEffectApplier
+public class HellrimeEssenceEffects : EssenceEffectApplier
 {
-    public UtterdarkEssenceEffects(uint target, uint caster) : base(target, caster)
+    public HellrimeEssenceEffects(uint target, uint caster) : base(target, caster)
     {
     }
 
@@ -21,10 +21,10 @@ public class UtterdarkEssenceEffects : EssenceEffectApplier
             return;
         }
 
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_NEGATIVE), Target);
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_NEGATIVE_ENERGY), Target);
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage, DAMAGE_TYPE_COLD), Target);
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FROST_L, 0, 0.5f), Target);
 
-        bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_NEGATIVE, Caster) == TRUE;
+        bool passedFortSave = FortitudeSave(Target, CalculateDC(), SAVING_THROW_TYPE_COLD, Caster) == TRUE;
 
         if (passedFortSave)
         {
@@ -37,11 +37,10 @@ public class UtterdarkEssenceEffects : EssenceEffectApplier
             float essenceDuration = warlockLevels < 5 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 5);
             IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
             {
-                SupernaturalEffect(EffectNegativeLevel(2)),
-                EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE)
+                EffectVisualEffect(VFX_DUR_ICESKIN),
+                EffectAbilityDecrease(ABILITY_DEXTERITY, 4)
             });
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_REDUCE_ABILITY_SCORE), Target);
         }
     }
 }

@@ -1,8 +1,7 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
-using NWN.Core;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Types.EssenceEffects;
+namespace AmiaReforged.Classes.Warlock.Types.EssenceEffects;
 
 public class VitriolicEssenceEffects : EssenceEffectApplier
 {

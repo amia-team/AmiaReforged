@@ -2,11 +2,11 @@
 using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Types.EssenceEffects;
+namespace AmiaReforged.Classes.Warlock.Types.EssenceEffects;
 
-public class DrainingEssenceEffects : EssenceEffectApplier
+public class BewitchingEssenceEffects : EssenceEffectApplier
 {
-    public DrainingEssenceEffects(uint target, uint caster) : base(target, caster)
+    public BewitchingEssenceEffects(uint target, uint caster) : base(target, caster)
     {
     }
 
@@ -22,9 +22,9 @@ public class DrainingEssenceEffects : EssenceEffectApplier
         }
 
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), Target);
-        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_MAGBLUE), Target);
+        ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_CHARM), Target);
 
-        bool passedWillSave = WillSave(Target, CalculateDC(), SAVING_THROW_TYPE_SPELL, Caster) == TRUE;
+        bool passedWillSave = WillSave(Target, CalculateDC(), SAVING_THROW_TYPE_MIND_SPELLS, Caster) == TRUE;
 
         if (passedWillSave)
         {
@@ -37,11 +37,10 @@ public class DrainingEssenceEffects : EssenceEffectApplier
             float essenceDuration = warlockLevels < 10 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 10);
             IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
             {
-                EffectSlow(),
-                EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE)
+                EffectVisualEffect(VFX_DUR_MIND_AFFECTING_DISABLED),
+                EffectConfused()
             });
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
-            ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_SLOW), Target);
         }
     }
 }
