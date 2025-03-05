@@ -69,7 +69,7 @@ public class Wilt : ISpell
         _schedulerService.Schedule(() => NWScript.DeleteLocalInt(target, $"wilt_{caster.Name}"), TimeSpan.FromSeconds(durationInRounds * 6));
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }

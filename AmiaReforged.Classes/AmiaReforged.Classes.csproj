@@ -18,8 +18,4 @@
       <None Remove="Jenkinsfile" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Spells\Divine\Cantrips\CureMinorWounds\" />
-    </ItemGroup>
-
 </Project>

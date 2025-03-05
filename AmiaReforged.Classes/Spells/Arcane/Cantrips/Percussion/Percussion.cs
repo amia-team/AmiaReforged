@@ -92,7 +92,7 @@ public class Percussion : ISpell
         return ScriptHandleResult.Handled;
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }

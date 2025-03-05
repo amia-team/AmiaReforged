@@ -55,7 +55,7 @@ public class FireBolt : ISpell
         return damage;
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }

@@ -57,7 +57,7 @@ public class RayofHarm : ISpell
         Result = creature.CheckResistSpell(caster);
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }

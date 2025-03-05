@@ -63,7 +63,7 @@ public class Renew : ISpell
         }
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }

@@ -69,7 +69,7 @@ public class AcidBolt : ISpell
         target.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }

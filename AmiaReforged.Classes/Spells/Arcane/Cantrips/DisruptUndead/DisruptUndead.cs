@@ -52,7 +52,7 @@ public class DisruptUndead : ISpell
         Result = creature.CheckResistSpell(caster);
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }

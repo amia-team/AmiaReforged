@@ -50,7 +50,7 @@ public class InflictMinorWounds : ISpell
         return NWScript.d3(numDie);
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }

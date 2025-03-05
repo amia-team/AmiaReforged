@@ -16,7 +16,7 @@ public class ElectricJolt : ISpell
     }
 
     public string ImpactScript => "X0_S0_ElecJolt";
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }

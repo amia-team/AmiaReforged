@@ -41,7 +41,7 @@ public class Virtue : ISpell
         target.ApplyEffect(EffectDuration.Temporary, hpEffect, TimeSpan.FromMinutes(caster.CasterLevel));
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }

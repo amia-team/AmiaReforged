@@ -53,7 +53,7 @@ public class Resistance : ISpell
         target.ApplyEffect(EffectDuration.Temporary, saveIncrease, TimeSpan.FromMinutes(turns));
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
     }
