@@ -76,13 +76,13 @@ public class MartialTechniqueService
         return;
       }
 
-      if (!effect.Tag!.Contains(MartialTechnique)) continue;
+      if (effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) continue;
       
       monk.RemoveEffect(effect);
       break;
     }
     
-    await NwTask.Delay(TimeSpan.FromMilliseconds(1f));
+    await NwTask.Delay(TimeSpan.FromMilliseconds(1));
     _martialEffect.SubType = EffectSubType.Unyielding;
     monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
   }
@@ -118,7 +118,7 @@ public class MartialTechniqueService
           return;
         }
 
-        if (!effect.Tag!.Contains(MartialTechnique)) continue;
+        if (effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) continue;
       
         monk.RemoveEffect(effect);
         break;
@@ -130,17 +130,9 @@ public class MartialTechniqueService
       monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
     }
     
-    Effect? technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag!.Contains(MartialTechnique));
+    Effect? technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is StunningTag or EagleTag or AxiomaticTag);
 
     if (technique is null) return;
-
-    string techniqueName = technique.Tag switch
-    {
-      StunningTag => "Stunning Strike",
-      EagleTag => "Eagle Strike",
-      AxiomaticTag  => "Axiomatic Strike",
-      _ => ""
-    };
     
     // Remove martial technique from cooldown to allow hits to proc again
     foreach (Effect effect in monk.ActiveEffects)
@@ -157,8 +149,7 @@ public class MartialTechniqueService
   private static void CueMartialTechniqueActivated(OnEffectApply eventData)
   {
     if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
-    if (eventData.Effect.Tag is null) return;
-    if (!eventData.Effect.Tag.Contains(MartialTechnique)) return;
+    if (eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
 
     string technique = eventData.Effect.Tag;
     
@@ -182,8 +173,7 @@ public class MartialTechniqueService
   private static void CueMartialTechniqueDeactivated(OnEffectRemove eventData)
   {
     if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
-    if (eventData.Effect.Tag is null) return;
-    if (!eventData.Effect.Tag.Contains(MartialTechnique)) return;
+    if (eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
 
     string technique = eventData.Effect.Tag;
     
@@ -213,7 +203,7 @@ public class MartialTechniqueService
     // Can't have the cooldown active for martial technique procs
     if (monk.ActiveEffects.Any(effect => effect.Tag is MartialCooldownTag)) return;
   
-    Effect? technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag!.Contains(MartialTechnique));
+    Effect? technique = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is StunningTag or EagleTag or AxiomaticTag);
     if (technique is null) return;
     
     // On hit, apply technique effects and cooldown
