@@ -35,36 +35,33 @@ public class StaticBonusesService
         
         Effect monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
-        
-        OnEffectApply onEffectApply = new();
-        AbilityRestrictionsHandler.PreventStaticBonuses(onEffectApply);
     }
     
-    /// <summary>
-    /// This is necessary because the game doesn't register replacing an equipped item as unequipping;
-    /// eg, if you have a shield in offhand and switch it into a kama, the game just reads it as an OnEquip event
-    /// and doesn't re-add the monk bonuses although you no longer have a shield to disqualify it
-    /// </summary>
     private static void OnEquipApplyBonuses(OnItemEquip eventData)
     {
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
+        // Only check for possible disqualifiers of monk bonuses or items with possible Wis bonus
+        if (eventData.Slot is not (InventorySlot.Chest or InventorySlot.RightHand or InventorySlot.LeftHand)
+            || !eventData.Item.HasItemProperty(ItemPropertyType.AbilityBonus)) return;
+        
         NwCreature monk = eventData.EquippedBy;
 
-        if (monk.ActiveEffects.Any(effect => effect.Tag is "monk_staticbonuses"))
-            foreach (Effect effect in monk.ActiveEffects)
-                if (effect.Tag == "monk_staticbonuses") monk.RemoveEffect(effect);
+        Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
         
-        Effect monkEffects = StaticBonuses.GetEffect(monk);
+        if (monkEffects is not null) monk.RemoveEffect(monkEffects);
+        
+        monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
-
-        OnEffectApply onEffectApply = new();
-        AbilityRestrictionsHandler.PreventStaticBonuses(onEffectApply);
     }
     
     private static void OnUnequipApplyBonuses(OnItemUnequip eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
+        
+        // Only check for possible disqualifiers of monk bonuses or items with possible Wis bonus
+        if (eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.Chest or EquipmentSlots.RightHand 
+                or EquipmentSlots.LeftHand) ||  !eventData.Item.HasItemProperty(ItemPropertyType.AbilityBonus)) return;
         
         // NB! the focus base item is categorized as torches in baseitems.2da
         if (eventData.Item.BaseItem.Category is not 
@@ -78,9 +75,6 @@ public class StaticBonusesService
             
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
-        
-        OnEffectApply onEffectApply = new();
-        AbilityRestrictionsHandler.PreventStaticBonuses(onEffectApply);
     }
 
     private static void OnLevelUpCheckBonuses(OnLevelUp eventData)
@@ -90,9 +84,8 @@ public class StaticBonusesService
         NwCreature monk = eventData.Creature;
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
         
-        if (monkEffects is null) return;
-
-        monk.RemoveEffect(monkEffects);
+        if (monkEffects is not null) monk.RemoveEffect(monkEffects);
+        
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
@@ -102,9 +95,7 @@ public class StaticBonusesService
         NwCreature monk = eventData.Creature;
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
         
-        if (monkEffects is null) return;
-
-        monk.RemoveEffect(monkEffects);
+        if (monkEffects is not null) monk.RemoveEffect(monkEffects);
         
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
