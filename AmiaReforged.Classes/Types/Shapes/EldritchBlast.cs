@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Classes.Types.EssenceEffects;
+using AmiaReforged.Classes.Warlock;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Types.Shapes;

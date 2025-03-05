@@ -1,7 +1,7 @@
 using AmiaReforged.Classes.EffectUtils;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Types;
+namespace AmiaReforged.Classes.Warlock;
 
 // Constants are defined here for ease of use when calling in service handlers.
 
