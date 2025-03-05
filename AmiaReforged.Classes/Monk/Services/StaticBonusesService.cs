@@ -135,7 +135,7 @@ public class StaticBonusesService
         }
     }
     
-    private static void OnWisdomRemoveCheckBonuses(OnEffectApply eventData)
+    private static void OnWisdomRemoveCheckBonuses(OnEffectRemove eventData)
     {
         if (eventData.Object is not NwCreature monk) return;
         if (monk.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
