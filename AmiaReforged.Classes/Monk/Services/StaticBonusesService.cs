@@ -44,7 +44,8 @@ public class StaticBonusesService
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
         
         // Only check for possible disqualifiers of monk bonuses
-        if (eventData.Slot is not (InventorySlot.Chest or InventorySlot.RightHand or InventorySlot.LeftHand)) return;
+        if (eventData.Slot is not (InventorySlot.Chest or InventorySlot.RightHand or InventorySlot.LeftHand))
+            if (!eventData.Item.HasItemProperty(ItemPropertyType.AbilityBonus)) return;
         
         NwCreature monk = eventData.EquippedBy;
 
@@ -67,8 +68,10 @@ public class StaticBonusesService
         const EquipmentSlots leftOrRightOrCreature =  
             EquipmentSlots.RightHand | EquipmentSlots.LeftHand | EquipmentSlots.CreatureWeaponBite 
             | EquipmentSlots.CreatureWeaponLeft | EquipmentSlots.CreatureWeaponRight;
+        
         if (eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.Chest or EquipmentSlots.RightHand 
-                or EquipmentSlots.LeftHand or leftOrRight or leftOrRightOrCreature)) return;
+                or EquipmentSlots.LeftHand or leftOrRight or leftOrRightOrCreature)) 
+            if (!eventData.Item.HasItemProperty(ItemPropertyType.AbilityBonus)) return;
         
         NwCreature monk = eventData.Creature;
         
