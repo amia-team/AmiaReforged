@@ -1,12 +1,12 @@
+using Anvil.API;
+using Anvil.Services;
+using Anvil.API.Events;
+using NWN.Core;
+using NLog;
 using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Types;
-using Anvil.API;
-using Anvil.API.Events;
-using Anvil.Services;
-using NLog;
-using NWN.Core;
 
-namespace AmiaReforged.Classes.Warlock;
+namespace AmiaReforged.Classes.Services;
 
 [ServiceBinding(typeof(WarlockSummonStatsHandler))]
 

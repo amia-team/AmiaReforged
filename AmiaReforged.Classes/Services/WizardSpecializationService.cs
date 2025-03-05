@@ -3,7 +3,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.Classes.Warlock;
+namespace AmiaReforged.Classes.Services;
 
 [ServiceBinding(typeof(WizardSpecializationService))]
 public class WizardSpecializationService

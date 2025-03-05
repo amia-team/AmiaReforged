@@ -1,10 +1,11 @@
+using System.Runtime.CompilerServices;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
 
-namespace AmiaReforged.Classes.Warlock;
+namespace AmiaReforged.Classes.Services;
 
 [ServiceBinding(typeof(WarlockFeatHandler))]
 public class WarlockFeatHandler

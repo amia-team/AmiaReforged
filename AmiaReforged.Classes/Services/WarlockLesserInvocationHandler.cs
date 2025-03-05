@@ -3,7 +3,7 @@ using Anvil.API;
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.Classes.Warlock;
+namespace AmiaReforged.Classes.Services;
 
 [ServiceBinding(typeof(WarlockLesserInvocationHandler))]
 public class WarlockLesserInvocationHandler
