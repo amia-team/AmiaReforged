@@ -49,7 +49,7 @@ public class AbilityRestrictionsHandler
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
         bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
-                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Id == FocusId;
+                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Id is FocusId;
         
         if (hasArmor || hasShield || hasFocusWithoutUnarmed)
             eventData.PreventFeatUse = true;
@@ -75,7 +75,7 @@ public class AbilityRestrictionsHandler
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
         bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
-                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Id == FocusId;
+                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Id is FocusId;
         
         string techniqueName = eventData.Effect.Tag switch
         {
@@ -107,7 +107,7 @@ public class AbilityRestrictionsHandler
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
         bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
-                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Id == FocusId;
+                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Id is FocusId;
         
         if (hasArmor || hasShield || hasFocusWithoutUnarmed)
             eventData.PreventApply = true;
