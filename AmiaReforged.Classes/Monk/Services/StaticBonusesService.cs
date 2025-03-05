@@ -89,6 +89,8 @@ public class StaticBonusesService
         
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
         
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+        
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
@@ -101,6 +103,8 @@ public class StaticBonusesService
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
         
         if (eventData.Creature.GetClassInfo(ClassType.Monk)!.Level < StaticBonusLevel) return;
+        
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
