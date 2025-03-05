@@ -29,10 +29,11 @@ public class SpellDecoratorFactory
     {
         Type spellType = spell.GetType();
 
+        // Never actually null, but the compiler doesn't know that
         if (_decorators.TryGetValue(spellType, out List<Type>? decoratorTypes))
             foreach (Type decoratorType in decoratorTypes)
             {
-                spell = (ISpell)Activator.CreateInstance(decoratorType, spell);
+                spell = (ISpell)Activator.CreateInstance(decoratorType, spell)!;
             }
 
         return spell;
