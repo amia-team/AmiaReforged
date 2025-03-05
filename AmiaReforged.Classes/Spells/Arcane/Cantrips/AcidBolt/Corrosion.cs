@@ -4,9 +4,9 @@ using Anvil.API.Events;
 namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.AcidBolt;
 
 [DecoratesSpell(typeof(AcidBolt))]
-public class AcidBoltSpecializationDecorator : SpellDecorator
+public class Corrosion : SpellDecorator
 {
-    public AcidBoltSpecializationDecorator(ISpell spell) : base(spell)
+    public Corrosion(ISpell spell) : base(spell)
     {
         Spell = spell;
     }
