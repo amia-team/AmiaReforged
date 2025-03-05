@@ -25,7 +25,6 @@ public class AbilityRestrictionsHandler
         
         NwModule.Instance.OnModuleLoad += HideDefaultFeedback;
         NwModule.Instance.OnUseFeat += PreventBodyOrSpiritTechnique;
-        NwModule.Instance.OnEffectApply += PreventMartialTechnique;
         NwModule.Instance.OnEffectApply += PreventStaticBonuses;
         NwModule.Instance.OnUseFeat += PreventHostileTechniqueToFriendly;
         NwModule.Instance.OnUseFeat += PreventTechniqueInNoCastingArea;
@@ -59,39 +58,6 @@ public class AbilityRestrictionsHandler
             player.SendServerMessage($"Having equipped a shield has prevented your {eventData.Feat.Name}.");
         if (hasFocusWithoutUnarmed)
             player.SendServerMessage($"Having equipped a focus without being unarmed has prevented your {eventData.Feat.Name}.");
-    }
-    
-    private static void PreventMartialTechnique(OnEffectApply eventData)
-    {
-        if (eventData.Object is not NwCreature monk) return;
-
-        if (eventData.Effect.Tag is not (MonkTechnique.StunningTag or MonkTechnique.EagleTag 
-            or MonkTechnique.AxiomaticTag)) return;
-        
-        bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
-        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
-        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
-                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Torches;
-        
-        if (hasArmor || hasShield || hasFocusWithoutUnarmed)
-            eventData.PreventApply = true;
-        
-        if (!monk.IsPlayerControlled(out NwPlayer? player)) return;
-
-        string techniqueName = eventData.Effect.Tag switch
-        {
-            MonkTechnique.StunningTag => "Stunning Strike",
-            MonkTechnique.EagleTag => "Eagle Strike",
-            MonkTechnique.AxiomaticTag => "Axiomatic Strike",
-            _ => ""
-        };
-            
-        if (hasArmor)
-            player.SendServerMessage($"Having equipped an armor has prevented your {techniqueName}.");
-        if (hasShield)
-            player.SendServerMessage($"Having equipped a shield has prevented your {techniqueName}.");
-        if (hasFocusWithoutUnarmed)
-            player.SendServerMessage($"Having equipped a focus without being unarmed has prevented your {techniqueName}.");
     }
     
     private static void PreventStaticBonuses(OnEffectApply eventData)
@@ -142,5 +108,42 @@ public class AbilityRestrictionsHandler
         eventData.PreventFeatUse = true;
         if (eventData.Creature.IsPlayerControlled(out NwPlayer? player))
             player.SendServerMessage("- You cannot cast magic in this area! -");
+    }
+    
+    public static bool PreventMartialTechnique(OnEffectApply eventData)
+    {
+        if (eventData.Object is not NwCreature monk) return false;
+        
+        bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
+        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
+        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
+                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Torches;
+        
+        bool isTechniquePrevented = false;
+
+        if (hasArmor || hasShield || hasFocusWithoutUnarmed)
+        {
+            eventData.PreventApply = true;
+            isTechniquePrevented = true;
+        }
+        
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return isTechniquePrevented;
+
+        string techniqueName = eventData.Effect.Tag switch
+        {
+            MonkTechnique.StunningTag => "Stunning Strike",
+            MonkTechnique.EagleTag => "Eagle Strike",
+            MonkTechnique.AxiomaticTag => "Axiomatic Strike",
+            _ => ""
+        };
+            
+        if (hasArmor)
+            player.SendServerMessage($"Having equipped an armor has prevented your {techniqueName}.");
+        if (hasShield)
+            player.SendServerMessage($"Having equipped a shield has prevented your {techniqueName}.");
+        if (hasFocusWithoutUnarmed)
+            player.SendServerMessage($"Having equipped a focus without being unarmed has prevented your {techniqueName}.");
+
+        return isTechniquePrevented;
     }
 }

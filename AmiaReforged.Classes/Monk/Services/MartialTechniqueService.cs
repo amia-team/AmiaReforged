@@ -26,7 +26,7 @@ public class MartialTechniqueService
     // Register methods to listen for the events.
     NwModule.Instance.OnUseFeat += MartialTechniqueUseFeat;
     NwModule.Instance.OnCombatRoundStart += EnterMartialTechnique;
-    NwModule.Instance.OnEffectApply += CueMartialTechniqueActivated;
+    NwModule.Instance.OnEffectApply += CheckAndCueMartialTechniqueActivated;
     NwModule.Instance.OnEffectRemove += CueMartialTechniqueDeactivated;
     NwModule.Instance.OnCreatureAttack += OnHitApplyTechnique;
     Log.Info("Monk Martial Technique Service initialized.");
@@ -146,25 +146,26 @@ public class MartialTechniqueService
   /// <summary>
   /// Cues the activation of the martial technique with a floaty text
   /// </summary>
-  private static void CueMartialTechniqueActivated(OnEffectApply eventData)
+  private static void CheckAndCueMartialTechniqueActivated(OnEffectApply eventData)
   {
-    if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
     if (eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
-
-    string technique = eventData.Effect.Tag;
     
-    switch (technique)
+    // Check if technique is prevented
+    bool techniquePrevented = AbilityRestrictionsHandler.PreventMartialTechnique(eventData);
+
+    if (techniquePrevented) return;
+    
+    if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
+
+    string techniqueName = eventData.Effect.Tag switch
     {
-      case StunningTag :
-        player.FloatingTextString("*Stunning Strike Activated*", false, false);
-        break;
-      case EagleTag :
-        player.FloatingTextString("*Eagle Strike Activated*", false, false);
-        break;
-      case AxiomaticTag :
-        player.FloatingTextString("*Axiomatic Strike Activated*", false, false);
-        break;
-    }
+      StunningTag => "Stunning Strike",
+      EagleTag => "Eagle Strike",
+      AxiomaticTag => "Axiomatic Strike",
+      _ => ""
+    };
+    
+    player.FloatingTextString($"*{techniqueName} Activated*", false, false);
   }
 
   /// <summary>
@@ -175,20 +176,15 @@ public class MartialTechniqueService
     if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
     if (eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
 
-    string technique = eventData.Effect.Tag;
-    
-    switch (technique)
+    string techniqueName = eventData.Effect.Tag switch
     {
-      case StunningTag :
-        player.FloatingTextString("*Stunning Strike Deactivated*", false, false);
-        break;
-      case EagleTag :
-        player.FloatingTextString("*Eagle Strike Deactivated*", false, false);
-        break;
-      case AxiomaticTag :
-        player.FloatingTextString("*Axiomatic Strike Deactivated*", false, false);
-        break;
-    }
+      StunningTag => "Stunning Strike",
+      EagleTag => "Eagle Strike",
+      AxiomaticTag => "Axiomatic Strike",
+      _ => ""
+    };
+    
+    player.FloatingTextString($"*{techniqueName} Activated*", false, false);
   }
 
   /// <summary>
