@@ -36,9 +36,19 @@ public class InflictMinorWounds : ISpell
         int damage = CalculateDamage(casterCreature);
         
         if (Result != ResistSpellResult.Failed) return;
+
+        Effect effectBasedOnType = GetEffectFromRacialType(eventData.TargetObject, damage); 
         
-        Effect damageEffect = Effect.Damage(damage, DamageType.Negative);
-        eventData.TargetObject.ApplyEffect(EffectDuration.Instant, damageEffect);
+        eventData.TargetObject.ApplyEffect(EffectDuration.Instant, effectBasedOnType);
+    }
+
+    private Effect GetEffectFromRacialType(NwGameObject targetObject, int damage)
+    {
+        return NWScript.GetRacialType(targetObject) switch
+        {
+            NWScript.RACIAL_TYPE_UNDEAD => Effect.Heal(damage),
+            _ => Effect.Damage(damage, DamageType.Negative),
+        };
     }
 
     private int CalculateDamage(NwCreature casterCreature)
