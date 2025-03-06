@@ -22,7 +22,6 @@
 
     <ItemGroup>
         <Folder Include="Migrations\"/>
-        <Folder Include="Systems\Chat\Commands\FactionCommands\" />
         <Folder Include="Systems\MiniGame\LiarsDice\Nui\"/>
         <Folder Include="Systems\MiniGame\LiarsDice\Tests\"/>
     </ItemGroup>
