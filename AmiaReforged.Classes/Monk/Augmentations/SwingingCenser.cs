@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
@@ -6,6 +7,7 @@ using Anvil.API;
 using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
+using static AmiaReforged.Classes.Monk.Constants.MonkTechnique;
 
 public static class SwingingCenser
 {
@@ -15,7 +17,7 @@ public static class SwingingCenser
         switch (technique)
         {
             case TechniqueType.Eagle:
-                AugmentEagle(attackData);
+                EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.KiBarrier:
                 AugmentKiBarrier(castData);
@@ -30,7 +32,7 @@ public static class SwingingCenser
                 AugmentEmptyBody(castData);
                 break;
             case TechniqueType.Stunning:
-                StunningStrike.DoStunningStrike(attackData);
+                AugmentStunning(attackData);
                 break;
             case TechniqueType.Axiomatic:
                 AxiomaticStrike.DoAxiomaticStrike(attackData);
@@ -41,8 +43,133 @@ public static class SwingingCenser
         }
     }
 
-    private static void AugmentEagle(OnCreatureAttack attackData)
+    private static void AugmentStunning(OnCreatureAttack attackData)
     {
+        StunningStrike.DoStunningStrike(attackData);
+        NwCreature monk = (NwCreature)attackData.Attacker;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkHealth = monk.HP;
+        int monkMaxHP = monk.MaxHP;
+        var rand = new Random();
+        
+        int diceHealing = 0;
+        
+        if (monkLevel == MonkLevel.KiFocusIii)
+        {
+            diceHealing = 4;
+        }
+        else if (monkLevel >= MonkLevel.KiFocusIi)
+        {
+            diceHealing = 3;
+        }
+        else if (monkLevel >= MonkLevel.KiFocusI)
+        {
+            diceHealing = 2;
+        }
+        else if (monkLevel >= MonkLevel.PathOfEnlightenment)
+        {
+            diceHealing = 1;
+        }
+        
+        // Roll 1d6s
+        int randomRoll = rand.Roll(6, diceHealing);
+        int healRemaining = randomRoll;
+        Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingS, false, 0.7f);
+        // Get healing  counter
+        LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>(HealingCounter);
+        int hpDiff;
+        // Check to make sure they are injured
+        if (monkMaxHP > monkHealth)
+        {
+            hpDiff = monkMaxHP - monkHealth;
+            // Use all your heal on the monk
+            if (hpDiff >= randomRoll)
+            {
+                monk.ApplyEffect(EffectDuration.Instant,Effect.Heal(randomRoll));
+                monk.ApplyEffect(EffectDuration.Instant,healVfx);
+                healCounter.Value = healCounter.Value + randomRoll;
+            }
+            else if (hpDiff < randomRoll)
+            {
+                healRemaining = healRemaining - hpDiff;
+                monk.ApplyEffect(EffectDuration.Instant,Effect.Heal(hpDiff));
+                monk.ApplyEffect(EffectDuration.Instant,healVfx);
+                healCounter.Value = healCounter.Value + hpDiff;
+                HealAlly();
+            }
+        }
+        else
+        {
+            HealAlly();
+        }
+
+        // Regenerate Ki Body Point
+        if (healCounter.Value >= 100)
+        {
+            NwFeat bodyKiPointFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!;
+            int bodyUses = monk.GetFeatRemainingUses(bodyKiPointFeat);
+            // Making sure they don't get more uses than their maximum
+            if (((monkLevel >= MonkLevel.BodyKiPointsVi) && (bodyUses<6)) || ((monkLevel >= MonkLevel.BodyKiPointsV) && (bodyUses<5)) ||
+                ((monkLevel >= MonkLevel.BodyKiPointsIv) && (bodyUses<4)) || ((monkLevel >= MonkLevel.BodyKiPointsIii) && (bodyUses<3)) || 
+                ((monkLevel >= MonkLevel.BodyKiPointsIi) && (bodyUses<2)) || ((monkLevel >= MonkLevel.BodyKiPointsI) && (bodyUses<1)))
+            {
+                monk.SetFeatRemainingUses(bodyKiPointFeat,(byte)(bodyUses+1));
+            }
+
+            // Reset Local Variable
+            healCounter.Value = 0; 
+        }
+        
+        return;
+        
+        // We will use the healRemaining variable for this
+        void HealAlly()
+        {
+            int firstCreature=0;
+            NwCreature lowestPercentHp = monk;
+            
+            foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium,
+                         false))
+            {
+                NwCreature creatureInShape = (NwCreature)nwObject;
+
+                if (monk.IsReactionTypeFriendly(creatureInShape)) continue;
+
+                if (firstCreature==0)
+                {
+                    lowestPercentHp = creatureInShape;
+                    firstCreature = 1; 
+                }
+                else
+                {   // Check their percent missing HP. Lowest is always set to the lowestPercentHp variable
+                    if (((creatureInShape.MaxHP - creatureInShape.HP)/creatureInShape.MaxHP) > ((lowestPercentHp.MaxHP - lowestPercentHp.HP)/lowestPercentHp.MaxHP))
+                    {
+                        lowestPercentHp = creatureInShape;
+                    }
+                }
+            }
+
+            // If there are no friendlies then return
+            if(lowestPercentHp == monk) return;
+            
+            int lowestHpDiff = lowestPercentHp.MaxHP - lowestPercentHp.HP;
+            
+            // Track how to apply the remaining heal
+            if (lowestHpDiff >= healRemaining)
+            { 
+                lowestPercentHp.ApplyEffect(EffectDuration.Instant,Effect.Heal(healRemaining));
+                lowestPercentHp.ApplyEffect(EffectDuration.Instant,healVfx);
+                healCounter.Value = healCounter.Value + healRemaining;
+            }
+            else
+            {
+                lowestPercentHp.ApplyEffect(EffectDuration.Instant,Effect.Heal(lowestHpDiff));
+                lowestPercentHp.ApplyEffect(EffectDuration.Instant,healVfx);
+                healCounter.Value = healCounter.Value + lowestHpDiff;
+            }
+            
+        }
+        
     }
 
     private static void AugmentKiBarrier(OnSpellCast castData)
@@ -113,7 +240,8 @@ public static class SwingingCenser
             }
         }
     }
-
+    
+    // Empty Body is WIP, need to add in AoE Factor
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
