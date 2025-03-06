@@ -139,7 +139,6 @@ public class StaticBonusesService
         async void ApplyStaticBonuses()
         {
             await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-            await NwTask.SwitchToMainThread();
             monkEffects = StaticBonuses.GetEffect(monk);
             monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
         }
