@@ -125,7 +125,7 @@ public class StaticBonusesService
     private static void OnWisdomApplyCheckBonuses(OnEffectApply eventData)
     {
         if (eventData.Object is not NwCreature monk) return;
-        if(monk.Classes.All(c=>c.Class.ClassType != ClassType.Monk)) return;
+        if(monk.Classes.Any(c=>c.Class.ClassType != ClassType.Monk)) return;
         if (monk.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Wisdom) return;
 
