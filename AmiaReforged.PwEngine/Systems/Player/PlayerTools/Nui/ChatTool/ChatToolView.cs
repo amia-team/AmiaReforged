@@ -42,7 +42,7 @@ public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
                     {
                         new NuiGroup
                         {
-                            Element = new NuiLabel(label: "Talking As:")
+                            Element = new NuiLabel(label: "Speaking As:")
                             {
                                 VerticalAlign = NuiVAlign.Middle,
                                 HorizontalAlign = NuiHAlign.Center
