@@ -47,7 +47,7 @@ public class StaticBonusesService
 
     private static async void OnEquipApplyBonuses(OnItemEquip eventData)
     {
-        NwCreature? character = eventData.EquippedBy;
+        NwCreature character = eventData.EquippedBy;
 
         if(!IsMonk(character)) return;
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
