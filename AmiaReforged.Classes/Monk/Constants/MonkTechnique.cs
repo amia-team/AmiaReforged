@@ -13,5 +13,4 @@ public static class MonkTechnique
     public const int EagleValue = 2;
     public const int AxiomaticValue = 3;
     public const string EagleStrikesCounter = "eagle_strikes_counter";
-    public const string HealingCounter = "censor_healing_counter";
 }

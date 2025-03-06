@@ -7,10 +7,10 @@ using Anvil.API;
 using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
-using static AmiaReforged.Classes.Monk.Constants.MonkTechnique;
 
 public static class SwingingCenser
 {
+    public const string HealingCounter = "censor_healing_counter";
     public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null,
         OnCreatureAttack? attackData = null)
     {
@@ -133,7 +133,7 @@ public static class SwingingCenser
             {
                 NwCreature creatureInShape = (NwCreature)nwObject;
 
-                if (monk.IsReactionTypeFriendly(creatureInShape)) continue;
+                if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
 
                 if (firstCreature==0)
                 {
@@ -231,7 +231,7 @@ public static class SwingingCenser
                 {
                     NwCreature creatureInShape = (NwCreature)nwObject;
 
-                    if (monk.IsReactionTypeFriendly(creatureInShape)) continue;
+                    if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
 
                     creatureInShape.ApplyEffect(EffectDuration.Instant, wholenessLink);
                 }
