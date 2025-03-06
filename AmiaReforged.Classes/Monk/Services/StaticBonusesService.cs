@@ -34,7 +34,7 @@ public class StaticBonusesService
     private static void OnLoadApplyBonuses(OnLoadCharacterFinish eventData)
     {
         if (eventData.Player.ControlledCreature is not NwCreature monk) return;
-        if (monk.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
+        if (monk.GetClassInfo(ClassType.Monk)?.Level is null or < StaticBonusLevel) return;
         if (monk.ActiveEffects.Any(effect => effect.Tag == "monk_staticbonuses")) return;
 
         Effect monkEffects = StaticBonuses.GetEffect(monk);
