@@ -11,11 +11,13 @@ namespace AmiaReforged.Classes.Monk.Services;
 [ServiceBinding(typeof(StaticBonusesService))]
 public class StaticBonusesService
 {
+    private readonly SchedulerService _schedulerService;
     private const int StaticBonusLevel = 3;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public StaticBonusesService(EventService eventService)
+    public StaticBonusesService(EventService eventService, SchedulerService schedulerService)
     {
+        _schedulerService = schedulerService;
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
 
         if (environment == "live") return;
@@ -122,7 +124,7 @@ public class StaticBonusesService
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
 
-    private static void OnWisdomApplyCheckBonuses(OnEffectApply eventData)
+    private void OnWisdomApplyCheckBonuses(OnEffectApply eventData)
     {
         if (eventData.Object is not NwCreature monk) return;
         if (monk.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
@@ -132,16 +134,12 @@ public class StaticBonusesService
 
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
 
-        ApplyStaticBonuses();
 
-        return;
-
-        async void ApplyStaticBonuses()
+        _schedulerService.Schedule(() =>
         {
-            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
             monkEffects = StaticBonuses.GetEffect(monk);
             monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
-        }
+        }, TimeSpan.FromMicroseconds(1));
     }
 
     private static void OnWisdomRemoveCheckBonuses(OnEffectRemove eventData)
