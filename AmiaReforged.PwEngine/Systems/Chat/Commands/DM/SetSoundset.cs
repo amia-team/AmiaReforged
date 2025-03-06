@@ -9,12 +9,12 @@ public class SetSoundset : IChatCommand
 {
     public string Command => "./setsoundset";
 
-    public Task ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (!caller.IsDM) return Task.CompletedTask;
         try
         {
-            int soundsetId = int.Parse(message.Split(' ')[1]);
+            int soundsetId = int.Parse(args[0]);
             if (soundsetId > 467)
             {
                 caller.SendServerMessage(message: "Invalid input. Soundset id can't go beyond 467.");

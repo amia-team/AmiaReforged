@@ -9,7 +9,7 @@ public class ServerPanel : IChatCommand
 {
     public string Command { get; } = "./serverpanel";
 
-    public Task ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (!caller.IsDM || !caller.IsPlayerDM)
         {

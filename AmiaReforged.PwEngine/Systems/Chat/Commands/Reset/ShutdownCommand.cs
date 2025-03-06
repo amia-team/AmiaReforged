@@ -19,7 +19,7 @@ public class Shutdown : IChatCommand
 
     public string Command => "./shutdown";
 
-    public Task ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (!caller.IsDM)
         {

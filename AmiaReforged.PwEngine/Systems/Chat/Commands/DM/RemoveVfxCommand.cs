@@ -9,12 +9,12 @@ public class RemoveVfx : IChatCommand
 {
     public string Command => "./removevfx";
 
-    public Task ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (!caller.IsDM) return Task.CompletedTask;
         try
         {
-            int vfxId = int.Parse(message.Split(' ')[1]);
+            int vfxId = int.Parse(args[0]);
             string vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
             string vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
             caller.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value = vfxId;

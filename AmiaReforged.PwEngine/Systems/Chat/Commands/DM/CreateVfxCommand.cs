@@ -9,18 +9,18 @@ public class CreateVfx : IChatCommand
 {
     public string Command => "./createvfx";
 
-    public Task ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (!caller.IsDM) return Task.CompletedTask;
         try
         {
-            int vfxId = int.Parse(message.Split(' ')[1]);
+            int vfxId = int.Parse(args[0]);
             string vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
             string vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
             caller.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value = vfxId;
-            if (message.Split(' ')[2] != string.Empty)
+            if (args[1] != string.Empty)
             {
-                _ = float.TryParse(message.Split(' ')[2], out float vfxScale);
+                _ = float.TryParse(args[1], out float vfxScale);
                 caller.ControlledCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value =
                     vfxScale;
             }

@@ -10,13 +10,13 @@ namespace AmiaReforged.Classes.Spells.Arcane.SecondCircle.Evocation;
 public class DarknessSpell : ISpell
 {
     private const double OneRound = 7;
-    public const string DarknessBlindTag = "DARKNESS_BLIND";
+    private const string DarknessBlindTag = "DARKNESS_BLIND";
 
     private const string DarknessInvisTag = "DARKNESS_INVIS";
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly ScriptHandleFactory _handleFactory;
 
-    public List<NwAreaOfEffect> DarknessAreas = new();
+    private List<NwAreaOfEffect> DarknessAreas = new();
 
     public DarknessSpell(ScriptHandleFactory handleFactory, SchedulerService schedulerService)
     {
@@ -31,7 +31,6 @@ public class DarknessSpell : ISpell
     {
         Result = result;
     }
-
 
     public ResistSpellResult Result { get; set; }
 

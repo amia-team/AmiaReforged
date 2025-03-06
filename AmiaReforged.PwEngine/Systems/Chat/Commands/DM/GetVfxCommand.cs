@@ -9,7 +9,7 @@ public class GetVfx : IChatCommand
 {
     public string Command => "./getvfx";
 
-    public Task ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (!caller.IsDM) return Task.CompletedTask;
 

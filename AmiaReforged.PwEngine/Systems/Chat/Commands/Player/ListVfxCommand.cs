@@ -8,13 +8,14 @@ public class ListVfx : IChatCommand
 {
     public string Command => "./listvfx";
 
-    public Task ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         string vfxList = "ID  LABEL";
         int vfxId;
         string vfxLabel;
 
-        if (message.Split(' ')[1].Contains(value: "inst"))
+        
+        if (args[0].Contains(value: "inst"))
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "F") continue;
@@ -24,7 +25,7 @@ public class ListVfx : IChatCommand
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
 
-        if (message.Split(' ')[1].Contains(value: "dur"))
+        if (args[0].Contains(value: "dur"))
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "D") continue;
@@ -34,7 +35,7 @@ public class ListVfx : IChatCommand
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
 
-        if (message.Split(' ')[1].Contains(value: "proj"))
+        if (args[0].Contains(value: "proj"))
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "P") continue;
@@ -44,7 +45,7 @@ public class ListVfx : IChatCommand
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
 
-        if (message.Split(' ')[1].Contains(value: "beam"))
+        if (args[0].Contains(value: "beam"))
         {
             for (int i = 0; i < NwGameTables.VisualEffectTable.RowCount; i++)
             {

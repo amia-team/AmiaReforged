@@ -13,7 +13,7 @@ public class ResetMinutesCommand : IChatCommand
 
     public string Command => "./resetminutes";
 
-    public Task ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (!caller.IsDM)
         {
@@ -25,7 +25,7 @@ public class ResetMinutesCommand : IChatCommand
             return Task.CompletedTask;
         }
 
-        if (message.Split(' ').Length <= 1)
+        if (args.Length == 0)
         {
             caller.SendServerMessage(
                 message: "./resetminutes usage: \"./resetminutes <number>\" for example, \"./resetminutes 30\"");
@@ -34,7 +34,7 @@ public class ResetMinutesCommand : IChatCommand
 
         try
         {
-            float newReset = float.Parse(message.Split(' ')[1]);
+            float newReset = float.Parse(args[0]);
             NWScript.SetLocalFloat(NwModule.Instance, sVarName: "minutesToReset", newReset);
             ResetTimeKeeperSingleton.Instance.ResetStartTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds();
 

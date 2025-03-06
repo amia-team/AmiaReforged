@@ -11,7 +11,7 @@ public class OpenPlayerToolsCommand : IChatCommand
 
     public string Command { get; } = "./playertools";
 
-    public Task ExecuteCommand(NwPlayer caller, string message)
+    public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (caller.IsDM) return Task.CompletedTask;
 
