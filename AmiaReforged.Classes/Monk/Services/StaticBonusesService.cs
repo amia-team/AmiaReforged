@@ -33,10 +33,6 @@ public class StaticBonusesService
 
     private static void OnLoadApplyBonuses(OnLoadCharacterFinish eventData)
     {
-        NwCreature? character = eventData.Player.LoginCreature;
-        if(character == null) return;
-        
-        if(!IsMonk(character)) return;
         if (eventData.Player.ControlledCreature is not NwCreature monk) return;
         if (monk.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
         if (monk.ActiveEffects.Any(effect => effect.Tag == "monk_staticbonuses")) return;
@@ -47,9 +43,6 @@ public class StaticBonusesService
 
     private static async void OnEquipApplyBonuses(OnItemEquip eventData)
     {
-        NwCreature? character = eventData.EquippedBy;
-
-        if(!IsMonk(character)) return;
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
 
         // First check for possible disqualifying mainhands, offhands, armors
@@ -72,9 +65,6 @@ public class StaticBonusesService
 
     private static async void OnUnequipApplyBonuses(OnItemUnequip eventData)
     {
-        NwCreature character = eventData.Creature;
-
-        if(!IsMonk(character)) return;
         if (eventData.Creature.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
 
         // These are hex-coded EquipableSlots from baseitems.2da to match EquipmentSlots for basic weapons
@@ -104,9 +94,6 @@ public class StaticBonusesService
 
     private static async void OnLevelUpCheckBonuses(OnLevelUp eventData)
     {
-        NwCreature character = eventData.Creature;
-
-        if(!IsMonk(character)) return;
         if (eventData.Creature.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
 
         NwCreature monk = eventData.Creature;
@@ -123,9 +110,6 @@ public class StaticBonusesService
     private static async void OnLevelDownCheckBonuses(OnLevelDown eventData)
     {
         NwCreature monk = eventData.Creature;
-        
-        if(!IsMonk(monk)) return;
-
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
 
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
@@ -141,7 +125,8 @@ public class StaticBonusesService
     private static void OnWisdomApplyCheckBonuses(OnEffectApply eventData)
     {
         if (eventData.Object is not NwCreature monk) return;
-        if(!IsMonk(monk)) return;
+        bool isMonk = monk.Classes.Any(c=>c.Class.ClassType == ClassType.Monk);
+        if(!isMonk) return;
         if (monk.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Wisdom) return;
 
@@ -161,16 +146,9 @@ public class StaticBonusesService
         }
     }
 
-    private static bool IsMonk(NwCreature monk)
-    {
-        bool isMonk = monk.Classes.Any(c=>c.Class.ClassType == ClassType.Monk);
-        return isMonk;
-    }
-
     private static void OnWisdomRemoveCheckBonuses(OnEffectRemove eventData)
     {
         if (eventData.Object is not NwCreature monk) return;
-        if(!IsMonk(monk)) return;
         if (monk.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Wisdom) return;
 
