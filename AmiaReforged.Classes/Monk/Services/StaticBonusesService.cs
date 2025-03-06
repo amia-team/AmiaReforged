@@ -122,25 +122,34 @@ public class StaticBonusesService
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
 
-    private static void OnWisdomApplyCheckBonuses(OnEffectApply eventData)
+    private static async void OnWisdomApplyCheckBonuses(OnEffectApply eventData)
     {
-        if (eventData.Object is not NwCreature monk) return;
-        if (monk.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
-        if (eventData.Effect.IntParams[0] is not (int)Ability.Wisdom) return;
-
-        Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
-
-        if (monkEffects is not null) monk.RemoveEffect(monkEffects);
-
-        ApplyStaticBonuses();
-
-        return;
-
-        async void ApplyStaticBonuses()
+        try
         {
-            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-            monkEffects = StaticBonuses.GetEffect(monk);
-            monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+            if (eventData.Object is not NwCreature monk) return;
+            if (monk.GetClassInfo(ClassType.Monk)?.Level < StaticBonusLevel) return;
+            if (eventData.Effect.IntParams[0] is not (int)Ability.Wisdom) return;
+
+            Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
+
+            if (monkEffects is not null) monk.RemoveEffect(monkEffects);
+
+            await ApplyStaticBonuses();
+
+            await NwTask.SwitchToMainThread();
+
+            return;
+
+            async Task ApplyStaticBonuses()
+            {
+                await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+                monkEffects = StaticBonuses.GetEffect(monk);
+                monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e.Message);
         }
     }
 
