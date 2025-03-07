@@ -23,20 +23,20 @@ public static class AugmentationApplier
     {
         switch (path)
         {
-            case PathType.Elements:
+            case PathType.CrashingMeteor:
                 CrashingMeteor.ApplyAugmentations(technique, castData, attackData);
                 break;
-            case PathType.Hymn:
+            case PathType.SwingingCenser:
                 break;
-            case PathType.Clarity:
+            case PathType.CrystalTides:
                 break;
-            case PathType.Mantle:
+            case PathType.ChardalynSand:
                 break;
-            case PathType.Golem:
+            case PathType.IroncladBull:
                 break;
-            case PathType.Torment:
+            case PathType.CrackedVessel:
                 break;
-            case PathType.Mists:
+            case PathType.EchoingValley:
                 break;
             default: return;
         }

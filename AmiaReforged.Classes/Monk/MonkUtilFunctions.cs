@@ -19,13 +19,13 @@ public static class MonkUtilFunctions
 
         return pathFeat?.Id switch
         {
-            MonkFeat.CrashingMeteor => PathType.Elements,
-            MonkFeat.SwingingCenser => PathType.Hymn,
-            MonkFeat.CrystalTides => PathType.Clarity,
-            MonkFeat.ChardalynSand => PathType.Mantle,
-            MonkFeat.IroncladBull => PathType.Golem,
-            MonkFeat.CrackedVessel => PathType.Torment,
-            MonkFeat.EchoingValley => PathType.Mists,
+            MonkFeat.CrashingMeteor => PathType.CrashingMeteor,
+            MonkFeat.SwingingCenser => PathType.SwingingCenser,
+            MonkFeat.CrystalTides => PathType.CrystalTides,
+            MonkFeat.ChardalynSand => PathType.ChardalynSand,
+            MonkFeat.IroncladBull => PathType.IroncladBull,
+            MonkFeat.CrackedVessel => PathType.CrackedVessel,
+            MonkFeat.EchoingValley => PathType.EchoingValley,
             _ => null
         };
     }
