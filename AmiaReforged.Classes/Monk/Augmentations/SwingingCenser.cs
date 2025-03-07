@@ -61,16 +61,20 @@ public static class SwingingCenser
         
         // If monk's injured, heal monk
         int monkMissingHp = monk.MaxHP - monk.HP;
-        int healRemainder = healAmount > monkMissingHp ? healAmount - monkMissingHp : 0;
         
         if (monkMissingHp > 0)
         {
-            monk.ApplyEffect(EffectDuration.Instant,Effect.Heal(randomRoll));
+            monk.ApplyEffect(EffectDuration.Instant,Effect.Heal(healAmount));
             monk.ApplyEffect(EffectDuration.Instant,healVfx);
         }
-        else
+        
+        // If all heal is used to heal the monk's missing HP, we know there's no remainder and we can return code early
+        int healRemainder = healAmount > monkMissingHp ? healAmount - monkMissingHp : 0;
+        
+        if (healRemainder == 0)
         {
-            HealAlly();
+            CheckHealCounter(healAmount);
+            return;
         }
 
         // Regenerate Ki Body Point
