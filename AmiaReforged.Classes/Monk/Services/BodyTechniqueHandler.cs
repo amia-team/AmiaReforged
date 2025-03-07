@@ -24,7 +24,7 @@ public class BodyTechniqueHandler
         Log.Info(message: "Monk Body Technique Handler initialized.");
     }
 
-    private void CastBodyTechnique(OnSpellCast castData)
+    private static void CastBodyTechnique(OnSpellCast castData)
     {
         if (castData.Caster is not NwCreature monk) return;
         if (castData.Spell?.FeatReference is null) return;
@@ -48,14 +48,14 @@ public class BodyTechniqueHandler
 
         switch (technique)
         {
+            case MonkFeat.WholenessOfBody:
+                WholenessOfBody.CastWholenessOfBody(castData);
+                break;
             case MonkFeat.EmptyBody:
                 EmptyBody.CastEmptyBody(castData);
                 break;
             case MonkFeat.KiBarrier:
                 KiBarrier.CastKiBarrier(castData);
-                break;
-            case MonkFeat.WholenessOfBody:
-                WholenessOfBody.CastWholenessOfBody(castData);
                 break;
         }
 
