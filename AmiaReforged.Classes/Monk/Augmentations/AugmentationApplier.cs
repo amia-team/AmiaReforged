@@ -27,18 +27,25 @@ public static class AugmentationApplier
                 CrashingMeteor.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.SwingingCenser:
+                SwingingCenser.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.CrystalTides:
+                CrystalTides.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.ChardalynSand:
+                ChardalynSand.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.IroncladBull:
+                IroncladBull.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.CrackedVessel:
+                CrackedVessel.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.EchoingValley:
+                EchoingValley.ApplyAugmentations(technique, castData, attackData);
                 break;
-            default: return;
+            default:
+                return;
         }
     }
 }
