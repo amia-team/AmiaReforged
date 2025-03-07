@@ -59,7 +59,6 @@ public static class SwingingCenser
         };
         
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingS, false, 0.7f);
-        LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>(HealingCounter);
         
         // If monk's injured, heal monk
         int monkMissingHp = monk.MaxHP - monk.HP;
@@ -67,22 +66,8 @@ public static class SwingingCenser
         
         if (monkMissingHp > 0)
         {
-            hpDiff = monkMaxHP - monkHealth;
-            // Use all your heal on the monk
-            if (hpDiff >= randomRoll)
-            {
-                monk.ApplyEffect(EffectDuration.Instant,Effect.Heal(randomRoll));
-                monk.ApplyEffect(EffectDuration.Instant,healVfx);
-                healCounter.Value = healCounter.Value + randomRoll;
-            }
-            else if (hpDiff < randomRoll)
-            {
-                healRemaining = healRemaining - hpDiff;
-                monk.ApplyEffect(EffectDuration.Instant,Effect.Heal(hpDiff));
-                monk.ApplyEffect(EffectDuration.Instant,healVfx);
-                healCounter.Value = healCounter.Value + hpDiff;
-                HealAlly();
-            }
+            monk.ApplyEffect(EffectDuration.Instant,Effect.Heal(randomRoll));
+            monk.ApplyEffect(EffectDuration.Instant,healVfx);
         }
         else
         {
@@ -156,8 +141,21 @@ public static class SwingingCenser
             
         }
         
-    }
+        // If monk has Body Ki Points, 
+        void CheckHealCounter(int amountToCheck)
+        {
+            if (monkLevel < MonkLevel.BodyKiPointsI) return;
+            
+            LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>(HealingCounter);
+            healCounter.Value += amountToCheck;
+            
+            if (healCounter.Value >= 100)
+                monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
 
+            healCounter.Delete();
+        }
+    }
+    
     private static void AugmentKiShout(OnSpellCast castData)
     {
     }
