@@ -32,7 +32,7 @@ public static class EagleStrike
         int effectDc = MonkUtilFunctions.CalculateMonkDc(monk);
         Effect eagleStrikeEffect = Effect.LinkEffects(Effect.ACDecrease(acDecreaseAmount),
             Effect.VisualEffect(VfxType.DurCessateNegative));
-        Effect eagleStrikeVfx = Effect.VisualEffect(VfxType.ComBloodSparkLarge);
+        Effect eagleStrikeVfx = Effect.VisualEffect(VfxType.ImpStarburstRed, false, 0.7f);
         eagleStrikeEffect.Tag = "eaglestrike_effect";
         eagleStrikeEffect.SubType = EffectSubType.Extraordinary;
 
