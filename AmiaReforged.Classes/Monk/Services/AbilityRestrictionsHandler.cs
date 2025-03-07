@@ -26,6 +26,7 @@ public class AbilityRestrictionsHandler
 
         NwModule.Instance.OnModuleLoad += HideDefaultFeedback;
         NwModule.Instance.OnUseFeat += PreventBodyOrSpiritTechnique;
+        // Martial technique prevention is in MartialTechniqueService
         NwModule.Instance.OnEffectApply += PreventStaticBonuses;
         NwModule.Instance.OnUseFeat += PreventHostileTechniqueToFriendly;
         NwModule.Instance.OnUseFeat += PreventTechniqueInNoCastingArea;
@@ -114,27 +115,5 @@ public class AbilityRestrictionsHandler
         eventData.PreventFeatUse = true;
         if (eventData.Creature.IsPlayerControlled(out NwPlayer? player))
             player.SendServerMessage(message: "- You cannot cast magic in this area! -");
-    }
-
-    public static bool PreventMartialTechnique(NwCreature monk, NwFeat technique)
-    {
-        bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
-        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
-        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
-                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is
-                                          BaseItemCategory.Torches;
-
-        bool isTechniquePrevented = hasArmor || hasShield || hasFocusWithoutUnarmed;
-
-        if (!monk.IsPlayerControlled(out NwPlayer? player)) return isTechniquePrevented;
-
-        if (hasArmor)
-            player.SendServerMessage($"Wearing an armor has prevented your {technique.Name}.");
-        if (hasShield)
-            player.SendServerMessage($"Wielding a shield has prevented your {technique.Name}.");
-        if (hasFocusWithoutUnarmed) 
-            player.SendServerMessage($"Wielding a focus without being unarmed has prevented your {technique.Name}.");
-
-        return isTechniquePrevented;
     }
 }
