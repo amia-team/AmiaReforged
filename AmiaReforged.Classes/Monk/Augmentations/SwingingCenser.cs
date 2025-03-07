@@ -140,10 +140,10 @@ public static class SwingingCenser
             
             LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>("swingingcenser_healcounter");
             healCounter.Value += amountToCheck;
-            
-            if (healCounter.Value >= 100)
-                monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
 
+            if (healCounter.Value < 100) return;
+            
+            monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
             healCounter.Delete();
         }
     }
