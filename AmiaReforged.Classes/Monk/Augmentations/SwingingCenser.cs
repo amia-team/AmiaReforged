@@ -51,25 +51,14 @@ public static class SwingingCenser
         int monkHealth = monk.HP;
         int monkMaxHP = monk.MaxHP;
         var rand = new Random();
-        
-        int diceHealing = 0;
-        
-        if (monkLevel == MonkLevel.KiFocusIii)
+
+        int diceHealing = monkLevel switch
         {
-            diceHealing = 4;
-        }
-        else if (monkLevel >= MonkLevel.KiFocusIi)
-        {
-            diceHealing = 3;
-        }
-        else if (monkLevel >= MonkLevel.KiFocusI)
-        {
-            diceHealing = 2;
-        }
-        else if (monkLevel >= MonkLevel.PathOfEnlightenment)
-        {
-            diceHealing = 1;
-        }
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
+            MonkLevel.KiFocusIii => 4,
+            _ => 1
+        };
         
         // Roll 1d6s
         int randomRoll = rand.Roll(6, diceHealing);
@@ -241,38 +230,23 @@ public static class SwingingCenser
         }
     }
     
-    // Empty Body is WIP, need to add in AoE Factor
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int regen = 1;
-        int concealment = 25;
+        int concealment = 50;
         TimeSpan regenTime = TimeSpan.FromSeconds(6);
 
         // Adjust as appropriate. 1 round per monk level.
         TimeSpan effectTime = TimeSpan.FromSeconds(monkLevel * 6);
-
-        if (monkLevel == MonkLevel.KiFocusIii)
+        
+        int regen = monkLevel switch
         {
-            regen = 7;
-            concealment = 55;
-        }
-        else if (monkLevel >= MonkLevel.KiFocusIi)
-        {
-            regen = 5;
-            concealment = 45;
-        }
-        else if (monkLevel >= MonkLevel.KiFocusI)
-        {
-            regen = 4;
-            concealment = 35;
-        }
-        else if (monkLevel >= MonkLevel.PathOfEnlightenment)
-        {
-            regen = 2;
-            concealment = 25;
-        }
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
+            MonkLevel.KiFocusIii => 8,
+            _ => 2
+        };
 
         Effect emptyBodyRegen = Effect.Regenerate(regen, regenTime);
         Effect emptyBodyConcealment = Effect.Concealment(concealment);
@@ -281,7 +255,15 @@ public static class SwingingCenser
         Effect emptyLink = Effect.LinkEffects(emptyBodyConcealment, emptyBodyRegen, emptyBodyVfx);
         // Tag for later tracking
         emptyLink.Tag = "EmptyBody2";
+        
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large,
+                     false))
+        {
+            NwCreature creatureInShape = (NwCreature)nwObject;
 
-        monk.ApplyEffect(EffectDuration.Temporary, emptyLink, effectTime);
+            if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
+
+            creatureInShape.ApplyEffect(EffectDuration.Temporary, emptyLink, effectTime);
+        }
     }
 }
