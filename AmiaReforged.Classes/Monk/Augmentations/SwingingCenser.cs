@@ -43,7 +43,11 @@ public static class SwingingCenser
                 return;
         }
     }
-
+    
+    /// <summary>
+    /// Stunning Fist heals the monk or a nearby ally for 1d6 damage. Healing 100 damage with this attack regenerates
+    /// a Body Ki Point. Each Ki Focus heals for an additional 1d6, to a maximum of 4d6 damage.
+    /// </summary>
     private static void AugmentStunning(OnCreatureAttack attackData)
     {
         StunningStrike.DoStunningStrike(attackData);
