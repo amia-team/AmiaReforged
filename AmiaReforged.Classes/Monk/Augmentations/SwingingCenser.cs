@@ -16,14 +16,8 @@ public static class SwingingCenser
     {
         switch (technique)
         {
-            case TechniqueType.Eagle:
-                EagleStrike.DoEagleStrike(attackData);
-                break;
-            case TechniqueType.KiBarrier:
-                AugmentKiBarrier(castData);
-                break;
-            case TechniqueType.KiShout:
-                AugmentKiShout(castData);
+            case TechniqueType.Stunning:
+                AugmentStunning(attackData);
                 break;
             case TechniqueType.Wholeness:
                 AugmentWholeness(castData);
@@ -31,15 +25,23 @@ public static class SwingingCenser
             case TechniqueType.EmptyBody:
                 AugmentEmptyBody(castData);
                 break;
-            case TechniqueType.Stunning:
-                AugmentStunning(attackData);
+            case TechniqueType.KiShout:
+                AugmentKiShout(castData);
+                break;
+            case TechniqueType.Eagle:
+                EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.Axiomatic:
                 AxiomaticStrike.DoAxiomaticStrike(attackData);
                 break;
+            case TechniqueType.KiBarrier:
+                KiBarrier.DoKiBarrier(castData);
+                break;
             case TechniqueType.Quivering:
                 QuiveringPalm.DoQuiveringPalm(castData);
                 break;
+            default:
+                return;
         }
     }
 
@@ -159,10 +161,6 @@ public static class SwingingCenser
             
         }
         
-    }
-
-    private static void AugmentKiBarrier(OnSpellCast castData)
-    {
     }
 
     private static void AugmentKiShout(OnSpellCast castData)
