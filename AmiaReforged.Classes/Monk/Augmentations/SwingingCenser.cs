@@ -77,22 +77,6 @@ public static class SwingingCenser
             return;
         }
 
-        // Regenerate Ki Body Point
-        if (healCounter.Value >= 100)
-        {
-            NwFeat bodyKiPointFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!;
-            int bodyUses = monk.GetFeatRemainingUses(bodyKiPointFeat);
-            // Making sure they don't get more uses than their maximum
-            if (((monkLevel >= MonkLevel.BodyKiPointsVi) && (bodyUses<6)) || ((monkLevel >= MonkLevel.BodyKiPointsV) && (bodyUses<5)) ||
-                ((monkLevel >= MonkLevel.BodyKiPointsIv) && (bodyUses<4)) || ((monkLevel >= MonkLevel.BodyKiPointsIii) && (bodyUses<3)) || 
-                ((monkLevel >= MonkLevel.BodyKiPointsIi) && (bodyUses<2)) || ((monkLevel >= MonkLevel.BodyKiPointsI) && (bodyUses<1)))
-            {
-                monk.SetFeatRemainingUses(bodyKiPointFeat,(byte)(bodyUses+1));
-            }
-
-            // Reset Local Variable
-            healCounter.Delete(); 
-        }
         
         return;
         
