@@ -51,7 +51,12 @@ public static class SwingingCenser
     private static void AugmentStunning(OnCreatureAttack attackData)
     {
         StunningStrike.DoStunningStrike(attackData);
+        
         NwCreature monk = attackData.Attacker;
+        
+        // Target must be a hostile creature
+        if (!monk.IsReactionTypeHostile((NwCreature)attackData.Target)) return;
+        
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int healAmount = monkLevel switch
         {
@@ -128,7 +133,7 @@ public static class SwingingCenser
             return healRemainder > missingHp ? missingHp : healRemainder;
         }
         
-        // If monk has Body Ki Points, 
+        // If monk has Body Ki Points, mount up the heal counter to regenerate a body ki point
         void CheckHealCounter(int amountToCheck)
         {
             if (monkLevel < MonkLevel.BodyKiPointsI) return;
