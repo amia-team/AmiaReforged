@@ -116,6 +116,7 @@ public static class SwingingCenser
                     First(ally => ally.Name == lowestHpName);
             
             allyToHeal.ApplyEffect(EffectDuration.Instant, Effect.Heal(healRemainder));
+            allyToHeal.ApplyEffect(EffectDuration.Instant, healVfx);
             
             // We know that either all the heal is used or that it only heals up to the ally's missing HP,
             // so if the heal remainder is greater than missing HP, we return just the missing HP amount
