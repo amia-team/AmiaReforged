@@ -50,9 +50,6 @@ public static class SwingingCenser
         StunningStrike.DoStunningStrike(attackData);
         NwCreature monk = attackData.Attacker;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int monkHealth = monk.HP;
-        int monkMaxHP = monk.MaxHP;
-        var rand = new Random();
 
         int diceHealing = monkLevel switch
         {
@@ -63,7 +60,6 @@ public static class SwingingCenser
         };
         
         // Roll 1d6s
-        int randomRoll = rand.Roll(6, diceHealing);
         int healRemaining = randomRoll;
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingS, false, 0.7f);
         // Get healing  counter
