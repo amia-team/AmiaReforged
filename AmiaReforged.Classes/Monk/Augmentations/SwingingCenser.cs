@@ -76,39 +76,40 @@ public static class SwingingCenser
             CheckHealCounter(healAmount);
             return;
         }
-
+        
+        // If the code wasn't returned, we know there's heal left and we use it on the ally
+        HealAlly();
         
         return;
         
-        // We will use the healRemaining variable for this
         void HealAlly()
         {
-            int firstCreature=0;
-            NwCreature lowestPercentHp = monk;
+            // This is like a list, but it allows two variables per element
+            Dictionary<string, int> alliesHp = new();
             
-            foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium,
-                         false))
+            // Look for hurt friends in a medium area
+            foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true))
             {
-                NwCreature creatureInShape = (NwCreature)nwObject;
+                NwCreature monkAlly = (NwCreature)nwObject;
 
-                if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
+                // Creature must be ally, injured, and alive
+                if (!(monk.IsReactionTypeFriendly(monkAlly) && monkAlly.HP < monkAlly.MaxHP && monkAlly.HP > -9)) 
+                    continue;
 
-                if (firstCreature==0)
-                {
-                    lowestPercentHp = creatureInShape;
-                    firstCreature = 1; 
-                }
-                else
-                {   // Check their percent missing HP. Lowest is always set to the lowestPercentHp variable
-                    if (((creatureInShape.MaxHP - creatureInShape.HP)/creatureInShape.MaxHP) > ((lowestPercentHp.MaxHP - lowestPercentHp.HP)/lowestPercentHp.MaxHP))
-                    {
-                        lowestPercentHp = creatureInShape;
-                    }
-                }
+                // name and missing HP are added to the list
+                alliesHp.Add(monkAlly.Name, monkAlly.MaxHP - monk.HP);
             }
 
-            // If there are no friendlies then return
-            if(lowestPercentHp == monk) return;
+            // If no hurt allies were found, return
+            if (alliesHp.Count == 0) return;
+            
+            // If hurt allies were found, we use the name of the lowest HP ally to get that ally in shape
+            string lowestHpName = alliesHp.Min().Key;
+            
+            NwGameObject allyToHeal = monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true).
+                    First(ally => ally.Name == lowestHpName);
+            
+            allyToHeal.ApplyEffect(EffectDuration.Instant, Effect.Heal(healRemainder));
             
             int lowestHpDiff = lowestPercentHp.MaxHP - lowestPercentHp.HP;
             
