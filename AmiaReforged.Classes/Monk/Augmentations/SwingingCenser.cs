@@ -106,7 +106,7 @@ public static class SwingingCenser
             }
 
             // Reset Local Variable
-            healCounter.Value = 0; 
+            healCounter.Delete(); 
         }
         
         return;
