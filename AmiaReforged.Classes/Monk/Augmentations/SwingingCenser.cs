@@ -10,7 +10,6 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class SwingingCenser
 {
-    public const string HealingCounter = "censor_healing_counter";
     public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null,
         OnCreatureAttack? attackData = null)
     {
@@ -146,7 +145,7 @@ public static class SwingingCenser
         {
             if (monkLevel < MonkLevel.BodyKiPointsI) return;
             
-            LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>(HealingCounter);
+            LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>("swingingcenser_healcounter");
             healCounter.Value += amountToCheck;
             
             if (healCounter.Value >= 100)
