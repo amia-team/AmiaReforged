@@ -48,7 +48,7 @@ public static class SwingingCenser
     private static void AugmentStunning(OnCreatureAttack attackData)
     {
         StunningStrike.DoStunningStrike(attackData);
-        NwCreature monk = (NwCreature)attackData.Attacker;
+        NwCreature monk = attackData.Attacker;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int monkHealth = monk.HP;
         int monkMaxHP = monk.MaxHP;
