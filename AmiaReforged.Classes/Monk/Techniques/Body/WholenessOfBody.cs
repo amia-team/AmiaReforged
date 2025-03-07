@@ -12,9 +12,9 @@ namespace AmiaReforged.Classes.Monk.Techniques.Body;
 /// </summary>
 public static class WholenessOfBody
 {
-    public static void CastWholenessOfBody(OnSpellAction wholenessData)
+    public static void CastWholenessOfBody(OnUseFeat wholenessData)
     {
-        NwCreature monk = wholenessData.Caster;
+        NwCreature monk = wholenessData.Creature;
         PathType? path = MonkUtilFunctions.GetMonkPath(monk);
         const TechniqueType technique = TechniqueType.Wholeness;
 
@@ -27,9 +27,9 @@ public static class WholenessOfBody
         DoWholenessOfBody(wholenessData);
     }
 
-    public static void DoWholenessOfBody(OnSpellAction castData)
+    public static void DoWholenessOfBody(OnUseFeat wholenessData)
     {
-        NwCreature monk = (NwCreature)castData.Caster;
+        NwCreature monk = wholenessData.Creature;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int healAmount = monkLevel * 2;
         Effect wholenessEffect = Effect.Heal(healAmount);

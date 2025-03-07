@@ -8,7 +8,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class ChardalynSand
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnSpellAction? 
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnUseFeat? 
             wholenessData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)

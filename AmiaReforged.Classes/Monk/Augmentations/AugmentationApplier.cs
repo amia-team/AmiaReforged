@@ -16,7 +16,7 @@ public static class AugmentationApplier
     /// <param name="wholenessData">Separate for Wholeness of Body, as an instant spell it uses other event data</param>
     /// <param name="attackData">Use for martial techniques</param>
     public static void ApplyAugmentations(PathType? path, TechniqueType technique, OnSpellCast? castData = null, 
-        OnSpellAction? wholenessData = null, OnCreatureAttack? attackData = null)
+        OnUseFeat? wholenessData = null, OnCreatureAttack? attackData = null)
     {
         switch (path)
         {

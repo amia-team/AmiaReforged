@@ -10,7 +10,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class SwingingCenser
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnSpellAction? 
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnUseFeat? 
             wholenessData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
@@ -152,9 +152,9 @@ public static class SwingingCenser
     {
     }
 
-    private static void AugmentWholeness(OnSpellAction wholenessData)
+    private static void AugmentWholeness(OnUseFeat wholenessData)
     {
-        NwCreature monk = wholenessData.Caster;
+        NwCreature monk = wholenessData.Creature;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int pulseAmount = 1;
         int healAmount = monkLevel * 2;
