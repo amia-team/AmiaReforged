@@ -78,11 +78,16 @@ public static class SwingingCenser
         }
         
         // If the code wasn't returned, we know there's heal left and we use it on the ally
-        HealAlly();
+        // We use HealAlly to return an int with the amount that the ally was healed for
+        int allyHealAmount = HealAlly();
+        
+        // If there was any heal remainder left to bounce to the ally, we know that the amount the monk was healed
+        // must be equal to the monk's missing HP; we add that with the ally heal amount and check the heal counter
+        CheckHealCounter(monkMissingHp + allyHealAmount);
         
         return;
         
-        void HealAlly()
+        int HealAlly()
         {
             // This is like a list, but it allows two variables per element
             Dictionary<string, int> alliesHp = new();
@@ -101,32 +106,21 @@ public static class SwingingCenser
             }
 
             // If no hurt allies were found, return
-            if (alliesHp.Count == 0) return;
+            if (alliesHp.Count == 0) return 0;
             
             // If hurt allies were found, we use the name of the lowest HP ally to get that ally in shape
-            string lowestHpName = alliesHp.Min().Key;
+            string lowestHpName = alliesHp.MinBy(hp => hp.Value).Key;
+            int missingHp = alliesHp.Min().Value;
             
             NwGameObject allyToHeal = monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true).
                     First(ally => ally.Name == lowestHpName);
             
             allyToHeal.ApplyEffect(EffectDuration.Instant, Effect.Heal(healRemainder));
             
-            int lowestHpDiff = lowestPercentHp.MaxHP - lowestPercentHp.HP;
-            
-            // Track how to apply the remaining heal
-            if (lowestHpDiff >= healRemaining)
-            { 
-                lowestPercentHp.ApplyEffect(EffectDuration.Instant,Effect.Heal(healRemaining));
-                lowestPercentHp.ApplyEffect(EffectDuration.Instant,healVfx);
-                healCounter.Value = healCounter.Value + healRemaining;
-            }
-            else
-            {
-                lowestPercentHp.ApplyEffect(EffectDuration.Instant,Effect.Heal(lowestHpDiff));
-                lowestPercentHp.ApplyEffect(EffectDuration.Instant,healVfx);
-                healCounter.Value = healCounter.Value + lowestHpDiff;
-            }
-            
+            // We know that either all the heal is used or that it only heals up to the ally's missing HP,
+            // so if the heal remainder is greater than missing HP, we return just the missing HP amount
+            // but if the missing HP is greater than the heal remainder, all heal is used and we return the whole remainder
+            return healRemainder > missingHp ? missingHp : healRemainder;
         }
         
         // If monk has Body Ki Points, 
