@@ -63,6 +63,7 @@ public static class SwingingCenser
         
         // If monk's injured, heal monk
         int monkMissingHp = monk.MaxHP - monk.HP;
+        int healRemainder = healAmount > monkMissingHp ? healAmount - monkMissingHp : 0;
         
         if (monkMissingHp > 0)
         {
