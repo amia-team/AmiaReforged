@@ -61,8 +61,10 @@ public static class SwingingCenser
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingS, false, 0.7f);
         LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>(HealingCounter);
         
-        // Check to make sure they are injured
-        if (monkMaxHP > monkHealth)
+        // If monk's injured, heal monk
+        int monkMissingHp = monk.MaxHP - monk.HP;
+        
+        if (monkMissingHp > 0)
         {
             hpDiff = monkMaxHP - monkHealth;
             // Use all your heal on the monk
