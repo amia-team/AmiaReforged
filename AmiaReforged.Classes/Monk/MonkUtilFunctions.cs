@@ -31,7 +31,7 @@ public static class MonkUtilFunctions
     }
 
     /// <summary>
-    ///     DC 10 + half the monk's character level + the monk's wisdom modifier
+    ///     DC 10 + monk level / 3 + wisdom modifier
     /// </summary>
     /// <returns>The monk ability DC</returns>
     public static int CalculateMonkDc(NwCreature monk) => 10 + monk.GetClassInfo(ClassType.Monk)!.Level / 3 +
