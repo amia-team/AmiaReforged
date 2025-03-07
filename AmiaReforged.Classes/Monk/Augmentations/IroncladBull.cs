@@ -7,8 +7,8 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class IroncladBull
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null,
-        OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnSpellAction? 
+            wholenessData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
@@ -22,7 +22,7 @@ public static class IroncladBull
                 AugmentEmptyBody(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(castData);
+                AugmentWholeness(wholenessData);
                 break;
             case TechniqueType.KiShout:
                 AugmentKiShout(castData);
@@ -51,7 +51,7 @@ public static class IroncladBull
     {
     }
 
-    private static void AugmentWholeness(OnSpellCast castData)
+    private static void AugmentWholeness(OnSpellAction wholenessData)
     {
     }
 

@@ -7,8 +7,8 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class EchoingValley
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null,
-        OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnSpellAction? 
+            wholenessData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
@@ -31,7 +31,7 @@ public static class EchoingValley
                 EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.Wholeness:
-                WholenessOfBody.DoWholenessOfBody(castData);
+                WholenessOfBody.DoWholenessOfBody(wholenessData);
                 break;
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(castData);

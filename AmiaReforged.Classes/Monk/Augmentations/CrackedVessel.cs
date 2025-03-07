@@ -7,8 +7,8 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class CrackedVessel
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null,
-        OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnSpellAction? 
+            wholenessData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
@@ -25,7 +25,7 @@ public static class CrackedVessel
                 AugmentQuivering(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(castData);
+                AugmentWholeness(wholenessData);
                 break;
             case TechniqueType.Stunning:
                 StunningStrike.DoStunningStrike(attackData);
@@ -57,7 +57,7 @@ public static class CrackedVessel
     {
     }
 
-    private static void AugmentWholeness(OnSpellCast castData)
+    private static void AugmentWholeness(OnSpellAction wholenessData)
     {
     }
 }

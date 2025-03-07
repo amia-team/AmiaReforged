@@ -12,22 +12,22 @@ namespace AmiaReforged.Classes.Monk.Techniques.Body;
 /// </summary>
 public static class WholenessOfBody
 {
-    public static void CastWholenessOfBody(OnSpellCast castData)
+    public static void CastWholenessOfBody(OnSpellAction wholenessData)
     {
-        NwCreature monk = (NwCreature)castData.Caster;
+        NwCreature monk = wholenessData.Caster;
         PathType? path = MonkUtilFunctions.GetMonkPath(monk);
         const TechniqueType technique = TechniqueType.Wholeness;
 
         if (path != null)
         {
-            AugmentationApplier.ApplyAugmentations(path, technique, castData);
+            AugmentationApplier.ApplyAugmentations(path, technique, null, wholenessData);
             return;
         }
 
-        DoWholenessOfBody(castData);
+        DoWholenessOfBody(wholenessData);
     }
 
-    public static void DoWholenessOfBody(OnSpellCast castData)
+    public static void DoWholenessOfBody(OnSpellAction castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;

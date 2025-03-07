@@ -17,7 +17,7 @@ public static class AxiomaticStrike
 
         if (path != null)
         {
-            AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
+            AugmentationApplier.ApplyAugmentations(path, technique, null, null, attackData);
             return;
         }
 

@@ -10,39 +10,36 @@ public static class AugmentationApplier
     /// <summary>
     ///     This routes the event data to the correct path effects
     /// </summary>
-    /// <param name="path"></param>
-    /// Path from GetMonkPath()
-    /// <param name="technique"></param>
-    /// Technique from which this function was called
-    /// <param name="castData"></param>
-    /// Use for body and spirit techniques
-    /// <param name="attackData"></param>
-    /// Use for martial techniques
-    public static void ApplyAugmentations(PathType? path, TechniqueType technique, OnSpellCast? castData = null,
-        OnCreatureAttack? attackData = null)
+    /// <param name="path">Path from GetMonkPath()</param>
+    /// <param name="technique">Technique from which this function was called</param>
+    /// <param name="castData">Use for body and spirit techniques</param>
+    /// <param name="wholenessData">Separate for Wholeness of Body, as an instant spell it uses other event data</param>
+    /// <param name="attackData">Use for martial techniques</param>
+    public static void ApplyAugmentations(PathType? path, TechniqueType technique, OnSpellCast? castData = null, 
+        OnSpellAction? wholenessData = null, OnCreatureAttack? attackData = null)
     {
         switch (path)
         {
             case PathType.CrashingMeteor:
-                CrashingMeteor.ApplyAugmentations(technique, castData, attackData);
+                CrashingMeteor.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
             case PathType.SwingingCenser:
-                SwingingCenser.ApplyAugmentations(technique, castData, attackData);
+                SwingingCenser.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
             case PathType.CrystalTides:
-                CrystalTides.ApplyAugmentations(technique, castData, attackData);
+                CrystalTides.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
             case PathType.ChardalynSand:
-                ChardalynSand.ApplyAugmentations(technique, castData, attackData);
+                ChardalynSand.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
             case PathType.IroncladBull:
-                IroncladBull.ApplyAugmentations(technique, castData, attackData);
+                IroncladBull.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
             case PathType.CrackedVessel:
-                CrackedVessel.ApplyAugmentations(technique, castData, attackData);
+                CrackedVessel.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
             case PathType.EchoingValley:
-                EchoingValley.ApplyAugmentations(technique, castData, attackData);
+                EchoingValley.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
             default:
                 return;
