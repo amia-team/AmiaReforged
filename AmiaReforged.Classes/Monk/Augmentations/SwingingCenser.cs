@@ -50,17 +50,14 @@ public static class SwingingCenser
         StunningStrike.DoStunningStrike(attackData);
         NwCreature monk = attackData.Attacker;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-
-        int diceHealing = monkLevel switch
+        int healAmount = monkLevel switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
-            _ => 1
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => Random.Shared.Roll(6, 2),
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => Random.Shared.Roll(6, 3),
+            MonkLevel.KiFocusIii => Random.Shared.Roll(6, 4),
+            _ => Random.Shared.Roll(6)
         };
         
-        // Roll 1d6s
-        int healRemaining = randomRoll;
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingS, false, 0.7f);
         // Get healing  counter
         LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>(HealingCounter);
