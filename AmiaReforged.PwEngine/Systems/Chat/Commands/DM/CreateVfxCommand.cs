@@ -2,7 +2,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.System.Commands.DM;
+namespace AmiaReforged.PwEngine.Systems.Chat.Commands.DM;
 
 [ServiceBinding(typeof(IChatCommand))]
 public class CreateVfx : IChatCommand
