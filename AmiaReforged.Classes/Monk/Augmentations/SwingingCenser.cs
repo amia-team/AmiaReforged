@@ -147,9 +147,30 @@ public static class SwingingCenser
             healCounter.Delete();
         }
     }
-    
+    /// <summary>
+    /// Ki Shout exhorts allies with +1 bonus to attack rolls for one turn, with an additional +1 bonus for every Ki Focus.
+    /// </summary>
     private static void AugmentKiShout(OnSpellCast castData)
     {
+        KiShout.DoKiShout(castData);
+        
+        NwCreature monk = (NwCreature)castData.Caster;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int abBonus = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
+            MonkLevel.KiFocusIii => 4,
+            _ => 1
+        };
+        
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal,
+                     false))
+        {
+            NwCreature creatureInShape = (NwCreature)nwObject;
+
+            if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
+        }
     }
     /// <summary>
     /// Wholeness of Body pulses in a large area around the monk, healing allies.
@@ -174,7 +195,6 @@ public static class SwingingCenser
         Effect wholenessVfx = Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f);
         Effect wholenessLink = Effect.LinkEffects(wholenessEffect, wholenessVfx);
         Effect aoeVfx = Effect.VisualEffect(VfxType.ImpPulseHoly);
-
 
         WholenessPulse();
         return;
