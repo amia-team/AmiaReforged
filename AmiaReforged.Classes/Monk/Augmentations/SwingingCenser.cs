@@ -151,33 +151,24 @@ public static class SwingingCenser
     private static void AugmentKiShout(OnSpellCast castData)
     {
     }
-
+    /// <summary>
+    /// Wholeness of Body pulses in a large area around the monk, healing allies.
+    /// Each Ki Focus adds a pulse to the heal, to a maximum of four pulses.
+    /// </summary>
     private static void AugmentWholeness(OnUseFeat wholenessData)
     {
         NwCreature monk = wholenessData.Creature;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int pulseAmount = 1;
         int healAmount = monkLevel * 2;
-        double level30Heal = healAmount * 1.5;
 
-        // Wholeness is gained at 7
-        if (monkLevel == MonkLevel.KiFocusIii)
+        int pulseAmount = monkLevel switch
         {
-            pulseAmount = 3;
-            healAmount = (int)level30Heal;
-        }
-        else if (monkLevel >= MonkLevel.KiFocusIi)
-        {
-            pulseAmount = 3;
-        }
-        else if (monkLevel >= MonkLevel.KiFocusI)
-        {
-            pulseAmount = 2;
-        }
-        else if (monkLevel >= MonkLevel.PathOfEnlightenment)
-        {
-            pulseAmount = 1;
-        }
+            // Wholeness is gained at 7
+            MonkLevel.KiFocusIii => 4,
+            >= MonkLevel.KiFocusIi => 3,
+            >= MonkLevel.KiFocusI => 2,
+            _ => 1
+        };
 
         Effect wholenessEffect = Effect.Heal(healAmount);
         Effect wholenessVfx = Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f);
