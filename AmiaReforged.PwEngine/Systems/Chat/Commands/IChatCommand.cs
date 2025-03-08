@@ -1,6 +1,6 @@
 ﻿using Anvil.API;
 
-namespace AmiaReforged.System.Commands;
+namespace AmiaReforged.PwEngine.Systems.Chat.Commands;
 
 public interface IChatCommand
 {

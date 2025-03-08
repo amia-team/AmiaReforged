@@ -1,7 +1,7 @@
 ﻿using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.System.Services;
+namespace AmiaReforged.PwEngine.Systems.Chat.Commands;
 
 [ServiceBinding(typeof(ShutdownManager))]
 public class ShutdownManager

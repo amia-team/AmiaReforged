@@ -1,7 +1,7 @@
 using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.System.Commands.Player;
+namespace AmiaReforged.PwEngine.Systems.Chat.Commands.Player;
 
 [ServiceBinding(typeof(IChatCommand))]
 public class ListVfx : IChatCommand

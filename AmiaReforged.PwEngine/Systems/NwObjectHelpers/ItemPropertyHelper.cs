@@ -229,16 +229,14 @@ public static class ItemPropertyHelper
         StringBuilder description = new(value: "");
         if (property.Property.GameStrRef == null) return description.ToString();
 
-        description.Append($"Item Property valid? {property.Valid}");
         description.Append(property.Property.GameStrRef.ToString());
-
-        int subtypepepe = NWScript.GetItemPropertySubType(property);
-        description.Append($"Subtype Debug: {subtypepepe}");
-
-
+        
         ItemPropertySubTypeTableEntry? subType = property.SubType;
-        if (subType != null) description.Append($"Subtype Label: {subType.Label} Subtype Name: {subType.Name}");
-
+        if (subType != null)
+        {
+            description.Append($" {subType.Name}");
+        }
+        
         ItemPropertyParamTableEntry? param1Value = property.Param1TableValue;
         ItemPropertyCostTableEntry? costTableValue = property.CostTableValue;
 

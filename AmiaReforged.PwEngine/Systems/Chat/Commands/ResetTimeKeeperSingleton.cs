@@ -1,4 +1,4 @@
-﻿namespace AmiaReforged.System.Services;
+﻿namespace AmiaReforged.PwEngine.Systems.Chat.Commands;
 
 public sealed class ResetTimeKeeperSingleton
 {

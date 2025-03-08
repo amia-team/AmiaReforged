@@ -1,11 +1,10 @@
 ﻿using System.Text.RegularExpressions;
-using AmiaReforged.System.Commands;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.PwEngine.Systems.Chat;
+namespace AmiaReforged.PwEngine.Systems.Chat.Commands;
 
 [ServiceBinding(typeof(ChatCommandService))]
 public class ChatCommandService

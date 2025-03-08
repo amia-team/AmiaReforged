@@ -2,7 +2,7 @@
 using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.System.Commands.Reset;
+namespace AmiaReforged.PwEngine.Systems.Chat.Commands.Reset;
 
 [ServiceBinding(typeof(IChatCommand))]
 public class OpenPlayerToolsCommand : IChatCommand

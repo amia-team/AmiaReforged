@@ -1,10 +1,9 @@
-﻿using AmiaReforged.System.Services;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
 
-namespace AmiaReforged.System.Commands.Reset;
+namespace AmiaReforged.PwEngine.Systems.Chat.Commands.Reset;
 
 [ServiceBinding(typeof(IChatCommand))]
 public class Shutdown : IChatCommand
