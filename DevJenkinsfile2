@@ -7,8 +7,8 @@ pipeline{
                 echo 'Building..'
                  script {
                     sh "sudo chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
-                    sh 'sudo chmod +x stop-dev.sh'
-                    sh 'bash stop-dev.sh'
+                    sh 'sudo chmod +x stop-dev2.sh'
+                    sh 'bash stop-dev2.sh'
                 }
             }
         }
@@ -106,8 +106,8 @@ pipeline{
         always {
             discordSend description: "Builder for plugin AmiaReforged Dev Server 2 finished.", footer: "Build results for AmiaReforged (DEV)", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: params.webhookURL
             sh "sudo chown -R jenkins.jenkins /var/lib/jenkins/workspace/"
-            sh 'sudo chmod +x start-dev.sh'
-            sh 'bash start-dev.sh'
+            sh 'sudo chmod +x start-dev2.sh'
+            sh 'bash start-dev2.sh'
         }
         success {
             echo 'Build success'
