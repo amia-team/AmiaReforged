@@ -147,43 +147,63 @@ public static class SwingingCenser
             healCounter.Delete();
         }
     }
-    
+    /// <summary>
+    /// Ki Shout exhorts allies with +1 bonus to attack rolls for one turn, with an additional +1 bonus for every Ki Focus.
+    /// </summary>
     private static void AugmentKiShout(OnSpellCast castData)
     {
-    }
+        KiShout.DoKiShout(castData);
+        
+        NwCreature monk = (NwCreature)castData.Caster;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        
+        int abBonus = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
+            MonkLevel.KiFocusIii => 4,
+            _ => 1
+        };
+        Effect abBonusEffect = Effect.LinkEffects(Effect.AttackIncrease(abBonus), 
+            Effect.VisualEffect(VfxType.DurCessatePositive));
+        Effect abBonusVfx = Effect.VisualEffect(VfxType.ImpHeadSonic);
+        TimeSpan effectDuration = NwTimeSpan.FromTurns(1);
+        
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal,
+                     false))
+        {
+            NwCreature creatureInShape = (NwCreature)nwObject;
 
+            if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
+            
+            creatureInShape.ApplyEffect(EffectDuration.Temporary, abBonusEffect, effectDuration);
+            creatureInShape.ApplyEffect(EffectDuration.Instant, abBonusVfx);
+        }
+    }
+    
+    /// <summary>
+    /// Wholeness of Body pulses in a large area around the monk, healing allies.
+    /// Each Ki Focus adds a pulse to the heal, to a maximum of four pulses.
+    /// </summary>
     private static void AugmentWholeness(OnUseFeat wholenessData)
     {
         NwCreature monk = wholenessData.Creature;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int pulseAmount = 1;
         int healAmount = monkLevel * 2;
-        double level30Heal = healAmount * 1.5;
 
-        // Wholeness is gained at 7
-        if (monkLevel == MonkLevel.KiFocusIii)
+        int pulseAmount = monkLevel switch
         {
-            pulseAmount = 3;
-            healAmount = (int)level30Heal;
-        }
-        else if (monkLevel >= MonkLevel.KiFocusIi)
-        {
-            pulseAmount = 3;
-        }
-        else if (monkLevel >= MonkLevel.KiFocusI)
-        {
-            pulseAmount = 2;
-        }
-        else if (monkLevel >= MonkLevel.PathOfEnlightenment)
-        {
-            pulseAmount = 1;
-        }
+            // Wholeness is gained at 7
+            MonkLevel.KiFocusIii => 4,
+            >= MonkLevel.KiFocusIi => 3,
+            >= MonkLevel.KiFocusI => 2,
+            _ => 1
+        };
 
         Effect wholenessEffect = Effect.Heal(healAmount);
         Effect wholenessVfx = Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f);
         Effect wholenessLink = Effect.LinkEffects(wholenessEffect, wholenessVfx);
         Effect aoeVfx = Effect.VisualEffect(VfxType.ImpPulseHoly);
-
 
         WholenessPulse();
         return;
