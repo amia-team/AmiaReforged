@@ -9,10 +9,23 @@ public static class SavingThrowProperties
     private const int SpecificSaveCost2 = 5000;
     private const int SpecificSaveCost3 = 15000;
     private const int SpecificSaveCost4 = 30000;
+
+    private const int UniversalSaveCost1 = 10000;
+    private const int UniversalSaveCost2 = 15000;
+    private const int UniversalSaveCost3 = 30000;
+    private const int UniversalSaveCost4 = 50000;
+
+    private const int GeneralSaveCost1 = 1000;
+    private const int GeneralSaveCost2 = 5000;
+    private const int GeneralSaveCost3 = 15000;
+    private const int GeneralSaveCost4 = 30000;
+    private const int GeneralSaveCost5 = 50000;
+    private const int GeneralSaveCost6 = 75000;
+
     /// <summary>
-    /// Specific Saves for Perfect mythals.
+    ///     Specific Saves for Perfect mythals.
     /// </summary>
-    public static readonly CraftingCategory SpecificSaves = new("specific_saves")
+    public static readonly CraftingCategory SpecificSaves = new(categoryId: "specific_saves")
     {
         Label = "Save vs Specific",
         Properties = new[]
@@ -224,17 +237,12 @@ public static class SavingThrowProperties
                 GuiLabel = "+3 vs Death",
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
-            },
+            }
         },
         BaseDifficulty = 15
     };
-    
-    private const int UniversalSaveCost1 = 10000;
-    private const int UniversalSaveCost2 = 15000;
-    private const int UniversalSaveCost3 = 30000;
-    private const int UniversalSaveCost4 = 50000;
 
-    public static readonly CraftingCategory UniversalSaves = new("universal_saves")
+    public static readonly CraftingCategory UniversalSaves = new(categoryId: "universal_saves")
     {
         Label = "Universal Saves",
         Properties = new[]
@@ -290,13 +298,7 @@ public static class SavingThrowProperties
         BaseDifficulty = 10
     };
 
-    private const int GeneralSaveCost1 = 1000;
-    private const int GeneralSaveCost2 = 5000;
-    private const int GeneralSaveCost3 = 15000;
-    private const int GeneralSaveCost4 = 30000;
-    private const int GeneralSaveCost5 = 50000;
-    private const int GeneralSaveCost6 = 75000;
-    public static readonly CraftingCategory GeneralSaves = new("general_saves")
+    public static readonly CraftingCategory GeneralSaves = new(categoryId: "general_saves")
     {
         Label = "Saving Throws",
         Properties = new[]
@@ -372,7 +374,7 @@ public static class SavingThrowProperties
                 GuiLabel = "+1 Reflex",
                 GoldCost = GeneralSaveCost1,
                 CraftingTier = CraftingTier.Intermediate
-            },
+            }
         },
         BaseDifficulty = 8
     };

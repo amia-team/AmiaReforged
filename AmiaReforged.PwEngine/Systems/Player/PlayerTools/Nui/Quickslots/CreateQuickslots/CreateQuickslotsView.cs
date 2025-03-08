@@ -1,5 +1,4 @@
-﻿using AmiaReforged.Core.UserInterface;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using NuiUtils = AmiaReforged.PwEngine.Systems.WindowingSystem.NuiUtils;
 
@@ -7,55 +6,51 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Quickslots.Create
 
 public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWindow
 {
+    public readonly NuiBind<string> QuickslotName = new(key: "quickslot_name");
+    public NuiButton CancelButton = null!;
+
+    public NuiButton CreateButton = null!;
+
+    public CreateQuickslotsView(NwPlayer player)
+    {
+        Presenter = new(this, player);
+    }
+
+    public NuiWindow? WindowTemplate { get; }
+
+    public sealed override CreateQuickSlotsPresenter Presenter { get; protected set; }
     public string Id => "playertools.quickslotscreate";
     public string Title => "Create Saved Quickslots";
     public string CategoryTag { get; } = null!;
     public bool RequiresPersistedCharacter { get; }
 
-    public IScryPresenter ForPlayer(NwPlayer player)
-    {
-        return Presenter;
-    }
+    public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 
     public bool ListInPlayerTools => false;
-    public NuiWindow? WindowTemplate { get; }
 
-    
-
-    public readonly NuiBind<string> QuickslotName = new("quickslot_name");
-
-    public NuiButton CreateButton = null!;
-    public NuiButton CancelButton = null!;
-
-    public CreateQuickslotsView(NwPlayer player)
-    {
-        Presenter = new CreateQuickSlotsPresenter(this, player);
-    }
-
-    public sealed override CreateQuickSlotsPresenter Presenter { get; protected set; }
     public override NuiLayout RootLayout()
     {
         NuiColumn root = new()
         {
-            Children = new List<NuiElement>
+            Children = new()
             {
-                new NuiRow()
+                new NuiRow
                 {
-                    Children = new List<NuiElement>
+                    Children = new()
                     {
-                        new NuiLabel("Quickslot Name")
+                        new NuiLabel(label: "Quickslot Name")
                         {
                             Aspect = 2f
                         },
-                        new NuiTextEdit("Enter a Name", QuickslotName, 255, false)
+                        new NuiTextEdit(label: "Enter a Name", QuickslotName, 255, false)
                     }
                 },
                 new NuiRow
                 {
-                    Children = new List<NuiElement>
+                    Children = new()
                     {
-                        NuiUtils.Assign(new NuiButton("Create") { Id = "create_quickslot_db" }, out CreateButton),
-                        NuiUtils.Assign(new NuiButton("Cancel") { Id = "cancel_quickslot_db" }, out CancelButton)
+                        NuiUtils.Assign(new(label: "Create") { Id = "create_quickslot_db" }, out CreateButton),
+                        NuiUtils.Assign(new(label: "Cancel") { Id = "cancel_quickslot_db" }, out CancelButton)
                     }
                 }
             }

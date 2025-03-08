@@ -6,7 +6,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 
 public static class MeleeOnHitProperties
 {
-    public static readonly CraftingCategory OnHits = new("on_hit_props")
+    public static readonly CraftingCategory OnHits = new(categoryId: "on_hit_props")
     {
         // Divine DC 20
         Label = "On Hit",
@@ -267,7 +267,7 @@ public static class MeleeOnHitProperties
                 GuiLabel = "Freeze (Slow 3 rounds,  CL 10)",
                 PowerCost = 6,
                 CraftingTier = CraftingTier.Unattainable
-            },
-        },
+            }
+        }
     };
 }

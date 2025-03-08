@@ -6,23 +6,24 @@ namespace AmiaReforged.Classes.Spells;
 public abstract class SpellDecorator : ISpell
 {
     protected ISpell Spell;
-    public ResistSpellResult Result { get; set; }
 
     protected SpellDecorator(ISpell spell)
     {
         Spell = spell;
     }
 
+    public ResistSpellResult Result { get; set; }
+
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
         Result = creature.CheckResistSpell(caster);
-        Spell.SetResult(Result);
+        Spell.SetSpellResistResult(Result);
     }
 
-    public void SetResult(ResistSpellResult result)
+    public void SetSpellResistResult(ResistSpellResult result)
     {
         Result = result;
-        Spell.SetResult(Result);
+        Spell.SetSpellResistResult(Result);
     }
 
     public virtual string ImpactScript => Spell.ImpactScript;

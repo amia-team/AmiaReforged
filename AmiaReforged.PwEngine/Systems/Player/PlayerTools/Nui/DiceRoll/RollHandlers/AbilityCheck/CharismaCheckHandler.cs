@@ -10,10 +10,11 @@ public class CharismaCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int chaMod = playerCreature.GetAbilityModifier(Ability.Charisma);
-        
-        playerCreature.SpeakString(new AbilityCheckString("Charisma", roll, chaMod).GetAbilityCheckString());
+
+        playerCreature.SpeakString(
+            new AbilityCheckString(abilityName: "Charisma", roll, chaMod).GetAbilityCheckString());
     }
 }

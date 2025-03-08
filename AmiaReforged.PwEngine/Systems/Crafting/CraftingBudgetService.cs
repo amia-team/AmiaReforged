@@ -1,7 +1,5 @@
-﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.Services;
-using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting;
@@ -12,14 +10,12 @@ public class CraftingBudgetService
     public int MythalBudgetForNwItem(NwItem item)
     {
         int baseItemType = NWScript.GetBaseItemType(item);
-        int casterWeapon = NWScript.GetLocalInt(item, "CASTER_WEAPON");
+        int casterWeapon = NWScript.GetLocalInt(item, sVarName: "CASTER_WEAPON");
         bool isTwoHanded = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
 
         int trueBase = baseItemType;
         if (casterWeapon == 1)
-        {
             trueBase = isTwoHanded ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
-        }
 
         return MythalBudgetFor(trueBase);
     }

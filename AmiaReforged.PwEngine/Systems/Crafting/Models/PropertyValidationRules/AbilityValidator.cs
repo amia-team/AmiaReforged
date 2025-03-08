@@ -15,9 +15,9 @@ public class AbilityValidator : IValidationRule
 
         // Extract any one of Cha, Wis, Str, Dex, Int, Con bonuses substrings in the incoming item property label
         string incomingLabel = ItemPropertyHelper.GameLabel(incoming.ItemProperty);
-        string noEnhancementBonus = incomingLabel.Replace("Enhancement Bonus: ", "");
+        string noEnhancementBonus = incomingLabel.Replace(oldValue: "Enhancement Bonus: ", newValue: "");
 
-        string[] split = noEnhancementBonus.Split(" ");
+        string[] split = noEnhancementBonus.Split(separator: " ");
         string incomingAbility = split[0];
 
         // Check if the incoming ability has been removed from the ChangeList
@@ -34,13 +34,13 @@ public class AbilityValidator : IValidationRule
             bool anyInChangelist = changelistProperties.Any(e =>
                 e.BasePropertyType == ItemPropertyType.AbilityBonus && AbilitiesAreSame(incomingAbility, e.Property) &&
                 e.State != ChangeListModel.ChangeState.Removed);
-            
+
             @enum = anyAbilityBonus || anyInChangelist ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
             error = "Ability already exists on this item.";
         }
 
 
-        return new ValidationResult
+        return new()
         {
             Result = @enum,
             ErrorMessage = error
@@ -50,9 +50,9 @@ public class AbilityValidator : IValidationRule
     private bool AbilitiesAreSame(string incomingAbility, ItemProperty itemProperty)
     {
         string itemPropertyLabel = ItemPropertyHelper.GameLabel(itemProperty);
-        string noEnhancementBonus = itemPropertyLabel.Replace("Enhancement Bonus: ", "");
+        string noEnhancementBonus = itemPropertyLabel.Replace(oldValue: "Enhancement Bonus: ", newValue: "");
 
-        string[] split = noEnhancementBonus.Split(" ");
+        string[] split = noEnhancementBonus.Split(separator: " ");
 
         string itemPropertyAbility = split[0];
 

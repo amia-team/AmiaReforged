@@ -1,6 +1,3 @@
-using System;
-using System.Data.Common;
-using Anvil.API;
 using Anvil.Services;
 using NWN.Core;
 
@@ -19,7 +16,7 @@ public class ElyonBossSpawner
 
     private int GenerateSpawnChance()
     {
-        Random random = new Random();
+        Random random = new();
         int Chance = random.Next(1, 100);
         return Chance;
     }
@@ -27,7 +24,7 @@ public class ElyonBossSpawner
     private int GenerateSpawnTime()
     {
         int MaxSpawnTime = 320; // Minutes
-        Random random = new Random();
+        Random random = new();
         int Time = random.Next(1, MaxSpawnTime);
         return Time;
     }
@@ -35,14 +32,14 @@ public class ElyonBossSpawner
     private int GenerateRandomWaypont()
     {
         int MaxWP = 30; // Waypoints
-        Random random = new Random();
+        Random random = new();
         int WP = random.Next(1, MaxWP);
         return WP;
     }
 
     public void SummonElyonBoss(uint Waypoint)
     {
-        string ResRef = NWScript.GetLocalString(Waypoint, "resRef");
+        string ResRef = NWScript.GetLocalString(Waypoint, sVarName: "resRef");
         IntPtr location = NWScript.GetLocation(Waypoint);
         uint Boss = NWScript.CreateObject(1, ResRef, location);
     }
@@ -50,21 +47,21 @@ public class ElyonBossSpawner
     private void MassWhisper(uint Waypoint)
     {
         uint WaypointArea = NWScript.GetArea(Waypoint);
-        string CreatureName = NWScript.GetLocalString(Waypoint, "creatureName");
+        string CreatureName = NWScript.GetLocalString(Waypoint, sVarName: "creatureName");
         string AreaName = NWScript.GetName(WaypointArea);
 
         uint oPC = NWScript.GetFirstPC();
 
         while (NWScript.GetIsObjectValid(oPC) == 1)
         {
-            NWScript.SendMessageToPC(oPC, "-----");
-            NWScript.SendMessageToPC(oPC, "-----");
+            NWScript.SendMessageToPC(oPC, szMessage: "-----");
+            NWScript.SendMessageToPC(oPC, szMessage: "-----");
             NWScript.SendMessageToPC(oPC,
                 " All adventurers begin to hear murmurs and rumors from locals about a terrifying creature loose on the isles. You quickly receive a message from the Guilds to confirm this fact. The message is simple: WARNING! Extremely dangerous " +
                 CreatureName + " is rampaging in " + AreaName +
                 "! We recommend engaging only with a group of skilled adventurers! ");
-            NWScript.SendMessageToPC(oPC, "-----");
-            NWScript.SendMessageToPC(oPC, "-----");
+            NWScript.SendMessageToPC(oPC, szMessage: "-----");
+            NWScript.SendMessageToPC(oPC, szMessage: "-----");
 
             oPC = NWScript.GetNextPC();
         }
@@ -77,27 +74,27 @@ public class ElyonBossSpawner
 
         uint Waypoint = NWScript.GetWaypointByTag("GlobalBossSpawn" + Convert.ToString(RandomWaypoint));
         uint WaypointArea = NWScript.GetArea(Waypoint);
-        string CreatureName = NWScript.GetLocalString(Waypoint, "creatureName");
+        string CreatureName = NWScript.GetLocalString(Waypoint, sVarName: "creatureName");
         string AreaName = NWScript.GetName(WaypointArea);
 
-        if ((NWScript.GetLocalInt(NWScript.GetModule(), "ElyonBossFired").Equals(0)) &&
-            ((1 <= SpawnCheck) && (SpawnCheck <= 25)))
+        if (NWScript.GetLocalInt(NWScript.GetModule(), sVarName: "ElyonBossFired").Equals(0) &&
+            1 <= SpawnCheck && SpawnCheck <= 25)
         {
-            NWScript.SetLocalString(NWScript.GetModule(), "announcerMessage",
+            NWScript.SetLocalString(NWScript.GetModule(), sVarName: "announcerMessage",
                 "``` All adventurers begin to hear murmurs and rumors from locals about a terrifying creature loose on the isles. You quickly receive a message from the Guilds to confirm this fact. The message is simple: WARNING! Extremely dangerous " +
                 CreatureName + " is rampaging in " + AreaName +
                 "! We recommend engaging only with a group of skilled adventurers! ```");
-            NWScript.SetLocalInt(NWScript.GetModule(), "ElyonBossFired", 1);
-            NWScript.ExecuteScript("webhook_announce");
+            NWScript.SetLocalInt(NWScript.GetModule(), sVarName: "ElyonBossFired", 1);
+            NWScript.ExecuteScript(sScript: "webhook_announce");
             SummonElyonBoss(Waypoint);
             MassWhisper(Waypoint);
         }
-        else if (NWScript.GetLocalInt(NWScript.GetModule(), "ElyonBossFired").Equals(0))
+        else if (NWScript.GetLocalInt(NWScript.GetModule(), sVarName: "ElyonBossFired").Equals(0))
         {
-            NWScript.SetLocalString(NWScript.GetModule(), "announcerMessage",
-                "``` *There are no reports of mythical creatures rampaging on Amia or her sister isles* ```");
-            NWScript.SetLocalInt(NWScript.GetModule(), "ElyonBossFired", 1);
-            NWScript.ExecuteScript("webhook_announce");
+            NWScript.SetLocalString(NWScript.GetModule(), sVarName: "announcerMessage",
+                sValue: "``` *There are no reports of mythical creatures rampaging on Amia or her sister isles* ```");
+            NWScript.SetLocalInt(NWScript.GetModule(), sVarName: "ElyonBossFired", 1);
+            NWScript.ExecuteScript(sScript: "webhook_announce");
         }
     }
 }

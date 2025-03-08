@@ -1,6 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using Anvil.API;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
@@ -33,12 +32,13 @@ public class DamageResistValidator : IValidationRule
                 { BasePropertyType: ItemPropertyType.DamageResistance, State: ChangeListModel.ChangeState.Removed })
             .Select(e => new Resistance(e.Property)).Any(r => r.ResistanceType == resistance.ResistanceType);
         bool alreadyExists = allResistances.Any(x => x.ResistanceType == resistance.ResistanceType);
-        ValidationEnum result = alreadyExists && !removed ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
+        ValidationEnum result =
+            alreadyExists && !removed ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
         string error = alreadyExists
             ? $"{resistance.ResistanceType} Resistance already exists on this item."
             : string.Empty;
 
-        return new ValidationResult
+        return new()
         {
             Result = result,
             ErrorMessage = error
@@ -57,10 +57,10 @@ public class DamageResistValidator : IValidationRule
             ResistanceType = incoming.SubTypeName;
 
             // Splits Resist_5/- into its constituent parts and selects the numeric component
-            ResistanceValue = int.Parse(incoming.PropertyBonus.Split("_")[1].Split("/")[0]);
+            ResistanceValue = int.Parse(incoming.PropertyBonus.Split(separator: "_")[1].Split(separator: "/")[0]);
         }
 
-        public string ResistanceType { get; set; }
+        public string ResistanceType { get; }
 
         public int ResistanceValue { get; set; }
     }

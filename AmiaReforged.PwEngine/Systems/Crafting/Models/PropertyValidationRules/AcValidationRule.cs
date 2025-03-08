@@ -11,19 +11,22 @@ public class AcValidationRule : IValidationRule
     {
         string errorMessage = "";
         ValidationEnum @enum = ValidationEnum.Valid;
-        
-        if(incoming.ItemProperty.Property.PropertyType == ItemPropertyType.AcBonus)
+
+        if (incoming.ItemProperty.Property.PropertyType == ItemPropertyType.AcBonus)
         {
             bool anyAcBonus = itemProperties.Any(x => x.Property.PropertyType == ItemPropertyType.AcBonus);
             bool acBonusNotRemoved = !changelistProperties.Any(e =>
                 e is { BasePropertyType: ItemPropertyType.AcBonus, State: ChangeListModel.ChangeState.Removed });
-            bool anyInChangelist = changelistProperties.Any(e => e.BasePropertyType == ItemPropertyType.AcBonus && e.State != ChangeListModel.ChangeState.Removed);
-            
-            @enum = anyAcBonus && acBonusNotRemoved || anyInChangelist ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid;
+            bool anyInChangelist = changelistProperties.Any(e =>
+                e.BasePropertyType == ItemPropertyType.AcBonus && e.State != ChangeListModel.ChangeState.Removed);
+
+            @enum = anyAcBonus && acBonusNotRemoved || anyInChangelist
+                ? ValidationEnum.PropertyNeverStacks
+                : ValidationEnum.Valid;
             errorMessage = "AC Bonus already exists on this item.";
         }
-        
-        return new ValidationResult
+
+        return new()
         {
             Result = @enum,
             ErrorMessage = errorMessage

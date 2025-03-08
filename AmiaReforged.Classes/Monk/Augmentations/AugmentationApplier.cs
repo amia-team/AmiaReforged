@@ -1,4 +1,5 @@
 // Applies the path effects to the techniques
+
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API.Events;
 
@@ -7,32 +8,41 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 public static class AugmentationApplier
 {
     /// <summary>
-    /// This routes the event data to the correct path effects
+    ///     This routes the event data to the correct path effects
     /// </summary>
-    /// <param name="path"></param> Path from GetMonkPath()
-    /// <param name="technique"></param> Technique from which this function was called
-    /// <param name="castData"></param> Use for body and spirit techniques
-    /// <param name="attackData"></param> Use for martial techniques
-
-    public static void ApplyAugmentations(PathType? path, TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+    /// <param name="path">Path from GetMonkPath()</param>
+    /// <param name="technique">Technique from which this function was called</param>
+    /// <param name="castData">Use for body and spirit techniques</param>
+    /// <param name="wholenessData">Separate for Wholeness of Body, as an instant spell it uses other event data</param>
+    /// <param name="attackData">Use for martial techniques</param>
+    public static void ApplyAugmentations(PathType? path, TechniqueType technique, OnSpellCast? castData = null, 
+        OnUseFeat? wholenessData = null, OnCreatureAttack? attackData = null)
     {
         switch (path)
         {
-            case PathType.Elements : CrashingMeteor.ApplyAugmentations(technique, castData, attackData);
+            case PathType.CrashingMeteor:
+                CrashingMeteor.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
-            case PathType.Hymn : 
+            case PathType.SwingingCenser:
+                SwingingCenser.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
-            case PathType.Clarity : 
+            case PathType.CrystalTides:
+                CrystalTides.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
-            case PathType.Mantle : 
+            case PathType.ChardalynSand:
+                ChardalynSand.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
-            case PathType.Golem : 
+            case PathType.IroncladBull:
+                IroncladBull.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
-            case PathType.Torment : 
+            case PathType.CrackedVessel:
+                CrackedVessel.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
-            case PathType.Mists :
+            case PathType.EchoingValley:
+                EchoingValley.ApplyAugmentations(technique, castData, wholenessData, attackData);
                 break;
-            default: return;
+            default:
+                return;
         }
     }
 }

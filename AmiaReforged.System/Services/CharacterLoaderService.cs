@@ -21,11 +21,11 @@ public class CharacterLoaderService
 
         if (RegisterToTravelAgency())
         {
-            Log.Error("CharacterLoaderService initalization failed.");
+            Log.Error(message: "CharacterLoaderService initalization failed.");
             return;
         }
 
-        Log.Info("Character Service initialized.");
+        Log.Info(message: "Character Service initialized.");
     }
 
     private bool RegisterToTravelAgency()
@@ -33,7 +33,7 @@ public class CharacterLoaderService
         NwArea? travelAgency = NwObject.FindObjectsWithTag<NwArea>(TravelAgencyTag).FirstOrDefault();
         if (travelAgency is null)
         {
-            Log.Error("Something is very wrong, entry gate could not be found");
+            Log.Error(message: "Something is very wrong, entry gate could not be found");
             return true;
         }
 
@@ -46,41 +46,42 @@ public class CharacterLoaderService
         if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
         if (player.IsDM) return;
         if (player.IsPlayerDM) return;
-        
-        Log.Info($"Storing character: {player.LoginCreature?.Name}");
-        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
-        if (pcKey is null) return;
-        
-        Log.Info("PCKey not null");
 
-        string dbToken = pcKey.Name.Split("_")[1];
-        if(!Guid.TryParse(dbToken, out Guid pcKeyGuid)) return;
-        
+        Log.Info($"Storing character: {player.LoginCreature?.Name}");
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag(itemTag: "ds_pckey");
+        if (pcKey is null) return;
+
+        Log.Info(message: "PCKey not null");
+
+        string dbToken = pcKey.Name.Split(separator: "_")[1];
+        if (!Guid.TryParse(dbToken, out Guid pcKeyGuid)) return;
+
         Log.Info($"Parsed GUID from PC Key: {pcKeyGuid.ToString()}");
 
-        
+
         bool characterExists = await _characterService.CharacterExists(pcKeyGuid);
 
         NwTask.SwitchToMainThread();
 
         if (characterExists) return;
-        
+
         string? playerFirstName = player.LoginCreature?.OriginalFirstName;
         string? playerLastName = player.LoginCreature?.OriginalLastName;
-        string cdKey =  pcKey.Name.Split("_")[0];
-        
+        string cdKey = pcKey.Name.Split(separator: "_")[0];
+
         PlayerCharacter playerCharacter = new()
         {
             Id = pcKeyGuid,
             PlayerId = cdKey,
             FirstName = playerFirstName,
-            LastName = playerLastName,
+            LastName = playerLastName
         };
-        
-        Log.Info($"Adding character: {playerCharacter.FirstName} {playerCharacter.LastName} ({playerCharacter.PlayerId}) with GUID: {playerCharacter.Id.ToString()}");
-        
+
+        Log.Info(
+            $"Adding character: {playerCharacter.FirstName} {playerCharacter.LastName} ({playerCharacter.PlayerId}) with GUID: {playerCharacter.Id.ToString()}");
+
         await _characterService.AddCharacter(playerCharacter);
-        
+
         await NwTask.SwitchToMainThread();
     }
 }

@@ -11,17 +11,15 @@ public static class ValidationHelper
         string p2Label = ItemPropertyHelper.GameLabel(p2);
 
         string drPrefix = "Damage Resistance: ";
-        string removedPrefix1 = p1Label.Replace(drPrefix, "");
-        string removedPrefix2 = p2Label.Replace(drPrefix, "");
-                
-        string[] split1 = removedPrefix1.Split(" ");
-        string[] split2 = removedPrefix2.Split(" ");
-                
+        string removedPrefix1 = p1Label.Replace(drPrefix, newValue: "");
+        string removedPrefix2 = p2Label.Replace(drPrefix, newValue: "");
+
+        string[] split1 = removedPrefix1.Split(separator: " ");
+        string[] split2 = removedPrefix2.Split(separator: " ");
+
         return split1[0] == split2[0];
     }
 
-    public static bool IdenticalBaseType(ItemProperty p1, ItemProperty p2)
-    {
-        return p1.Property.PropertyType == p2.Property.PropertyType;
-    }
+    public static bool IdenticalBaseType(ItemProperty p1, ItemProperty p2) =>
+        p1.Property.PropertyType == p2.Property.PropertyType;
 }

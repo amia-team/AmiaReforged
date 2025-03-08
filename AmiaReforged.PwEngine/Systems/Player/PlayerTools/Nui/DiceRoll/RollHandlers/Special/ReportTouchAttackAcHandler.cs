@@ -22,6 +22,7 @@ public class ReportTouchAttackAcHandler : IRollHandler
         int addedAc = armorAc + neckAc + shieldAc;
         int touchAc = NWScript.GetAC(playerCreature) - addedAc;
 
-        playerCreature.SpeakString($"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> My Touch AC is:</c> {touchAc} <c{AmiaLime.ToColorToken()}>[?]</c>");
+        playerCreature.SpeakString(
+            $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> My Touch AC is:</c> {touchAc} <c{AmiaLime.ToColorToken()}>[?]</c>");
     }
 }

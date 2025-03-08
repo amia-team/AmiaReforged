@@ -1,5 +1,5 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Types;
+using AmiaReforged.Classes.Warlock;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
@@ -10,7 +10,7 @@ public class BoundOnesLuck
     {
         if (GetHasFeat(FEAT_PRESTIGE_DARK_BLESSING, nwnObjectId) == TRUE)
         {
-            SendMessageToPC(nwnObjectId, Warlock.String("You already have Dark Blessing."));
+            SendMessageToPC(nwnObjectId, WarlockConstants.String(message: "You already have Dark Blessing."));
             return;
         }
 

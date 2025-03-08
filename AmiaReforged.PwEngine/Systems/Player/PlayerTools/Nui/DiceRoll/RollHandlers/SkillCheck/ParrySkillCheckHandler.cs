@@ -10,12 +10,12 @@ public class ParrySkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int parryMod = playerCreature.GetSkillRank(Skill.Parry!);
-        
+
         int result = roll + parryMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Parry", roll, parryMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Parry", roll, parryMod, result).GetRollResult());
     }
 }

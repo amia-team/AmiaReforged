@@ -6,21 +6,21 @@ public static class NuiUtils
 {
     public static NuiCombo CreateComboForEnum<T>(NuiBind<int> selected) where T : struct, Enum
     {
-        List<NuiComboEntry> entries = new List<NuiComboEntry>();
+        List<NuiComboEntry> entries = new();
         foreach (T value in Enum.GetValues<T>())
         {
-            entries.Add(new NuiComboEntry(value.ToString(), (int)(value as object)));
+            entries.Add(new(value.ToString(), (int)(value as object)));
         }
 
-        return new NuiCombo
+        return new()
         {
             Entries = entries,
-            Selected = selected,
+            Selected = selected
         };
     }
 
     /// <summary>
-    /// Assign a NUI element to an additional parameter.
+    ///     Assign a NUI element to an additional parameter.
     /// </summary>
     /// <param name="value">The value to assign.</param>
     /// <param name="assign">The field/variable to assign the value.</param>
@@ -33,7 +33,7 @@ public static class NuiUtils
     }
 
     /// <summary>
-    /// Configure a NUI element.
+    ///     Configure a NUI element.
     /// </summary>
     /// <param name="value">The value to configure.</param>
     /// <param name="configure">The configuration to change.</param>

@@ -5,6 +5,9 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 
 public class CastSpellProperties
 {
+    private const int CustomCastBattletide9 = 455;
+
+    private const int CustomCastBlessWeapon17 = 517;
     /* Useful spells:
      - Aura of Vitality (13)
 - Belagarn's Iron Horn (7)
@@ -16,7 +19,7 @@ public class CastSpellProperties
 - Improved Invisibility (7)
      */
 
-    public static readonly CraftingCategory BeneficialSpells = new CraftingCategory("beneficial_spells")
+    public static readonly CraftingCategory BeneficialSpells = new(categoryId: "beneficial_spells")
     {
         Label = "Beneficial Spells",
         Properties = new[]
@@ -112,14 +115,10 @@ public class CastSpellProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Intermediate,
                 GoldCost = 10000
-            },
+            }
         },
-        BaseDifficulty = 16,
+        BaseDifficulty = 16
     };
-
-    private const int CustomCastBattletide9 = 455;
-
-    private const int CustomCastBlessWeapon17 = 517;
 
     /* Fluff spells:
      - Aid (3)
@@ -129,7 +128,7 @@ public class CastSpellProperties
 - Light (1)
      */
 
-    public static readonly CraftingCategory FluffSpells = new CraftingCategory("fluff_spells")
+    public static readonly CraftingCategory FluffSpells = new(categoryId: "fluff_spells")
     {
         Label = "Fluff Spells",
         Properties = new[]
@@ -198,7 +197,7 @@ public class CastSpellProperties
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Minor,
                 GoldCost = 1000
-            },
+            }
         },
         BaseDifficulty = 16
     };

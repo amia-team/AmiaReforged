@@ -8,11 +8,11 @@ public enum QualityEnum
     Raw = -1,
     None = 0,
     VeryPoor = 1,
-    Poor = 2, 
+    Poor = 2,
     BelowAverage = 3,
-    Average = 4, 
+    Average = 4,
     AboveAverage = 5,
-    Good = 6, 
+    Good = 6,
     VeryGood = 7,
     Excellent = 8,
     Masterwork = 9
@@ -20,8 +20,6 @@ public enum QualityEnum
 
 public static class QualityEnumExtensions
 {
-    public static string ToHumanizedString(this QualityEnum quality)
-    {
-        return Regex.Replace(quality.ToString(), "(\\B[A-Z])", " $1");
-    }
+    public static string ToHumanizedString(this QualityEnum quality) =>
+        Regex.Replace(quality.ToString(), pattern: "(\\B[A-Z])", replacement: " $1");
 }

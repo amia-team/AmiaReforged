@@ -8,36 +8,34 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.DiceRoll;
 
 public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 {
-    [Inject] private Lazy<DiceRollManager> DiceRollManager { get; init; }
-
-    private List<NuiButton> RollButtons;
-
-    private Dictionary<int, string> RollButtonIds;
+    private readonly NwPlayer _player;
 
     private NuiWindowToken _token;
     private NuiWindow? _window;
-    private readonly NwPlayer _player;
+
+    private Dictionary<int, string> RollButtonIds;
+
+    private List<NuiButton> RollButtons;
 
     public DiceRollWindowPresenter(DiceRollWindowView toolView, NwPlayer player)
     {
         _player = player;
         View = toolView;
     }
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
+
+    [Inject] private Lazy<DiceRollManager> DiceRollManager { get; init; }
+
+    public override DiceRollWindowView View { get; }
+    public override NuiWindowToken Token() => _token;
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 271f, 400f),
             Resizable = false
         };
     }
-
-    public override DiceRollWindowView View { get; }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
@@ -52,19 +50,18 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     public override void Create()
     {
         if (_window == null)
-        {
             // Try to create the window if it doesn't exist.
             InitBefore();
-        }
 
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+            _player.SendServerMessage(
+                message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
-        
+
         _player.TryCreateNuiWindow(_window, out _token);
         SetDiceRollMode(DiceRollMode.SpecialRoll);
         Token().SetBindValue(View.Selection, 0);
@@ -90,10 +87,8 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
         };
 
         if (buttonIds.Contains(eventData.ElementId))
-        {
             Token().SetBindValue<List<NuiComboEntry>>(View.ButtonGroupEntries,
                 SetDiceRollMode(ModeFromButtonId(eventData.ElementId)));
-        }
 
         if (eventData.ElementId == View.GoButton.Id)
         {
@@ -140,14 +135,14 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     {
         List<NuiComboEntry> diceOptions = new()
         {
-            new NuiComboEntry(DiceRollStringConstants.ReportTouchAttackAc, 0),
-            new NuiComboEntry(DiceRollStringConstants.ReportFlatFootedAc, 1),
-            new NuiComboEntry(DiceRollStringConstants.ReportRegularAc, 2),
-            new NuiComboEntry(DiceRollStringConstants.ReportAlignment, 3),
-            new NuiComboEntry(DiceRollStringConstants.ReportCharacterLevel, 4),
+            new(DiceRollStringConstants.ReportTouchAttackAc, 0),
+            new(DiceRollStringConstants.ReportFlatFootedAc, 1),
+            new(DiceRollStringConstants.ReportRegularAc, 2),
+            new(DiceRollStringConstants.ReportAlignment, 3),
+            new(DiceRollStringConstants.ReportCharacterLevel, 4)
         };
 
-        RollButtonIds = new Dictionary<int, string>
+        RollButtonIds = new()
         {
             { 0, DiceRollStringConstants.ReportTouchAttackAc },
             { 1, DiceRollStringConstants.ReportFlatFootedAc },
@@ -163,17 +158,17 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     {
         List<NuiComboEntry> diceOptions = new()
         {
-            new NuiComboEntry(DiceRollStringConstants.CounterBluffListen, 0),
-            new NuiComboEntry(DiceRollStringConstants.CounterBluffSpot, 1),
-            new NuiComboEntry(DiceRollStringConstants.RollGrappleCheck, 2),
-            new NuiComboEntry(DiceRollStringConstants.CounterIntimidate, 3),
-            new NuiComboEntry(DiceRollStringConstants.RollInitiative, 4),
-            new NuiComboEntry(DiceRollStringConstants.RollTouchAttackStr, 5),
-            new NuiComboEntry(DiceRollStringConstants.RollTouchAttackDex, 6),
-            new NuiComboEntry(DiceRollStringConstants.RollTouchAttackWis, 7),
+            new(DiceRollStringConstants.CounterBluffListen, 0),
+            new(DiceRollStringConstants.CounterBluffSpot, 1),
+            new(DiceRollStringConstants.RollGrappleCheck, 2),
+            new(DiceRollStringConstants.CounterIntimidate, 3),
+            new(DiceRollStringConstants.RollInitiative, 4),
+            new(DiceRollStringConstants.RollTouchAttackStr, 5),
+            new(DiceRollStringConstants.RollTouchAttackDex, 6),
+            new(DiceRollStringConstants.RollTouchAttackWis, 7)
         };
 
-        RollButtonIds = new Dictionary<int, string>
+        RollButtonIds = new()
         {
             { 0, DiceRollStringConstants.CounterBluffListen },
             { 1, DiceRollStringConstants.CounterBluffSpot },
@@ -192,15 +187,15 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     {
         List<NuiComboEntry> diceOptions = new()
         {
-            new NuiComboEntry(DiceRollStringConstants.Strength, 0),
-            new NuiComboEntry(DiceRollStringConstants.Dexterity, 1),
-            new NuiComboEntry(DiceRollStringConstants.Constitution, 2),
-            new NuiComboEntry(DiceRollStringConstants.Intelligence, 3),
-            new NuiComboEntry(DiceRollStringConstants.Wisdom, 4),
-            new NuiComboEntry(DiceRollStringConstants.Charisma, 5),
+            new(DiceRollStringConstants.Strength, 0),
+            new(DiceRollStringConstants.Dexterity, 1),
+            new(DiceRollStringConstants.Constitution, 2),
+            new(DiceRollStringConstants.Intelligence, 3),
+            new(DiceRollStringConstants.Wisdom, 4),
+            new(DiceRollStringConstants.Charisma, 5)
         };
 
-        RollButtonIds = new Dictionary<int, string>
+        RollButtonIds = new()
         {
             { 0, DiceRollStringConstants.Strength },
             { 1, DiceRollStringConstants.Dexterity },
@@ -217,36 +212,36 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     {
         List<NuiComboEntry> diceOptions = new()
         {
-            new NuiComboEntry(DiceRollStringConstants.AnimalEmpathy, 0),
-            new NuiComboEntry(DiceRollStringConstants.Appraise, 1),
-            new NuiComboEntry(DiceRollStringConstants.Bluff, 2),
-            new NuiComboEntry(DiceRollStringConstants.Concentration, 3),
-            new NuiComboEntry(DiceRollStringConstants.CraftArmor, 4),
-            new NuiComboEntry(DiceRollStringConstants.CraftTrap, 5),
-            new NuiComboEntry(DiceRollStringConstants.CraftWeapon, 6),
-            new NuiComboEntry(DiceRollStringConstants.DisableTrap, 7),
-            new NuiComboEntry(DiceRollStringConstants.Discipline, 8),
-            new NuiComboEntry(DiceRollStringConstants.Heal, 9),
-            new NuiComboEntry(DiceRollStringConstants.Hide, 10),
-            new NuiComboEntry(DiceRollStringConstants.Intimidate, 11),
-            new NuiComboEntry(DiceRollStringConstants.Listen, 12),
-            new NuiComboEntry(DiceRollStringConstants.Lore, 13),
-            new NuiComboEntry(DiceRollStringConstants.MoveSilently, 14),
-            new NuiComboEntry(DiceRollStringConstants.OpenLock, 15),
-            new NuiComboEntry(DiceRollStringConstants.Parry, 16),
-            new NuiComboEntry(DiceRollStringConstants.Perform, 17),
-            new NuiComboEntry(DiceRollStringConstants.Persuade, 18),
-            new NuiComboEntry(DiceRollStringConstants.PickPocket, 19),
-            new NuiComboEntry(DiceRollStringConstants.Search, 20),
-            new NuiComboEntry(DiceRollStringConstants.SetTrap, 21),
-            new NuiComboEntry(DiceRollStringConstants.Spellcraft, 22),
-            new NuiComboEntry(DiceRollStringConstants.Spot, 23),
-            new NuiComboEntry(DiceRollStringConstants.Taunt, 24),
-            new NuiComboEntry(DiceRollStringConstants.Tumble, 25),
-            new NuiComboEntry(DiceRollStringConstants.UseMagicDevice, 26)
+            new(DiceRollStringConstants.AnimalEmpathy, 0),
+            new(DiceRollStringConstants.Appraise, 1),
+            new(DiceRollStringConstants.Bluff, 2),
+            new(DiceRollStringConstants.Concentration, 3),
+            new(DiceRollStringConstants.CraftArmor, 4),
+            new(DiceRollStringConstants.CraftTrap, 5),
+            new(DiceRollStringConstants.CraftWeapon, 6),
+            new(DiceRollStringConstants.DisableTrap, 7),
+            new(DiceRollStringConstants.Discipline, 8),
+            new(DiceRollStringConstants.Heal, 9),
+            new(DiceRollStringConstants.Hide, 10),
+            new(DiceRollStringConstants.Intimidate, 11),
+            new(DiceRollStringConstants.Listen, 12),
+            new(DiceRollStringConstants.Lore, 13),
+            new(DiceRollStringConstants.MoveSilently, 14),
+            new(DiceRollStringConstants.OpenLock, 15),
+            new(DiceRollStringConstants.Parry, 16),
+            new(DiceRollStringConstants.Perform, 17),
+            new(DiceRollStringConstants.Persuade, 18),
+            new(DiceRollStringConstants.PickPocket, 19),
+            new(DiceRollStringConstants.Search, 20),
+            new(DiceRollStringConstants.SetTrap, 21),
+            new(DiceRollStringConstants.Spellcraft, 22),
+            new(DiceRollStringConstants.Spot, 23),
+            new(DiceRollStringConstants.Taunt, 24),
+            new(DiceRollStringConstants.Tumble, 25),
+            new(DiceRollStringConstants.UseMagicDevice, 26)
         };
 
-        RollButtonIds = new Dictionary<int, string>
+        RollButtonIds = new()
         {
             { 0, DiceRollStringConstants.AnimalEmpathy },
             { 1, DiceRollStringConstants.Appraise },
@@ -284,18 +279,18 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     {
         List<NuiComboEntry> diceOptions = new()
         {
-            new NuiComboEntry(DiceRollStringConstants.D2, 0),
-            new NuiComboEntry(DiceRollStringConstants.D3, 1),
-            new NuiComboEntry(DiceRollStringConstants.D4, 2),
-            new NuiComboEntry(DiceRollStringConstants.D6, 3),
-            new NuiComboEntry(DiceRollStringConstants.D8, 4),
-            new NuiComboEntry(DiceRollStringConstants.D10, 5),
-            new NuiComboEntry(DiceRollStringConstants.D12, 6),
-            new NuiComboEntry(DiceRollStringConstants.D20, 7),
-            new NuiComboEntry(DiceRollStringConstants.D100, 8),
+            new(DiceRollStringConstants.D2, 0),
+            new(DiceRollStringConstants.D3, 1),
+            new(DiceRollStringConstants.D4, 2),
+            new(DiceRollStringConstants.D6, 3),
+            new(DiceRollStringConstants.D8, 4),
+            new(DiceRollStringConstants.D10, 5),
+            new(DiceRollStringConstants.D12, 6),
+            new(DiceRollStringConstants.D20, 7),
+            new(DiceRollStringConstants.D100, 8)
         };
 
-        RollButtonIds = new Dictionary<int, string>
+        RollButtonIds = new()
         {
             { 0, DiceRollStringConstants.D2 },
             { 1, DiceRollStringConstants.D3 },
@@ -315,12 +310,12 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     {
         List<NuiComboEntry> diceOptions = new()
         {
-            new NuiComboEntry(DiceRollStringConstants.Fortitude, 0),
-            new NuiComboEntry(DiceRollStringConstants.Reflex, 1),
-            new NuiComboEntry(DiceRollStringConstants.Will, 2),
+            new(DiceRollStringConstants.Fortitude, 0),
+            new(DiceRollStringConstants.Reflex, 1),
+            new(DiceRollStringConstants.Will, 2)
         };
 
-        RollButtonIds = new Dictionary<int, string>
+        RollButtonIds = new()
         {
             { 0, DiceRollStringConstants.Fortitude },
             { 1, DiceRollStringConstants.Reflex },

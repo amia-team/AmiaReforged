@@ -10,13 +10,13 @@ namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 public sealed class WindowDirector : IDisposable
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly Dictionary<NuiWindowToken, IScryPresenter> _tokens = new();
-    private readonly Dictionary<NuiWindowToken, List<NuiWindowToken>> _linkedTokens = new();
     private readonly Dictionary<NwPlayer, List<IScryPresenter>> _activeWindows = new();
+    private readonly Dictionary<NuiWindowToken, List<NuiWindowToken>> _linkedTokens = new();
+    private readonly Dictionary<NuiWindowToken, IScryPresenter> _tokens = new();
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="WindowDirector"/> class.
-    /// Registers event handlers for client enter, client leave, and NUI events.
+    ///     Initializes a new instance of the <see cref="WindowDirector" /> class.
+    ///     Registers event handlers for client enter, client leave, and NUI events.
     /// </summary>
     public WindowDirector()
     {
@@ -26,7 +26,20 @@ public sealed class WindowDirector : IDisposable
     }
 
     /// <summary>
-    /// Passes NUI events to the relevant Presenter. If the event is a close event, the window is removed.
+    ///     Disposes the WindowDirector, closing all active windows and clearing resources.
+    /// </summary>
+    public void Dispose()
+    {
+        foreach (List<IScryPresenter> windows in _activeWindows.Values)
+        {
+            windows.ForEach(w => w.Close());
+        }
+
+        _activeWindows.Clear();
+    }
+
+    /// <summary>
+    ///     Passes NUI events to the relevant Presenter. If the event is a close event, the window is removed.
     /// </summary>
     /// <param name="obj">The NUI event object containing details about the event.</param>
     private void HandleNuiEvents(ModuleEvents.OnNuiEvent obj)
@@ -42,7 +55,7 @@ public sealed class WindowDirector : IDisposable
 
                 if (window != null)
                 {
-                    Log.Info("Window found, removing.");
+                    Log.Info(message: "Window found, removing.");
                     _tokens.Remove(window.Token());
                     window.Close();
                     playerWindows?.Remove(window);
@@ -57,16 +70,16 @@ public sealed class WindowDirector : IDisposable
     }
 
     /// <summary>
-    /// Registers a player when they enter the module.
+    ///     Registers a player when they enter the module.
     /// </summary>
     /// <param name="obj">The event object containing details about the client enter event.</param>
     private void RegisterPlayer(ModuleEvents.OnClientEnter obj)
     {
-        _activeWindows.Add(obj.Player, new List<IScryPresenter>());
+        _activeWindows.Add(obj.Player, new());
     }
 
     /// <summary>
-    /// Purges windows associated with a player when they leave the module.
+    ///     Purges windows associated with a player when they leave the module.
     /// </summary>
     /// <param name="obj">The event object containing details about the client leave event.</param>
     private void PurgeWindows(ModuleEvents.OnClientLeave obj)
@@ -76,7 +89,7 @@ public sealed class WindowDirector : IDisposable
     }
 
     /// <summary>
-    /// Opens a new window and associates it with the player.
+    ///     Opens a new window and associates it with the player.
     /// </summary>
     /// <param name="window">The window presenter to be opened.</param>
     public void OpenWindow(IScryPresenter window)
@@ -86,14 +99,14 @@ public sealed class WindowDirector : IDisposable
 
         _tokens.TryAdd(window.Token(), window);
         _activeWindows.TryGetValue(window.Token().Player, out List<IScryPresenter>? playerWindows);
-        _linkedTokens.TryAdd(window.Token(), new List<NuiWindowToken>());
-        
+        _linkedTokens.TryAdd(window.Token(), new());
+
         playerWindows?.Add(window);
         window.Closing += (_, _) => CloseWindow(window.Token().Player, window.GetType());
     }
 
     /// <summary>
-    /// Closes a window of a specific type for a player.
+    ///     Closes a window of a specific type for a player.
     /// </summary>
     /// <param name="player">The player whose window is to be closed.</param>
     /// <param name="type">The type of the window to be closed.</param>
@@ -123,20 +136,7 @@ public sealed class WindowDirector : IDisposable
     }
 
     /// <summary>
-    /// Disposes the WindowDirector, closing all active windows and clearing resources.
-    /// </summary>
-    public void Dispose()
-    {
-        foreach (List<IScryPresenter> windows in _activeWindows.Values)
-        {
-            windows.ForEach(w => w.Close());
-        }
-
-        _activeWindows.Clear();
-    }
-
-    /// <summary>
-    /// Checks if a window of a specific type is open for a player.
+    ///     Checks if a window of a specific type is open for a player.
     /// </summary>
     /// <param name="player">The player to check for open windows.</param>
     /// <param name="type">The type of the window to check.</param>
@@ -149,7 +149,7 @@ public sealed class WindowDirector : IDisposable
 
 
     /// <summary>
-    /// Use <see cref="GenericWindow"/> to build a new window in a more fluent manner.
+    ///     Use <see cref="GenericWindow" /> to build a new window in a more fluent manner.
     /// </summary>
     /// <param name="nwPlayer"></param>
     /// <param name="title">Title of window</param>
@@ -170,7 +170,7 @@ public sealed class WindowDirector : IDisposable
 
         OpenWindow(presenter);
     }
-    
+
     public void OpenPopup(NwPlayer nwPlayer, string title, string message, bool ignoreButton = false)
     {
         SimplePopupView view = new(nwPlayer, message, title, ignoreButton);

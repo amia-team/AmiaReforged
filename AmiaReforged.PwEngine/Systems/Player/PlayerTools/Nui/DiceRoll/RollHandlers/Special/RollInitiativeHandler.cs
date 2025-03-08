@@ -17,12 +17,12 @@ public class RollInitiativeHandler : IRollHandler
         int roll = NWScript.d20();
         int dexMod = playerCreature.GetAbilityModifier(Ability.Dexterity);
         int result = roll + dexMod;
-        
-        StringBuilder builder = new StringBuilder();
-        
-        string message = $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> Initiative Roll = D20:</c> {roll}<c{LightBlue.ToColorToken()}> + Dexterity Modifier (</c> <c{Yellow.ToColorToken()}>{dexMod}</c><c{LightBlue.ToColorToken()}> ) =</c> {result} <c{AmiaLime.ToColorToken()}>[?]</c>";
-        
+
+        StringBuilder builder = new();
+
+        string message =
+            $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> Initiative Roll = D20:</c> {roll}<c{LightBlue.ToColorToken()}> + Dexterity Modifier (</c> <c{Yellow.ToColorToken()}>{dexMod}</c><c{LightBlue.ToColorToken()}> ) =</c> {result} <c{AmiaLime.ToColorToken()}>[?]</c>";
+
         playerCreature.SpeakString(message);
-        
     }
 }

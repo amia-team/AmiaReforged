@@ -5,11 +5,10 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 
-
 namespace AmiaReforged.Classes.Monk.Techniques.Body;
 
 /// <summary>
-/// The monk is given 50% concealment for rounds per monk level. Using this technique spends one body ki point. 
+///     The monk is given 50% concealment for rounds per monk level. Using this technique spends one body ki point.
 /// </summary>
 public static class EmptyBody
 {
@@ -24,7 +23,7 @@ public static class EmptyBody
             AugmentationApplier.ApplyAugmentations(path, technique, castData);
             return;
         }
-        
+
         DoEmptyBody(castData);
     }
 
@@ -32,7 +31,7 @@ public static class EmptyBody
     {
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        Effect emptyBodyEffect = Effect.LinkEffects(Effect.Concealment(50), 
+        Effect emptyBodyEffect = Effect.LinkEffects(Effect.Concealment(50),
             Effect.VisualEffect(VfxType.DurInvisibility), Effect.VisualEffect(VfxType.DurCessatePositive));
         emptyBodyEffect.SubType = EffectSubType.Supernatural;
         TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);

@@ -1,28 +1,17 @@
-using System;
-using System.Data.Common;
-using Anvil.API;
-using Anvil.API.Events;
-using Anvil.Services;
-using NLog;
-using NWN.Core;
 using System.Numerics;
-using AmiaReforged.System;
-using AmiaReforged.Core.Services;
 using AmiaReforged.Core.Models;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client.Payloads;
-using Microsoft.VisualStudio.TestPlatform.TestExecutor;
-using NWN.Core.NWNX;
-using System.Runtime.InteropServices;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using AmiaReforged.Core.UserInterface;
+using AmiaReforged.Core.Services;
+using Anvil.API;
+using Anvil.Services;
+using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
 [ServiceBinding(typeof(InvasionPatrol))]
 public class InvasionPatrol
 {
-    private readonly InvasionService _invasionService;
     private readonly Invasions _invasions;
+    private readonly InvasionService _invasionService;
 
     public InvasionPatrol(InvasionService invasionService, Invasions invasions)
     {
@@ -30,7 +19,7 @@ public class InvasionPatrol
         _invasions = invasions;
     }
 
-    [ScriptHandler("invasion_patrol")]
+    [ScriptHandler(scriptName: "invasion_patrol")]
     public async void InvasionPatrolCheck(CallInfo info)
     {
         uint oPC = NWScript.OBJECT_SELF;
@@ -50,37 +39,34 @@ public class InvasionPatrol
         int PatrolValue = 4;
         int rewardCount = 1;
         await NwModule.Instance.WaitForObjectContext();
-        var JobJournal = NWScript.GetItemPossessedBy(oPC, "js_jobjournal");
+        var JobJournal = NWScript.GetItemPossessedBy(oPC, sItemTag: "js_jobjournal");
         if (NWScript.GetIsObjectValid(JobJournal) == 1)
         {
-            string PrimaryJob = NWScript.GetLocalString(JobJournal, "primaryjob");
-            string SecondaryJob = NWScript.GetLocalString(JobJournal, "secondaryjob");
+            string PrimaryJob = NWScript.GetLocalString(JobJournal, sVarName: "primaryjob");
+            string SecondaryJob = NWScript.GetLocalString(JobJournal, sVarName: "secondaryjob");
             if (PrimaryJob == "Soldier")
             {
                 PatrolValue += 8;
                 rewardCount = 3;
-                NWScript.SendMessageToPC(oPC, "*Your soldier job makes you exceptional at patrols*");
+                NWScript.SendMessageToPC(oPC, szMessage: "*Your soldier job makes you exceptional at patrols*");
             }
             else if (SecondaryJob == "Soldier")
             {
                 PatrolValue += 4;
                 rewardCount = 2;
-                NWScript.SendMessageToPC(oPC, "*Your soldier job makes you good at patrols*");
+                NWScript.SendMessageToPC(oPC, szMessage: "*Your soldier job makes you good at patrols*");
             }
         }
 
         if (invasionRecordTemp != null)
         {
             invasionRecord = invasionRecordTemp;
-            if ((NWScript.GetDistanceBetweenLocations(StoredLocation, Location) >= 20.0) ||
-                (NWScript.GetIsObjectValid(StoredArea) != 1))
+            if (NWScript.GetDistanceBetweenLocations(StoredLocation, Location) >= 20.0 ||
+                NWScript.GetIsObjectValid(StoredArea) != 1)
             {
                 NWScript.SetLocalLocation(oPC, AreaResRef, Location);
                 int temp = invasionRecord.InvasionPercent - PatrolValue;
-                if (temp < 0)
-                {
-                    temp = 0;
-                }
+                if (temp < 0) temp = 0;
 
                 if (invasionRecord.InvasionPercent > 80)
                 {
@@ -129,22 +115,22 @@ public class InvasionPatrol
             }
             else
             {
-                NWScript.SendMessageToPC(oPC, "*You must patrol in a different location*");
+                NWScript.SendMessageToPC(oPC, szMessage: "*You must patrol in a different location*");
             }
         }
         else
         {
-            NWScript.SendMessageToPC(oPC, "*No need to patrol this area*");
+            NWScript.SendMessageToPC(oPC, szMessage: "*No need to patrol this area*");
         }
     }
 
     public void SpawnEnemies(uint oPC, int count)
     {
         int waypointcount = 1;
-        uint waypoint = NWScript.GetWaypointByTag("Invasion" + waypointcount.ToString());
+        uint waypoint = NWScript.GetWaypointByTag("Invasion" + waypointcount);
         uint waypointSpawn = new();
         uint Area = NWScript.GetArea(oPC);
-        Random random = new Random();
+        Random random = new();
         int ran;
         string spawn = "";
         Vector3 ranLocPositon = NWScript.GetPositionFromLocation(NWScript.GetLocation(oPC));
@@ -161,7 +147,7 @@ public class InvasionPatrol
             }
 
             waypointcount++;
-            waypoint = NWScript.GetWaypointByTag("Invasion" + waypointcount.ToString());
+            waypoint = NWScript.GetWaypointByTag("Invasion" + waypointcount);
         }
 
         int i;
@@ -171,19 +157,19 @@ public class InvasionPatrol
             switch (ran)
             {
                 case 1:
-                    spawn = NWScript.GetLocalString(waypointSpawn, "creaturetype1");
+                    spawn = NWScript.GetLocalString(waypointSpawn, sVarName: "creaturetype1");
                     break;
                 case 2:
-                    spawn = NWScript.GetLocalString(waypointSpawn, "creaturetype2");
+                    spawn = NWScript.GetLocalString(waypointSpawn, sVarName: "creaturetype2");
                     break;
                 case 3:
-                    spawn = NWScript.GetLocalString(waypointSpawn, "creaturetype3");
+                    spawn = NWScript.GetLocalString(waypointSpawn, sVarName: "creaturetype3");
                     break;
                 case 4:
-                    spawn = NWScript.GetLocalString(waypointSpawn, "creaturetype4");
+                    spawn = NWScript.GetLocalString(waypointSpawn, sVarName: "creaturetype4");
                     break;
                 case 5:
-                    spawn = NWScript.GetLocalString(waypointSpawn, "creaturetype5");
+                    spawn = NWScript.GetLocalString(waypointSpawn, sVarName: "creaturetype5");
                     break;
             }
 
@@ -195,287 +181,277 @@ public class InvasionPatrol
     public void Reward(uint oPC, NwObject AnvilPC, int rewardCount)
     {
         int XP = NWScript.GetXP(oPC);
-        Random random = new Random();
+        Random random = new();
         int Level = NWScript.GetLevelByPosition(1, oPC) + NWScript.GetLevelByPosition(2, oPC) +
                     NWScript.GetLevelByPosition(3, oPC);
 
-        NWScript.SendMessageToPC(oPC, "*You find something of interest on your patrol*");
+        NWScript.SendMessageToPC(oPC, szMessage: "*You find something of interest on your patrol*");
 
 
         int i;
         for (i = 0; i < rewardCount; i++)
         {
             if (Level < 30)
-            {
-              NWScript.SetXP(oPC, XP + 25);
-            }
+                NWScript.SetXP(oPC, XP + 25);
             else
-            {
-              NWScript.SetXP(oPC, XP + 1);
-            }
-    
+                NWScript.SetXP(oPC, XP + 1);
+
             int temp = random.Next(1, 101);
 
             if (temp == 50)
             {
-                
                 if (NWScript.GetSkillRank(0, oPC, NWScript.TRUE) >= 1) // HAS AE
-                {
                     switch (random.Next(37))
                     {
                         case 0:
-                            Anvil.API.NwItem.Create("js_sold_losta1", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta1", (NwGameObject?)AnvilPC);
                             break;
                         case 1:
-                            Anvil.API.NwItem.Create("js_sold_losta2", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta2", (NwGameObject?)AnvilPC);
                             break;
                         case 2:
-                            Anvil.API.NwItem.Create("js_sold_losta3", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta3", (NwGameObject?)AnvilPC);
                             break;
                         case 3:
-                            Anvil.API.NwItem.Create("js_sold_losta4", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta4", (NwGameObject?)AnvilPC);
                             break;
                         case 4:
-                            Anvil.API.NwItem.Create("js_sold_losta5", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta5", (NwGameObject?)AnvilPC);
                             break;
                         case 5:
-                            Anvil.API.NwItem.Create("js_sold_losta6", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta6", (NwGameObject?)AnvilPC);
                             break;
                         case 6:
-                            Anvil.API.NwItem.Create("js_sold_losta7", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta7", (NwGameObject?)AnvilPC);
                             break;
                         case 7:
-                            Anvil.API.NwItem.Create("js_sold_losta8", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta8", (NwGameObject?)AnvilPC);
                             break;
                         case 8:
-                            Anvil.API.NwItem.Create("js_sold_losta9", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta9", (NwGameObject?)AnvilPC);
                             break;
                         case 9:
-                            Anvil.API.NwItem.Create("js_sold_losta10", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta10", (NwGameObject?)AnvilPC);
                             break;
                         case 10:
-                            Anvil.API.NwItem.Create("js_sold_losta11", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta11", (NwGameObject?)AnvilPC);
                             break;
                         case 11:
-                            Anvil.API.NwItem.Create("js_sold_losta12", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta12", (NwGameObject?)AnvilPC);
                             break;
                         case 12:
-                            Anvil.API.NwItem.Create("js_sold_losta13", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta13", (NwGameObject?)AnvilPC);
                             break;
                         case 13:
-                            Anvil.API.NwItem.Create("js_sold_losta14", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta14", (NwGameObject?)AnvilPC);
                             break;
                         case 14:
-                            Anvil.API.NwItem.Create("js_sold_losta15", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta15", (NwGameObject?)AnvilPC);
                             break;
                         case 15:
-                            Anvil.API.NwItem.Create("js_sold_losta16", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta16", (NwGameObject?)AnvilPC);
                             break;
                         case 16:
-                            Anvil.API.NwItem.Create("js_sold_losta17", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta17", (NwGameObject?)AnvilPC);
                             break;
                         case 17:
-                            Anvil.API.NwItem.Create("js_sold_losta18", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta18", (NwGameObject?)AnvilPC);
                             break;
                         case 18:
-                            Anvil.API.NwItem.Create("js_sold_losta19", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta19", (NwGameObject?)AnvilPC);
                             break;
                         case 19:
-                            Anvil.API.NwItem.Create("js_sold_losta20", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta20", (NwGameObject?)AnvilPC);
                             break;
                         case 20:
-                            Anvil.API.NwItem.Create("js_sold_losta21", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta21", (NwGameObject?)AnvilPC);
                             break;
                         case 21:
-                            Anvil.API.NwItem.Create("js_sold_losta22", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta22", (NwGameObject?)AnvilPC);
                             break;
                         case 22:
-                            Anvil.API.NwItem.Create("js_sold_losta23", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta23", (NwGameObject?)AnvilPC);
                             break;
                         case 23:
-                            Anvil.API.NwItem.Create("js_sold_losta24", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta24", (NwGameObject?)AnvilPC);
                             break;
                         case 24:
-                            Anvil.API.NwItem.Create("js_sold_losta25", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta25", (NwGameObject?)AnvilPC);
                             break;
                         case 25:
-                            Anvil.API.NwItem.Create("js_sold_losta26", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta26", (NwGameObject?)AnvilPC);
                             break;
                         case 26:
-                            Anvil.API.NwItem.Create("js_sold_losta27", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta27", (NwGameObject?)AnvilPC);
                             break;
                         case 27:
-                            Anvil.API.NwItem.Create("js_sold_losta28", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta28", (NwGameObject?)AnvilPC);
                             break;
                         case 28:
-                            Anvil.API.NwItem.Create("js_sold_losta29", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta29", (NwGameObject?)AnvilPC);
                             break;
                         case 29:
-                            Anvil.API.NwItem.Create("js_sold_losta30", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta30", (NwGameObject?)AnvilPC);
                             break;
                         case 30:
-                            Anvil.API.NwItem.Create("js_sold_losta31", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta31", (NwGameObject?)AnvilPC);
                             break;
                         case 31:
-                            Anvil.API.NwItem.Create("js_sold_losta32", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta32", (NwGameObject?)AnvilPC);
                             break;
                         case 32:
-                            Anvil.API.NwItem.Create("js_sold_losta33", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta33", (NwGameObject?)AnvilPC);
                             break;
                         case 33:
-                            Anvil.API.NwItem.Create("js_sold_losta34", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta34", (NwGameObject?)AnvilPC);
                             break;
                         case 34:
-                            Anvil.API.NwItem.Create("js_sold_losta35", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta35", (NwGameObject?)AnvilPC);
                             break;
                         case 35:
-                            Anvil.API.NwItem.Create("js_sold_losta36", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta36", (NwGameObject?)AnvilPC);
                             break;
                         case 36:
-                            Anvil.API.NwItem.Create("js_sold_losta37", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta37", (NwGameObject?)AnvilPC);
                             break;
                     }
-                }
                 else // DOES NOT HAVE AE
-                {
                     switch (random.Next(21))
                     {
                         case 0:
-                            Anvil.API.NwItem.Create("js_sold_losta1", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta1", (NwGameObject?)AnvilPC);
                             break;
                         case 1:
-                            Anvil.API.NwItem.Create("js_sold_losta2", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta2", (NwGameObject?)AnvilPC);
                             break;
                         case 2:
-                            Anvil.API.NwItem.Create("js_sold_losta3", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta3", (NwGameObject?)AnvilPC);
                             break;
                         case 3:
-                            Anvil.API.NwItem.Create("js_sold_losta4", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta4", (NwGameObject?)AnvilPC);
                             break;
                         case 4:
-                            Anvil.API.NwItem.Create("js_sold_losta5", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta5", (NwGameObject?)AnvilPC);
                             break;
                         case 5:
-                            Anvil.API.NwItem.Create("js_sold_losta6", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta6", (NwGameObject?)AnvilPC);
                             break;
                         case 6:
-                            Anvil.API.NwItem.Create("js_sold_losta7", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta7", (NwGameObject?)AnvilPC);
                             break;
                         case 7:
-                            Anvil.API.NwItem.Create("js_sold_losta11", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta11", (NwGameObject?)AnvilPC);
                             break;
                         case 8:
-                            Anvil.API.NwItem.Create("js_sold_losta12", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta12", (NwGameObject?)AnvilPC);
                             break;
                         case 9:
-                            Anvil.API.NwItem.Create("js_sold_losta13", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta13", (NwGameObject?)AnvilPC);
                             break;
                         case 10:
-                            Anvil.API.NwItem.Create("js_sold_losta15", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta15", (NwGameObject?)AnvilPC);
                             break;
                         case 11:
-                            Anvil.API.NwItem.Create("js_sold_losta16", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta16", (NwGameObject?)AnvilPC);
                             break;
                         case 12:
-                            Anvil.API.NwItem.Create("js_sold_losta17", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta17", (NwGameObject?)AnvilPC);
                             break;
                         case 13:
-                            Anvil.API.NwItem.Create("js_sold_losta19", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta19", (NwGameObject?)AnvilPC);
                             break;
                         case 14:
-                            Anvil.API.NwItem.Create("js_sold_losta20", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta20", (NwGameObject?)AnvilPC);
                             break;
                         case 15:
-                            Anvil.API.NwItem.Create("js_sold_losta21", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta21", (NwGameObject?)AnvilPC);
                             break;
                         case 16:
-                            Anvil.API.NwItem.Create("js_sold_losta22", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta22", (NwGameObject?)AnvilPC);
                             break;
                         case 17:
-                            Anvil.API.NwItem.Create("js_sold_losta23", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta23", (NwGameObject?)AnvilPC);
                             break;
                         case 18:
-                            Anvil.API.NwItem.Create("js_sold_losta24", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta24", (NwGameObject?)AnvilPC);
                             break;
                         case 19:
-                            Anvil.API.NwItem.Create("js_sold_losta31", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta31", (NwGameObject?)AnvilPC);
                             break;
                         case 20:
-                            Anvil.API.NwItem.Create("js_sold_losta37", (NwGameObject?)AnvilPC);
+                            NwItem.Create(template: "js_sold_losta37", (NwGameObject?)AnvilPC);
                             break;
-
                     }
-                }
             }
             else if (temp <= 30)
             {
                 switch (random.Next(21))
                 {
                     case 0:
-                        Anvil.API.NwItem.Create("js_hun_mbone", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_hun_mbone", (NwGameObject?)AnvilPC);
                         break;
                     case 1:
-                        Anvil.API.NwItem.Create("js_alch_kit10", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_alch_kit10", (NwGameObject?)AnvilPC);
                         break;
                     case 2:
-                        Anvil.API.NwItem.Create("js_alch_pore", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_alch_pore", (NwGameObject?)AnvilPC);
                         break;
                     case 3:
-                        Anvil.API.NwItem.Create("js_jew_diam", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_jew_diam", (NwGameObject?)AnvilPC);
                         break;
                     case 4:
-                        Anvil.API.NwItem.Create("js_jew_emer", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_jew_emer", (NwGameObject?)AnvilPC);
                         break;
                     case 5:
-                        Anvil.API.NwItem.Create("js_jew_ruby", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_jew_ruby", (NwGameObject?)AnvilPC);
                         break;
                     case 6:
-                        Anvil.API.NwItem.Create("js_jew_sapp", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_jew_sapp", (NwGameObject?)AnvilPC);
                         break;
                     case 7:
-                        Anvil.API.NwItem.Create("js_bre_fili", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_bre_fili", (NwGameObject?)AnvilPC);
                         break;
                     case 8:
-                        Anvil.API.NwItem.Create("js_bre_tual", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_bre_tual", (NwGameObject?)AnvilPC);
                         break;
                     case 9:
-                        Anvil.API.NwItem.Create("js_che_saus", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_che_saus", (NwGameObject?)AnvilPC);
                         break;
                     case 10:
-                        Anvil.API.NwItem.Create("js_che_roro", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_che_roro", (NwGameObject?)AnvilPC);
                         break;
                     case 11:
-                        Anvil.API.NwItem.Create("js_che_mepi", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_che_mepi", (NwGameObject?)AnvilPC);
                         break;
                     case 12:
-                        Anvil.API.NwItem.Create("js_che_brea", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_che_brea", (NwGameObject?)AnvilPC);
                         break;
                     case 13:
-                        Anvil.API.NwItem.Create("js_sco_drus", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_sco_drus", (NwGameObject?)AnvilPC);
                         break;
                     case 14:
-                        Anvil.API.NwItem.Create("js_venomgland", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_venomgland", (NwGameObject?)AnvilPC);
                         break;
                     case 15:
-                        Anvil.API.NwItem.Create("js_tai_scbrd1", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_tai_scbrd1", (NwGameObject?)AnvilPC);
                         break;
                     case 16:
-                        Anvil.API.NwItem.Create("js_tai_scbrd2", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_tai_scbrd2", (NwGameObject?)AnvilPC);
                         break;
                     case 17:
-                        Anvil.API.NwItem.Create("js_tai_quiver1", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_tai_quiver1", (NwGameObject?)AnvilPC);
                         break;
                     case 18:
-                        Anvil.API.NwItem.Create("js_tai_bpack1", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_tai_bpack1", (NwGameObject?)AnvilPC);
                         break;
                     case 19:
-                        Anvil.API.NwItem.Create("js_arca_spiderl", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_arca_spiderl", (NwGameObject?)AnvilPC);
                         break;
                     case 20:
-                        Anvil.API.NwItem.Create("js_hun_sbone", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_hun_sbone", (NwGameObject?)AnvilPC);
                         break;
                     case 21:
-                        Anvil.API.NwItem.Create("js_hun_lbone", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_hun_lbone", (NwGameObject?)AnvilPC);
                         break;
                 }
             }
@@ -484,10 +460,10 @@ public class InvasionPatrol
                 switch (random.Next(2))
                 {
                     case 0:
-                        Anvil.API.NwItem.Create("js_sold_fang", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_sold_fang", (NwGameObject?)AnvilPC);
                         break;
                     case 1:
-                        Anvil.API.NwItem.Create("js_sold_claw", (NwGameObject?)AnvilPC);
+                        NwItem.Create(template: "js_sold_claw", (NwGameObject?)AnvilPC);
                         break;
                 }
             }

@@ -10,13 +10,14 @@ public class CraftWeaponSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int craftWeaponMod = playerCreature.GetSkillRank(Skill.CraftWeapon!);
-        
+
         int result = roll + craftWeaponMod;
-        
-        
-        playerCreature.SpeakString(new SkillCheckString("Craft Weapon", roll, craftWeaponMod, result).GetRollResult());
+
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Craft Weapon", roll, craftWeaponMod, result)
+            .GetRollResult());
     }
 }

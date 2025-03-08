@@ -4,7 +4,7 @@ using Anvil.API;
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models;
 
 /// <summary>
-///  Plain old data object for crafting properties. Should not contain any logic (i.e.: Can the property stack).
+///     Plain old data object for crafting properties. Should not contain any logic (i.e.: Can the property stack).
 /// </summary>
 public class CraftingProperty
 {
@@ -19,24 +19,17 @@ public class CraftingProperty
 
     public int GoldCost { get; set; }
 
-    public ItemPropertyModel ToItemPropertyModel()
-    {
-        return new ItemPropertyModel
+    public ItemPropertyModel ToItemPropertyModel() =>
+        new()
         {
             Property = ItemProperty,
             GoldCost = GoldCost
         };
-    }
 
     // operator to convert back to ItemProperty
-    public static implicit operator ItemProperty(CraftingProperty craftingProperty)
-    {
-        return craftingProperty.ItemProperty;
-    }
+    public static implicit operator ItemProperty(CraftingProperty craftingProperty) => craftingProperty.ItemProperty;
 
     //operator to convert to ItemPropertyModel
-    public static implicit operator ItemPropertyModel(CraftingProperty craftingProperty)
-    {
-        return craftingProperty.ToItemPropertyModel();
-    }
+    public static implicit operator ItemPropertyModel(CraftingProperty craftingProperty) =>
+        craftingProperty.ToItemPropertyModel();
 }

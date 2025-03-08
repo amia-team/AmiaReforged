@@ -21,7 +21,7 @@ public class PwEngineContext : DbContext
         if (!optionsBuilder.IsConfigured)
         {
             optionsBuilder.UseNpgsql(_connectionString);
-            optionsBuilder.EnableSensitiveDataLogging(true);
+            optionsBuilder.EnableSensitiveDataLogging();
         }
     }
 

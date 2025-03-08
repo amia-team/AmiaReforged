@@ -7,19 +7,13 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 [ServiceBinding(typeof(JobItemPropertyHandler))]
 public class JobItemPropertyHandler
 {
-    public JobItemPropertyHandler()
-    {
-    }
-
     // public float DurabilityFromItem(NwItem item)
     // {
     //     
     // }
 
-    public float DeriveDurability(QualityEnum qualityEnum, MaterialEnum materialEnum)
-    {
-        return DurabilityFromQuality(qualityEnum) + DurabilityFromMaterial(materialEnum);
-    }
+    public float DeriveDurability(QualityEnum qualityEnum, MaterialEnum materialEnum) =>
+        DurabilityFromQuality(qualityEnum) + DurabilityFromMaterial(materialEnum);
 
     private float DurabilityFromQuality(QualityEnum qualityEnum)
     {
@@ -100,10 +94,7 @@ public class JobItemPropertyHandler
     public int DeriveMagic(QualityEnum quality, MaterialEnum material)
     {
         float magicFromMaterial = MagicFromMaterial(material);
-        if (magicFromMaterial == 0.0f)
-        {
-            return 0;
-        }
+        if (magicFromMaterial == 0.0f) return 0;
 
         return (int)(magicFromMaterial + MagicFromQuality(quality));
     }
@@ -124,13 +115,7 @@ public class JobItemPropertyHandler
         };
     }
 
-    public int DeriveValue(QualityEnum quality, MaterialEnum material)
-    {
-        return 0;
-    }
+    public int DeriveValue(QualityEnum quality, MaterialEnum material) => 0;
 
-    public ItemType DeriveType(BaseItemType baseItemItemType)
-    {
-        return ItemType.Log;
-    }
+    public ItemType DeriveType(BaseItemType baseItemItemType) => ItemType.Log;
 }

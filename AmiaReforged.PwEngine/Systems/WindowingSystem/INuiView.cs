@@ -3,7 +3,7 @@ using Anvil.API;
 namespace AmiaReforged.PwEngine.Systems.WindowingSystem;
 
 /// <summary>
-/// Internal interface - implement <see cref="NuiView{TView}"/> instead.
+///     Internal interface - implement <see cref="NuiView{TView}" /> instead.
 /// </summary>
 public interface INuiView
 {

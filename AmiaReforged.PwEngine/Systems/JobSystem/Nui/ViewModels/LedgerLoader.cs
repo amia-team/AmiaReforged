@@ -1,5 +1,4 @@
-﻿using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+﻿using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 using Anvil.API;
 using Anvil.Services;
@@ -20,8 +19,8 @@ public class LedgerLoader
     {
         Ledger ledger = new()
         {
-            Entries = new List<LedgerEntry>(),
-            ItemReferences = new List<long>()
+            Entries = new(),
+            ItemReferences = new()
         };
 
         foreach (StoredJobItem storedItem in storage.Items)
@@ -41,7 +40,7 @@ public class LedgerLoader
                 AverageQuality = AverageQualityCalculator.Calculate(storage.Items.Where(i => i.JobItem.Name == itemName)
                     .Select(i => i.JobItem.Quality).ToArray()),
                 BaseValue = storage.Items.First(i => i.JobItem.Name == itemName).JobItem.BaseValue,
-                Items = new List<LedgerItem>()
+                Items = new()
             };
 
             ledger.Entries.Add(entry);
@@ -52,7 +51,7 @@ public class LedgerLoader
                 // This is a bit of a hack, but it works for now
                 entry.Type = storedItem.JobItem.Type;
 
-                entry.Items.Add(new LedgerItem
+                entry.Items.Add(new()
                 {
                     Name = storedItem.JobItem.Name,
                     QualityEnum = storedItem.JobItem.Quality,
@@ -69,7 +68,7 @@ public class LedgerLoader
 
     public Ledger FromPlayer(NwCreature tokenPlayer)
     {
-        List<NwItem> nwItems = tokenPlayer.Inventory.Items.Where(i => i.ResRef.StartsWith("js_")).ToList();
+        List<NwItem> nwItems = tokenPlayer.Inventory.Items.Where(i => i.ResRef.StartsWith(value: "js_")).ToList();
 
         ICollection<JobItem> jobItems = nwItems.Select(i => _mappingService.MapFrom(i)).ToList();
 
@@ -77,8 +76,8 @@ public class LedgerLoader
 
         Ledger ledger = new()
         {
-            Entries = new List<LedgerEntry>(),
-            ItemReferences = new List<long>()
+            Entries = new(),
+            ItemReferences = new()
         };
 
         foreach (JobItem item in distinctItems)
@@ -90,7 +89,7 @@ public class LedgerLoader
                 AverageQuality = AverageQualityCalculator.Calculate(jobItems.Where(i => i.Name == item.Name)
                     .Select(i => i.Quality).ToArray()),
                 BaseValue = item.BaseValue,
-                Items = new List<LedgerItem>()
+                Items = new()
             };
 
             ledger.Entries.Add(entry);
@@ -100,7 +99,7 @@ public class LedgerLoader
             {
                 // This is a bit of a hack, but it works for now
                 entry.Type = jobItem.Type;
-                entry.Items.Add(new LedgerItem
+                entry.Items.Add(new()
                 {
                     Name = jobItem.Name,
                     QualityEnum = jobItem.Quality,
@@ -109,7 +108,7 @@ public class LedgerLoader
                     DurabilityModifier = jobItem.DurabilityModifier,
                     BaseValue = jobItem.BaseValue
                 });
-                
+
                 // Add item reference to the ledger
                 ledger.ItemReferences.Add(jobItem.Id);
             }

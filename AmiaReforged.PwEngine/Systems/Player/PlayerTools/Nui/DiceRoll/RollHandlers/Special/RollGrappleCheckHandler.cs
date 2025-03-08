@@ -21,7 +21,7 @@ public class RollGrappleCheckHandler : IRollHandler
         int result = diceRoll + baseAttackBonus + strMod + sizeMod;
 
         string grapple =
-            $"<c{AmiaColors.AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> Grapple Check = D20: </c>{diceRoll}<c{LightBlue.ToColorToken()}> + Base Attack Bonus ( </c><c{Yellow.ToColorToken()}>{baseAttackBonus}</c> <c{LightBlue.ToColorToken()}>) + Strength Modifier ( </c><c{Yellow.ToColorToken()}>{strMod}</c><c{LightBlue.ToColorToken()}> ) + Size Modifier ( </c><c{Yellow.ToColorToken()}>{sizeMod}</c><c{LightBlue.ToColorToken()}> ) = </c>{result} <c{AmiaColors.AmiaLime.ToColorToken()}>[?]</c>";
+            $"<c{AmiaLime.ToColorToken()}>[?]</c><c{LightBlue.ToColorToken()}> Grapple Check = D20: </c>{diceRoll}<c{LightBlue.ToColorToken()}> + Base Attack Bonus ( </c><c{Yellow.ToColorToken()}>{baseAttackBonus}</c> <c{LightBlue.ToColorToken()}>) + Strength Modifier ( </c><c{Yellow.ToColorToken()}>{strMod}</c><c{LightBlue.ToColorToken()}> ) + Size Modifier ( </c><c{Yellow.ToColorToken()}>{sizeMod}</c><c{LightBlue.ToColorToken()}> ) = </c>{result} <c{AmiaLime.ToColorToken()}>[?]</c>";
 
         playerCreature.SpeakString(grapple);
     }

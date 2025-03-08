@@ -10,12 +10,12 @@ public class HideSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int hideMod = playerCreature.GetSkillRank(Skill.Hide!);
-        
+
         int result = roll + hideMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Hide", roll, hideMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Hide", roll, hideMod, result).GetRollResult());
     }
 }

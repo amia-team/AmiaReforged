@@ -1,13 +1,12 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using Anvil.API;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
 [ValidationRuleFor(Property = ItemPropertyType.CastSpell)]
 public class CastSpellValidator : IValidationRule
 {
-    private static readonly string[] Fluff = new[]
+    private static readonly string[] Fluff =
     {
         "Aid (3)",
         "Bless (2)",
@@ -15,7 +14,7 @@ public class CastSpellValidator : IValidationRule
         "Bull's Strength (3)",
         "Endurance (3)",
         "Expeditious Retreat (5)",
-        "Light (1)",
+        "Light (1)"
     };
 
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
@@ -45,11 +44,11 @@ public class CastSpellValidator : IValidationRule
             .ToList();
 
         List<CastSpell> allCastSpells = castSpellsInChangelist.Concat(castSpellsInItem).ToList();
-        
+
         // Look for any fluff spells in the item or changelist
         bool fluffExists = allCastSpells.Any(x => Fluff.Contains(x.SpellName));
 
-        return new ValidationResult()
+        return new()
         {
             Result = fluffExists ? ValidationEnum.LimitReached : ValidationEnum.Valid,
             ErrorMessage = fluffExists ? "Only one fluff spell can be added to an item." : string.Empty
@@ -75,7 +74,7 @@ public class CastSpellValidator : IValidationRule
         // Now we only care if the same spell exists in the item or the changelist
         bool alreadyExists = allCastSpells.Any(x => x.SpellName == castSpell.SpellName);
 
-        return new ValidationResult()
+        return new()
         {
             Result = alreadyExists ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid,
             ErrorMessage = alreadyExists ? $"{castSpell.SpellName} already exists on the item." : string.Empty
@@ -95,7 +94,7 @@ public class CastSpellValidator : IValidationRule
             UsesPerDay = incoming.PropertyBonus;
         }
 
-        public string SpellName { get; set; }
+        public string SpellName { get; }
         public string UsesPerDay { get; set; }
     }
 }

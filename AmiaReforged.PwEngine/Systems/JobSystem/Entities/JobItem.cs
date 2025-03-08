@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using AmiaReforged.PwEngine.Database.Entities;
-using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
@@ -20,5 +19,5 @@ public class JobItem
     public string IconResRef { get; set; }
     public byte[] SerializedData { get; set; }
     public long WorldCharacterId { get; set; }
-    [ForeignKey("WorldCharacterId")] public WorldCharacter MadeBy { get; set; }
+    [ForeignKey(name: "WorldCharacterId")] public WorldCharacter MadeBy { get; set; }
 }

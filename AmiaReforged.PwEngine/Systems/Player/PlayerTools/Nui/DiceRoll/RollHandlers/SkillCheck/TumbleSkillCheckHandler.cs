@@ -10,12 +10,12 @@ public class TumbleSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int tumbleMod = playerCreature.GetSkillRank(Skill.Tumble!);
-        
+
         int result = roll + tumbleMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Tumble", roll, tumbleMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Tumble", roll, tumbleMod, result).GetRollResult());
     }
 }

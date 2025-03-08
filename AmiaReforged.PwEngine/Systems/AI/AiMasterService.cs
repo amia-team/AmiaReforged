@@ -118,169 +118,143 @@ public class AiMasterService
     private ScriptHandleResult HandleOnDisturbed(CallInfo arg)
     {
         if (!_disturbedHandlers.TryGetValue(arg.ScriptName, out IOnDisturbedBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnDisturbed eventData = new();
         handler.OnDisturbed(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnDeath(CallInfo arg)
     {
         if (!_deathHandlers.TryGetValue(arg.ScriptName, out IOnDeathBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnDeath eventData = new();
         handler.OnDeath(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnDamaged(CallInfo arg)
     {
         if (!_damagedHandlers.TryGetValue(arg.ScriptName, out IOnDamagedBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnDamaged eventData = new();
         handler.OnDamaged(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnHeartbeat(CallInfo arg)
     {
         if (!_heartbeatHandlers.TryGetValue(arg.ScriptName, out IOnHeartbeatBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnHeartbeat eventData = new();
         handler.OnHeartbeat(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnConversation(CallInfo arg)
     {
         if (!_conversationHandlers.TryGetValue(arg.ScriptName, out IOnConversationBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnConversation eventData = new();
         handler.OnConversation(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
-    
+
     private ScriptHandleResult HandleOnCombatRoundEnd(CallInfo arg)
     {
         if (!_combatRoundEndHandlers.TryGetValue(arg.ScriptName, out IOnCombatRoundEndBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnCombatRoundEnd eventData = new();
         handler.OnCombatRoundEnd(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnPerception(CallInfo arg)
     {
         if (!_perceptionHandlers.TryGetValue(arg.ScriptName, out IOnPerceptionBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnPerception eventData = new();
         handler.OnPerception(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnPhysicalAttacked(CallInfo arg)
     {
         if (!_physicalAttackedHandlers.TryGetValue(arg.ScriptName, out IOnPhysicalAttackedBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnPhysicalAttacked eventData = new();
         handler.OnPhysicalAttacked(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnRested(CallInfo arg)
     {
         if (!_restedHandlers.TryGetValue(arg.ScriptName, out IOnRestedBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnRested eventData = new();
         handler.OnRested(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnSpawn(CallInfo arg)
     {
         if (!_spawnHandlers.TryGetValue(arg.ScriptName, out IOnSpawnBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnSpawn eventData = new();
         handler.OnSpawn(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnSpellCastAt(CallInfo arg)
     {
         if (!_spellCastHandlers.TryGetValue(arg.ScriptName, out IOnSpellCastAtBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnSpellCastAt eventData = new();
         handler.OnSpellCastAt(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnUserDefined(CallInfo arg)
     {
         if (!_userDefinedHandlers.TryGetValue(arg.ScriptName, out IOnUserDefined? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnUserDefined eventData = new();
         handler.UserDefined(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 
     private ScriptHandleResult HandleOnBlocked(CallInfo arg)
     {
         if (!_blockedHandlers.TryGetValue(arg.ScriptName, out IOnBlockedBehavior? handler))
-        {
             return ScriptHandleResult.NotHandled;
-        }
-        
+
         CreatureEvents.OnBlocked eventData = new();
         handler.OnBlocked(eventData);
-        
+
         return ScriptHandleResult.Handled;
     }
 }

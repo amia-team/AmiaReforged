@@ -4,7 +4,7 @@ using Anvil.API;
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Emotes.EmoteDefinitions;
 
 [CreatedAtRuntime]
-public class DrinkEmote: IEmote
+public class DrinkEmote : IEmote
 {
     public string Label => "Drink";
     public string Id => "emote_drink";

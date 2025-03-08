@@ -1,11 +1,7 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
-using AmiaReforged.PwEngine.Systems.Crafting;
 using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 using Anvil.API;
-using Anvil.Services;
-using Microsoft.Extensions.Primitives;
 using NLog;
 using NWN.Core;
 
@@ -27,10 +23,7 @@ public static class ItemPropertyHelper
         label += property.Property.GameStrRef;
 
         ItemPropertySubTypeTableEntry? subType = property.SubType;
-        if (subType != null)
-        {
-            label += " " + subType.Label;
-        }
+        if (subType != null) label += " " + subType.Label;
 
         ItemPropertyParamTableEntry? param1Value = property.Param1TableValue;
         ItemPropertyCostTableEntry? costTableValue = property.CostTableValue;
@@ -38,15 +31,9 @@ public static class ItemPropertyHelper
 
         if (param1Value != null || costTableValue != null)
         {
-            if (costTableValue != null)
-            {
-                label += " " + costTableValue.Label;
-            }
+            if (costTableValue != null) label += " " + costTableValue.Label;
 
-            if (param1Value != null)
-            {
-                label += " " + param1Value.Label;
-            }
+            if (param1Value != null) label += " " + param1Value.Label;
         }
 
         return label;
@@ -56,9 +43,9 @@ public static class ItemPropertyHelper
     {
         string gameLabel = GameLabel(ip);
 
-        gameLabel = gameLabel.Replace("_", " ");
-        
-        return new CraftingProperty
+        gameLabel = gameLabel.Replace(oldValue: "_", newValue: " ");
+
+        return new()
         {
             ItemProperty = ip,
             GuiLabel = gameLabel,
@@ -82,9 +69,14 @@ public static class ItemPropertyHelper
             ItemPropertyType.Material,
             ItemPropertyType.Quality,
             ItemPropertyType.Trap,
-            ItemPropertyType.Additional
+            ItemPropertyType.Additional,
+            ItemPropertyType.UseLimitationClass,
+            ItemPropertyType.UseLimitationAlignmentGroup,
+            ItemPropertyType.UseLimitationRacialType,
+            ItemPropertyType.UseLimitationSpecificAlignment,
+            ItemPropertyType.NoDamage
         };
-        
+
         return noCost.Any(it => it == ip.Property.PropertyType) ? 0 : 2;
     }
 
@@ -124,7 +116,7 @@ public static class ItemPropertyHelper
             { "mythal4", CraftingTier.Greater },
             { "mythal5", CraftingTier.Flawless },
             { "mythal6", CraftingTier.Perfect },
-            { "mythal7", CraftingTier.Divine },
+            { "mythal7", CraftingTier.Divine }
         };
 
         Dictionary<CraftingTier, int> mythals = new()
@@ -135,13 +127,13 @@ public static class ItemPropertyHelper
             { CraftingTier.Greater, 0 },
             { CraftingTier.Flawless, 0 },
             { CraftingTier.Perfect, 0 },
-            { CraftingTier.Divine, 0 },
+            { CraftingTier.Divine, 0 }
         };
 
         NwCreature? playerLoginCreature = player.LoginCreature;
         if (playerLoginCreature == null) return mythals;
 
-        foreach (NwItem item in playerLoginCreature.Inventory.Items.Where(i => i.ResRef.StartsWith("mythal")))
+        foreach (NwItem item in playerLoginCreature.Inventory.Items.Where(i => i.ResRef.StartsWith(value: "mythal")))
         {
             string resRef = item.ResRef;
 
@@ -164,7 +156,7 @@ public static class ItemPropertyHelper
             { CraftingTier.Greater, "mythal4" },
             { CraftingTier.Flawless, "mythal5" },
             { CraftingTier.Perfect, "mythal6" },
-            { CraftingTier.Divine, "mythal7" },
+            { CraftingTier.Divine, "mythal7" }
         };
 
         tierMap.TryGetValue(tier, out string? t);
@@ -182,34 +174,36 @@ public static class ItemPropertyHelper
             || property1.Property.PropertyType == ItemPropertyType.OnHitCastSpell &&
             property2.Property.PropertyType == ItemPropertyType.OnHitCastSpell)
         {
-            LogManager.GetCurrentClassLogger().Info("Comparing OnHit properties.");
-            NwArea? systemArea = NwModule.Instance.Areas.FirstOrDefault(a => a.Name.Contains("Area to Rest"));
+            LogManager.GetCurrentClassLogger().Info(message: "Comparing OnHit properties.");
+            NwArea? systemArea = NwModule.Instance.Areas.FirstOrDefault(a => a.Name.Contains(value: "Area to Rest"));
 
             if (systemArea == null)
             {
-                LogManager.GetCurrentClassLogger().Info("System area not found.");
+                LogManager.GetCurrentClassLogger().Info(message: "System area not found.");
                 return false;
             }
 
             Location? arbitraryWaypoint = systemArea.FindObjectsOfTypeInArea<NwWaypoint>().First().Location;
-            
-            if(arbitraryWaypoint == null)
+
+            if (arbitraryWaypoint == null)
             {
-                LogManager.GetCurrentClassLogger().Info("Arbitrary waypoint not found.");
+                LogManager.GetCurrentClassLogger().Info(message: "Arbitrary waypoint not found.");
                 return false;
             }
 
-            NwItem dummy = NwItem.Create("nw_wswls001", arbitraryWaypoint);
+            NwItem dummy = NwItem.Create(template: "nw_wswls001", arbitraryWaypoint);
             if (dummy == null)
             {
                 // log this error
-                LogManager.GetCurrentClassLogger().Info("Dummy item not created.");
+                LogManager.GetCurrentClassLogger().Info(message: "Dummy item not created.");
                 return false;
             }
 
             if (!property1.Valid || !property2.Valid)
             {
-                LogManager.GetCurrentClassLogger().Info("An item property was not valid. Check the definitions in PropertyConstants for errors.");
+                LogManager.GetCurrentClassLogger()
+                    .Info(message:
+                        "An item property was not valid. Check the definitions in PropertyConstants for errors.");
                 return false;
             }
 
@@ -217,10 +211,10 @@ public static class ItemPropertyHelper
             dummy.AddItemProperty(property2, EffectDuration.Permanent);
             ItemProperty[] properties = dummy.ItemProperties.ToArray();
             LogManager.GetCurrentClassLogger().Info($"Comparing {properties.Length} properties.");
-            
+
             // Uses regex to remove the +X% from the labels for comparison purposes
-            string l1 = Regex.Replace(GameLabel(properties[0]), @"\d+%", string.Empty).TrimEnd();
-            string l2 = Regex.Replace(GameLabel(properties[1]), @"\d+%", string.Empty).TrimEnd();
+            string l1 = Regex.Replace(GameLabel(properties[0]), pattern: @"\d+%", string.Empty).TrimEnd();
+            string l2 = Regex.Replace(GameLabel(properties[1]), pattern: @"\d+%", string.Empty).TrimEnd();
             propertiesAreSame = l1 == l2;
             LogManager.GetCurrentClassLogger().Info($"Properties are the same: {propertiesAreSame}. {l1} == {l2}");
             dummy.Destroy();
@@ -232,11 +226,8 @@ public static class ItemPropertyHelper
 
     public static string FullPropertyDescription(ItemProperty property)
     {
-        StringBuilder description = new("");
-        if (property.Property.GameStrRef == null)
-        {
-            return description.ToString();
-        }
+        StringBuilder description = new(value: "");
+        if (property.Property.GameStrRef == null) return description.ToString();
 
         description.Append($"Item Property valid? {property.Valid}");
         description.Append(property.Property.GameStrRef.ToString());
@@ -246,10 +237,7 @@ public static class ItemPropertyHelper
 
 
         ItemPropertySubTypeTableEntry? subType = property.SubType;
-        if (subType != null)
-        {
-            description.Append($"Subtype Label: {subType.Label} Subtype Name: {subType.Name}");
-        }
+        if (subType != null) description.Append($"Subtype Label: {subType.Label} Subtype Name: {subType.Name}");
 
         ItemPropertyParamTableEntry? param1Value = property.Param1TableValue;
         ItemPropertyCostTableEntry? costTableValue = property.CostTableValue;

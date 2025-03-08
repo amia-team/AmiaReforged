@@ -14,7 +14,8 @@ public class td_act_ffile_af
     private const string CRET_INT = "csharp_return_int";
     private const int TRUE = 1;
     private const int FALSE = 0;
-    [ScriptHandler("td_act_ffile_af")]
+
+    [ScriptHandler(scriptName: "td_act_ffile_af")]
     public void FPlusArchiveFile(CallInfo cinfo)
     {
         NwObject oPC = cinfo.ObjectSelf!;
@@ -24,12 +25,16 @@ public class td_act_ffile_af
 
 
         string curchar = cinfo.ScriptParams[CARG_3];
-        if (DEBUG) {
+        if (DEBUG)
+        {
             NWScript.SendMessageToPC(oPC, "PC bic file: " + curchar);
             NWScript.SendMessageToPC(oPC, "Target bic file: " + fname);
         }
-        if (curchar == fname) {
-            NWScript.SendMessageToPC(oPC, "ERROR: You may not archive the file of the character you are playing");
+
+        if (curchar == fname)
+        {
+            NWScript.SendMessageToPC(oPC,
+                szMessage: "ERROR: You may not archive the file of the character you are playing");
             NWScript.SetLocalInt(oPC, CRET_INT, FALSE);
             return;
         }
@@ -38,13 +43,8 @@ public class td_act_ffile_af
         bool success = archivesys.ArchiveFile(cdkey, fname);
 
         if (success)
-        {
             NWScript.SetLocalInt(oPC, CRET_INT, TRUE);
-        }
         else
-        {
             NWScript.SetLocalInt(oPC, CRET_INT, FALSE);
-        }
-
     }
 }

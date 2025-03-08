@@ -23,6 +23,6 @@ public static class EffectWhitelist
         EffectType.ElementalShield,
         EffectType.Polymorph,
         EffectType.Sanctuary,
-        EffectType.Concealment,
+        EffectType.Concealment
     };
 }

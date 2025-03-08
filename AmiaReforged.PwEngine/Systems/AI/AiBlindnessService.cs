@@ -1,7 +1,5 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
-using Anvil.Services;
-using NLog.Fluent;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.AI;
@@ -20,8 +18,8 @@ public class AiBlindnessService
         if (obj.Object is not NwCreature creature) return;
 
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
-        
-        NWScript.DeleteLocalInt(creature, "AI_BLINDNESS");
+
+        NWScript.DeleteLocalInt(creature, sVarName: "AI_BLINDNESS");
         creature.OnCombatRoundStart -= FightSomething;
     }
 
@@ -30,11 +28,11 @@ public class AiBlindnessService
         if (obj.Object is not NwCreature creature) return;
 
         if (creature.IsPlayerControlled || creature.IsDMAvatar) return;
-        
-        if(NWScript.GetLocalInt(creature, "AI_BLINDNESS") == 1) return;
-        
-        NWScript.SetLocalInt(creature, "AI_BLINDNESS", 1);
-        creature.SpeakString("*flails around blindly*");
+
+        if (NWScript.GetLocalInt(creature, sVarName: "AI_BLINDNESS") == 1) return;
+
+        NWScript.SetLocalInt(creature, sVarName: "AI_BLINDNESS", 1);
+        creature.SpeakString(message: "*flails around blindly*");
         creature.OnCombatRoundStart += FightSomething;
     }
 
@@ -44,23 +42,23 @@ public class AiBlindnessService
 
         if (creature.AttackTarget != null)
         {
-            creature.SpeakString("DEBUG: I have a target already.");
+            creature.SpeakString(message: "DEBUG: I have a target already.");
             return;
         }
 
         if (creature.IsPlayerControlled || creature.IsDMAvatar)
         {
-            creature.SpeakString("DEBUG: I am player controlled.");
+            creature.SpeakString(message: "DEBUG: I am player controlled.");
             return;
         }
 
-        creature.SpeakString("DEBUG: I'm looking for a target.");
+        creature.SpeakString(message: "DEBUG: I'm looking for a target.");
         List<NwCreature> nearbyHostiles = creature.GetNearestObjectsByType<NwCreature>()
             .Where(c => c.IsReactionTypeHostile(creature) && c.Distance(creature) <= 10f).ToList();
 
         creature.SpeakString($"DEBUG: I metagamed the fuck out of {nearbyHostiles.Count} hostiles nearby.");
         List<NwCreature> hostilesWeCanHear = nearbyHostiles.Where(c => creature.IsCreatureHeard(c)).ToList();
-        
+
         creature.SpeakString($"I can hear {hostilesWeCanHear.Count} hostiles nearby.");
 
         // Quicksort the list of hostiles by distance to the creature.

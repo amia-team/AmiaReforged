@@ -10,12 +10,13 @@ public class AppraiseSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int appraiseMod = playerCreature.GetSkillRank(Skill.Appraise!);
-        
+
         int result = roll + appraiseMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Appraise", roll, appraiseMod, result).GetRollResult());
+
+        playerCreature.SpeakString(
+            new SkillCheckString(skillName: "Appraise", roll, appraiseMod, result).GetRollResult());
     }
 }

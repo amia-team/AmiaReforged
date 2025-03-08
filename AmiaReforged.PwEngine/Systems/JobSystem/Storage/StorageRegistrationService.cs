@@ -57,3 +57,4 @@
 //         _manager.OpenWindow<LedgerView>(player);
 //     }
 // }
+

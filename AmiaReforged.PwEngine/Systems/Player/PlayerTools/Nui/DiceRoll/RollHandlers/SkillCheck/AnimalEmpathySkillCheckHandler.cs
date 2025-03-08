@@ -16,6 +16,7 @@ public class AnimalEmpathySkillCheckHandler : IRollHandler
 
         int result = roll + appraiseMod;
 
-        playerCreature.SpeakString(new SkillCheckString("Animal Empathy", roll, appraiseMod, result).GetRollResult());
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Animal Empathy", roll, appraiseMod, result)
+            .GetRollResult());
     }
 }

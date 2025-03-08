@@ -19,25 +19,25 @@ public class TrapService
     private const string TangleTrapComponent = "itm_sc_trazors";
     private const string NegativeTrapComponent = "itm_sc_ninducer";
     private const string SpikeTrapComponent = "itm_sc_aconcent";
-    
+
     private const string TrapPlacementScript = "evnt_set_trap";
     private const string TrapRecoverScript = "evnt_rec_trap";
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly Dictionary<TrapBaseType, string> _trapComponentDictionary;
 
     private readonly Dictionary<string, Dictionary<TrapBaseType, TrapBaseType>> _trapDictionary;
-    private readonly Dictionary<TrapBaseType, string> _trapComponentDictionary;
 
     public TrapService()
     {
-        EventsPlugin.SubscribeEvent("NWNX_ON_TRAP_SET_AFTER", TrapPlacementScript);
+        EventsPlugin.SubscribeEvent(evt: "NWNX_ON_TRAP_SET_AFTER", TrapPlacementScript);
         // EventsPlugin.SubscribeEvent("NWNX_ON_TRAP_RECOVER_AFTER", TrapRecoverScript);
 
         NwModule.Instance.OnAcquireItem += OnRecoverTrap;
-        _trapDictionary = new Dictionary<string, Dictionary<TrapBaseType, TrapBaseType>>
+        _trapDictionary = new()
         {
             {
-                ElectricTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
+                ElectricTrapComponent, new()
                 {
                     { TrapBaseType.MinorElectrical, TrapBaseType.AverageElectrical },
                     { TrapBaseType.AverageElectrical, TrapBaseType.StrongElectrical },
@@ -46,7 +46,7 @@ public class TrapService
                 }
             },
             {
-                FireTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
+                FireTrapComponent, new()
                 {
                     { TrapBaseType.MinorFire, TrapBaseType.AverageFire },
                     { TrapBaseType.AverageFire, TrapBaseType.StrongFire },
@@ -55,7 +55,7 @@ public class TrapService
                 }
             },
             {
-                SonicTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
+                SonicTrapComponent, new()
                 {
                     { TrapBaseType.MinorSonic, TrapBaseType.AverageSonic },
                     { TrapBaseType.AverageSonic, TrapBaseType.StrongSonic },
@@ -64,7 +64,7 @@ public class TrapService
                 }
             },
             {
-                ColdTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
+                ColdTrapComponent, new()
                 {
                     { TrapBaseType.MinorFrost, TrapBaseType.AverageFrost },
                     { TrapBaseType.AverageFrost, TrapBaseType.StrongFrost },
@@ -73,7 +73,7 @@ public class TrapService
                 }
             },
             {
-                GasTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
+                GasTrapComponent, new()
                 {
                     { TrapBaseType.MinorGas, TrapBaseType.AverageGas },
                     { TrapBaseType.AverageGas, TrapBaseType.StrongGas },
@@ -81,7 +81,7 @@ public class TrapService
                 }
             },
             {
-                HolyTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
+                HolyTrapComponent, new()
                 {
                     { TrapBaseType.MinorHoly, TrapBaseType.AverageHoly },
                     { TrapBaseType.AverageHoly, TrapBaseType.StrongHoly },
@@ -89,7 +89,7 @@ public class TrapService
                 }
             },
             {
-                TangleTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
+                TangleTrapComponent, new()
                 {
                     { TrapBaseType.MinorTangle, TrapBaseType.AverageTangle },
                     { TrapBaseType.AverageTangle, TrapBaseType.StrongTangle },
@@ -97,7 +97,7 @@ public class TrapService
                 }
             },
             {
-                NegativeTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
+                NegativeTrapComponent, new()
                 {
                     { TrapBaseType.MinorNegative, TrapBaseType.AverageNegative },
                     { TrapBaseType.AverageNegative, TrapBaseType.StrongNegative },
@@ -105,7 +105,7 @@ public class TrapService
                 }
             },
             {
-                SpikeTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
+                SpikeTrapComponent, new()
                 {
                     { TrapBaseType.MinorSpike, TrapBaseType.AverageSpike },
                     { TrapBaseType.AverageSpike, TrapBaseType.StrongSpike },
@@ -114,7 +114,7 @@ public class TrapService
             }
         };
 
-        _trapComponentDictionary = new Dictionary<TrapBaseType, string>
+        _trapComponentDictionary = new()
         {
             { TrapBaseType.MinorElectrical, ElectricTrapComponent },
             { TrapBaseType.AverageElectrical, ElectricTrapComponent },
@@ -165,26 +165,24 @@ public class TrapService
     {
         if (info.ObjectSelf is null)
         {
-            Log.Error("Couldn't get object self: Creature is null");
+            Log.Error(message: "Couldn't get object self: Creature is null");
             return;
         }
 
-        if (!info.ObjectSelf.IsLoginPlayerCharacter(out NwPlayer? player))
-        {
-            return;
-        }
+        if (!info.ObjectSelf.IsLoginPlayerCharacter(out NwPlayer? player)) return;
         NwCreature creature = player.LoginCreature!;
 
-        NwTrigger? trigger = creature.GetNearestObjectsByType<NwTrigger>().Where(t => t.TrapCreator == player).FirstOrDefault();
-        if(trigger is null)
+        NwTrigger? trigger = creature.GetNearestObjectsByType<NwTrigger>().Where(t => t.TrapCreator == player)
+            .FirstOrDefault();
+        if (trigger is null)
         {
-            Log.Error("Couldn't get trigger: Trigger is null");
+            Log.Error(message: "Couldn't get trigger: Trigger is null");
             return;
         }
-        
+
         TrapBaseType trapType = trigger.TrapBaseType;
         if (HasNoUpgradeComponentFor(trapType, creature)) return;
-        
+
         CreateTrapUpgrade(trapType, trigger, creature);
     }
 
@@ -204,31 +202,31 @@ public class TrapService
 
         if (component is null)
         {
-            Log.Error("Couldn't find component in inventory: Component is null");
+            Log.Error(message: "Couldn't find component in inventory: Component is null");
             return;
         }
 
         component.Destroy();
-        
+
         uint trap = NWScript.CreateTrapAtLocation((int)trapUpgrade, trigger.Location!);
         ObjectPlugin.SetTrapCreator(trap, creature);
-        
+
         trigger.Destroy();
 
         if (!creature.IsPlayerControlled(out NwPlayer? player)) return;
 
-        player.SendServerMessage("Your trap has been upgraded using a component from your inventory.");
+        player.SendServerMessage(message: "Your trap has been upgraded using a component from your inventory.");
     }
 
     [ScriptHandler(TrapRecoverScript)]
     public void OnRecoverAfter(CallInfo info)
     {
-        string itemString = EventsPlugin.GetEventData("TRAP_OBJECT_ID");
+        string itemString = EventsPlugin.GetEventData(tag: "TRAP_OBJECT_ID");
         NwItem? item = NWScript.StringToObject(itemString).ToNwObject<NwItem>();
-        
+
         if (item is null)
         {
-            Log.Error("Couldn't get item: Item is null");
+            Log.Error(message: "Couldn't get item: Item is null");
             return;
         }
 
@@ -237,15 +235,12 @@ public class TrapService
 
     private void OnRecoverTrap(ModuleEvents.OnAcquireItem obj)
     {
-        if (!obj.AcquiredBy.IsPlayerControlled(out NwPlayer? player))
-        {
-            return;
-        }
+        if (!obj.AcquiredBy.IsPlayerControlled(out NwPlayer? player)) return;
 
         if (obj.Item is null) return;
 
         if (NWScript.GetBaseItemType(obj.Item) != NWScript.BASE_ITEM_TRAPKIT) return;
-        
+
         NWScript.SetIdentified(obj.Item, NWScript.TRUE);
     }
 }

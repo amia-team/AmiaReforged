@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 namespace AmiaReforged.PwEngine;
 
 /// <summary>
-/// Implements a generic repository for database operations. For dependency injection purposes, use <see cref="RepositoryBuilder"/>.
+///     Implements a generic repository for database operations. For dependency injection purposes, use
+///     <see cref="RepositoryBuilder" />.
 /// </summary>
 /// <typeparam name="T"></typeparam>
 /// <typeparam name="TId"></typeparam>
 public class Repository<T, TId> : IRepository<T, TId> where T : class
 {
-    
     private readonly DbContext _context;
     private readonly DbSet<T> _dbSet;
 
@@ -20,15 +20,9 @@ public class Repository<T, TId> : IRepository<T, TId> where T : class
         _dbSet = _context.Set<T>();
     }
 
-    public async Task<T?> Get(TId id)
-    {
-        return await _dbSet.FindAsync(id);
-    }
+    public async Task<T?> Get(TId id) => await _dbSet.FindAsync(id);
 
-    public async Task<IEnumerable<T?>> GetAll()
-    {
-        return await _dbSet.ToListAsync();
-    }
+    public async Task<IEnumerable<T?>> GetAll() => await _dbSet.ToListAsync();
 
     public async Task Add(T entity)
     {

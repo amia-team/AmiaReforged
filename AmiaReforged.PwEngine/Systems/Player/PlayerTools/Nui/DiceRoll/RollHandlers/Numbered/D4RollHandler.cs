@@ -1,4 +1,5 @@
 ﻿// Keeps the color token more concise.
+
 using Anvil.API;
 using NWN.Core;
 
@@ -15,6 +16,6 @@ public class D4RollHandler : IRollHandler
         int roll = NWScript.d4();
 
         playerCreature.SpeakString(
-            new NumericDieString("D4", roll).GetRollResult());
+            new NumericDieString(rollType: "D4", roll).GetRollResult());
     }
 }

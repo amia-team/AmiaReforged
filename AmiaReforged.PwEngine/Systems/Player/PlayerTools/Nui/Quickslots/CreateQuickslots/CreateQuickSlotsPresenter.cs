@@ -10,11 +10,9 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Quickslots.Create
 
 public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
 {
-    private NuiWindow? _window;
-    private NwPlayer _player;
+    private readonly NwPlayer _player;
     private NuiWindowToken _token;
-    [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; }
-    [Inject] private Lazy<WindowDirector> WindowManager { get; set; }
+    private NuiWindow? _window;
 
 
     public CreateQuickSlotsPresenter(CreateQuickslotsView toolView, NwPlayer player)
@@ -22,6 +20,12 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
         _player = player;
         View = toolView;
     }
+
+    [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; }
+    [Inject] private Lazy<WindowDirector> WindowManager { get; set; }
+
+    public override CreateQuickslotsView View { get; }
+
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
         switch (eventData.EventType)
@@ -32,20 +36,16 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
         }
     }
 
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
+    public override NuiWindowToken Token() => _token;
 
-    public override CreateQuickslotsView View { get; }
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0, 0, 400, 300),
             Closable = true,
             Resizable = false,
-            Collapsed = false,
+            Collapsed = false
         };
     }
 
@@ -53,15 +53,14 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
     {
         // Create the window if it's null.
         if (_window == null)
-        {
             // Try to create the window if it doesn't exist.
             InitBefore();
-        }
 
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+            _player.SendServerMessage(
+                message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
@@ -69,7 +68,6 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
         _player.TryCreateNuiWindow(_window, out _token);
 
         Token().SetBindValue(View.QuickslotName, string.Empty);
-
     }
 
     private async void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
@@ -97,14 +95,15 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
         NwPlayer tokenPlayer = Token().Player;
         Guid playerId = PcKeyUtils.GetPcKey(tokenPlayer);
         byte[] serializedQuickbar = tokenPlayer.LoginCreature!.SerializeQuickbar()!;
-        
+
         if (Token().GetBindValue(View.QuickslotName) == string.Empty)
         {
-            tokenPlayer.SendServerMessage("You must enter a name for the quickslot.", ColorConstants.Red);
+            tokenPlayer.SendServerMessage(message: "You must enter a name for the quickslot.", ColorConstants.Red);
             return;
         }
 
-        await QuickslotLoader.Value.SavePlayerQuickslots(Token().GetBindValue(View.QuickslotName)!, serializedQuickbar, playerId);
+        await QuickslotLoader.Value.SavePlayerQuickslots(Token().GetBindValue(View.QuickslotName)!, serializedQuickbar,
+            playerId);
         await NwTask.SwitchToMainThread();
 
         Token().Close();

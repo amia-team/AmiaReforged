@@ -1,13 +1,12 @@
 ﻿using Anvil.API;
-using Npgsql.TypeMapping;
 using NWN.Core;
 
 namespace AmiaReforged.System.Dynamic.Quest;
 
 public class MiniQuestReward : IMiniQuestRewardStrategy
 {
-    private NwCreature? _questGiver;
     private NwPlayer? _player;
+    private NwCreature? _questGiver;
 
     public void DoRewardForEachItem(List<NwItem> questItems, NwCreature? questGiver, NwPlayer? player)
     {
@@ -39,9 +38,6 @@ public class MiniQuestReward : IMiniQuestRewardStrategy
     private void DoItemReward()
     {
         string itemReward = NWScript.GetLocalString(_questGiver, DynamicQuestLocals.MiniQuest.ItemReward);
-        if (itemReward != string.Empty)
-        {
-            NwItem.Create(itemReward, _player!.LoginCreature);
-        }
+        if (itemReward != string.Empty) NwItem.Create(itemReward, _player!.LoginCreature);
     }
 }

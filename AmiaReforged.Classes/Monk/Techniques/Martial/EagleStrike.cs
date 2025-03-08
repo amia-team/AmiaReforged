@@ -17,10 +17,10 @@ public static class EagleStrike
 
         if (path != null)
         {
-            AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
+            AugmentationApplier.ApplyAugmentations(path, technique, null, null, attackData);
             return;
         }
-        
+
         DoEagleStrike(attackData);
     }
 
@@ -32,7 +32,7 @@ public static class EagleStrike
         int effectDc = MonkUtilFunctions.CalculateMonkDc(monk);
         Effect eagleStrikeEffect = Effect.LinkEffects(Effect.ACDecrease(acDecreaseAmount),
             Effect.VisualEffect(VfxType.DurCessateNegative));
-        Effect eagleStrikeVfx = Effect.VisualEffect(VfxType.ComBloodSparkLarge);
+        Effect eagleStrikeVfx = Effect.VisualEffect(VfxType.ImpStarburstRed, false, 0.7f);
         eagleStrikeEffect.Tag = "eaglestrike_effect";
         eagleStrikeEffect.SubType = EffectSubType.Extraordinary;
 
@@ -46,11 +46,13 @@ public static class EagleStrike
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
 
         if (savingThrowResult is not SavingThrowResult.Failure) return;
-        
+
         // Prevent stacking, instead refresh effect
         foreach (Effect effect in targetCreature.ActiveEffects)
+        {
             if (effect.Tag == "eaglestrike_effect")
                 targetCreature.RemoveEffect(effect);
+        }
 
         // Apply effect
         targetCreature.ApplyEffect(EffectDuration.Temporary, eagleStrikeEffect, effectDuration);

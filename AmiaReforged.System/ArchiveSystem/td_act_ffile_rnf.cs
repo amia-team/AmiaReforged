@@ -15,32 +15,29 @@ public class td_act_ffile_rnf
     private const int TRUE = 1;
     private const int FALSE = 0;
 
-    [ScriptHandler("td_act_ffile_rnf")]
+    [ScriptHandler(scriptName: "td_act_ffile_rnf")]
     public void FPlusRenameFile(CallInfo cinfo)
     {
         NwObject oPC = cinfo.ObjectSelf;
         string cdkey = cinfo.ScriptParams[CARG_1];
-        int index = Int32.Parse(cinfo.ScriptParams[CARG_2]);
+        int index = int.Parse(cinfo.ScriptParams[CARG_2]);
         string newname = cinfo.ScriptParams[CARG_3];
 
         newname = newname.ToLower();
-        if (newname.Contains(".")) {
+        if (newname.Contains(value: "."))
+        {
             NWScript.SetLocalInt(oPC, CRET_INT, FALSE);
             return;
         }
+
         newname = newname + ".bic";
 
-        Td_act_file_ex archivesys = new Td_act_file_ex();
+        Td_act_file_ex archivesys = new();
         bool success = archivesys.RenameFile(cdkey, index, newname, FALSE);
 
         if (success)
-        {
             NWScript.SetLocalInt(oPC, CRET_INT, TRUE);
-        }
         else
-        {
             NWScript.SetLocalInt(oPC, CRET_INT, FALSE);
-        }
-
     }
 }

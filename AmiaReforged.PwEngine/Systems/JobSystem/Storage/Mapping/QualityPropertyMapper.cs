@@ -5,7 +5,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
 /// <summary>
-/// Maps from NWN Item properties to Job System item properties and vice versa.
+///     Maps from NWN Item properties to Job System item properties and vice versa.
 /// </summary>
 [ServiceBinding(typeof(QualityPropertyMapper))]
 public class QualityPropertyMapper : IMappingService<QualityEnum, IPQuality>

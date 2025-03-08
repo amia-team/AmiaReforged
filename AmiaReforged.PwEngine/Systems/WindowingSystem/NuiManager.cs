@@ -11,28 +11,44 @@ public sealed class NuiManager : IDisposable
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly InjectionService _injectionService;
-    private readonly WindowAutoCloseService _windowAutoCloseService;
-
-    private readonly List<INuiView> _nuiViews;
 
     private readonly Dictionary<NwPlayer, List<INuiController>> _nuiControllers = new();
+
+    private readonly List<INuiView> _nuiViews;
+    private readonly WindowAutoCloseService _windowAutoCloseService;
 
     public NuiManager(InjectionService injectionService, WindowAutoCloseService windowAutoCloseService,
         IEnumerable<INuiView> nuiViews)
     {
-        this._injectionService = injectionService;
-        this._windowAutoCloseService = windowAutoCloseService;
-        this._nuiViews = nuiViews.OrderBy(view => view.Title).ToList();
+        _injectionService = injectionService;
+        _windowAutoCloseService = windowAutoCloseService;
+        _nuiViews = nuiViews.OrderBy(view => view.Title).ToList();
 
         NwModule.Instance.OnNuiEvent += OnNuiEvent;
         NwModule.Instance.OnClientLeave += OnClientLeave;
     }
 
+    void IDisposable.Dispose()
+    {
+        foreach (List<INuiController> controllers in _nuiControllers.Values)
+        {
+            foreach (INuiController controller in controllers)
+            {
+                controller.Close();
+            }
+        }
+
+        _nuiControllers.Clear();
+    }
+
     /// <summary>
-    /// Opens a window view using the specified controller.
+    ///     Opens a window view using the specified controller.
     /// </summary>
     /// <param name="player">The player to show the window.</param>
-    /// <param name="configure">Additional configuration for the controller before it is initialized by the <see cref="NuiManager"/>.</param>
+    /// <param name="configure">
+    ///     Additional configuration for the controller before it is initialized by the
+    ///     <see cref="NuiManager" />.
+    /// </param>
     /// <typeparam name="TView">The type of view to open.</typeparam>
     /// <typeparam name="TController">The type of controller for the view.</typeparam>
     /// <returns>The created controller. Null if the client cannot render windows.</returns>
@@ -46,7 +62,7 @@ public sealed class NuiManager : IDisposable
             TController? controller = _injectionService.Inject(new TController
             {
                 View = view,
-                Token = token,
+                Token = token
             });
 
             configure?.Invoke(controller);
@@ -59,31 +75,25 @@ public sealed class NuiManager : IDisposable
     }
 
     /// <summary>
-    /// Opens a window view using the view's default controller.
+    ///     Opens a window view using the view's default controller.
     /// </summary>
     /// <param name="player">The player opening the window.</param>
     /// <typeparam name="T">The type of view to open.</typeparam>
     public void OpenWindow<T>(NwPlayer player) where T : NuiView<T>, new()
     {
         INuiView view = GetWindowFromType(typeof(T));
-        if (view != null)
-        {
-            OpenWindow(player, view);
-        }
+        if (view != null) OpenWindow(player, view);
     }
 
     /// <summary>
-    /// Opens a window view using the view's default controller.
+    ///     Opens a window view using the view's default controller.
     /// </summary>
     /// <param name="player">The player opening the window.</param>
     /// <param name="view">The view to open.</param>
     public void OpenWindow(NwPlayer player, INuiView view)
     {
         INuiController? controller = view.CreateDefaultController(player);
-        if (controller == null)
-        {
-            return;
-        }
+        if (controller == null) return;
 
         _injectionService.Inject(controller);
         InitController(controller, player);
@@ -93,22 +103,16 @@ public sealed class NuiManager : IDisposable
     {
         foreach (INuiView view in _nuiViews)
         {
-            if (view.GetType() == windowType)
-            {
-                return view;
-            }
+            if (view.GetType() == windowType) return view;
         }
 
-        Log.Error("Failed to find window of type {Type}", windowType.FullName);
+        Log.Error(message: "Failed to find window of type {Type}", windowType.FullName);
         return null;
     }
 
     private void InitController(INuiController? controller, NwPlayer player)
     {
-        if (controller.AutoClose)
-        {
-            _windowAutoCloseService.RegisterWindowForAutoClose(controller);
-        }
+        if (controller.AutoClose) _windowAutoCloseService.RegisterWindowForAutoClose(controller);
 
         controller.Init();
         _nuiControllers.AddElement(player, controller);
@@ -131,10 +135,7 @@ public sealed class NuiManager : IDisposable
                 }
             }
 
-            if (controller == null)
-            {
-                return;
-            }
+            if (controller == null) return;
 
             controller.ProcessEvent(eventData);
             if (eventData.EventType == NuiEventType.Close)
@@ -156,19 +157,6 @@ public sealed class NuiManager : IDisposable
 
             _nuiControllers.Remove(eventData.Player);
         }
-    }
-
-    void IDisposable.Dispose()
-    {
-        foreach (List<INuiController> controllers in _nuiControllers.Values)
-        {
-            foreach (INuiController controller in controllers)
-            {
-                controller.Close();
-            }
-        }
-
-        _nuiControllers.Clear();
     }
 
     public bool WindowIsOpen(NwPlayer player, Type type)

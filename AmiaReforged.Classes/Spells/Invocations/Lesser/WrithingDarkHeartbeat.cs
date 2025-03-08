@@ -1,5 +1,5 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Types;
+using AmiaReforged.Classes.Warlock;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
@@ -19,7 +19,8 @@ public class WrithingDarkHeartbeat
             {
                 SignalEvent(current, EventSpellCastAt(nwnObjectId, 998));
 
-                if (NwEffects.ResistSpell(caster, current) || GetHasSpellEffect(EFFECT_TYPE_ULTRAVISION, current) == TRUE || 
+                if (NwEffects.ResistSpell(caster, current) ||
+                    GetHasSpellEffect(EFFECT_TYPE_ULTRAVISION, current) == TRUE ||
                     GetHasSpellEffect(EFFECT_TYPE_TRUESEEING, current) == TRUE)
                 {
                     current = GetNextInPersistentObject(nwnObjectId);
@@ -28,14 +29,16 @@ public class WrithingDarkHeartbeat
 
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), current);
 
-                bool passedWillSave = WillSave(current, Warlock.CalculateDC(caster), 0, caster) == TRUE;
+                bool passedWillSave = WillSave(current, WarlockConstants.CalculateDc(caster), 0, caster) == TRUE;
 
                 if (passedWillSave)
                 {
-                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE), current);
+                    ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_WILL_SAVING_THROW_USE),
+                        current);
                     current = GetNextInPersistentObject(nwnObjectId);
                     continue;
                 }
+
                 if (!passedWillSave)
                 {
                     ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectBlindness(), current, 6f);

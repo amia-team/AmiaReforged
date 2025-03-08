@@ -1,10 +1,7 @@
 using System.Text;
 using Anvil.API;
-using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using NLog;
-using NWN.Core;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.BuffRemover;
 
@@ -14,8 +11,6 @@ public class BuffRemoverModel
     private const string ZoltanIsStupidMessage =
         "Well, this is embarrassing. Screenshot this and tell Zoltan he sucks.";
 
-    public List<string> Labels { get; set; } = new();
-    public List<Effect> RemovableEffects { get; private set; } = new();
     private readonly Dictionary<string, Effect> _labelDict = new();
 
     private readonly NwPlayer _player;
@@ -24,6 +19,9 @@ public class BuffRemoverModel
     {
         _player = player;
     }
+
+    public List<string> Labels { get; set; } = new();
+    public List<Effect> RemovableEffects { get; private set; } = new();
 
     public List<string> GetEffectLabels()
     {
@@ -87,7 +85,7 @@ public class BuffRemoverModel
         {
             _player.SendServerMessage(ZoltanIsStupidMessage,
                 ColorConstants.Red);
-            return new List<Effect>();
+            return new();
         }
 
         // First, we want all linked effects...Limit only one linked effect, because we will
@@ -141,12 +139,13 @@ public class BuffRemoverModel
         }
 
         Effect effect = _labelDict[Labels[clickArrayIndex]];
-        
+
         List<Effect> spellEffectList = character.ActiveEffects
-            .Where(e => e.Spell.Name.ToString() == effect.Spell.Name.ToString() && !e.Spell.ToString().IsNullOrEmpty() && e != effect).ToList();
-        
+            .Where(e => e.Spell.Name.ToString() == effect.Spell.Name.ToString() &&
+                        !e.Spell.ToString().IsNullOrEmpty() && e != effect).ToList();
+
         spellEffectList.ForEach(e => character.RemoveEffect(e));
-        
+
         character.RemoveEffect(effect);
     }
 }

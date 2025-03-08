@@ -20,17 +20,18 @@ public class WebhookSender
             using HttpClient httpClient = new();
             Dictionary<string, string> postParams = new()
             {
-                ["username"] = username,
-                ["content"] = message,
-                ["avatar_url"] = avatar
+                [key: "username"] = username,
+                [key: "content"] = message,
+                [key: "avatar_url"] = avatar
             };
 
             using FormUrlEncodedContent postContent = new(postParams);
             await httpClient.PostAsync(_webhookUri, postContent);
             await new NwTaskHelper().TrySwitchToMainThread();
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
-            Log.Error(ex, "Webhook is likely not correct, or not set");
+            Log.Error(ex, message: "Webhook is likely not correct, or not set");
         }
     }
 }

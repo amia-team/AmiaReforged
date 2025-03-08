@@ -14,7 +14,8 @@ public class SeeTheUnseen
             EffectUltravision()
         });
 
-        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, seeUnseenEffects, nwnObjectId, HoursToSeconds(GetCasterLevel(nwnObjectId)));
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, seeUnseenEffects, nwnObjectId,
+            HoursToSeconds(GetCasterLevel(nwnObjectId)));
         return 0;
     }
 }

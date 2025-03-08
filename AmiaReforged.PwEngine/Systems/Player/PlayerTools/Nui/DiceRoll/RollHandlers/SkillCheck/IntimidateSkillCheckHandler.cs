@@ -10,12 +10,13 @@ public class IntimidateSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int intimidateMod = playerCreature.GetSkillRank(Skill.Intimidate!);
-        
+
         int result = roll + intimidateMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Intimidate", roll, intimidateMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Intimidate", roll, intimidateMod, result)
+            .GetRollResult());
     }
 }

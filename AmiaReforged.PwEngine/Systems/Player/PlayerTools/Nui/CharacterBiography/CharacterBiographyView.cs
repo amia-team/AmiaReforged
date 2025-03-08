@@ -1,5 +1,4 @@
-﻿using AmiaReforged.Core.UserInterface;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using NuiUtils = AmiaReforged.PwEngine.Systems.WindowingSystem.NuiUtils;
 
@@ -7,61 +6,56 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.CharacterBiograph
 
 public sealed class CharacterBiographyView : ScryView<CharacterBiographyPresenter>, IToolWindow
 {
+    public readonly NuiBind<string> CharacterBiography = new(key: "character_biography");
+    public NuiButton DiscardButton = null!;
+
+
+    public NuiButton SaveButton = null!;
+
+
+    public CharacterBiographyView(NwPlayer player)
+    {
+        Presenter = new(this, player);
+
+        CategoryTag = "Character";
+    }
+
+    public override CharacterBiographyPresenter Presenter { get; protected set; }
     public string Id => "playertools.charbiography";
     public bool ListInPlayerTools => true;
     public bool RequiresPersistedCharacter => false;
     public string Title => "Character Biography";
     public string CategoryTag { get; }
 
-    public IScryPresenter ForPlayer(NwPlayer player)
-    {
-        return Presenter;
-    }
-
-
-    public readonly NuiBind<string> CharacterBiography = new NuiBind<string>("character_biography");
-
-
-    public NuiButton SaveButton = null!;
-    public NuiButton DiscardButton = null!;
-
-
-    public CharacterBiographyView(NwPlayer player)
-    {
-        Presenter = new CharacterBiographyPresenter(this, player);
-        
-        CategoryTag = "Character";
-    }
-
-    public override CharacterBiographyPresenter Presenter { get; protected set; }
+    public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 
     public override NuiLayout RootLayout()
     {
-        NuiColumn root = new NuiColumn
+        NuiColumn root = new()
         {
-            Children = new List<NuiElement>
+            Children = new()
             {
-                new NuiTextEdit("Edit Bio", CharacterBiography, 10000, true)
+                new NuiTextEdit(label: "Edit Bio", CharacterBiography, 10000, true)
                 {
                     WordWrap = true,
                     Height = 400f,
-                    Width = 400f,
+                    Width = 400f
                 },
                 new NuiRow
                 {
-                    Children = new List<NuiElement>
+                    Children = new()
                     {
-                        NuiUtils.Assign(new NuiButton("Save")
+                        NuiUtils.Assign(new(label: "Save")
                         {
-                            Id = "save",
+                            Id = "save"
                         }, out SaveButton),
-                        NuiUtils.Assign(new NuiButton("Discard Changes")
+                        NuiUtils.Assign(new(label: "Discard Changes")
                         {
-                            Id = "discard",
-                        }, out DiscardButton),
-                    },
-                },
-            },
+                            Id = "discard"
+                        }, out DiscardButton)
+                    }
+                }
+            }
         };
 
         return root;

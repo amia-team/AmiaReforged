@@ -10,12 +10,13 @@ public class OpenLockSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int openLockMod = playerCreature.GetSkillRank(Skill.OpenLock!);
-        
+
         int result = roll + openLockMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Open Lock", roll, openLockMod, result).GetRollResult());
+
+        playerCreature.SpeakString(
+            new SkillCheckString(skillName: "Open Lock", roll, openLockMod, result).GetRollResult());
     }
 }

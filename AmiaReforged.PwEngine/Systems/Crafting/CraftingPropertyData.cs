@@ -2,7 +2,6 @@
 using AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
 using Anvil.API;
 using Anvil.Services;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting;
@@ -12,7 +11,6 @@ public class CraftingPropertyData
 {
     public const int CasterWeapon1H = 9998;
     public const int CasterWeapon2H = 9999;
-    public Dictionary<int, IReadOnlyList<CraftingCategory>> Properties { get; } = new();
 
     public CraftingPropertyData()
     {
@@ -26,6 +24,8 @@ public class CraftingPropertyData
         SetupRangedWeapons();
         SetupAmmo();
     }
+
+    public Dictionary<int, IReadOnlyList<CraftingCategory>> Properties { get; } = new();
 
     private void SetupEquippedItems()
     {
@@ -54,7 +54,7 @@ public class CraftingPropertyData
         // This list of properties is different because natural armor has its own unique costs.
         List<CraftingCategory> properties = new()
         {
-            new CraftingCategory("natural_armor")
+            new(categoryId: "natural_armor")
             {
                 Label = "Armor",
                 Properties = new[]
@@ -136,7 +136,7 @@ public class CraftingPropertyData
         properties.Add(MeleeOnHitProperties.OnHits);
 
         // Gauntlets have another tier of massive criticals.
-        properties.Add(new CraftingCategory("massive_criticals")
+        properties.Add(new(categoryId: "massive_criticals")
         {
             Label = "Massive Criticals",
             Properties = new[]
@@ -266,7 +266,7 @@ public class CraftingPropertyData
                 GenericItemProperties.Regeneration,
                 AbilityProperties.Abilities,
                 //Ranged have extra Massive Critical options
-                new CraftingCategory("ranged_massive_criticals")
+                new(categoryId: "ranged_massive_criticals")
                 {
                     Label = "Massive Criticals",
                     Properties = new[]
@@ -317,7 +317,7 @@ public class CraftingPropertyData
             properties.AddRange(category.Properties);
         }
 
-        return (IReadOnlyList<CraftingProperty>)properties;
+        return properties;
     }
 
     public IReadOnlyList<CraftingProperty> UncategorizedPropertiesForNwItem(NwItem selection)

@@ -10,13 +10,14 @@ public class ConcentrationSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int concentrationMod = playerCreature.GetSkillRank(Skill.Concentration!);
-        
+
         int result = roll + concentrationMod;
-        
-        
-        playerCreature.SpeakString(new SkillCheckString("Concentration", roll, concentrationMod, result).GetRollResult());
+
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Concentration", roll, concentrationMod, result)
+            .GetRollResult());
     }
 }

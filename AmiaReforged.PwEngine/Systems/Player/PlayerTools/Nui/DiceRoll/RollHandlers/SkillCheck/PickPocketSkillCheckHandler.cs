@@ -10,12 +10,13 @@ public class PickPocketSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int pickPocketMod = playerCreature.GetSkillRank(Skill.PickPocket!);
-        
+
         int result = roll + pickPocketMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Pick Pocket", roll, pickPocketMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Pick Pocket", roll, pickPocketMod, result)
+            .GetRollResult());
     }
 }

@@ -1,13 +1,12 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using Anvil.API;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
 [ValidationRuleFor(Property = ItemPropertyType.SkillBonus)]
 public class SkillBonusValidator : IValidationRule
 {
-    private readonly List<string> _personalSkills = new List<string>
+    private readonly List<string> _personalSkills = new()
     {
         "Appraise",
         "Bluff",
@@ -21,7 +20,7 @@ public class SkillBonusValidator : IValidationRule
         "Open Lock",
         "Ride",
         "Tumble",
-        "Use Magic Device",
+        "Use Magic Device"
     };
 
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
@@ -82,10 +81,10 @@ public class SkillBonusValidator : IValidationRule
         List<SkillBonus> existingFreebies = skillsInItem.Where(x => x.Bonus == 5).ToList();
         bool hasMaxSkill = addedFreebies.Count > 0 || existingFreebies.Count > 0;
 
-        result = hasMaxSkill  ? ValidationEnum.LimitReached : result;
+        result = hasMaxSkill ? ValidationEnum.LimitReached : result;
         error = hasMaxSkill ? "Free personal skill bonus limit reached." : error;
 
-        return new ValidationResult
+        return new()
         {
             Result = result,
             ErrorMessage = error
@@ -123,7 +122,7 @@ public class SkillBonusValidator : IValidationRule
         result = anySkill ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
         error = anySkill ? "Skill already exists on this item." : string.Empty;
 
-        return new ValidationResult
+        return new()
         {
             Result = result,
             ErrorMessage = error
@@ -132,11 +131,6 @@ public class SkillBonusValidator : IValidationRule
 
     private class SkillBonus
     {
-        public static SkillBonus FromProperty(ItemProperty itemProperty)
-        {
-            return new SkillBonus(itemProperty);
-        }
-
         public SkillBonus(ItemProperty itemProperty)
         {
             ItemPropertyModel model = new()
@@ -149,7 +143,8 @@ public class SkillBonusValidator : IValidationRule
             Bonus = int.Parse(model.PropertyBonus);
         }
 
-        public string Skill { get; set; }
-        public int Bonus { get; set; }
+        public string Skill { get; }
+        public int Bonus { get; }
+        public static SkillBonus FromProperty(ItemProperty itemProperty) => new(itemProperty);
     }
 }

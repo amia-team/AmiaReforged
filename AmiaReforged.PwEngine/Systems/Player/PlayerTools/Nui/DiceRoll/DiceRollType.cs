@@ -64,10 +64,9 @@ public enum DiceRollType
     D12,
     D20,
     D100,
-    
+
     // Saving throws
     Fortitude,
     Reflex,
     Will
-    
 }

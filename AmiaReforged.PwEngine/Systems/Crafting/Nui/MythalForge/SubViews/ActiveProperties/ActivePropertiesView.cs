@@ -6,40 +6,40 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.Active
 public class ActivePropertiesView : IScryView
 {
     private const string RemovePropertyConst = "remove_property";
-    
-    public string RemoveProperty => RemovePropertyConst;
-    public IScryPresenter Presenter { get; }
-    
-    public NuiBind<string> PropertyNames { get; } = new("ip_names");
-    public NuiBind<string> PropertyPowerCosts { get; } = new("ip_power_costs");
-    public NuiBind<bool> Removable { get; } = new("ip_remove");
-    public NuiBind<int> PropertyCount { get; } = new("ip_count");
-    
+
 
     public ActivePropertiesView(IScryPresenter presenter)
     {
         Presenter = presenter;
     }
 
+    public string RemoveProperty => RemovePropertyConst;
+    public IScryPresenter Presenter { get; }
+
+    public NuiBind<string> PropertyNames { get; } = new(key: "ip_names");
+    public NuiBind<string> PropertyPowerCosts { get; } = new(key: "ip_power_costs");
+    public NuiBind<bool> Removable { get; } = new(key: "ip_remove");
+    public NuiBind<int> PropertyCount { get; } = new(key: "ip_count");
+
     public NuiLayout RootLayout()
     {
         List<NuiListTemplateCell> cells = new()
         {
-            new NuiListTemplateCell(new NuiLabel(PropertyNames)),
-            new NuiListTemplateCell(new NuiGroup
+            new(new NuiLabel(PropertyNames)),
+            new(new NuiGroup
             {
                 Element = new NuiLabel(PropertyPowerCosts)
                 {
                     HorizontalAlign = NuiHAlign.Center,
-                    VerticalAlign = NuiVAlign.Middle,
+                    VerticalAlign = NuiVAlign.Middle
                 },
                 Aspect = 1f
             })
             {
                 Width = 30f,
-                VariableSize = false,
+                VariableSize = false
             },
-            new NuiListTemplateCell(new NuiButtonImage("ir_cntrspell")
+            new(new NuiButtonImage(resRef: "ir_cntrspell")
             {
                 Id = RemovePropertyConst,
                 Enabled = Removable
@@ -48,9 +48,8 @@ public class ActivePropertiesView : IScryView
                 Width = 30f,
                 VariableSize = false
             }
-            
         };
-        
+
         return new NuiColumn
         {
             Children =
@@ -62,8 +61,7 @@ public class ActivePropertiesView : IScryView
                 }
             },
             Width = 400f,
-            Height = 400f,
-
+            Height = 400f
         };
     }
 }

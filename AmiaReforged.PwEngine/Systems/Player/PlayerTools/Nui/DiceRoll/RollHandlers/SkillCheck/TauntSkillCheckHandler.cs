@@ -10,12 +10,12 @@ public class TauntSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int tauntMod = playerCreature.GetSkillRank(Skill.Taunt!);
-        
+
         int result = roll + tauntMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Taunt", roll, tauntMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Taunt", roll, tauntMod, result).GetRollResult());
     }
 }

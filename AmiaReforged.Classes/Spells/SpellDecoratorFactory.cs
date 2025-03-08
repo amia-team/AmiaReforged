@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Anvil.Services;
 
@@ -9,7 +6,7 @@ namespace AmiaReforged.Classes.Spells;
 [ServiceBinding(typeof(SpellDecoratorFactory))]
 public class SpellDecoratorFactory
 {
-    private readonly Dictionary<Type, List<Type>> _decorators = new Dictionary<Type, List<Type>>();
+    private readonly Dictionary<Type, List<Type>> _decorators = new();
 
     public SpellDecoratorFactory()
     {
@@ -22,10 +19,7 @@ public class SpellDecoratorFactory
             var attribute = type.GetCustomAttribute<DecoratesSpell>();
             if (attribute != null)
             {
-                if (!_decorators.ContainsKey(attribute.SpellType))
-                {
-                    _decorators[attribute.SpellType] = new List<Type>();
-                }
+                if (!_decorators.ContainsKey(attribute.SpellType)) _decorators[attribute.SpellType] = new();
                 _decorators[attribute.SpellType].Add(type);
             }
         }
@@ -34,15 +28,14 @@ public class SpellDecoratorFactory
     public ISpell ApplyDecorators(ISpell spell)
     {
         Type spellType = spell.GetType();
-        
+
+        // Never actually null, but the compiler doesn't know that
         if (_decorators.TryGetValue(spellType, out List<Type>? decoratorTypes))
-        {
             foreach (Type decoratorType in decoratorTypes)
             {
-                spell = (ISpell)Activator.CreateInstance(decoratorType, spell);
+                spell = (ISpell)Activator.CreateInstance(decoratorType, spell)!;
             }
-        }
-        
+
         return spell;
     }
 }

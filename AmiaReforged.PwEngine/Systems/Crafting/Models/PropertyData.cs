@@ -32,7 +32,7 @@ public class PropertyData
             };
 
             // Damage die always follow fornat: xdy where x and y are integers...Only ever one of these... 
-            Match match = Regex.Match(model.Label, @"(\d+)d(\d+)");
+            Match match = Regex.Match(model.Label, pattern: @"(\d+)d(\d+)");
 
             // Split the label into the number of dice and the size of the die. It should have found something like 1d8, so split on the 'd'.
             string[] split = match.Value.Split('d');
@@ -58,7 +58,7 @@ public class PropertyData
             ResistanceType = incoming.SubTypeName;
 
             // Splits Resist_5/- into its constituent parts and selects the numeric component
-            ResistanceValue = int.Parse(incoming.PropertyBonus.Split("_")[1].Split("/")[0]);
+            ResistanceValue = int.Parse(incoming.PropertyBonus.Split(separator: "_")[1].Split(separator: "/")[0]);
         }
 
         public string ResistanceType { get; set; }
@@ -76,7 +76,7 @@ public class PropertyData
             };
 
             Class = model.SubTypeName;
-            string modelPropertyBonus = model.PropertyBonus.Replace("Level", "");
+            string modelPropertyBonus = model.PropertyBonus.Replace(oldValue: "Level", newValue: "");
             Level = int.Parse(modelPropertyBonus);
         }
 
@@ -93,8 +93,9 @@ public class PropertyData
             {
                 Property = property
             };
-            string trimmedLabel = model.Label.Replace("On Hit: ", "").Replace("Bonus_", "");
-            string[] split = trimmedLabel.Split(" ");
+            string trimmedLabel = model.Label.Replace(oldValue: "On Hit: ", newValue: "")
+                .Replace(oldValue: "Bonus_", newValue: "");
+            string[] split = trimmedLabel.Split(separator: " ");
             Type = split[0];
             SaveDc = split[1];
         }

@@ -15,67 +15,64 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook;
 
 public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
 {
-    [Inject] private Lazy<WindowDirector> WindowDirector { get; set; } = null!;
-    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; } = null!;
-    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; set; } = null!;
-
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private List<SpellbookViewModel?> _spellbooks = null!;
-    private List<SpellbookViewModel?>? _visibleSpellbooks = new();
-    
-    private NuiWindowToken _token = default;
-    private NuiWindow? _window;
-    
     private readonly NwPlayer _player;
+
+    private List<SpellbookViewModel?> _spellbooks = null!;
+
+    private NuiWindowToken _token;
+    private List<SpellbookViewModel?>? _visibleSpellbooks = new();
+    private NuiWindow? _window;
 
     public SpellbookListPresenter(SpellbookListView toolView, NwPlayer player)
     {
         View = toolView;
         _player = player;
     }
+
+    [Inject] private Lazy<WindowDirector> WindowDirector { get; set; } = null!;
+    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; } = null!;
+    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; set; } = null!;
+
+    public override SpellbookListView View { get; }
+
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0f, 100f, 400f, 600f),
+            Geometry = new NuiRect(0f, 100f, 400f, 600f)
         };
     }
 
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
+    public override NuiWindowToken Token() => _token;
 
-    public override SpellbookListView View { get; }
     public override void Create()
     {
         if (_window == null)
-        {
             // Try to create the window if it doesn't exist.
             InitBefore();
-        }
 
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+            _player.SendServerMessage(
+                message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
-        
+
         NwCreature? character = Token().Player.LoginCreature;
 
-        if (character == null)
-        {
-            return;
-        }
-        
+        if (character == null) return;
+
         if (!character.Classes.Any(c => c.Class is { IsSpellCaster: true, HasMemorizedSpells: true }))
         {
-            Token().Player.SendServerMessage("You don't have any classes that memorize spells, so you don't have any spellbooks.");
+            Token().Player
+                .SendServerMessage(
+                    message: "You don't have any classes that memorize spells, so you don't have any spellbooks.");
             Token().Close();
             return;
         }
@@ -85,6 +82,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         if (characterId == Guid.Empty)
         {
             Token().Player.SendServerMessage(
+                message:
                 "Could not source your character, so functionality may be limited. If you don't have a PC key, you'll need to enter the travel agency and try again.");
             return; // This is a temporary measure until we have a better way to handle this.
         }
@@ -128,25 +126,26 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
     private void OpenSelectedSpellbook(ModuleEvents.OnNuiEvent eventData)
     {
         SpellbookViewModel? selectedSpellbook = _visibleSpellbooks?[eventData.ArrayIndex];
-        if (selectedSpellbook == null)
-        {
-            return;
-        }
+        if (selectedSpellbook == null) return;
 
-        NWScript.SetLocalString(Token().Player.LoginCreature, "selected_spellbook", selectedSpellbook.Id.ToString());
+        NWScript.SetLocalString(Token().Player.LoginCreature, sVarName: "selected_spellbook",
+            selectedSpellbook.Id.ToString());
         Log.Info($"Stored spellbook id: {selectedSpellbook.Id}");
-        
+
         OpenSpellbookView view = new(Token().Player);
         OpenSpellbookPresenter presenter = view.Presenter;
         InjectionService? injector = AnvilCore.GetService<InjectionService>();
         if (injector is null)
         {
-            Token().Player.SendServerMessage("Failed to load the spellbook due to missing DI container. Screenshot this and report it as a bug.");
+            Token().Player
+                .SendServerMessage(
+                    message:
+                    "Failed to load the spellbook due to missing DI container. Screenshot this and report it as a bug.");
             return;
         }
-        
+
         injector.Inject(presenter);
-        
+
         WindowDirector.Value.OpenWindow(presenter);
         Token().Close();
     }
@@ -154,12 +153,9 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
     private void DeleteSelectedSpellbook(ModuleEvents.OnNuiEvent eventData)
     {
         SpellbookViewModel? selectedSpellbook = _visibleSpellbooks?[eventData.ArrayIndex];
-        if (selectedSpellbook == null)
-        {
-            return;
-        }
+        if (selectedSpellbook == null) return;
 
-        string pcIdString = NWScript.GetLocalString(Token().Player.LoginCreature, "pc_guid");
+        string pcIdString = NWScript.GetLocalString(Token().Player.LoginCreature, sVarName: "pc_guid");
         Guid pcId = Guid.Parse(pcIdString);
         SpellbookLoader.Value.DeleteSpellbook(selectedSpellbook.Id, pcId);
 
@@ -178,10 +174,12 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         InjectionService? injector = AnvilCore.GetService<InjectionService>();
         if (injector is null)
         {
-            _player.SendServerMessage("Failed to load the spellbook creator due to missing DI container. Screenshot this and report it as a bug.");
+            _player.SendServerMessage(
+                message:
+                "Failed to load the spellbook creator due to missing DI container. Screenshot this and report it as a bug.");
             return;
         }
-        
+
         injector.Inject(presenter);
         WindowDirector.Value.OpenWindow(presenter);
         Token().Close();

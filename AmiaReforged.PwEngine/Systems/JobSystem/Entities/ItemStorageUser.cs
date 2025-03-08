@@ -9,8 +9,8 @@ public class ItemStorageUser
     [Key] public long Id { get; set; }
 
     public long ItemStorageId { get; set; }
-    [ForeignKey("ItemStorageId")] public ItemStorage ItemStorage { get; set; }
-    
+    [ForeignKey(name: "ItemStorageId")] public ItemStorage ItemStorage { get; set; }
+
     public long WorldCharacterId { get; set; }
-    [ForeignKey("WorldCharacterId")] public WorldCharacter WorldCharacter { get; set; }
+    [ForeignKey(name: "WorldCharacterId")] public WorldCharacter WorldCharacter { get; set; }
 }

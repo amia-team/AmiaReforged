@@ -10,12 +10,13 @@ public class SetTrapSkillCheckHandler : IRollHandler
     {
         NwCreature? playerCreature = player.LoginCreature;
         if (playerCreature is null) return;
-        
+
         int roll = NWScript.d20();
         int setTrapMod = playerCreature.GetSkillRank(Skill.SetTrap!);
-        
+
         int result = roll + setTrapMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Set Trap", roll, setTrapMod, result).GetRollResult());
+
+        playerCreature.SpeakString(
+            new SkillCheckString(skillName: "Set Trap", roll, setTrapMod, result).GetRollResult());
     }
 }

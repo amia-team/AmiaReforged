@@ -5,11 +5,10 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge;
 
 public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
 {
-    private NuiWindow? _window;
-    private readonly NwPlayer _player;
     private readonly MythalForgePresenter _parent;
+    private readonly NwPlayer _player;
     private NuiWindowToken _token;
-    public override MythalLedgerView View { get; }
+    private NuiWindow? _window;
 
     public MythalLedgerPresenter(MythalForgePresenter parent, NwPlayer player, MythalLedgerView toolView)
     {
@@ -20,6 +19,8 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
         parent.ViewUpdated += UpdateLedger;
         parent.ForgeClosing += HandleClose;
     }
+
+    public override MythalLedgerView View { get; }
 
     private void HandleClose(MythalForgePresenter sender, EventArgs e)
     {
@@ -42,14 +43,11 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
         Token().SetBindValue(View.DivineMythalCount, senderModel.MythalCategoryModel.DivineMythals);
     }
 
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
+    public override NuiWindowToken Token() => _token;
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), "Mythal Ledger")
+        _window = new(View.RootLayout(), title: "Mythal Ledger")
         {
             Id = "mythal_ledger",
             Geometry = new NuiRect(1600, 500, 300, 300),
@@ -60,10 +58,7 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
 
     public override void Create()
     {
-        if (_window == null)
-        {
-            InitBefore();
-        }
+        if (_window == null) InitBefore();
 
         if (_window == null)
         {

@@ -1,5 +1,5 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Types;
+using AmiaReforged.Classes.Warlock;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Lesser;
@@ -18,12 +18,12 @@ public class FleeTheScene
         });
         IntPtr sanctuary = NwEffects.LinkEffectList(new List<IntPtr>
         {
-            EffectSanctuary(Warlock.CalculateDC(nwnObjectId)),
+            EffectSanctuary(WarlockConstants.CalculateDc(nwnObjectId)),
             EffectVisualEffect(VFX_DUR_SANCTUARY)
         });
 
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, haste, nwnObjectId, duration);
-        
+
         if (GetIsInCombat(nwnObjectId) == TRUE)
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, sanctuary, nwnObjectId, 3f);
     }

@@ -11,7 +11,13 @@ public static class AttackBonusProperties
     private const int MythalCostAb4 = 15000;
     private const int MythalCostAb5 = 35000;
 
-    public static readonly CraftingCategory AttackBonus = new("attack_bonus")
+    private const int MythalCostEnhancement1 = 2000;
+    private const int MythalCostEnhancement2 = 5000;
+    private const int MythalCostEnhancement3 = 15000;
+    private const int MythalCostEnhancement4 = 35000;
+    private const int MythalCostEnhancement5 = 75000;
+
+    public static readonly CraftingCategory AttackBonus = new(categoryId: "attack_bonus")
     {
         Label = "Attack Bonus",
         Properties = new[]
@@ -60,13 +66,7 @@ public static class AttackBonusProperties
         BaseDifficulty = 5
     };
 
-    private const int MythalCostEnhancement1 = 2000;
-    private const int MythalCostEnhancement2 = 5000;
-    private const int MythalCostEnhancement3 = 15000;
-    private const int MythalCostEnhancement4 = 35000;
-    private const int MythalCostEnhancement5 = 75000;
-
-    public static readonly CraftingCategory EnhancementBonus = new("enhancement_bonus")
+    public static readonly CraftingCategory EnhancementBonus = new(categoryId: "enhancement_bonus")
     {
         Label = "Enhancement Bonus",
         Properties = new[]

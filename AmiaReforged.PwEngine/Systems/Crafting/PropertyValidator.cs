@@ -10,11 +10,11 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 [ServiceBinding(typeof(PropertyValidator))]
 public class PropertyValidator
 {
-    readonly Dictionary<ItemPropertyType, IValidationRule> _validationRules;
+    private readonly Dictionary<ItemPropertyType, IValidationRule> _validationRules;
 
     public PropertyValidator()
     {
-        _validationRules = new Dictionary<ItemPropertyType, IValidationRule>();
+        _validationRules = new();
 
         LoadValidationRules();
     }
@@ -42,12 +42,10 @@ public class PropertyValidator
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
         if (!_validationRules.TryGetValue(incoming.ItemProperty.Property.PropertyType, out IValidationRule? operation))
-        {
-            return new ValidationResult
+            return new()
             {
                 Result = ValidationEnum.Valid
             };
-        }
 
         return operation.Validate(incoming, itemProperties, changelistProperties);
     }

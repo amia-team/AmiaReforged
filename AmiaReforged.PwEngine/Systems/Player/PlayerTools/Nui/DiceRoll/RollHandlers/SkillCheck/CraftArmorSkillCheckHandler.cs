@@ -15,7 +15,8 @@ public class CraftArmorSkillCheckHandler : IRollHandler
         int craftArmorMod = playerCreature.GetSkillRank(Skill.CraftArmor!);
 
         int result = roll + craftArmorMod;
-        
-        playerCreature.SpeakString(new SkillCheckString("Craft Armor", roll, craftArmorMod, result).GetRollResult());
+
+        playerCreature.SpeakString(new SkillCheckString(skillName: "Craft Armor", roll, craftArmorMod, result)
+            .GetRollResult());
     }
 }

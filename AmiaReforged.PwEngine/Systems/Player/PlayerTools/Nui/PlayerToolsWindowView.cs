@@ -6,65 +6,66 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui;
 
 public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
 {
-    
-    public override PlayerToolsWindowPresenter Presenter { get; protected set; }
+    // Value binds.
+    public readonly NuiBind<string> Search = new(key: "search_val");
+    public readonly NuiBind<int> WindowCount = new(key: "window_count");
+    public readonly NuiBind<string> WindowNames = new(key: "win_names");
+    public NuiButtonImage OpenWindowButton = null!;
+
+    // Buttons.
+    public NuiButtonImage SearchButton = null!;
+
     public PlayerToolsWindowView(NwPlayer player)
     {
-        Presenter = new PlayerToolsWindowPresenter(this, player);
+        Presenter = new(this, player);
     }
+
+    public override PlayerToolsWindowPresenter Presenter { get; protected set; }
+
     public override NuiLayout RootLayout()
     {
         List<NuiListTemplateCell> rowTemplate = new()
         {
-            new NuiListTemplateCell(new NuiButtonImage("dm_goto")
+            new(new NuiButtonImage(resRef: "dm_goto")
             {
                 Id = "btn_openwin",
                 Aspect = 1f,
-                Tooltip = "Open Window",
+                Tooltip = "Open Window"
             }.Assign(out OpenWindowButton))
             {
                 VariableSize = false,
-                Width = 35f,
+                Width = 35f
             },
-            new NuiListTemplateCell(new NuiLabel(WindowNames)
+            new(new NuiLabel(WindowNames)
             {
-                VerticalAlign = NuiVAlign.Middle,
-            }),
+                VerticalAlign = NuiVAlign.Middle
+            })
         };
 
         NuiColumn root = new()
         {
-            Children = new List<NuiElement>
+            Children = new()
             {
                 new NuiRow
                 {
                     Height = 40f,
-                    Children = new List<NuiElement>
+                    Children = new()
                     {
-                        new NuiTextEdit("Search for tools...", Search, 255, false),
-                        new NuiButtonImage("isk_search")
+                        new NuiTextEdit(label: "Search for tools...", Search, 255, false),
+                        new NuiButtonImage(resRef: "isk_search")
                         {
                             Id = "btn_search",
-                            Aspect = 1f,
-                        }.Assign(out SearchButton),
-                    },
+                            Aspect = 1f
+                        }.Assign(out SearchButton)
+                    }
                 },
                 new NuiList(rowTemplate, WindowCount)
                 {
-                    RowHeight = 35f,
-                },
-            },
+                    RowHeight = 35f
+                }
+            }
         };
 
         return root;
     }
-
-    // Value binds.
-    public readonly NuiBind<string> Search = new("search_val");
-    public readonly NuiBind<string> WindowNames = new NuiBind<string>("win_names");
-    public readonly NuiBind<int> WindowCount = new NuiBind<int>("window_count");
-    
-    // Buttons.
-    public NuiButtonImage SearchButton = null!;
-    public NuiButtonImage OpenWindowButton = null!;
 }

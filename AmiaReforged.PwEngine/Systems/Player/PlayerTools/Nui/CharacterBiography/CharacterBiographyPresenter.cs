@@ -6,9 +6,9 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.CharacterBiograph
 
 public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
 {
-    private NuiWindow? _window;
-    private NuiWindowToken _token;
     private readonly NwPlayer _player;
+    private NuiWindowToken _token;
+    private NuiWindow? _window;
 
     public CharacterBiographyPresenter(CharacterBiographyView toolView, NwPlayer player)
     {
@@ -16,16 +16,13 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
         View = toolView;
     }
 
-    public override NuiWindowToken Token()
-    {
-        return _token;
-    }
-
     public override CharacterBiographyView View { get; }
+
+    public override NuiWindowToken Token() => _token;
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), View.Title)
+        _window = new(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(500f, 100f, 470, 560f),
             Resizable = false
@@ -35,15 +32,14 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
     public override void Create()
     {
         if (_window == null)
-        {
             // Try to create the window if it doesn't exist.
             InitBefore();
-        }
 
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+            _player.SendServerMessage(
+                message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
@@ -72,13 +68,8 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
         if (eventData.ElementId == View.SaveButton.Id)
-        {
             SaveCharacterBiography();
-        }
-        else if (eventData.ElementId == View.DiscardButton.Id)
-        {
-            DiscardCharacterBiography();
-        }
+        else if (eventData.ElementId == View.DiscardButton.Id) DiscardCharacterBiography();
     }
 
     private void SaveCharacterBiography()
@@ -86,11 +77,9 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
         string? characterBio = Token().GetBindValue(View.CharacterBiography);
 
         NwCreature? character = Token().Player.LoginCreature;
-        if (character != null && characterBio != null)
-        {
-            character.Description = characterBio;
-        }
+        if (character != null && characterBio != null) character.Description = characterBio;
 
+        RaiseCloseEvent();
         Token().Player.ExportCharacter();
         Token().Close();
     }

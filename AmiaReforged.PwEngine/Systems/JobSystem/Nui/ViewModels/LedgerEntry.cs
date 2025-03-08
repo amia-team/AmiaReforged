@@ -12,11 +12,9 @@ public class LedgerEntry
     public int BaseValue { get; init; }
     public int TotalValue => BaseValue * Quantity;
     public List<LedgerItem> Items { get; set; }
-    
+
     // To string method
-    
-    public override string ToString()
-    {
-        return $"Type: {Type.ToString()}\n \t {Name} x{Quantity} @ {BaseValue} each = {TotalValue}";
-    }
+
+    public override string ToString() =>
+        $"Type: {Type.ToString()}\n \t {Name} x{Quantity} @ {BaseValue} each = {TotalValue}";
 }

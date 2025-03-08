@@ -9,6 +9,14 @@ public class ItemPropertyModel
     public string Label => ItemPropertyHelper.GameLabel(Property);
     public string BasePropertyLabel => GetBasePropertyLabel();
 
+    public string SubTypeName => GetSubTypeName();
+
+    public string PropertyBonus => GetPropertyBonus();
+
+    public string PropertyParam => GetPropertyParam();
+
+    public int GoldCost { get; set; }
+
     private string GetBasePropertyLabel()
     {
         string baseLabel = string.Empty;
@@ -17,22 +25,14 @@ public class ItemPropertyModel
         baseLabel += Property.Property.GameStrRef;
         return baseLabel;
     }
-    
-    public string SubTypeName => GetSubTypeName();
 
     private string GetSubTypeName() => Property.SubType?.Name.ToString() ?? string.Empty;
-
-    public string PropertyBonus => GetPropertyBonus();
 
     private string GetPropertyBonus() =>
         (Property.CostTableValue == null ? string.Empty : Property.CostTableValue.Label) ?? string.Empty;
 
-    public string PropertyParam => GetPropertyParam();
-
     private string GetPropertyParam() =>
         (Property.Param1TableValue == null ? string.Empty : Property.Param1TableValue.Label) ?? string.Empty;
-
-    public int GoldCost { get; set; }
 
 
     // implicit operator to map back to ItemProperty
