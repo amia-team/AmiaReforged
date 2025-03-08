@@ -156,6 +156,7 @@ public static class SwingingCenser
         
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        
         int abBonus = monkLevel switch
         {
             >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
@@ -163,6 +164,10 @@ public static class SwingingCenser
             MonkLevel.KiFocusIii => 4,
             _ => 1
         };
+        Effect abBonusEffect = Effect.LinkEffects(Effect.AttackIncrease(abBonus), 
+            Effect.VisualEffect(VfxType.DurCessatePositive));
+        Effect abBonusVfx = Effect.VisualEffect(VfxType.ImpHeadSonic);
+        TimeSpan effectDuration = NwTimeSpan.FromTurns(1);
         
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal,
                      false))
@@ -170,8 +175,12 @@ public static class SwingingCenser
             NwCreature creatureInShape = (NwCreature)nwObject;
 
             if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
+            
+            creatureInShape.ApplyEffect(EffectDuration.Temporary, abBonusEffect, effectDuration);
+            creatureInShape.ApplyEffect(EffectDuration.Instant, abBonusVfx);
         }
     }
+    
     /// <summary>
     /// Wholeness of Body pulses in a large area around the monk, healing allies.
     /// Each Ki Focus adds a pulse to the heal, to a maximum of four pulses.
