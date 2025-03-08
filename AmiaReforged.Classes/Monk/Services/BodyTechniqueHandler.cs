@@ -36,7 +36,6 @@ public class BodyTechniqueHandler
 
         if (!monk.KnowsFeat(bodyKiPointFeat) || monk.GetFeatRemainingUses(bodyKiPointFeat) < 1)
         {
-            wholenessData.PreventFeatUse = true;
             if (monk.IsPlayerControlled(out NwPlayer? player))
                 player.SendServerMessage
                 ($"Cannot use {wholenessData.Feat.Name} because your body ki is depleted.");
