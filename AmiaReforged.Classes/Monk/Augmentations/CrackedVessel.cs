@@ -71,6 +71,54 @@ public static class CrackedVessel
         negativeDamage += (short)damageAmount;
         damageData.SetDamageByType(DamageType.Negative, negativeDamage);
     }
+    
+    /// <summary>
+    /// Wholeness of Body unleashes 2d6 negative energy and physical damage in a large radius when the monk is injured,
+    /// 2d8 when badly wounded, and 2d10 when near death. Fortitude saving throw halves the damage. Each Ki Focus
+    /// multiplies the damage bonus, to a maximum of 8d6, 8d8, and 8d10 negative energy and physical damage.
+    /// </summary>
+    private static void AugmentWholeness(OnUseFeat wholenessData)
+    {
+        WholenessOfBody.DoWholenessOfBody(wholenessData);
+
+        NwCreature monk = wholenessData.Creature;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
+        int damageDice = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
+            MonkLevel.KiFocusIii => 8,
+            _ => 2
+        };
+        int damageSides = IsInjured(monk) ? 6 : IsBadlyWounded(monk) ? 8 : IsNearDeath(monk) ? 10 : 0;
+        Effect aoeVfx = MonkUtilFunctions.ResizedVfx(VfxType.FnfLosEvil30, RadiusSize.Large);
+        
+        monk.ApplyEffect(EffectDuration.Instant, aoeVfx);
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, false))
+        {
+            NwCreature creatureInShape = (NwCreature)nwObject;
+            if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
+            
+            CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.Fireball)!);
+            
+            SavingThrowResult savingThrowResult =
+                creatureInShape.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Negative, monk);
+
+            int damageAmount = Random.Shared.Roll(damageSides, damageDice);
+
+            if (savingThrowResult == SavingThrowResult.Success)
+            {
+                damageAmount /= 2;
+                creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+            }
+
+            Effect wholenessEffect = Effect.LinkEffects(Effect.Damage(damageAmount, DamageType.Negative),
+                Effect.Damage(damageAmount, DamageType.Piercing), Effect.VisualEffect(VfxType.ImpNegativeEnergy));
+            
+            creatureInShape.ApplyEffect(EffectDuration.Instant, wholenessEffect);
+        }
+    }
 
     private static void AugmentKiShout(OnSpellCast castData)
     {
@@ -79,10 +127,7 @@ public static class CrackedVessel
     private static void AugmentQuivering(OnSpellCast castData)
     {
     }
-
-    private static void AugmentWholeness(OnUseFeat wholenessData)
-    {
-    }
+    
     
     private static bool IsInjured(NwCreature monk)
     {

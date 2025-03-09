@@ -54,7 +54,7 @@ public static class MonkUtilFunctions
             VfxType.FnfLosEvil10 or (VfxType)1046 => RadiusSize.Medium,
             VfxType.FnfFireball => RadiusSize.Huge,
             VfxType.FnfElectricExplosion => RadiusSize.Gargantuan,
-            VfxType.FnfHowlOdd or VfxType.FnfHowlMind => RadiusSize.Colossal,
+            VfxType.FnfHowlOdd or VfxType.FnfHowlMind or VfxType.FnfLosEvil30 => RadiusSize.Colossal,
             _ => RadiusSize.Large
         };
 
