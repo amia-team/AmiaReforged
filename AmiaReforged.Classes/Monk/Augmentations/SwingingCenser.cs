@@ -233,15 +233,19 @@ public static class SwingingCenser
         }
     }
     
+    /// <summary>
+    /// Empty Body creates a soothing winds in a large area around the monk, granting allies 50% concealment and
+    /// 2 regeneration. Each Ki Focus increases the regeneration by 2, to a maximum of 8 regeneration.
+    /// </summary>
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int concealment = 50;
-        TimeSpan regenTime = TimeSpan.FromSeconds(6);
+        TimeSpan regenTime = NwTimeSpan.FromRounds(1);
 
         // Adjust as appropriate. 1 round per monk level.
-        TimeSpan effectTime = TimeSpan.FromSeconds(monkLevel * 6);
+        TimeSpan effectTime = NwTimeSpan.FromRounds(monkLevel);
         
         int regen = monkLevel switch
         {
