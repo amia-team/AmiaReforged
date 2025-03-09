@@ -259,9 +259,9 @@ public static class SwingingCenser
         Effect emptyBodyConcealment = Effect.Concealment(concealment);
         // Stand in VFX, change as appropriate
         Effect emptyBodyVfx = Effect.VisualEffect(VfxType.DurBlur);
-        Effect emptyLink = Effect.LinkEffects(emptyBodyConcealment, emptyBodyRegen, emptyBodyVfx);
+        Effect emptyBodyEffect = Effect.LinkEffects(emptyBodyConcealment, emptyBodyRegen, emptyBodyVfx);
         // Tag for later tracking
-        emptyLink.Tag = "EmptyBody2";
+        emptyBodyEffect.Tag = "emptybody_swingingcenser";
         
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large,
                      false))
@@ -270,7 +270,11 @@ public static class SwingingCenser
 
             if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
 
-            creatureInShape.ApplyEffect(EffectDuration.Temporary, emptyLink, effectTime);
+            foreach (Effect effect in creatureInShape.ActiveEffects)
+                if (effect.Tag == "emptybody_swingingcenser") 
+                    creatureInShape.RemoveEffect(effect);
+            
+            creatureInShape.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectTime);
         }
     }
 }
