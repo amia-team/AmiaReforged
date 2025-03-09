@@ -152,7 +152,7 @@ public static class CrashingMeteor
     }
 
     /// <summary>
-    ///     Wholeness of Body deals 2d6 elemental damage in a medium area round the monk, with a successful reflex save
+    ///     Wholeness of Body deals 2d6 elemental damage in a large area round the monk, with a successful reflex save
     ///     halving the damage. Each Ki Focus adds 2d6 damage to a maximum of 8d6 elemental damage.
     /// </summary>
     private static void AugmentWholeness(OnUseFeat wholenessData)
@@ -172,11 +172,11 @@ public static class CrashingMeteor
         };
         Effect elementalAoeVfx = elementalType switch
         {
-            DamageType.Fire => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Medium),
-            DamageType.Cold => MonkUtilFunctions.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Medium),
-            DamageType.Electrical => MonkUtilFunctions.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Medium),
-            DamageType.Acid => MonkUtilFunctions.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Medium),
-            _ => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Medium)
+            DamageType.Fire => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large),
+            DamageType.Cold => MonkUtilFunctions.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
+            DamageType.Electrical => MonkUtilFunctions.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
+            DamageType.Acid => MonkUtilFunctions.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
+            _ => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large)
         };
         Effect elementalDamageVfx = elementalType switch
         {
@@ -196,7 +196,7 @@ public static class CrashingMeteor
         };
 
         monk.ApplyEffect(EffectDuration.Instant, elementalAoeVfx);
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true,
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
