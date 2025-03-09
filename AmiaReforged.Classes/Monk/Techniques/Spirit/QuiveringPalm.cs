@@ -23,7 +23,11 @@ public static class QuiveringPalm
 
         DoQuiveringPalm(castData);
     }
-
+    
+    /// <summary>
+    /// On a successful melee touch attack against an enemy creature, the target must make a fortitude save or die.
+    /// Each use depletes a Spirit Ki Point.
+    /// </summary>
     public static void DoQuiveringPalm(OnSpellCast castData)
     {
         if (castData.TargetObject is not NwCreature targetCreature) return;

@@ -23,15 +23,18 @@ public static class KiBarrier
 
         DoKiBarrier(castData);
     }
-
+    
+    /// <summary>
+    /// The monk is given a damage reduction of 5/-. The barrier absorbs up to 10 points of physical damage for
+    /// every two monk levels and lasts for turns per monk level. Each use depletes a Body Ki Point.
+    /// </summary>
     public static void DoKiBarrier(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int damageReductionAmount = 5;
         int totalAbsorb = monkLevel / 2 * 10;
         Effect kiBarrierEffect = Effect.LinkEffects(
-            Effect.DamageReduction(damageReductionAmount, DamagePower.Plus20, totalAbsorb),
+            Effect.DamageReduction(5, DamagePower.Plus20, totalAbsorb),
             Effect.VisualEffect(VfxType.DurCessatePositive));
         kiBarrierEffect.SubType = EffectSubType.Supernatural;
         Effect kiBarrierVfx = Effect.VisualEffect(VfxType.ImpDeathWard, false, 0.7f);

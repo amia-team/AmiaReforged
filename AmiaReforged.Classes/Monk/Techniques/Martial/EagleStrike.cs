@@ -23,7 +23,11 @@ public static class EagleStrike
 
         DoEagleStrike(attackData);
     }
-
+    
+    /// <summary>
+    /// On two successful hits per round against an enemy creature, the target must succeed at a reflex save or suffer
+    /// a penalty of -2 to their armor class for two rounds.
+    /// </summary>
     public static void DoEagleStrike(OnCreatureAttack attackData)
     {
         NwCreature monk = attackData.Attacker;

@@ -23,7 +23,10 @@ public static class AxiomaticStrike
 
         DoAxiomaticStrike(attackData);
     }
-
+    
+    /// <summary>
+    /// Each successful hit deals +1 bonus physical damage. Every 10 monk levels increases the damage by +1.
+    /// </summary>
     public static void DoAxiomaticStrike(OnCreatureAttack attackData)
     {
         NwCreature monk = attackData.Attacker;

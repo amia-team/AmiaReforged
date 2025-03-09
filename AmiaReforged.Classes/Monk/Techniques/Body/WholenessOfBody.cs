@@ -7,9 +7,6 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Body;
 
-/// <summary>
-///     The monk can heal damage equal to twice her class level. Using this technique spends one body ki point.
-/// </summary>
 public static class WholenessOfBody
 {
     public static void CastWholenessOfBody(OnUseFeat wholenessData)
@@ -26,7 +23,10 @@ public static class WholenessOfBody
 
         DoWholenessOfBody(wholenessData);
     }
-
+    
+    /// <summary>
+    ///     The monk can heal damage equal to twice their class level. Each use depletes a Body Ki Point.
+    /// </summary>
     public static void DoWholenessOfBody(OnUseFeat wholenessData)
     {
         NwCreature monk = wholenessData.Creature;

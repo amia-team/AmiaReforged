@@ -23,7 +23,11 @@ public static class StunningStrike
 
         DoStunningStrike(attackData);
     }
-
+    
+    /// <summary>
+    /// On the first successful hit per round against an enemy creature, the target must succeed at a fortitude save
+    /// or be stunned for one round.
+    /// </summary>
     public static void DoStunningStrike(OnCreatureAttack attackData)
     {
         NwCreature monk = attackData.Attacker;
