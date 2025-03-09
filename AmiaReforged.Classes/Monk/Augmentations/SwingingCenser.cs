@@ -167,7 +167,7 @@ public static class SwingingCenser
         Effect abBonusEffect = Effect.LinkEffects(Effect.AttackIncrease(abBonus), 
             Effect.VisualEffect(VfxType.DurCessatePositive));
         Effect abBonusVfx = Effect.VisualEffect(VfxType.ImpHeadSonic);
-        TimeSpan effectDuration = NwTimeSpan.FromTurns(1);
+        TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
         
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal,
                      false))
