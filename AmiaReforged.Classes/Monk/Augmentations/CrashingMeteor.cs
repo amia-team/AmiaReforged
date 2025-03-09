@@ -43,7 +43,7 @@ public static class CrashingMeteor
     }
 
     /// <summary>
-    ///     Stunning Strike deals 2d6 elemental damage in a medium area around the target. The damage isn’t multiplied by
+    ///     Stunning Strike deals 2d6 elemental damage in a large area around the target. The damage isn’t multiplied by
     ///     critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental
     ///     damage.
     /// </summary>
@@ -64,11 +64,11 @@ public static class CrashingMeteor
         };
         Effect elementalAoeVfx = elementalType switch
         {
-            DamageType.Fire => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Medium),
-            DamageType.Cold => MonkUtilFunctions.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Medium),
-            DamageType.Electrical => MonkUtilFunctions.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Medium),
-            DamageType.Acid => MonkUtilFunctions.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Medium),
-            _ => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Medium)
+            DamageType.Fire => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large),
+            DamageType.Cold => MonkUtilFunctions.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
+            DamageType.Electrical => MonkUtilFunctions.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
+            DamageType.Acid => MonkUtilFunctions.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
+            _ => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large)
         };
         Effect elementalDamageVfx = elementalType switch
         {
@@ -88,7 +88,7 @@ public static class CrashingMeteor
         };
 
         attackData.Target.ApplyEffect(EffectDuration.Instant, elementalAoeVfx);
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true,
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
