@@ -24,8 +24,8 @@ public static class IroncladBull
             case TechniqueType.Wholeness:
                 AugmentWholeness(wholenessData);
                 break;
-            case TechniqueType.KiShout:
-                AugmentKiShout(castData);
+            case TechniqueType.Quivering:
+                AugmentQuivering(castData);
                 break;
             case TechniqueType.Stunning:
                 StunningStrike.DoStunningStrike(attackData);
@@ -36,12 +36,12 @@ public static class IroncladBull
             case TechniqueType.EmptyBody:
                 EmptyBody.DoEmptyBody(castData);
                 break;
-            case TechniqueType.Quivering:
-                QuiveringPalm.DoQuiveringPalm(castData);
+            case TechniqueType.KiShout:
+                KiShout.DoKiShout(castData);
                 break;
         }
     }
-    
+
     /// <summary>
     /// Eagle Strike has a 1% chance to regenerate a Body Ki Point. Each Ki Focus increases the chance by 1%,
     /// to a maximum of 4% chance.
@@ -120,8 +120,49 @@ public static class IroncladBull
         
         monk.ApplyEffect(EffectDuration.Permanent, Effect.TemporaryHitpoints(tempHpAmount));
     }
-
-    private static void AugmentKiShout(OnSpellCast castData)
+    
+    /// <summary>
+    /// Quivering Palm binds the target with Stonehold for one round if they fail a reflex saving throw.
+    /// Each Ki Focus increases the duration by one round, to a maximum of four rounds.
+    /// </summary>
+    private static void AugmentQuivering(OnSpellCast castData)
     {
+        QuiveringPalm.DoQuiveringPalm(castData);
+        
+        if (castData.TargetObject is not NwCreature targetCreature) return;
+        
+        NwCreature monk = (NwCreature)castData.Caster;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
+        int roundsAmount = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
+            MonkLevel.KiFocusIii => 4,
+            _ => 1
+        };
+
+        Effect quiveringEffect = Effect.LinkEffects(Effect.Paralyze(), Effect.VisualEffect(VfxType.DurStonehold));
+        // Base game paralysis is stopped by mind immunity, so we do our own freedom check
+        quiveringEffect.IgnoreImmunity = true;
+        
+        TimeSpan quiveringDuration = NwTimeSpan.FromRounds(roundsAmount);
+
+        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature).Result;
+        
+        if (touchAttackResult is TouchAttackResult.Miss) return;
+        
+        SavingThrowResult savingThrowResult =
+            targetCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Death, monk);
+
+        if (savingThrowResult is SavingThrowResult.Success)
+        {
+            targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
+            return;
+        }
+
+        if (targetCreature.IsImmuneTo(ImmunityType.Paralysis)) return;
+
+        targetCreature.ApplyEffect(EffectDuration.Temporary, quiveringEffect, quiveringDuration);
     }
 }
