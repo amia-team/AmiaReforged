@@ -75,10 +75,28 @@ public static class IroncladBull
     }
     
     /// <summary>
-    /// 
+    /// Ki Barrier grants 5/- physical damage resistance, with each Ki Focus increasing it by 5,
+    /// to a maximum of 20/- physical damage resistance.
     /// </summary>
     private static void AugmentKiBarrier(OnSpellCast castData)
     {
+        KiBarrier.DoKiBarrier(castData);
+        
+        NwCreature monk = (NwCreature)castData.Caster;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int resistanceAmount = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 10,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 15,
+            MonkLevel.KiFocusIii => 20,
+            _ => 5
+        };
+        Effect kiBarrierEffect = Effect.LinkEffects(Effect.DamageResistance(DamageType.Bludgeoning, resistanceAmount), 
+            Effect.DamageResistance(DamageType.Slashing, resistanceAmount), 
+            Effect.DamageResistance(DamageType.Piercing, resistanceAmount), Effect.VisualEffect(VfxType.DurCessatePositive));
+        TimeSpan effectDuration = NwTimeSpan.FromTurns(monkLevel);
+        
+        monk.ApplyEffect(EffectDuration.Temporary, kiBarrierEffect, effectDuration);
     }
     
     /// <summary>
