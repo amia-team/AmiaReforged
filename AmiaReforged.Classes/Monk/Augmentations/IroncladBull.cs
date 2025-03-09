@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
@@ -20,9 +21,6 @@ public static class IroncladBull
             case TechniqueType.KiBarrier:
                 AugmentKiBarrier(castData);
                 break;
-            case TechniqueType.EmptyBody:
-                AugmentEmptyBody(castData);
-                break;
             case TechniqueType.Wholeness:
                 AugmentWholeness(wholenessData);
                 break;
@@ -34,6 +32,9 @@ public static class IroncladBull
                 break;
             case TechniqueType.Axiomatic:
                 AxiomaticStrike.DoAxiomaticStrike(attackData);
+                break;
+            case TechniqueType.EmptyBody:
+                EmptyBody.DoEmptyBody(castData);
                 break;
             case TechniqueType.Quivering:
                 QuiveringPalm.DoQuiveringPalm(castData);
@@ -72,17 +73,34 @@ public static class IroncladBull
         if (d100Roll <= kiBodyRegenChance)
             monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
     }
-
+    
+    /// <summary>
+    /// 
+    /// </summary>
     private static void AugmentKiBarrier(OnSpellCast castData)
     {
     }
-
-    private static void AugmentEmptyBody(OnSpellCast castData)
-    {
-    }
-
+    
+    /// <summary>
+    /// Wholeness of Body grants 20 temporary hit points until removed. Each Ki Focus increases the amount of temporary
+    /// hit points by 20, to a maximum of 80 temporary hit points.
+    /// </summary>
     private static void AugmentWholeness(OnUseFeat wholenessData)
     {
+        WholenessOfBody.DoWholenessOfBody(wholenessData);
+        
+        NwCreature monk = wholenessData.Creature;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        
+        int tempHpAmount = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 40,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 60,
+            MonkLevel.KiFocusIii => 80,
+            _ => 20
+        };
+        
+        monk.ApplyEffect(EffectDuration.Permanent, Effect.TemporaryHitpoints(tempHpAmount));
     }
 
     private static void AugmentKiShout(OnSpellCast castData)
