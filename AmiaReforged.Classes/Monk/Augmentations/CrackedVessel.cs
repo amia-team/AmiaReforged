@@ -4,6 +4,7 @@ using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
+using NLog.Targets;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
@@ -38,8 +39,6 @@ public static class CrackedVessel
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(castData);
                 break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(technique), technique, null);
         }
     }
     
@@ -52,6 +51,8 @@ public static class CrackedVessel
     private static void AugmentAxiomatic(OnCreatureAttack attackData)
     {
         AxiomaticStrike.DoAxiomaticStrike(attackData);
+
+        if (attackData.Target is not NwCreature targetCreature) return;
 
         NwCreature monk = attackData.Attacker;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
@@ -70,6 +71,16 @@ public static class CrackedVessel
         
         negativeDamage += (short)damageAmount;
         damageData.SetDamageByType(DamageType.Negative, negativeDamage);
+        
+        if (monkLevel < MonkLevel.BodyKiPointsI || !attackData.KillingBlow) return;
+        
+        LocalVariableInt killCounter = monk.GetObjectVariable<LocalVariableInt>("crackedvessel_killcounter");
+        killCounter.Value++;
+
+        if (killCounter.Value < 3) return;
+            
+        monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
+        killCounter.Delete();
     }
     
     /// <summary>
