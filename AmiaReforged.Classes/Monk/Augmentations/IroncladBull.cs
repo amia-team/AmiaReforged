@@ -1,6 +1,8 @@
+using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
+using Anvil.API;
 using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
@@ -38,9 +40,37 @@ public static class IroncladBull
                 break;
         }
     }
-
+    
+    /// <summary>
+    /// Eagle Strike has a 1% chance to regenerate a Body Ki Point. Each Ki Focus increases the chance by 1%,
+    /// to a maximum of 4% chance.
+    /// </summary>
     private static void AugmentEagle(OnCreatureAttack attackData)
     {
+        EagleStrike.DoEagleStrike(attackData);
+        
+        NwCreature monk = attackData.Attacker;
+        
+        // Target must be a hostile creature
+        if (!monk.IsReactionTypeHostile((NwCreature)attackData.Target)) return;
+        
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        
+        // The effect only affects Body Ki Point recharge, so duh
+        if (monkLevel < MonkLevel.BodyKiPointsI) return;
+        
+        int kiBodyRegenChance = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
+            MonkLevel.KiFocusIii => 4,
+            _ => 1
+        };
+
+        int d100Roll = Random.Shared.Roll(100);
+        
+        if (d100Roll <= kiBodyRegenChance)
+            monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
     }
 
     private static void AugmentKiBarrier(OnSpellCast castData)
