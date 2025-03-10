@@ -258,10 +258,13 @@ public static class SwingingCenser
         Effect emptyBodyRegen = Effect.Regenerate(regen, regenTime);
         Effect emptyBodyConcealment = Effect.Concealment(concealment);
         // Stand in VFX, change as appropriate
-        Effect emptyBodyVfx = Effect.VisualEffect(VfxType.DurBlur);
+        Effect emptyBodyVfx = Effect.VisualEffect(VfxType.DurInvisibility);
         Effect emptyBodyEffect = Effect.LinkEffects(emptyBodyConcealment, emptyBodyRegen, emptyBodyVfx);
         // Tag for later tracking
         emptyBodyEffect.Tag = "emptybody_swingingcenser";
+        
+        monk.Location!.ApplyEffect(EffectDuration.Instant, 
+            Effect.VisualEffect(VfxType.FnfDispelGreater, false, 0.3f));
         
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large,
                      false))
