@@ -10,8 +10,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class CrashingMeteor
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnUseFeat? 
-            wholenessData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
@@ -25,7 +24,7 @@ public static class CrashingMeteor
                 AugmentKiShout(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(wholenessData);
+                AugmentWholeness(castData);
                 break;
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(castData);
@@ -155,11 +154,11 @@ public static class CrashingMeteor
     ///     Wholeness of Body deals 2d6 elemental damage in a large area round the monk, with a successful reflex save
     ///     halving the damage. Each Ki Focus adds 2d6 damage to a maximum of 8d6 elemental damage.
     /// </summary>
-    private static void AugmentWholeness(OnUseFeat wholenessData)
+    private static void AugmentWholeness(OnSpellCast castData)
     {
-        WholenessOfBody.DoWholenessOfBody(wholenessData);
+        WholenessOfBody.DoWholenessOfBody(castData);
 
-        NwCreature monk = wholenessData.Creature;
+        NwCreature monk = (NwCreature)castData.Caster;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);

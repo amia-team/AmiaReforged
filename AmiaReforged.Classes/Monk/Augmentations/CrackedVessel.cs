@@ -1,6 +1,7 @@
 using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
+using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -10,22 +11,18 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class CrackedVessel
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnUseFeat? 
-            wholenessData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
             case TechniqueType.Axiomatic:
                 AugmentAxiomatic(attackData);
                 break;
-            case TechniqueType.KiShout:
-                AugmentKiShout(castData);
-                break;
             case TechniqueType.Quivering:
                 AugmentQuivering(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(wholenessData);
+                AugmentWholeness(castData);
                 break;
             case TechniqueType.Stunning:
                 StunningStrike.DoStunningStrike(attackData);
@@ -38,6 +35,9 @@ public static class CrackedVessel
                 break;
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(castData);
+                break;
+            case TechniqueType.KiShout:
+                KiShout.DoKiShout(castData);
                 break;
         }
     }
@@ -88,11 +88,11 @@ public static class CrackedVessel
     /// 2d8 when badly wounded, and 2d10 when near death. Fortitude saving throw halves the damage. Each Ki Focus
     /// multiplies the damage bonus, to a maximum of 8d6, 8d8, and 8d10 negative energy and physical damage.
     /// </summary>
-    private static void AugmentWholeness(OnUseFeat wholenessData)
+    private static void AugmentWholeness(OnSpellCast castData)
     {
-        WholenessOfBody.DoWholenessOfBody(wholenessData);
+        WholenessOfBody.DoWholenessOfBody(castData);
 
-        NwCreature monk = wholenessData.Creature;
+        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int damageDice = monkLevel switch
@@ -129,10 +129,6 @@ public static class CrackedVessel
             
             creatureInShape.ApplyEffect(EffectDuration.Instant, wholenessEffect);
         }
-    }
-
-    private static void AugmentKiShout(OnSpellCast castData)
-    {
     }
 
     private static void AugmentQuivering(OnSpellCast castData)

@@ -9,27 +9,27 @@ namespace AmiaReforged.Classes.Monk.Techniques.Body;
 
 public static class WholenessOfBody
 {
-    public static void CastWholenessOfBody(OnUseFeat wholenessData)
+    public static void CastWholenessOfBody(OnSpellCast castData)
     {
-        NwCreature monk = wholenessData.Creature;
+        NwCreature monk = (NwCreature)castData.Caster;
         PathType? path = MonkUtilFunctions.GetMonkPath(monk);
         const TechniqueType technique = TechniqueType.Wholeness;
 
         if (path != null)
         {
-            AugmentationApplier.ApplyAugmentations(path, technique, null, wholenessData);
+            AugmentationApplier.ApplyAugmentations(path, technique, castData);
             return;
         }
 
-        DoWholenessOfBody(wholenessData);
+        DoWholenessOfBody(castData);
     }
     
     /// <summary>
     ///     The monk can heal damage equal to twice their class level. Each use depletes a Body Ki Point.
     /// </summary>
-    public static void DoWholenessOfBody(OnUseFeat wholenessData)
+    public static void DoWholenessOfBody(OnSpellCast castData)
     {
-        NwCreature monk = wholenessData.Creature;
+        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int healAmount = monkLevel * 2;
         Effect wholenessEffect = Effect.Heal(healAmount);

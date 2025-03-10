@@ -16,30 +16,30 @@ public static class AugmentationApplier
     /// <param name="wholenessData">Separate for Wholeness of Body, as an instant spell it uses other event data</param>
     /// <param name="attackData">Use for martial techniques</param>
     public static void ApplyAugmentations(PathType? path, TechniqueType technique, OnSpellCast? castData = null, 
-        OnUseFeat? wholenessData = null, OnCreatureAttack? attackData = null)
+        OnCreatureAttack? attackData = null)
     {
         switch (path)
         {
             case PathType.CrashingMeteor:
-                CrashingMeteor.ApplyAugmentations(technique, castData, wholenessData, attackData);
+                CrashingMeteor.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.SwingingCenser:
-                SwingingCenser.ApplyAugmentations(technique, castData, wholenessData, attackData);
+                SwingingCenser.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.CrystalTides:
-                CrystalTides.ApplyAugmentations(technique, castData, wholenessData, attackData);
+                CrystalTides.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.ChardalynSand:
-                ChardalynSand.ApplyAugmentations(technique, castData, wholenessData, attackData);
+                ChardalynSand.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.IroncladBull:
-                IroncladBull.ApplyAugmentations(technique, castData, wholenessData, attackData);
+                IroncladBull.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.CrackedVessel:
-                CrackedVessel.ApplyAugmentations(technique, castData, wholenessData, attackData);
+                CrackedVessel.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.EchoingValley:
-                EchoingValley.ApplyAugmentations(technique, castData, wholenessData, attackData);
+                EchoingValley.ApplyAugmentations(technique, castData, attackData);
                 break;
             default:
                 return;

@@ -7,8 +7,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class CrystalTides
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnUseFeat? 
-            wholenessData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
@@ -31,7 +30,7 @@ public static class CrystalTides
                 EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.Wholeness:
-                WholenessOfBody.DoWholenessOfBody(wholenessData);
+                WholenessOfBody.DoWholenessOfBody(castData);
                 break;
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(castData);

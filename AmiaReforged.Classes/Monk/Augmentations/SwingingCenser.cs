@@ -10,8 +10,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class SwingingCenser
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnUseFeat? 
-            wholenessData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
@@ -19,7 +18,7 @@ public static class SwingingCenser
                 AugmentStunning(attackData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(wholenessData);
+                AugmentWholeness(castData);
                 break;
             case TechniqueType.EmptyBody:
                 AugmentEmptyBody(castData);
@@ -185,9 +184,9 @@ public static class SwingingCenser
     /// Wholeness of Body pulses in a large area around the monk, healing allies.
     /// Each Ki Focus adds a pulse to the heal, to a maximum of four pulses.
     /// </summary>
-    private static void AugmentWholeness(OnUseFeat wholenessData)
+    private static void AugmentWholeness(OnSpellCast castData)
     {
-        NwCreature monk = wholenessData.Creature;
+        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int healAmount = monkLevel * 2;
 

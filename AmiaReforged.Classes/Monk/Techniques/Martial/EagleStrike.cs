@@ -17,7 +17,7 @@ public static class EagleStrike
 
         if (path != null)
         {
-            AugmentationApplier.ApplyAugmentations(path, technique, null, null, attackData);
+            AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
             return;
         }
 

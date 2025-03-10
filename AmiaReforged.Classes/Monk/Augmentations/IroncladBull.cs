@@ -10,8 +10,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class IroncladBull
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnUseFeat? 
-            wholenessData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
@@ -22,7 +21,7 @@ public static class IroncladBull
                 AugmentKiBarrier(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(wholenessData);
+                AugmentWholeness(castData);
                 break;
             case TechniqueType.Quivering:
                 AugmentQuivering(castData);
@@ -103,11 +102,11 @@ public static class IroncladBull
     /// Wholeness of Body grants 20 temporary hit points until removed. Each Ki Focus increases the amount of temporary
     /// hit points by 20, to a maximum of 80 temporary hit points.
     /// </summary>
-    private static void AugmentWholeness(OnUseFeat wholenessData)
+    private static void AugmentWholeness(OnSpellCast castData)
     {
-        WholenessOfBody.DoWholenessOfBody(wholenessData);
+        WholenessOfBody.DoWholenessOfBody(castData);
         
-        NwCreature monk = wholenessData.Creature;
+        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         
         int tempHpAmount = monkLevel switch
