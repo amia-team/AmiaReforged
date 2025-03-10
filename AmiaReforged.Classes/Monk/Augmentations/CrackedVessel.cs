@@ -131,11 +131,19 @@ public static class CrackedVessel
         }
     }
     
+    /// <summary>
+    /// Empty Body grants 5% physical damage immunity when the monk is injured, 10% when badly wounded, and 15% when
+    /// near death. This effect is only granted while the monk is in combat. Each Ki Focus grants 5% more physical
+    /// damage immunity, to a maximum of 20%, 25%, and 30% physical damage immunity.
+    /// </summary>
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
         EmptyBody.DoEmptyBody(castData);
 
         NwCreature monk = (NwCreature)castData.Caster;
+
+        if (!monk.IsInCombat) return;
+        
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int pctImmunityBonus = monkLevel switch
@@ -160,9 +168,14 @@ public static class CrackedVessel
         
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect,  effectDuration);
     }
-
+    
+    /// <summary>
+    /// Quivering Palm inflicts 5% negative energy and physical damage vulnerability for three rounds.
+    /// Each Ki Focus adds 5% to a maximum of 20%.
+    /// </summary>
     private static void AugmentQuivering(OnSpellCast castData)
     {
+        
     }
     
     
