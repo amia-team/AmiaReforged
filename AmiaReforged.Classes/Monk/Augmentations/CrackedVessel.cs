@@ -175,7 +175,42 @@ public static class CrackedVessel
     /// </summary>
     private static void AugmentQuivering(OnSpellCast castData)
     {
+        QuiveringPalm.DoQuiveringPalm(castData);
         
+        if (castData.TargetObject is not NwCreature targetCreature) return;
+
+        NwCreature monk = (NwCreature)castData.Caster;
+
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+
+        int pctVulnerability = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 10,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 15,
+            MonkLevel.KiFocusIii => 20,
+            _ => 5
+        };
+        Effect quiveringEffect = Effect.LinkEffects(
+            Effect.DamageImmunityDecrease(DamageType.Negative, pctVulnerability),
+            Effect.DamageImmunityDecrease(DamageType.Piercing, pctVulnerability),
+            Effect.DamageImmunityDecrease(DamageType.Slashing, pctVulnerability),
+            Effect.DamageImmunityDecrease(DamageType.Bludgeoning, pctVulnerability));
+        quiveringEffect.Tag = "crackedvessel_quiveringpalm";
+        
+        TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
+        
+        Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpNegativeEnergy, false, 0.7f);
+
+        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature).Result;
+
+        if (touchAttackResult is TouchAttackResult.Miss) return;
+
+        foreach (Effect effect in targetCreature.ActiveEffects)
+            if (effect.Tag == "crackedvessel_quiveringpalm") 
+                targetCreature.RemoveEffect(effect);
+        
+        targetCreature.ApplyEffect(EffectDuration.Temporary, quiveringEffect, effectDuration);
+        targetCreature.ApplyEffect(EffectDuration.Instant, quiveringVfx, effectDuration);
     }
     
     
