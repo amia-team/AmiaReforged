@@ -24,14 +24,14 @@ public static class CrackedVessel
             case TechniqueType.Wholeness:
                 AugmentWholeness(castData);
                 break;
+            case TechniqueType.EmptyBody:
+                AugmentEmptyBody(castData);
+                break;
             case TechniqueType.Stunning:
                 StunningStrike.DoStunningStrike(attackData);
                 break;
             case TechniqueType.Eagle:
                 EagleStrike.DoEagleStrike(attackData);
-                break;
-            case TechniqueType.EmptyBody:
-                EmptyBody.DoEmptyBody(castData);
                 break;
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(castData);
@@ -41,7 +41,7 @@ public static class CrackedVessel
                 break;
         }
     }
-    
+
     /// <summary>
     /// Axiomatic Strike deals 1d2 bonus negative energy damage when the monk is injured, 1d4 when badly wounded,
     /// and 1d6 when near death. In addition, every three killing blows made with this attack against living enemies
@@ -52,7 +52,7 @@ public static class CrackedVessel
     {
         AxiomaticStrike.DoAxiomaticStrike(attackData);
 
-        if (attackData.Target is not NwCreature targetCreature) return;
+        if (attackData.Target is not NwCreature) return;
 
         NwCreature monk = attackData.Attacker;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
@@ -129,6 +129,36 @@ public static class CrackedVessel
             
             creatureInShape.ApplyEffect(EffectDuration.Instant, wholenessEffect);
         }
+    }
+    
+    private static void AugmentEmptyBody(OnSpellCast castData)
+    {
+        EmptyBody.DoEmptyBody(castData);
+
+        NwCreature monk = (NwCreature)castData.Caster;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
+        int pctImmunityBonus = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 5,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 10,
+            MonkLevel.KiFocusIii => 15,
+            _ => 0
+        };
+        int pctImmunityBase = IsInjured(monk) ? 5 : IsBadlyWounded(monk) ? 10 : IsNearDeath(monk) ? 15 : 0;
+        int pctImmunityTotal = pctImmunityBase + pctImmunityBonus;
+        TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
+        Effect emptyBodyEffect = Effect.LinkEffects(Effect.DamageIncrease(pctImmunityTotal, DamageType.Piercing),
+            Effect.DamageIncrease(pctImmunityTotal, DamageType.Slashing),
+            Effect.DamageIncrease(pctImmunityTotal, DamageType.Bludgeoning));
+        emptyBodyEffect.Tag = "crackedvessel_emptybody";
+        
+
+        foreach (Effect effect in monk.ActiveEffects)
+            if (effect.Tag == "crackedvessel_emptybody") 
+                monk.RemoveEffect(effect);
+        
+        monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect,  effectDuration);
     }
 
     private static void AugmentQuivering(OnSpellCast castData)
