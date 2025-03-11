@@ -13,12 +13,12 @@ public class EchoingValleySummonHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public EchoingValleySummonHandler(EventService eventService)
+    public EchoingValleySummonHandler()
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
 
         if (environment == "live") return;
-        
+
         NwModule.Instance.OnAssociateAdd += OnEchoAdd;
         NwModule.Instance.OnAssociateRemove += OnEchoRemove;
         
@@ -58,7 +58,7 @@ public class EchoingValleySummonHandler
         {
             foreach (NwCreature associate in monk.Associates)
                 if (associate.ResRef is "summon_echo")
-                    await associate.SetIsDestroyable(false);
+                    associate.SetIsDestroyable(false);
 
             await NwTask.Delay(TimeSpan.FromMilliseconds(1));
 
@@ -66,7 +66,7 @@ public class EchoingValleySummonHandler
         
             foreach (NwCreature associate in monk.Associates)
                 if (associate.ResRef is "summon_echo")
-                    await associate.SetIsDestroyable(true);
+                    associate.SetIsDestroyable(true);
         }
     }
     
