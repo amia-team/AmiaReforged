@@ -1,6 +1,4 @@
-﻿using AmiaReforged.Classes.Monk.Constants;
-using AmiaReforged.Classes.Monk.Techniques.Body;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
@@ -13,13 +11,14 @@ public class EchoingValleySummonHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public EchoingValleySummonHandler()
+    public EchoingValleySummonHandler(EventService eventService)
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
 
         if (environment == "live") return;
         
         NwModule.Instance.OnAssociateAdd += OnEchoAdd;
+        eventService.SubscribeAll<OnAssociateAdd, OnAssociateAdd.Factory>(OnEchoAddAfter, EventCallbackType.After);
         
         Log.Info(message: "Monk Echoing Valley Summon Handler initialized.");
     }
@@ -38,13 +37,16 @@ public class EchoingValleySummonHandler
     }
 
     /// <summary>
-    /// Sets the echo undestroyable and hides them
+    /// Sets the old echoes undestroyable and hides new echoes from view
     /// </summary>
     private void OnEchoAdd(OnAssociateAdd eventData)
     {
         if (eventData.Associate.ResRef is not "summon_echo") return;
 
         NwCreature monk = eventData.Owner;
+        
+        // Hides the stupid "unsummoning creature" message
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, monk);
         
         eventData.Associate.
             ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurCutsceneInvisibility));
@@ -53,4 +55,22 @@ public class EchoingValleySummonHandler
             if (associate.Tag == "summon_echo")
                 associate.SetIsDestroyable(false);
     }
+    
+    /// <summary>
+    /// Sets the echoes destroyable again
+    /// </summary>
+    private void OnEchoAddAfter(OnAssociateAdd eventData)
+    {
+        if (eventData.Associate.ResRef is not "summon_echo") return;
+
+        NwCreature monk = eventData.Owner;
+        
+        // Shows the stupid "unsummoning creature" message again
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
+        
+        foreach (NwCreature associate in monk.Associates)
+            if (associate.Tag == "summon_echo")
+                associate.SetIsDestroyable(true);
+    }
+
 }
