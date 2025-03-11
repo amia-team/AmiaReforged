@@ -80,11 +80,10 @@ public static class EchoingValley
             
             if (summonLocation is null) return;
             
-            Effect summonEcho = Effect.SummonCreature("echo_echoingvalley", VfxType.ImpMagicProtection);
+            Effect summonEcho = Effect.SummonCreature("summon_echo", VfxType.ImpMagicProtection);
             TimeSpan summonDuration = NwTimeSpan.FromTurns(2);
 
             await monk.WaitForObjectContext();
-            
             summonLocation.ApplyEffect(EffectDuration.Temporary, summonEcho, summonDuration);
         }
     }
@@ -129,7 +128,7 @@ public static class EchoingValley
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
         {   
             // Must be echo and monk's associate
-            if (!monk.Associates.Contains(nwObject) || nwObject.ResRef != "echo_echoingvalley") continue;
+            if (!monk.Associates.Contains(nwObject) || nwObject.ResRef != "summon_echo") continue;
             
             nwObject.Location?.ApplyEffect(EffectDuration.Instant, kiShoutEffect);
         }
@@ -165,7 +164,6 @@ public static class EchoingValley
             TimeSpan summonDuration = NwTimeSpan.FromTurns(1);
 
             await monk.WaitForObjectContext();
-
             summonLocation.ApplyEffect(EffectDuration.Temporary, summonEcho, summonDuration);
         }
     }
