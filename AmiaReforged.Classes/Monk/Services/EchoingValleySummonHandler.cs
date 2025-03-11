@@ -36,6 +36,19 @@ public class EchoingValleySummonHandler
         echo.Location?.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDispel, false, 0.4f));
     }
 
+    [ScriptHandler("nw_ch_ac3")]
+    private void OnEchoCombatRoundEnd(CallInfo info)
+    {
+        if (info.ObjectSelf is not NwCreature echo) return;
+        if (echo.ResRef is not "summon_echo") return;
+
+        Effect echoDamageVfx = MonkUtilFunctions.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Medium);
+        Effect echoDamage = Effect.Damage(Random.Shared.Roll(6), DamageType.Sonic);
+        Effect echoEffect = Effect.LinkEffects(echoDamage, echoDamageVfx);
+        
+        echo.Location?.ApplyEffect(EffectDuration.Instant, echoEffect);
+    }
+
     /// <summary>
     /// Sets the old echoes undestroyable and hides new echoes from view
     /// </summary>
