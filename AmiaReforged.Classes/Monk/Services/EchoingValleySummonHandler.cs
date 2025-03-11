@@ -50,16 +50,16 @@ public class EchoingValleySummonHandler
         eventData.Associate.
             ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurCutsceneInvisibility));
         
-        StopEchoUnsummoning();
+        foreach (NwCreature associate in monk.Associates)
+            if (associate.ResRef is "summon_echo")
+                associate.SetIsDestroyable(false);
+        
+        /*StopEchoUnsummoning();
         
         return;
         
         async void StopEchoUnsummoning()
         {
-            foreach (NwCreature associate in monk.Associates)
-                if (associate.ResRef is "summon_echo")
-                    associate.SetIsDestroyable(false);
-
             await NwTask.Delay(TimeSpan.FromMilliseconds(1));
 
             if (!monk.IsValid) return;
@@ -67,7 +67,7 @@ public class EchoingValleySummonHandler
             foreach (NwCreature associate in monk.Associates)
                 if (associate.ResRef is "summon_echo")
                     associate.SetIsDestroyable(true);
-        }
+        }*/
     }
     
     private static void OnEchoRemove(OnAssociateRemove eventData)
