@@ -61,16 +61,20 @@ public static class EchoingValley
             MonkLevel.KiFocusIii => 4,
             _ => 1
         };
+        
+        // Check how many echoes monk has
+        int echoCount = monk.Associates.Count(associate => 
+            associate is { AssociateType: AssociateType.Summoned, Tag: "stunningstrike_echoingvalley" });
+        
+        // Return if capped out
+        if (echoCount <= echoCap) return;
+
+        SummonEcho();
+
+        return;
 
         async void SummonEcho()
         {
-            // Check how many echoes monk has
-            int echoCount = monk.Associates.Count(associate => 
-                associate is { AssociateType: AssociateType.Summoned, Tag: "stunningstrike_echoingvalley" });
-        
-            // Return if capped out
-            if (echoCount <= echoCap) return;
-        
             // Create the new echo and attach it as a summon
             Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 4f);
             Effect summonEcho = Effect.SummonCreature("echo", VfxType.FnfPwstun);
@@ -78,14 +82,7 @@ public static class EchoingValley
 
             await monk.WaitForObjectContext();
             summonLocation?.ApplyEffect(EffectDuration.Temporary,summonEcho, summonDuration);
-
-            /*newEcho.SetIsDestroyable(false, false);
-            newEcho.ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurCutsceneInvisibility));
-            newEcho.Location!.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfPwstun));
-        
-            monk.ControllingPlayer.AddToParty();*/
         }
-        
     }
     
     private static void AugmentEmptyBody(OnSpellCast castData)
