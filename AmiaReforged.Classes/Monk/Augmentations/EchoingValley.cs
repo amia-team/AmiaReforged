@@ -145,7 +145,7 @@ public static class EchoingValley
         
         NwCreature monk = (NwCreature)castData.Caster;
         
-        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature).Result;
+        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature);
 
         if (touchAttackResult == TouchAttackResult.Miss) return;
 

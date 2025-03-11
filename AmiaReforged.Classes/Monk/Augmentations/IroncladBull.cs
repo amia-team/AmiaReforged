@@ -147,7 +147,7 @@ public static class IroncladBull
         
         TimeSpan quiveringDuration = NwTimeSpan.FromRounds(roundsAmount);
 
-        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature).Result;
+        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature);
         
         if (touchAttackResult is TouchAttackResult.Miss) return;
         

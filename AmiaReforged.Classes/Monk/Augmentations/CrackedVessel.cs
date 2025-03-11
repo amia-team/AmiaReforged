@@ -201,7 +201,7 @@ public static class CrackedVessel
         
         Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpNegativeEnergy, false, 0.7f);
 
-        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature).Result;
+        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature);
 
         if (touchAttackResult is TouchAttackResult.Miss) return;
 
