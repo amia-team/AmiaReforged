@@ -2,13 +2,13 @@
 
     <PropertyGroup>
         <OutputType>Library</OutputType>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="NWN.Anvil" Version="8193.36.1" />
+      <PackageReference Include="NWN.Anvil" Version="8193.37.0" />
       <PackageReference Include="NWN.Anvil.TestRunner" Version="8193.36.1" />
     </ItemGroup>
 
