@@ -21,25 +21,20 @@ public class EchoingValleySummonHandler
         
         NwModule.Instance.OnAssociateAdd += OnEchoAdd;
         
-        NwCreature? echo = NwObject.FindObjectsWithTag<NwCreature>("summon_echo").FirstOrDefault();
-        if (echo != null)
-        {
-            echo.OnHeartbeat += OnEchoHeartbeat;
-        }
-        
         Log.Info(message: "Monk Echoing Valley Summon Handler initialized.");
     }
     
     /// <summary>
     /// Since the echo can't be seen, their location and presence is manifested with a vfx
     /// </summary>
-    private void OnEchoHeartbeat(CreatureEvents.OnHeartbeat eventData)
+    [ScriptHandler("nw_ch_ac1")]
+    private void OnEchoHeartbeat(CallInfo info)
     {
-        if (eventData.Creature.ResRef is not "summon_echo") return;
-        if (eventData.Creature.PlotFlag is false) return;
+        if (info.ObjectSelf is not NwCreature echo) return;
+        if (echo.ResRef is not "summon_echo") return;
+        if (echo.PlotFlag is false) return;
         
-        eventData.Creature.Location?.
-            ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDispel, false, 0.4f));
+        echo.Location?.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDispel, false, 0.4f));
     }
 
     /// <summary>
