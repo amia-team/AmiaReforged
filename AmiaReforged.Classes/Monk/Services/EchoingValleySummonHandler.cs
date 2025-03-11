@@ -43,10 +43,14 @@ public class EchoingValleySummonHandler
     private void OnEchoAdd(OnAssociateAdd eventData)
     {
         if (eventData.Associate.ResRef is not "summon_echo") return;
+
+        NwCreature monk = eventData.Owner;
         
         eventData.Associate.
             ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurCutsceneInvisibility));
-        eventData.Associate.SetIsDestroyable(false);
+        
+        foreach (NwCreature associate in monk.Associates)
+            if (associate.Tag == "summon_echo")
+                associate.SetIsDestroyable(false);
     }
-
 }
