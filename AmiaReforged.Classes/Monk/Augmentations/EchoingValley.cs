@@ -82,7 +82,8 @@ public static class EchoingValley
             
             if (summonLocation is null) return;
             
-            Effect summonEcho = Effect.SummonCreature("summon_echo", VfxType.ImpMagicProtection);
+            Effect summonEcho = Effect.SummonCreature("summon_echo", VfxType.ImpMagicProtection!, 
+                TimeSpan.FromSeconds(1), 0, VfxType.None);
             TimeSpan summonDuration = NwTimeSpan.FromTurns(2);
 
             await monk.WaitForObjectContext();
@@ -162,7 +163,7 @@ public static class EchoingValley
             
             if (summonLocation is null) return;
             
-            Effect summonEcho = Effect.SummonCreature(targetCreature.ResRef, VfxType.FnfPwstun);
+            Effect summonEcho = Effect.SummonCreature(targetCreature.ResRef, VfxType.FnfPwstun!);
             TimeSpan summonDuration = NwTimeSpan.FromTurns(1);
 
             await monk.WaitForObjectContext();
