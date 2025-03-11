@@ -24,9 +24,9 @@ public class CureMinorWounds : ISpell
         if (eventData.TargetObject == null) return;
 
         bool skipTouchAttack = NWScript.GetRacialType(eventData.TargetObject) != NWScript.RACIAL_TYPE_UNDEAD;
-        Task<TouchAttackResult> result = casterCreature.TouchAttackRanged(eventData.TargetObject, !skipTouchAttack);
+        TouchAttackResult result = casterCreature.TouchAttackRanged(eventData.TargetObject, !skipTouchAttack);
 
-        if (result.Result != TouchAttackResult.Hit || !skipTouchAttack) return;
+        if (result != TouchAttackResult.Hit || !skipTouchAttack) return;
 
 
         int healAmount = CalculateHealAmount(casterCreature);
