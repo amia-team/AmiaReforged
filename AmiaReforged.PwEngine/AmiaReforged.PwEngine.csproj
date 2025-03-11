@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
@@ -16,8 +16,8 @@
         </PackageReference>
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.15"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.11"/>
-        <PackageReference Include="NWN.Anvil" Version="8193.36.1"/>
-        <PackageReference Include="NWN.Core" Version="8193.36.1"/>
+        <PackageReference Include="NWN.Anvil" Version="8193.37.0" />
+        <PackageReference Include="NWN.Core" Version="8193.37.2" />
     </ItemGroup>
 
     <ItemGroup>
