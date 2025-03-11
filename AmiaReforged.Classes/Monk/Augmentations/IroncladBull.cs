@@ -15,16 +15,16 @@ public static class IroncladBull
         switch (technique)
         {
             case TechniqueType.Eagle:
-                AugmentEagle(attackData);
+                AugmentEagleStrike(attackData);
                 break;
             case TechniqueType.KiBarrier:
                 AugmentKiBarrier(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(castData);
+                AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.Quivering:
-                AugmentQuivering(castData);
+                AugmentQuiveringPalm(castData);
                 break;
             case TechniqueType.Stunning:
                 StunningStrike.DoStunningStrike(attackData);
@@ -45,7 +45,7 @@ public static class IroncladBull
     /// Eagle Strike has a 1% chance to regenerate a Body Ki Point. Each Ki Focus increases the chance by 1%,
     /// to a maximum of 4% chance.
     /// </summary>
-    private static void AugmentEagle(OnCreatureAttack attackData)
+    private static void AugmentEagleStrike(OnCreatureAttack attackData)
     {
         EagleStrike.DoEagleStrike(attackData);
         
@@ -102,7 +102,7 @@ public static class IroncladBull
     /// Wholeness of Body grants 20 temporary hit points until removed. Each Ki Focus increases the amount of temporary
     /// hit points by 20, to a maximum of 80 temporary hit points.
     /// </summary>
-    private static void AugmentWholeness(OnSpellCast castData)
+    private static void AugmentWholenessOfBody(OnSpellCast castData)
     {
         WholenessOfBody.DoWholenessOfBody(castData);
         
@@ -124,7 +124,7 @@ public static class IroncladBull
     /// Quivering Palm binds the target with Stonehold for one round if they fail a reflex saving throw.
     /// Each Ki Focus increases the duration by one round, to a maximum of four rounds.
     /// </summary>
-    private static void AugmentQuivering(OnSpellCast castData)
+    private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
         QuiveringPalm.DoQuiveringPalm(castData);
         

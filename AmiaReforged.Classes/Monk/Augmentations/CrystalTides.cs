@@ -12,10 +12,10 @@ public static class CrystalTides
         switch (technique)
         {
             case TechniqueType.Stunning:
-                AugmentStunning(attackData);
+                AugmentStunningStrike(attackData);
                 break;
             case TechniqueType.Axiomatic:
-                AugmentAxiomatic(attackData);
+                AugmentAxiomaticStrike(attackData);
                 break;
             case TechniqueType.KiShout:
                 AugmentKiShout(castData);
@@ -24,7 +24,7 @@ public static class CrystalTides
                 AugmentEmptyBody(castData);
                 break;
             case TechniqueType.Quivering:
-                AugmentQuivering(castData);
+                AugmentQuiveringPalm(castData);
                 break;
             case TechniqueType.Eagle:
                 EagleStrike.DoEagleStrike(attackData);
@@ -38,11 +38,11 @@ public static class CrystalTides
         }
     }
 
-    private static void AugmentStunning(OnCreatureAttack attackData)
+    private static void AugmentStunningStrike(OnCreatureAttack attackData)
     {
     }
 
-    private static void AugmentAxiomatic(OnCreatureAttack attackData)
+    private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
     {
     }
 
@@ -54,7 +54,7 @@ public static class CrystalTides
     {
     }
 
-    private static void AugmentQuivering(OnSpellCast castData)
+    private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
     }
 }

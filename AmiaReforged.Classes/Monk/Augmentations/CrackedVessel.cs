@@ -16,13 +16,13 @@ public static class CrackedVessel
         switch (technique)
         {
             case TechniqueType.Axiomatic:
-                AugmentAxiomatic(attackData);
+                AugmentAxiomaticStrike(attackData);
                 break;
             case TechniqueType.Quivering:
-                AugmentQuivering(castData);
+                AugmentQuiveringPalm(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(castData);
+                AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.EmptyBody:
                 AugmentEmptyBody(castData);
@@ -48,7 +48,7 @@ public static class CrackedVessel
     /// regenerates a Body Ki Point. Each Ki Focus multiplies the damage bonus,
     /// to a maximum of 4d2, 4d4, and 4d6 bonus negative energy damage.
     /// </summary>
-    private static void AugmentAxiomatic(OnCreatureAttack attackData)
+    private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
     {
         AxiomaticStrike.DoAxiomaticStrike(attackData);
 
@@ -88,7 +88,7 @@ public static class CrackedVessel
     /// 2d8 when badly wounded, and 2d10 when near death. Fortitude saving throw halves the damage. Each Ki Focus
     /// multiplies the damage bonus, to a maximum of 8d6, 8d8, and 8d10 negative energy and physical damage.
     /// </summary>
-    private static void AugmentWholeness(OnSpellCast castData)
+    private static void AugmentWholenessOfBody(OnSpellCast castData)
     {
         WholenessOfBody.DoWholenessOfBody(castData);
 
@@ -173,7 +173,7 @@ public static class CrackedVessel
     /// Quivering Palm inflicts 5% negative energy and physical damage vulnerability for three rounds.
     /// Each Ki Focus adds 5% to a maximum of 20%.
     /// </summary>
-    private static void AugmentQuivering(OnSpellCast castData)
+    private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
         QuiveringPalm.DoQuiveringPalm(castData);
         

@@ -13,10 +13,10 @@ public static class ChardalynSand
         switch (technique)
         {
             case TechniqueType.Stunning:
-                AugmentStunning(attackData);
+                AugmentStunningStrike(attackData);
                 break;
             case TechniqueType.Axiomatic:
-                AugmentAxiomatic(attackData);
+                AugmentAxiomaticStrike(attackData);
                 break;
             case TechniqueType.KiBarrier:
                 AugmentKiBarrier(castData);
@@ -39,11 +39,11 @@ public static class ChardalynSand
         }
     }
 
-    private static void AugmentStunning(OnCreatureAttack attackData)
+    private static void AugmentStunningStrike(OnCreatureAttack attackData)
     {
     }
 
-    private static void AugmentAxiomatic(OnCreatureAttack attackData)
+    private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
     {
     }
 

@@ -15,16 +15,16 @@ public static class CrashingMeteor
         switch (technique)
         {
             case TechniqueType.Stunning:
-                AugmentStunning(attackData);
+                AugmentStunningStrike(attackData);
                 break;
             case TechniqueType.Axiomatic:
-                AugmentAxiomatic(attackData);
+                AugmentAxiomaticStrike(attackData);
                 break;
             case TechniqueType.KiShout:
                 AugmentKiShout(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(castData);
+                AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(castData);
@@ -46,7 +46,7 @@ public static class CrashingMeteor
     ///     critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental
     ///     damage.
     /// </summary>
-    private static void AugmentStunning(OnCreatureAttack attackData)
+    private static void AugmentStunningStrike(OnCreatureAttack attackData)
     {
         StunningStrike.DoStunningStrike(attackData);
 
@@ -129,7 +129,7 @@ public static class CrashingMeteor
     ///     Axiomatic Strike deals +1 bonus elemental damage to the target, with an additional +1 for every Ki Focus,
     ///     to a maximum of +4 elemental damage.
     /// </summary>
-    private static void AugmentAxiomatic(OnCreatureAttack attackData)
+    private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
     {
         AxiomaticStrike.DoAxiomaticStrike(attackData);
 
@@ -154,7 +154,7 @@ public static class CrashingMeteor
     ///     Wholeness of Body deals 2d6 elemental damage in a large area round the monk, with a successful reflex save
     ///     halving the damage. Each Ki Focus adds 2d6 damage to a maximum of 8d6 elemental damage.
     /// </summary>
-    private static void AugmentWholeness(OnSpellCast castData)
+    private static void AugmentWholenessOfBody(OnSpellCast castData)
     {
         WholenessOfBody.DoWholenessOfBody(castData);
 

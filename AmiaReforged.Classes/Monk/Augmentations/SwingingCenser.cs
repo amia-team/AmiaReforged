@@ -15,10 +15,10 @@ public static class SwingingCenser
         switch (technique)
         {
             case TechniqueType.Stunning:
-                AugmentStunning(attackData);
+                AugmentStunningStrike(attackData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(castData);
+                AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.EmptyBody:
                 AugmentEmptyBody(castData);
@@ -47,7 +47,7 @@ public static class SwingingCenser
     /// Stunning Fist heals the monk or a nearby ally for 1d6 damage. Healing 100 damage with this attack regenerates
     /// a Body Ki Point. Each Ki Focus heals for an additional 1d6, to a maximum of 4d6 damage.
     /// </summary>
-    private static void AugmentStunning(OnCreatureAttack attackData)
+    private static void AugmentStunningStrike(OnCreatureAttack attackData)
     {
         StunningStrike.DoStunningStrike(attackData);
         
@@ -184,7 +184,7 @@ public static class SwingingCenser
     /// Wholeness of Body pulses in a large area around the monk, healing allies.
     /// Each Ki Focus adds a pulse to the heal, to a maximum of four pulses.
     /// </summary>
-    private static void AugmentWholeness(OnSpellCast castData)
+    private static void AugmentWholenessOfBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;

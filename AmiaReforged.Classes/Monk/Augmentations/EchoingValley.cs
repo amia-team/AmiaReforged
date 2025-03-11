@@ -15,7 +15,7 @@ public static class EchoingValley
         switch (technique)
         {
             case TechniqueType.Stunning:
-                AugmentStunning(attackData);
+                AugmentStunningStrike(attackData);
                 break;
             case TechniqueType.KiShout:
                 AugmentKiShout(castData);
@@ -24,7 +24,7 @@ public static class EchoingValley
                 AugmentEmptyBody(castData);
                 break;
             case TechniqueType.Quivering:
-                AugmentQuivering(castData);
+                AugmentQuiveringPalm(castData);
                 break;
             case TechniqueType.Eagle:
                 EagleStrike.DoEagleStrike(attackData);
@@ -46,7 +46,7 @@ public static class EchoingValley
     /// Echoes last for two turns. Each Ki Focus allows an additional Echo to be summoned for an additional
     /// 1d4 bonus magical damage to a maximum of 4d4.
     /// </summary>
-    private static void AugmentStunning(OnCreatureAttack attackData)
+    private static void AugmentStunningStrike(OnCreatureAttack attackData)
     {
         StunningStrike.DoStunningStrike(attackData);
         
@@ -111,7 +111,7 @@ public static class EchoingValley
     {
     }
 
-    private static void AugmentQuivering(OnSpellCast castData)
+    private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
     }
 }
