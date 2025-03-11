@@ -50,7 +50,7 @@ public static class MonkUtilFunctions
     {
         float vfxDefaultSize = visualEffect switch
         {
-            VfxType.ImpFrostL or VfxType.ImpAcidS => 1f,
+            VfxType.ImpFrostL or VfxType.ImpAcidS or VfxType.ImpBlindDeafM => 1f,
             VfxType.FnfLosEvil10 or (VfxType)1046 => RadiusSize.Medium,
             VfxType.FnfFireball => RadiusSize.Huge,
             VfxType.FnfElectricExplosion => RadiusSize.Gargantuan,
