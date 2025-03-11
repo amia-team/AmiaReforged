@@ -65,10 +65,10 @@ public static class EchoingValley
         
         // Check how many echoes monk has
         int echoCount = monk.Associates.Count(associate => 
-            associate is { AssociateType: AssociateType.Summoned, Tag: "stunningstrike_echoingvalley" });
+            associate is { AssociateType: AssociateType.Summoned, ResRef: "summon_echo" });
         
         // Return if capped out
-        if (echoCount <= echoCap) return;
+        if (echoCount == echoCap) return;
 
         SummonEcho();
 
@@ -99,7 +99,7 @@ public static class EchoingValley
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         // Check how many echoes monk has
         int echoCount = monk.Associates.Count(associate => 
-            associate is { AssociateType: AssociateType.Summoned, Tag: "stunningstrike_echoingvalley" });
+            associate is { AssociateType: AssociateType.Summoned, ResRef: "summon_echo" });
 
         Effect emptyBodyEffect = Effect.LinkEffects(Effect.ACIncrease(echoCount), 
             Effect.VisualEffect(VfxType.DurPdkFear));
