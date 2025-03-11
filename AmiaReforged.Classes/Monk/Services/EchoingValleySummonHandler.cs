@@ -48,8 +48,7 @@ public class EchoingValleySummonHandler
         // Hides the stupid "unsummoning creature" message
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, monk);
         
-        Effect echoEffect = Effect.LinkEffects(Effect.VisualEffect(VfxType.DurCutsceneInvisibility), Effect.Pacified(),
-            Effect.Ethereal());
+        Effect echoEffect = Effect.LinkEffects(Effect.Pacified(), Effect.Ethereal());
         echoEffect.Tag = "summonecho_effect";
         echoEffect.SubType = EffectSubType.Unyielding;
         
