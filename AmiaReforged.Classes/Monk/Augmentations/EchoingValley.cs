@@ -87,6 +87,24 @@ public static class EchoingValley
     
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
+        EmptyBody.DoEmptyBody(castData);
+        
+        NwCreature monk = (NwCreature)castData.Caster;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        // Check how many echoes monk has
+        int echoCount = monk.Associates.Count(associate => 
+            associate is { AssociateType: AssociateType.Summoned, Tag: "stunningstrike_echoingvalley" });
+
+        Effect emptyBodyEffect = Effect.LinkEffects(Effect.ACIncrease(echoCount), 
+            Effect.VisualEffect(VfxType.DurPdkFear));
+        emptyBodyEffect.Tag = "emptybody_echoingvalley";
+        TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
+
+        foreach (Effect effect in monk.ActiveEffects)
+            if (effect.Tag == "emptybody_echoingvalley")
+                monk.RemoveEffect(effect);
+        
+        monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
     }
     
     private static void AugmentKiShout(OnSpellCast castData)
