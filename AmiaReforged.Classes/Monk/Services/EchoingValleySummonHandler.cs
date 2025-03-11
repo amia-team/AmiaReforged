@@ -41,7 +41,7 @@ public class EchoingValleySummonHandler
     /// <summary>
     /// Hides the new echo and sets old echoes undestroyable so they're not unsummoned
     /// </summary>
-    private static void OnEchoAdd(OnAssociateAdd eventData)
+    private static async void OnEchoAdd(OnAssociateAdd eventData)
     {
         if (eventData.Associate.ResRef is not "summon_echo") return;
 
@@ -50,24 +50,17 @@ public class EchoingValleySummonHandler
         eventData.Associate.
             ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurCutsceneInvisibility));
         
-        StopEchoUnsummoning();
-        
-        return;
-        
-        async void StopEchoUnsummoning()
-        {
-            foreach (NwCreature associate in monk.Associates)
-                if (associate.ResRef is "summon_echo")
-                    await associate.SetIsDestroyable(false);
+        foreach (NwCreature associate in monk.Associates)
+            if (associate.ResRef is "summon_echo")
+                await associate.SetIsDestroyable(false);
 
-            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
 
-            if (!monk.IsValid) return;
+        if (!monk.IsValid) return;
         
-            foreach (NwCreature associate in monk.Associates)
-                if (associate.ResRef is "summon_echo")
-                    await associate.SetIsDestroyable(true);
-        }
+        foreach (NwCreature associate in monk.Associates)
+            if (associate.ResRef is "summon_echo")
+                await associate.SetIsDestroyable(true);
     }
     
     private static void OnEchoRemove(OnAssociateRemove eventData)
