@@ -26,7 +26,7 @@ pipeline{
                 sh 'sudo dotnet publish AmiaReforged.Classes --output /home/amia/dev_server/server2/anvil/Plugins/AmiaReforged.Classes/'
                 sh 'sudo dotnet publish AmiaReforged.Races --output /home/amia/dev_server/server2/anvil/Plugins/AmiaReforged.Races/'
                 sh 'sudo dotnet publish AmiaReforged.DMS --output /home/amia/dev_server/server2/anvil/Plugins/AmiaReforged.DMS/'
-                sh 'sudo dotnet publish AmiaReforged.PwEngine --output /home/amia/dev_server2/server/anvil/Plugins/AmiaReforged.PwEngine/'
+                sh 'sudo dotnet publish AmiaReforged.PwEngine --output /home/amia/dev_server/server2/anvil/Plugins/AmiaReforged.PwEngine/'
             }
         }
         stage('Deploy Core') {
