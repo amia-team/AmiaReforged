@@ -13,22 +13,23 @@ public class EchoingValleySummonHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public EchoingValleySummonHandler()
+    public EchoingValleySummonHandler(EventService eventService)
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
 
         if (environment == "live") return;
         
         NwModule.Instance.OnAssociateAdd += OnEchoAdd;
+        NwModule.Instance.OnAssociateRemove += OnEchoRemove;
         
         Log.Info(message: "Monk Echoing Valley Summon Handler initialized.");
     }
-    
+
     /// <summary>
     /// Since the echo can't be seen, their location and presence is manifested with a vfx
     /// </summary>
     [ScriptHandler("nw_ch_ac1")]
-    private void OnEchoHeartbeat(CallInfo info)
+    private static void OnEchoHeartbeat(CallInfo info)
     {
         if (info.ObjectSelf is not NwCreature echo) return;
         if (echo.ResRef is not "summon_echo") return;
@@ -38,15 +39,35 @@ public class EchoingValleySummonHandler
     }
 
     /// <summary>
-    /// Sets the echo undestroyable and hides them
+    /// Hides the new echo and sets old echoes undestroyable so they're not unsummoned
     /// </summary>
-    private void OnEchoAdd(OnAssociateAdd eventData)
+    private static async void OnEchoAdd(OnAssociateAdd eventData)
     {
         if (eventData.Associate.ResRef is not "summon_echo") return;
+
+        NwCreature monk = eventData.Owner;
         
         eventData.Associate.
             ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurCutsceneInvisibility));
-        eventData.Associate.SetIsDestroyable(false);
+        
+        foreach (NwCreature associate in monk.Associates)
+            if (associate.ResRef is "summon_echo")
+                await associate.SetIsDestroyable(false);
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+
+        if (!monk.IsValid) return;
+        
+        foreach (NwCreature associate in monk.Associates)
+            if (associate.ResRef is "summon_echo")
+                await associate.SetIsDestroyable(true);
     }
+    
+    private static void OnEchoRemove(OnAssociateRemove eventData)
+    {
+        if (eventData.Associate.ResRef is not "summon_echo") return;
+        
+    }
+    
 
 }
