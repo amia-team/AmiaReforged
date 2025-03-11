@@ -51,9 +51,11 @@ public static class EchoingValley
     {
         StunningStrike.DoStunningStrike(attackData);
         
-        if (attackData.Target is not NwCreature targetCreature) return;
-        
         NwCreature monk = attackData.Attacker;
+        
+        if (attackData.Target is not NwCreature targetCreature) return;
+        if (!targetCreature.IsReactionTypeHostile(monk)) return;
+        
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int echoCap = monkLevel switch
         {
