@@ -22,11 +22,11 @@ public class InflictMinorWounds : ISpell
         if (eventData.Caster is not NwCreature casterCreature) return;
         if (eventData.TargetObject == null) return;
 
-        Task<TouchAttackResult> result = casterCreature.TouchAttackRanged(eventData.TargetObject, true);
+        TouchAttackResult result = casterCreature.TouchAttackRanged(eventData.TargetObject, true);
 
         bool skipTouchAttack = NWScript.GetRacialType(eventData.TargetObject) == NWScript.RACIAL_TYPE_UNDEAD;
 
-        if (result.Result != TouchAttackResult.Hit || !skipTouchAttack) return;
+        if (result != TouchAttackResult.Hit || !skipTouchAttack) return;
 
         int damage = CalculateDamage(casterCreature);
 
