@@ -2,6 +2,7 @@ using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
+using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -72,19 +73,25 @@ public static class EchoingValley
         SummonEcho();
 
         return;
-
+        
         async void SummonEcho()
         {
-            // Create the new echo and attach it as a summon
             Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 4f);
-            Effect summonEcho = Effect.SummonCreature("echo", VfxType.FnfPwstun);
+            
+            if (summonLocation is null) return;
+            
+            Effect summonEcho = Effect.SummonCreature("echo_echoingvalley", VfxType.ImpMagicProtection);
             TimeSpan summonDuration = NwTimeSpan.FromTurns(2);
 
             await monk.WaitForObjectContext();
-            summonLocation?.ApplyEffect(EffectDuration.Temporary,summonEcho, summonDuration);
+            
+            summonLocation.ApplyEffect(EffectDuration.Temporary, summonEcho, summonDuration);
         }
     }
     
+    /// <summary>
+    /// Empty Body grants +1 bonus dodge AC for each Echo.
+    /// </summary>
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
         EmptyBody.DoEmptyBody(castData);
@@ -107,11 +114,59 @@ public static class EchoingValley
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
     }
     
+    /// <summary>
+    /// Ki Shout awakens the Echoes, granting them the ability to fight.
+    /// </summary>
     private static void AugmentKiShout(OnSpellCast castData)
     {
-    }
+        KiShout.DoKiShout(castData);
 
+        NwCreature monk = (NwCreature)castData.Caster;
+
+        Effect kiShoutEffect = Effect.VisualEffect(VfxType.FnfPwstun, false, 0.7f);
+        kiShoutEffect.Tag = "kishout_echoingvalley";
+
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        {   
+            // Must be echo and monk's associate
+            if (!monk.Associates.Contains(nwObject) || nwObject.ResRef != "echo_echoingvalley") continue;
+            
+            nwObject.Location?.ApplyEffect(EffectDuration.Instant, kiShoutEffect);
+        }
+    }
+    
+    /// <summary>
+    /// Quivering Palm creates an Echo of the targeted creature to fight alongside the monk for one turn.
+    /// </summary>
     private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
+        QuiveringPalm.DoQuiveringPalm(castData);
+        
+        if (castData.TargetObject is not NwCreature targetCreature) return;
+        
+        NwCreature monk = (NwCreature)castData.Caster;
+        
+        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature).Result;
+
+        if (touchAttackResult == TouchAttackResult.Miss) return;
+
+        SummonClone();
+
+        return;
+
+        async void SummonClone()
+        {
+            // Create the new echo and attach it as a summon
+            Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 4f);
+            
+            if (summonLocation is null) return;
+            
+            Effect summonEcho = Effect.SummonCreature(targetCreature.ResRef, VfxType.FnfPwstun);
+            TimeSpan summonDuration = NwTimeSpan.FromTurns(1);
+
+            await monk.WaitForObjectContext();
+
+            summonLocation.ApplyEffect(EffectDuration.Temporary, summonEcho, summonDuration);
+        }
     }
 }
