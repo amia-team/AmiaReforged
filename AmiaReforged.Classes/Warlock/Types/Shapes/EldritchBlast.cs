@@ -21,12 +21,8 @@ public static class EldritchBlast
         LogManager.GetCurrentClassLogger().Info($"Damage calculated: {damage}.");
 
         int touchAttackRanged = WarlockConstants.RangedTouch(nwnObjectId, targetObject);
-        
-        LogManager.GetCurrentClassLogger().Info($"Ranged touch attack: {touchAttackRanged}.");
 
         if (touchAttackRanged == FALSE) return;
-
-        LogManager.GetCurrentClassLogger().Info("Touch attack successful.");
 
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfx.Beam(essenceType, nwnObjectId), targetObject, 1.1f);
         effectApplier.ApplyEffects(damage * touchAttackRanged);
