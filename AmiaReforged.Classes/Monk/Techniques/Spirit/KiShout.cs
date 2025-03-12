@@ -28,7 +28,7 @@ public static class KiShout
     ///     Stuns enemies within colossal range for three rounds if they fail a will save. In addition,
     ///     all enemies take 1d4 sonic damage per monk level. Each use depletes a Spirit Ki Point.
     /// </summary>
-    public static void DoKiShout(OnSpellCast castData)
+    public static void DoKiShout(OnSpellCast castData, DamageType damageType = DamageType.Sonic, VfxType damageVfx = VfxType.ImpSonic)
     {
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
@@ -47,8 +47,8 @@ public static class KiShout
             CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.AbilityHowlSonic)!);
 
             int damageAmount = Random.Shared.Roll(4, monkLevel);
-            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, DamageType.Sonic),
-                Effect.VisualEffect(VfxType.ImpSonic));
+            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, damageType),
+                Effect.VisualEffect(damageVfx));
 
             creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
 
