@@ -7,7 +7,15 @@ public interface ISpell
 {
     bool ResistedSpell { get; set; }
     string ImpactScript { get; }
-    void DoSpellResist(NwCreature creature, NwCreature caster);
+
+    void DoSpellResist(NwCreature creature, NwCreature caster)
+    {
+        ResistedSpell = creature.SpellResistanceCheck(caster)
+                        || creature.SpellImmunityCheck(caster)
+                        || creature.SpellAbsorptionLimitedCheck(caster)
+                        || creature.SpellAbsorptionUnlimitedCheck(caster);
+    }
+
     void OnSpellImpact(SpellEvents.OnSpellCast eventData);
     void SetSpellResisted(bool result);
 }

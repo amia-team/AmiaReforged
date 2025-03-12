@@ -16,7 +16,10 @@ public class AcidBolt : ISpell
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster)
+                        || creature.SpellImmunityCheck(caster)
+                        || creature.SpellAbsorptionLimitedCheck(caster)
+                        || creature.SpellAbsorptionUnlimitedCheck(caster);
     }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
