@@ -39,11 +39,11 @@ public static class QuiveringPalm
         Effect quiveringEffect = Effect.Death(true);
         Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpDeath, false, 0.7f);
 
-        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature);
+        monk.TouchAttackMelee(targetCreature);
 
         CreatureEvents.OnSpellCastAt.Signal(monk, targetCreature, castData.Spell!);
 
-        if (touchAttackResult is TouchAttackResult.Miss) return;
+        if (monk.TouchAttackMelee(targetCreature) is TouchAttackResult.Miss) return;
 
         SavingThrowResult savingThrowResult =
             targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Death, monk);
