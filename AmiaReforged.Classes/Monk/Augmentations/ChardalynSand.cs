@@ -21,9 +21,6 @@ public static class ChardalynSand
             case TechniqueType.Eagle:
                 AugmentEagleStrike(attackData);
                 break;
-            case TechniqueType.KiBarrier:
-                AugmentKiBarrier(castData);
-                break;
             case TechniqueType.KiShout:
                 AugmentKiShout(castData);
                 break;
@@ -35,6 +32,9 @@ public static class ChardalynSand
                 break;
             case TechniqueType.Wholeness:
                 WholenessOfBody.DoWholenessOfBody(castData);
+                break;
+            case TechniqueType.KiBarrier:
+                KiBarrier.DoKiBarrier(castData);
                 break;
             case TechniqueType.Quivering:
                 QuiveringPalm.DoQuiveringPalm(castData);
@@ -50,8 +50,12 @@ public static class ChardalynSand
     {
         EagleStrike.DoEagleStrike(attackData);
         
+        if (attackData.Target is not NwCreature targetCreature) return;
+        
         NwCreature monk = attackData.Attacker;
-        NwCreature targetCreature = (NwCreature)attackData.Target;
+        
+        if (!targetCreature.IsReactionTypeHostile(monk)) return;
+        
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int wildMagicPct = monkLevel switch
@@ -93,15 +97,33 @@ public static class ChardalynSand
         damageData.SetDamageByType(elementalType, magicalDamage);
     }
 
-    private static void AugmentKiBarrier(OnSpellCast castData)
+    /// <summary>
+    /// Empty Body grants a spell mantle that absorbs up to 2 spells and spell-like abilities.
+    /// Each Ki Focus increases the effects it can absorb by 2, to a maximum of 8 spells or spell-like abilities.
+    /// </summary>
+    private static void AugmentEmptyBody(OnSpellCast castData)
     {
+        NwCreature monk = (NwCreature)castData.Caster;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        
+        int spellsAbsorbed = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
+            MonkLevel.KiFocusIii => 4,
+            _ => 1
+        };
+        Effect spellAbsorb = Effect.SpellLevelAbsorption(spellsAbsorbed);
+        Effect spellAbsorbVfx = Effect.VisualEffect(VfxType.DurSpellturning);
+        Effect emptyBodyEffect = Effect.LinkEffects(spellAbsorb, spellAbsorbVfx);
+        TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
+        
+        monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
     }
 
     private static void AugmentKiShout(OnSpellCast castData)
     {
     }
-
-    private static void AugmentEmptyBody(OnSpellCast castData)
-    {
-    }
+    
+    
 }
