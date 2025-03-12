@@ -12,7 +12,7 @@ public static class EldritchSpear
         EssenceType essenceType = (EssenceType)GetLocalInt(GetItemPossessedBy(caster, sItemTag: "ds_pckey"),
             sVarName: "warlock_essence");
 
-        int touchAttackRanged = WarlockConstants.RangedTouch(targetObject);
+        int touchAttackRanged = WarlockConstants.RangedTouch(caster, targetObject);
         IntPtr location = GetLocation(targetObject);
 
         int damage = EldritchDamage.CalculateDamageAmount(caster);

@@ -1,4 +1,7 @@
 ﻿using AmiaReforged.Classes.Warlock.Types.EssenceEffects;
+using Anvil.API;
+using NLog;
+using NLog.Fluent;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Warlock.Types.Shapes;
@@ -8,11 +11,16 @@ public static class EldritchBlast
     public static void CastEldritchBlast(uint nwnObjectId, uint targetObject, EssenceType essenceType,
         EssenceEffectApplier effectApplier)
     {
+        LogManager.GetCurrentClassLogger().Info("Casting Eldritch Blast.");
         if (SpellFailure(nwnObjectId) == TRUE) return;
 
         SignalEvent(targetObject, EventSpellCastAt(nwnObjectId, 981));
+        LogManager.GetCurrentClassLogger().Info("EventSpellCastAt signal sent.");
+
         int damage = EldritchDamage.CalculateDamageAmount(nwnObjectId);
-        int touchAttackRanged = WarlockConstants.RangedTouch(targetObject);
+        LogManager.GetCurrentClassLogger().Info($"Damage calculated: {damage}.");
+
+        int touchAttackRanged = WarlockConstants.RangedTouch(nwnObjectId, targetObject);
 
         if (touchAttackRanged == FALSE) return;
 
