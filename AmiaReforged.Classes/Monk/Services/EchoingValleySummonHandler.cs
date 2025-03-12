@@ -86,15 +86,15 @@ public class EchoingValleySummonHandler
         // Hides the stupid "unsummoning creature" message
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, monk);
         
+        foreach (NwCreature associate in monk.Associates)
+            if (associate.ResRef == "summon_echo")
+                associate.IsDestroyable = false;
+        
         Effect echoEffect = Effect.LinkEffects(Effect.Pacified(), Effect.Ethereal());
         echoEffect.Tag = "summonecho_effect";
         echoEffect.SubType = EffectSubType.Unyielding;
         
         eventData.Associate.ApplyEffect(EffectDuration.Permanent, echoEffect);
-        
-        foreach (NwCreature associate in monk.Associates)
-            if (associate.ResRef == "summon_echo")
-                associate.IsDestroyable = false;
     }
     
     /// <summary>
@@ -110,10 +110,19 @@ public class EchoingValleySummonHandler
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
         
         eventData.Associate.IsDestroyable = true;
+
+        MakeEchoesDestroyable();
+        return;
         
-        foreach (NwCreature associate in monk.Associates)
-            if (associate.ResRef == "summon_echo")
-                associate.IsDestroyable = true;
+        async void MakeEchoesDestroyable()
+        {
+            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+        
+            foreach (NwCreature associate in monk.Associates)
+                if (associate.ResRef == "summon_echo")
+                    associate.IsDestroyable = true;
+        }
+        
     }
     
     /// <summary>
