@@ -86,12 +86,11 @@ public class EchoingValleySummonHandler
         echoEffect.Tag = "summonecho_effect";
         echoEffect.SubType = EffectSubType.Unyielding;
         
-        eventData.Associate.
-            ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurCutsceneInvisibility));
+        eventData.Associate.ApplyEffect(EffectDuration.Permanent, echoEffect);
         
         foreach (NwCreature associate in monk.Associates)
             if (associate.Tag == "summon_echo")
-                associate.SetIsDestroyable(false);
+                associate.IsDestroyable = false;
     }
     
     /// <summary>
@@ -108,7 +107,7 @@ public class EchoingValleySummonHandler
         
         foreach (NwCreature associate in monk.Associates)
             if (associate.Tag == "summon_echo")
-                associate.SetIsDestroyable(true);
+                associate.IsDestroyable = true;
     }
     
     /// <summary>
