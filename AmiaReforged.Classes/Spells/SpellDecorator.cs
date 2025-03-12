@@ -16,7 +16,10 @@ public abstract class SpellDecorator : ISpell
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster)
+                        || creature.SpellImmunityCheck(caster)
+                        || creature.SpellAbsorptionLimitedCheck(caster)
+                        || creature.SpellAbsorptionUnlimitedCheck(caster);
         Spell.SetSpellResisted(ResistedSpell);
     }
 

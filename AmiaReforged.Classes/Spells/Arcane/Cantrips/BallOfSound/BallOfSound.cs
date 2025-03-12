@@ -13,7 +13,10 @@ public class BallOfSound : ISpell
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster)
+                        || creature.SpellImmunityCheck(caster)
+                        || creature.SpellAbsorptionLimitedCheck(caster)
+                        || creature.SpellAbsorptionUnlimitedCheck(caster);
     }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -21,7 +24,7 @@ public class BallOfSound : ISpell
         if (eventData.Caster == null) return;
         if (eventData.Caster is not NwCreature casterCreature) return;
         if (eventData.TargetObject == null) return;
-        
+
         int damage = CalculateDamage(casterCreature);
 
         // Does more damage to petrified targets.
