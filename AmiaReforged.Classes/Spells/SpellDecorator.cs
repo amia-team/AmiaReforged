@@ -7,6 +7,8 @@ public abstract class SpellDecorator : ISpell
 {
     protected ISpell Spell;
 
+    public bool CheckedSpellResistance { get; set; }
+
     protected SpellDecorator(ISpell spell)
     {
         Spell = spell;
@@ -16,17 +18,20 @@ public abstract class SpellDecorator : ISpell
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
+        if (CheckedSpellResistance) return;
         ResistedSpell = creature.SpellResistanceCheck(caster)
                         || creature.SpellImmunityCheck(caster)
                         || creature.SpellAbsorptionLimitedCheck(caster)
                         || creature.SpellAbsorptionUnlimitedCheck(caster);
         Spell.SetSpellResisted(ResistedSpell);
+        Spell.CheckedSpellResistance = true;
     }
 
     public void SetSpellResisted(bool result)
     {
         ResistedSpell = result;
         Spell.SetSpellResisted(ResistedSpell);
+        Spell.CheckedSpellResistance = true;
     }
 
     public virtual string ImpactScript => Spell.ImpactScript;

@@ -8,14 +8,10 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.FireBolt;
 [ServiceBinding(typeof(ISpell))]
 public class FireBolt : ISpell
 {
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
 
     public string ImpactScript => "X0_S0_Flare";
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
-    }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {

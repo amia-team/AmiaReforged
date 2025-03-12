@@ -16,7 +16,7 @@ public class DarknessSpell : ISpell
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly ScriptHandleFactory _handleFactory;
 
-    private List<NwAreaOfEffect> DarknessAreas = new();
+    private readonly List<NwAreaOfEffect> _darknessAreas = new();
 
     public DarknessSpell(ScriptHandleFactory handleFactory, SchedulerService schedulerService)
     {
@@ -32,6 +32,7 @@ public class DarknessSpell : ISpell
         ResistedSpell = result;
     }
 
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
@@ -86,7 +87,7 @@ public class DarknessSpell : ISpell
             return;
         }
 
-        DarknessAreas.Add(darknessAoE);
+        _darknessAreas.Add(darknessAoE);
     }
 
     private void OnEffectApply(OnEffectApply obj)
@@ -107,9 +108,9 @@ public class DarknessSpell : ISpell
 
     private void ClearInvalidArea()
     {
-        foreach (NwAreaOfEffect area in DarknessAreas.ToList().Where(area => !area.IsValid))
+        foreach (NwAreaOfEffect area in _darknessAreas.ToList().Where(area => !area.IsValid))
         {
-            DarknessAreas.Remove(area);
+            _darknessAreas.Remove(area);
         }
     }
 
@@ -125,7 +126,7 @@ public class DarknessSpell : ISpell
 
     private bool IsInDarknessAoE(NwObject objObject, out NwAreaOfEffect? aoe)
     {
-        aoe = DarknessAreas.FirstOrDefault(darknessArea =>
+        aoe = _darknessAreas.FirstOrDefault(darknessArea =>
             darknessArea.GetObjectsInEffectArea<NwCreature>().Contains(objObject));
 
         return aoe != null;

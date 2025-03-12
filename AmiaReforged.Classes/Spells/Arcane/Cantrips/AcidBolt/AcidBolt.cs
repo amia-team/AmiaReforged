@@ -11,16 +11,9 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.AcidBolt;
 [ServiceBinding(typeof(ISpell))]
 public class AcidBolt : ISpell
 {
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "X0_S0_AcidSplash";
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster)
-                        || creature.SpellImmunityCheck(caster)
-                        || creature.SpellAbsorptionLimitedCheck(caster)
-                        || creature.SpellAbsorptionUnlimitedCheck(caster);
-    }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {

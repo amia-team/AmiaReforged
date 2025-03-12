@@ -8,12 +8,8 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.ViciousMockery;
 [ServiceBinding(typeof(ISpell))]
 public class ViciousMockery : ISpell
 {
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
-    }
 
     public string ImpactScript => "am_c_vicsmock";
 

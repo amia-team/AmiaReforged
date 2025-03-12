@@ -8,6 +8,7 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.Daze;
 public class Daze : ISpell
 {
     private const double TwoRounds = 12;
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_Daze";
 

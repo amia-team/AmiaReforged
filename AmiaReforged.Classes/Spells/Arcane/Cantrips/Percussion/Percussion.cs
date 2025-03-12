@@ -16,12 +16,8 @@ public class Percussion : ISpell
         _handleFactory = handleFactory;
     }
 
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
-    }
 
     public string ImpactScript => "am_s_percussion";
 

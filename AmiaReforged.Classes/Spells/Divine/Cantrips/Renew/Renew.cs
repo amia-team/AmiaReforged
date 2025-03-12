@@ -15,13 +15,10 @@ public class Renew : ISpell
         _schedulerService = schedulerService;
     }
 
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "am_s_renew";
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
-    }
+    
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {

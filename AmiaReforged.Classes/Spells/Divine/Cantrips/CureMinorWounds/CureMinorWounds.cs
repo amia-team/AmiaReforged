@@ -8,13 +8,10 @@ namespace AmiaReforged.Classes.Spells.Divine.Cantrips.CureMinorWounds;
 [ServiceBinding(typeof(CureMinorWounds))]
 public class CureMinorWounds : ISpell
 {
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_CurMinW";
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
-    }
+    
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {

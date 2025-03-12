@@ -8,16 +8,9 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.BallOfSound;
 [ServiceBinding(typeof(ISpell))]
 public class BallOfSound : ISpell
 {
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "amx_csp_bsound";
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster)
-                        || creature.SpellImmunityCheck(caster)
-                        || creature.SpellAbsorptionLimitedCheck(caster)
-                        || creature.SpellAbsorptionUnlimitedCheck(caster);
-    }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {

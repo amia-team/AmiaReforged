@@ -7,13 +7,14 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.Resistance;
 [ServiceBinding(typeof(ISpell))]
 public class Resistance : ISpell
 {
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
 
     public string ImpactScript => "NW_S0_Resis";
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
+        // this spell is friendly and does not require a saving throw, resistance, et al.
     }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)

@@ -6,13 +6,9 @@ namespace AmiaReforged.Classes.Spells.Divine.Cantrips.Virtue;
 
 public class Virtue : ISpell
 {
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_Virtue";
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
-    }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {

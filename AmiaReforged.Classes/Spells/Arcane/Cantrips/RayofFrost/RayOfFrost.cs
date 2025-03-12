@@ -8,12 +8,8 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.RayofFrost;
 [ServiceBinding(typeof(ISpell))]
 public class RayOfFrost : ISpell
 {
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
-    }
 
     public string ImpactScript => "NW_S0_RayFrost";
 

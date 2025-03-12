@@ -15,14 +15,10 @@ public class Wilt : ISpell
         _schedulerService = schedulerService;
     }
 
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "am_s_wilt";
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
-    }
-
+    
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         NwGameObject? caster = eventData.Caster;

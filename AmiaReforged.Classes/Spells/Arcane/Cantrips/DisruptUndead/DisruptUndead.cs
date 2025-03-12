@@ -9,6 +9,7 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.DisruptUndead;
 public class DisruptUndead : ISpell
 {
     public string ImpactScript => "am_s_disruptun";
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -30,7 +31,7 @@ public class DisruptUndead : ISpell
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
+        // Already implemented in SpellDecorator.cs...This spell is decorated so we don't want to check multiple times.
     }
 
     public void SetSpellResisted(bool result)

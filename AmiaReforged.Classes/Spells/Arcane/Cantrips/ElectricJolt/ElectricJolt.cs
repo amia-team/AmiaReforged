@@ -8,12 +8,10 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.ElectricJolt;
 [ServiceBinding(typeof(ISpell))]
 public class ElectricJolt : ISpell
 {
+    public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
 
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        ResistedSpell = creature.SpellResistanceCheck(caster);
-    }
+
 
     public string ImpactScript => "X0_S0_ElecJolt";
 
@@ -56,7 +54,6 @@ public class ElectricJolt : ISpell
 
         if (nearestEnemy == null) return;
 
-        DoSpellResist(nearestEnemy, casterCreature);
         if (!ResistedSpell) return;
 
         int damageHalved = damage / 2;
