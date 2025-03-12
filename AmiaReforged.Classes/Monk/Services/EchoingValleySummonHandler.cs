@@ -44,16 +44,25 @@ public class EchoingValleySummonHandler
     {
         if (info.ObjectSelf is not NwCreature echo) return;
         if (echo.ResRef is not "summon_echo") return;
-
-        Effect echoDamageVfx = MonkUtilFunctions.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Medium);
-        Effect echoDamage = Effect.Damage(Random.Shared.Roll(6), DamageType.Sonic);
-        Effect echoEffect = Effect.LinkEffects(echoDamage, echoDamageVfx);
         
-        echo.Location?.ApplyEffect(EffectDuration.Instant, echoEffect);
+        if (echo.Master != null)
+            echo.ActionForceMoveTo(echo.Master, true);
 
-        if (echo.Master is null) return;
+        Effect echoVfx = MonkUtilFunctions.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Medium);
 
-        echo.ActionForceMoveTo(echo.Master, true);
+        if (echo.Location is null) return;
+        
+        echo.Location.ApplyEffect(EffectDuration.Instant, echoVfx);
+        foreach (NwGameObject nwObject in echo.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        {
+            NwCreature creatureInShape = (NwCreature)nwObject;
+            
+            if (!creatureInShape.IsReactionTypeHostile(echo)) continue;
+
+            Effect echoDamage = Effect.Damage(Random.Shared.Roll(6), DamageType.Sonic);
+
+            creatureInShape.ApplyEffect(EffectDuration.Instant, echoDamage);
+        }
     }
     
     /// <summary>
@@ -66,11 +75,21 @@ public class EchoingValleySummonHandler
         if (info.ObjectSelf is not NwCreature echo) return;
         if (echo.ResRef is not "summon_echo") return;
 
-        Effect echoDamageVfx = MonkUtilFunctions.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Large);
-        Effect echoDamage = Effect.Damage(Random.Shared.Roll(6, 10), DamageType.Sonic);
-        Effect echoEffect = Effect.LinkEffects(echoDamage, echoDamageVfx);
+        Effect echoVfx = MonkUtilFunctions.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Large);
         
-        echo.Location?.ApplyEffect(EffectDuration.Instant, echoEffect);
+        if (echo.Location is null) return;
+        
+        echo.Location.ApplyEffect(EffectDuration.Instant, echoVfx);
+        foreach (NwGameObject nwObject in echo.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        {
+            NwCreature creatureInShape = (NwCreature)nwObject;
+            
+            if (!creatureInShape.IsReactionTypeHostile(echo)) continue;
+
+            Effect echoDamage = Effect.Damage(Random.Shared.Roll(6, 10), DamageType.Sonic);
+
+            creatureInShape.ApplyEffect(EffectDuration.Instant, echoDamage);
+        }
     }
 
     /// <summary>
