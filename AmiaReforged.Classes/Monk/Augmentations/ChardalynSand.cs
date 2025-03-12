@@ -1,7 +1,9 @@
+using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
+using Anvil.API;
 using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
@@ -12,11 +14,12 @@ public static class ChardalynSand
     {
         switch (technique)
         {
-            case TechniqueType.Stunning:
-                AugmentStunningStrike(attackData);
-                break;
+            
             case TechniqueType.Axiomatic:
                 AugmentAxiomaticStrike(attackData);
+                break;
+            case TechniqueType.Eagle:
+                AugmentEagleStrike(attackData);
                 break;
             case TechniqueType.KiBarrier:
                 AugmentKiBarrier(castData);
@@ -27,8 +30,8 @@ public static class ChardalynSand
             case TechniqueType.EmptyBody:
                 AugmentEmptyBody(castData);
                 break;
-            case TechniqueType.Eagle:
-                EagleStrike.DoEagleStrike(attackData);
+            case TechniqueType.Stunning:
+                StunningStrike.DoStunningStrike(attackData);
                 break;
             case TechniqueType.Wholeness:
                 WholenessOfBody.DoWholenessOfBody(castData);
@@ -39,8 +42,26 @@ public static class ChardalynSand
         }
     }
 
-    private static void AugmentStunningStrike(OnCreatureAttack attackData)
+    private static void AugmentEagleStrike(OnCreatureAttack attackData)
     {
+        EagleStrike.DoEagleStrike(attackData);
+        
+        NwCreature monk = attackData.Attacker;
+        NwCreature targetCreature = (NwCreature)attackData.Target;
+        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int wildMagicPct = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
+            MonkLevel.KiFocusIii => 4,
+            _ => 1
+        };
+
+        int d100Roll = Random.Shared.Roll(100);
+        
+        if (d100Roll <= wildMagicPct)
+            WildMagicEffects.DoWildMagic(monk, targetCreature, monkLevel, dc);
     }
 
     private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
