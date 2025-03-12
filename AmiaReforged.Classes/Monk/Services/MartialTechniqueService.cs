@@ -98,7 +98,7 @@ public class MartialTechniqueService
     private async void EnterMartialTechnique(OnCombatRoundStart eventData)
     {
         // Creature must be monk
-        if (eventData.Creature.GetClassInfo(NwClass.FromClassType(ClassType.Monk)) is null) return;
+        if (eventData.Creature.GetClassInfo(ClassType.Monk) is null) return;
 
         NwCreature monk = eventData.Creature;
         LocalVariableInt queuedTechnique = monk.GetObjectVariable<LocalVariableInt>(MartialTechnique);
@@ -174,7 +174,7 @@ public class MartialTechniqueService
     private static void OnHitApplyTechnique(OnCreatureAttack attackData)
     {
         // Creature must be monk
-        if (attackData.Attacker.GetClassInfo(NwClass.FromClassType(ClassType.Monk)) is null) return;
+        if (attackData.Attacker.GetClassInfo(ClassType.Monk) is null) return;
         NwCreature monk = attackData.Attacker;
 
         // Can't have the cooldown active for martial technique procs
