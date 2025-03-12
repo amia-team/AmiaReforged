@@ -78,7 +78,7 @@ public static class EchoingValley
         
         async void SummonEcho()
         {
-            Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 4f);
+            Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 3f);
             
             if (summonLocation is null) return;
             
