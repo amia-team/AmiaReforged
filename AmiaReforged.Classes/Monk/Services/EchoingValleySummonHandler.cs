@@ -19,10 +19,11 @@ public class EchoingValleySummonHandler
         
         NwModule.Instance.OnAssociateAdd += OnEchoAdd;
         eventService.SubscribeAll<OnAssociateAdd, OnAssociateAdd.Factory>(OnEchoAddAfter, EventCallbackType.After);
+        NwModule.Instance.OnEffectApply += OnEchoAwakened;
         
         Log.Info(message: "Monk Echoing Valley Summon Handler initialized.");
     }
-    
+
     /// <summary>
     /// Since the echo can't be seen, their location and presence is manifested with a vfx
     /// </summary>
@@ -35,7 +36,10 @@ public class EchoingValleySummonHandler
         
         echo.Location?.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDispel, false, 0.4f));
     }
-
+    
+    /// <summary>
+    /// In combat deal a silly little 1d6 dmg per round in a medium AOE
+    /// </summary>
     [ScriptHandler("nw_ch_ac3")]
     private void OnEchoCombatRoundEnd(CallInfo info)
     {
@@ -44,6 +48,23 @@ public class EchoingValleySummonHandler
 
         Effect echoDamageVfx = MonkUtilFunctions.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Medium);
         Effect echoDamage = Effect.Damage(Random.Shared.Roll(6), DamageType.Sonic);
+        Effect echoEffect = Effect.LinkEffects(echoDamage, echoDamageVfx);
+        
+        echo.Location?.ApplyEffect(EffectDuration.Instant, echoEffect);
+    }
+    
+    /// <summary>
+    /// When awakened by monk's Ki Shout, is able to die and explodes in 10d6 sonic dmg
+    /// </summary>
+    /// <param name="info"></param>
+    [ScriptHandler("nw_ch_ac7")]
+    private void OnEchoDeath(CallInfo info)
+    {
+        if (info.ObjectSelf is not NwCreature echo) return;
+        if (echo.ResRef is not "summon_echo") return;
+
+        Effect echoDamageVfx = MonkUtilFunctions.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Large);
+        Effect echoDamage = Effect.Damage(Random.Shared.Roll(6, 10), DamageType.Sonic);
         Effect echoEffect = Effect.LinkEffects(echoDamage, echoDamageVfx);
         
         echo.Location?.ApplyEffect(EffectDuration.Instant, echoEffect);
@@ -88,6 +109,16 @@ public class EchoingValleySummonHandler
         foreach (NwCreature associate in monk.Associates)
             if (associate.Tag == "summon_echo")
                 associate.SetIsDestroyable(true);
+    }
+    
+    /// <summary>
+    /// Removes the protective plot flag and ethereal and pacified effects so they can die, commands echoes to attack
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <exception cref="NotImplementedException"></exception>
+    private void OnEchoAwakened(OnEffectApply obj)
+    {
+        throw new NotImplementedException();
     }
 
 }
