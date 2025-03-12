@@ -114,11 +114,20 @@ public class EchoingValleySummonHandler
     /// <summary>
     /// Removes the protective plot flag and ethereal and pacified effects so they can die, commands echoes to attack
     /// </summary>
-    /// <param name="obj"></param>
-    /// <exception cref="NotImplementedException"></exception>
-    private void OnEchoAwakened(OnEffectApply obj)
+    private void OnEchoAwakened(OnEffectApply eventData)
     {
-        throw new NotImplementedException();
+        if (eventData.Object.ResRef is not "summon_echo") return;
+        if (eventData.Effect.Tag is not "kishout_echoingvalley") return;
+
+        NwCreature echo = (NwCreature)eventData.Object;
+        
+        foreach (Effect effect in echo.ActiveEffects)
+            if  (effect.Tag == "summonecho_effect")
+                echo.RemoveEffect(effect);
+        
+        NwCreature nearestHostile =
+            echo.GetNearestCreatures().First(creature => creature.IsReactionTypeHostile(echo));
+        echo.ActionAttackTarget(nearestHostile);
     }
 
 }
