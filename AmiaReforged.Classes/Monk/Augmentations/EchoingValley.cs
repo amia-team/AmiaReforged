@@ -83,7 +83,7 @@ public static class EchoingValley
             if (summonLocation is null) return;
             
             Effect summonEcho = Effect.SummonCreature("summon_echo", VfxType.ImpMagicProtection!, 
-                TimeSpan.FromSeconds(1), 0, VfxType.None);
+                TimeSpan.Zero, 0, VfxType.ImpPulseWater);
             TimeSpan summonDuration = NwTimeSpan.FromTurns(2);
 
             await monk.WaitForObjectContext();
