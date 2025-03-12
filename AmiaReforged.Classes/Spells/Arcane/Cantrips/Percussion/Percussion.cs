@@ -16,11 +16,11 @@ public class Percussion : ISpell
         _handleFactory = handleFactory;
     }
 
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster);
     }
 
     public string ImpactScript => "am_s_percussion";
@@ -55,9 +55,9 @@ public class Percussion : ISpell
         _scheduler.Schedule(() => sound.Destroy(), TimeSpan.FromSeconds(roundsToSeconds));
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 
     private ScriptHandleResult OnEnterPercussion(CallInfo arg)

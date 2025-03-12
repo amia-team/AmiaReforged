@@ -8,11 +8,11 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.RayofFrost;
 [ServiceBinding(typeof(ISpell))]
 public class RayOfFrost : ISpell
 {
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster);
     }
 
     public string ImpactScript => "NW_S0_RayFrost";
@@ -34,11 +34,11 @@ public class RayOfFrost : ISpell
 
         Effect damageEffect = Effect.Damage(damage, DamageType.Cold);
 
-        if (Result == ResistSpellResult.Failed) target.ApplyEffect(EffectDuration.Instant, damageEffect);
+        if (!ResistedSpell) target.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 }

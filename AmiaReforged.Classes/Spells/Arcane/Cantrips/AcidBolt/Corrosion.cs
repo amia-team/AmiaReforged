@@ -44,7 +44,7 @@ public class Corrosion : SpellDecorator
 
     private void ApplyCorrosion(NwGameObject creature, Effect corrosion)
     {
-        if (Result == ResistSpellResult.Failed)
+        if (!ResistedSpell)
         {
             RemoveExistingEffect(creature);
             creature.ApplyEffect(EffectDuration.Instant, corrosion);

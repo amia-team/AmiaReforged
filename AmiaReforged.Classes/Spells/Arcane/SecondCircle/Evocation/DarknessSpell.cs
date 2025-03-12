@@ -27,16 +27,16 @@ public class DarknessSpell : ISpell
         schedulerService.ScheduleRepeating(ClearInvalidArea, TimeSpan.FromSeconds(60));
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster);
     }
 
     public string ImpactScript => "NW_S0_Darkness";

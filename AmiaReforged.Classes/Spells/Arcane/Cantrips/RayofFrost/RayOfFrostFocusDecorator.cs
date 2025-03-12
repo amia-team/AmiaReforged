@@ -40,7 +40,7 @@ public class RayOfFrostFocusDecorator : SpellDecorator
 
         bool anyFocus = hasFocus || hasGreaterFocus || hasEpicFocus;
 
-        if (anyFocus && Result == ResistSpellResult.Failed)
+        if (anyFocus && !ResistedSpell)
         {
             int savePenalty = hasEpicFocus ? 3 : hasGreaterFocus ? 2 : hasFocus ? 1 : 0;
             int freezeChance = hasEpicFocus ? 10 : 0;

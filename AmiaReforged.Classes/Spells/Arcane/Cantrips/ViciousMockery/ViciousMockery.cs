@@ -8,11 +8,11 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.ViciousMockery;
 [ServiceBinding(typeof(ISpell))]
 public class ViciousMockery : ISpell
 {
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster);
     }
 
     public string ImpactScript => "am_c_vicsmock";
@@ -53,7 +53,7 @@ public class ViciousMockery : ISpell
 
         const int concentrationPenalty = 10;
 
-        if (Result == ResistSpellResult.Failed)
+        if (!ResistedSpell)
         {
             Effect damageEffect = Effect.Damage(damage, DamageType.Sonic);
             Effect skillPenalty =
@@ -81,8 +81,8 @@ public class ViciousMockery : ISpell
         }
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 }

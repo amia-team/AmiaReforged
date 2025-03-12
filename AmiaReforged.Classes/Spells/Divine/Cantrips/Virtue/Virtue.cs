@@ -6,12 +6,12 @@ namespace AmiaReforged.Classes.Spells.Divine.Cantrips.Virtue;
 
 public class Virtue : ISpell
 {
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_Virtue";
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster);
     }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -41,8 +41,8 @@ public class Virtue : ISpell
         target.ApplyEffect(EffectDuration.Temporary, hpEffect, TimeSpan.FromMinutes(caster.CasterLevel));
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 }

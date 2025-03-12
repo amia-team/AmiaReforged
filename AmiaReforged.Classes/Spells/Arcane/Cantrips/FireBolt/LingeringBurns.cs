@@ -27,7 +27,7 @@ public class LingeringBurns : SpellDecorator
 
         bool isEvocationFocused = basicFocus || greaterFocus || epicFocus;
 
-        if (isEvocationFocused && Result == ResistSpellResult.Failed)
+        if (isEvocationFocused && !ResistedSpell)
         {
             int fireSavePenalty = epicFocus ? 3 : greaterFocus ? 2 : basicFocus ? 1 : 0;
             int extraVulnerability = epicFocus ? 5 : 0;

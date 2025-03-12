@@ -8,18 +8,18 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.ElectricJolt;
 [ServiceBinding(typeof(ISpell))]
 public class ElectricJolt : ISpell
 {
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster);
     }
 
     public string ImpactScript => "X0_S0_ElecJolt";
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -37,7 +37,7 @@ public class ElectricJolt : ISpell
         int numberOfDie = caster.CasterLevel / 2;
         int damage = NWScript.d3(numberOfDie);
 
-        if (Result != ResistSpellResult.Failed) return;
+        if (!ResistedSpell) return;
 
         Effect damageEffect = Effect.Damage(damage, DamageType.Electrical);
         target.ApplyEffect(EffectDuration.Instant, damageEffect);
@@ -57,7 +57,7 @@ public class ElectricJolt : ISpell
         if (nearestEnemy == null) return;
 
         DoSpellResist(nearestEnemy, casterCreature);
-        if (Result != ResistSpellResult.Failed) return;
+        if (!ResistedSpell) return;
 
         int damageHalved = damage / 2;
         Effect jumpDamage = Effect.Damage(damageHalved, DamageType.Electrical);

@@ -12,18 +12,18 @@ public abstract class SpellDecorator : ISpell
         Spell = spell;
     }
 
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
-        Spell.SetSpellResistResult(Result);
+        ResistedSpell = creature.SpellResistanceCheck(caster);
+        Spell.SetSpellResisted(ResistedSpell);
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
-        Spell.SetSpellResistResult(Result);
+        ResistedSpell = result;
+        Spell.SetSpellResisted(ResistedSpell);
     }
 
     public virtual string ImpactScript => Spell.ImpactScript;

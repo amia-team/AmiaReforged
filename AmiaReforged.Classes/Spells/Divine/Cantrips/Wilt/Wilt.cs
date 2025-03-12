@@ -15,12 +15,12 @@ public class Wilt : ISpell
         _schedulerService = schedulerService;
     }
 
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
     public string ImpactScript => "am_s_wilt";
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster);
     }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -48,7 +48,7 @@ public class Wilt : ISpell
 
         if (NWScript.GetRacialType(target) == NWScript.RACIAL_TYPE_UNDEAD) return;
 
-        if (Result == ResistSpellResult.Failed)
+        if (!ResistedSpell)
         {
             NWScript.SetLocalInt(target, $"wilt_{caster.Name}", NWScript.TRUE);
             int damage = NWScript.d3(numDice) / 2;
@@ -71,8 +71,8 @@ public class Wilt : ISpell
             TimeSpan.FromSeconds(durationInRounds * 6));
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 }

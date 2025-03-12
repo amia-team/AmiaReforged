@@ -56,7 +56,7 @@ public class DisruptUndeadFocusDecorator : SpellDecorator
 
     private void ApplyPenalty(NwCreature creature, NwGameObject target, Effect saveDecrease)
     {
-        if (Result == ResistSpellResult.Failed)
+        if (!ResistedSpell)
         {
             RemoveExistingEffect(creature);
             target.ApplyEffect(EffectDuration.Temporary, saveDecrease, TimeSpan.FromSeconds(12));

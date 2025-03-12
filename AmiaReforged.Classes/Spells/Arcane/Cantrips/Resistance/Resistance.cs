@@ -7,13 +7,13 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.Resistance;
 [ServiceBinding(typeof(ISpell))]
 public class Resistance : ISpell
 {
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public string ImpactScript => "NW_S0_Resis";
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster);
     }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -53,8 +53,8 @@ public class Resistance : ISpell
         target.ApplyEffect(EffectDuration.Temporary, saveIncrease, TimeSpan.FromMinutes(turns));
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 }

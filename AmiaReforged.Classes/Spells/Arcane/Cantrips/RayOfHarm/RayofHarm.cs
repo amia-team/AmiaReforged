@@ -9,7 +9,7 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.RayOfHarm;
 public class RayofHarm : ISpell
 {
     public string ImpactScript => "am_s_rayofharm";
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -31,12 +31,12 @@ public class RayofHarm : ISpell
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster);
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 
     private static int CalculateDamage(NwGameObject caster, NwCreature casterCreature)
@@ -57,6 +57,6 @@ public class RayofHarm : ISpell
 
     private void ApplyDamage(NwGameObject target, Effect damageEffect)
     {
-        if (Result == ResistSpellResult.Failed) target.ApplyEffect(EffectDuration.Instant, damageEffect);
+        if (!ResistedSpell) target.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 }
