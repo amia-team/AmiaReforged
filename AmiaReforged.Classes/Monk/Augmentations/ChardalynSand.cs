@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
@@ -108,10 +109,10 @@ public static class ChardalynSand
         
         int spellsAbsorbed = monkLevel switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
-            _ => 1
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
+            MonkLevel.KiFocusIii => 8,
+            _ => 2
         };
         Effect spellAbsorb = Effect.SpellLevelAbsorption(spellsAbsorbed);
         Effect spellAbsorbVfx = Effect.VisualEffect(VfxType.DurSpellturning);
@@ -120,10 +121,33 @@ public static class ChardalynSand
         
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
     }
-
+    
+    /// <summary>
+    /// Ki Shout deals magical damage instead of sonic. In addition, it breaches enemy creatures of 1 magical defense
+    /// according to the breach list. Each Ki Focus adds an additional breached magical defense, to a maximum of 4 magical effects.
+    /// </summary>
     private static void AugmentKiShout(OnSpellCast castData)
     {
+        KiShout.DoKiShout(castData, DamageType.Magical, VfxType.ImpMagblue);
+
+        NwCreature monk = (NwCreature)castData.Caster;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        
+        int spellsBreached = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
+            MonkLevel.KiFocusIii => 4,
+            _ => 1
+        };
+
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        {
+            NwCreature creatureInShape = (NwCreature)nwObject;
+            
+            if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
+            
+            NwEffects.DoBreach(creatureInShape, spellsBreached);
+        }
     }
-    
-    
 }
