@@ -41,7 +41,11 @@ public static class ChardalynSand
                 break;
         }
     }
-
+    
+    /// <summary>
+    /// Eagle Strike has a 1% chance to impart a wild magic effect.
+    /// Each Ki Focus increases the chance by 1% to a maximum of 5%.
+    /// </summary>
     private static void AugmentEagleStrike(OnCreatureAttack attackData)
     {
         EagleStrike.DoEagleStrike(attackData);
@@ -63,9 +67,30 @@ public static class ChardalynSand
         if (d100Roll <= wildMagicPct)
             WildMagicEffects.DoWildMagic(monk, targetCreature, monkLevel, dc);
     }
-
+    
+    /// <summary>
+    /// Axiomatic Strike deals +1 bonus magical damage. Each Ki Focus increases the damage by 1,
+    /// to a maximum of +4 bonus magical damage.
+    /// </summary>
     private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
     {
+        AxiomaticStrike.DoAxiomaticStrike(attackData);
+
+        NwCreature monk = attackData.Attacker;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
+        DamageData<short> damageData = attackData.DamageData;
+        short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
+        short bonusDamage = monkLevel switch
+        {
+            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
+            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
+            MonkLevel.KiFocusIii => 4,
+            _ => 1
+        };
+
+        magicalDamage += bonusDamage;
+        damageData.SetDamageByType(elementalType, magicalDamage);
     }
 
     private static void AugmentKiBarrier(OnSpellCast castData)
