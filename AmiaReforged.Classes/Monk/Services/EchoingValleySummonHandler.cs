@@ -53,7 +53,7 @@ public class EchoingValleySummonHandler
         if (echo.Location is null) return;
         
         echo.Location.ApplyEffect(EffectDuration.Instant, echoVfx);
-        foreach (NwGameObject nwObject in echo.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        foreach (NwGameObject nwObject in echo.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, false))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
             
@@ -80,7 +80,7 @@ public class EchoingValleySummonHandler
         if (echo.Location is null) return;
         
         echo.Location.ApplyEffect(EffectDuration.Instant, echoVfx);
-        foreach (NwGameObject nwObject in echo.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        foreach (NwGameObject nwObject in echo.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, false))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
             
