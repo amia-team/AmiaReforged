@@ -51,6 +51,10 @@ public class EchoingValleySummonHandler
         Effect echoEffect = Effect.LinkEffects(echoDamage, echoDamageVfx);
         
         echo.Location?.ApplyEffect(EffectDuration.Instant, echoEffect);
+
+        if (echo.Master is null) return;
+
+        echo.ActionForceMoveTo(echo.Master, true);
     }
     
     /// <summary>
