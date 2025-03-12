@@ -1,5 +1,6 @@
 using System.Reflection;
 using Anvil.API;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui;
 
@@ -20,8 +21,8 @@ public class PlayerToolsModel
     private List<IToolWindow> GetVisibleWindows()
     {
         List<IToolWindow> windows = GetAvailableWindows();
-        if (_searchTerm == string.Empty) return windows;
-
+        if (_searchTerm.IsNullOrEmpty()) return windows;
+        
         return windows.FindAll(w => w.Title.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
     }
 
