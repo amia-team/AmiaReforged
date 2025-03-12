@@ -30,7 +30,7 @@ public class WarlockSummonUtilHandler
             if (!obj.Creature.ResRef.Contains(value: "wlk")) return;
 
             NwCreature summon = obj.Creature;
-            summon.SetIsDestroyable(true, false);
+            summon.IsDestroyable = true;
 
             await NwTask.Delay(TimeSpan.FromSeconds(2.5f));
             summon.GetObjectVariable<LocalVariableInt>(name: "wlk_unsummonable").Value = 1;
