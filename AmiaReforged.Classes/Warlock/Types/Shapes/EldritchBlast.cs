@@ -1,4 +1,6 @@
 ﻿using AmiaReforged.Classes.Warlock.Types.EssenceEffects;
+using NLog;
+using NLog.Fluent;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Warlock.Types.Shapes;
@@ -8,13 +10,21 @@ public static class EldritchBlast
     public static void CastEldritchBlast(uint nwnObjectId, uint targetObject, EssenceType essenceType,
         EssenceEffectApplier effectApplier)
     {
+        LogManager.GetCurrentClassLogger().Info("Casting Eldritch Blast.");
         if (SpellFailure(nwnObjectId) == TRUE) return;
 
         SignalEvent(targetObject, EventSpellCastAt(nwnObjectId, 981));
+        LogManager.GetCurrentClassLogger().Info("EventSpellCastAt signal sent.");
+
         int damage = EldritchDamage.CalculateDamageAmount(nwnObjectId);
+        LogManager.GetCurrentClassLogger().Info($"Damage calculated: {damage}.");
+
         int touchAttackRanged = WarlockConstants.RangedTouch(targetObject);
+        LogManager.GetCurrentClassLogger().Info($"Ranged touch attack: {touchAttackRanged}.");
 
         if (touchAttackRanged == FALSE) return;
+
+        LogManager.GetCurrentClassLogger().Info("Touch attack successful.");
 
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfx.Beam(essenceType, nwnObjectId), targetObject, 1.1f);
         effectApplier.ApplyEffects(damage * touchAttackRanged);

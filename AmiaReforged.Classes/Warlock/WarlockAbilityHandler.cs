@@ -96,9 +96,6 @@ public class WarlockAbilityHandler
                     message: "You cannot perform that action on a friendly target due to PvP settings");
             return;
         }
-        
-
-     
     }
 
     private void OnIllegalCast(OnSpellCast obj)
