@@ -9,7 +9,7 @@ public class BreachList
 {
     private const Spell GreaterSanctuary = (Spell)443;
 
-    public List<Spell> BreachSpells = new()
+    public static readonly List<Spell> BreachSpells = new()
     {
         Spell.GreaterSpellMantle,
         Spell.Premonition,
