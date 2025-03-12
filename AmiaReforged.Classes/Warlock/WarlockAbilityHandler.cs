@@ -87,15 +87,18 @@ public class WarlockAbilityHandler
         if (NWScript.GetLevelByClass(57, obj.Caster) <= 0) return;
         if (obj.TargetObject is NwCreature creature)
         {
-            if (!obj.Caster.IsReactionTypeFriendly(creature)) return;            
+            if (!(obj.Spell.Id == 981 || obj.Spell.Id == 982 || obj.Spell.Id == 1005)) return;
+
+            if (!obj.Caster.IsReactionTypeFriendly(creature)) return;  
+            obj.PreventSpellCast = true;
+            if (obj.Caster.IsPlayerControlled(out NwPlayer? player))
+                player.SendServerMessage(
+                    message: "You cannot perform that action on a friendly target due to PvP settings");
+            return;
         }
         
-        if (!(obj.Spell.Id == 981 || obj.Spell.Id == 982 || obj.Spell.Id == 1005)) return;
 
-        obj.PreventSpellCast = true;
-        if (obj.Caster.IsPlayerControlled(out NwPlayer? player))
-            player.SendServerMessage(
-                message: "You cannot perform that action on a friendly target due to PvP settings");
+     
     }
 
     private void OnIllegalCast(OnSpellCast obj)

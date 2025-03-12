@@ -2,12 +2,15 @@
 using AmiaReforged.Classes.Warlock.Types;
 using AmiaReforged.Classes.Warlock.Types.EssenceEffects;
 using AmiaReforged.Classes.Warlock.Types.Shapes;
+using NLog;
+using NLog.Fluent;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells;
 
 public class EldritchBlasts
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public void CastEldritchBlasts(uint nwnObjectId)
     {
         int spellId = GetSpellId();
@@ -16,6 +19,8 @@ public class EldritchBlasts
         uint targetObject = GetSpellTargetObject();
         bool hasEldritchMastery = GetHasFeat(1298, nwnObjectId) == TRUE;
 
+        Log.Info($"Casting Eldritch Blast with essence {essence}.");
+        
         if (NwEffects.IsPolymorphed(nwnObjectId))
         {
             SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
