@@ -1,4 +1,6 @@
-﻿using NWN.Core;
+﻿using AmiaReforged.Classes.Spells;
+using Anvil.API;
+using NWN.Core;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.EffectUtils;
@@ -473,5 +475,36 @@ public static class NwEffects
         customShapeEffect = TagEffect(customShapeEffect, sNewTag: "customshape_effect");
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, customShapeEffect, target, duration);
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_POLYMORPH), target);
+    }
+
+    public static void DoBreach(NwObject target, int breachAmount, int? spellResistanceDecrease = null, Spell? sourceSpell = null)
+    {
+        NwCreature creature = (NwCreature)target;
+
+        List<Spell> breachList = BreachList.BreachSpells;
+        List<Spell> breachableSpellEffects = new();
+        
+        foreach (Effect effect in creature.ActiveEffects)
+        {
+            if (effect.Spell is null) continue;
+            
+            breachableSpellEffects.Add(effect.Spell.SpellType);
+        }
+
+        breachableSpellEffects = breachList.Intersect(breachableSpellEffects).ToList();
+
+        if (breachableSpellEffects.Count == 0) return;
+
+        for (int i = 0; i < breachAmount; i++)
+        {
+            Spell spell = breachableSpellEffects[i];
+            Effect? effectToBreach = creature.ActiveEffects.FirstOrDefault(effect => effect.Spell!.SpellType == spell);
+
+            if (effectToBreach == null) return;
+            
+            creature.RemoveEffect(effectToBreach);
+            creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpBreach));
+        }
+
     }
 }
