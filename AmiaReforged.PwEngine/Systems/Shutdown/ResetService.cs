@@ -82,7 +82,7 @@ public class ResetService
                 continue;
             }
 
-            if (instancePlayer.LoginCreature!.ActiveEffects.Any(e => e.EffectType == EffectType.Polymorph))
+            if (instancePlayer.LoginCreature != null && instancePlayer.LoginCreature.ActiveEffects.Any(e => e.EffectType == EffectType.Polymorph))
             {
                 instancePlayer.SendServerMessage(
                     message: "-- Polymorphed PCs can't be saved. Please unpolymorph to save your PC. --");
