@@ -243,7 +243,17 @@ public static class CrashingMeteor
         NwCreature monk = (NwCreature)castData.Caster;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
+        VfxType elementalDamageVfx = elementalType switch
+        {
+            DamageType.Fire => VfxType.ImpFlameS,
+            DamageType.Cold => VfxType.ImpFrostS,
+            DamageType.Electrical => VfxType.ComHitElectrical,
+            DamageType.Acid => VfxType.ImpAcidS,
+            _ => VfxType.ImpFlameS
+        };
+        
+        KiShout.DoKiShout(castData, elementalType, elementalDamageVfx);
+        
         int vulnerabilityPct = monkLevel switch
         {
             >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 20,
@@ -259,51 +269,18 @@ public static class CrashingMeteor
             DamageType.Acid => VfxType.DurAuraPulseGreenBlack,
             _ => VfxType.DurAuraPulseOrangeBlack
         };
-        VfxType elementalDamageVfx = elementalType switch
-        {
-            DamageType.Fire => VfxType.ImpFlameS,
-            DamageType.Cold => VfxType.ImpFrostS,
-            DamageType.Electrical => VfxType.ComHitElectrical,
-            DamageType.Acid => VfxType.ImpAcidS,
-            _ => VfxType.ImpFlameS
-        };
-
-        // Regular ki shout effect
-        Effect kiShoutVfx = Effect.VisualEffect(VfxType.FnfHowlMind);
-        Effect kiShoutEffect = Effect.Stunned();
-        kiShoutEffect.SubType = EffectSubType.Supernatural;
-        TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
+        
 
         // Elemental effect
         Effect elementalEffect = Effect.LinkEffects(Effect.DamageImmunityDecrease(elementalType, vulnerabilityPct),
             Effect.VisualEffect(elementalVfx));
-        elementalEffect.SubType = EffectSubType.Supernatural;
-
-        monk.ApplyEffect(EffectDuration.Instant, kiShoutVfx);
+        
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
             if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
-
-            CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.AbilityHowlSonic)!);
-
-            int damageAmount = Random.Shared.Roll(4, monkLevel);
-            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, elementalType),
-                Effect.VisualEffect(elementalDamageVfx));
-
-            creatureInShape.ApplyEffect(EffectDuration.Temporary, elementalEffect, effectDuration);
-            creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
-
-            SavingThrowResult savingThrowResult =
-                creatureInShape.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
-
-            if (savingThrowResult is SavingThrowResult.Failure)
-            {
-                creatureInShape.ApplyEffect(EffectDuration.Temporary, kiShoutEffect, effectDuration);
-                continue;
-            }
-
-            creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+            
+            creatureInShape.ApplyEffect(EffectDuration.Temporary, elementalEffect, NwTimeSpan.FromRounds(3));
         }
     }
 }
