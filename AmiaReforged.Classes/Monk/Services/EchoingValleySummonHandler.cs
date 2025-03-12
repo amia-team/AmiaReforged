@@ -106,6 +106,8 @@ public class EchoingValleySummonHandler
             foreach (NwCreature associate in monk.Associates)
                 if (associate.ResRef == "summon_echo")
                     associate.IsDestroyable = true;
+            
+            FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
         }
     }
     
