@@ -18,7 +18,6 @@ public class EchoingValleySummonHandler
         if (environment == "live") return;
         
         NwModule.Instance.OnAssociateAdd += OnEchoAdd;
-        // eventService.SubscribeAll<OnAssociateAdd, OnAssociateAdd.Factory>(OnEchoAddAfter, EventCallbackType.After);
         NwModule.Instance.OnEffectApply += OnEchoAwakened;
         
         Log.Info(message: "Monk Echoing Valley Summon Handler initialized.");
@@ -109,34 +108,6 @@ public class EchoingValleySummonHandler
             
             FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
         }
-    }
-    
-    /// <summary>
-    /// Sets the echoes destroyable again
-    /// </summary>
-    private void OnEchoAddAfter(OnAssociateAdd eventData)
-    {
-        if (eventData.Associate.ResRef is not "summon_echo") return;
-
-        NwCreature monk = eventData.Owner;
-        
-        // Shows the stupid "unsummoning creature" message again
-        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
-        
-        eventData.Associate.IsDestroyable = true;
-
-        MakeEchoesDestroyable();
-        return;
-        
-        async void MakeEchoesDestroyable()
-        {
-            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-        
-            foreach (NwCreature associate in monk.Associates)
-                if (associate.ResRef == "summon_echo")
-                    associate.IsDestroyable = true;
-        }
-        
     }
     
     /// <summary>
