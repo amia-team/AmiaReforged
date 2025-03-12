@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Classes.Warlock.Types.EssenceEffects;
+using Anvil.API;
 using NLog;
 using NLog.Fluent;
 using static NWN.Core.NWScript;
@@ -19,7 +20,8 @@ public static class EldritchBlast
         int damage = EldritchDamage.CalculateDamageAmount(nwnObjectId);
         LogManager.GetCurrentClassLogger().Info($"Damage calculated: {damage}.");
 
-        int touchAttackRanged = WarlockConstants.RangedTouch(targetObject);
+        int touchAttackRanged = WarlockConstants.RangedTouch(nwnObjectId, targetObject);
+        
         LogManager.GetCurrentClassLogger().Info($"Ranged touch attack: {touchAttackRanged}.");
 
         if (touchAttackRanged == FALSE) return;

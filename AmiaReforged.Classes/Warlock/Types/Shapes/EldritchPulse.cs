@@ -14,7 +14,7 @@ public static class EldritchPulse
         if (NwEffects.IsValidSpellTarget(targetObject, 3, caster))
         {
             // Single target effect
-            int touchAttackRanged = WarlockConstants.RangedTouch(targetObject);
+            int touchAttackRanged = WarlockConstants.RangedTouch(caster, targetObject);
             if (touchAttackRanged == FALSE) return;
             effectApplier.ApplyEffects(damage * touchAttackRanged);
             SignalEvent(targetObject, EventSpellCastAt(caster, 1004));
