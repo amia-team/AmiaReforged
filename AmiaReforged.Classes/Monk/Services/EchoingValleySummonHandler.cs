@@ -18,8 +18,7 @@ public class EchoingValleySummonHandler
         if (environment == "live") return;
         
         NwModule.Instance.OnAssociateAdd += OnEchoAdd;
-        // eventService.SubscribeAll<OnAssociateAdd, OnAssociateAdd.Factory>(OnEchoAddAfter, EventCallbackType.After);
-        eventService.SubscribeAll<OnEffectApply, OnEffectApply.Factory>(MakeDestroyable, EventCallbackType.After);
+        eventService.SubscribeAll<OnAssociateAdd, OnAssociateAdd.Factory>(OnEchoAddAfter, EventCallbackType.After);
         NwModule.Instance.OnEffectApply += OnEchoAwakened;
         
         Log.Info(message: "Monk Echoing Valley Summon Handler initialized.");
@@ -94,7 +93,7 @@ public class EchoingValleySummonHandler
         eventData.Associate.ApplyEffect(EffectDuration.Permanent, echoEffect);
         
         foreach (NwCreature associate in monk.Associates)
-            if (associate.Tag == "summon_echo")
+            if (associate.ResRef == "summon_echo")
                 associate.IsDestroyable = false;
     }
     
@@ -110,28 +109,7 @@ public class EchoingValleySummonHandler
         // Shows the stupid "unsummoning creature" message again
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
         
-        foreach (NwCreature associate in monk.Associates)
-            if (associate.Tag == "summon_echo")
-                associate.IsDestroyable = true;
-    }
-    
-    private void MakeDestroyable(OnEffectApply eventData)
-    {
-        if (eventData.Object.ResRef is not "summon_echo") return;
-        if (eventData.Effect.Tag is not "summonecho_effect") return;
-
-        NwCreature echo = (NwCreature)eventData.Object;
-
-        if (echo.Master is null) return;
-        
-        NwCreature monk = echo.Master;
-        
-        // Shows the stupid "unsummoning creature" message again
-        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
-        
-        foreach (NwCreature associate in monk.Associates)
-            if (associate.Tag == "summon_echo")
-                associate.IsDestroyable = true;
+        eventData.Associate.IsDestroyable = true;
     }
     
     /// <summary>
