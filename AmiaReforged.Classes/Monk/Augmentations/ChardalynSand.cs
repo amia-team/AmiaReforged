@@ -43,8 +43,8 @@ public static class ChardalynSand
     }
     
     /// <summary>
-    /// Eagle Strike has a 1% chance to impart a wild magic effect.
-    /// Each Ki Focus increases the chance by 1% to a maximum of 5%.
+    /// Eagle Strike has a 30% chance to impart a wild magic effect.
+    /// Each Ki Focus makes potent effects more likely to occur.
     /// </summary>
     private static void AugmentEagleStrike(OnCreatureAttack attackData)
     {
@@ -58,7 +58,7 @@ public static class ChardalynSand
         
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int wildMagicPct = MonkUtilFunctions.GetKiFocus(monk) switch
+        int wildMagicTier = MonkUtilFunctions.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -68,8 +68,8 @@ public static class ChardalynSand
 
         int d100Roll = Random.Shared.Roll(100);
         
-        if (d100Roll <= wildMagicPct)
-            WildMagicEffects.DoWildMagic(monk, targetCreature, monkLevel, dc);
+        if (d100Roll <= 30)
+            WildMagicEffects.DoWildMagic(monk, targetCreature, monkLevel, dc, wildMagicTier);
     }
     
     /// <summary>
