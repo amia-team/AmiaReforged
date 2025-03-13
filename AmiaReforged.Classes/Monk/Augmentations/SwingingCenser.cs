@@ -57,11 +57,11 @@ public static class SwingingCenser
         if (!monk.IsReactionTypeHostile((NwCreature)attackData.Target)) return;
         
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int healAmount = monkLevel switch
+        int healAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => Random.Shared.Roll(6, 2),
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => Random.Shared.Roll(6, 3),
-            MonkLevel.KiFocusIii => Random.Shared.Roll(6, 4),
+            KiFocus.KiFocus1 => Random.Shared.Roll(6, 2),
+            KiFocus.KiFocus2 => Random.Shared.Roll(6, 3),
+            KiFocus.KiFocus3 => Random.Shared.Roll(6, 4),
             _ => Random.Shared.Roll(6)
         };
         
@@ -156,11 +156,11 @@ public static class SwingingCenser
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         
-        int abBonus = monkLevel switch
+        int abBonus = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
         Effect abBonusEffect = Effect.LinkEffects(Effect.AttackIncrease(abBonus), 
@@ -190,12 +190,11 @@ public static class SwingingCenser
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int healAmount = monkLevel * 2;
 
-        int pulseAmount = monkLevel switch
+        int pulseAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            // Wholeness is gained at 7
-            MonkLevel.KiFocusIii => 4,
-            >= MonkLevel.KiFocusIi => 3,
-            >= MonkLevel.KiFocusI => 2,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
 
@@ -246,11 +245,11 @@ public static class SwingingCenser
         // Adjust as appropriate. 1 round per monk level.
         TimeSpan effectTime = NwTimeSpan.FromRounds(monkLevel);
         
-        int regen = monkLevel switch
+        int regen = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
-            MonkLevel.KiFocusIii => 8,
+            KiFocus.KiFocus1 => 4,
+            KiFocus.KiFocus2 => 6,
+            KiFocus.KiFocus3 => 8,
             _ => 2
         };
 

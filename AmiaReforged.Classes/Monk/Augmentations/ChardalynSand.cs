@@ -59,11 +59,11 @@ public static class ChardalynSand
         
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int wildMagicPct = monkLevel switch
+        int wildMagicPct = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
 
@@ -86,11 +86,11 @@ public static class ChardalynSand
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
         DamageData<short> damageData = attackData.DamageData;
         short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
-        short bonusDamage = monkLevel switch
+        short bonusDamage = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
 
@@ -107,13 +107,14 @@ public static class ChardalynSand
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         
-        int spellsAbsorbed = monkLevel switch
+        int spellsAbsorbed = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
-            MonkLevel.KiFocusIii => 8,
+            KiFocus.KiFocus1 => 4,
+            KiFocus.KiFocus2 => 6,
+            KiFocus.KiFocus3 => 8,
             _ => 2
         };
+        
         Effect spellAbsorb = Effect.SpellLevelAbsorption(spellsAbsorbed);
         Effect spellAbsorbVfx = Effect.VisualEffect(VfxType.DurSpellturning);
         Effect emptyBodyEffect = Effect.LinkEffects(spellAbsorb, spellAbsorbVfx);
@@ -133,11 +134,11 @@ public static class ChardalynSand
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         
-        int spellsBreached = monkLevel switch
+        int spellsBreached = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
 

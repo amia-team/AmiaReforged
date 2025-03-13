@@ -56,11 +56,11 @@ public static class CrackedVessel
 
         NwCreature monk = attackData.Attacker;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int damageDice = monkLevel switch
+        int damageDice = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
         int damageSides = IsInjured(monk) ? 2 : IsBadlyWounded(monk) ? 4 : IsNearDeath(monk) ? 6 : 0;
@@ -95,11 +95,11 @@ public static class CrackedVessel
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int damageDice = monkLevel switch
+        int damageDice = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
-            MonkLevel.KiFocusIii => 8,
+            KiFocus.KiFocus1 => 4,
+            KiFocus.KiFocus2 => 6,
+            KiFocus.KiFocus3 => 8,
             _ => 2
         };
         int damageSides = IsInjured(monk) ? 6 : IsBadlyWounded(monk) ? 8 : IsNearDeath(monk) ? 10 : 0;
@@ -146,11 +146,11 @@ public static class CrackedVessel
         
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int pctImmunityBonus = monkLevel switch
+        int pctImmunityBonus = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 5,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 10,
-            MonkLevel.KiFocusIii => 15,
+            KiFocus.KiFocus1 => 5,
+            KiFocus.KiFocus2 => 10,
+            KiFocus.KiFocus3 => 15,
             _ => 0
         };
         int pctImmunityBase = IsInjured(monk) ? 5 : IsBadlyWounded(monk) ? 10 : IsNearDeath(monk) ? 15 : 0;
@@ -183,11 +183,11 @@ public static class CrackedVessel
 
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
 
-        int pctVulnerability = monkLevel switch
+        int pctVulnerability = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 10,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 15,
-            MonkLevel.KiFocusIii => 20,
+            KiFocus.KiFocus1 => 10,
+            KiFocus.KiFocus2 => 15,
+            KiFocus.KiFocus3 => 20,
             _ => 5
         };
         Effect quiveringEffect = Effect.LinkEffects(

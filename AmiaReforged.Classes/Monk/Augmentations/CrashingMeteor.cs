@@ -54,11 +54,11 @@ public static class CrashingMeteor
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int diceAmount = monkLevel switch
+        int diceAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
-            MonkLevel.KiFocusIii => 8,
+            KiFocus.KiFocus1 => 4,
+            KiFocus.KiFocus2 => 6,
+            KiFocus.KiFocus3 => 8,
             _ => 2
         };
         Effect elementalAoeVfx = elementalType switch
@@ -138,11 +138,11 @@ public static class CrashingMeteor
         DamageData<short> damageData = attackData.DamageData;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         short elementalDamage = damageData.GetDamageByType(elementalType);
-        short bonusDamageElemental = monkLevel switch
+        short bonusDamageElemental = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
 
@@ -162,11 +162,11 @@ public static class CrashingMeteor
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int diceAmount = monkLevel switch
+        int diceAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
-            MonkLevel.KiFocusIii => 8,
+            KiFocus.KiFocus1 => 4,
+            KiFocus.KiFocus2 => 6,
+            KiFocus.KiFocus3 => 8,
             _ => 2
         };
         Effect elementalAoeVfx = elementalType switch
@@ -254,11 +254,11 @@ public static class CrashingMeteor
         
         KiShout.DoKiShout(castData, elementalType, elementalDamageVfx);
         
-        int vulnerabilityPct = monkLevel switch
+        int vulnerabilityPct = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 20,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 30,
-            MonkLevel.KiFocusIii => 40,
+            KiFocus.KiFocus1 => 20,
+            KiFocus.KiFocus2 => 30,
+            KiFocus.KiFocus3 => 40,
             _ => 10
         };
         VfxType elementalVfx = elementalType switch

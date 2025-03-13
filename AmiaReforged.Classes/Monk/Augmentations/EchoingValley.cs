@@ -57,11 +57,11 @@ public static class EchoingValley
         if (!targetCreature.IsReactionTypeHostile(monk)) return;
         
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int echoCap = monkLevel switch
+        int echoCap = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
         

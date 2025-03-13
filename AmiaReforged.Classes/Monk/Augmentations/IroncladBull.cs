@@ -59,11 +59,11 @@ public static class IroncladBull
         // The effect only affects Body Ki Point recharge, so duh
         if (monkLevel < MonkLevel.BodyKiPointsI) return;
         
-        int kiBodyRegenChance = monkLevel switch
+        int kiBodyRegenChance = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
 
@@ -83,11 +83,11 @@ public static class IroncladBull
         
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int resistanceAmount = monkLevel switch
+        int resistanceAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 10,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 15,
-            MonkLevel.KiFocusIii => 20,
+            KiFocus.KiFocus1 => 10,
+            KiFocus.KiFocus2 => 15,
+            KiFocus.KiFocus3 => 20,
             _ => 5
         };
         Effect kiBarrierEffect = Effect.LinkEffects(Effect.DamageResistance(DamageType.Bludgeoning, resistanceAmount), 
@@ -109,11 +109,11 @@ public static class IroncladBull
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         
-        int tempHpAmount = monkLevel switch
+        int tempHpAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 40,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 60,
-            MonkLevel.KiFocusIii => 80,
+            KiFocus.KiFocus1 => 40,
+            KiFocus.KiFocus2 => 60,
+            KiFocus.KiFocus3 => 80,
             _ => 20
         };
         
@@ -133,11 +133,11 @@ public static class IroncladBull
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int roundsAmount = monkLevel switch
+        int roundsAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
 
