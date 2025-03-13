@@ -56,20 +56,10 @@ public static class ChardalynSand
         
         if (!targetCreature.IsReactionTypeHostile(monk)) return;
         
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int wildMagicTier = MonkUtilFunctions.GetKiFocus(monk) switch
-        {
-            KiFocus.KiFocus1 => 2,
-            KiFocus.KiFocus2 => 3,
-            KiFocus.KiFocus3 => 4,
-            _ => 1
-        };
-
         int d100Roll = Random.Shared.Roll(100);
         
         if (d100Roll <= 30)
-            WildMagicEffects.DoWildMagic(monk, targetCreature, monkLevel, dc, wildMagicTier);
+            WildMagicEffects.DoWildMagic(monk, targetCreature);
     }
     
     /// <summary>
