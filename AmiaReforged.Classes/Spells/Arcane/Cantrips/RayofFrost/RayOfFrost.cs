@@ -25,7 +25,7 @@ public class RayOfFrost : ISpell
         if (target == null) return;
 
         Effect beam = Effect.Beam(VfxType.BeamCold, caster, BodyNode.Hand);
-        target.ApplyEffect(EffectDuration.Instant, beam);
+        target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1.1));
 
         int numberOfDie = caster.CasterLevel / 2;
         LogManager.GetCurrentClassLogger().Info($"Number of die: {numberOfDie}");
