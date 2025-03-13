@@ -7,7 +7,7 @@ using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(JobSystemPLCPersist))]
+// [ServiceBinding(typeof(JobSystemPLCPersist))]
 public class JobSystemPLCPersist
 {
     private readonly PersistPLCService _persistPLCService;

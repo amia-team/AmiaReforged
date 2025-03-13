@@ -8,7 +8,7 @@ using NLog;
 
 namespace AmiaReforged.Core.Services;
 
-[ServiceBinding(typeof(PersistPLCService))]
+// [ServiceBinding(typeof(PersistPLCService))]
 public class PersistPLCService
 {
     private readonly DatabaseContextFactory _ctxFactory;
