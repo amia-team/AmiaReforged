@@ -107,7 +107,6 @@ public static class IroncladBull
         WholenessOfBody.DoWholenessOfBody(castData);
         
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         
         int tempHpAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
@@ -131,7 +130,7 @@ public static class IroncladBull
         if (castData.TargetObject is not NwCreature targetCreature) return;
         
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int roundsAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {

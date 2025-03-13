@@ -56,7 +56,6 @@ public static class SwingingCenser
         // Target must be a hostile creature
         if (!monk.IsReactionTypeHostile((NwCreature)attackData.Target)) return;
         
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int healAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => Random.Shared.Roll(6, 2),
@@ -135,8 +134,6 @@ public static class SwingingCenser
         // If monk has Body Ki Points, mount up the heal counter to regenerate a body ki point
         void CheckHealCounter(int amountToCheck)
         {
-            if (monkLevel < MonkLevel.BodyKiPointsI) return;
-            
             LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>("swingingcenser_healcounter");
             healCounter.Value += amountToCheck;
 
@@ -154,7 +151,6 @@ public static class SwingingCenser
         KiShout.DoKiShout(castData);
         
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         
         int abBonus = MonkUtilFunctions.GetKiFocus(monk) switch
         {

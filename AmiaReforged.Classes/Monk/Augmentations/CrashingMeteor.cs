@@ -1,4 +1,3 @@
-using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
@@ -52,7 +51,6 @@ public static class CrashingMeteor
 
         NwCreature monk = attackData.Attacker;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int diceAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
@@ -136,7 +134,6 @@ public static class CrashingMeteor
         NwCreature monk = attackData.Attacker;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
         DamageData<short> damageData = attackData.DamageData;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         short elementalDamage = damageData.GetDamageByType(elementalType);
         short bonusDamageElemental = MonkUtilFunctions.GetKiFocus(monk) switch
         {
@@ -160,7 +157,6 @@ public static class CrashingMeteor
 
         NwCreature monk = (NwCreature)castData.Caster;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int diceAmount = MonkUtilFunctions.GetKiFocus(monk) switch
         {
@@ -242,7 +238,6 @@ public static class CrashingMeteor
     {
         NwCreature monk = (NwCreature)castData.Caster;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         VfxType elementalDamageVfx = elementalType switch
         {
             DamageType.Fire => VfxType.ImpFlameS,

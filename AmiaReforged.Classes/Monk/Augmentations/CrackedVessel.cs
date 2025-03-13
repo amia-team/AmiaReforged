@@ -5,7 +5,6 @@ using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
-using NLog.Targets;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
@@ -55,7 +54,7 @@ public static class CrackedVessel
         if (attackData.Target is not NwCreature) return;
 
         NwCreature monk = attackData.Attacker;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+
         int damageDice = MonkUtilFunctions.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
@@ -72,7 +71,7 @@ public static class CrackedVessel
         negativeDamage += (short)damageAmount;
         damageData.SetDamageByType(DamageType.Negative, negativeDamage);
         
-        if (monkLevel < MonkLevel.BodyKiPointsI || !attackData.KillingBlow) return;
+        if (!attackData.KillingBlow) return;
         
         LocalVariableInt killCounter = monk.GetObjectVariable<LocalVariableInt>("crackedvessel_killcounter");
         killCounter.Value++;
@@ -93,7 +92,7 @@ public static class CrackedVessel
         WholenessOfBody.DoWholenessOfBody(castData);
 
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        
         int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int damageDice = MonkUtilFunctions.GetKiFocus(monk) switch
         {
@@ -103,6 +102,7 @@ public static class CrackedVessel
             _ => 2
         };
         int damageSides = IsInjured(monk) ? 6 : IsBadlyWounded(monk) ? 8 : IsNearDeath(monk) ? 10 : 0;
+        
         Effect aoeVfx = MonkUtilFunctions.ResizedVfx(VfxType.FnfLosEvil30, RadiusSize.Large);
         
         monk.ApplyEffect(EffectDuration.Instant, aoeVfx);
@@ -145,7 +145,6 @@ public static class CrackedVessel
         if (!monk.IsInCombat) return;
         
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
         int pctImmunityBonus = MonkUtilFunctions.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 5,
@@ -180,8 +179,6 @@ public static class CrackedVessel
         if (castData.TargetObject is not NwCreature targetCreature) return;
 
         NwCreature monk = (NwCreature)castData.Caster;
-
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
 
         int pctVulnerability = MonkUtilFunctions.GetKiFocus(monk) switch
         {

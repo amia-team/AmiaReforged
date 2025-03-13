@@ -1,5 +1,4 @@
 using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
@@ -56,7 +55,6 @@ public static class EchoingValley
         if (attackData.Target is not NwCreature targetCreature) return;
         if (!targetCreature.IsReactionTypeHostile(monk)) return;
         
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int echoCap = MonkUtilFunctions.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,

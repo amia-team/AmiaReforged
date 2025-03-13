@@ -1,5 +1,4 @@
 using AmiaReforged.Classes.EffectUtils;
-using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
@@ -82,7 +81,6 @@ public static class ChardalynSand
         AxiomaticStrike.DoAxiomaticStrike(attackData);
 
         NwCreature monk = attackData.Attacker;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
         DamageData<short> damageData = attackData.DamageData;
         short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
@@ -132,7 +130,6 @@ public static class ChardalynSand
         KiShout.DoKiShout(castData, DamageType.Magical, VfxType.ImpMagblue);
 
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         
         int spellsBreached = MonkUtilFunctions.GetKiFocus(monk) switch
         {
