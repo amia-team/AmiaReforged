@@ -32,7 +32,6 @@ public class PersistPLCService
             Log.Error(e, "Error saving invasion record");
         }
 
-        await NwTask.SwitchToMainThread();
     }
 
     public async Task UpdatePersistPLC(PersistPLC persistPLC)
@@ -49,7 +48,6 @@ public class PersistPLCService
             Log.Error(e, "Error updating invasion record");
         }
 
-        await NwTask.SwitchToMainThread();
     }
 
     public async Task DeletePersistPLC(PersistPLC persistPLC)
@@ -66,7 +64,6 @@ public class PersistPLCService
             Log.Error(e, "Error deleting persistent plc record");
         }
 
-        await NwTask.SwitchToMainThread();
     }
 
     public async Task<List<PersistPLC>> GetAllPersistPLCRecords()
@@ -83,7 +80,6 @@ public class PersistPLCService
             Log.Error(e, "Error getting all invasion records");
         }
 
-        await NwTask.SwitchToMainThread();
         return persistplc; 
     }
 
@@ -103,7 +99,6 @@ public class PersistPLCService
             Log.Error(e, "Error getting certain invasion record");
         }
 
-        await NwTask.SwitchToMainThread();
         return persistplc;
     }
 
