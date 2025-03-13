@@ -24,6 +24,34 @@ public class SpellCastingService
             _spellImpactHandlers.Add(spell.ImpactScript, spell);
             scriptHandleFactory.RegisterScriptHandler(spell.ImpactScript, HandleSpellImpact);
         }
+
+        NwModule.Instance.OnSpellCast += PreventRestricedCasts;
+    }
+
+    private void PreventRestricedCasts(OnSpellCast obj)
+    {
+        if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
+
+        NwCreature? character = player.LoginCreature;
+
+        if (character is null) return;
+
+        if (character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
+        {
+            NWScript.FloatingTextStringOnCreature(sStringToDisplay: "- You cannot cast magic in this area! -",
+                character,
+                NWScript.FALSE);
+
+            obj.PreventSpellCast = true;
+            return;
+        }
+
+        if (obj.TargetObject is null) return;
+
+        if (!obj.TargetObject.IsPlayerControlled(out NwPlayer? nwPlayer)) return;
+        if (character.Area?.PVPSetting != PVPSetting.None) return;
+        NWScript.SendMessageToPC(character, szMessage: "PVP is not allowed in this area.");
+        obj.PreventSpellCast = true;
     }
 
     private ScriptHandleResult HandleSpellImpact(CallInfo callInfo)
@@ -43,15 +71,6 @@ public class SpellCastingService
 
         if (target is null)
         {
-            // This is an AOE
-            if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
-            {
-                NWScript.FloatingTextStringOnCreature(sStringToDisplay: "- You cannot cast magic in this area! -",
-                    casterCreature,
-                    NWScript.FALSE);
-                return ScriptHandleResult.Handled;
-            }
-
             DoCasterLevelOverride(casterCreature);
 
             spell.OnSpellImpact(eventData);
@@ -59,16 +78,7 @@ public class SpellCastingService
             RevertCasterLevelOverride(casterCreature);
             return ScriptHandleResult.Handled;
         }
-
-        if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
-        {
-            NWScript.FloatingTextStringOnCreature(sStringToDisplay: "- You cannot cast magic in this area! -",
-                casterCreature,
-                NWScript.FALSE);
-            return ScriptHandleResult.Handled;
-        }
-
-
+        
         if (target is NwCreature targetCreature)
         {
             bool targetIsInParty = false;
@@ -86,12 +96,6 @@ public class SpellCastingService
             {
                 NWScript.SendMessageToPC(casterCreature,
                     szMessage: "You cannot target a friendly creature with this spell.");
-                return ScriptHandleResult.Handled;
-            }
-
-            if (targetCreature.IsPlayerControlled && areaPvpSetting == PVPSetting.None)
-            {
-                NWScript.SendMessageToPC(casterCreature, szMessage: "PVP is not allowed in this area.");
                 return ScriptHandleResult.Handled;
             }
 
