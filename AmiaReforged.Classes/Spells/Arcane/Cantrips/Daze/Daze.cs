@@ -26,7 +26,7 @@ public class Daze : ISpell
         if (eventData.Caster is not NwCreature casterCreature) return;
         if (eventData.TargetObject == null) return;
 
-        if (!ResistedSpell) return;
+        if (ResistedSpell) return;
 
         Ability primaryAbility = Ability.Charisma;
         if (eventData.SpellCastClass != null) primaryAbility = eventData.SpellCastClass.PrimaryAbility;

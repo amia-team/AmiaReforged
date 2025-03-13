@@ -27,7 +27,7 @@ public class InflictMinorWounds : ISpell
 
         int damage = CalculateDamage(casterCreature);
 
-        if (!ResistedSpell || !skipTouchAttack) return;
+        if (ResistedSpell || !skipTouchAttack) return;
 
         ApplyEffect(eventData, damage);
     }

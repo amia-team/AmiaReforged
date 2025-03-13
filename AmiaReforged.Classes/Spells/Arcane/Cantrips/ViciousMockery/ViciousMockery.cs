@@ -49,7 +49,7 @@ public class ViciousMockery : ISpell
 
         const int concentrationPenalty = 10;
 
-        if (!ResistedSpell)
+        if (ResistedSpell)
         {
             Effect damageEffect = Effect.Damage(damage, DamageType.Sonic);
             Effect skillPenalty =

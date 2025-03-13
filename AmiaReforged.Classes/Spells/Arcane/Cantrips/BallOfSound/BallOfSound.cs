@@ -26,7 +26,7 @@ public class BallOfSound : ISpell
             damage += damage / 2;
         }
 
-        if (!ResistedSpell ||
+        if (ResistedSpell ||
             eventData.TargetObject.ActiveEffects.Any(e => e.EffectType == EffectType.Deaf)) return;
 
         ApplyEffect(eventData, damage);

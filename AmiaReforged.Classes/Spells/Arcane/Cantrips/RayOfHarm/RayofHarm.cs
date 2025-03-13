@@ -53,6 +53,6 @@ public class RayofHarm : ISpell
 
     private void ApplyDamage(NwGameObject target, Effect damageEffect)
     {
-        if (!ResistedSpell) target.ApplyEffect(EffectDuration.Instant, damageEffect);
+        if (ResistedSpell) target.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 }

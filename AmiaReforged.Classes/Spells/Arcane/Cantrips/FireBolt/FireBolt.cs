@@ -26,7 +26,7 @@ public class FireBolt : ISpell
 
         int damage = CalculateDamage(caster);
 
-        if (!ResistedSpell) return;
+        if (ResistedSpell) return;
 
         ApplyDamage(damage, target);
     }

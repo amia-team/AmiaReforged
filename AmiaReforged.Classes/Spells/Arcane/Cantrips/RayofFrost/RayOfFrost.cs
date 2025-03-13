@@ -26,14 +26,15 @@ public class RayOfFrost : ISpell
 
         Effect beam = Effect.Beam(VfxType.BeamCold, caster, BodyNode.Hand);
         target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1.1));
-
+        if (ResistedSpell) return;
+        
         int numberOfDie = caster.CasterLevel / 2;
         LogManager.GetCurrentClassLogger().Info($"Number of die: {numberOfDie}");
         int damage = NWScript.d3(numberOfDie);
 
         Effect damageEffect = Effect.Damage(damage, DamageType.Cold);
 
-        if (!ResistedSpell) target.ApplyEffect(EffectDuration.Instant, damageEffect);
+        target.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 
     public void SetSpellResisted(bool result)

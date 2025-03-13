@@ -28,7 +28,7 @@ public class AcidBolt : ISpell
 
         int damage = CalculateDamage(casterCreature, caster);
 
-        if (!ResistedSpell) return;
+        if (ResistedSpell) return;
 
         ApplyDamage(damage, target);
     }

@@ -28,7 +28,7 @@ public class CureMinorWounds : ISpell
 
         int healAmount = CalculateHealAmount(casterCreature);
 
-        if (!ResistedSpell || !skipTouchAttack) return;
+        if (ResistedSpell || !skipTouchAttack) return;
 
         ApplyEffect(eventData, healAmount);
     }

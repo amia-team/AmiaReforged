@@ -54,6 +54,6 @@ public class DisruptUndead : ISpell
 
         Effect damageEffect = Effect.Damage(damage, DamageType.Positive);
 
-        if (!ResistedSpell) target.ApplyEffect(EffectDuration.Instant, damageEffect);
+        if (ResistedSpell) target.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 }

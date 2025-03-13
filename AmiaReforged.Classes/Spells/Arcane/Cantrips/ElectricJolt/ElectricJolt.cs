@@ -35,7 +35,7 @@ public class ElectricJolt : ISpell
         int numberOfDie = caster.CasterLevel / 2;
         int damage = NWScript.d3(numberOfDie);
 
-        if (!ResistedSpell) return;
+        if (ResistedSpell) return;
 
         Effect damageEffect = Effect.Damage(damage, DamageType.Electrical);
         target.ApplyEffect(EffectDuration.Instant, damageEffect);
@@ -54,7 +54,7 @@ public class ElectricJolt : ISpell
 
         if (nearestEnemy == null) return;
 
-        if (!ResistedSpell) return;
+        if (ResistedSpell) return;
 
         int damageHalved = damage / 2;
         Effect jumpDamage = Effect.Damage(damageHalved, DamageType.Electrical);
