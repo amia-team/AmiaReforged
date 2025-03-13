@@ -29,7 +29,11 @@ public static class MonkUtilFunctions
             _ => null
         };
     }
-
+    
+    /// <summary>
+    /// Use in tandem with GetMonkPath, ie if GetMonkPath is not null, you can get the KiFocus. UPDATE TO USE MONK FEATS WHEN IMPLEMENTED!!!
+    /// </summary>
+    /// <returns>Ki Focus tier for scaling monk powers</returns>
     public static KiFocusType? GetKiFocus(NwCreature monk)
     {
         return monk.GetClassInfo(ClassType.Monk)!.Level switch
