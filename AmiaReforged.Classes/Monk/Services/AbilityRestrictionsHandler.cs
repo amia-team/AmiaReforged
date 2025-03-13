@@ -86,8 +86,9 @@ public class AbilityRestrictionsHandler
         if (hasShield)
             player.SendServerMessage(message: "Equipping this shield has disabled your monk abilities.");
         if (hasFocusWithoutUnarmed)
-            player.SendServerMessage(
-                message: "Equipping a focus without being unarmed has disabled your monk abilities.");
+            player.SendServerMessage(message: "Equipping a focus without being unarmed has disabled your monk abilities.");
+        
+        WisdomAttackBonus.UnsetWisdomAttackBonus(monk);
     }
 
     private static void PreventHostileTechniqueToFriendly(OnUseFeat eventData)
