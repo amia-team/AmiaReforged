@@ -30,6 +30,17 @@ public static class MonkUtilFunctions
         };
     }
 
+    public static KiFocusType? GetKiFocus(NwCreature monk)
+    {
+        return monk.GetClassInfo(ClassType.Monk)!.Level switch
+        {
+            >= 18 and < 24 => KiFocusType.KiFocus1,
+            >= 24 and < 30 => KiFocusType.KiFocus2,
+            30 => KiFocusType.KiFocus3,
+            _ => null
+        };
+    }
+
     /// <summary>
     ///     DC 10 + monk level / 3 + wisdom modifier
     /// </summary>
