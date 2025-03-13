@@ -108,6 +108,8 @@ public class SpellCastingService
 
         RevertCasterLevelOverride(casterCreature);
 
+        spell.CheckedSpellResistance = false;
+
         return ScriptHandleResult.Handled;
     }
 
