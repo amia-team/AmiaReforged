@@ -1,6 +1,8 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
+using NLog.Fluent;
 using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.RayofFrost;
@@ -17,7 +19,7 @@ public class RayOfFrost : ISpell
     {
         NwGameObject? caster = eventData.Caster;
         if (caster == null) return;
-        if (caster is not NwCreature casterCreature) return;
+        if (caster is not NwCreature) return;
 
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
@@ -26,6 +28,7 @@ public class RayOfFrost : ISpell
         target.ApplyEffect(EffectDuration.Instant, beam);
 
         int numberOfDie = caster.CasterLevel / 2;
+        LogManager.GetCurrentClassLogger().Info($"Number of die: {numberOfDie}");
         int damage = NWScript.d3(numberOfDie);
 
         Effect damageEffect = Effect.Damage(damage, DamageType.Cold);
