@@ -13,12 +13,10 @@ public class PersistPLCService
 {
     private readonly DatabaseContextFactory _ctxFactory;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly NwTaskHelper _nwTaskHelper;
 
-    public PersistPLCService(DatabaseContextFactory ctxFactory, NwTaskHelper nwTaskHelper)
+    public PersistPLCService(DatabaseContextFactory ctxFactory)
     {
         _ctxFactory = ctxFactory;
-        _nwTaskHelper = nwTaskHelper;
     }
 
     public async Task AddPersistPLC(PersistPLC persistPLC)
@@ -34,7 +32,7 @@ public class PersistPLCService
             Log.Error(e, "Error saving invasion record");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 
     public async Task UpdatePersistPLC(PersistPLC persistPLC)
@@ -51,7 +49,7 @@ public class PersistPLCService
             Log.Error(e, "Error updating invasion record");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 
     public async Task DeletePersistPLC(PersistPLC persistPLC)
@@ -65,10 +63,10 @@ public class PersistPLCService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error deleting invasion record");
+            Log.Error(e, "Error deleting persistent plc record");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 
     public async Task<List<PersistPLC>> GetAllPersistPLCRecords()
@@ -84,7 +82,8 @@ public class PersistPLCService
         {
             Log.Error(e, "Error getting all invasion records");
         }
-        await _nwTaskHelper.TrySwitchToMainThread();
+
+        await NwTask.SwitchToMainThread();
         return persistplc; 
     }
 
@@ -104,7 +103,7 @@ public class PersistPLCService
             Log.Error(e, "Error getting certain invasion record");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
         return persistplc;
     }
 
