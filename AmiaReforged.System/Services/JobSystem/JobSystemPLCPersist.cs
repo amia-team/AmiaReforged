@@ -61,6 +61,7 @@ public class JobSystemPLCPersist
         newPLC.Size = NWScript.GetObjectVisualTransform(PLC, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE);
 
         await _persistPLCService.AddPersistPLC(newPLC);
+        await NwTask.SwitchToMainThread();
         NWScript.DestroyObject(PLCWidget);
 
         NWScript.SetLocalString(NWScript.GetModule(), sVarName: "staffMessage", "Persist PLC Laid by " +
@@ -100,6 +101,7 @@ public class JobSystemPLCPersist
             persistPLCAreaxyz.Orientation == NWScript.GetFacing(PLC))
         {
             await _persistPLCService.DeletePersistPLC(persistPLCAreaxyz);
+            await NwTask.SwitchToMainThread();
 
             NWScript.SetLocalString(NWScript.GetModule(), sVarName: "staffMessage", "Persist PLC Destroyed by " +
                 NWScript.GetName(Killer) + " in " + NWScript.GetName(Area) + ". Info --  " + " ResRef: " +
