@@ -4,7 +4,7 @@ namespace AmiaReforged.Classes.Monk;
 
 public class WildMagicEffects
 {
-    public static void DoWildMagic(NwCreature monk, NwCreature targetCreature, int monkLevel, int dc)
+    public static void DoWildMagic(NwCreature monk, NwCreature targetCreature, int monkLevel, int dc, int wildMagicTier)
     {
         int d100Roll = Random.Shared.Roll(100);
 
@@ -29,76 +29,5 @@ public class WildMagicEffects
 
         monk.ActionCastSpellAt(randomSpell, targetCreature.Location!, MetaMagic.None, true, 
             ProjectilePathType.Default, true, ClassType.Monk);
-        
-        // DON'T DELETE COMMENTED OUT CODE, it's another method for creating spell effects
-        
-        /*// Defenses are checked in order spell level absorption (mantles), spell immunity, then spell resistance.
-        bool spellAbsorbed = 
-            monk.SpellAbsorptionLimitedCheck(targetCreature, randomSpell, randomSpell.SpellSchool, randomSpell.InnateSpellLevel);
-        if (spellAbsorbed) return;
-        
-        bool spellImmune = monk.SpellImmunityCheck(targetCreature, randomSpell);
-        if (spellImmune) return;
-
-        bool spellResisted = monk.SpellResistanceCheck(targetCreature, randomSpell, monkLevel);
-        if (spellResisted) return;
-
-        switch (randomSpell.SpellType)
-        {
-            case Spell.ColorSpray : DoColorSpray();
-                break;
-            case Spell.MagicMissile : DoMagicMissile();
-                break;
-            case Spell.Grease : DoGrease();
-                break;
-            case Spell.Balagarnsironhorn : DoBalagarnsIronHorn();
-                break;
-            case Spell.Combust : DoCombust();
-                break;
-            case Spell.TashasHideousLaughter : DoTashasHideousLaughter();
-                break;
-            case Spell.GhoulTouch : DoGhoulTouch();
-                break;
-            // AND SO ON...
-        }
-        
-        void DoColorSpray()
-        {
-            throw new NotImplementedException();
-        }
-        
-        void DoMagicMissile()
-        {
-            throw new NotImplementedException();
-        }
-        
-        void DoGrease()
-        {
-            throw new NotImplementedException();
-        }
-        
-        void DoBalagarnsIronHorn()
-        {
-            throw new NotImplementedException();
-        }
-       
-        void DoCombust()
-        {
-            throw new NotImplementedException();
-        }
-
-        
-        void DoTashasHideousLaughter()
-        {
-            throw new NotImplementedException();
-        }
-
-        void DoGhoulTouch()
-        {
-            throw new NotImplementedException();
-        }
-        */
-
-        
     }
 }
