@@ -62,6 +62,13 @@ public class StaticBonusesService
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
         
+        // Block wisdom attack bonus for ranged weapons
+        if (monk.IsRangedWeaponEquipped)
+        {
+            WisdomAttackBonus.UnsetWisdomAttackBonus(monk);
+            return;
+        }
+        
         // This checks only for the wis monk path
         WisdomAttackBonus.SetWisdomAttackBonus(monk);
     }

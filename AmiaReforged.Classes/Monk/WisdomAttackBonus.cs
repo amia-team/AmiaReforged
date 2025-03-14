@@ -8,6 +8,7 @@ public static class WisdomAttackBonus
     public static void SetWisdomAttackBonus(NwCreature monk)
     {
         if (MonkUtilFunctions.GetMonkPath(monk) != PathType.CrystalTides) return;
+        if (monk.IsRangedWeaponEquipped) return;
         
         int meleeAttackBonus = monk.GetAttackBonus(true);
         
@@ -35,6 +36,7 @@ public static class WisdomAttackBonus
     
     public static void UnsetWisdomAttackBonus(NwCreature monk)
     {
+        // Setting to 0 reverts to original BAB
         monk.BaseAttackBonus = 0;
     }
 }
