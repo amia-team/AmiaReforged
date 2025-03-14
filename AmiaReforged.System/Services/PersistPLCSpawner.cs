@@ -47,6 +47,7 @@ public class PersistPLCSpawner
         GatherAreas();
 
         List<PersistPLC> persistPLC = await _persistPLCService.GetAllPersistPLCRecords();
+        await NwTask.SwitchToMainThread();
         int count = persistPLC.Count;
 
         int i;

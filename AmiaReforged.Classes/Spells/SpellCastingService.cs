@@ -31,12 +31,12 @@ public class SpellCastingService
     private void PreventRestricedCasts(OnSpellCast obj)
     {
         if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
-
+        if (obj.Spell is null) return;
         NwCreature? character = player.LoginCreature;
 
         if (character is null) return;
 
-        if (character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
+        if (character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1 && obj.Item is null)
         {
             NWScript.FloatingTextStringOnCreature(sStringToDisplay: "- You cannot cast magic in this area! -",
                 character,
@@ -46,7 +46,14 @@ public class SpellCastingService
             return;
         }
 
-        if (obj.TargetObject is null) return;
+        if (obj.Item is not null && obj.Spell.IsHostileSpell && character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
+        {
+            NWScript.SendMessageToPC(character, szMessage: "You cannot use that item in this area.");
+            obj.PreventSpellCast = true;
+            return;
+        }
+
+        if (obj.TargetObject is null || obj.TargetObject == obj.Caster) return;
 
         if (!obj.TargetObject.IsPlayerControlled(out NwPlayer? nwPlayer)) return;
         if (character.Area?.PVPSetting != PVPSetting.None) return;
