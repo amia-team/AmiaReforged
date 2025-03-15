@@ -15,6 +15,9 @@ public static class HiddenSpring
             case TechniqueType.Stunning:
                 AugmentStunningStrike(attackData);
                 break;
+            case TechniqueType.Eagle:
+                AugmentEagleStrike(attackData);
+                break;
             case TechniqueType.Axiomatic:
                 AugmentAxiomaticStrike(attackData);
                 break;
@@ -26,9 +29,6 @@ public static class HiddenSpring
                 break;
             case TechniqueType.Quivering:
                 AugmentQuiveringPalm(castData);
-                break;
-            case TechniqueType.Eagle:
-                EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.Wholeness:
                 WholenessOfBody.DoWholenessOfBody(castData);
@@ -52,28 +52,53 @@ public static class HiddenSpring
         if (stunningStrikeResult != SavingThrowResult.Immune) return;
 
         NwCreature monk = attackData.Attacker;
-
-        Effect? stunningEffect = null, visualEffect = null;
-        TimeSpan effectDuration = NwTimeSpan.FromRounds(1);
         
-        switch (MonkUtilFunctions.GetKiFocus(monk))
+        Effect stunningEffect = MonkUtilFunctions.GetKiFocus(monk) switch
         {
-            case KiFocus.KiFocus1 or KiFocus.KiFocus2:
-                stunningEffect = Effect.Pacified();
-                visualEffect = Effect.VisualEffect(VfxType.FnfHowlOdd, false, 0.06f);
-                break;
-            case KiFocus.KiFocus3:
-                stunningEffect = Effect.Paralyze();
-                visualEffect = Effect.VisualEffect(VfxType.DurParalyzeHold);
-                break;
-        }
-
-        if (stunningEffect is null || visualEffect is null) return;
+            KiFocus.KiFocus1 or KiFocus.KiFocus2 => Effect.Pacified(),
+            KiFocus.KiFocus3 => Effect.Paralyze(),
+            _ => Effect.VisualEffect(VfxType.None)
+        };
+        Effect stunningVfx = Effect.VisualEffect(VfxType.FnfHowlOdd, false, 0.06f);
+        TimeSpan stunningDuration = NwTimeSpan.FromRounds(1);
         
         stunningEffect.IgnoreImmunity = true;
         
-        targetCreature.ApplyEffect(EffectDuration.Temporary, stunningEffect, effectDuration);
-        targetCreature.ApplyEffect(EffectDuration.Instant, visualEffect);
+        targetCreature.ApplyEffect(EffectDuration.Temporary, stunningEffect, stunningDuration);
+        targetCreature.ApplyEffect(EffectDuration.Instant, stunningVfx);
+    }
+    
+    /// <summary>
+    /// Eagle Strike with Ki Focus I incurs a -1 penalty to attack rolls, and Ki Focus III increases the penalty to -2.
+    /// </summary>
+    private static void AugmentEagleStrike(OnCreatureAttack attackData)
+    {
+        SavingThrowResult stunningStrikeResult = EagleStrike.DoEagleStrike(attackData);
+
+        if (attackData.Target is not NwCreature targetCreature) return;
+
+        if (stunningStrikeResult != SavingThrowResult.Failure) return;
+
+        NwCreature monk = attackData.Attacker;
+
+        int abDecrease = MonkUtilFunctions.GetKiFocus(monk) switch
+        {
+            KiFocus.KiFocus1 or KiFocus.KiFocus2 => 1,
+            KiFocus.KiFocus3 => 2,
+            _ => 0
+        };
+        Effect eagleEffect = Effect.AttackDecrease(abDecrease);
+        TimeSpan eagleDuration = NwTimeSpan.FromRounds(2);
+        eagleEffect.Tag = "eaglestrike_hiddenspring";
+        eagleEffect.IgnoreImmunity = true;
+        
+        foreach (Effect effect in targetCreature.ActiveEffects)
+        {
+            if (effect.Tag == "eaglestrike_hiddenspring")
+                targetCreature.RemoveEffect(effect);
+        }
+        
+        targetCreature.ApplyEffect(EffectDuration.Temporary, eagleEffect, eagleDuration);
     }
 
     private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
