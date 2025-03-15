@@ -125,9 +125,10 @@ public static class IroncladBull
     /// </summary>
     private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
-        QuiveringPalm.DoQuiveringPalm(castData);
+        TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(castData);
         
         if (castData.TargetObject is not NwCreature targetCreature) return;
+        if (touchAttackResult is TouchAttackResult.Miss) return;
         
         NwCreature monk = (NwCreature)castData.Caster;
         
@@ -145,21 +146,17 @@ public static class IroncladBull
         quiveringEffect.IgnoreImmunity = true;
         
         TimeSpan quiveringDuration = NwTimeSpan.FromRounds(roundsAmount);
-
-        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature);
-        
-        if (touchAttackResult is TouchAttackResult.Miss) return;
         
         SavingThrowResult savingThrowResult =
-            targetCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Death, monk);
-
+            targetCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Paralysis, monk);
+        
+        if (targetCreature.IsImmuneTo(ImmunityType.Paralysis)) return;
+        
         if (savingThrowResult is SavingThrowResult.Success)
         {
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
             return;
         }
-
-        if (targetCreature.IsImmuneTo(ImmunityType.Paralysis)) return;
 
         targetCreature.ApplyEffect(EffectDuration.Temporary, quiveringEffect, quiveringDuration);
     }
