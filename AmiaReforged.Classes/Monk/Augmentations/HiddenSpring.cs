@@ -1,5 +1,6 @@
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
+using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -21,20 +22,20 @@ public static class HiddenSpring
             case TechniqueType.Axiomatic:
                 AugmentAxiomaticStrike(attackData);
                 break;
-            case TechniqueType.KiShout:
-                AugmentKiShout(castData);
-                break;
             case TechniqueType.EmptyBody:
                 AugmentEmptyBody(castData);
-                break;
-            case TechniqueType.Quivering:
-                AugmentQuiveringPalm(castData);
                 break;
             case TechniqueType.Wholeness:
                 WholenessOfBody.DoWholenessOfBody(castData);
                 break;
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(castData);
+                break;
+            case TechniqueType.Quivering:
+                QuiveringPalm.DoQuiveringPalm(castData);
+                break;
+            case TechniqueType.KiShout:
+                KiShout.DoKiShout(castData);
                 break;
         }
     }
@@ -122,17 +123,29 @@ public static class HiddenSpring
         bludgeoningDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Bludgeoning, bludgeoningDamage);
     }
-
-    private static void AugmentKiShout(OnSpellCast castData)
-    {
-        
-    }
-
+    
+    /// <summary>
+    /// Empty Body adds one fourth of the base wisdom modifier to fortitude and reflex saves. Each Ki Focus
+    /// adds another one fourth of the base wisdom modifier, to a maximum of the total base wisdom modifier.
+    /// </summary>
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
-    }
-
-    private static void AugmentQuiveringPalm(OnSpellCast castData)
-    {
+        EmptyBody.DoEmptyBody(castData);
+        
+        NwCreature monk = (NwCreature)castData.Caster;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int baseWisdomModifier = (monk.GetRawAbilityScore(Ability.Wisdom) - 10) / 2;
+        int bonusAmount = MonkUtilFunctions.GetKiFocus(monk) switch
+        {
+            KiFocus.KiFocus1 => baseWisdomModifier / 3,
+            KiFocus.KiFocus2 => baseWisdomModifier / 2,
+            KiFocus.KiFocus3 => baseWisdomModifier,
+            _ => baseWisdomModifier / 4
+        };
+        Effect emptyBodyEffect = Effect.LinkEffects(Effect.SavingThrowIncrease(SavingThrow.Fortitude, bonusAmount), 
+            Effect.SavingThrowIncrease(SavingThrow.Reflex, bonusAmount));
+        TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
+        
+        monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
     }
 }
