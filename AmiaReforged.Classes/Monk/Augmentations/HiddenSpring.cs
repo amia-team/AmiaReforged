@@ -100,13 +100,32 @@ public static class HiddenSpring
         
         targetCreature.ApplyEffect(EffectDuration.Temporary, eagleEffect, eagleDuration);
     }
-
+    
+    /// <summary>
+    /// Axiomatic Strike with Ki Focus I adds one fourth of the base wisdom modifier as bonus physical damage,
+    /// and Ki Focus III increases this to half the base wisdom modifier.
+    /// </summary>
     private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
     {
+        short bludgeoningDamage = AxiomaticStrike.DoAxiomaticStrike(attackData);
+
+        NwCreature monk = attackData.Attacker;
+        DamageData<short> damageData = attackData.DamageData;
+        int baseWisdomModifier = (monk.GetRawAbilityScore(Ability.Wisdom) - 10) / 2;
+        int bonusDamage = MonkUtilFunctions.GetKiFocus(monk) switch
+        {
+            KiFocus.KiFocus1 or KiFocus.KiFocus2 => baseWisdomModifier / 4,
+            KiFocus.KiFocus3 => baseWisdomModifier / 2,
+            _ => 0
+        };
+
+        bludgeoningDamage += (short)bonusDamage;
+        damageData.SetDamageByType(DamageType.Bludgeoning, bludgeoningDamage);
     }
 
     private static void AugmentKiShout(OnSpellCast castData)
     {
+        
     }
 
     private static void AugmentEmptyBody(OnSpellCast castData)
