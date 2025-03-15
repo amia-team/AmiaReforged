@@ -71,7 +71,6 @@ public static class FickleStrand
         AxiomaticStrike.DoAxiomaticStrike(attackData);
 
         NwCreature monk = attackData.Attacker;
-        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
         DamageData<short> damageData = attackData.DamageData;
         short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
         short bonusDamage = MonkUtilFunctions.GetKiFocus(monk) switch
@@ -83,7 +82,7 @@ public static class FickleStrand
         };
 
         magicalDamage += bonusDamage;
-        damageData.SetDamageByType(elementalType, magicalDamage);
+        damageData.SetDamageByType(DamageType.Magical, magicalDamage);
     }
 
     /// <summary>
