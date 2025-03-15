@@ -21,7 +21,7 @@ public static class MonkFeat
     public const int IroncladBull = 1229;
     public const int FickleStrand = 1230;
     public const int CrackedVessel = 1231;
-    public const int CrystalTides = 1241;
+    public const int HiddenSpring = 1241;
     public const int StunningStrike = 1341;
     public const int EagleStrike = 1342;
     public const int AxiomaticStrike = 1343;

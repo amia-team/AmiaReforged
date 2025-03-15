@@ -36,7 +36,7 @@ public class MonkDialogHandler
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
         if (eventData.Creature.Feats.Any(feat => feat.Id is MonkFeat.CrashingMeteor
-                or MonkFeat.SwingingCenser or MonkFeat.CrystalTides or MonkFeat.FickleStrand
+                or MonkFeat.SwingingCenser or MonkFeat.HiddenSpring or MonkFeat.FickleStrand
                 or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley)) return;
 
         await player.ActionStartConversation
@@ -97,8 +97,8 @@ public class MonkDialogHandler
 
         if (localInt(arg: "ds_check1").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.CrystalTides)!);
-            return NwFeat.FromFeatId(MonkFeat.CrystalTides)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.HiddenSpring)!);
+            return NwFeat.FromFeatId(MonkFeat.HiddenSpring)!.Name.ToString();
         }
 
 

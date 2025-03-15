@@ -26,8 +26,8 @@ public static class AugmentationApplier
             case PathType.SwingingCenser:
                 SwingingCenser.ApplyAugmentations(technique, castData, attackData);
                 break;
-            case PathType.CrystalTides:
-                CrystalTides.ApplyAugmentations(technique, castData, attackData);
+            case PathType.HiddenSpring:
+                HiddenSpring.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.FickleStrand:
                 FickleStrand.ApplyAugmentations(technique, castData, attackData);

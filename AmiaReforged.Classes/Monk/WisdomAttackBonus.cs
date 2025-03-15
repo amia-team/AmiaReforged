@@ -7,7 +7,7 @@ public static class WisdomAttackBonus
 {
     public static void SetWisdomAttackBonus(NwCreature monk)
     {
-        if (MonkUtilFunctions.GetMonkPath(monk) != PathType.CrystalTides) return;
+        if (MonkUtilFunctions.GetMonkPath(monk) != PathType.HiddenSpring) return;
         if (monk.IsRangedWeaponEquipped) return;
         
         int meleeAttackBonus = monk.GetAttackBonus(true);

@@ -14,14 +14,14 @@ public static class MonkUtilFunctions
     public static PathType? GetMonkPath(NwCreature monk)
     {
         NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => feat.Id is MonkFeat.CrashingMeteor
-            or MonkFeat.SwingingCenser or MonkFeat.CrystalTides or MonkFeat.FickleStrand
+            or MonkFeat.SwingingCenser or MonkFeat.HiddenSpring or MonkFeat.FickleStrand
             or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley);
 
         return pathFeat?.Id switch
         {
             MonkFeat.CrashingMeteor => PathType.CrashingMeteor,
             MonkFeat.SwingingCenser => PathType.SwingingCenser,
-            MonkFeat.CrystalTides => PathType.CrystalTides,
+            MonkFeat.HiddenSpring => PathType.HiddenSpring,
             MonkFeat.FickleStrand => PathType.FickleStrand,
             MonkFeat.IroncladBull => PathType.IroncladBull,
             MonkFeat.CrackedVessel => PathType.CrackedVessel,
