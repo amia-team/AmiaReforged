@@ -14,7 +14,7 @@ public static class MonkUtilFunctions
     public static PathType? GetMonkPath(NwCreature monk)
     {
         NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => feat.Id is MonkFeat.CrashingMeteor
-            or MonkFeat.SwingingCenser or MonkFeat.CrystalTides or MonkFeat.ChardalynSand
+            or MonkFeat.SwingingCenser or MonkFeat.CrystalTides or MonkFeat.FickleStrand
             or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley);
 
         return pathFeat?.Id switch
@@ -22,7 +22,7 @@ public static class MonkUtilFunctions
             MonkFeat.CrashingMeteor => PathType.CrashingMeteor,
             MonkFeat.SwingingCenser => PathType.SwingingCenser,
             MonkFeat.CrystalTides => PathType.CrystalTides,
-            MonkFeat.ChardalynSand => PathType.ChardalynSand,
+            MonkFeat.FickleStrand => PathType.FickleStrand,
             MonkFeat.IroncladBull => PathType.IroncladBull,
             MonkFeat.CrackedVessel => PathType.CrackedVessel,
             MonkFeat.EchoingValley => PathType.EchoingValley,

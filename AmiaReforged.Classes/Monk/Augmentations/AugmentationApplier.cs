@@ -29,8 +29,8 @@ public static class AugmentationApplier
             case PathType.CrystalTides:
                 CrystalTides.ApplyAugmentations(technique, castData, attackData);
                 break;
-            case PathType.ChardalynSand:
-                ChardalynSand.ApplyAugmentations(technique, castData, attackData);
+            case PathType.FickleStrand:
+                FickleStrand.ApplyAugmentations(technique, castData, attackData);
                 break;
             case PathType.IroncladBull:
                 IroncladBull.ApplyAugmentations(technique, castData, attackData);

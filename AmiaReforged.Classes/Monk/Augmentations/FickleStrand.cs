@@ -8,7 +8,7 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
-public static class ChardalynSand
+public static class FickleStrand
 {
     public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {

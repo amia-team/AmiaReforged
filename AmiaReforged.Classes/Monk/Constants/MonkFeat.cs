@@ -19,7 +19,7 @@ public static class MonkFeat
     public const int CrashingMeteor = 1227;
     public const int SwingingCenser = 1228;
     public const int IroncladBull = 1229;
-    public const int ChardalynSand = 1230;
+    public const int FickleStrand = 1230;
     public const int CrackedVessel = 1231;
     public const int CrystalTides = 1241;
     public const int StunningStrike = 1341;
