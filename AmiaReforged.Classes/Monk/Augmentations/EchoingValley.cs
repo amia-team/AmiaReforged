@@ -17,11 +17,11 @@ public static class EchoingValley
             case TechniqueType.Stunning:
                 AugmentStunningStrike(attackData);
                 break;
-            case TechniqueType.KiShout:
-                AugmentKiShout(castData);
-                break;
             case TechniqueType.EmptyBody:
                 AugmentEmptyBody(castData);
+                break;
+            case TechniqueType.KiShout:
+                AugmentKiShout(castData);
                 break;
             case TechniqueType.Quivering:
                 AugmentQuiveringPalm(castData);
@@ -140,15 +140,12 @@ public static class EchoingValley
     /// </summary>
     private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
-        QuiveringPalm.DoQuiveringPalm(castData);
+        TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(castData);
         
         if (castData.TargetObject is not NwCreature targetCreature) return;
+        if (touchAttackResult == TouchAttackResult.Miss) return;
         
         NwCreature monk = (NwCreature)castData.Caster;
-        
-        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature);
-
-        if (touchAttackResult == TouchAttackResult.Miss) return;
 
         SummonClone();
 
@@ -156,16 +153,15 @@ public static class EchoingValley
 
         async void SummonClone()
         {
-            // Create the new echo and attach it as a summon
             Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 4f);
             
             if (summonLocation is null) return;
             
-            Effect summonEcho = Effect.SummonCreature(targetCreature.ResRef, VfxType.FnfPwstun!);
+            Effect summonClone = Effect.SummonCreature(targetCreature, VfxType.FnfPwstun!);
             TimeSpan summonDuration = NwTimeSpan.FromTurns(1);
 
             await monk.WaitForObjectContext();
-            summonLocation.ApplyEffect(EffectDuration.Temporary, summonEcho, summonDuration);
+            summonLocation.ApplyEffect(EffectDuration.Temporary, summonClone, summonDuration);
         }
     }
 }
