@@ -17,14 +17,14 @@ public static class CrackedVessel
             case TechniqueType.Axiomatic:
                 AugmentAxiomaticStrike(attackData);
                 break;
-            case TechniqueType.Quivering:
-                AugmentQuiveringPalm(castData);
-                break;
             case TechniqueType.Wholeness:
                 AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.EmptyBody:
                 AugmentEmptyBody(castData);
+                break;
+            case TechniqueType.Quivering:
+                AugmentQuiveringPalm(castData);
                 break;
             case TechniqueType.Stunning:
                 StunningStrike.DoStunningStrike(attackData);
@@ -174,9 +174,10 @@ public static class CrackedVessel
     /// </summary>
     private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
-        QuiveringPalm.DoQuiveringPalm(castData);
+        TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(castData);
         
         if (castData.TargetObject is not NwCreature targetCreature) return;
+        if (touchAttackResult is TouchAttackResult.Miss) return;
 
         NwCreature monk = (NwCreature)castData.Caster;
 
@@ -192,22 +193,17 @@ public static class CrackedVessel
             Effect.DamageImmunityDecrease(DamageType.Piercing, pctVulnerability),
             Effect.DamageImmunityDecrease(DamageType.Slashing, pctVulnerability),
             Effect.DamageImmunityDecrease(DamageType.Bludgeoning, pctVulnerability));
+        TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
         quiveringEffect.Tag = "crackedvessel_quiveringpalm";
         
-        TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
-        
         Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpNegativeEnergy, false, 0.7f);
-
-        TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature);
-
-        if (touchAttackResult is TouchAttackResult.Miss) return;
-
+        
         foreach (Effect effect in targetCreature.ActiveEffects)
             if (effect.Tag == "crackedvessel_quiveringpalm") 
                 targetCreature.RemoveEffect(effect);
         
         targetCreature.ApplyEffect(EffectDuration.Temporary, quiveringEffect, effectDuration);
-        targetCreature.ApplyEffect(EffectDuration.Instant, quiveringVfx, effectDuration);
+        targetCreature.ApplyEffect(EffectDuration.Instant, quiveringVfx);
     }
     
     
