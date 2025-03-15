@@ -28,7 +28,7 @@ public static class EagleStrike
     /// On two successful hits per round against an enemy creature, the target must succeed at a reflex save or suffer
     /// a penalty of -2 to their armor class for two rounds.
     /// </summary>
-    public static void DoEagleStrike(OnCreatureAttack attackData)
+    public static SavingThrowResult DoEagleStrike(OnCreatureAttack attackData)
     {
         NwCreature monk = attackData.Attacker;
         TimeSpan effectDuration = NwTimeSpan.FromRounds(2);
@@ -41,15 +41,13 @@ public static class EagleStrike
         eagleStrikeEffect.SubType = EffectSubType.Extraordinary;
 
         // DC check for eagle effect
-        if (attackData.Target is not NwCreature targetCreature) return;
+        if (attackData.Target is not NwCreature targetCreature) return SavingThrowResult.Failure;
 
         SavingThrowResult savingThrowResult =
             targetCreature.RollSavingThrow(SavingThrow.Reflex, effectDc, SavingThrowType.None, monk);
 
         if (savingThrowResult is SavingThrowResult.Success)
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
-
-        if (savingThrowResult is not SavingThrowResult.Failure) return;
 
         // Prevent stacking, instead refresh effect
         foreach (Effect effect in targetCreature.ActiveEffects)
@@ -61,5 +59,7 @@ public static class EagleStrike
         // Apply effect
         targetCreature.ApplyEffect(EffectDuration.Temporary, eagleStrikeEffect, effectDuration);
         targetCreature.ApplyEffect(EffectDuration.Instant, eagleStrikeVfx);
+
+        return savingThrowResult;
     }
 }

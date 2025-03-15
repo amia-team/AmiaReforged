@@ -28,7 +28,7 @@ public static class StunningStrike
     /// On the first successful hit per round against an enemy creature, the target must succeed at a fortitude save
     /// or be stunned for one round.
     /// </summary>
-    public static void DoStunningStrike(OnCreatureAttack attackData)
+    public static SavingThrowResult DoStunningStrike(OnCreatureAttack attackData)
     {
         NwCreature monk = attackData.Attacker;
         Effect stunningStrikeEffect =
@@ -38,15 +38,16 @@ public static class StunningStrike
         int effectDc = MonkUtilFunctions.CalculateMonkDc(monk);
 
         // DC check for stunning effect
-        if (attackData.Target is not NwCreature targetCreature) return;
+        if (attackData.Target is not NwCreature targetCreature) return SavingThrowResult.Failure;
 
         SavingThrowResult savingThrowResult =
             targetCreature.RollSavingThrow(SavingThrow.Fortitude, effectDc, SavingThrowType.None, monk);
 
         if (savingThrowResult is SavingThrowResult.Success)
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
-
-        if (savingThrowResult is SavingThrowResult.Failure)
-            targetCreature.ApplyEffect(EffectDuration.Temporary, stunningStrikeEffect, effectDuration);
+        
+        targetCreature.ApplyEffect(EffectDuration.Temporary, stunningStrikeEffect, effectDuration);
+        
+        return savingThrowResult;
     }
 }
