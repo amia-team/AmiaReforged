@@ -78,40 +78,6 @@ public static class MonkUtilFunctions
     }
 
     /// <summary>
-    ///     A simpler version of NWN's spellsIsTarget() adjusted to Amia's difficulty setting. Don't use if it doesn't simplify
-    ///     AoE spell targeting.
-    /// </summary>
-    /// <param name="creaturesOnly">true if you want to only affect creatures</param>
-    /// <param name="affectsSelf">true if you want to affect yourself</param>
-    /// <param name="alliesOnly">true if you to affect only allies</param>
-    /// <returns>Valid target for spell effect</returns>
-    public static bool IsValidTarget(NwObject targetObject, NwCreature caster, bool creaturesOnly, bool affectsSelf,
-        bool alliesOnly)
-    {
-        if (targetObject == caster) return affectsSelf;
-        if (creaturesOnly)
-        {
-            if (targetObject is not NwCreature targetCreature) return false;
-            if (alliesOnly)
-            {
-                if (caster.IsReactionTypeFriendly(targetCreature))
-                    return true;
-            }
-            else if (caster.IsReactionTypeHostile(targetCreature))
-            {
-                return true;
-            }
-        }
-        else if (targetObject is NwCreature targetCreature && !caster.IsReactionTypeFriendly(targetCreature)
-                 || targetObject is NwPlaceable || targetObject is NwDoor)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
     ///     Sends debug message to player as "DEBUG: {debugString1} {debugString2}", debugString2 is colored
     /// </summary>
     public static void MonkDebug(NwPlayer player, string debugString1, string debugString2)
