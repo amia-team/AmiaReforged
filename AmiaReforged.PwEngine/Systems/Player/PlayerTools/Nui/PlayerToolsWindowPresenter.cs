@@ -70,6 +70,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
                     "You haven't gone through the entry area yet. You'll want to do this if you want access to all functionality.",
                     false);
 
+        Token().SetBindValue(View.Search, string.Empty);
         RefreshWindowList();
     }
 

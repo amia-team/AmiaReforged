@@ -77,6 +77,7 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
             _quickslots = (await QuickslotLoader.Value.LoadQuickslots(playerId)).ToList();
             await NwTask.SwitchToMainThread();
 
+            Token().SetBindValue(View.Search, string.Empty);
             RefreshQuickslotList();
         }
         catch (Exception e)

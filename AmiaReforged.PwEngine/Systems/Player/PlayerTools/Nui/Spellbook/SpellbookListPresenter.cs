@@ -88,7 +88,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         }
 
         _spellbooks = SpellbookLoader.Value.LoadSpellbook(characterId);
-
+        Token().SetBindValue(View.Search, string.Empty);
         RefreshSpellbookList();
     }
 
