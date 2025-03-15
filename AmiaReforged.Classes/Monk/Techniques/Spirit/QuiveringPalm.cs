@@ -28,9 +28,9 @@ public static class QuiveringPalm
     /// On a successful melee touch attack against an enemy creature, the target must make a fortitude save or die.
     /// Each use depletes a Spirit Ki Point.
     /// </summary>
-    public static void DoQuiveringPalm(OnSpellCast castData)
+    public static TouchAttackResult DoQuiveringPalm(OnSpellCast castData)
     {
-        if (castData.TargetObject is not NwCreature targetCreature) return;
+        if (castData.TargetObject is not NwCreature targetCreature) return TouchAttackResult.Miss;
 
         NwCreature monk = (NwCreature)castData.Caster;
 
@@ -39,11 +39,9 @@ public static class QuiveringPalm
         Effect quiveringEffect = Effect.Death(true);
         Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpDeath, false, 0.7f);
 
-        monk.TouchAttackMelee(targetCreature);
-
         CreatureEvents.OnSpellCastAt.Signal(monk, targetCreature, castData.Spell!);
 
-        if (monk.TouchAttackMelee(targetCreature) is TouchAttackResult.Miss) return;
+        if (monk.TouchAttackMelee(targetCreature) is TouchAttackResult.Miss) return TouchAttackResult.Miss;
 
         SavingThrowResult savingThrowResult =
             targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Death, monk);
@@ -57,5 +55,7 @@ public static class QuiveringPalm
             targetCreature.ApplyEffect(EffectDuration.Instant, quiveringEffect);
             targetCreature.ApplyEffect(EffectDuration.Instant, quiveringVfx);
         }
+
+        return TouchAttackResult.Hit;
     }
 }
