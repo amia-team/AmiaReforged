@@ -40,7 +40,7 @@ public class MonkDialogHandler
                 or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley)) return;
 
         await player.ActionStartConversation
-            (eventData.Creature, dialogResRef: "mont_path_dlg", true, false);
+            (eventData.Creature, dialogResRef: "mont_path", true, false);
     }
 
     /// <summary>
@@ -52,10 +52,10 @@ public class MonkDialogHandler
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
         await player.ActionStartConversation
-            (eventData.Creature, dialogResRef: "monk_eye_dlg", true, false);
+            (eventData.Creature, dialogResRef: "monk_eyeglow", true, false);
     }
 
-    [ScriptHandler(scriptName: "monk_path_dlg")]
+    [ScriptHandler(scriptName: "monk_path")]
     private void PathDialog(CallInfo info)
     {
         DialogEvents.AppearsWhen eventData = new();
@@ -72,7 +72,7 @@ public class MonkDialogHandler
         }
     }
 
-    [ScriptHandler(scriptName: "monk_eye_dlg")]
+    [ScriptHandler(scriptName: "monk_eyeglow")]
     private void EyeGlowDialog(CallInfo info)
     {
         DialogEvents.AppearsWhen eventData = new();
@@ -148,7 +148,7 @@ public class MonkDialogHandler
     {
         Effect monkEyeVfx = GetMonkEyeVfx(monk);
         monkEyeVfx.SubType = EffectSubType.Unyielding;
-        monkEyeVfx.Tag = "monk_eye_glow_vfx";
+        monkEyeVfx.Tag = "monk_eyeglow";
         monk.ApplyEffect(EffectDuration.Permanent, monkEyeVfx);
     }
 
@@ -329,7 +329,7 @@ public class MonkDialogHandler
         if (localInt(arg: "ds_check9").HasValue)
             foreach (Effect effect in monk.ActiveEffects)
             {
-                if (effect.Tag is "monk_eye_glow_vfx")
+                if (effect.Tag is "monk_eyeglow")
                     monk.RemoveEffect(effect);
             }
 
