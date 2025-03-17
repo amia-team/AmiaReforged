@@ -45,8 +45,18 @@ public class EchoingValleySummonHandler
         if (info.ObjectSelf is not NwCreature echo) return;
         if (echo.ResRef is not "summon_echo") return;
         
+        
+        // Jumps at monk's hostiles or huddles up to monk if there are no hostiles
         if (echo.Master != null)
-            echo.ActionForceMoveTo(echo.Master, true);
+        {
+            NwCreature? nearestHostile =
+                echo.Master.GetNearestCreatures().FirstOrDefault(creature => creature.IsReactionTypeHostile(echo.Master));
+
+            if (nearestHostile != null)
+                echo.JumpToObject(nearestHostile);
+            else echo.ActionForceFollowObject(echo.Master, 0.5f);
+        }
+            
 
         Effect echoVfx = MonkUtilFunctions.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Medium);
 
