@@ -12,6 +12,21 @@ public class MonkDialogHandler
 {
     private readonly Logger _log = LogManager.GetCurrentClassLogger();
 
+    private const VfxType EyesBlueHumanMale = (VfxType)324;
+    private const VfxType EyesBlueHumanFemale = (VfxType)325;
+    private const VfxType EyesBlueDwarfMale = (VfxType)326;
+    private const VfxType EyesBlueDwarfFemale = (VfxType)327;
+    private const VfxType EyesBlueElfMale = (VfxType)328;
+    private const VfxType EyesBlueElfFemale = (VfxType)329;
+    private const VfxType EyesBlueGnomeMale = (VfxType)330;
+    private const VfxType EyesBlueGnomeFemale = (VfxType)331;
+    private const VfxType EyesBlueHalflingMale = (VfxType)332;
+    private const VfxType EyesBlueHalflingFemale = (VfxType)333;
+    private const VfxType EyesBlueHalfOrcMale = (VfxType)334;
+    private const VfxType EyesBlueHalfOrcFemale = (VfxType)335;
+    
+    
+
     public MonkDialogHandler(DialogService dialogService)
     {
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
@@ -293,35 +308,21 @@ public class MonkDialogHandler
                 _ => eyeGlowVfx
             };
         // BLUE
-
-        const VfxType eyesBlueHumanMale = (VfxType)324;
-        const VfxType eyesBlueHumanFemale = (VfxType)325;
-        const VfxType eyesBlueDwarfMale = (VfxType)326;
-        const VfxType eyesBlueDwarfFemale = (VfxType)327;
-        const VfxType eyesBlueElfMale = (VfxType)328;
-        const VfxType eyesBlueElfFemale = (VfxType)329;
-        const VfxType eyesBlueGnomeMale = (VfxType)330;
-        const VfxType eyesBlueGnomeFemale = (VfxType)331;
-        const VfxType eyesBlueHalflingMale = (VfxType)332;
-        const VfxType eyesBlueHalflingFemale = (VfxType)333;
-        const VfxType eyesBlueHalfOrcMale = (VfxType)334;
-        const VfxType eyesBlueHalfOrcFemale = (VfxType)335;
-
         if (localInt(arg: "ds_check8").HasValue)
             eyeGlowVfx = (gender, appearanceType.RowIndex) switch
             {
-                (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => eyesBlueHumanMale,
-                (Gender.Female, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => eyesBlueHumanFemale,
-                (Gender.Male, (int)AppearanceType.HalfOrc) => eyesBlueHalfOrcMale,
-                (Gender.Female, (int)AppearanceType.HalfOrc) => eyesBlueHalfOrcFemale,
-                (Gender.Male, (int)AppearanceType.Halfling) => eyesBlueHalflingMale,
-                (Gender.Female, (int)AppearanceType.Halfling) => eyesBlueHalflingFemale,
-                (Gender.Male, (int)AppearanceType.Gnome) => eyesBlueGnomeMale,
-                (Gender.Female, (int)AppearanceType.Gnome) => eyesBlueGnomeFemale,
-                (Gender.Male, (int)AppearanceType.Dwarf) => eyesBlueDwarfMale,
-                (Gender.Female, (int)AppearanceType.Dwarf) => eyesBlueDwarfFemale,
-                (Gender.Male, (int)AppearanceType.Elf) => eyesBlueElfMale,
-                (Gender.Female, (int)AppearanceType.Elf) => eyesBlueElfFemale,
+                (Gender.Male, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => EyesBlueHumanMale,
+                (Gender.Female, (int)AppearanceType.Human or (int)AppearanceType.HalfElf) => EyesBlueHumanFemale,
+                (Gender.Male, (int)AppearanceType.HalfOrc) => EyesBlueHalfOrcMale,
+                (Gender.Female, (int)AppearanceType.HalfOrc) => EyesBlueHalfOrcFemale,
+                (Gender.Male, (int)AppearanceType.Halfling) => EyesBlueHalflingMale,
+                (Gender.Female, (int)AppearanceType.Halfling) => EyesBlueHalflingFemale,
+                (Gender.Male, (int)AppearanceType.Gnome) => EyesBlueGnomeMale,
+                (Gender.Female, (int)AppearanceType.Gnome) => EyesBlueGnomeFemale,
+                (Gender.Male, (int)AppearanceType.Dwarf) => EyesBlueDwarfMale,
+                (Gender.Female, (int)AppearanceType.Dwarf) => EyesBlueDwarfFemale,
+                (Gender.Male, (int)AppearanceType.Elf) => EyesBlueElfMale,
+                (Gender.Female, (int)AppearanceType.Elf) => EyesBlueElfFemale,
                 _ => eyeGlowVfx
             };
 
