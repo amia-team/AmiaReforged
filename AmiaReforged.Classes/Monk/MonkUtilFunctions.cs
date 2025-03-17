@@ -14,7 +14,7 @@ public static class MonkUtilFunctions
     public static PathType? GetMonkPath(NwCreature monk)
     {
         // Check for Path of Enlightenment PrC as a failsafe
-        if (monk.GetClassInfo(NwClass.FromClassId(50)) is null) return null;
+        if (monk.GetClassInfo(NwClass.FromClassId(50)) is not null) return null;
             
         NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => feat.Id is MonkFeat.CrashingMeteor
             or MonkFeat.SwingingCenser or MonkFeat.HiddenSpring or MonkFeat.FickleStrand
