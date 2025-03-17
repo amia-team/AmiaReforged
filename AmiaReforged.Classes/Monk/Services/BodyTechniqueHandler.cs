@@ -41,8 +41,7 @@ public class BodyTechniqueHandler
             castData.PreventSpellCast = true;
             if (monk.IsPlayerControlled(out NwPlayer? player))
                 player.SendServerMessage
-                ($"Cannot use {castData.Spell.FeatReference.Name} because your body ki is depleted.",
-                    MonkColors.MonkColorScheme);
+                    ($"Cannot use {castData.Spell.FeatReference.Name} because your Body Ki Points are depleted.");
             return;
         }
 

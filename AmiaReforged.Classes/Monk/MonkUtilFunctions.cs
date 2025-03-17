@@ -87,8 +87,7 @@ public static class MonkUtilFunctions
     {
         if (!player.IsValid) return;
         if (player.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "monk_debug").Value != 1) return;
-
-        debugString2.ColorString(MonkColors.MonkColorScheme);
+        
         player.SendServerMessage($"DEBUG: {debugString1} {debugString2}");
     }
 

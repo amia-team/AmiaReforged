@@ -68,7 +68,7 @@ public class MonkDialogHandler
         if (nodeType == NodeType.ReplyNode)
         {
             string path = GivePathFeat(monk);
-            eventData.PlayerSpeaker.SendServerMessage($"{path} added.", MonkColors.MonkColorScheme);
+            eventData.PlayerSpeaker.SendServerMessage($"{path} added.");
         }
     }
 
