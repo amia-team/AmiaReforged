@@ -11,7 +11,7 @@ public class EchoingValleySummonHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public EchoingValleySummonHandler(EventService eventService)
+    public EchoingValleySummonHandler()
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
 
@@ -27,7 +27,7 @@ public class EchoingValleySummonHandler
     /// Since the echo can't be seen, their location and presence is manifested with a vfx
     /// </summary>
     [ScriptHandler("nw_ch_ac1")]
-    private void OnEchoHeartbeat(CallInfo info)
+    private static void OnEchoHeartbeat(CallInfo info)
     {
         if (info.ObjectSelf is not NwCreature echo) return;
         if (echo.ResRef is not "summon_echo") return;
@@ -40,7 +40,7 @@ public class EchoingValleySummonHandler
     /// In combat deal a silly little 1d6 dmg per round in a medium AOE
     /// </summary>
     [ScriptHandler("nw_ch_ac3")]
-    private void OnEchoCombatRoundEnd(CallInfo info)
+    private static void OnEchoCombatRoundEnd(CallInfo info)
     {
         if (info.ObjectSelf is not NwCreature echo) return;
         if (echo.ResRef is not "summon_echo") return;
@@ -80,7 +80,7 @@ public class EchoingValleySummonHandler
     /// </summary>
     /// <param name="info"></param>
     [ScriptHandler("nw_ch_ac7")]
-    private void OnEchoDeath(CallInfo info)
+    private static void OnEchoDeath(CallInfo info)
     {
         if (info.ObjectSelf is not NwCreature echo) return;
         if (echo.ResRef is not "summon_echo") return;
@@ -105,7 +105,7 @@ public class EchoingValleySummonHandler
     /// <summary>
     /// Sets the old echoes undestroyable and hides new echoes from view
     /// </summary>
-    private void OnEchoAdd(OnAssociateAdd eventData)
+    private static void OnEchoAdd(OnAssociateAdd eventData)
     {
         if (eventData.Associate.ResRef is not "summon_echo") return;
 
@@ -142,7 +142,7 @@ public class EchoingValleySummonHandler
     /// <summary>
     /// Removes the protective plot flag and ethereal and pacified effects so they can die, commands echoes to attack
     /// </summary>
-    private void OnEchoAwakened(OnEffectApply eventData)
+    private static void OnEchoAwakened(OnEffectApply eventData)
     {
         if (eventData.Object.ResRef is not "summon_echo") return;
         if (eventData.Effect.Tag is not "kishout_echoingvalley") return;
