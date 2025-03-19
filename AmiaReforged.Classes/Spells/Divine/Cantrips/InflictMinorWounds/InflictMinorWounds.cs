@@ -22,7 +22,9 @@ public class InflictMinorWounds : ISpell
         TouchAttackResult result = casterCreature.TouchAttackRanged(eventData.TargetObject, true);
 
         bool skipTouchAttack = NWScript.GetRacialType(eventData.TargetObject) == NWScript.RACIAL_TYPE_UNDEAD;
-
+        
+        SpellUtils.SignalSpell(casterCreature, eventData.TargetObject, eventData.Spell);
+        
         if (result != TouchAttackResult.Hit || !skipTouchAttack) return;
 
         int damage = CalculateDamage(casterCreature);

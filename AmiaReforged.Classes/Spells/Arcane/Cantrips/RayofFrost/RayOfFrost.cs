@@ -26,6 +26,9 @@ public class RayOfFrost : ISpell
 
         Effect beam = Effect.Beam(VfxType.BeamCold, caster, BodyNode.Hand);
         target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1.1));
+        
+        SpellUtils.SignalSpell(caster, target, eventData.Spell);
+        
         if (ResistedSpell) return;
         
         int numberOfDie = caster.CasterLevel / 2;

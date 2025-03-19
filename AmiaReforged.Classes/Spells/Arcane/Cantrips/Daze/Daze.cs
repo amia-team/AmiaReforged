@@ -25,6 +25,8 @@ public class Daze : ISpell
         if (eventData.Caster == null) return;
         if (eventData.Caster is not NwCreature casterCreature) return;
         if (eventData.TargetObject == null) return;
+        
+        SpellUtils.SignalSpell(casterCreature, eventData.TargetObject, eventData.Spell);
 
         if (ResistedSpell) return;
 

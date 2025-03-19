@@ -21,6 +21,8 @@ public class DisruptUndead : ISpell
         if (target == null) return;
 
         if (caster is not NwCreature casterCreature) return;
+        
+        SpellUtils.SignalSpell(casterCreature, target, eventData.Spell);
 
         ApplyBeam(caster, target);
 

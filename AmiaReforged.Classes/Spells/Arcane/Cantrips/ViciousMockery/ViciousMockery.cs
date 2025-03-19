@@ -48,7 +48,9 @@ public class ViciousMockery : ISpell
         int damage = NWScript.d4(caster.CasterLevel / 3 + focusDice);
 
         const int concentrationPenalty = 10;
-
+        
+        SpellUtils.SignalSpell(caster, target, eventData.Spell);
+        
         if (ResistedSpell)
         {
             Effect damageEffect = Effect.Damage(damage, DamageType.Sonic);
