@@ -32,6 +32,15 @@ public class SpellUtils
         return false;
     }
     
+    /// <summary>
+    /// A catch-all for all object types so you don't have to always check separately for creature, door, and placeable
+    /// </summary>
+    static void SignalSpell(NwGameObject caster, NwGameObject target, NwSpell spell)
+    {
+        if (target is NwCreature creature) CreatureEvents.OnSpellCastAt.Signal(caster, creature, spell);
+        if (target is NwDoor door) DoorEvents.OnSpellCastAt.Signal(caster, door, spell);
+        if (target is NwPlaceable placeable) PlaceableEvents.OnSpellCastAt.Signal(caster, placeable, spell);
+    }
     
     /// <summary>
     /// Accounts for custom DCs like Shifter and Monk Wild Magic
