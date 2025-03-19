@@ -50,32 +50,31 @@ public class ViciousMockery : ISpell
         const int concentrationPenalty = 10;
         
         SpellUtils.SignalSpell(caster, target, eventData.Spell);
+
+        if (ResistedSpell) return;
         
-        if (ResistedSpell)
+        Effect damageEffect = Effect.Damage(damage, DamageType.Sonic);
+        Effect skillPenalty =
+            Effect.SkillDecrease(NwSkill.FromSkillType(Skill.Concentration)!, concentrationPenalty);
+        skillPenalty.Tag = "VICIOUS_MOCKERY";
+        target.ApplyEffect(EffectDuration.Instant, damageEffect);
+
+
+        Effect? existingSkillPenalty =
+            targetCreature.ActiveEffects.SingleOrDefault(e => e.Tag == "VICIOUS_MOCKERY");
+        if (existingSkillPenalty != null) targetCreature.RemoveEffect(existingSkillPenalty);
+
+        if (hasEpicFocus)
         {
-            Effect damageEffect = Effect.Damage(damage, DamageType.Sonic);
-            Effect skillPenalty =
-                Effect.SkillDecrease(NwSkill.FromSkillType(Skill.Concentration)!, concentrationPenalty);
-            skillPenalty.Tag = "VICIOUS_MOCKERY";
-            target.ApplyEffect(EffectDuration.Instant, damageEffect);
+            targetCreature.ApplyEffect(EffectDuration.Temporary, skillPenalty, TimeSpan.FromSeconds(18));
+        }
+        else
+        {
+            SavingThrowResult result = targetCreature.RollSavingThrow(SavingThrow.Will,
+                10 + caster.CasterLevel + chaMod, SavingThrowType.Spell);
 
-
-            Effect? existingSkillPenalty =
-                targetCreature.ActiveEffects.SingleOrDefault(e => e.Tag == "VICIOUS_MOCKERY");
-            if (existingSkillPenalty != null) targetCreature.RemoveEffect(existingSkillPenalty);
-
-            if (hasEpicFocus)
-            {
+            if (result == SavingThrowResult.Failure)
                 targetCreature.ApplyEffect(EffectDuration.Temporary, skillPenalty, TimeSpan.FromSeconds(18));
-            }
-            else
-            {
-                SavingThrowResult result = targetCreature.RollSavingThrow(SavingThrow.Will,
-                    10 + caster.CasterLevel + chaMod, SavingThrowType.Spell);
-
-                if (result == SavingThrowResult.Failure)
-                    targetCreature.ApplyEffect(EffectDuration.Temporary, skillPenalty, TimeSpan.FromSeconds(18));
-            }
         }
     }
 
