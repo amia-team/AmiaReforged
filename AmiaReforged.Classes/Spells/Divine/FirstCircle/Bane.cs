@@ -47,6 +47,8 @@ public class FireBolt : ISpell
             foreach (NwGameObject nwObject in location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
             {
                 if (nwObject is not NwCreature targetCreature || !casterCreature.IsReactionTypeHostile(targetCreature)) continue;
+
+                SpellUtils.SignalSpell(caster, nwObject, eventData.Spell);
             
                 if (ResistedSpell) continue;
             
