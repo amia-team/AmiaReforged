@@ -11,24 +11,18 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 ///     Maps job system items to their respective entities.
 /// </summary>
 [ServiceBinding(typeof(JobSystemMappingService))]
-public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
+public partial class JobSystemMappingService(
+    PwEngineContext context,
+    JobItemPropertyHandler propertyHandler,
+    QualityPropertyMapper qualityMapper)
+    : IMappingService<JobItem, NwItem>
 {
-    private readonly PwEngineContext _context;
-    private readonly JobItemPropertyHandler _propertyHandler;
-    private readonly QualityPropertyMapper _qualityMapper;
-
-    public JobSystemMappingService(PwEngineContext context, JobItemPropertyHandler propertyHandler,
-        QualityPropertyMapper qualityMapper)
-    {
-        _context = context;
-        _propertyHandler = propertyHandler;
-        _qualityMapper = qualityMapper;
-    }
+    private readonly PwEngineContext _context = context;
 
     public JobItem MapFrom(NwItem item)
     {
         IPQuality nwnQuality = GetQualityFromitem(item);
-        QualityEnum quality = _qualityMapper.MapFrom(nwnQuality);
+        QualityEnum quality = qualityMapper.MapFrom(nwnQuality);
 
         const string replacement = "";
         string itemName = MyRegex().Replace(item.Name, replacement);
@@ -41,10 +35,10 @@ public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
             .WithName(itemName)
             .WithDescription(item.Description)
             .WithResRef(item.ResRef)
-            .WithBaseValue(_propertyHandler.DeriveValue(quality, material))
-            .WithMagicModifier(_propertyHandler.DeriveMagic(quality, material))
-            .WithDurabilityModifier(_propertyHandler.DeriveDurability(quality, material))
-            .WithType(_propertyHandler.DeriveType(item.BaseItem.ItemType))
+            .WithBaseValue(propertyHandler.DeriveValue(quality, material))
+            .WithMagicModifier(propertyHandler.DeriveMagic(quality, material))
+            .WithDurabilityModifier(propertyHandler.DeriveDurability(quality, material))
+            .WithType(propertyHandler.DeriveType(item.BaseItem.ItemType))
             .WithQuality(quality)
             .WithMaterial(material)
             .WithCreator(madeBy)
