@@ -32,6 +32,11 @@ public class SpellUtils
         return false;
     }
     
+    
+    /// <summary>
+    /// Accounts for custom DCs like Shifter and Monk Wild Magic
+    /// </summary>
+    /// <returns></returns>
     public static int GetSpellDc(SpellEvents.OnSpellCast eventData)
     {
         NwCreature? casterCreature = eventData.Caster as NwCreature;
