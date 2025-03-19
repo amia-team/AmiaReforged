@@ -24,7 +24,7 @@ public class AcidBolt : ISpell
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
         
-        CreatureEvents.OnSpellCastAt.Signal(caster, (NwCreature)target, eventData.Spell);
+        SpellUtils.SignalSpell(caster, target, eventData.Spell);
         
         ApplyBolt(target);
 
