@@ -37,6 +37,7 @@ public class MonkDialogHandler
         DialogService = dialogService;
         NwModule.Instance.OnUseFeat += OpenPathDialog;
         NwModule.Instance.OnUseFeat += OpenEyeGlowDialog;
+        NwModule.Instance.OnUseFeat += OpenFightingStyleDialog;
         _log.Info(message: "Monk Eye Glow Feat Handler initialized.");
     }
 
@@ -59,7 +60,7 @@ public class MonkDialogHandler
     }
 
     /// <summary>
-    ///     Opens the dialog menu to set the eye glow color
+    ///     Opens the dialog menu to set the eye glow
     /// </summary>
     private static async void OpenEyeGlowDialog(OnUseFeat eventData)
     {
@@ -69,6 +70,20 @@ public class MonkDialogHandler
         await player.ActionStartConversation
             (eventData.Creature, dialogResRef: "monk_eyeglow", true, false);
     }
+    
+    /// <summary>
+    ///     Opens the dialog menu to choose the fighting style
+    /// </summary>
+    private async void OpenFightingStyleDialog(OnUseFeat eventData)
+    {
+        if (eventData.Feat.Id is not MonkFeat.MonkFightingStyle) return;
+        if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
+
+        await player.ActionStartConversation
+            (eventData.Creature, dialogResRef: "monk_fightingstyle", true, false);
+    }
+    
+    
 
     [ScriptHandler(scriptName: "monk_path")]
     private void PathDialog(CallInfo info)
@@ -99,8 +114,27 @@ public class MonkDialogHandler
         NodeType nodeType = DialogService.CurrentNodeType;
 
 
-        if (nodeType == NodeType.StartingNode) DialogService.SetCurrentNodeText(text: "Select eye glow color:");
+        if (nodeType == NodeType.StartingNode) DialogService.SetCurrentNodeText(text: "Select eye glow:");
         if (nodeType == NodeType.ReplyNode) ApplyEyeGlow(monk);
+    }
+    
+    [ScriptHandler(scriptName: "monk_fightingstyle")]
+    private void FightingStyleDialog(CallInfo info)
+    {
+        DialogEvents.AppearsWhen eventData = new();
+
+        if (eventData.PlayerSpeaker?.ControlledCreature is null) return;
+
+        NwCreature monk = eventData.PlayerSpeaker.ControlledCreature;
+        NodeType nodeType = DialogService.CurrentNodeType;
+
+
+        if (nodeType == NodeType.StartingNode) DialogService.SetCurrentNodeText(text: "Select fighting style:");
+        if (nodeType == NodeType.ReplyNode)
+        {
+            string addedFeats = GiveFightingStyleFeats(monk);
+            eventData.PlayerSpeaker.SendServerMessage($"{addedFeats} added.");
+        }
     }
 
     /// <summary>
@@ -336,5 +370,36 @@ public class MonkDialogHandler
             }
 
         return Effect.VisualEffect(eyeGlowVfx, false, scale);
+    }
+    
+    /// <summary>
+    ///  At level 6 monk, choose between IKD, Imp Disarm, and Called Shot and Mobility
+    /// </summary>
+    private static string GiveFightingStyleFeats(NwCreature monk)
+    {
+        Func<string, LocalVariableInt> localInt = monk.GetObjectVariable<LocalVariableInt>;
+        
+        // Improved Knockdown
+        if (localInt(arg: "ds_check1").HasValue)
+        {
+            monk.AddFeat(Feat.ImprovedKnockdown!, 6);
+            return NwFeat.FromFeatType(Feat.ImprovedKnockdown)!.Name.ToString();
+        }
+
+
+        if (localInt(arg: "ds_check2").HasValue)
+        {
+            monk.AddFeat(Feat.ImprovedDisarm!, 6);
+            return NwFeat.FromFeatType(Feat.ImprovedDisarm)!.Name.ToString();
+        }
+
+        if (localInt(arg: "ds_check3").HasValue)
+        {
+            monk.AddFeat(Feat.Mobility!, 6);
+            monk.AddFeat(Feat.CalledShot!, 6);
+            return NwFeat.FromFeatType(Feat.Mobility)!.Name +" and "+ NwFeat.FromFeatType(Feat.CalledShot)!.Name;
+        }
+
+        return "";
     }
 }
