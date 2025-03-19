@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.Classes.Monk;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
@@ -28,10 +29,12 @@ public class FireBolt : ISpell
 
         NwClass? spellClass = eventData.SpellCastClass;
         if (spellClass == null) return;
-
+        
         int casterLevel = casterCreature.GetClassInfo(spellClass)!.Level;
-        int spellDc = eventData.SaveDC;
+        int spellDc = SpellUtils.GetSpellDc(eventData);
         TimeSpan spellDuration = NwTimeSpan.FromRounds(casterLevel);
+        
+        bool hasEpicFocus = casterCreature.Feats.Any(f => f.FeatType == Feat.EpicSpellFocusEnchantment);
         
         DoBane();
         return;
@@ -39,8 +42,7 @@ public class FireBolt : ISpell
 
         void DoBane()
         {
-            bool hasEpicFocus = casterCreature.Feats.Any(f => f.FeatType == Feat.EpicSpellFocusEnchantment);
-        
+
             location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosEvil30));
         
             foreach (NwGameObject nwObject in location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
