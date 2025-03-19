@@ -79,7 +79,8 @@ public class MonkDialogHandler
 
         NwCreature monk = eventData.PlayerSpeaker.ControlledCreature;
         NodeType nodeType = DialogService.CurrentNodeType;
-
+        
+        if (nodeType == NodeType.StartingNode) DialogService.SetCurrentNodeText(text: "Select Path of Enlightenment:");
         if (nodeType == NodeType.ReplyNode)
         {
             string path = GivePathFeat(monk);
@@ -98,7 +99,7 @@ public class MonkDialogHandler
         NodeType nodeType = DialogService.CurrentNodeType;
 
 
-        if (nodeType == NodeType.StartingNode) DialogService.SetCurrentNodeText(text: "Select eye glow color.");
+        if (nodeType == NodeType.StartingNode) DialogService.SetCurrentNodeText(text: "Select eye glow color:");
         if (nodeType == NodeType.ReplyNode) ApplyEyeGlow(monk);
     }
 
