@@ -20,7 +20,9 @@ public class RayofHarm : ISpell
 
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
-
+        
+        SpellUtils.SignalSpell(caster, target, eventData.Spell);
+        
         ApplyBeam(caster, target);
 
         int damage = CalculateDamage(caster, casterCreature);

@@ -25,7 +25,9 @@ public class BallOfSound : ISpell
         {
             damage += damage / 2;
         }
-
+        
+        SpellUtils.SignalSpell(casterCreature, eventData.TargetObject, eventData.Spell);
+        
         if (ResistedSpell ||
             eventData.TargetObject.ActiveEffects.Any(e => e.EffectType == EffectType.Deaf)) return;
 

@@ -21,6 +21,8 @@ public class FireBolt : ISpell
 
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
+        
+        SpellUtils.SignalSpell(casterCreature, target, eventData.Spell);
 
         ApplyBolt(target);
 

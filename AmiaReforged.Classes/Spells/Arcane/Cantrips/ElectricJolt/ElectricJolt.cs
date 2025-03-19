@@ -34,6 +34,8 @@ public class ElectricJolt : ISpell
 
         int numberOfDie = caster.CasterLevel / 2;
         int damage = NWScript.d3(numberOfDie);
+        
+        SpellUtils.SignalSpell(casterCreature, target, eventData.Spell);
 
         if (ResistedSpell) return;
 
