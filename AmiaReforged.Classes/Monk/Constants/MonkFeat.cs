@@ -29,4 +29,5 @@ public static class MonkFeat
     public const int KiShout = 1346;
     public const int BodyKiPoint = 1347;
     public const int SpiritKiPoint = 1353;
+    public const int MonkFightingStyle = 1356;
 }
