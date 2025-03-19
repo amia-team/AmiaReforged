@@ -52,6 +52,11 @@ public class SpellUtils
     private static int GetMonkWildMagicDc(NwCreature creature, int spellLevel) => 
         MonkUtilFunctions.CalculateMonkDc(creature) - 9 + spellLevel;
 
-    private static int CalculateShifterDc(NwCreature creature) => 
-        10 + creature.GetClassInfo(ClassType.Shifter)!.Level / 2 + creature.GetAbilityModifier(Ability.Wisdom);
+    private static int CalculateShifterDc(NwCreature creature)
+    {
+        int shifterLevel = creature.GetClassInfo(ClassType.Shifter)!.Level;
+        int druidLevel = creature.GetClassInfo(ClassType.Druid) != null ? creature.GetClassInfo(ClassType.Druid)!.Level : 0;
+        return 10 + (shifterLevel + druidLevel) / 2 + creature.GetAbilityModifier(Ability.Wisdom);
+    }
+        
 }
