@@ -1,4 +1,6 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.Classes.Monk;
+using Anvil.API;
+using Anvil.API.Events;
 using NWN.Core;
 using static NWN.Core.NWScript;
 
@@ -474,31 +476,5 @@ public static class NwEffects
         customShapeEffect = TagEffect(customShapeEffect, sNewTag: "customshape_effect");
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, customShapeEffect, target, duration);
         ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_POLYMORPH), target);
-    }
-    
-    /// <summary>
-    /// If spell targets neutrals (like fireball, grease, etc., most AOE spells),
-    /// it also damages yourself and associates (and doors and placeables), but not your party members or their associates
-    /// </summary>
-    /// <returns>True for valid targets to apply effects to</returns>
-    static bool IsValidAoeTarget(NwObject caster, NwObject target)
-    {
-        // Hurts doors and placeables
-        if (target is NwDoor or NwPlaceable) return true;
-
-        // Hurts yourself
-        if (caster == target) return true;
-
-        if (target is NwCreature targetCreature)
-        {
-            // Hurt your own associates
-            if (targetCreature.Master == caster) return true;
-            
-            // Hurt neutrals and hostiles
-            if (!targetCreature.IsReactionTypeFriendly((NwCreature)caster)) return true;
-        }
-        
-        // Doesn't hurt other targets than the checked for above
-        return false;
     }
 }
