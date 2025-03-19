@@ -19,10 +19,9 @@ public class FireBolt : ISpell
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
-        if (eventData.Caster is not NwCreature casterCreature) return;
-
-        NwGameObject? target = eventData.TargetObject;
-        if (target == null) return;
+        NwGameObject? caster = eventData.Caster;
+        if (caster == null) return;
+        if (caster is not NwCreature casterCreature) return;
         
         Location? location = eventData.TargetLocation;
         if (location == null) return;
