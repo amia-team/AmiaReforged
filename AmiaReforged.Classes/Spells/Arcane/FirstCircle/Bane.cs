@@ -58,7 +58,7 @@ public class FireBolt : ISpell
                 }
 
                 SavingThrowResult savingThrowResult = 
-                    targetCreature.RollSavingThrow(SavingThrow.Will, spellDc, SavingThrowType.MindSpells);
+                    targetCreature.RollSavingThrow(SavingThrow.Will, spellDc, SavingThrowType.MindSpells, casterCreature);
 
                 if (savingThrowResult is SavingThrowResult.Success)
                 {
