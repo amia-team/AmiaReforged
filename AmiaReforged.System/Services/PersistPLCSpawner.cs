@@ -8,30 +8,28 @@ using NWN.Core;
 namespace AmiaReforged.System.Services;
 
 // [ServiceBinding(typeof(PersistPLCSpawner))]
-public class PersistPLCSpawner
+public class PersistPlcSpawner
 {
-    private readonly PersistPLCService _persistPLCService;
-    private readonly SchedulerService _schedulerService;
-    private readonly List<string> serverAreaResref;
-    private readonly List<NwArea> serverAreas;
+    private readonly PersistPLCService _persistPlcService;
+    private readonly List<string> _serverAreaResref;
+    private readonly List<NwArea> _serverAreas;
 
 
-    public PersistPLCSpawner(SchedulerService schedulerService, PersistPLCService persistPLCService)
+    public PersistPlcSpawner(SchedulerService schedulerService, PersistPLCService persistPlcService)
     {
-        _schedulerService = schedulerService;
-        _persistPLCService = persistPLCService;
+        _persistPlcService = persistPlcService;
         
-        serverAreas = NwModule.Instance.Areas.Where(a => a.Objects.Any(w => w.Tag == "is_area")).ToList();
-        serverAreaResref = serverAreas.Select(a => a.ResRef).ToList();
+        _serverAreas = NwModule.Instance.Areas.Where(a => a.Objects.Any(w => w.Tag == "is_area")).ToList();
+        _serverAreaResref = _serverAreas.Select(a => a.ResRef).ToList();
         
-        _schedulerService.ScheduleRepeating(Run, TimeSpan.FromMinutes(1));
+        schedulerService.ScheduleRepeating(Run, TimeSpan.FromMinutes(1));
     }
     
     private async void Run()
     {
         if (NWScript.GetLocalInt(NWScript.GetModule(), sVarName: "PersistPLCLaunched") == 1) return;
         
-        List<PersistPLC> persistPlc = await _persistPLCService.GetAllPersistPLCRecords();
+        List<PersistPLC> persistPlc = await _persistPlcService.GetAllPersistPLCRecords();
         await NwTask.SwitchToMainThread();
         int count = persistPlc.Count;
 
@@ -41,10 +39,10 @@ public class PersistPLCSpawner
             PersistPLC temp = persistPlc[i];
             string tempPlcName = temp.PLCName ?? throw new ArgumentNullException($"temp.PLCName");
             string areaResRef = temp.AreaResRef;
-            int realResRefIndex = serverAreaResref.FindIndex(x => x.Contains(areaResRef));
-            if (realResRefIndex == -1 || realResRefIndex >= serverAreas.Count) continue;
+            int realResRefIndex = _serverAreaResref.FindIndex(x => x.Contains(areaResRef));
+            if (realResRefIndex == -1 || realResRefIndex >= _serverAreas.Count) continue;
 
-            uint realArea = serverAreas[realResRefIndex];
+            uint realArea = _serverAreas[realResRefIndex];
             string plcResRef = temp.PLCResRef;
             Vector3 vector = NWScript.Vector(temp.X, temp.Y, temp.Z);
             
