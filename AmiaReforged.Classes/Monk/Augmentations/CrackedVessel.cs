@@ -55,7 +55,7 @@ public static class CrackedVessel
 
         NwCreature monk = attackData.Attacker;
 
-        int damageDice = MonkUtilFunctions.GetKiFocus(monk) switch
+        int damageDice = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -93,8 +93,8 @@ public static class CrackedVessel
 
         NwCreature monk = (NwCreature)castData.Caster;
         
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int damageDice = MonkUtilFunctions.GetKiFocus(monk) switch
+        int dc = MonkUtils.CalculateMonkDc(monk);
+        int damageDice = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 4,
             KiFocus.KiFocus2 => 6,
@@ -103,7 +103,7 @@ public static class CrackedVessel
         };
         int damageSides = IsInjured(monk) ? 6 : IsBadlyWounded(monk) ? 8 : IsNearDeath(monk) ? 10 : 0;
         
-        Effect aoeVfx = MonkUtilFunctions.ResizedVfx(VfxType.FnfLosEvil30, RadiusSize.Large);
+        Effect aoeVfx = MonkUtils.ResizedVfx(VfxType.FnfLosEvil30, RadiusSize.Large);
         
         monk.ApplyEffect(EffectDuration.Instant, aoeVfx);
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, false))
@@ -145,7 +145,7 @@ public static class CrackedVessel
         if (!monk.IsInCombat) return;
         
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int pctImmunityBonus = MonkUtilFunctions.GetKiFocus(monk) switch
+        int pctImmunityBonus = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 5,
             KiFocus.KiFocus2 => 10,
@@ -181,7 +181,7 @@ public static class CrackedVessel
 
         NwCreature monk = (NwCreature)castData.Caster;
 
-        int pctVulnerability = MonkUtilFunctions.GetKiFocus(monk) switch
+        int pctVulnerability = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 10,
             KiFocus.KiFocus2 => 15,

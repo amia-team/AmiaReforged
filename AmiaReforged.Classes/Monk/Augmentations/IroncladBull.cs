@@ -59,7 +59,7 @@ public static class IroncladBull
         // The effect only affects Body Ki Point recharge, so duh
         if (monkLevel < MonkLevel.BodyKiPointsI) return;
         
-        int kiBodyRegenChance = MonkUtilFunctions.GetKiFocus(monk) switch
+        int kiBodyRegenChance = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -83,7 +83,7 @@ public static class IroncladBull
         
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int resistanceAmount = MonkUtilFunctions.GetKiFocus(monk) switch
+        int resistanceAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 10,
             KiFocus.KiFocus2 => 15,
@@ -108,7 +108,7 @@ public static class IroncladBull
         
         NwCreature monk = (NwCreature)castData.Caster;
         
-        int tempHpAmount = MonkUtilFunctions.GetKiFocus(monk) switch
+        int tempHpAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 40,
             KiFocus.KiFocus2 => 60,
@@ -132,8 +132,8 @@ public static class IroncladBull
         
         NwCreature monk = (NwCreature)castData.Caster;
         
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int roundsAmount = MonkUtilFunctions.GetKiFocus(monk) switch
+        int dc = MonkUtils.CalculateMonkDc(monk);
+        int roundsAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,

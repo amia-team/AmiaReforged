@@ -55,7 +55,7 @@ public static class EchoingValley
         if (attackData.Target is not NwCreature targetCreature) return;
         if (!targetCreature.IsReactionTypeHostile(monk)) return;
         
-        int echoCap = MonkUtilFunctions.GetKiFocus(monk) switch
+        int echoCap = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,

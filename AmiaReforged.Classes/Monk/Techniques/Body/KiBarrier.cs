@@ -12,7 +12,7 @@ public static class KiBarrier
     public static void CastKiBarrier(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        PathType? path = MonkUtilFunctions.GetMonkPath(monk);
+        PathType? path = MonkUtils.GetMonkPath(monk);
         TechniqueType technique = TechniqueType.KiBarrier;
 
         if (path != null)

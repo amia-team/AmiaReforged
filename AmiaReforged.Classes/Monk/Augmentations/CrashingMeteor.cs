@@ -50,9 +50,9 @@ public static class CrashingMeteor
         StunningStrike.DoStunningStrike(attackData);
 
         NwCreature monk = attackData.Attacker;
-        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int diceAmount = MonkUtilFunctions.GetKiFocus(monk) switch
+        DamageType elementalType = MonkUtils.GetElementalType(monk);
+        int dc = MonkUtils.CalculateMonkDc(monk);
+        int diceAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 4,
             KiFocus.KiFocus2 => 6,
@@ -61,11 +61,11 @@ public static class CrashingMeteor
         };
         Effect elementalAoeVfx = elementalType switch
         {
-            DamageType.Fire => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large),
-            DamageType.Cold => MonkUtilFunctions.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
-            DamageType.Electrical => MonkUtilFunctions.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
-            DamageType.Acid => MonkUtilFunctions.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
-            _ => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large)
+            DamageType.Fire => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large),
+            DamageType.Cold => MonkUtils.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
+            DamageType.Electrical => MonkUtils.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
+            DamageType.Acid => MonkUtils.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
+            _ => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large)
         };
         Effect elementalDamageVfx = elementalType switch
         {
@@ -132,10 +132,10 @@ public static class CrashingMeteor
         AxiomaticStrike.DoAxiomaticStrike(attackData);
 
         NwCreature monk = attackData.Attacker;
-        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
+        DamageType elementalType = MonkUtils.GetElementalType(monk);
         DamageData<short> damageData = attackData.DamageData;
         short elementalDamage = damageData.GetDamageByType(elementalType);
-        short bonusDamageElemental = MonkUtilFunctions.GetKiFocus(monk) switch
+        short bonusDamageElemental = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -156,9 +156,9 @@ public static class CrashingMeteor
         WholenessOfBody.DoWholenessOfBody(castData);
 
         NwCreature monk = (NwCreature)castData.Caster;
-        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int diceAmount = MonkUtilFunctions.GetKiFocus(monk) switch
+        DamageType elementalType = MonkUtils.GetElementalType(monk);
+        int dc = MonkUtils.CalculateMonkDc(monk);
+        int diceAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 4,
             KiFocus.KiFocus2 => 6,
@@ -167,11 +167,11 @@ public static class CrashingMeteor
         };
         Effect elementalAoeVfx = elementalType switch
         {
-            DamageType.Fire => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large),
-            DamageType.Cold => MonkUtilFunctions.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
-            DamageType.Electrical => MonkUtilFunctions.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
-            DamageType.Acid => MonkUtilFunctions.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
-            _ => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large)
+            DamageType.Fire => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large),
+            DamageType.Cold => MonkUtils.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
+            DamageType.Electrical => MonkUtils.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
+            DamageType.Acid => MonkUtils.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
+            _ => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large)
         };
         Effect elementalDamageVfx = elementalType switch
         {
@@ -237,7 +237,7 @@ public static class CrashingMeteor
     private static void AugmentKiShout(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
+        DamageType elementalType = MonkUtils.GetElementalType(monk);
         VfxType elementalDamageVfx = elementalType switch
         {
             DamageType.Fire => VfxType.ImpFlameS,
@@ -249,7 +249,7 @@ public static class CrashingMeteor
         
         KiShout.DoKiShout(castData, elementalType, elementalDamageVfx);
         
-        int vulnerabilityPct = MonkUtilFunctions.GetKiFocus(monk) switch
+        int vulnerabilityPct = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 20,
             KiFocus.KiFocus2 => 30,

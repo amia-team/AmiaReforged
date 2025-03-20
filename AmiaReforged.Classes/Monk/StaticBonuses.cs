@@ -26,7 +26,7 @@ public static class StaticBonuses
         Effect monkSpeed = Effect.MovementSpeedIncrease(monkSpeedBonusAmount);
         monkSpeed.ShowIcon = false;
 
-        int kiStrikeBonusAmount = MonkUtilFunctions.GetKiFocus(monk) switch
+        int kiStrikeBonusAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 1,
             KiFocus.KiFocus2 => 2,

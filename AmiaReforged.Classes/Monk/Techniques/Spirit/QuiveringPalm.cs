@@ -12,7 +12,7 @@ public static class QuiveringPalm
     public static void CastQuiveringPalm(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        PathType? path = MonkUtilFunctions.GetMonkPath(monk);
+        PathType? path = MonkUtils.GetMonkPath(monk);
         const TechniqueType technique = TechniqueType.Quivering;
 
         if (path != null)
@@ -34,7 +34,7 @@ public static class QuiveringPalm
 
         NwCreature monk = (NwCreature)castData.Caster;
 
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
+        int dc = MonkUtils.CalculateMonkDc(monk);
 
         Effect quiveringEffect = Effect.Death(true);
         Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpDeath, false, 0.7f);

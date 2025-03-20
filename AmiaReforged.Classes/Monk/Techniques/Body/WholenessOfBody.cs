@@ -12,7 +12,7 @@ public static class WholenessOfBody
     public static void CastWholenessOfBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        PathType? path = MonkUtilFunctions.GetMonkPath(monk);
+        PathType? path = MonkUtils.GetMonkPath(monk);
         const TechniqueType technique = TechniqueType.Wholeness;
 
         if (path != null)

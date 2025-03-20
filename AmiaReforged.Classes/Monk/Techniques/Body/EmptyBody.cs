@@ -12,7 +12,7 @@ public static class EmptyBody
     public static void CastEmptyBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        PathType? path = MonkUtilFunctions.GetMonkPath(monk);
+        PathType? path = MonkUtils.GetMonkPath(monk);
         const TechniqueType technique = TechniqueType.EmptyBody;
 
         if (path != null)

@@ -58,7 +58,7 @@ public class EchoingValleySummonHandler
         }
             
 
-        Effect echoVfx = MonkUtilFunctions.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Medium);
+        Effect echoVfx = MonkUtils.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Medium);
 
         if (echo.Location is null) return;
         
@@ -85,7 +85,7 @@ public class EchoingValleySummonHandler
         if (info.ObjectSelf is not NwCreature echo) return;
         if (echo.ResRef is not "summon_echo") return;
 
-        Effect echoVfx = MonkUtilFunctions.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Large);
+        Effect echoVfx = MonkUtils.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Large);
         
         if (echo.Location is null) return;
         

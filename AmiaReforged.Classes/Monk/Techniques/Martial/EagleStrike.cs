@@ -12,7 +12,7 @@ public static class EagleStrike
     public static void ApplyEagleStrike(OnCreatureAttack attackData)
     {
         NwCreature monk = attackData.Attacker;
-        PathType? path = MonkUtilFunctions.GetMonkPath(monk);
+        PathType? path = MonkUtils.GetMonkPath(monk);
         const TechniqueType technique = TechniqueType.Eagle;
 
         if (path != null)
@@ -33,7 +33,7 @@ public static class EagleStrike
         NwCreature monk = attackData.Attacker;
         TimeSpan effectDuration = NwTimeSpan.FromRounds(2);
         int acDecreaseAmount = 2;
-        int effectDc = MonkUtilFunctions.CalculateMonkDc(monk);
+        int effectDc = MonkUtils.CalculateMonkDc(monk);
         Effect eagleStrikeEffect = Effect.LinkEffects(Effect.ACDecrease(acDecreaseAmount),
             Effect.VisualEffect(VfxType.DurCessateNegative));
         Effect eagleStrikeVfx = Effect.VisualEffect(VfxType.ImpStarburstRed, false, 0.7f);

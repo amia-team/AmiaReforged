@@ -12,7 +12,7 @@ public static class KiShout
     public static void CastKiShout(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        PathType? path = MonkUtilFunctions.GetMonkPath(monk);
+        PathType? path = MonkUtils.GetMonkPath(monk);
         const TechniqueType technique = TechniqueType.KiShout;
 
         if (path != null)
@@ -32,7 +32,7 @@ public static class KiShout
     {
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
+        int dc = MonkUtils.CalculateMonkDc(monk);
         Effect kiShoutEffect = Effect.Stunned();
         kiShoutEffect.SubType = EffectSubType.Supernatural;
         Effect kiShoutVfx = Effect.VisualEffect(VfxType.FnfHowlMind);

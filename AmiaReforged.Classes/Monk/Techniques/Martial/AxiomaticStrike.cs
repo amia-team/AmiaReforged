@@ -12,7 +12,7 @@ public static class AxiomaticStrike
     public static void ApplyAxiomaticStrike(OnCreatureAttack attackData)
     {
         NwCreature monk = attackData.Attacker;
-        PathType? path = MonkUtilFunctions.GetMonkPath(monk);
+        PathType? path = MonkUtils.GetMonkPath(monk);
         const TechniqueType technique = TechniqueType.Axiomatic;
 
         if (path != null)

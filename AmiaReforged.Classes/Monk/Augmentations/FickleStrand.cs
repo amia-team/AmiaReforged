@@ -73,7 +73,7 @@ public static class FickleStrand
         NwCreature monk = attackData.Attacker;
         DamageData<short> damageData = attackData.DamageData;
         short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
-        short bonusDamage = MonkUtilFunctions.GetKiFocus(monk) switch
+        short bonusDamage = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -94,7 +94,7 @@ public static class FickleStrand
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         
-        int spellsAbsorbed = MonkUtilFunctions.GetKiFocus(monk) switch
+        int spellsAbsorbed = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 4,
             KiFocus.KiFocus2 => 6,
@@ -120,7 +120,7 @@ public static class FickleStrand
 
         NwCreature monk = (NwCreature)castData.Caster;
         
-        int spellsBreached = MonkUtilFunctions.GetKiFocus(monk) switch
+        int spellsBreached = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,

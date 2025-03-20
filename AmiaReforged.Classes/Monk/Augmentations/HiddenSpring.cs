@@ -54,7 +54,7 @@ public static class HiddenSpring
 
         NwCreature monk = attackData.Attacker;
         
-        Effect stunningEffect = MonkUtilFunctions.GetKiFocus(monk) switch
+        Effect stunningEffect = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 or KiFocus.KiFocus2 => Effect.Pacified(),
             KiFocus.KiFocus3 => Effect.Paralyze(),
@@ -82,7 +82,7 @@ public static class HiddenSpring
 
         NwCreature monk = attackData.Attacker;
 
-        int abDecrease = MonkUtilFunctions.GetKiFocus(monk) switch
+        int abDecrease = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 or KiFocus.KiFocus2 => 1,
             KiFocus.KiFocus3 => 2,
@@ -113,7 +113,7 @@ public static class HiddenSpring
         NwCreature monk = attackData.Attacker;
         DamageData<short> damageData = attackData.DamageData;
         int baseWisdomModifier = (monk.GetRawAbilityScore(Ability.Wisdom) - 10) / 2;
-        int bonusDamage = MonkUtilFunctions.GetKiFocus(monk) switch
+        int bonusDamage = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 or KiFocus.KiFocus2 => baseWisdomModifier / 4,
             KiFocus.KiFocus3 => baseWisdomModifier / 2,
@@ -135,7 +135,7 @@ public static class HiddenSpring
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int baseWisdomModifier = (monk.GetRawAbilityScore(Ability.Wisdom) - 10) / 2;
-        int bonusAmount = MonkUtilFunctions.GetKiFocus(monk) switch
+        int bonusAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => baseWisdomModifier / 3,
             KiFocus.KiFocus2 => baseWisdomModifier / 2,

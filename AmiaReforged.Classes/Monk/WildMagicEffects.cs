@@ -11,7 +11,7 @@ public static class WildMagicEffects
 
         const int spellEpicChance = 1;
         
-        switch (MonkUtilFunctions.GetKiFocus(monk))
+        switch (MonkUtils.GetKiFocus(monk))
         {
             default:
                 spellWeakChance = 66;

@@ -56,7 +56,7 @@ public static class SwingingCenser
         // Target must be a hostile creature
         if (!monk.IsReactionTypeHostile((NwCreature)attackData.Target)) return;
         
-        int healAmount = MonkUtilFunctions.GetKiFocus(monk) switch
+        int healAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => Random.Shared.Roll(6, 2),
             KiFocus.KiFocus2 => Random.Shared.Roll(6, 3),
@@ -152,7 +152,7 @@ public static class SwingingCenser
         
         NwCreature monk = (NwCreature)castData.Caster;
         
-        int abBonus = MonkUtilFunctions.GetKiFocus(monk) switch
+        int abBonus = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -186,7 +186,7 @@ public static class SwingingCenser
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         int healAmount = monkLevel * 2;
 
-        int pulseAmount = MonkUtilFunctions.GetKiFocus(monk) switch
+        int pulseAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -241,7 +241,7 @@ public static class SwingingCenser
         // Adjust as appropriate. 1 round per monk level.
         TimeSpan effectTime = NwTimeSpan.FromRounds(monkLevel);
         
-        int regen = MonkUtilFunctions.GetKiFocus(monk) switch
+        int regen = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 4,
             KiFocus.KiFocus2 => 6,

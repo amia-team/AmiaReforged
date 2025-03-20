@@ -6,7 +6,7 @@ using Anvil.API;
 
 namespace AmiaReforged.Classes.Monk;
 
-public static class MonkUtilFunctions
+public static class MonkUtils
 {
     /// <summary>
     ///     Returns the monk's path type

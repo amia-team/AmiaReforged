@@ -273,8 +273,8 @@ public class MartialTechniqueService
                                           BaseItemCategory.Torches;
 
 
-        if (MonkUtilFunctions.GetMonkPath(monk) != PathType.HiddenSpring 
-            && MonkUtilFunctions.GetKiFocus(monk) != KiFocus.KiFocus2 && monk.IsRangedWeaponEquipped)
+        if (MonkUtils.GetMonkPath(monk) != PathType.HiddenSpring 
+            && MonkUtils.GetKiFocus(monk) != KiFocus.KiFocus2 && monk.IsRangedWeaponEquipped)
             hasRangedWeapon = true;
 
         bool isTechniquePrevented = hasArmor || hasShield || hasFocusWithoutUnarmed || hasRangedWeapon;

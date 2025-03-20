@@ -12,7 +12,7 @@ public static class StunningStrike
     public static void ApplyStunningStrike(OnCreatureAttack attackData)
     {
         NwCreature monk = attackData.Attacker;
-        PathType? path = MonkUtilFunctions.GetMonkPath(monk);
+        PathType? path = MonkUtils.GetMonkPath(monk);
         const TechniqueType technique = TechniqueType.Stunning;
 
         if (path != null)
@@ -35,7 +35,7 @@ public static class StunningStrike
             Effect.LinkEffects(Effect.Stunned(), Effect.VisualEffect(VfxType.DurCessateNegative));
         stunningStrikeEffect.SubType = EffectSubType.Extraordinary;
         TimeSpan effectDuration = NwTimeSpan.FromRounds(1);
-        int effectDc = MonkUtilFunctions.CalculateMonkDc(monk);
+        int effectDc = MonkUtils.CalculateMonkDc(monk);
 
         // DC check for stunning effect
         if (attackData.Target is not NwCreature targetCreature) return SavingThrowResult.Failure;
