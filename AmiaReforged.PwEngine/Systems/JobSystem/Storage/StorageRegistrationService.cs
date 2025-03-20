@@ -58,7 +58,6 @@ public class StorageRegistrationService
 
         LedgerView view = new(player);
         _manager.OpenWindow(view.Presenter);
-        // _manager.OpenWindow<LedgerView>(player);
     }
 }
 

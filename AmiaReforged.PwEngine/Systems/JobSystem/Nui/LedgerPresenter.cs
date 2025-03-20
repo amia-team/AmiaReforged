@@ -50,6 +50,9 @@ public sealed class LedgerPresenter(NwPlayer player, LedgerView view) : ScryPres
             case LedgerConsts.GemsId:
                 LoadCategory(ItemType.Gem);
                 break;
+            case LedgerConsts.StoneId:
+                LoadCategory(ItemType.Stone);
+                break;
             case LedgerConsts.IngotsId:
                 LoadCategory(ItemType.Ingot);
                 break;

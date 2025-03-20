@@ -16,7 +16,6 @@ public enum ItemType
     // Alchemical ingredients
     PotionIngredient,
     Potion,
-    Processed,
     Grain,
     Flour,
     // Academic books, scrolls, ivory, ancient artifacts, etc.
@@ -26,5 +25,6 @@ public enum ItemType
     // Processed animal parts
     Hide,
     // Jewelry, Paintings, Sculptures, etc.
-    Crafts
+    Crafts,
+    Stone
 }
