@@ -33,6 +33,50 @@ public class SpellUtils
     }
     
     /// <summary>
+    /// Always use if the spell's effect duration can be extended
+    /// </summary>
+    /// <param name="metaMagic">The metamagic used on the spellcast; use MetaMagicFeat from the event data</param>
+    /// <param name="durationToExtend">Use the effect duration from NwTimespan.FromRounds/Turns/Hours</param>
+    /// <returns>The extended duration; if the metamagic wasn't extend, does nothing</returns>
+    public static TimeSpan CheckExtend(MetaMagic metaMagic, TimeSpan durationToExtend) =>
+        metaMagic switch
+        {
+            MetaMagic.Extend => durationToExtend * 2,
+            _ => durationToExtend
+        };
+    
+    /// <summary>
+    /// Always use if the spell's value (usually damage) can be empowered
+    /// </summary>
+    /// <param name="metaMagic">The metamagic used on the spellcast; use MetaMagicFeat from the event data</param>
+    /// <param name="valueToEmpower">Typically the damage gotten from Random.Shared.Roll or other calculation</param>
+    /// <returns>The empowered value; if empower wasn't used returns the normal value</returns>
+    public static int CheckEmpower(MetaMagic metaMagic, int valueToEmpower)
+    {
+        return metaMagic switch
+        {
+            MetaMagic.Empower => (int)(valueToEmpower * 1.5),
+            _ => valueToEmpower
+        };
+    }
+    
+    /// <summary>
+    /// Always use if the spell's value (usually damage) can be maximized
+    /// </summary>
+    /// <param name="metaMagic">The metamagic used on the spellcast; use MetaMagicFeat from the event data</param>
+    /// <param name="dieSides">The number of sides on the die</param>
+    /// <param name="diceAmount">The amount of dice to roll</param>
+    /// <returns>The maximized value; if maximize wasn't used returns the normal value</returns>
+    public static int CheckMaximize(MetaMagic metaMagic, int dieSides, int diceAmount)
+    {
+        return metaMagic switch
+        {
+            MetaMagic.Maximize => dieSides * diceAmount,
+            _ => Random.Shared.Roll(dieSides, diceAmount)
+        };
+    }
+    
+    /// <summary>
     /// A catch-all for all object types so you don't have to always check separately for creature, door, and placeable
     /// </summary>
     public static void SignalSpell(NwGameObject caster, NwGameObject target, NwSpell spell)
