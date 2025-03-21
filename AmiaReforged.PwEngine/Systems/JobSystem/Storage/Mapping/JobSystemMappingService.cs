@@ -41,7 +41,6 @@ public partial class JobSystemMappingService(
             .WithType(propertyHandler.DeriveType(item.BaseItem.ItemType))
             .WithQuality(quality)
             .WithMaterial(material)
-            .WithCreator(madeBy)
             .WithIconResRef(item.PortraitResRef)
             .WithSerializedData(item.Serialize()!)
             .Build();

@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using AmiaReforged.Core.Models;
 
 namespace AmiaReforged.PwEngine.Database.Entities;
 

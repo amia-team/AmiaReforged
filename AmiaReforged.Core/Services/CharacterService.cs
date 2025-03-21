@@ -1,5 +1,4 @@
 ﻿using System.Linq.Expressions;
-using AmiaReforged.Core.Helpers;
 using AmiaReforged.Core.Models;
 using Anvil.API;
 using Anvil.Services;
@@ -13,12 +12,10 @@ public class CharacterService
 {
     private readonly DatabaseContextFactory _ctxFactory;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly NwTaskHelper _nwTaskHelper;
 
-    public CharacterService(DatabaseContextFactory ctxFactory, NwTaskHelper nwTaskHelper)
+    public CharacterService(DatabaseContextFactory ctxFactory)
     {
         _ctxFactory = ctxFactory;
-        _nwTaskHelper = nwTaskHelper;
     }
 
     public async Task AddCharacter(PlayerCharacter playerCharacter)
@@ -34,7 +31,7 @@ public class CharacterService
             Log.Error(e, "Error saving character");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 
     public async Task UpdateCharacter(PlayerCharacter playerCharacter)
@@ -51,7 +48,7 @@ public class CharacterService
             Log.Error(e, "Error updating character");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 
     public async Task DeleteCharacter(PlayerCharacter playerCharacter)
@@ -68,7 +65,7 @@ public class CharacterService
             Log.Error(e, "Error deleting character");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 
     public async Task<List<PlayerCharacter>> GetAllCharacters()
@@ -85,7 +82,7 @@ public class CharacterService
             Log.Error(e, "Error getting all characters");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
         return characters;
     }
 
@@ -105,7 +102,7 @@ public class CharacterService
             Log.Error(e, "Error getting certain characters");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
         return characters;
     }
 
@@ -123,7 +120,7 @@ public class CharacterService
             Log.Error(e, "Error checking if character exists");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
         
         return exists;
     }
@@ -178,7 +175,7 @@ public class CharacterService
             Log.Error(e, "Error adding characters");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 
     public async Task DeleteCharacters(IEnumerable<PlayerCharacter> characters)
@@ -195,6 +192,6 @@ public class CharacterService
             Log.Error(e, "Error deleting characters");
         }
 
-        await _nwTaskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
     }
 }

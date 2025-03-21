@@ -9,9 +9,9 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem.Nui;
 [ServiceBinding(typeof(LedgerLoader))]
 public class LedgerLoader(JobSystemMappingService mappingService)
 {
-    public Ledger FromItemStorage(ItemStorage storage)
+    public CharacterLedger FromItemStorage(ItemStorage storage)
     {
-        Ledger ledger = new()
+        CharacterLedger characterLedger = new()
         {
             Entries = new(),
             ItemReferences = new()
@@ -19,7 +19,7 @@ public class LedgerLoader(JobSystemMappingService mappingService)
 
         foreach (StoredJobItem storedItem in storage.Items)
         {
-            ledger.ItemReferences.Add(storedItem.Id);
+            characterLedger.ItemReferences.Add(storedItem.Id);
         }
 
         string[] itemNames = storage.Items.Select(i => i.JobItem.Name).Distinct().ToArray();
@@ -37,7 +37,7 @@ public class LedgerLoader(JobSystemMappingService mappingService)
                 Items = new()
             };
 
-            ledger.Entries.Add(entry);
+            characterLedger.Entries.Add(entry);
 
             // Add individual items to the ledger entry
             foreach (StoredJobItem storedItem in storage.Items.Where(i => i.JobItem.Name == itemName))
@@ -57,10 +57,10 @@ public class LedgerLoader(JobSystemMappingService mappingService)
             }
         }
 
-        return ledger;
+        return characterLedger;
     }
 
-    public Ledger FromPlayer(NwCreature tokenPlayer)
+    public CharacterLedger FromPlayer(NwCreature tokenPlayer)
     {
         List<NwItem> nwItems = tokenPlayer.Inventory.Items.Where(i => i.ResRef.StartsWith(value: "js_")).ToList();
 
@@ -68,7 +68,7 @@ public class LedgerLoader(JobSystemMappingService mappingService)
 
         ICollection<JobItem> distinctItems = jobItems.DistinctBy(jb => jb.Name).ToList();
 
-        Ledger ledger = new()
+        CharacterLedger characterLedger = new()
         {
             Entries = new(),
             ItemReferences = new()
@@ -86,7 +86,7 @@ public class LedgerLoader(JobSystemMappingService mappingService)
                 Items = new()
             };
 
-            ledger.Entries.Add(entry);
+            characterLedger.Entries.Add(entry);
 
             // Add individual items to the ledger entry
             foreach (JobItem jobItem in jobItems.Where(i => i.Name == item.Name))
@@ -104,11 +104,11 @@ public class LedgerLoader(JobSystemMappingService mappingService)
                 });
 
                 // Add item reference to the ledger
-                ledger.ItemReferences.Add(jobItem.Id);
+                characterLedger.ItemReferences.Add(jobItem.Id);
             }
         }
 
-        return ledger;
+        return characterLedger;
     }
 }
 

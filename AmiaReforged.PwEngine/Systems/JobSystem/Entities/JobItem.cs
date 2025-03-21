@@ -16,8 +16,6 @@ public class JobItem
     public ItemType Type { get; set; }
     public QualityEnum Quality { get; set; }
     public MaterialEnum Material { get; set; }
-    public string IconResRef { get; set; }
+    public string? IconResRef { get; set; }
     public byte[] SerializedData { get; set; }
-    public long WorldCharacterId { get; set; }
-    [ForeignKey(name: "WorldCharacterId")] public WorldCharacter MadeBy { get; set; }
 }
