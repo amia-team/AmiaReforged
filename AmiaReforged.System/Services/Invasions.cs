@@ -66,11 +66,11 @@ public class Invasions
     {
         uint Area = NWScript.GetArea(waypoint);
         string areaName = NWScript.GetName(Area);
-        string creaturetype1 = "ab_uce_runner";
-        string creaturetype2 = "ab_uce_heaer";
+        string creaturetype1 = "ab_uce_heaer";
+        string creaturetype2 = "ab_uce_runner";
         string creaturetype3 = "ds_demon_4";
         string creaturetype4 = "ab_succubussneak";
-        string creaturetype5 = "ab_uce_archer";
+        string creaturetype5 = "";
         string lieutentant = "balorlieutentant";
         string boss = "demoninvaboss";
         string overflow = "";
@@ -268,22 +268,38 @@ public class Invasions
             Vector3 randomPosSe = NWScript.Vector(xPosition + 1.0f, yPosition - 1.0f, zPosition);
             Vector3 randomPosSw = NWScript.Vector(xPosition - 1.0f, yPosition - 1.0f, zPosition);
 
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1,
-                NWScript.Location(area, randomPosN, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype2,
-                NWScript.Location(area, randomPosS, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype3,
-                NWScript.Location(area, randomPosE, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype4,
-                NWScript.Location(area, randomPosW, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype5,
-                NWScript.Location(area, randomPosNe, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype2,
-                NWScript.Location(area, randomPosNw, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype3,
-                NWScript.Location(area, randomPosSe, facing));
-            NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype4,
-                NWScript.Location(area, randomPosSw, facing));
+            if (creaturetype1 != "")
+            {
+                NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype1,
+                    NWScript.Location(area, randomPosN, facing));
+            }
+            
+            if (creaturetype2 != "")
+            {
+                NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype2,
+                    NWScript.Location(area, randomPosS, facing));
+                NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype2,
+                    NWScript.Location(area, randomPosNw, facing));
+            }
+            if (creaturetype3 != "")
+            {
+                NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype3,
+                    NWScript.Location(area, randomPosE, facing));
+                NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype3,
+                    NWScript.Location(area, randomPosSe, facing));
+            }
+            if (creaturetype4 != "")
+            {
+                NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype4,
+                    NWScript.Location(area, randomPosW, facing));
+                NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype4,
+                    NWScript.Location(area, randomPosSw, facing));
+            }
+            if (creaturetype5 != "")
+            {
+                NWScript.CreateObject(NWScript.OBJECT_TYPE_CREATURE, creaturetype5,
+                    NWScript.Location(area, randomPosNe, facing));
+            }
             countMobs++;
 
             // PLC Spawning
