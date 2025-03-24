@@ -101,13 +101,46 @@ public class SpellUtils
         // Default eventData.SaveDC, exceptions listed before
         return spellClass.ClassType switch
         {
-            ClassType.Monk => GetMonkWildMagicDc(casterCreature, eventData.SpellLevel),
+            ClassType.Monk => CalculateMonkWildMagicDc(casterCreature, eventData.SpellLevel),
             ClassType.Shifter => CalculateShifterDc(casterCreature),
             _ => eventData.SaveDC
         };
     }
+    
+    public static int GetAoeSpellDc(AreaOfEffectEvents.OnEnter eventData)
+    {
+        if (eventData.Effect.Creator is not NwCreature casterCreature) return eventData.SpellSaveDC;
+        NwSpell? spell = eventData.Effect.Spell;
+        if (spell is null) return eventData.SpellSaveDC;
+        
+        // If the caster knows the spell, default to normal DC
+        if (casterCreature.Classes.Any(c => c.KnownSpells.Any(spells => spells.Contains(spell))))
+            return eventData.SpellSaveDC;
+        
+        // Check for both monk and shifter as classes, if caster has both, then use the highest level class
+        // or default to shifter if monk and shifter are equal
+        if (casterCreature.Classes.All(c => c.Class.ClassType is ClassType.Monk or ClassType.Shifter))
+        {
+            int monkLevel = casterCreature.GetClassInfo(ClassType.Monk)!.Level;
+            int shifterLevel = casterCreature.GetClassInfo(ClassType.Shifter)!.Level;
+            
+            
+            return monkLevel > shifterLevel ? CalculateMonkWildMagicDc(casterCreature, spell.InnateSpellLevel) 
+                : CalculateShifterDc(casterCreature);
+        }
+        
+        CreatureClassInfo? spellClass = casterCreature.Classes.FirstOrDefault(c => c.Class.ClassType is ClassType.Monk or ClassType.Shifter);
+        if (spellClass is null) return eventData.SpellSaveDC;
+        
+        return spellClass.Class.ClassType switch
+        {
+            ClassType.Monk => CalculateMonkWildMagicDc(casterCreature, spell.InnateSpellLevel),
+            ClassType.Shifter => CalculateShifterDc(casterCreature),
+            _ => eventData.SpellSaveDC
+        };
+    }
 
-    private static int GetMonkWildMagicDc(NwCreature creature, int spellLevel) => 
+    private static int CalculateMonkWildMagicDc(NwCreature creature, int spellLevel) => 
         MonkUtilFunctions.CalculateMonkDc(creature) - 9 + spellLevel;
 
     private static int CalculateShifterDc(NwCreature creature)
