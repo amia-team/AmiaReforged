@@ -7,28 +7,25 @@ namespace AmiaReforged.Classes.Spells.Arcane.SecondCircle.Necromancy;
 public class GhoulTouchOnEnter
 {
     [ScriptHandler("NW_S0_GhoulTchA")]
-    public static void OnEnter(CallInfo info)
+    public static void OnScriptRun(CallInfo info)
     {
         AreaOfEffectEvents.OnEnter eventData = new();
         
-        if (eventData.Effect.Creator is not NwCreature caster) return;
-        if (eventData.Entering is not NwCreature creature) return;
-
-        bool resistedSpell = creature.SpellAbsorptionLimitedCheck(caster) 
-                             || creature.SpellAbsorptionUnlimitedCheck(caster)
-                             || creature.SpellImmunityCheck(caster) 
-                             || creature.SpellAbsorptionUnlimitedCheck(caster)
-                             || creature.SpellResistanceCheck(caster);
-        
-        if (resistedSpell) return;
-        
-        ApplyEffect(eventData);
+        eventData.Effect.OnEnter += OnEnterGhoul;
     }
     
-    private static void ApplyEffect(AreaOfEffectEvents.OnEnter eventData)
+    private static void OnEnterGhoul(AreaOfEffectEvents.OnEnter eventData)
     {
-        NwCreature caster = (NwCreature)eventData.Effect.Creator!;
-        NwCreature enteringCreature = (NwCreature)eventData.Entering;
+        if (eventData.Effect.Creator is not NwCreature caster) return;
+        if (eventData.Entering is not NwCreature enteringCreature) return;
+        
+        bool resistedSpell = enteringCreature.SpellAbsorptionLimitedCheck(caster) 
+                             || enteringCreature.SpellAbsorptionUnlimitedCheck(caster)
+                             || enteringCreature.SpellImmunityCheck(caster) 
+                             || enteringCreature.SpellAbsorptionUnlimitedCheck(caster)
+                             || enteringCreature.SpellResistanceCheck(caster);
+        
+        if (resistedSpell) return;
         
         if (caster.IsReactionTypeFriendly(enteringCreature)) return;
         
