@@ -7,8 +7,10 @@ namespace AmiaReforged.Classes.Spells.Arcane.SecondCircle.Necromancy;
 public class GhoulTouchOnEnter
 {
     [ScriptHandler("NW_S0_GhoulTchA")]
-    public void OnEnter(AreaOfEffectEvents.OnEnter eventData)
+    public static void OnEnter(CallInfo info)
     {
+        if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)) return;
+        
         if (eventData.Effect.Creator is not NwCreature caster) return;
         if (eventData.Entering is not NwCreature creature) return;
 
@@ -21,6 +23,7 @@ public class GhoulTouchOnEnter
         if (resistedSpell) return;
         
         ApplyEffect(eventData);
+
     }
     
     private static void ApplyEffect(AreaOfEffectEvents.OnEnter eventData)
