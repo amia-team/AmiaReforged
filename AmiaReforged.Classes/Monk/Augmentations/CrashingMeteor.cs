@@ -167,7 +167,7 @@ public static class CrashingMeteor
         };
         Effect elementalAoeVfx = elementalType switch
         {
-            DamageType.Fire => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large),
+            DamageType.Fire => MonkUtils.ResizedVfx(VfxType.FnfFirestorm, RadiusSize.Large),
             DamageType.Cold => MonkUtils.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
             DamageType.Electrical => MonkUtils.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
             DamageType.Acid => MonkUtils.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
