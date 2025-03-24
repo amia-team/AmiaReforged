@@ -5,13 +5,11 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Spells.Arcane.SecondCircle.Necromancy;
 
 [ServiceBinding(typeof(GhoulTouchOnEnter))]
-public static class GhoulTouchOnEnter
+public class GhoulTouchOnEnter
 {
     [ScriptHandler("NW_S0_GhoulTchA")]
-    public static void OnEnter(CallInfo info)
+    public void OnEnter(AreaOfEffectEvents.OnEnter eventData)
     {
-        AreaOfEffectEvents.OnEnter eventData = new();
-        
         if (eventData.Effect.Creator is not NwCreature caster) return;
         if (eventData.Entering is not NwCreature creature) return;
 
@@ -26,7 +24,7 @@ public static class GhoulTouchOnEnter
         ApplyEffect(eventData);
     }
     
-    private static void ApplyEffect(AreaOfEffectEvents.OnEnter eventData)
+    private void ApplyEffect(AreaOfEffectEvents.OnEnter eventData)
     {
         NwCreature caster = (NwCreature)eventData.Effect.Creator!;
         NwCreature enteringCreature = (NwCreature)eventData.Entering;
