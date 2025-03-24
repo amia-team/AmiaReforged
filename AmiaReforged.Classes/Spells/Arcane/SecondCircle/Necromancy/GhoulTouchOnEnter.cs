@@ -23,7 +23,6 @@ public class GhoulTouchOnEnter
         if (resistedSpell) return;
         
         ApplyEffect(eventData);
-
     }
     
     private static void ApplyEffect(AreaOfEffectEvents.OnEnter eventData)
@@ -34,8 +33,8 @@ public class GhoulTouchOnEnter
         if (caster.IsReactionTypeFriendly(enteringCreature)) return;
         
         Effect ghoulVfx = Effect.VisualEffect(VfxType.ImpDoom);
-        Effect ghoulEffect = Effect.LinkEffects(Effect.AttackDecrease(2), 
-            Effect.DamageDecrease(2, DamageType.BaseWeapon), 
+        Effect ghoulEffect = Effect.LinkEffects(Effect.AttackDecrease(2),
+            Effect.DamageDecrease(2, DamageType.Piercing | DamageType.Bludgeoning | DamageType.Slashing),
             Effect.SavingThrowDecrease(SavingThrow.All, 2), Effect.SkillDecrease(Skill.AllSkills!, 2));
         
         TimeSpan effectDuration = NwTimeSpan.FromRounds(Random.Shared.Roll(6) + 2);
