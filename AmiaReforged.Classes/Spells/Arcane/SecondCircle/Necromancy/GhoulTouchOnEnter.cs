@@ -15,22 +15,19 @@ public class GhoulTouchOnEnter
         if (eventData.Effect.Creator is not NwCreature caster) return;
         if (eventData.Entering is not NwCreature creature) return;
 
-        bool resistedSpell = creature.SpellAbsorptionLimitedCheck(caster) 
-                             || creature.SpellAbsorptionUnlimitedCheck(caster)
-                             || creature.SpellImmunityCheck(caster) 
-                             || creature.SpellAbsorptionUnlimitedCheck(caster)
-                             || creature.SpellResistanceCheck(caster);
+        bool resistedSpell = caster.SpellAbsorptionLimitedCheck(creature) 
+                             || caster.SpellAbsorptionUnlimitedCheck(creature)
+                             || caster.SpellImmunityCheck(creature) 
+                             || caster.SpellAbsorptionUnlimitedCheck(creature)
+                             || caster.SpellResistanceCheck(creature);
         
         if (resistedSpell) return;
         
-        ApplyEffect(eventData);
+        ApplyEffect(eventData, caster, creature);
     }
     
-    private void ApplyEffect(AreaOfEffectEvents.OnEnter eventData)
+    private void ApplyEffect(AreaOfEffectEvents.OnEnter eventData, NwCreature caster, NwCreature enteringCreature)
     {
-        NwCreature caster = (NwCreature)eventData.Effect.Creator!;
-        NwCreature enteringCreature = (NwCreature)eventData.Entering;
-        
         if (caster.IsReactionTypeFriendly(enteringCreature)) return;
         
         Effect ghoulVfx = Effect.VisualEffect(VfxType.ImpDoom);
