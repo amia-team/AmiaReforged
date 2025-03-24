@@ -4,6 +4,7 @@ using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Arcane.SecondCircle.Necromancy;
 
+[ServiceBinding(typeof(GhoulTouchOnEnter))]
 public static class GhoulTouchOnEnter
 {
     [ScriptHandler("NW_S0_GhoulTchA")]
