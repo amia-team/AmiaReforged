@@ -9,7 +9,7 @@ public class GhoulTouchOnEnter
     [ScriptHandler("NW_S0_GhoulTchA")]
     public static void OnEnter(CallInfo info)
     {
-        if (!info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData)) return;
+        AreaOfEffectEvents.OnEnter eventData = new();
         
         if (eventData.Effect.Creator is not NwCreature caster) return;
         if (eventData.Entering is not NwCreature creature) return;
