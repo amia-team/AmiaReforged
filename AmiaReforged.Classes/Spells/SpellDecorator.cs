@@ -19,10 +19,11 @@ public abstract class SpellDecorator : ISpell
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
         if (CheckedSpellResistance) return;
-        ResistedSpell = creature.SpellResistanceCheck(caster)
+        ResistedSpell = creature.SpellAbsorptionLimitedCheck(caster)
+                        || creature.SpellAbsorptionUnlimitedCheck(caster)
                         || creature.SpellImmunityCheck(caster)
-                        || creature.SpellAbsorptionLimitedCheck(caster)
-                        || creature.SpellAbsorptionUnlimitedCheck(caster);
+                        || creature.SpellResistanceCheck(caster);
+        
         Spell.SetSpellResisted(ResistedSpell);
         Spell.CheckedSpellResistance = true;
     }
