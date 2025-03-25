@@ -12,10 +12,10 @@ public interface ISpell
     void DoSpellResist(NwCreature creature, NwCreature caster)
     {
         if (CheckedSpellResistance) return;
-        ResistedSpell = creature.SpellAbsorptionLimitedCheck(caster)
-                        || creature.SpellAbsorptionUnlimitedCheck(caster)
-                        || creature.SpellImmunityCheck(caster)
-                        || creature.SpellResistanceCheck(caster);
+        ResistedSpell = caster.SpellAbsorptionLimitedCheck(creature)
+                        || caster.SpellAbsorptionUnlimitedCheck(creature)
+                        || caster.SpellImmunityCheck(creature)
+                        || caster.SpellResistanceCheck(creature);
         
         CheckedSpellResistance = true;
     }
