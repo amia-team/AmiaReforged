@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Core.UserInterface;
+using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 
@@ -28,6 +29,13 @@ public sealed class LedgerView : ScryView<LedgerPresenter>
     public NuiButton WeaponsButton = null!;
     public NuiButton ArmorButton = null!;
     public NuiButton CraftsButton = null!;
+    
+    public ItemType SelectedCategory { get; set; } = ItemType.Log;
+    
+    public readonly NuiBind<string> MaterialNames = new("item_names");
+    public readonly NuiBind<string> AverageQualities = new("average_qualities");
+    public readonly NuiBind<string> Amounts = new("amounts");
+    public readonly NuiBind<int> CellCount = new("cell_count");
 
     public LedgerView(NwPlayer player)
     {
@@ -36,6 +44,9 @@ public sealed class LedgerView : ScryView<LedgerPresenter>
 
     public override NuiLayout RootLayout()
     {
+        List<NuiListTemplateCell> cells = new()
+        {
+        };
         NuiColumn root = new()
         {
             Children =
@@ -178,7 +189,8 @@ public sealed class LedgerView : ScryView<LedgerPresenter>
                             Tooltip = "Jewelry, Paintings, Etc"
                         }.Assign(out CraftsButton),
                     }
-                }
+                },
+                new NuiList(cells, CellCount)
             }
         };
 

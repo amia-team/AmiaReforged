@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+using AmiaReforged.PwEngine.Systems.JobSystem.Nui.ViewModels;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
@@ -15,7 +16,7 @@ public sealed class LedgerPresenter(NwPlayer player, LedgerView view) : ScryPres
     private NuiWindowToken _token;
 
     private LedgerModel Model { get; } = new(player);
-    
+
     public override void InitBefore()
     {
         _window = new NuiWindow(View.RootLayout(), "Ledger")
@@ -102,9 +103,36 @@ public sealed class LedgerPresenter(NwPlayer player, LedgerView view) : ScryPres
     private void LoadCategory(ItemType type)
     {
         NwCreature? character = player.LoginCreature;
-        if(character is null) return;
+        if (character is null) return;
 
-        character.SpeakString($"Selected {type.ToString()}");
+        LedgerCategoryViewModel? viewModel = Model.ViewModelFor(type);
+
+        if (viewModel is null)
+        {
+            ClearScreen();
+            return;
+        }
+
+        // The first row of these are headers: Material | Amount | Average Quality
+        List<string> materialNames =
+            viewModel.CategoryEntries.Keys.Select(k => k.ToString()).Prepend("Material").ToList();
+        List<string> amounts = viewModel.CategoryEntries.Values.Select(v => v.Count).Prepend("Amount").ToList();
+        List<string> averageQualities = viewModel.CategoryEntries.Values.Select(v => v.AverageQuality)
+            .Prepend("Average Quality").ToList();
+
+        Token().SetBindValues(View.MaterialNames, materialNames);
+        Token().SetBindValues(View.Amounts, amounts);
+        Token().SetBindValues(View.AverageQualities, averageQualities);
+
+        Token().SetBindValue(View.CellCount, materialNames.Count);
+    }
+
+    private void ClearScreen()
+    {
+        Token().SetBindValue(View.CellCount, 0);
+        Token().SetBindValues(View.MaterialNames, new List<string>());
+        Token().SetBindValues(View.AverageQualities, new List<string>());
+        Token().SetBindValues(View.Amounts, new List<string>());
     }
 
     public override void Create()
@@ -127,9 +155,4 @@ public sealed class LedgerPresenter(NwPlayer player, LedgerView view) : ScryPres
     {
         _token.Close();
     }
-}
-
-[CreatedAtRuntime]
-public sealed class LedgerModel(NwPlayer player)
-{
 }

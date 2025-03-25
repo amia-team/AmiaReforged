@@ -1,14 +1,10 @@
 ﻿using System.Text;
+using AmiaReforged.PwEngine.Systems.JobSystem.Nui.ViewModels;
 
-namespace AmiaReforged.PwEngine.Systems.JobSystem.Nui.ViewModels;
+namespace AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
-public class CharacterLedger
+public class CharacterLedger(CharacterDataSource characterDataSource) : Ledger(characterDataSource)
 {
-    public List<long> ItemReferences { get; set; }
-    public List<LedgerEntry> Entries { get; set; }
-
-    public int TotalValue => Entries.Sum(e => e.TotalValue);
-
     public override string ToString()
     {
         StringBuilder sb = new();

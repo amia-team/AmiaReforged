@@ -12,12 +12,10 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 /// </summary>
 [ServiceBinding(typeof(JobSystemMappingService))]
 public partial class JobSystemMappingService(
-    PwEngineContext context,
     JobItemPropertyHandler propertyHandler,
     QualityPropertyMapper qualityMapper)
     : IMappingService<JobItem, NwItem>
 {
-    private readonly PwEngineContext _context = context;
 
     public JobItem MapFrom(NwItem item)
     {
@@ -28,8 +26,6 @@ public partial class JobSystemMappingService(
         string itemName = MyRegex().Replace(item.Name, replacement);
 
         MaterialEnum material = GetMaterialFromItem(item);
-
-        long madeBy = long.TryParse(NWScript.GetLocalString(item, sVarName: "MadeBy"), out long result) ? result : 0;
 
         return JobItemBuilder.CreateJobItem()
             .WithName(itemName)

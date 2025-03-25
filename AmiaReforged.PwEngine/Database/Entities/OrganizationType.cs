@@ -7,5 +7,6 @@ public enum OrganizationType
     Government,
     Religion,
     Guild,
-    SocialGroup
+    SocialGroup,
+    Enterprise,
 }
