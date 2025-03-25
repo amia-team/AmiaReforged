@@ -53,10 +53,10 @@ public class StorageRegistrationService
             return;
         }
 
-        if (_manager.IsWindowOpen(player, typeof(LedgerPresenter)))
+        if (_manager.IsWindowOpen(player, typeof(PlayerLedgerPresenter)))
             return;
 
-        LedgerView view = new(player);
+        PlayerLedgerView view = new(player);
         _manager.OpenWindow(view.Presenter);
     }
 }

@@ -1,6 +1,6 @@
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Nui;
 
-public sealed class LedgerConsts
+public sealed class LedgerBindingConsts
 {
     public const string LogsId = "logs";
     public const string PlanksId = "planks";

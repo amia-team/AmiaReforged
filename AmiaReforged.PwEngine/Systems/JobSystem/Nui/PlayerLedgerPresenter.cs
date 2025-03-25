@@ -7,15 +7,15 @@ using Anvil.API.Events;
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Nui;
 
 [CreatedAtRuntime]
-public sealed class LedgerPresenter(NwPlayer player, LedgerView view) : ScryPresenter<LedgerView>
+public sealed class PlayerLedgerPresenter(NwPlayer player, PlayerLedgerView view) : ScryPresenter<PlayerLedgerView>
 {
-    public override LedgerView View { get; } = view;
+    public override PlayerLedgerView View { get; } = view;
     public override NuiWindowToken Token() => _token;
 
     private NuiWindow? _window;
     private NuiWindowToken _token;
 
-    private LedgerModel Model { get; } = new(player);
+    private PlayerLedgerModel Model { get; } = new(player);
 
     public override void InitBefore()
     {
@@ -39,61 +39,61 @@ public sealed class LedgerPresenter(NwPlayer player, LedgerView view) : ScryPres
     {
         switch (evnt.ElementId)
         {
-            case LedgerConsts.LogsId:
+            case LedgerBindingConsts.LogsId:
                 LoadCategory(ItemType.Log);
                 break;
-            case LedgerConsts.PlanksId:
+            case LedgerBindingConsts.PlanksId:
                 LoadCategory(ItemType.Plank);
                 break;
-            case LedgerConsts.OreId:
+            case LedgerBindingConsts.OreId:
                 LoadCategory(ItemType.Ore);
                 break;
-            case LedgerConsts.GemsId:
+            case LedgerBindingConsts.GemsId:
                 LoadCategory(ItemType.Gem);
                 break;
-            case LedgerConsts.StoneId:
+            case LedgerBindingConsts.StoneId:
                 LoadCategory(ItemType.Stone);
                 break;
-            case LedgerConsts.IngotsId:
+            case LedgerBindingConsts.IngotsId:
                 LoadCategory(ItemType.Ingot);
                 break;
-            case LedgerConsts.GrainId:
+            case LedgerBindingConsts.GrainId:
                 LoadCategory(ItemType.Grain);
                 break;
-            case LedgerConsts.FlourId:
+            case LedgerBindingConsts.FlourId:
                 LoadCategory(ItemType.Flour);
                 break;
-            case LedgerConsts.IngredientsId:
+            case LedgerBindingConsts.IngredientsId:
                 LoadCategory(ItemType.FoodIngredient);
                 break;
-            case LedgerConsts.FoodId:
+            case LedgerBindingConsts.FoodId:
                 LoadCategory(ItemType.Food);
                 break;
-            case LedgerConsts.DrinksId:
+            case LedgerBindingConsts.DrinksId:
                 LoadCategory(ItemType.Drink);
                 break;
-            case LedgerConsts.PotionIngredientsId:
+            case LedgerBindingConsts.PotionIngredientsId:
                 LoadCategory(ItemType.PotionIngredient);
                 break;
-            case LedgerConsts.PotionsId:
+            case LedgerBindingConsts.PotionsId:
                 LoadCategory(ItemType.Potion);
                 break;
-            case LedgerConsts.AcademiaId:
+            case LedgerBindingConsts.AcademiaId:
                 LoadCategory(ItemType.Scholastic);
                 break;
-            case LedgerConsts.PeltsId:
+            case LedgerBindingConsts.PeltsId:
                 LoadCategory(ItemType.Pelt);
                 break;
-            case LedgerConsts.HidesId:
+            case LedgerBindingConsts.HidesId:
                 LoadCategory(ItemType.Hide);
                 break;
-            case LedgerConsts.WeaponsId:
+            case LedgerBindingConsts.WeaponsId:
                 LoadCategory(ItemType.Weapon);
                 break;
-            case LedgerConsts.ArmorId:
+            case LedgerBindingConsts.ArmorId:
                 LoadCategory(ItemType.Armor);
                 break;
-            case LedgerConsts.CraftsId:
+            case LedgerBindingConsts.CraftsId:
                 LoadCategory(ItemType.Crafts);
                 return;
             default: return;
@@ -105,7 +105,14 @@ public sealed class LedgerPresenter(NwPlayer player, LedgerView view) : ScryPres
         NwCreature? character = player.LoginCreature;
         if (character is null) return;
 
-        LedgerCategoryViewModel? viewModel = Model.ViewModelFor(type);
+        View.SelectedCategory = type;
+
+        UpdateLedgerView();
+    }
+
+    private void UpdateLedgerView()
+    {
+        LedgerCategoryViewModel? viewModel = Model.ViewModelFor(View.SelectedCategory);
 
         if (viewModel is null)
         {
@@ -130,9 +137,10 @@ public sealed class LedgerPresenter(NwPlayer player, LedgerView view) : ScryPres
     private void ClearScreen()
     {
         Token().SetBindValue(View.CellCount, 0);
+        
         Token().SetBindValues(View.MaterialNames, new List<string>());
-        Token().SetBindValues(View.AverageQualities, new List<string>());
         Token().SetBindValues(View.Amounts, new List<string>());
+        Token().SetBindValues(View.AverageQualities, new List<string>());
     }
 
     public override void Create()

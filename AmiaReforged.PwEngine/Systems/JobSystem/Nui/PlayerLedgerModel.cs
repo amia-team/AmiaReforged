@@ -6,7 +6,7 @@ using Anvil.API;
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Nui;
 
 [CreatedAtRuntime]
-public sealed class LedgerModel(NwPlayer player)
+public sealed class PlayerLedgerModel(NwPlayer player)
 {
     public CharacterLedger Ledger { get; } = new(new CharacterDataSource(player));
 
