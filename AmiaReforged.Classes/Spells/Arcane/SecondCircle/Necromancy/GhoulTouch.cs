@@ -16,6 +16,13 @@ public class GhoulTouch : ISpell
     private SchedulerService SchedulerService { get; }
 
     private int _spellDc;
+
+    public GhoulTouch(ScriptHandleFactory scriptHandleFactory, SchedulerService schedulerService)
+    {
+        ScriptHandleFactory = scriptHandleFactory;
+        SchedulerService = schedulerService;
+    }
+
     private void SetGhoulDc(int spellDc)
     {
         _spellDc = spellDc;
