@@ -80,7 +80,7 @@ public class GhoulTouch : ISpell
 
     private ScriptHandleResult OnEnterGhoulTouch(CallInfo info)
     {
-        AreaOfEffectEvents.OnEnter eventData = new AreaOfEffectEvents.OnEnter();
+        info.TryGetEvent(out AreaOfEffectEvents.OnEnter eventData);
 
         if (eventData.Entering is not NwCreature enteringCreature) return ScriptHandleResult.Handled;
         if (eventData.Effect.Creator is not NwCreature caster) return ScriptHandleResult.Handled;
