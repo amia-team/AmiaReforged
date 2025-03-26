@@ -11,18 +11,7 @@ public class GhoulTouch : ISpell
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_GhoulTch";
-    [Inject]
-    private ScriptHandleFactory ScriptHandleFactory { get; init; }
-    private SchedulerService SchedulerService { get; }
-
     private int _spellDc;
-
-    public GhoulTouch(ScriptHandleFactory scriptHandleFactory, SchedulerService schedulerService)
-    {
-        ScriptHandleFactory = scriptHandleFactory;
-        SchedulerService = schedulerService;
-    }
-
     private void SetGhoulDc(int spellDc)
     {
         _spellDc = spellDc;
@@ -30,6 +19,14 @@ public class GhoulTouch : ISpell
     private int GetGhoulDc()
     {
         return _spellDc;
+    }
+
+    private SchedulerService SchedulerService { get; }
+    private ScriptHandleFactory ScriptHandleFactory { get; }
+    public GhoulTouch(ScriptHandleFactory scriptHandleFactory, SchedulerService schedulerService)
+    {
+        ScriptHandleFactory = scriptHandleFactory;
+        SchedulerService = schedulerService;
     }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -87,7 +84,7 @@ public class GhoulTouch : ISpell
 
     private ScriptHandleResult OnEnterGhoulTouch(CallInfo info)
     {
-        AreaOfEffectEvents.OnEnter eventData = new AreaOfEffectEvents.OnEnter();
+        AreaOfEffectEvents.OnEnter eventData = new();
 
         if (eventData.Entering is not NwCreature enteringCreature) return ScriptHandleResult.Handled;
         if (eventData.Effect.Creator is not NwCreature caster) return ScriptHandleResult.Handled;
