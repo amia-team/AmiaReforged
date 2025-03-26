@@ -89,6 +89,7 @@ public class GhoulTouch : ISpell
         if (eventData.Entering is not NwCreature enteringCreature) return ScriptHandleResult.Handled;
         enteringCreature.SpeakString("Teeheee I stepped on your goo");
         if (eventData.Effect.Creator is not NwCreature caster) return ScriptHandleResult.Handled;
+        caster.SpeakString("Oh no I stepped on my own goo!");
         
         if (caster.IsReactionTypeFriendly(enteringCreature)) return ScriptHandleResult.Handled;
         
