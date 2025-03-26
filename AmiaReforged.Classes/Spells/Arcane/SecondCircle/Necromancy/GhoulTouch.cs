@@ -83,11 +83,11 @@ public class GhoulTouch : ISpell
         if (info.TryGetEvent(out AreaOfEffectEvents.OnEnter? eventData) == false) return ScriptHandleResult.Handled;
 
         if (eventData.Entering is not NwCreature enteringCreature) return ScriptHandleResult.Handled;
-        // if (eventData.Effect.Creator is not NwCreature caster) return ScriptHandleResult.Handled;
+        if (eventData.Effect.Creator is not NwCreature caster) return ScriptHandleResult.Handled;
         
-        // if (caster.IsReactionTypeFriendly(enteringCreature)) return ScriptHandleResult.Handled;
+        if (caster.IsReactionTypeFriendly(enteringCreature)) return ScriptHandleResult.Handled;
         
-        // if (ResistedSpell) return ScriptHandleResult.Handled;
+        if (ResistedSpell) return ScriptHandleResult.Handled;
         
         int dc = GetGhoulDc();
         
@@ -99,7 +99,7 @@ public class GhoulTouch : ISpell
         TimeSpan effectDuration = NwTimeSpan.FromRounds(Random.Shared.Roll(6) + 2);
         
         SavingThrowResult savingThrowResult =
-            enteringCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Negative);
+            enteringCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Negative, caster);
         
         if (savingThrowResult == SavingThrowResult.Success)
             enteringCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
