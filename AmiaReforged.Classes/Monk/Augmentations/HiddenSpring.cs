@@ -41,8 +41,8 @@ public static class HiddenSpring
     }
     
     /// <summary>
-    /// Wisdom modifier applies to attacks rolls instead of strength or dexterity. Ki Focus II allows the use of
-    /// Martial Techniques with ranged weapons.
+    /// Stunning Strike does weaker effects if the target is immune to stun. Ki Focus I pacifies (making the
+    /// target unable to attack), Ki Focus II dazes, and Ki Focus III paralyzes the target.
     /// </summary>
     private static void AugmentStunningStrike(OnCreatureAttack attackData)
     {
@@ -54,12 +54,15 @@ public static class HiddenSpring
 
         NwCreature monk = attackData.Attacker;
         
-        Effect stunningEffect = MonkUtils.GetKiFocus(monk) switch
+        Effect? stunningEffect = MonkUtils.GetKiFocus(monk) switch
         {
-            KiFocus.KiFocus1 or KiFocus.KiFocus2 => Effect.Pacified(),
+            KiFocus.KiFocus1  => Effect.Pacified(),
+            KiFocus.KiFocus2 => Effect.Dazed(),
             KiFocus.KiFocus3 => Effect.Paralyze(),
-            _ => Effect.VisualEffect(VfxType.None)
+            _ => null
         };
+        if (stunningEffect is null) return;
+        
         Effect stunningVfx = Effect.VisualEffect(VfxType.FnfHowlOdd, false, 0.06f);
         TimeSpan stunningDuration = NwTimeSpan.FromRounds(1);
         
@@ -70,7 +73,7 @@ public static class HiddenSpring
     }
     
     /// <summary>
-    /// Eagle Strike with Ki Focus I incurs a -1 penalty to attack rolls, and Ki Focus III increases the penalty to -2.
+    /// Eagle Strike with Ki Focus I incurs a -1 penalty to attack rolls, increased to -2 with Ki Focus II and -3 with Ki Focus III.
     /// </summary>
     private static void AugmentEagleStrike(OnCreatureAttack attackData)
     {
@@ -84,10 +87,12 @@ public static class HiddenSpring
 
         int abDecrease = MonkUtils.GetKiFocus(monk) switch
         {
-            KiFocus.KiFocus1 or KiFocus.KiFocus2 => 1,
-            KiFocus.KiFocus3 => 2,
+            KiFocus.KiFocus1 => 1,
+            KiFocus.KiFocus2 => 2,
+            KiFocus.KiFocus3 => 3,
             _ => 0
         };
+        
         Effect eagleEffect = Effect.AttackDecrease(abDecrease);
         TimeSpan eagleDuration = NwTimeSpan.FromRounds(2);
         eagleEffect.Tag = "eaglestrike_hiddenspring";
@@ -103,30 +108,32 @@ public static class HiddenSpring
     }
     
     /// <summary>
-    /// Axiomatic Strike with Ki Focus I adds one fourth of the base wisdom modifier as bonus physical damage,
-    /// and Ki Focus III increases this to half the base wisdom modifier.
+    /// Axiomatic Strike deals +1 bonus positive damage, increased by an additional +1 for every Ki Focus to a maximum
+    /// of +4 bonus positive damage.
     /// </summary>
     private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
     {
-        short bludgeoningDamage = AxiomaticStrike.DoAxiomaticStrike(attackData);
+        AxiomaticStrike.DoAxiomaticStrike(attackData);
 
         NwCreature monk = attackData.Attacker;
         DamageData<short> damageData = attackData.DamageData;
-        int baseWisdomModifier = (monk.GetRawAbilityScore(Ability.Wisdom) - 10) / 2;
+        short positiveDamage = damageData.GetDamageByType(DamageType.Positive);
+            
         int bonusDamage = MonkUtils.GetKiFocus(monk) switch
         {
-            KiFocus.KiFocus1 or KiFocus.KiFocus2 => baseWisdomModifier / 4,
-            KiFocus.KiFocus3 => baseWisdomModifier / 2,
-            _ => 0
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
+            _ => 1
         };
 
-        bludgeoningDamage += (short)bonusDamage;
-        damageData.SetDamageByType(DamageType.Bludgeoning, bludgeoningDamage);
+        positiveDamage += (short)bonusDamage;
+        damageData.SetDamageByType(DamageType.Positive, positiveDamage);
     }
     
     /// <summary>
-    /// Empty Body adds one fourth of the base wisdom modifier to fortitude and reflex saves. Each Ki Focus
-    /// adds another one fourth of the base wisdom modifier, to a maximum of the total base wisdom modifier.
+    /// Empty Body gives +2 to fortitude and reflex saving throws. Each Ki Focus gives an additional +2 to
+    /// a maximum of +8 to fortitude and reflex saving throws.
     /// </summary>
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
@@ -134,13 +141,12 @@ public static class HiddenSpring
         
         NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int baseWisdomModifier = (monk.GetRawAbilityScore(Ability.Wisdom) - 10) / 2;
         int bonusAmount = MonkUtils.GetKiFocus(monk) switch
         {
-            KiFocus.KiFocus1 => baseWisdomModifier / 3,
-            KiFocus.KiFocus2 => baseWisdomModifier / 2,
-            KiFocus.KiFocus3 => baseWisdomModifier,
-            _ => baseWisdomModifier / 4
+            KiFocus.KiFocus1 => 4,
+            KiFocus.KiFocus2 => 6,
+            KiFocus.KiFocus3 => 8,
+            _ => 2
         };
         Effect emptyBodyEffect = Effect.LinkEffects(Effect.SavingThrowIncrease(SavingThrow.Fortitude, bonusAmount), 
             Effect.SavingThrowIncrease(SavingThrow.Reflex, bonusAmount));
