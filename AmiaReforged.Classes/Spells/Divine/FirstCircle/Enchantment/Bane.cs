@@ -1,9 +1,8 @@
-﻿using AmiaReforged.Classes.Monk;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.Classes.Spells.Arcane.FirstCircle;
+namespace AmiaReforged.Classes.Spells.Divine.FirstCircle.Enchantment;
 
 /// <summary>
 /// Bane fills the caster's enemies with fear and doubt. They suffer a -1 penalty on their attack rolls
