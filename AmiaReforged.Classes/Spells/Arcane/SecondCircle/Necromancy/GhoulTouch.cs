@@ -13,17 +13,9 @@ public class GhoulTouch : ISpell
     public string ImpactScript => "NW_S0_GhoulTch";
     [Inject]
     private ScriptHandleFactory ScriptHandleFactory { get; init; }
-    [Inject]
     private SchedulerService SchedulerService { get; }
 
     private int _spellDc;
-
-    public GhoulTouch(ScriptHandleFactory scriptHandleFactory, SchedulerService schedulerService)
-    {
-        ScriptHandleFactory = scriptHandleFactory;
-        SchedulerService = schedulerService;
-    }
-
     private void SetGhoulDc(int spellDc)
     {
         _spellDc = spellDc;
