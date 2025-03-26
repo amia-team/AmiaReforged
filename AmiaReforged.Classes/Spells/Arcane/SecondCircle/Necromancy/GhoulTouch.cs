@@ -92,10 +92,13 @@ public class GhoulTouch : ISpell
         caster.SpeakString("Oh no I stepped on my own goo!");
         
         if (caster.IsReactionTypeFriendly(enteringCreature)) return ScriptHandleResult.Handled;
+        enteringCreature.SpeakString("Still gooey after friendly check");
         
         if (ResistedSpell) return ScriptHandleResult.Handled;
+        enteringCreature.SpeakString("Yep, gooey after spell resist check");
         
         int dc = GetGhoulDc();
+        enteringCreature.SpeakString("Gooey after getting goo DC!");
         
         Effect ghoulVfx = Effect.VisualEffect(VfxType.ImpDoom);
         Effect ghoulEffect = Effect.LinkEffects(Effect.AttackDecrease(2),
