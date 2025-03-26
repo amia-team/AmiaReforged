@@ -102,7 +102,7 @@ public class GhoulTouch : ISpell
         
         Effect ghoulVfx = Effect.VisualEffect(VfxType.ImpDoom);
         Effect ghoulEffect = Effect.LinkEffects(Effect.AttackDecrease(2),
-            Effect.DamageDecrease(2,  DamageType.Slashing),
+            Effect.DamageDecrease(2),
             Effect.SavingThrowDecrease(SavingThrow.All, 2), Effect.SkillDecrease(Skill.AllSkills!, 2));
         
         enteringCreature.SpeakString("Declared effects, still gooey.");
