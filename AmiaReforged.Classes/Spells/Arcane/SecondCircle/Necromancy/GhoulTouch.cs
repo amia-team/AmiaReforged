@@ -87,6 +87,7 @@ public class GhoulTouch : ISpell
         AreaOfEffectEvents.OnEnter eventData = new();
 
         if (eventData.Entering is not NwCreature enteringCreature) return ScriptHandleResult.Handled;
+        enteringCreature.SpeakString("Teeheee I stepped on your goo");
         if (eventData.Effect.Creator is not NwCreature caster) return ScriptHandleResult.Handled;
         
         if (caster.IsReactionTypeFriendly(enteringCreature)) return ScriptHandleResult.Handled;
