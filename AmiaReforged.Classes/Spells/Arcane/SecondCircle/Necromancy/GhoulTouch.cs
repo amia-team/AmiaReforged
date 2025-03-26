@@ -105,19 +105,30 @@ public class GhoulTouch : ISpell
             Effect.DamageDecrease(2,  DamageType.Slashing),
             Effect.SavingThrowDecrease(SavingThrow.All, 2), Effect.SkillDecrease(Skill.AllSkills!, 2));
         
+        enteringCreature.SpeakString("Declared effects, still gooey.");
+        
         TimeSpan effectDuration = NwTimeSpan.FromRounds(Random.Shared.Roll(6) + 2);
+        
+        enteringCreature.SpeakString("Duration set, gooing strong.");
         
         SavingThrowResult savingThrowResult =
             enteringCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Negative, caster);
         
+        enteringCreature.SpeakString("Rolled fort against your mighty goo.");
+
         if (savingThrowResult == SavingThrowResult.Success)
+        {
             enteringCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+            enteringCreature.SpeakString("Hah, your goo is weak.");
+        }
 
         if (savingThrowResult != SavingThrowResult.Failure) return ScriptHandleResult.Handled;
         
         enteringCreature.ApplyEffect(EffectDuration.Temporary, ghoulEffect, effectDuration);
         enteringCreature.ApplyEffect(EffectDuration.Instant, ghoulVfx);
         
+        enteringCreature.SpeakString("Your goo is too powerful!!!");
+
         return ScriptHandleResult.Handled;
     }
 }
