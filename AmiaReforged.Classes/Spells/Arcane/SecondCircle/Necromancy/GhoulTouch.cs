@@ -98,7 +98,7 @@ public class GhoulTouch : ISpell
         enteringCreature.SpeakString("Yep, gooey after spell resist check");
         
         int dc = GetGhoulDc();
-        enteringCreature.SpeakString("Gooey after getting goo DC!");
+        enteringCreature.SpeakString($"Gooey after getting goo DC! DC is {dc}");
         
         Effect ghoulVfx = Effect.VisualEffect(VfxType.ImpDoom);
         Effect ghoulEffect = Effect.LinkEffects(Effect.AttackDecrease(2),
