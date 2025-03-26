@@ -99,7 +99,7 @@ public class GhoulTouch : ISpell
         
         Effect ghoulEffect = 
             Effect.LinkEffects(Effect.AttackDecrease(2),
-            Effect.DamageDecrease(2),
+            Effect.DamageDecrease(2, DamageType.BaseWeapon),
             Effect.SavingThrowDecrease(SavingThrow.All, 2), 
             Effect.SkillDecreaseAll(2));
         
