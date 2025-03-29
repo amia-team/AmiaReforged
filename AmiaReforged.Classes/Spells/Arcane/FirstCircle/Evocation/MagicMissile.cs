@@ -34,16 +34,16 @@ public class MagicMissile : ISpell
         switch (eventData.Spell.SpellType)
         {
             case Spell.MagicMissile:
-                DoMagicMissile(casterCreature, target, eventData.MetaMagicFeat);
+                _ = DoMagicMissile(casterCreature, target, eventData.MetaMagicFeat);
                 break;
             case Spell.ShadowConjurationMagicMissile:
-                ShadowMagicMissile.DoShadowMagicMissile(casterCreature, target, eventData.MetaMagicFeat);
+                _ = ShadowMagicMissile.DoShadowMagicMissile(casterCreature, target, eventData.MetaMagicFeat);
                 break;
             default: return;
         }
     }
 
-    private static async void DoMagicMissile(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
+    private static async Task DoMagicMissile(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
     {
         float distanceToTarget = casterCreature.Distance(target);
         float missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 2f);
@@ -78,10 +78,7 @@ public class MagicMissile : ISpell
         if (!hasEpicFocus) return;
 
         NwGameObject? firstHostile = target.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true).
-            FirstOrDefault(o => 
-                o is NwCreature creature 
-                && creature.IsReactionTypeHostile(casterCreature)
-                && creature != target);
+            FirstOrDefault(o => o is NwCreature creature && creature.IsReactionTypeHostile(casterCreature));
 
         if (firstHostile is not NwCreature firstHostileCreature) return;
 
@@ -89,13 +86,13 @@ public class MagicMissile : ISpell
         
         for (int i = 0; i < numberOfMissiles; i++)
         {
-            firstHostileCreature.ApplyEffect(EffectDuration.Instant, missileProjectileVfx);
+            target.ApplyEffect(EffectDuration.Instant, missileProjectileVfx);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
         
         for (int i = 0; i < numberOfMissiles; i++)
         {
-            ApplyMissileEffect(casterCreature, firstHostileCreature, metaMagic);
+            ApplyMissileEffect(casterCreature, target, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
     }
@@ -108,6 +105,7 @@ public class MagicMissile : ISpell
             Effect.VisualEffect(VfxType.ImpMagblue));
             
         target.ApplyEffect(EffectDuration.Instant, damageEffect);
+        
     }
 
     private static int CalculateDamage(NwCreature casterCreature, MetaMagic metaMagic)

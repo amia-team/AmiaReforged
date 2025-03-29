@@ -3,9 +3,9 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Spells.Arcane.FourthCircle.Illusion.ShadowConjuration;
 
-public static class ShadowMagicMissile
+public class ShadowMagicMissile
 {
-    public static async void DoShadowMagicMissile(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
+    public static async Task DoShadowMagicMissile(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
     {
         float distanceToTarget = casterCreature.Distance(target);
         float missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 2f);
@@ -40,10 +40,7 @@ public static class ShadowMagicMissile
         if (!hasEpicFocus) return;
 
         NwGameObject? firstHostile = target.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true).
-            FirstOrDefault(o => 
-                o is NwCreature creature 
-                && creature.IsReactionTypeHostile(casterCreature)
-                && creature != target);
+            FirstOrDefault(o => o is NwCreature creature && creature.IsReactionTypeHostile(casterCreature));
 
         if (firstHostile is not NwCreature firstHostileCreature) return;
 
@@ -51,13 +48,13 @@ public static class ShadowMagicMissile
         
         for (int i = 0; i < numberOfMissiles; i++)
         {
-            firstHostileCreature.ApplyEffect(EffectDuration.Instant, missileProjectileVfx);
+            target.ApplyEffect(EffectDuration.Instant, missileProjectileVfx);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
         
         for (int i = 0; i < numberOfMissiles; i++)
         {
-            ApplyMissileEffect(casterCreature, firstHostileCreature, metaMagic);
+            ApplyMissileEffect(casterCreature, target, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
     }
