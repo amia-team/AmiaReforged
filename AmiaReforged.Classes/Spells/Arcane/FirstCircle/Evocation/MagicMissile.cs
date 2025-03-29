@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.Tracing;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using AmiaReforged.Classes.Spells.Arcane.FourthCircle.Illusion.ShadowConjuration;
@@ -31,6 +30,8 @@ public class MagicMissile : ISpell
         
         if (ResistedSpell) return;
 
+        ApplyMissileEffect(casterCreature, target, eventData.MetaMagicFeat);
+        return;
         switch (eventData.Spell.SpellType)
         {
             case Spell.MagicMissile:
