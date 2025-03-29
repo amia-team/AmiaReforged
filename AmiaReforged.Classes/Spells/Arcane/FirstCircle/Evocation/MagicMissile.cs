@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.Tracing;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using AmiaReforged.Classes.Spells.Arcane.FourthCircle.Illusion.ShadowConjuration;
@@ -78,7 +77,10 @@ public class MagicMissile : ISpell
         if (!hasEpicFocus) return;
 
         NwGameObject? firstHostile = target.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true).
-            FirstOrDefault(o => o is NwCreature creature && creature.IsReactionTypeHostile(casterCreature));
+            FirstOrDefault(o => 
+                o is NwCreature creature 
+                && creature != target 
+                && creature.IsReactionTypeHostile(casterCreature));
 
         if (firstHostile is not NwCreature firstHostileCreature) return;
 
@@ -86,13 +88,13 @@ public class MagicMissile : ISpell
         
         for (int i = 0; i < numberOfMissiles; i++)
         {
-            target.ApplyEffect(EffectDuration.Instant, missileProjectileVfx);
+            firstHostileCreature.ApplyEffect(EffectDuration.Instant, missileProjectileVfx);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
         
         for (int i = 0; i < numberOfMissiles; i++)
         {
-            ApplyMissileEffect(casterCreature, target, metaMagic);
+            ApplyMissileEffect(casterCreature, firstHostileCreature, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
     }
