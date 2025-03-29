@@ -125,16 +125,7 @@ public class MagicMissile : ISpell
 
             for (int i = 0; i < numberOfMissiles; i++)
             {
-                int damage = CalculateShadowDamage(casterCreature, eventData.MetaMagicFeat);
-            
-                Effect damageEffect = Effect.LinkEffects(
-                    Effect.Damage(damage, DamageType.Cold), 
-                    Effect.Damage(damage, DamageType.Negative),
-                    Effect.VisualEffect(VfxType.ImpFrostS),
-                    Effect.VisualEffect(VfxType.ComHitNegative));
-            
-                target.ApplyEffect(EffectDuration.Instant, damageEffect);
-                
+                ApplyShadowMissileEffect(casterCreature, target, eventData.MetaMagicFeat);
                 await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
             }
 
@@ -160,16 +151,7 @@ public class MagicMissile : ISpell
         
             for (int i = 0; i < numberOfMissiles; i++)
             {
-                int damage = CalculateShadowDamage(casterCreature, eventData.MetaMagicFeat);
-            
-                Effect damageEffect = Effect.LinkEffects(
-                    Effect.Damage(damage, DamageType.Cold), 
-                    Effect.Damage(damage, DamageType.Negative),
-                    Effect.VisualEffect(VfxType.ImpFrostS),
-                    Effect.VisualEffect(VfxType.ComHitNegative));
-            
-                target.ApplyEffect(EffectDuration.Instant, damageEffect);
-                
+                ApplyShadowMissileEffect(casterCreature, firstHostileCreature, eventData.MetaMagicFeat);
                 await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
             }
         }
