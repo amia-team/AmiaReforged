@@ -2,7 +2,7 @@
 
 namespace AmiaReforged.Classes.Spells.Arcane.FourthCircle.Illusion.ShadowConjuration;
 
-public class ShadowMagicMissile
+public static class ShadowMagicMissile
 {
     public static async Task DoShadowMagicMissile(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
     {
@@ -30,6 +30,7 @@ public class ShadowMagicMissile
 
         for (int i = 0; i < numberOfMissiles; i++)
         {
+            await casterCreature.WaitForObjectContext();
             ApplyMissileEffect(casterCreature, target, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
@@ -56,6 +57,7 @@ public class ShadowMagicMissile
         
         for (int i = 0; i < numberOfMissiles; i++)
         {
+            await casterCreature.WaitForObjectContext();
             ApplyMissileEffect(casterCreature, firstHostileCreature, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }

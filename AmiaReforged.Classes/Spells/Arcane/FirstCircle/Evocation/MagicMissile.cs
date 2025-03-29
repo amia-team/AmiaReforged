@@ -68,6 +68,7 @@ public class MagicMissile : ISpell
 
         for (int i = 0; i < numberOfMissiles; i++)
         {
+            await casterCreature.WaitForObjectContext();
             ApplyMissileEffect(casterCreature, target, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
@@ -94,6 +95,7 @@ public class MagicMissile : ISpell
         
         for (int i = 0; i < numberOfMissiles; i++)
         {
+            await casterCreature.WaitForObjectContext();
             ApplyMissileEffect(casterCreature, firstHostileCreature, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
