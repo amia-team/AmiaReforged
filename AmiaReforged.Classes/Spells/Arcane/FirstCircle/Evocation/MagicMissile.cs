@@ -34,16 +34,16 @@ public class MagicMissile : ISpell
         switch (eventData.Spell.SpellType)
         {
             case Spell.MagicMissile:
-                _ = DoMagicMissile(eventData, casterCreature, target);
+                DoMagicMissile(casterCreature, target, eventData.MetaMagicFeat);
                 break;
             case Spell.ShadowConjurationMagicMissile:
-                _ = ShadowMagicMissile.DoShadowMagicMissile(eventData, casterCreature, target);
+                ShadowMagicMissile.DoShadowMagicMissile(casterCreature, target, eventData.MetaMagicFeat);
                 break;
             default: return;
         }
     }
 
-    private static async Task DoMagicMissile(SpellEvents.OnSpellCast eventData, NwCreature casterCreature, NwGameObject target)
+    private static async void DoMagicMissile(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
     {
         float distanceToTarget = casterCreature.Distance(target);
         float missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 2f);
@@ -69,13 +69,7 @@ public class MagicMissile : ISpell
 
         for (int i = 0; i < numberOfMissiles; i++)
         {
-            int damage = CalculateDamage(casterCreature, eventData.MetaMagicFeat);
-            
-            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damage), 
-                Effect.VisualEffect(VfxType.ImpMagblue));
-            
-            target.ApplyEffect(EffectDuration.Instant, damageEffect);
-            
+            ApplyMissileEffect(casterCreature, target, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
 
@@ -101,15 +95,19 @@ public class MagicMissile : ISpell
         
         for (int i = 0; i < numberOfMissiles; i++)
         {
-            int damage = CalculateDamage(casterCreature, eventData.MetaMagicFeat);
-            
-            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damage), 
-                Effect.VisualEffect(VfxType.ImpMagblue));
-            
-            target.ApplyEffect(EffectDuration.Instant, damageEffect);
-            
+            ApplyMissileEffect(casterCreature, firstHostileCreature, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
+    }
+
+    private static void ApplyMissileEffect(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
+    {
+        int damage = CalculateDamage(casterCreature, metaMagic);
+            
+        Effect damageEffect = Effect.LinkEffects(Effect.Damage(damage), 
+            Effect.VisualEffect(VfxType.ImpMagblue));
+            
+        target.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 
     private static int CalculateDamage(NwCreature casterCreature, MetaMagic metaMagic)
