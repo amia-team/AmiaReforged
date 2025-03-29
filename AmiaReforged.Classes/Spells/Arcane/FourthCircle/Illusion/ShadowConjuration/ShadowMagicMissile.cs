@@ -1,4 +1,4 @@
-﻿/*using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Spells.Arcane.FourthCircle.Illusion.ShadowConjuration;
@@ -59,7 +59,7 @@ public class ShadowMagicMissile
         }
     }
 
-    private static void ApplyShadowMissileEffect(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
+    private static void ApplyMissileEffect(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
     {
         int damage = CalculateDamage(casterCreature, metaMagic);
             
@@ -73,7 +73,7 @@ public class ShadowMagicMissile
         
     }
 
-    private static int CalculateShadowDamage(NwCreature casterCreature, MetaMagic metaMagic)
+    private static int CalculateDamage(NwCreature casterCreature, MetaMagic metaMagic)
     {
         bool hasFocus = casterCreature.KnowsFeat(Feat.SpellFocusIllusion!);
         bool hasGreaterFocus = casterCreature.KnowsFeat(Feat.GreaterSpellFocusIllusion!);
@@ -86,4 +86,4 @@ public class ShadowMagicMissile
         return damage;
     }
     
-}*/
+}
