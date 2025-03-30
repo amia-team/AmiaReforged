@@ -41,12 +41,12 @@ public class InfestationOfMaggots : ISpell
         return _spellCaster;
     }
     
-    private Effect _conDamage;
-    private void SetMaggotsConDamage(Effect conDamage)
+    private int _conDamage;
+    private void SetMaggotsConDamage(int conDamage)
     {
         _conDamage = conDamage;
     }
-    private Effect GetMaggotsConDamage()
+    private int GetMaggotsConDamage()
     {
         return _conDamage;
     }
@@ -114,9 +114,18 @@ public class InfestationOfMaggots : ISpell
         int conDamage = SpellUtils.CheckMaximize(metaMagic, 4, 1);
         conDamage = SpellUtils.CheckEmpower(metaMagic, conDamage);
         
+        // Check for prior con damage; if prior con damage is found, add the maggots con damage on top of it 
+        Effect? priorConDamage = targetCreature.ActiveEffects.FirstOrDefault(effect => 
+            effect.EffectType == EffectType.AbilityDecrease
+            && effect.IntParams[0] == (int)Ability.Constitution);
+        
+        if (priorConDamage != null)
+            conDamage += priorConDamage.IntParams[1];
+        
+        SetMaggotsConDamage(conDamage);
+
         Effect conDamageEffect = Effect.AbilityDecrease(Ability.Constitution, conDamage);
         conDamageEffect.SubType = EffectSubType.Extraordinary;
-        SetMaggotsConDamage(conDamageEffect);
         
         targetCreature.ApplyEffect(EffectDuration.Instant, impactVfx);
         targetCreature.ApplyEffect(EffectDuration.Temporary, maggotsEffect, effectDuration);
@@ -152,9 +161,20 @@ public class InfestationOfMaggots : ISpell
             return ScriptHandleResult.Handled;
         }
         
-        Effect conDamage = GetMaggotsConDamage();
+        int conDamage = GetMaggotsConDamage();
         
-        maggotsTarget.ApplyEffect(EffectDuration.Permanent, conDamage);
+        // Check for prior con damage; if prior con damage is found, add the maggots con damage on top of it
+        Effect? priorConDamage = maggotsTarget.ActiveEffects.FirstOrDefault(effect => 
+            effect.EffectType == EffectType.AbilityDecrease
+            && effect.IntParams[0] == (int)Ability.Constitution);
+        
+        if (priorConDamage != null)
+            conDamage += priorConDamage.IntParams[1];
+        
+        Effect conDamageEffect = Effect.AbilityDecrease(Ability.Constitution, conDamage);
+        conDamageEffect.SubType = EffectSubType.Extraordinary;
+        
+        maggotsTarget.ApplyEffect(EffectDuration.Permanent, conDamageEffect);
         
         return ScriptHandleResult.Handled;
     }
