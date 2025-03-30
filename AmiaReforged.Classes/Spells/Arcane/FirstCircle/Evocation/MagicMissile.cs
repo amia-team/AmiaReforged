@@ -30,7 +30,6 @@ public class MagicMissile : ISpell
         
         if (ResistedSpell) return;
         
-        
         switch (eventData.Spell.SpellType)
         {
             case Spell.MagicMissile:
@@ -50,21 +49,21 @@ public class MagicMissile : ISpell
         
         if (!hasEpicFocus) return;
 
-        NwGameObject? firstHostile = target.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true).
+        NwCreature? firstHostile = (NwCreature?)target.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true).
             FirstOrDefault(o => 
                 o is NwCreature creature 
                 && creature != target 
                 && creature.IsReactionTypeHostile(casterCreature));
 
-        if (firstHostile is not NwCreature firstHostileCreature) return;
+        if (firstHostile is null) return;
         
         switch (eventData.Spell.SpellType)
         {
             case Spell.MagicMissile:
-                _ = DoMagicMissile(casterCreature, firstHostileCreature, eventData.MetaMagicFeat);
+                _ = DoMagicMissile(casterCreature, firstHostile, eventData.MetaMagicFeat);
                 break;
             case Spell.ShadowConjurationMagicMissile:
-                _ = ShadowMagicMissile.DoShadowMagicMissile(casterCreature, firstHostileCreature, eventData.MetaMagicFeat);
+                _ = ShadowMagicMissile.DoShadowMagicMissile(casterCreature, firstHostile, eventData.MetaMagicFeat);
                 break;
             default: return;
         }
