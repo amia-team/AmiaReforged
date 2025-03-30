@@ -45,7 +45,7 @@ public class MagicMissile : ISpell
     private static async Task DoMagicMissile(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
     {
         float distanceToTarget = casterCreature.Distance(target);
-        float missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 2f);
+        float missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 2.5f);
         
         int numberOfMissiles = casterCreature.CasterLevel switch
         {
@@ -96,7 +96,7 @@ public class MagicMissile : ISpell
         }
 
         distanceToTarget = casterCreature.Distance(firstHostileCreature);
-        missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 2f);
+        missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 2.5f);
         
         await NwTask.Delay(TimeSpan.FromSeconds(missileTravelDelay));
         
