@@ -107,10 +107,10 @@ public class InfestationOfMaggots : ISpell
         maggotsEffect.Tag = "infestation_of_maggots_effect";
 
         TimeSpan effectDuration = NwTimeSpan.FromRounds(10 + caster.CasterLevel);
-        effectDuration = SpellUtils.CheckExtend(metaMagic, effectDuration);
+        effectDuration = SpellUtils.ExtendSpell(metaMagic, effectDuration);
 
-        int conDamage = SpellUtils.CheckMaximize(metaMagic, 4, 1);
-        conDamage = SpellUtils.CheckEmpower(metaMagic, conDamage);
+        int conDamage = SpellUtils.MaximizeSpell(metaMagic, 4, 1);
+        conDamage = SpellUtils.EmpowerSpell(metaMagic, conDamage);
         
         SetMaggotsConDamage(conDamage);
         

@@ -56,9 +56,9 @@ public static class ShadowMagicMissile
         bool hasGreaterFocus = casterCreature.KnowsFeat(Feat.GreaterSpellFocusIllusion!);
         bool hasEpicFocus = casterCreature.KnowsFeat(Feat.EpicSpellFocusIllusion!);
 
-        int damage = SpellUtils.CheckMaximize(metaMagic,4, 1) + 1;
+        int damage = SpellUtils.MaximizeSpell(metaMagic,4, 1) + 1;
         damage = hasFocus ? damage + 1 : hasGreaterFocus ? damage + 2 : hasEpicFocus ? damage + 3 : damage;
-        damage = SpellUtils.CheckEmpower(metaMagic, damage);
+        damage = SpellUtils.EmpowerSpell(metaMagic, damage);
 
         return damage;
     }

@@ -53,7 +53,7 @@ public class GhoulTouch : ISpell
             Effect.VisualEffect(VfxType.DurCessateNegative), Effect.VisualEffect(VfxType.DurParalyzed));
         
         TimeSpan effectDuration = NwTimeSpan.FromRounds(Random.Shared.Roll(6) + 2);
-        effectDuration = SpellUtils.CheckExtend(eventData.MetaMagicFeat, effectDuration);
+        effectDuration = SpellUtils.ExtendSpell(eventData.MetaMagicFeat, effectDuration);
 
         int dc = SpellUtils.GetSpellDc(eventData);
         SetGhoulDc(dc);
