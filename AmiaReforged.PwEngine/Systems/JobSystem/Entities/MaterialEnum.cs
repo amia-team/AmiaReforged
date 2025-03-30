@@ -94,4 +94,5 @@ public enum MaterialEnum
     SheetPaper = 89,
     SheetParchment = 90,
     Electrum = 91,
+    Silver
 }

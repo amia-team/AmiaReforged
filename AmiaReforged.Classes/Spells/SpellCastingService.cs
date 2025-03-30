@@ -63,6 +63,10 @@ public class SpellCastingService
 
     private ScriptHandleResult HandleSpellImpact(CallInfo callInfo)
     {
+        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
+
+        if (environment == "live") return ScriptHandleResult.NotHandled;
+        
         if (!_spellImpactHandlers.TryGetValue(callInfo.ScriptName, out ISpell? spell))
             return ScriptHandleResult.NotHandled;
 
