@@ -57,7 +57,7 @@ public static class ShadowMagicMissile
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
         
-        distanceToTarget = target.Distance(firstHostileCreature);
+        distanceToTarget = casterCreature.Distance(firstHostileCreature);
         missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 2f);
         
         await NwTask.Delay(TimeSpan.FromSeconds(missileTravelDelay));
