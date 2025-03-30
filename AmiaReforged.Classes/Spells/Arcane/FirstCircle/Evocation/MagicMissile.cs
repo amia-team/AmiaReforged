@@ -87,6 +87,8 @@ public class MagicMissile : ISpell
 
         await NwTask.Delay(TimeSpan.FromSeconds(0.1f) * (numberOfMissiles + 1));
         
+        SpellUtils.SignalSpell(casterCreature, firstHostileCreature, Spell.MagicMissile!);
+        
         for (int i = 0; i < numberOfMissiles; i++)
         {
             await target.WaitForObjectContext();

@@ -49,6 +49,8 @@ public static class ShadowMagicMissile
 
         await NwTask.Delay(TimeSpan.FromSeconds(0.1f) * (numberOfMissiles + 1));
         
+        SpellUtils.SignalSpell(casterCreature, firstHostileCreature, Spell.ShadowConjurationMagicMissile!);
+        
         for (int i = 0; i < numberOfMissiles; i++)
         {
             await target.WaitForObjectContext();
