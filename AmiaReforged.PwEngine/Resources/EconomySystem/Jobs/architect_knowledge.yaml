@@ -1,0 +1,10 @@
+StrongBeams:
+  Description: You have learned how to build strong beams, which means you can build stronger structures.
+  Effect:
+    - ExtraDefense:
+        Modifies: Defense
+        Factor: 1.1
+Bricole:
+  Description: Bricole are thick, oak-wood posts, bound together and driven into the bottom of a body of water. They are used to support buildings, bridges, and other structures. You can now build over water tiles.
+  Effect:
+    - BuildOverWater

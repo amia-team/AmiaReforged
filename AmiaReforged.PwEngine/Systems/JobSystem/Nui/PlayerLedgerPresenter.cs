@@ -19,10 +19,22 @@ public sealed class PlayerLedgerPresenter(NwPlayer player, PlayerLedgerView view
 
     public override void InitBefore()
     {
-        _window = new NuiWindow(View.RootLayout(), "Ledger")
+        _window = new(View.RootLayout(), "Your Job System Ledger")
         {
             Geometry = new NuiRect(200, 200, 640, 480)
         };
+
+        if (player.LoginCreature == null) return;
+
+        player.LoginCreature.OnAcquireItem += OnAcquireItem;
+    }
+
+    private void OnAcquireItem(ModuleEvents.OnAcquireItem obj)
+    {
+        if (obj.AcquiredBy != player.LoginCreature) return;
+
+        Model.RefreshLedger();
+        UpdateLedgerView();
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
@@ -125,7 +137,7 @@ public sealed class PlayerLedgerPresenter(NwPlayer player, PlayerLedgerView view
             viewModel.CategoryEntries.Keys.Select(k => k.ToString()).Prepend("Material").ToList();
         List<string> amounts = viewModel.CategoryEntries.Values.Select(v => v.Count).Prepend("Amount").ToList();
         List<string> averageQualities = viewModel.CategoryEntries.Values.Select(v => v.AverageQuality)
-            .Prepend("Average Quality").ToList();
+            .Prepend("Overall Quality").ToList();
 
         Token().SetBindValues(View.MaterialNames, materialNames);
         Token().SetBindValues(View.Amounts, amounts);
@@ -137,7 +149,7 @@ public sealed class PlayerLedgerPresenter(NwPlayer player, PlayerLedgerView view
     private void ClearScreen()
     {
         Token().SetBindValue(View.CellCount, 0);
-        
+
         Token().SetBindValues(View.MaterialNames, new List<string>());
         Token().SetBindValues(View.Amounts, new List<string>());
         Token().SetBindValues(View.AverageQualities, new List<string>());
@@ -161,6 +173,7 @@ public sealed class PlayerLedgerPresenter(NwPlayer player, PlayerLedgerView view
 
     public override void Close()
     {
+        if (player.LoginCreature != null) player.LoginCreature.OnAcquireItem -= OnAcquireItem;
         _token.Close();
     }
 }

@@ -1,0 +1,14 @@
+OreItemDefinition:
+  BaseType: MiscSmall
+  Category: Ore
+  SupportedMaterials:
+    - Adamantine
+    - ColdIron
+    - Copper
+    - Gold
+    - Iron
+    - Lead
+    - Mithral
+    - Platinum
+    - RegularSilver
+    - AlchemicalSilver

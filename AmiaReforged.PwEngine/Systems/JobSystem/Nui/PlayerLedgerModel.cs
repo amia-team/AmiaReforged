@@ -8,7 +8,12 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem.Nui;
 [CreatedAtRuntime]
 public sealed class PlayerLedgerModel(NwPlayer player)
 {
-    public CharacterLedger Ledger { get; } = new(new CharacterDataSource(player));
+    private CharacterLedger Ledger { get; set; } = new(new(player));
+    
+    public void RefreshLedger()
+    {
+        Ledger = new(new(player));
+    }
 
     public LedgerCategoryViewModel? ViewModelFor(ItemType type)
     {

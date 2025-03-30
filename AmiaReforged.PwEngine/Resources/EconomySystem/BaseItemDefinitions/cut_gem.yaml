@@ -1,0 +1,17 @@
+RoughGemDefinition:
+  BaseType: Gem
+  Category: Gem
+  SupportedMaterials:
+    - Amethyst
+    - Aquamarine
+    - Beljuril
+    - Diamond
+    - Emerald
+    - Garnet
+    - Opal
+    - Pearl
+    - Ruby
+    - Sapphire
+    - Topaz
+    - Tourmaline
+  CostModifier: 1.0

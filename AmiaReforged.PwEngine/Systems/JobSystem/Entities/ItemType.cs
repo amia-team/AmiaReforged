@@ -26,5 +26,7 @@ public enum ItemType
     Hide,
     // Jewelry, Paintings, Sculptures, etc.
     Crafts,
-    Stone
+    Stone,
+    Unknown,
+    Ammunition
 }

@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 using Anvil.Services;
 using NWN.Core;
@@ -19,11 +20,13 @@ public partial class JobSystemMappingService(
 
     public JobItem MapFrom(NwItem item)
     {
-        IPQuality nwnQuality = GetQualityFromitem(item);
+        IPQuality nwnQuality = GetQualityFromItem(item);
         QualityEnum quality = qualityMapper.MapFrom(nwnQuality);
 
         const string replacement = "";
         string itemName = MyRegex().Replace(item.Name, replacement);
+
+        item.Possessor?.SpeakString($"Processing {item.Name}");
 
         MaterialEnum material = GetMaterialFromItem(item);
 
@@ -49,7 +52,7 @@ public partial class JobSystemMappingService(
         return nwItem;
     }
 
-    private static IPQuality GetQualityFromitem(NwItem item)
+    private static IPQuality GetQualityFromItem(NwItem item)
     {
         ItemProperty? qualityProperty =
             item.ItemProperties.SingleOrDefault(p => p.Property.PropertyType == ItemPropertyType.Quality);
@@ -64,9 +67,13 @@ public partial class JobSystemMappingService(
     {
         ItemProperty? materialProperty =
             item.ItemProperties.SingleOrDefault(p => p.Property.PropertyType == ItemPropertyType.Material);
-        MaterialEnum material = materialProperty == null
-            ? MaterialEnum.None
-            : (MaterialEnum)materialProperty.SubType!.RowIndex;
+        if (materialProperty == null) return MaterialEnum.None;
+        
+        ItemPropertyCostTableEntry? costTableValue = materialProperty.CostTableValue;
+        if (costTableValue == null) return MaterialEnum.None;
+        string? value = costTableValue.Name.ToString();
+        if (string.IsNullOrEmpty(value)) return MaterialEnum.None;
+        MaterialEnum material = (MaterialEnum)costTableValue.RowIndex;
         return material;
     }
 

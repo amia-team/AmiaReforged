@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.PwEngine", "Am
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.Test", "AmiaReforged.Test\AmiaReforged.Test.csproj", "{25BDA517-F0E5-4447-ABB1-AFE0D147F6A2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.PwEngineTests", "AmiaReforged.PwEngineTests\AmiaReforged.PwEngineTests.csproj", "{640DC7C9-DA35-4829-9329-ED804FF6E404}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,5 +57,9 @@ Global
 		{25BDA517-F0E5-4447-ABB1-AFE0D147F6A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{25BDA517-F0E5-4447-ABB1-AFE0D147F6A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{25BDA517-F0E5-4447-ABB1-AFE0D147F6A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{640DC7C9-DA35-4829-9329-ED804FF6E404}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{640DC7C9-DA35-4829-9329-ED804FF6E404}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{640DC7C9-DA35-4829-9329-ED804FF6E404}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{640DC7C9-DA35-4829-9329-ED804FF6E404}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

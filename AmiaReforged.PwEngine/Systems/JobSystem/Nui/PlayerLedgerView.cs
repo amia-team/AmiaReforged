@@ -29,9 +29,9 @@ public sealed class PlayerLedgerView : ScryView<PlayerLedgerPresenter>
     public NuiButton WeaponsButton = null!;
     public NuiButton ArmorButton = null!;
     public NuiButton CraftsButton = null!;
-    
+
     public ItemType SelectedCategory { get; set; } = ItemType.Log;
-    
+
     public readonly NuiBind<string> MaterialNames = new("item_names");
     public readonly NuiBind<string> AverageQualities = new("average_qualities");
     public readonly NuiBind<string> Amounts = new("amounts");
@@ -44,153 +44,171 @@ public sealed class PlayerLedgerView : ScryView<PlayerLedgerPresenter>
 
     public override NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> cells = new()
+        List<NuiListTemplateCell> cells =
+        [
+            new(new NuiLabel(MaterialNames))
+            {
+            },
+
+            new(new NuiLabel(Amounts))
+            {
+            },
+            new(new NuiLabel(AverageQualities))
+            {
+            }
+
+        ];
+        NuiColumn nuiElement = new NuiColumn()
         {
+            Children =
+            {
+                new NuiButton("Logs")
+                {
+                    Id = LedgerBindingConsts.LogsId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Uncut logs, useful for heavy constructions and processing to planks"
+                }.Assign(out LogsButton),
+                new NuiButton("Planks")
+                {
+                    Id = LedgerBindingConsts.PlanksId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Planks used for construction"
+                }.Assign(out PlanksButton),
+                new NuiButton("Ore")
+                {
+                    Id = LedgerBindingConsts.OreId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Unsmelted ores"
+                }.Assign(out OreButton),
+                new NuiButton("Gems")
+                {
+                    Id = LedgerBindingConsts.GemsId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Rough and processed gems"
+                }.Assign(out GemsButton),
+                new NuiButton("Stone")
+                {
+                    Id = LedgerBindingConsts.StoneId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Stone used in building"
+                }.Assign(out GemsButton),
+                new NuiButton("Ingots")
+                {
+                    Id = LedgerBindingConsts.IngotsId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Ore that has been processed into bars"
+                }.Assign(out IngotsButton),
+                new NuiButton("Pelts")
+                {
+                    Id = LedgerBindingConsts.PeltsId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Unprocessed job system pelts"
+                }.Assign(out PeltsButton),
+                new NuiButton("Hides")
+                {
+                    Id = LedgerBindingConsts.HidesId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Processed job system pelts"
+                }.Assign(out HidesButton),
+                new NuiButton("Grain")
+                {
+                    Id = LedgerBindingConsts.GrainId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Food that can be stored for long periods of time to be processed later"
+                }.Assign(out GrainButton),
+                new NuiButton("Flour")
+                {
+                    Id = LedgerBindingConsts.FlourId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Byproduct of job system grains for making bread"
+                }.Assign(out FlourButton),
+                new NuiButton("Ingredients")
+                {
+                    Id = LedgerBindingConsts.IngredientsId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Job system cooking ingredients"
+                }.Assign(out IngredientsButton),
+                new NuiButton("Food")
+                {
+                    Id = LedgerBindingConsts.FoodId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Job system meals"
+                }.Assign(out FoodButton),
+                new NuiButton("Drinks")
+                {
+                    Id = LedgerBindingConsts.DrinksId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Alcohol, juice, other job system drinks"
+                }.Assign(out DrinksButton),
+                new NuiButton("Alchemy Ingredients")
+                {
+                    Id = LedgerBindingConsts.PotionIngredientsId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Alchemical reagents"
+                }.Assign(out PotionIngredientsButton),
+                new NuiButton("Potions")
+                {
+                    Id = LedgerBindingConsts.PotionsId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Job system potions"
+                }.Assign(out PotionsButton),
+                new NuiButton("Academic")
+                {
+                    Id = LedgerBindingConsts.AcademiaId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Scholarly items, artificer components, etc."
+                }.Assign(out AcademiaButton),
+                new NuiButton("Weapons")
+                {
+                    Id = LedgerBindingConsts.WeaponsId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Job System Weapons"
+                }.Assign(out WeaponsButton),
+                new NuiButton("Armor")
+                {
+                    Id = LedgerBindingConsts.ArmorId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Job System Armor"
+                }.Assign(out ArmorButton),
+                new NuiButton("Crafts")
+                {
+                    Id = LedgerBindingConsts.CraftsId,
+                    Width = 100f,
+                    Height = 60f,
+                    Tooltip = "Jewelry, Paintings, Etc"
+                }.Assign(out CraftsButton),
+            }
         };
         NuiColumn root = new()
         {
             Children =
             {
-                new NuiColumn()
+                new NuiRow()
                 {
                     Children =
                     {
-                        new NuiButton("Logs")
-                        {
-                            Id = LedgerBindingConsts.LogsId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Uncut logs, useful for heavy constructions and processing to planks"
-                        }.Assign(out LogsButton),
-                        new NuiButton("Planks")
-                        {
-                            Id = LedgerBindingConsts.PlanksId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Planks used for construction"
-                        }.Assign(out PlanksButton),
-                        new NuiButton("Ore")
-                        {
-                            Id = LedgerBindingConsts.OreId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Unsmelted ores"
-                        }.Assign(out OreButton),
-                        new NuiButton("Gems")
-                        {
-                            Id = LedgerBindingConsts.GemsId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Rough and processed gems"
-                        }.Assign(out GemsButton),
-                        new NuiButton("Stone")
-                        {
-                            Id = LedgerBindingConsts.StoneId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Stone used in building"
-                        }.Assign(out GemsButton),
-                        new NuiButton("Ingots")
-                        {
-                            Id = LedgerBindingConsts.IngotsId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Ore that has been processed into bars"
-                        }.Assign(out IngotsButton),
-                        new NuiButton("Pelts")
-                        {
-                            Id = LedgerBindingConsts.PeltsId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Unprocessed job system pelts"
-                        }.Assign(out PeltsButton),
-                        new NuiButton("Hides")
-                        {
-                            Id = LedgerBindingConsts.HidesId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Processed job system pelts"
-                        }.Assign(out HidesButton),
-                        new NuiButton("Grain")
-                        {
-                            Id = LedgerBindingConsts.GrainId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Food that can be stored for long periods of time to be processed later"
-                        }.Assign(out GrainButton),
-                        new NuiButton("Flour")
-                        {
-                            Id = LedgerBindingConsts.FlourId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Byproduct of job system grains for making bread"
-                        }.Assign(out FlourButton),
-                        new NuiButton("Ingredients")
-                        {
-                            Id = LedgerBindingConsts.IngredientsId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Job system cooking ingredients"
-                        }.Assign(out IngredientsButton),
-                        new NuiButton("Food")
-                        {
-                            Id = LedgerBindingConsts.FoodId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Job system meals"
-                        }.Assign(out FoodButton),
-                        new NuiButton("Drinks")
-                        {
-                            Id = LedgerBindingConsts.DrinksId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Alcohol, juice, other job system drinks"
-                        }.Assign(out DrinksButton),
-                        new NuiButton("Alchemy Ingredients")
-                        {
-                            Id = LedgerBindingConsts.PotionIngredientsId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Alchemical reagents"
-                        }.Assign(out PotionIngredientsButton),
-                        new NuiButton("Potions")
-                        {
-                            Id = LedgerBindingConsts.PotionsId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Job system potions"
-                        }.Assign(out PotionsButton),
-                        new NuiButton("Academic")
-                        {
-                            Id = LedgerBindingConsts.AcademiaId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Scholarly items, artificer components, etc."
-                        }.Assign(out AcademiaButton),
-                        new NuiButton("Weapons")
-                        {
-                            Id = LedgerBindingConsts.WeaponsId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Job System Weapons"
-                        }.Assign(out WeaponsButton),
-                        new NuiButton("Armor")
-                        {
-                            Id = LedgerBindingConsts.ArmorId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Job System Armor"
-                        }.Assign(out ArmorButton),
-                        new NuiButton("Crafts")
-                        {
-                            Id = LedgerBindingConsts.CraftsId,
-                            Width = 100f,
-                            Height = 60f,
-                            Tooltip = "Jewelry, Paintings, Etc"
-                        }.Assign(out CraftsButton),
+                        nuiElement,
+                        new NuiList(cells, CellCount)
                     }
-                },
-                new NuiList(cells, CellCount)
+                }
             }
         };
 

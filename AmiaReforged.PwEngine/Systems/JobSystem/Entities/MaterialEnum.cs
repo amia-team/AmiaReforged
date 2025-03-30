@@ -83,5 +83,15 @@ public enum MaterialEnum
     Topaz = 77,
     WoodPhandar = 78,
     WoodShadowtop = 79,
-    WoodZhurkwood = 80
+    WoodZhurkwood = 80,
+    StoneGranite = 81,
+    StonePif = 82,
+    StonePaf = 83,
+    StonePouf = 84,
+    StoneMarble = 86,
+    StoneLimestone = 87,
+    StoneSlate = 88,
+    SheetPaper = 89,
+    SheetParchment = 90,
+    Electrum = 91,
 }

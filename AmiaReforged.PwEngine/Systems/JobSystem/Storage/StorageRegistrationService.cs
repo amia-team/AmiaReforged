@@ -12,12 +12,12 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage;
 [ServiceBinding(typeof(StorageRegistrationService))]
 public class StorageRegistrationService
 {
-    private readonly WindowDirector _manager;
+    private readonly WindowDirector _windowSystem;
     private const string PwJobStorage = "pw_job_storage";
 
-    public StorageRegistrationService(WindowDirector manager)
+    public StorageRegistrationService(WindowDirector windowSystem)
     {
-        _manager = manager;
+        _windowSystem = windowSystem;
 
         SetupStorageContainers();
     }
@@ -53,11 +53,11 @@ public class StorageRegistrationService
             return;
         }
 
-        if (_manager.IsWindowOpen(player, typeof(PlayerLedgerPresenter)))
+        if (_windowSystem.IsWindowOpen(player, typeof(PlayerLedgerPresenter)))
             return;
 
         PlayerLedgerView view = new(player);
-        _manager.OpenWindow(view.Presenter);
+        _windowSystem.OpenWindow(view.Presenter);
     }
 }
 
