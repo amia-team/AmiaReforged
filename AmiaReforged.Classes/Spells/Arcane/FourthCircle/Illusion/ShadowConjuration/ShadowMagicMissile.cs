@@ -53,7 +53,6 @@ public static class ShadowMagicMissile
         
         for (int i = 0; i < numberOfMissiles; i++)
         {
-            await target.WaitForObjectContext();
             firstHostileCreature.ApplyEffect(EffectDuration.Instant, missileProjectileVfx);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
