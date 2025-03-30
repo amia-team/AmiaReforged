@@ -123,7 +123,7 @@ public class InfestationOfMaggots : ISpell
         }, effectDuration + NwTimeSpan.FromRounds(1)); // Small grace period to allow for inconsistent game updates.
     }
 
-    private void ApplyConDamage(NwCreature targetCreature, int conDamage)
+    private static void ApplyConDamage(NwCreature targetCreature, int conDamage)
     {
         Effect impactVfx = Effect.VisualEffect(VfxType.ImpDiseaseS);
         
