@@ -71,7 +71,7 @@ public static class ShadowMagicMissile
             Effect.Damage(damage, DamageType.Cold), 
             Effect.Damage(damage, DamageType.Negative),
             Effect.VisualEffect(VfxType.ImpFrostS),
-            Effect.VisualEffect(VfxType.ComHitNegative));
+            Effect.VisualEffect(VfxType.ComHitNegative, false, 1.5f));
             
         target.ApplyEffect(EffectDuration.Instant, damageEffect);
         
