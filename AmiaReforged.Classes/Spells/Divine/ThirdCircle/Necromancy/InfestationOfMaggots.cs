@@ -88,13 +88,11 @@ public class InfestationOfMaggots : ISpell
         SetMaggotsTarget(targetCreature);
         SetMaggotsCaster(targetCreature);
         
-        ApplyEffect(caster, targetCreature, eventData.MetaMagicFeat);
+        ApplyMaggotsEffect(caster, targetCreature, eventData.MetaMagicFeat);
     }
 
-    private void ApplyEffect(NwCreature caster, NwCreature targetCreature, MetaMagic metaMagic)
+    private void ApplyMaggotsEffect(NwCreature caster, NwCreature targetCreature, MetaMagic metaMagic)
     {
-        Effect impactVfx = Effect.VisualEffect(VfxType.ImpDiseaseS);
-        
         ScriptCallbackHandle maggotsIntervalHandle = ScriptHandleFactory.CreateUniqueHandler(OnMaggotsInterval);
         
         Effect maggotsEffect = Effect.RunAction(
@@ -114,6 +112,21 @@ public class InfestationOfMaggots : ISpell
         int conDamage = SpellUtils.CheckMaximize(metaMagic, 4, 1);
         conDamage = SpellUtils.CheckEmpower(metaMagic, conDamage);
         
+        SetMaggotsConDamage(conDamage);
+        
+        targetCreature.ApplyEffect(EffectDuration.Temporary, maggotsEffect, effectDuration);
+        ApplyConDamage(targetCreature, conDamage);
+        
+        SchedulerService.Schedule(() =>
+        {
+            maggotsIntervalHandle.Dispose();
+        }, effectDuration + NwTimeSpan.FromRounds(1)); // Small grace period to allow for inconsistent game updates.
+    }
+
+    private void ApplyConDamage(NwCreature targetCreature, int conDamage)
+    {
+        Effect impactVfx = Effect.VisualEffect(VfxType.ImpDiseaseS);
+        
         // Check for prior con damage; if prior con damage is found, add the maggots con damage on top of it 
         Effect? priorConDamage = targetCreature.ActiveEffects.FirstOrDefault(effect => 
             effect.EffectType == EffectType.AbilityDecrease
@@ -121,20 +134,12 @@ public class InfestationOfMaggots : ISpell
         
         if (priorConDamage != null)
             conDamage += priorConDamage.IntParams[1];
-        
-        SetMaggotsConDamage(conDamage);
 
         Effect conDamageEffect = Effect.AbilityDecrease(Ability.Constitution, conDamage);
         conDamageEffect.SubType = EffectSubType.Extraordinary;
         
         targetCreature.ApplyEffect(EffectDuration.Instant, impactVfx);
-        targetCreature.ApplyEffect(EffectDuration.Temporary, maggotsEffect, effectDuration);
         targetCreature.ApplyEffect(EffectDuration.Permanent, conDamageEffect);
-        
-        SchedulerService.Schedule(() =>
-        {
-            maggotsIntervalHandle.Dispose();
-        }, effectDuration + NwTimeSpan.FromRounds(1)); // Small grace period to allow for inconsistent game updates.
     }
 
     private ScriptHandleResult OnMaggotsInterval(CallInfo info)
@@ -163,18 +168,7 @@ public class InfestationOfMaggots : ISpell
         
         int conDamage = GetMaggotsConDamage();
         
-        // Check for prior con damage; if prior con damage is found, add the maggots con damage on top of it
-        Effect? priorConDamage = maggotsTarget.ActiveEffects.FirstOrDefault(effect => 
-            effect.EffectType == EffectType.AbilityDecrease
-            && effect.IntParams[0] == (int)Ability.Constitution);
-        
-        if (priorConDamage != null)
-            conDamage += priorConDamage.IntParams[1];
-        
-        Effect conDamageEffect = Effect.AbilityDecrease(Ability.Constitution, conDamage);
-        conDamageEffect.SubType = EffectSubType.Extraordinary;
-        
-        maggotsTarget.ApplyEffect(EffectDuration.Permanent, conDamageEffect);
+        ApplyConDamage(maggotsTarget, conDamage);
         
         return ScriptHandleResult.Handled;
     }
