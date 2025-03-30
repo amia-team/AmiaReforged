@@ -29,7 +29,8 @@ public class MagicMissile : ISpell
         SpellUtils.SignalSpell(casterCreature, target, eventData.Spell);
         
         if (ResistedSpell) return;
-
+        
+        
         switch (eventData.Spell.SpellType)
         {
             case Spell.MagicMissile:
@@ -37,6 +38,33 @@ public class MagicMissile : ISpell
                 break;
             case Spell.ShadowConjurationMagicMissile:
                 _ = ShadowMagicMissile.DoShadowMagicMissile(casterCreature, target, eventData.MetaMagicFeat);
+                break;
+            default: return;
+        }
+        
+        // Check for another hostile target if the caster has epic spell focus
+        
+        bool hasEpicFocus = 
+            (eventData.Spell.SpellType == Spell.MagicMissile && casterCreature.KnowsFeat(Feat.EpicSpellFocusEvocation!))
+            || (eventData.Spell.SpellType == Spell.ShadowConjurationMagicMissile && casterCreature.KnowsFeat(Feat.EpicSpellFocusIllusion!));
+        
+        if (!hasEpicFocus) return;
+
+        NwGameObject? firstHostile = target.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true).
+            FirstOrDefault(o => 
+                o is NwCreature creature 
+                && creature != target 
+                && creature.IsReactionTypeHostile(casterCreature));
+
+        if (firstHostile is not NwCreature firstHostileCreature) return;
+        
+        switch (eventData.Spell.SpellType)
+        {
+            case Spell.MagicMissile:
+                _ = DoMagicMissile(casterCreature, firstHostileCreature, eventData.MetaMagicFeat);
+                break;
+            case Spell.ShadowConjurationMagicMissile:
+                _ = ShadowMagicMissile.DoShadowMagicMissile(casterCreature, firstHostileCreature, eventData.MetaMagicFeat);
                 break;
             default: return;
         }
@@ -70,40 +98,6 @@ public class MagicMissile : ISpell
         {
             await casterCreature.WaitForObjectContext();
             ApplyMissileEffect(casterCreature, target, metaMagic);
-            await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
-        }
-
-        bool hasEpicFocus = casterCreature.KnowsFeat(Feat.EpicSpellFocusEvocation!);
-        
-        if (!hasEpicFocus) return;
-
-        NwGameObject? firstHostile = target.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true).
-            FirstOrDefault(o => 
-                o is NwCreature creature 
-                && creature != target 
-                && creature.IsReactionTypeHostile(casterCreature));
-
-        if (firstHostile is not NwCreature firstHostileCreature) return;
-
-        await NwTask.Delay(TimeSpan.FromSeconds(0.1f) * (numberOfMissiles + 1));
-        
-        SpellUtils.SignalSpell(casterCreature, firstHostileCreature, Spell.MagicMissile!);
-        
-        for (int i = 0; i < numberOfMissiles; i++)
-        {
-            firstHostileCreature.ApplyEffect(EffectDuration.Instant, missileProjectileVfx);
-            await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
-        }
-
-        distanceToTarget = casterCreature.Distance(firstHostileCreature);
-        missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 3f);
-        
-        await NwTask.Delay(TimeSpan.FromSeconds(missileTravelDelay));
-        
-        for (int i = 0; i < numberOfMissiles; i++)
-        {
-            await casterCreature.WaitForObjectContext();
-            ApplyMissileEffect(casterCreature, firstHostileCreature, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
     }

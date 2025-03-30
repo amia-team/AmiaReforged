@@ -34,40 +34,6 @@ public static class ShadowMagicMissile
             ApplyMissileEffect(casterCreature, target, metaMagic);
             await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
         }
-
-        bool hasEpicFocus = casterCreature.KnowsFeat(Feat.EpicSpellFocusIllusion!);
-        
-        if (!hasEpicFocus) return;
-
-        NwGameObject? firstHostile = target.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true).
-            FirstOrDefault(o => 
-                o is NwCreature creature 
-                && creature != target 
-                && creature.IsReactionTypeHostile(casterCreature));
-
-        if (firstHostile is not NwCreature firstHostileCreature) return;
-
-        await NwTask.Delay(TimeSpan.FromSeconds(0.1f) * (numberOfMissiles + 1));
-        
-        SpellUtils.SignalSpell(casterCreature, firstHostileCreature, Spell.ShadowConjurationMagicMissile!);
-        
-        for (int i = 0; i < numberOfMissiles; i++)
-        {
-            firstHostileCreature.ApplyEffect(EffectDuration.Instant, missileProjectileVfx);
-            await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
-        }
-        
-        distanceToTarget = casterCreature.Distance(firstHostileCreature);
-        missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 3f);
-        
-        await NwTask.Delay(TimeSpan.FromSeconds(missileTravelDelay));
-        
-        for (int i = 0; i < numberOfMissiles; i++)
-        {
-            await casterCreature.WaitForObjectContext();
-            ApplyMissileEffect(casterCreature, firstHostileCreature, metaMagic);
-            await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
-        }
     }
 
     private static void ApplyMissileEffect(NwCreature casterCreature, NwGameObject target, MetaMagic metaMagic)
