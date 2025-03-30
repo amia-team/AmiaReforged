@@ -187,7 +187,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
 
     private void RefreshSpellbookList()
     {
-        string search = Token().GetBindValue(View.Search)!;
+        string search = Token().GetBindValue(View.Search) ?? string.Empty;
         _visibleSpellbooks = _spellbooks.Where(book =>
                 book != null && book.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
             .ToList();

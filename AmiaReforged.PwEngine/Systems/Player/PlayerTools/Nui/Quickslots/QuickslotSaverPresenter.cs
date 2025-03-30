@@ -89,7 +89,7 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
 
     private void RefreshQuickslotList()
     {
-        string search = Token().GetBindValue(View.Search)!;
+        string search = Token().GetBindValue(View.Search) ?? string.Empty;
         _visibleQuickslots = _quickslots.Where(q => q.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
