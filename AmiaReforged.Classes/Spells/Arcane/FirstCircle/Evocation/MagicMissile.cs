@@ -113,7 +113,7 @@ public class MagicMissile : ISpell
         int damage = CalculateDamage(casterCreature, metaMagic);
             
         Effect damageEffect = Effect.LinkEffects(Effect.Damage(damage), 
-            Effect.VisualEffect(VfxType.ImpMagblue));
+            Effect.VisualEffect(VfxType.ImpMagblue, false, 0.7f));
             
         target.ApplyEffect(EffectDuration.Instant, damageEffect);
         
