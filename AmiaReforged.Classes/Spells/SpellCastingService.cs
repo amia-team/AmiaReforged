@@ -42,28 +42,33 @@ public class SpellCastingService
         
         // Don't restrict DM avatars, let the hellballs rolL! DM possessed NPCs are still restricted.
         if (character.IsDMAvatar) return;
+        
+        bool isNoCastingArea = character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1;
 
-        if (character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1 && obj.Item is null)
+
+        // Restrict spellbook casting in no casting areas
+        if (isNoCastingArea && obj.Item is null)
         {
             player.FloatingTextString("- You cannot cast magic in this area! -", false);
 
             obj.PreventSpellCast = true;
             return;
         }
-
-        if (obj.Item is not null && obj.Spell.IsHostileSpell && character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
+        
+        // Restrict item casting when casting hostile spells from an item
+        if (isNoCastingArea && obj.Item is not null && obj.Spell.IsHostileSpell)
         {
             player.SendServerMessage("You cannot use that item in this area.");
             obj.PreventSpellCast = true;
             return;
         }
-
-        if (obj.TargetObject is null || obj.TargetObject == obj.Caster) return;
         
-        if (character.Area?.PVPSetting != PVPSetting.None) return;
-        
-        player.SendServerMessage("PVP is not allowed in this area.");
-        obj.PreventSpellCast = true;
+        // Restrict hostile spellcasting in no PvP areas
+        if (character.Area?.PVPSetting == PVPSetting.None && obj.Spell.IsHostileSpell)
+        {
+            player.SendServerMessage("PVP is not allowed in this area.");
+            obj.PreventSpellCast = true;
+        }
     }
 
     private ScriptHandleResult HandleSpellImpact(CallInfo callInfo)
