@@ -37,9 +37,11 @@ public class SpellCastingService
         if (character is null) return;
         
         // Don't restrict raise dead and resurrection in the "Welcome to Amia!" area
-        if (character.Area?.ResRef == "welcometotheeete" &&
-            obj.Spell.SpellType is Spell.RaiseDead or Spell.Resurrection)
+        if (character.Area?.ResRef == "welcometotheeete" && obj.Spell.SpellType is Spell.RaiseDead or Spell.Resurrection)
             return;
+        
+        // Don't restrict DM avatars, let the hellballs rolL! DM possessed NPCs are still restricted.
+        if (character.IsDMAvatar) return;
 
         if (character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1 && obj.Item is null)
         {
