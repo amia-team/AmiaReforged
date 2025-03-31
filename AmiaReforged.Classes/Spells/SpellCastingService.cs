@@ -35,6 +35,11 @@ public class SpellCastingService
         NwCreature? character = player.LoginCreature;
 
         if (character is null) return;
+        
+        // Don't restrict raise dead and resurrection in the "Welcome to Amia!" area
+        if (character.Area?.ResRef == "welcometotheeete" &&
+            obj.Spell.SpellType is Spell.RaiseDead or Spell.Resurrection)
+            return;
 
         if (character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1 && obj.Item is null)
         {
