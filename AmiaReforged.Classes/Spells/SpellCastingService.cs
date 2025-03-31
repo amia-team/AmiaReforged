@@ -32,9 +32,7 @@ public class SpellCastingService
     {
         if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
         if (obj.Spell is null) return;
-        NwCreature? character = player.LoginCreature;
-
-        if (character is null) return;
+        if (obj.Caster is not NwCreature character) return;
         
         // Don't restrict raise dead and resurrection in the "Welcome to Amia!" area
         bool isWelcomeArea = character.Area?.ResRef == "welcometotheeete";
