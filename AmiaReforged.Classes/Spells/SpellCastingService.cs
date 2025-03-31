@@ -37,28 +37,25 @@ public class SpellCastingService
         if (character is null) return;
         
         // Don't restrict raise dead and resurrection in the "Welcome to Amia!" area
-        if (character.Area?.ResRef == "welcometotheeete" && obj.Spell.SpellType is Spell.RaiseDead or Spell.Resurrection)
+        bool isWelcomeArea = character.Area?.ResRef == "welcometotheeete";
+        
+        if (isWelcomeArea && obj.Spell.SpellType is Spell.RaiseDead or Spell.Resurrection)
             return;
         
         // Don't restrict DM avatars, let the hellballs rolL! DM possessed NPCs are still restricted.
         if (character.IsDMAvatar) return;
         
+        // Don't restrict items that use Unique Power or Unique Power Self unless it's a recall stone
+        if (obj.Item is not null && obj.Spell.ImpactScript == "NW_S3_ActItem01" && !obj.Item.ResRef.Contains("recall"))
+            return;
+        
+        // Restrict casting in no casting areas
         bool isNoCastingArea = character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1;
-
-
-        // Restrict spellbook casting in no casting areas
-        if (isNoCastingArea && obj.Item is null)
+        
+        if (isNoCastingArea)
         {
             player.FloatingTextString("- You cannot cast magic in this area! -", false);
 
-            obj.PreventSpellCast = true;
-            return;
-        }
-        
-        // Restrict item casting when casting hostile spells from an item
-        if (isNoCastingArea && obj.Item is not null && obj.Spell.IsHostileSpell)
-        {
-            player.SendServerMessage("You cannot use that item in this area.");
             obj.PreventSpellCast = true;
             return;
         }
