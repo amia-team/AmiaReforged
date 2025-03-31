@@ -45,9 +45,7 @@ public class SpellCastingService
 
         if (character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1 && obj.Item is null)
         {
-            NWScript.FloatingTextStringOnCreature(sStringToDisplay: "- You cannot cast magic in this area! -",
-                character,
-                NWScript.FALSE);
+            player.FloatingTextString("- You cannot cast magic in this area! -", false);
 
             obj.PreventSpellCast = true;
             return;
@@ -55,16 +53,16 @@ public class SpellCastingService
 
         if (obj.Item is not null && obj.Spell.IsHostileSpell && character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
         {
-            NWScript.SendMessageToPC(character, szMessage: "You cannot use that item in this area.");
+            player.SendServerMessage("You cannot use that item in this area.");
             obj.PreventSpellCast = true;
             return;
         }
 
         if (obj.TargetObject is null || obj.TargetObject == obj.Caster) return;
-
-        if (!obj.TargetObject.IsPlayerControlled(out NwPlayer? nwPlayer)) return;
+        
         if (character.Area?.PVPSetting != PVPSetting.None) return;
-        NWScript.SendMessageToPC(character, szMessage: "PVP is not allowed in this area.");
+        
+        player.SendServerMessage("PVP is not allowed in this area.");
         obj.PreventSpellCast = true;
     }
 
