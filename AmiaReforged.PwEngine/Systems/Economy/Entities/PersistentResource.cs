@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Systems.Economy.Entities;
@@ -5,6 +6,8 @@ namespace AmiaReforged.PwEngine.Systems.Economy.Entities;
 public class PersistentResource
 {
     public BaseItemType ItemType { get; set; }
-    public List<Material> Materials { get; set; }
-    public int Quantity { get; set; }
+    public ItemType Type { get; set; }
+    public string NamingScheme { get; set; }
+    public List<string> MaterialTags { get; set; }
+    public List<Material> Materials { get; set; } = new();
 }

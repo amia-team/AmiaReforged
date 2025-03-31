@@ -1,0 +1,19 @@
+ItemType: MiscSmall
+Type: Ore
+NamingScheme: "%Material% Ore"
+MaterialTags:
+  - Adamantine
+  - Mithral
+  - Gold
+  - Silver
+  - Copper
+  - Iron
+  - Steel
+  - Bronze
+  - Brass
+  - Platinum
+  - Electrum
+  - Cobalt
+  - Darksteel
+  - Coldiron
+  - AlchemicalSilver
