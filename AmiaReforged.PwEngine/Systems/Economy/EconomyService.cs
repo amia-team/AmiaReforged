@@ -149,7 +149,6 @@ public class EconomyService
                 }
 
                 CultivatedResources.Add(resource);
-                // Log.Info($"Successfully loaded {file}");
             }
             catch (Exception ex)
             {

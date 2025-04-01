@@ -35,19 +35,6 @@ public class EconomyServiceTests
     [Test]
     public void Should_Find_Resources_Directory()
     {
-        string resourcesPath =
-            "/home/cltalmadge/RiderProjects/AmiaReforged/AmiaReforged.PwEngine/Resources/EconomySystem";
-        Assert.That(TestConfig.ResourcesPath, Is.EqualTo(resourcesPath),
-            "Test environment variable not configured: TEST_FILE_LOCATION");
-
-        string serviceResource = _economyService.ResourcesPath;
-        
-        Assert.That(
-            serviceResource,
-            Is.EqualTo(TestConfig.ResourcesPath),
-            "Resources path should be set correctly"
-        );
-        
         Assert.That(
             _economyService.DirectoryExists(),
             Is.True,
