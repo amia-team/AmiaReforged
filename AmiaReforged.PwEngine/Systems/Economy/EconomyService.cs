@@ -6,7 +6,7 @@ using YamlDotNet.Serialization;
 
 namespace AmiaReforged.PwEngine.Systems.Economy;
 
-[ServiceBinding(typeof(EconomyService))]
+// [ServiceBinding(typeof(EconomyService))]
 public class EconomyService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
