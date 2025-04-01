@@ -25,6 +25,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Folder Include="Resources\Innovations\" />
         <Folder Include="Systems\MiniGame\LiarsDice\Nui\"/>
         <Folder Include="Systems\MiniGame\LiarsDice\Tests\"/>
     </ItemGroup>
