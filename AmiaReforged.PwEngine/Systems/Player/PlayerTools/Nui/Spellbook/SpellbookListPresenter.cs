@@ -155,8 +155,14 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         SpellbookViewModel? selectedSpellbook = _visibleSpellbooks?[eventData.ArrayIndex];
         if (selectedSpellbook == null) return;
 
-        string pcIdString = NWScript.GetLocalString(Token().Player.LoginCreature, sVarName: "pc_guid");
-        Guid pcId = Guid.Parse(pcIdString);
+
+        Guid pcId = PlayerIdService.Value.GetPlayerKey(Token().Player);
+        if (pcId == Guid.Empty)
+        {
+            Token().Player.SendServerMessage("Couldn't delete the selected spellbook. Please file a bug report");
+            return;
+        }
+        
         SpellbookLoader.Value.DeleteSpellbook(selectedSpellbook.Id, pcId);
 
         Token().Player.SendServerMessage($"Spellbook {selectedSpellbook.Name} has been deleted.");
