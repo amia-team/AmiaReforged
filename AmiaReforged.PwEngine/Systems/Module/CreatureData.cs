@@ -1,6 +1,4 @@
-using Anvil.API;
-
-namespace AmiaReforged.PwEngine.Systems.Chat.Commands;
+namespace AmiaReforged.PwEngine.Systems.Module;
 
 public class CreatureData
 {

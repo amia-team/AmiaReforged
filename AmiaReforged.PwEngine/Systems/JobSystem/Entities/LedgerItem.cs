@@ -1,6 +1,4 @@
-﻿using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
-
-namespace AmiaReforged.PwEngine.Systems.JobSystem.Nui.ViewModels;
+﻿namespace AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
 public class LedgerItem
 {

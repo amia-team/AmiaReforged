@@ -1,5 +1,4 @@
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
-using AmiaReforged.PwEngine.Systems.JobSystem.Nui.ViewModels;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 

@@ -20,15 +20,15 @@ public class EconomyServiceTests
         {
             Layout = "${longdate} ${level:uppercase=true} ${message} ${exception:format=tostring}"
         };
-        
+
         config.AddTarget(consoleTarget);
         config.AddRule(LogLevel.Debug, LogLevel.Fatal, consoleTarget);
         LogManager.Configuration = config;
-        
+
         Trace.Listeners.Add(new ConsoleTraceListener());
-        
+
         Environment.SetEnvironmentVariable("ECONOMY_RESOURCES_PATH", TestConfig.ResourcesPath);
-        
+
         _economyService = new();
     }
 
@@ -51,17 +51,8 @@ public class EconomyServiceTests
             "Materials should not be empty"
         );
     }
-    
-    [Test]
-    public void Should_Not_Have_Null_Materials()
-    {
-        Assert.That(
-            _economyService.Materials,
-            Is.Not.Null,
-            "Materials should not be null"
-        );
-    }
-    
+
+
     [Test]
     public void Should_Read_EnvironmentTraits()
     {
@@ -71,17 +62,7 @@ public class EconomyServiceTests
             "EnvironmentTraits should not be empty"
         );
     }
-    
-    [Test]
-    public void Should_Not_Have_Null_EnvironmentTraits()
-    {
-        Assert.That(
-            _economyService.EnvironmentTraits,
-            Is.Not.Null,
-            "EnvironmentTraits should not be null"
-        );
-    }
-    
+
     [Test]
     public void Should_Read_PersistentResources()
     {
@@ -91,17 +72,7 @@ public class EconomyServiceTests
             "PersistentResources should not be empty"
         );
     }
-    
-    [Test]
-    public void Should_Not_Have_Null_PersistentResources()
-    {
-        Assert.That(
-            _economyService.PersistentResources,
-            Is.Not.Null,
-            "PersistentResources should not be null"
-        );
-    }
-    
+
     [Test]
     public void Should_Read_CultivatedResources()
     {
@@ -111,17 +82,7 @@ public class EconomyServiceTests
             "CultivatedResources should not be empty"
         );
     }
-    
-    [Test]
-    public void Should_Not_Have_Null_CultivatedResources()
-    {
-        Assert.That(
-            _economyService.CultivatedResources,
-            Is.Not.Null,
-            "CultivatedResources should not be null"
-        );
-    }
-    
+
     [Test]
     public void Should_Read_Professions()
     {
@@ -131,14 +92,14 @@ public class EconomyServiceTests
             "Professions should not be empty"
         );
     }
-    
+
     [Test]
-    public void Should_Not_Have_Null_Professions()
+    public void Should_Read_Innovations()
     {
         Assert.That(
-            _economyService.Professions,
-            Is.Not.Null,
-            "Professions should not be null"
+            _economyService.Innovations,
+            Is.Not.Empty,
+            "Innovations should not be empty"
         );
     }
 

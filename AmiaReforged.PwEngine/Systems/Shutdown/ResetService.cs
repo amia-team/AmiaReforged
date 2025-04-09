@@ -5,7 +5,7 @@ using Anvil.Services;
 using NLog;
 using NWN.Core;
 
-namespace AmiaReforged.System.Services;
+namespace AmiaReforged.PwEngine.Systems.Shutdown;
 
 [ServiceBinding(typeof(ResetService))]
 public class ResetService

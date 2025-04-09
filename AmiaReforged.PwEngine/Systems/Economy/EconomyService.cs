@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Systems.Economy.Entities;
+using AmiaReforged.PwEngine.Systems.Economy.DomainModels;
 using Anvil.Services;
 using NLog;
 using YamlDotNet.Core;
@@ -10,7 +10,7 @@ namespace AmiaReforged.PwEngine.Systems.Economy;
 public class EconomyService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    public string ResourcesPath;
+    private readonly string _resourcesPath;
     private readonly Deserializer _deserializer;
 
     public List<PersistentResource> PersistentResources { get; set; } = new();
@@ -18,26 +18,26 @@ public class EconomyService
     public List<Profession> Professions { get; set; } = new();
     public List<Material> Materials { get; set; } = new();
     public List<EnvironmentTrait> EnvironmentTraits { get; set; } = new();
+    public List<Innovation> Innovations { get; set; } = new();
 
     public EconomyService()
     {
-        ResourcesPath = Environment.GetEnvironmentVariable("ECONOMY_RESOURCES_PATH") ?? string.Empty;
+        _resourcesPath = Environment.GetEnvironmentVariable("ECONOMY_RESOURCES_PATH") ?? string.Empty;
         _deserializer = new();
         
-
         LoadYamlFiles();
     }
 
     public bool DirectoryExists()
     {
-        return Directory.Exists(ResourcesPath);
+        return Directory.Exists(_resourcesPath);
     }
 
     private void LoadYamlFiles()
     {
-        if (!Directory.Exists(ResourcesPath))
+        if (!Directory.Exists(_resourcesPath))
         {
-            Log.Error($"Directory does not exist. Did not load economy system: {ResourcesPath}");
+            Log.Error($"Directory does not exist. Did not load economy system: {_resourcesPath}");
             return;
         }
 
@@ -49,7 +49,7 @@ public class EconomyService
 
     private void LoadMaterials()
     {
-        string resourcesDirectory = Path.Combine(ResourcesPath, "Materials");
+        string resourcesDirectory = Path.Combine(_resourcesPath, "Materials");
         foreach (string file in Directory.GetFiles(resourcesDirectory, "*.yaml", SearchOption.AllDirectories))
         {
             try
@@ -68,7 +68,7 @@ public class EconomyService
 
     private void LoadEnvironmentTraits()
     {
-        string resourcesDirectory = Path.Combine(ResourcesPath, "EnvironmentTraits");
+        string resourcesDirectory = Path.Combine(_resourcesPath, "EnvironmentTraits");
         foreach (string file in Directory.GetFiles(resourcesDirectory, "*.yaml", SearchOption.AllDirectories))
         {
             try
@@ -93,7 +93,7 @@ public class EconomyService
 
     private void LoadPersistentResources()
     {
-        string resourcesDirectory = Path.Combine(ResourcesPath, "PersistentResources");
+        string resourcesDirectory = Path.Combine(_resourcesPath, "PersistentResources");
         foreach (string file in Directory.GetFiles(resourcesDirectory, "*.yaml", SearchOption.AllDirectories))
         {
             try
@@ -124,7 +124,7 @@ public class EconomyService
 
     private void LoadCultivatedResources()
     {
-        string resourcesDirectory = Path.Combine(ResourcesPath, "CultivatedResources");
+        string resourcesDirectory = Path.Combine(_resourcesPath, "CultivatedResources");
         foreach (string file in Directory.GetFiles(resourcesDirectory, "*.yaml", SearchOption.AllDirectories))
         {
             Log.Debug($"Reading from {file}");

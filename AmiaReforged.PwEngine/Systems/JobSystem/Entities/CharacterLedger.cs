@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using AmiaReforged.PwEngine.Systems.JobSystem.Nui.ViewModels;
 
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 

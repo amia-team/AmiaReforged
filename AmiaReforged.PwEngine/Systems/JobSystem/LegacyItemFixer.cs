@@ -8,12 +8,12 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.JobSystem;
 
-[ServiceBinding(typeof(LegacyItemFixer))]
+// [ServiceBinding(typeof(LegacyItemFixer))]
 public class LegacyItemFixer
 {
     private readonly MaterialResRefMapper _legacyMaterialMapper;
     private readonly ItemTypeResRefMapper _resRefMapper;
-    private BaseItemTypeMapper _baseTypeMapper;
+    private readonly BaseItemTypeMapper _baseTypeMapper;
     private const string WelcomeAreResRef = "welcometotheeete";
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 

@@ -1,0 +1,9 @@
+name: Stonecutting
+description: "You have learned how to cut stones using a chisel and hammer. This allows you to process stone into blocks, which can be used for construction and other purposes. Stone blocks are more durable than raw stone and can be used to create a variety of structures."
+effect_tags:
+  - Stonecutting
+knowledge_tags:
+  - RecipeStoneBlocks
+  - RecipeStoneBricks
+  - UnlockChiselUse
+  - UnlockStonemasonTable

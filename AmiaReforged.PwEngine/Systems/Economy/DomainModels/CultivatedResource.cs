@@ -1,7 +1,7 @@
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Systems.Economy.Entities;
+namespace AmiaReforged.PwEngine.Systems.Economy.DomainModels;
 
 public class CultivatedResource
 {

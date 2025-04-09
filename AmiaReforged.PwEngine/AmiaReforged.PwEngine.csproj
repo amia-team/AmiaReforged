@@ -25,7 +25,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Resources\EconomySystem\Innovations\" />
+        <Folder Include="Resources\EconomySystem\InnovationEffects\" />
+        <Folder Include="Resources\EconomySystem\Knowledge\Architect\" />
         <Folder Include="Systems\MiniGame\LiarsDice\Nui\"/>
         <Folder Include="Systems\MiniGame\LiarsDice\Tests\"/>
     </ItemGroup>

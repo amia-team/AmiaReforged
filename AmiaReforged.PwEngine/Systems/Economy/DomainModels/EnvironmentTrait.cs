@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Systems.Economy.Entities;
+namespace AmiaReforged.PwEngine.Systems.Economy.DomainModels;
 
 public class EnvironmentTrait
 {

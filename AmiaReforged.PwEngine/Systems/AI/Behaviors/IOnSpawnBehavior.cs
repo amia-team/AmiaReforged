@@ -1,6 +1,6 @@
 ﻿using Anvil.API.Events;
 
-namespace AmiaReforged.PwEngine.Systems.AI.PackageDefinitions;
+namespace AmiaReforged.PwEngine.Systems.AI.Behaviors;
 
 public interface IOnSpawnBehavior
 {
