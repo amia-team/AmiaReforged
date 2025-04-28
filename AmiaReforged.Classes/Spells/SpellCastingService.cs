@@ -62,7 +62,7 @@ public class SpellCastingService
         }
         
         // Restrict hostile spellcasting in no PvP areas
-        if (character.Area?.PVPSetting == PVPSetting.None && obj.Spell.IsHostileSpell)
+        if (character.Area?.PVPSetting == PVPSetting.None && obj.Spell.IsHostileSpell && obj.TargetObject.IsPlayerControlled(out NwPlayer? _))
         {
             player.SendServerMessage("PVP is not allowed in this area.");
             obj.PreventSpellCast = true;
@@ -101,8 +101,6 @@ public class SpellCastingService
             if (casterCreature.IsPlayerControlled(out NwPlayer? player))
                 targetIsInParty = player.PartyMembers.Any(p => p.LoginCreature == targetCreature) ||
                                   casterCreature.Associates.Any(a => a == targetCreature);
-
-            PVPSetting? areaPvpSetting = casterCreature.Area?.PVPSetting;
 
             spell.DoSpellResist(targetCreature, casterCreature);
 
