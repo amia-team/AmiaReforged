@@ -10,6 +10,9 @@ namespace AmiaReforged.Classes.Spells;
 [ServiceBinding(typeof(SpellCastingService))]
 public class SpellCastingService
 {
+    private const string WelcomeAreaResRef = "welcometotheeete";
+    private const string UniquePowerScriptName = "NW_S3_ActItem01";
+    private const string RecallResRef = "recall";
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly SpellDecoratorFactory _decoratorFactory;
     private readonly Dictionary<string, ISpell> _spellImpactHandlers = new();
@@ -35,7 +38,7 @@ public class SpellCastingService
         if (obj.Caster is not NwCreature character) return;
         
         // Don't restrict raise dead and resurrection in the "Welcome to Amia!" area
-        bool isWelcomeArea = character.Area?.ResRef == "welcometotheeete";
+        bool isWelcomeArea = character.Area?.ResRef == WelcomeAreaResRef;
         
         if (isWelcomeArea && obj.Spell.SpellType is Spell.RaiseDead or Spell.Resurrection)
             return;
@@ -44,7 +47,7 @@ public class SpellCastingService
         if (character.IsDMAvatar) return;
         
         // Don't restrict items that use Unique Power or Unique Power Self unless it's a recall stone
-        if (obj.Item is not null && obj.Spell.ImpactScript == "NW_S3_ActItem01" && !obj.Item.ResRef.Contains("recall"))
+        if (obj.Item is not null && obj.Spell.ImpactScript == UniquePowerScriptName && !obj.Item.ResRef.Contains(RecallResRef))
             return;
         
         // Restrict casting in no casting areas
