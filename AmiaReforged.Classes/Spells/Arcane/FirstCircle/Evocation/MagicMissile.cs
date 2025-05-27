@@ -73,15 +73,8 @@ public class MagicMissile : ISpell
     {
         float distanceToTarget = casterCreature.Distance(target);
         float missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 3f);
-        
-        int numberOfMissiles = casterCreature.CasterLevel switch
-        {
-            3 or 4 => 2,
-            5 or 6 => 3,
-            7 or 8 => 4,
-            >= 9 => 5,
-            _ => 1
-        };
+
+        int numberOfMissiles = Math.Min(1 + (casterCreature.CasterLevel - 1) / 2, 5);
 
         Effect missileProjectileVfx = Effect.VisualEffect(VfxType.ImpMirv);
         
