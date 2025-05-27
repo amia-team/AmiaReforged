@@ -28,10 +28,10 @@ public class SpellCastingService
             scriptHandleFactory.RegisterScriptHandler(spell.ImpactScript, HandleSpellImpact);
         }
 
-        NwModule.Instance.OnSpellCast += PreventRestricedCasts;
+        NwModule.Instance.OnSpellCast += PreventRestrictedCasts;
     }
 
-    private void PreventRestricedCasts(OnSpellCast obj)
+    private void PreventRestrictedCasts(OnSpellCast obj)
     {
         if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
         if (obj.Spell is null) return;
