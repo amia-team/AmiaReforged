@@ -6,7 +6,7 @@ using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(ChaosReset))]
+// [ServiceBinding(typeof(ChaosReset))]
 public class ChaosReset
 {
     private readonly Invasions _invasions;
