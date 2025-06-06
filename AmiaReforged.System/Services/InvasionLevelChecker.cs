@@ -6,7 +6,7 @@ using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(InvasionLevelChecker))]
+// [ServiceBinding(typeof(InvasionLevelChecker))]
 public class InvasionLevelChecker
 {
     private readonly Invasions _invasions;

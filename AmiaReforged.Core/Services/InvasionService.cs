@@ -33,8 +33,6 @@ public class InvasionService
         {
             Log.Error(e, "Error saving invasion record");
         }
-
-        await _nwTaskHelper.TrySwitchToMainThread();
     }
 
     public async Task UpdateInvasionArea(InvasionRecord invasionRecord)

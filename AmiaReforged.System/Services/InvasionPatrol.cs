@@ -7,7 +7,7 @@ using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(InvasionPatrol))]
+// [ServiceBinding(typeof(InvasionPatrol))]
 public class InvasionPatrol
 {
     private readonly Invasions _invasions;

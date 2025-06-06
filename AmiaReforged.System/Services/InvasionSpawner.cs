@@ -1,11 +1,12 @@
 using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Services;
+using Anvil.API;
 using Anvil.Services;
 using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(InvasionSpawner))]
+// [ServiceBinding(typeof(InvasionSpawner))]
 public class InvasionSpawner
 {
     private readonly Invasions _invasions;
@@ -74,6 +75,7 @@ public class InvasionSpawner
                 newRecord.InvasionPercent = random.Next(5, 25);
                 newRecord.RealmChaos = 1;
                 await _invasionService.AddInvasionArea(newRecord);
+                await NwTask.SwitchToMainThread();
             }
             else
             {

@@ -4,7 +4,7 @@ using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(Invasions))]
+// [ServiceBinding(typeof(Invasions))]
 public class Invasions
 {
     private List<uint> _waypointMasterList = new();

@@ -6,7 +6,7 @@ using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(InvasionForceLaunch))]
+// [ServiceBinding(typeof(InvasionForceLaunch))]
 public class InvasionForceLaunch
 {
     private readonly Invasions _invasions;
