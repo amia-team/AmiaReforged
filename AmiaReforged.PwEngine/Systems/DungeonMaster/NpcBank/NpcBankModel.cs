@@ -11,7 +11,7 @@ using Action = System.Action;
 
 namespace AmiaReforged.PwEngine.Systems.DungeonMaster.NpcBank;
 
-public class NpcBankModel(NwPlayer player)
+public sealed class NpcBankModel(NwPlayer player)
 {
     [Inject] private Lazy<NpcBankService> BankService { get; init; } = null!;
     [Inject] private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
@@ -152,7 +152,7 @@ public class NpcBankModel(NwPlayer player)
         );
     }
 
-    protected virtual void OnNpcUpdate()
+    private void OnNpcUpdate()
     {
         NpcUpdate?.Invoke(this, EventArgs.Empty);
     }
