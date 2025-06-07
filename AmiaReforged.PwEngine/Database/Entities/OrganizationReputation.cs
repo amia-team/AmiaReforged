@@ -11,7 +11,7 @@ public class OrganizationReputation
     [ForeignKey("OrganizationAid")] public Organization OrganizationA { get; set; }
     
     public long OrganizationBId { get; set; }
-    [ForeignKey("OrganizationBid")] public Organization OrganizationB { get; set; }
+    [ForeignKey("OrganizationBId")] public Organization OrganizationB { get; set; }
     
     // Anything below -50 is considered to be at war
     [Range(-100, 100)] public int Reputation { get; set; }

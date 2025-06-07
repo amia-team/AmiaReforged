@@ -1,6 +1,7 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core;
+using Action = System.Action;
 
 namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry.GenericWindows;
 
@@ -11,11 +12,20 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
+    private Action? Outcome { get; set; }
     public SimplePopupPresenter(NwPlayer player, SimplePopupView toolView, string title)
     {
         _player = player;
         _title = title;
         View = toolView;
+    }
+
+    public SimplePopupPresenter(NwPlayer player, SimplePopupView toolView, Action outcome, string title)
+    {
+        _player = player;
+        _title = title;
+        View = toolView;
+        Outcome = outcome;
     }
 
     public override SimplePopupView View { get; }
@@ -27,6 +37,9 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
         if (obj.ElementId == "ok_button")
         {
             Close();
+            
+            Outcome?.Invoke();
+            
             return;
         }
 

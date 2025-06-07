@@ -24,6 +24,9 @@ public class AmiaDbContext : DbContext
     public DbSet<InvasionRecord> InvasionRecord { get; set; } = null!;
     public DbSet<LastLocation> LastLocation { get; set; } = null!;
     public DbSet<PersistPLC> PersistPLC { get; set; } = null!;
+    public DbSet<Encounter> Encounters { get; set; } = null!;
+    public DbSet<EncounterEntry> EncounterEntries { get; set; } = null!;
+    public DbSet<Npc> Npcs { get; set; } = null!;
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
