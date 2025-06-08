@@ -14,6 +14,7 @@ public class NpcBankView : ScryView<NpcBankPresenter>, IDmWindow
     public readonly NuiBind<string> PublicImageResref = new(key: "public_image_resref");
     public readonly NuiBind<long> Ids = new(key: "ids_val");
     public readonly NuiBind<int> NpcCount = new("npc_count");
+    public readonly NuiBind<int> Selection = new("selection");
 
     public NuiButtonImage SearchButton = null!;
     public NuiButtonImage AddNpcButton = null!;
@@ -84,7 +85,7 @@ public class NpcBankView : ScryView<NpcBankPresenter>, IDmWindow
                 {
                     Children =
                     [
-                        new NuiTextEdit(label: "Search for tools...", Search, 255, false),
+                        new NuiTextEdit(label: "Search for NPCs...", Search, 255, false),
                         new NuiButtonImage(resRef: "isk_search")
                         {
                             Id = "btn_search",
@@ -97,7 +98,25 @@ public class NpcBankView : ScryView<NpcBankPresenter>, IDmWindow
                         }.Assign(out AddNpcButton),
                     ]
                 },
-
+                new NuiRow()
+                {
+                    Children =
+                    [
+                        new NuiSpacer(),
+                        new NuiSpacer(),
+                        new NuiCombo
+                        {
+                            Entries = new NuiValue<List<NuiComboEntry>>([
+                                new NuiComboEntry("Commoner", 0),
+                                new NuiComboEntry("Merchant", 1),
+                                new NuiComboEntry("Defender", 2),
+                                new NuiComboEntry("Hostile", 3),
+                            ]),
+                            Id = "faction_sel",
+                            Selected = Selection
+                        }
+                    ]
+                },
                 new NuiRow()
                 {
                     Children =

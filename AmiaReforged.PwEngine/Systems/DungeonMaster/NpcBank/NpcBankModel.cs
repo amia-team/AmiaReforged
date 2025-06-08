@@ -79,16 +79,18 @@ public sealed class NpcBankModel(NwPlayer player)
         _searchTerm = search;
     }
 
-    public void PromptSpawn(int eventDataArrayIndex)
+    public void PromptSpawn(int eventDataArrayIndex, NwFaction faction)
     {
         SelectedNpc = VisibleNpcs.ToArray()[eventDataArrayIndex];
-
+        SelectedFaction = faction;
         player.EnterTargetMode(ValidateAndSpawn, new()
         {
             CursorType = MouseCursor.Action,
             ValidTargets = ObjectTypes.Tile
         });
     }
+
+    public NwFaction SelectedFaction { get; set; }
 
     private void ValidateAndSpawn(ModuleEvents.OnPlayerTarget obj)
     {
@@ -103,7 +105,7 @@ public sealed class NpcBankModel(NwPlayer player)
         }
 
         Location spawnLocation = Location.Create(player.LoginCreature.Area, obj.TargetPosition, 0);
-
+        creature.Faction = SelectedFaction;
         creature.Clone(spawnLocation);
         creature.Destroy();
     }

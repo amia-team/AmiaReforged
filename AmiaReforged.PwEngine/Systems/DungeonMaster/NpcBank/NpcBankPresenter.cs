@@ -54,14 +54,15 @@ public class NpcBankPresenter : ScryPresenter<NpcBankView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
-        
+
         Token().SetBindValue(View.Search, "");
-        
+
         Model.LoadNpcs();
 
         Model.NpcUpdate += UpdateList;
-        
-       RefreshNpcList();
+
+        Token().SetBindValue(View.Selection, 0);
+        RefreshNpcList();
     }
 
     private void UpdateList(NpcBankModel sender, EventArgs e)
@@ -95,7 +96,27 @@ public class NpcBankPresenter : ScryPresenter<NpcBankView>
                  && eventData.ArrayIndex >= 0
                  && eventData.ArrayIndex < Model.VisibleNpcs.Count())
         {
-            Model.PromptSpawn(eventData.ArrayIndex);
+            int selected = Token().GetBindValue(View.Selection);
+            StandardFaction selectedFaction = StandardFaction.Commoner;
+            switch (selected)
+            {
+                case 0:
+                    selectedFaction = StandardFaction.Commoner;
+                    break;
+                case 1:
+                    selectedFaction = StandardFaction.Merchant;
+                    break;
+                case 2:
+                    selectedFaction = StandardFaction.Defender;
+                    break;
+                case 3:
+                    selectedFaction = StandardFaction.Hostile;
+                    break;
+            }
+
+            NwFaction faction = NwFaction.FromStandardFaction(selectedFaction)!;
+            
+            Model.PromptSpawn(eventData.ArrayIndex, faction);
         }
         else if (eventData.ElementId == View.DeleteNpcButton.Id
                  && eventData.ArrayIndex >= 0
@@ -112,21 +133,21 @@ public class NpcBankPresenter : ScryPresenter<NpcBankView>
     private void RefreshNpcList()
     {
         string search = Token().GetBindValue(View.Search)!;
-        
+
         Model.SetSearchTerm(search);
         Model.LoadNpcs();
         Model.RefreshNpcList();
-        
+
         List<string> npcNames = [];
         npcNames.AddRange(Model.VisibleNpcs.Select(n => n.DmCdKey != _player.CDKey ? $"{n.Name} (Shared)" : n.Name));
-        
+
         List<long> npcIds = Model.VisibleNpcs.Select(n => n.Id).ToList();
 
         List<string> publicTooltips = Model.VisibleNpcs.Select(visibleNpc => visibleNpc.Public
                 ? "This NPC is visible to other DMs"
                 : "Not visible to other DMs")
             .ToList();
-        
+
         List<string> publicImageResrefs = Model.VisibleNpcs.Select(visibleNpc => visibleNpc.Public
                 ? "ir_reldom"
                 : "ief_blind")
@@ -137,7 +158,6 @@ public class NpcBankPresenter : ScryPresenter<NpcBankView>
         Token().SetBindValues(View.PublicImageResref, publicImageResrefs);
         Token().SetBindValues(View.PublicSettings, publicTooltips);
         Token().SetBindValue(View.NpcCount, Model.VisibleNpcs.Count());
-        
     }
 
     public override void Close()
