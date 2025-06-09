@@ -7,7 +7,6 @@ namespace AmiaReforged.PwEngine.Systems.Chat.Commands.Reset;
 [ServiceBinding(typeof(IChatCommand))]
 public class OpenPlayerToolsCommand : IChatCommand
 {
-    [Inject] private WindowManager WindowManager { get; set; }
 
     public string Command { get; } = "./playertools";
 

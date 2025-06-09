@@ -31,7 +31,6 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
     public override CreateSpellbookView View { get; }
 
-    [Inject] private Lazy<WindowManager> WindowManager { get; set; }
 
     public override NuiWindowToken Token() => _token;
 
