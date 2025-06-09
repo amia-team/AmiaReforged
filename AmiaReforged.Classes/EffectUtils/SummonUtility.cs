@@ -1,4 +1,6 @@
 ﻿using System.Numerics;
+using Anvil.API;
+using NWN.Core;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.EffectUtils;
@@ -45,34 +47,27 @@ public static class SummonUtility
 
     public static void SetSummonsFacing(int summonCount, IntPtr location)
     {
-        if (summonCount == 1)
-        {
-            uint summon = GetAssociate(ASSOCIATE_TYPE_SUMMONED, OBJECT_SELF);
-            AssignCommand(summon, () => SetFacingPoint(GetPositionFromLocation(location)));
-        }
-
         if (summonCount > 1)
             for (int i = 1; i <= summonCount; i++)
             {
-                uint summon = GetAssociate(ASSOCIATE_TYPE_HENCHMAN, OBJECT_SELF, i);
+                uint summon = GetAssociate(ASSOCIATE_TYPE_SUMMONED, OBJECT_SELF, i);
                 AssignCommand(summon, () => SetFacingPoint(GetPositionFromLocation(location)));
             }
     }
 
-    public static void SummonMany(uint caster, float summonDuration, int summonCount, string summonResRef,
+    public static void SummonMany(int summonVfx, int unsummonVfx, float summonDuration, int summonCount, string summonResRef,
         IntPtr location,
         float minLoc, float maxLoc, float minDelay, float maxDelay)
     {
         for (int i = 1; i <= summonCount; i++)
         {
             float delay = NwEffects.RandomFloat(minDelay, maxDelay);
+            
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
-            float newDelay = delay + 0.1f;
-            string newTag = summonResRef + IntToString(i) + GetSubString(GetName(caster), 0, 2);
-            DelayCommand(delay, () => CreateObject(OBJECT_TYPE_CREATURE, summonResRef, summonLocation, 0, newTag));
-            DelayCommand(newDelay, () => AddHenchman(caster, GetObjectByTag(newTag)));
-            DelayCommand(newDelay,
-                () => DelayCommand(summonDuration, () => RemoveHenchman(caster, GetObjectByTag(newTag))));
+            
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay, 0, unsummonVfx);
+            
+            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
         }
     }
 
