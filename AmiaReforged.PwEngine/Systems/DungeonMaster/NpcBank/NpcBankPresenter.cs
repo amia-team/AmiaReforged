@@ -154,7 +154,6 @@ public class NpcBankPresenter : ScryPresenter<NpcBankView>
             .ToList();
 
         Token().SetBindValues(View.Names, npcNames);
-        Token().SetBindValues(View.Ids, npcIds);
         Token().SetBindValues(View.PublicImageResref, publicImageResrefs);
         Token().SetBindValues(View.PublicSettings, publicTooltips);
         Token().SetBindValue(View.NpcCount, Model.VisibleNpcs.Count());

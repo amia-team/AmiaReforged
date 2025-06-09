@@ -1,6 +1,7 @@
 using AmiaReforged.Core.Models;
 using Anvil.API;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.Core.Services;
@@ -8,19 +9,21 @@ namespace AmiaReforged.Core.Services;
 [ServiceBinding(typeof(EncounterService))]
 public class EncounterService
 {
-    private readonly AmiaDbContext _context;
+    private readonly DatabaseContextFactory _factory;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public EncounterService(DatabaseContextFactory context)
     {
-        _context = context.CreateDbContext();
+        _factory = context;
     }
 
-    public async Task AddEncounter(Encounter encounter)
+    public void AddEncounter(Encounter encounter)
     {
+        AmiaDbContext ctx = _factory.CreateDbContext();
         try
         {
-            await _context.Encounters.AddAsync(encounter);
+            ctx.Encounters.Add(encounter);
+            ctx.SaveChanges();
         }
         catch (Exception ex)
         {
@@ -28,16 +31,34 @@ public class EncounterService
         }
     }
 
-    public IEnumerable<Encounter> GetEncountersForDm(string dmPublicKey)
+    public void DeleteEncounter(Encounter encounter)
     {
+        AmiaDbContext ctx = _factory.CreateDbContext();
+
         try
         {
-            IEnumerable<Encounter> encounter = _context.Encounters.Where(e => e.DmId == dmPublicKey);
+            ctx.Encounters.Remove(encounter);
+            ctx.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to delete encounter: {ex}");
+        }
+    }
 
-            foreach (Encounter e in encounter)
-            {
-                e.EncounterEntries = _context.EncounterEntries.Where(entry => entry.EncounterId == e.Id).ToList();
-            }
+    public IEnumerable<Encounter> GetEncountersForDm(string dmPublicKey)
+    {
+        AmiaDbContext ctx = _factory.CreateDbContext();
+
+        try
+        {
+            IEnumerable<Encounter> encounter =
+                ctx
+                    .Encounters
+                    .Include(p => p.EncounterEntries)
+                    .Where(e => e.DmId == dmPublicKey);
+
+            Log.Info($"Found {encounter.Count()} encounters");
 
             return encounter;
         }
@@ -47,5 +68,53 @@ public class EncounterService
         }
 
         return new List<Encounter>();
+    }
+
+    public void AddEncounterEntry(EncounterEntry entry)
+    {
+        AmiaDbContext ctx = _factory.CreateDbContext();
+
+        try
+        {
+            ctx.EncounterEntries.Add(entry);
+            ctx.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to add an entry to this encounter: {ex}");
+        }
+    }
+
+    public void DeleteEntry(EncounterEntry entry)
+    {
+        AmiaDbContext ctx = _factory.CreateDbContext();
+
+        try
+        {
+            ctx.EncounterEntries.Remove(entry);
+            ctx.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to add an entry to this encounter: {ex}");
+        }
+    }
+
+    public IEnumerable<EncounterEntry> GetEntries(long encounterId)
+    {
+        List<EncounterEntry> entries = [];
+        AmiaDbContext ctx = _factory.CreateDbContext();
+
+        try
+        {
+            entries = ctx.EncounterEntries.Where(e => e.EncounterId == encounterId).ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to retrieve entries for {encounterId}: {ex}");
+        }
+
+        
+        return entries;
     }
 }

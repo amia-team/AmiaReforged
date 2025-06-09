@@ -8,7 +8,7 @@ public class EncounterEntry
     [Key] public long Id { get; set; }
     [Required] public byte[] SerializedString { get; set; }
     public string Name { get; set; }
-    
+
     public long EncounterId { get; set; }
-    [ForeignKey("EncounterId")] public Encounter Encounter { get; set; }    
+    [ForeignKey("EncounterId")] public virtual Encounter Encounter { get; set; }
 }

@@ -12,7 +12,6 @@ public class NpcBankView : ScryView<NpcBankPresenter>, IDmWindow
     public readonly NuiBind<string> Names = new(key: "names_val");
     public readonly NuiBind<string> PublicSettings = new(key: "public_val");
     public readonly NuiBind<string> PublicImageResref = new(key: "public_image_resref");
-    public readonly NuiBind<long> Ids = new(key: "ids_val");
     public readonly NuiBind<int> NpcCount = new("npc_count");
     public readonly NuiBind<int> Selection = new("selection");
 

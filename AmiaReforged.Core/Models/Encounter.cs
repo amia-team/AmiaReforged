@@ -13,18 +13,19 @@ public class Encounter
     
     public int EncounterSize { get; set; }
     
-    public List<EncounterEntry> EncounterEntries { get; set; }
+    public virtual List<EncounterEntry> EncounterEntries { get; set; }
     
     public required string DmId { get; set; }
     [ForeignKey("DmId")] public Dm Dm { get; set; }
 
-    public void SpawnEncounters(Location location)
+    public void SpawnEncounters(Location location, NwFaction faction)
     {
         foreach (EncounterEntry entry in EncounterEntries)
         {
             NwCreature? creature = NwCreature.Deserialize(entry.SerializedString);
             if(creature is null) continue;
             
+            creature.Faction = faction;
             NWScript.CopyObject(creature, location);
         }
     }
