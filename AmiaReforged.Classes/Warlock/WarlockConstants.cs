@@ -20,6 +20,10 @@ public static class WarlockConstants
     /// </summary>
     public static int RangedTouch(uint nwnObjectId, uint targetObject)
     {
+        const int miss = 0;
+        const int hit = 1;
+        const int criticalHit = 2;
+        
         NwObject? caster = nwnObjectId.ToNwObject();
         NwObject? target = targetObject.ToNwObject();
         if (target is not NwCreature targetCreature) return 1;
@@ -27,7 +31,12 @@ public static class WarlockConstants
 
         TouchAttackResult result = casterCreature.TouchAttackRanged(targetCreature, true);
 
-        return result == TouchAttackResult.Hit ? TRUE : FALSE;
+        return result switch
+        {
+            TouchAttackResult.Hit => hit,
+            TouchAttackResult.CriticalHit => criticalHit,
+            _ => miss
+        };
     }
 
     /// <summary>
