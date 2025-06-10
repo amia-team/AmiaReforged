@@ -6,8 +6,8 @@ namespace AmiaReforged.Core.Models;
 public class StoredItem
 {
     [Key] public long ItemId { get; set; }
-    public Guid PlayerCharacterId { get; set; }
-    public string ItemJson { get; set; }
-    
-    [ForeignKey("PlayerCharacterId")] public PlayerCharacter Character { get; set; }
+    public required Guid PlayerCharacterId { get; set; }
+    public required string ItemJson { get; set; }
+
+    [ForeignKey("PlayerCharacterId")] public PlayerCharacter? Character { get; set; }
 }

@@ -117,11 +117,13 @@ public class PersonalStorageService
 
         Guid characterId = Guid.Parse(pcKey!.Name.Split("_")[1]);
 
-        StoredItem newItem = new();
 
         Json itemJson = NWScript.ObjectToJson(obj.Item);
-        newItem.ItemJson = itemJson.Dump();
-        newItem.PlayerCharacterId = characterId;
+        StoredItem newItem = new()
+        {
+            ItemJson = itemJson.Dump(),
+            PlayerCharacterId = characterId
+        };
 
 
         bool success = true;
