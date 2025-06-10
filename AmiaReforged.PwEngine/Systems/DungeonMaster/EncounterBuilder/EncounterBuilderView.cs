@@ -21,7 +21,6 @@ public class EncounterBuilderView : ScryView<EncounterBuilderPresenter>, IDmWind
     public NuiButtonImage EditEncounterButton = null!;
     public NuiButtonImage DeleteEncounterButton = null!;
 
-
     public sealed override EncounterBuilderPresenter Presenter { get; protected set; }
     public string Title => "Encounter Tools";
     public bool ListInDmTools => true;
