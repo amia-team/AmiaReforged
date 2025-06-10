@@ -68,28 +68,27 @@ public class PillarOfPhantoms
             int randomXOffset = Random.Shared.Next(-4, 4);
             int randomYOffset = Random.Shared.Next(-4, 4);
             // The Z axis is shared with the trap, so we don't need to randomize it
+            if (obj.Placeable.Area == null) continue;
             Location spawnLocation = Location.Create(obj.Placeable.Area,
                 new(obj.Placeable.Position.X + randomXOffset, obj.Placeable.Position.Y + randomYOffset,
                     obj.Placeable.Position.Z),
                 obj.Placeable.Rotation);
 
             // Is it safe to spawn the phantom here?
-            if (spawnLocation.IsWalkable)
-            {
-                // Just to make sure, we're going to set the spawn location's Z value to its walkable height
-                Location trueSpawnLocation = Location.Create(obj.Placeable.Area,
-                    new(spawnLocation.Position.X, spawnLocation.Position.Y, spawnLocation.GroundHeight),
-                    obj.Placeable.Rotation);
-                NwCreature.Create(PillarPhantomTag, trueSpawnLocation);
-                Effect spawnVfx =
-                    Effect.VisualEffect(VfxType.FnfSummonUndead, false, Random.Shared.NextFloat(-1.5f, 1.5f));
-                Effect secondaryVfx =
-                    Effect.VisualEffect(VfxType.ImpRaiseDead, false, Random.Shared.NextFloat(-1.5f, 1.5f));
+            if (spawnLocation is not { IsWalkable: true }) continue;
+            // Just to make sure, we're going to set the spawn location's Z value to its walkable height
+            Location trueSpawnLocation = Location.Create(obj.Placeable.Area,
+                new(spawnLocation.Position.X, spawnLocation.Position.Y, spawnLocation.GroundHeight),
+                obj.Placeable.Rotation);
+            NwCreature.Create(PillarPhantomTag, trueSpawnLocation);
+            Effect spawnVfx =
+                Effect.VisualEffect(VfxType.FnfSummonUndead, false, Random.Shared.NextFloat(-1.5f, 1.5f));
+            Effect secondaryVfx =
+                Effect.VisualEffect(VfxType.ImpRaiseDead, false, Random.Shared.NextFloat(-1.5f, 1.5f));
 
-                // Apply at location
-                trueSpawnLocation.ApplyEffect(EffectDuration.Instant, spawnVfx);
-                trueSpawnLocation.ApplyEffect(EffectDuration.Instant, secondaryVfx);
-            }
+            // Apply at location
+            trueSpawnLocation.ApplyEffect(EffectDuration.Instant, spawnVfx);
+            trueSpawnLocation.ApplyEffect(EffectDuration.Instant, secondaryVfx);
         }
     }
 
