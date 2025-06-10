@@ -21,7 +21,7 @@ public class ActivePropertiesModel
                 property.DurationType != EffectDuration.Permanent) continue;
 
             // Check the existing properties in the categories
-            CraftingProperty? craftingProperty =
+            CraftingProperty craftingProperty =
                 properties.FirstOrDefault(p => ItemPropertyHelper.PropertiesAreSame(p, property)) ??
                 ItemPropertyHelper.ToCraftingProperty(property);
 

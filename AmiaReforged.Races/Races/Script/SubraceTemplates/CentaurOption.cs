@@ -27,7 +27,7 @@ public class CentaurOption : ISubraceApplier
 
         SetSubraceModifiers(nwnObjectId);
 
-        TemplateRunner? templateRunner = new();
+        TemplateRunner templateRunner = new();
 
         TemplateRunner.Run(nwnObjectId);
         CreaturePlugin.SetRacialType(nwnObjectId, NWScript.RACIAL_TYPE_HUMANOID_MONSTROUS);

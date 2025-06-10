@@ -14,7 +14,7 @@ public class SpellbookViewModel
 
     public static SpellbookViewModel FromDatabaseModel(SavedSpellbook savedBook)
     {
-        SpellbookViewModel? spellbookViewModel = new()
+        SpellbookViewModel spellbookViewModel = new()
         {
             Name = savedBook.SpellbookName,
             Class = savedBook.ClassId.ToString(),

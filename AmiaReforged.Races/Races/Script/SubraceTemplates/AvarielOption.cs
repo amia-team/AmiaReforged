@@ -25,7 +25,7 @@ public class AvarielOption : ISubraceApplier
 
         SetSubraceModifiers(nwnObjectId);
 
-        TemplateRunner? templateRunner = new();
+        TemplateRunner templateRunner = new();
 
         TemplateRunner.Run(nwnObjectId);
             

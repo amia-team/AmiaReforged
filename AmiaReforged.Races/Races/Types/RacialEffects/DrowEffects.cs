@@ -16,7 +16,7 @@ public class DrowEffects : IEffectCollector
 
         int spellResistance = GetSpellResistanceBasedOnFeat();
 
-        List<IntPtr>? effectsForObject = new()
+        List<IntPtr> effectsForObject = new()
         {
             NWScript.EffectSpellResistanceIncrease(spellResistance)
         };

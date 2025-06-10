@@ -14,7 +14,7 @@ public class AasimarEffects : IEffectCollector
         _oid = objectId;
         _hasHeritageFeat = HasHeritageFeat();
 
-        List<IntPtr>? effects = new()
+        List<IntPtr> effects = new()
         {
             NWScript.EffectSkillIncrease(NWScript.SKILL_PERSUADE, 2),
             NWScript.EffectDamageResistance(NWScript.DAMAGE_TYPE_COLD, 5),

@@ -11,7 +11,7 @@ public class CentaurEffects : IEffectCollector
     {
         _oid = objectId;
 
-        List<IntPtr>? effects = new()
+        List<IntPtr> effects = new()
         {
             NWScript.EffectSkillIncrease(NWScript.SKILL_MOVE_SILENTLY, 2),
         };
