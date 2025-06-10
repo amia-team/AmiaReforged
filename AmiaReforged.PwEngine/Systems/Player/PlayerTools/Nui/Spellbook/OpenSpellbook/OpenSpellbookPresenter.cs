@@ -213,28 +213,23 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
         {
             Log.Info($"Iteration {f}");
             spellRows.Add(new());
-            if (!preparedSpells.ContainsKey(f)) break;
-            Log.Info($"Spell level {f} has {preparedSpells[f].Count} spells.");
+            if (!preparedSpells.TryGetValue(f, out List<PreparedSpellModel>? spell)) break;
+
             spellRow.TryAdd(f, new());
             spellRow[f].Add(spellLevelIcons[f]);
 
-            foreach (PreparedSpellModel s in preparedSpells[f])
+            foreach (NuiImage prep in from s in preparedSpells[f]
+                     let spellIconResRef = s.IconResRef == "" ? "ir_tmp_spawn" : s.IconResRef
+                     select new NuiImage(spellIconResRef)
+                     {
+                         Tooltip = s.SpellName,
+                         Height = 40f,
+                         Width = 40f,
+                         ImageAspect = NuiAspect.Fill,
+                         HorizontalAlign = NuiHAlign.Center,
+                         VerticalAlign = NuiVAlign.Middle
+                     })
             {
-                string spellIconResRef = s.IconResRef == "" ? "ir_tmp_spawn" : s.IconResRef;
-
-
-                Log.Info($"Processing spell {s.SpellName} with icon {spellIconResRef}");
-
-                NuiImage prep = new(spellIconResRef)
-                {
-                    Tooltip = s.SpellName,
-                    Height = 40f,
-                    Width = 40f,
-                    ImageAspect = NuiAspect.Fill,
-                    HorizontalAlign = NuiHAlign.Center,
-                    VerticalAlign = NuiVAlign.Middle
-                };
-
                 spellRow[f].Add(prep);
             }
 
@@ -320,12 +315,12 @@ public sealed class SpellbookMemorizer
         for (byte spellLevel = 0; spellLevel <= 9; spellLevel++)
         {
             Log.Info($"Memorizing spells for level {(int)spellLevel}");
-            
+
             IReadOnlyList<PreparedSpellModel>? spells = _spellbook.SpellBook?[spellLevel];
 
             for (int spellSlot = 0; spellSlot < classInfo.GetMemorizedSpellSlots(spellLevel).Count; spellSlot++)
             {
-                if(spells == null) continue;
+                if (spells == null) continue;
                 if (spellSlot > spells.Count)
                 {
                     Log.Info(message: "No more spells to memorize.");
