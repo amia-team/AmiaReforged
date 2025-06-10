@@ -2,7 +2,7 @@
 
 public class LedgerItem
 {
-    public string Name { get; set; }
+    public required string Name { get; set; }
     public QualityEnum QualityEnum { get; set; }
     public MaterialEnum MaterialEnum { get; set; }
     public float MagicModifier { get; set; }

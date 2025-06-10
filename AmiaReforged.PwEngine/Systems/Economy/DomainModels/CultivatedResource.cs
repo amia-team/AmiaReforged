@@ -15,14 +15,14 @@ public class CultivatedResource
     /// </summary>
     public ItemType Type { get; set; }
     
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     /// <summary>
     /// Time to harvest in rounds.
     /// </summary>
     public int TimeToHarvest { get; set; }
+
+    public List<string> EnvironmentTags { get; set; } = [];
     
-    public List<string> EnvironmentTags { get; set; }
-    
-    public List<EnvironmentTrait> SuitableEnvironments { get; set; } = new();
+    public List<EnvironmentTrait> SuitableEnvironments { get; set; } = [];
 }

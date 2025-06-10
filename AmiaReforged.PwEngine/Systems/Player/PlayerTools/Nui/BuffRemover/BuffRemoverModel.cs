@@ -31,7 +31,7 @@ public class BuffRemoverModel
             string effectString = EffectString(effect);
             LogManager.GetCurrentClassLogger().Info($"{effectString}");
 
-            if (effectLabels.Any(e => e.StartsWith(effect.Spell.Name.ToString()))) continue;
+            if (effectLabels.Any(e => e.StartsWith(effect.Spell?.Name.ToString() ?? string.Empty))) continue;
 
             effectLabels.Add(effectString);
 

@@ -50,48 +50,48 @@ public class CreatureData
     public int SpellResistance { get; set; }
 
 
-    public ItemData RightHand { get; set; }
-    public ItemData LeftHand { get; set; }
-    public ItemData Gloves { get; set; }
-    public ItemData Armor { get; set; }
-    public ItemData Helmet { get; set; }
-    public ItemData Ring1 { get; set; }
-    public ItemData Ring2 { get; set; }
-    public ItemData Neck { get; set; }
-    public ItemData Boots { get; set; }
-    public ItemData Cloak { get; set; }
+    public ItemData? RightHand { get; set; }
+    public ItemData? LeftHand { get; set; }
+    public ItemData? Gloves { get; set; }
+    public ItemData? Armor { get; set; }
+    public ItemData? Helmet { get; set; }
+    public ItemData? Ring1 { get; set; }
+    public ItemData? Ring2 { get; set; }
+    public ItemData? Neck { get; set; }
+    public ItemData? Boots { get; set; }
+    public ItemData? Cloak { get; set; }
     
-    public ItemData Arrows { get; set; }
-    public ItemData Bullets { get; set; }
-    public ItemData Bolts { get; set; }
+    public ItemData? Arrows { get; set; }
+    public ItemData? Bullets { get; set; }
+    public ItemData? Bolts { get; set; }
     
-    public ItemData CreatureHide { get; set; }
-    public ItemData CreatureRightWeapon { get; set; }
-    public ItemData CreatureLeftWeapon { get; set; }
-    public ItemData CreatureBite { get; set; }
+    public ItemData? CreatureHide { get; set; }
+    public ItemData? CreatureRightWeapon { get; set; }
+    public ItemData? CreatureLeftWeapon { get; set; }
+    public ItemData? CreatureBite { get; set; }
     
     
-    public InventoryData Inventory { get; set; }
-    public CreatureEventData Events { get; set; }
-    public IEnumerable<SpecialAbilityData> SpecialAbilities { get; set; }
-    public IEnumerable<SpellPowerData> SpellAbilities { get; set; }
-    public IEnumerable<FeatData> Feats { get; set; }
+    public InventoryData? Inventory { get; set; }
+    public CreatureEventData? Events { get; set; }
+    public IEnumerable<SpecialAbilityData>? SpecialAbilities { get; set; }
+    public IEnumerable<SpellPowerData>? SpellAbilities { get; set; }
+    public IEnumerable<FeatData>? Feats { get; set; }
 }
 
 public class SkillData
 {
-    public string Name { get; set; }
+    public string? Name { get; set; }
     public int Value { get; set; }
 }
 
 public class FeatData
 {
-    public string Name { get; set; }
+    public string? Name { get; set; }
 }
 
 public class SpellPowerData
 {
-    public string Name { get; set; }
+    public string? Name { get; set; }
     public int CasterLevel { get; set; }
 }
 
