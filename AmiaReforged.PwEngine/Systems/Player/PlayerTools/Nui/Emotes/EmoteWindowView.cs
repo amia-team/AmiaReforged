@@ -23,7 +23,7 @@ public class EmoteWindowView : ScryView<EmoteWindowPresenter>, IToolWindow
     }
 
     public sealed override EmoteWindowPresenter Presenter { get; protected set; }
-    public string Id => "playertoosl.emotewindow";
+    public string Id => "playertools.emotewindow";
     public bool ListInPlayerTools => false;
     public bool RequiresPersistedCharacter => false;
     public string Title => "Emotes";

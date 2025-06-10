@@ -8,10 +8,10 @@ public class CharacterReputation
     [Key] public long Id { get; set; }
 
     public long CharacterId { get; set; }
-    [ForeignKey(nameof(CharacterId))] public WorldCharacter Character { get; set; }
+    [ForeignKey(nameof(CharacterId))] public required WorldCharacter Character { get; set; }
 
     public long OrganizationId { get; set; }
-    [ForeignKey(nameof(OrganizationId))] public Organization Organization { get; set; }
+    [ForeignKey(nameof(OrganizationId))] public required Organization Organization { get; set; }
 
     /// <summary>
     /// 0 is neutral, -100 is hated, 100 is loved

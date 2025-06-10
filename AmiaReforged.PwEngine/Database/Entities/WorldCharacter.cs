@@ -5,7 +5,11 @@ namespace AmiaReforged.PwEngine.Database.Entities;
 public class WorldCharacter
 {
     [Key] public long Id { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
+    
+    [StringLength(255)]
+    public required string FirstName { get; set; }
+
+    [StringLength(255)]
+    public required string LastName { get; set; }
     public string FullName => $"{FirstName} {LastName}";
 }

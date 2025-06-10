@@ -7,8 +7,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.Active
 
 public class ActivePropertiesModel
 {
-    public readonly List<CraftingProperty> Hidden = new();
-    public readonly List<CraftingProperty> Visible = new();
+    private readonly List<CraftingProperty> _hidden = new();
+    private readonly List<CraftingProperty> _visible = new();
 
 
     public ActivePropertiesModel(NwItem item, IReadOnlyList<CraftingCategory> categories)
@@ -26,31 +26,31 @@ public class ActivePropertiesModel
                 ItemPropertyHelper.ToCraftingProperty(property);
 
             // If the property is in the categories, add it to the list of all properties
-            Visible.Add(craftingProperty);
+            _visible.Add(craftingProperty);
         }
     }
 
     public void HideProperty(CraftingProperty property)
     {
-        Hidden.Add(property);
-        Visible.Remove(property);
+        _hidden.Add(property);
+        _visible.Remove(property);
 
         // sort alphabetically
-        Hidden.Sort((a, b) => string.Compare(a.GuiLabel, b.GuiLabel, StringComparison.Ordinal));
+        _hidden.Sort((a, b) => string.Compare(a.GuiLabel, b.GuiLabel, StringComparison.Ordinal));
     }
 
     public void RevealProperty(CraftingProperty property)
     {
-        Hidden.Remove(property);
-        Visible.Add(property);
+        _hidden.Remove(property);
+        _visible.Add(property);
 
         // sort alphabetically
-        Visible.Sort((a, b) => string.Compare(a.GuiLabel, b.GuiLabel, StringComparison.Ordinal));
+        _visible.Sort((a, b) => string.Compare(a.GuiLabel, b.GuiLabel, StringComparison.Ordinal));
     }
 
     public List<MythalCategoryModel.MythalProperty> GetVisibleProperties()
     {
-        List<MythalCategoryModel.MythalProperty> visibleProperties = Visible.Select(property =>
+        List<MythalCategoryModel.MythalProperty> visibleProperties = _visible.Select(property =>
             new MythalCategoryModel.MythalProperty
             {
                 Id = Guid.NewGuid().ToString(), Label = property.GuiLabel, Internal = property, Selectable = true

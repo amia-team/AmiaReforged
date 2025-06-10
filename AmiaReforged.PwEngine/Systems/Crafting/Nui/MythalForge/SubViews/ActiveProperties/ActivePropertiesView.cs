@@ -10,11 +10,9 @@ public class ActivePropertiesView : IScryView
 
     public ActivePropertiesView(IScryPresenter presenter)
     {
-        Presenter = presenter;
     }
 
     public string RemoveProperty => RemovePropertyConst;
-    public IScryPresenter Presenter { get; }
 
     public NuiBind<string> PropertyNames { get; } = new(key: "ip_names");
     public NuiBind<string> PropertyPowerCosts { get; } = new(key: "ip_power_costs");

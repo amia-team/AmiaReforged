@@ -12,7 +12,6 @@ public class ChangelistView : IScryView
 
     public ChangelistView(IScryPresenter presenter)
     {
-        Presenter = presenter;
     }
 
     public NuiBind<string> PropertyLabel { get; } = new(key: "change_label");
@@ -20,7 +19,6 @@ public class ChangelistView : IScryView
     public NuiBind<Color> Colors { get; } = new(key: "changelist_colors");
     public string RemoveId => RemoveFromChangeList;
     public NuiBind<int> ChangeCount { get; } = new(key: "change_count");
-    public IScryPresenter Presenter { get; }
 
     /// <summary>
     ///     Only concerned with building a NuiGroup for the changelist panel.

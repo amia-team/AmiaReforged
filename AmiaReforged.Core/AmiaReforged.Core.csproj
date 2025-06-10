@@ -21,6 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="CommandQuery\Spellbook\" />
       <Folder Include="Migrations" />
     </ItemGroup>
 

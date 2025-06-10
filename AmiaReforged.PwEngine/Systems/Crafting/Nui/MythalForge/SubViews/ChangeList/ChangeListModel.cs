@@ -38,8 +38,7 @@ public class ChangeListModel
             Label = property.Internal.GuiLabel,
             Property = property,
             GpCost = property.Internal.GoldCost,
-            State = ChangeState.Added,
-            Difficulty = property.Difficulty
+            State = ChangeState.Added
         };
 
         _addedProperties.Add(entry);
@@ -95,7 +94,6 @@ public class ChangeListModel
     {
         public required string Label { get; set; }
         public required CraftingProperty Property { get; set; }
-        public int Difficulty { get; set; }
         public int GpCost { get; set; }
         public ChangeState State { get; set; }
 
