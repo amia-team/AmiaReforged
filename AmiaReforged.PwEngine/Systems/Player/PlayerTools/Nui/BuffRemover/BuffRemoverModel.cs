@@ -57,12 +57,6 @@ public class BuffRemoverModel
         string effectLabel = effect.EffectType.ToString();
         labelBuilder.Append(effectLabel + ":");
 
-        // foreach (string? param in effect.StringParams)
-        // {
-        //     if (param.IsNullOrEmpty()) continue;
-        //     labelBuilder.Append(param + " ");
-        // }
-
         labelBuilder.Append(effect.IntParams[0]);
 
         return labelBuilder.ToString();
