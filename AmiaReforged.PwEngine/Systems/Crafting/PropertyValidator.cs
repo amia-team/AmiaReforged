@@ -30,7 +30,10 @@ public class PropertyValidator
             ValidationRuleFor? attribute = type.GetCustomAttribute<ValidationRuleFor>();
             if (attribute == null) continue;
 
+            // Disabled with a pragma because this is absolutely necessary.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             IValidationRule? instance = (IValidationRule)Activator.CreateInstance(type);
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
             if (instance == null) continue;
 

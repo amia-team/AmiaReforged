@@ -21,6 +21,8 @@ public class SetSoundset : IChatCommand
                 return Task.CompletedTask;
             }
 
+            if(caller.ControlledCreature == null) return Task.CompletedTask;
+            
             caller.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "soundsetid").Value = soundsetId;
             caller.EnterTargetMode(SetCreatureSoundset, new() { ValidTargets = ObjectTypes.Creature });
             caller.FloatingTextString($"Setting soundset id {soundsetId}!", false);
