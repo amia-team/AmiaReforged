@@ -56,8 +56,7 @@ public static class SummonUtility
     }
 
     public static void SummonMany(int summonVfx, int unsummonVfx, float summonDuration, int summonCount, string summonResRef,
-        IntPtr location,
-        float minLoc, float maxLoc, float minDelay, float maxDelay)
+        IntPtr location, float minLoc, float maxLoc, float minDelay, float maxDelay)
     {
         for (int i = 1; i <= summonCount; i++)
         {
@@ -65,9 +64,10 @@ public static class SummonUtility
             
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
             
-            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay, 0, unsummonVfx);
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, nUnsummonVisualEffectId: unsummonVfx);
             
-            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
+            DelayCommand(delay, () => 
+                ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration));
         }
     }
 
