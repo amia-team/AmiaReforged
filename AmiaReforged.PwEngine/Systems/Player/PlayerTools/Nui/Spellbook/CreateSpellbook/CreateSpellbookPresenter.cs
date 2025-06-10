@@ -11,25 +11,19 @@ using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.CreateSpellbook;
 
-public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
+public class CreateSpellbookPresenter(CreateSpellbookView toolView, NwPlayer player)
+    : ScryPresenter<CreateSpellbookView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly NwPlayer _player;
 
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
-    public CreateSpellbookPresenter(CreateSpellbookView toolView, NwPlayer player)
-    {
-        View = toolView;
-        _player = player;
-    }
+    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; } = null!;
+    [Inject] private Lazy<CharacterService> CharacterService { get; set; } = null!;
+    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; set; } = null!;
 
-    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; }
-    [Inject] private Lazy<CharacterService> CharacterService { get; set; }
-    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; set; }
-
-    public override CreateSpellbookView View { get; }
+    public override CreateSpellbookView View { get; } = toolView;
 
 
     public override NuiWindowToken Token() => _token;
@@ -44,13 +38,13 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage(
+            player.SendServerMessage(
                 message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
 
-        _player.TryCreateNuiWindow(_window, out _token);
+        player.TryCreateNuiWindow(_window, out _token);
         List<string> classnames = (from creatureClass in Token().Player.LoginCreature?.Classes
             where creatureClass.Class.IsSpellCaster
             select creatureClass.Class.Name.ToString()).ToList();
@@ -91,32 +85,41 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
     private async void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        Log.Info($"{eventData.ElementId}");
-        if (eventData.ElementId == View.CreateButton.Id)
+        try
         {
-            if (Token().GetBindValue(View.SpellbookName) == string.Empty)
+            Log.Info($"{eventData.ElementId}");
+            if (eventData.ElementId == View.CreateButton.Id)
             {
-                Token().Player.SendServerMessage(message: "You must enter a name for the spellbook.",
-                    ColorConstants.Red);
-                return;
+                if (Token().GetBindValue(View.SpellbookName) == string.Empty)
+                {
+                    Token().Player.SendServerMessage(message: "You must enter a name for the spellbook.",
+                        ColorConstants.Red);
+                    return;
+                }
+
+                await SaveSpellbookToDb();
+                await NwTask.SwitchToMainThread();
+
+                Token().SetBindValue(View.SpellbookName, string.Empty);
+                Token().Close();
             }
-
-            await SaveSpellbookToDb();
-            await NwTask.SwitchToMainThread();
-
-            Token().SetBindValue(View.SpellbookName, string.Empty);
-            Token().Close();
+            else if (eventData.ElementId == View.CancelButton.Id)
+            {
+                Token().SetBindValue(View.SpellbookName, string.Empty);
+                Token().Close();
+            }
         }
-        else if (eventData.ElementId == View.CancelButton.Id)
+        catch (Exception e)
         {
-            Token().SetBindValue(View.SpellbookName, string.Empty);
-            Token().Close();
+            Log.Error($"Failed to handle event for {eventData.ElementId}");
+            Log.Error(e);
         }
     }
 
     private async Task SaveSpellbookToDb()
     {
-        string spellbookName = Token().GetBindValue(View.SpellbookName);
+        string spellbookName = Token().GetBindValue(View.SpellbookName)!;
+
 
         // Save spellbook to database
         NwCreature? character = Token().Player.LoginCreature;
@@ -132,9 +135,8 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
         bool characterExists = await CharacterService.Value.CharacterExists(pcId);
         await NwTask.SwitchToMainThread();
-        Log.Info($"Character exists: {characterExists}");
-        // TODO: Refactor whatever the fuck this mess is supposed to be.
-        if (spellbookName != null && pcId != Guid.Empty && characterExists)
+
+        if (pcId != Guid.Empty && characterExists)
         {
             int selectedClassIndex = Token().GetBindValue(View.Selection);
             Log.Info($"Selected class index: {selectedClassIndex}");
@@ -145,17 +147,19 @@ public class CreateSpellbookPresenter : ScryPresenter<CreateSpellbookView>
 
             if (selectedName != null)
             {
-                Log.Info($"Selected Name: {selectedName}");
-                ClassPreparedSpells classPreparedSpells = new()
-                {
-                    Class = selectedName,
-                    IsInnate = false
-                };
-
                 Dictionary<byte, IReadOnlyList<PreparedSpellModel>> preparedSpells = new();
 
-                CreatureClassInfo creatureClassInfo = character.Classes
-                    .Where(c => c.Class.Name.ToString() == selectedName).FirstOrDefault();
+                CreatureClassInfo? creatureClassInfo =
+                    character.Classes.FirstOrDefault(c => c.Class.Name.ToString() == selectedName);
+
+                if (creatureClassInfo == null)
+                {
+                    player.SendServerMessage(
+                        "Could not save your spellbook to the database. Screenshot this and report it as a bug.",
+                        ColorConstants.Red);
+                    return;
+                }
+
                 Log.Info($"Found selected class: {creatureClassInfo.Class.Name.ToString()}");
                 for (byte i = 0; i <= 9; i++)
                 {
