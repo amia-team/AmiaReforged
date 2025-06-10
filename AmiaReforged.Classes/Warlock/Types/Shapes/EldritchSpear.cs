@@ -31,10 +31,10 @@ public static class EldritchSpear
 
         while (GetIsObjectValid(currentTarget) == TRUE)
         {
-            if (currentTarget == targetObject) continue;
-            
             if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
             {
+                if (currentTarget == targetObject) continue;
+                
                 SignalEvent(currentTarget, EventSpellCastAt(caster, 982));
 
                 EssenceEffectApplier aoeEffectApplier =
