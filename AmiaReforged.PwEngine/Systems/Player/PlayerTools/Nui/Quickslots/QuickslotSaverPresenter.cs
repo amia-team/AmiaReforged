@@ -28,8 +28,8 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
         View = toolView;
     }
 
-    [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; }
-    [Inject] private Lazy<WindowDirector> WindowDirector { get; set; }
+    [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; } = null!;
+    [Inject] private Lazy<WindowDirector> WindowDirector { get; set; } = null!;
 
     [Inject] private Lazy<PlayerDataService> PlayerDataService { get; set; }
 
