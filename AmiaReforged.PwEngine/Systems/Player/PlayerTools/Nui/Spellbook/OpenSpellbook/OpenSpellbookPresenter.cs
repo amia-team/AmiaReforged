@@ -203,7 +203,7 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
             }
         };
 
-    private static List<NuiRow> PopulateSpellRows(Dictionary<byte, List<PreparedSpellModel>>? preparedSpells,
+    private static List<NuiRow> PopulateSpellRows(Dictionary<byte, List<PreparedSpellModel>?>? preparedSpells,
         List<NuiImage> spellLevelIcons)
     {
         if (preparedSpells == null) return new();
@@ -303,14 +303,12 @@ public sealed class SpellbookMemorizer
 
         NwCreature playerCreature = _player.LoginCreature;
 
-        if (!playerCreature.Classes.Any(c => c.Class.Id == classId)) return;
+        if (playerCreature.Classes.All(c => c.Class.Id != classId)) return;
         CreatureClassInfo classInfo = playerCreature.Classes.First(c => c.Class.Id == classId);
 
 
         for (byte i = 0; i <= 9; i++)
         {
-            IReadOnlyList<PreparedSpellModel> spells = _spellbook.SpellBook[i];
-
             foreach (MemorizedSpellSlot spellSlot in classInfo.GetMemorizedSpellSlots(i))
             {
                 spellSlot.ClearMemorizedSpell();
@@ -322,10 +320,12 @@ public sealed class SpellbookMemorizer
         for (byte spellLevel = 0; spellLevel <= 9; spellLevel++)
         {
             Log.Info($"Memorizing spells for level {(int)spellLevel}");
-            IReadOnlyList<PreparedSpellModel> spells = _spellbook.SpellBook[spellLevel];
+            
+            IReadOnlyList<PreparedSpellModel>? spells = _spellbook.SpellBook?[spellLevel];
 
             for (int spellSlot = 0; spellSlot < classInfo.GetMemorizedSpellSlots(spellLevel).Count; spellSlot++)
             {
+                if(spells == null) continue;
                 if (spellSlot > spells.Count)
                 {
                     Log.Info(message: "No more spells to memorize.");

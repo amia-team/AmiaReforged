@@ -13,7 +13,7 @@ public class ShockPylonTrap
 
     public ShockPylonTrap()
     {
-        List<NwPlaceable?> traps = NwObject.FindObjectsWithTag<NwPlaceable>(MeatZapper).ToList();
+        List<NwPlaceable> traps = NwObject.FindObjectsWithTag<NwPlaceable>(MeatZapper).ToList();
 
         foreach (NwPlaceable? trap in traps)
         {
@@ -68,7 +68,7 @@ public class ShockPylonTrap
     {
         // We just want to get the meat zappers that are in the area, but ignore the ones we already have and add them
         // with the rest of the traps
-        List<NwPlaceable?> traps = area.FindObjectsOfTypeInArea<NwPlaceable>().Where(t => t.Tag == MeatZapper).ToList();
+        List<NwPlaceable> traps = area.FindObjectsOfTypeInArea<NwPlaceable>().Where(t => t.Tag == MeatZapper).ToList();
         foreach (NwPlaceable? trap in traps)
         {
             if (trap.Area == null) continue;

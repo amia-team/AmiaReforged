@@ -34,7 +34,7 @@ public class PillarOfPhantoms
 
         if (!_activeTraps.ContainsKey(obj.Area)) _activeTraps.Add(obj.Area, new());
 
-        obj.SpawnedObject.SpeakString(message: "OOooOo bitch");
+        obj.SpawnedObject?.SpeakString(message: "OOooOo bitch");
         RegisterNewTraps(obj.Area);
     }
 
@@ -57,10 +57,11 @@ public class PillarOfPhantoms
 
 
         // Get creatures that are player controlled within 25 meters of the trap
-        List<NwCreature> creatures = obj.Placeable.Area.FindObjectsOfTypeInArea<NwCreature>()
+        List<NwCreature>? creatures = obj.Placeable.Area?.FindObjectsOfTypeInArea<NwCreature>()
             .Where(c => c.IsPlayerControlled && c.Distance(obj.Placeable) <= 10f).ToList();
 
         obj.Placeable.SpeakString(message: "OooOOOoo");
+        if (creatures == null) return;
         foreach (NwCreature unused in creatures)
         {
             // Pick a random, valid location within 4 meters of the trap

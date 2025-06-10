@@ -6,7 +6,6 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.OpenSpe
 
 public sealed class OpenSpellbookView : ScryView<OpenSpellbookPresenter>, IToolWindow
 {
-    public readonly int numberOfCantrips;
     public readonly NuiBind<string> SpellbookClass = new(key: "spellbook_class");
 
     public readonly NuiBind<string> SpellbookName = new(key: "spellbook_name");

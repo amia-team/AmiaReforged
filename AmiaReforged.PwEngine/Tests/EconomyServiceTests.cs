@@ -10,7 +10,7 @@ namespace AmiaReforged.PwEngine.Tests;
 [TestFixture]
 public class EconomyServiceTests
 {
-    private EconomyService _economyService;
+    private EconomyService _economyService = null!;
 
     [OneTimeSetUp]
     public void Setup()

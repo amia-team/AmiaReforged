@@ -10,8 +10,6 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui;
 
 public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindowView>
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
