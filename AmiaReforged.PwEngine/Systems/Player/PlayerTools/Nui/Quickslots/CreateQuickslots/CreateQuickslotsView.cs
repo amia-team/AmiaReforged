@@ -16,13 +16,11 @@ public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWi
         Presenter = new(this, player);
     }
 
-    public NuiWindow? WindowTemplate { get; }
-
     public sealed override CreateQuickSlotsPresenter Presenter { get; protected set; }
     public string Id => "playertools.quickslotscreate";
     public string Title => "Create Saved Quickslots";
     public string CategoryTag { get; } = null!;
-    public bool RequiresPersistedCharacter { get; }
+    public bool RequiresPersistedCharacter => true;
 
     public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 
