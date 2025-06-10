@@ -40,7 +40,8 @@ public class SetSoundset : IChatCommand
 
     private void SetCreatureSoundset(ModuleEvents.OnPlayerTarget obj)
     {
-        NwCreature targetCreature = (NwCreature)obj.TargetObject;
+        if(obj.TargetObject is not NwCreature targetCreature) return;
+        
         int soundsetId = targetCreature.GetObjectVariable<LocalVariableInt>(name: "soundsetid").Value;
 
         targetCreature.SoundSet = (ushort)soundsetId;
