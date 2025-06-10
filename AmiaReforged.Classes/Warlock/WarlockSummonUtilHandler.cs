@@ -22,7 +22,7 @@ public class WarlockSummonUtilHandler
     /// </summary>
     private static void AllowMultipleSummons(OnAssociateAdd eventData)
     {
-        if (eventData.Associate.ResRef is not "summon_echo") return;
+        if (!eventData.Associate.ResRef.Contains("wlk")) return;
 
         NwCreature warlock = eventData.Owner;
         
@@ -38,7 +38,7 @@ public class WarlockSummonUtilHandler
         
         async void DelayedMakeDestroyable()
         {
-            await NwTask.Delay(TimeSpan.FromSeconds(3));
+            await NwTask.Delay(TimeSpan.FromSeconds(1));
         
             foreach (NwCreature associate in warlock.Associates)
                 if (associate.ResRef.Contains("wlk"))
