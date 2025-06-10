@@ -15,13 +15,18 @@ public class CreateVfx : IChatCommand
         try
         {
             int vfxId = int.Parse(args[0]);
-            string vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
-            string vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
-            caller.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value = vfxId;
+            string? vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
+            string? vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
+
+            NwCreature? callerControlledCreature = caller.ControlledCreature;
+            
+            if (callerControlledCreature is null) return Task.CompletedTask;
+            
+            callerControlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value = vfxId;
             if (args[1] != string.Empty)
             {
                 _ = float.TryParse(args[1], out float vfxScale);
-                caller.ControlledCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value =
+                callerControlledCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value =
                     vfxScale;
             }
 
