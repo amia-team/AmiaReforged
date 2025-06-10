@@ -29,7 +29,7 @@ public class WarlockSummonStatsHandler
         if (NWScript.GetLevelByClass(57, obj.Owner) <= 0) return;
         bool isAberration = obj.Associate.ResRef == "wlkaberrant";
         if (!isAberration) return;
-        if (obj.AssociateType != AssociateType.Henchman) return;
+        if (obj.AssociateType != AssociateType.Summoned) return;
 
         NwCreature summon = obj.Associate;
 
@@ -356,7 +356,7 @@ public class WarlockSummonStatsHandler
         if (NWScript.GetLevelByClass(57, obj.Owner) <= 0) return;
         bool isElemental = obj.Associate.ResRef == "wlkelemental";
         if (!isElemental) return;
-        if (obj.AssociateType != AssociateType.Henchman) return;
+        if (obj.AssociateType != AssociateType.Summoned) return;
 
         NwCreature summon = obj.Associate;
 
@@ -710,7 +710,7 @@ public class WarlockSummonStatsHandler
         if (NWScript.GetLevelByClass(57, obj.Owner) <= 0) return;
         bool isFiend = obj.Associate.ResRef == "wlkfiend";
         if (!isFiend) return;
-        if (obj.AssociateType != AssociateType.Henchman) return;
+        if (obj.AssociateType != AssociateType.Summoned) return;
 
         NwCreature summon = obj.Associate;
 
