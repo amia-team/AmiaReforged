@@ -14,7 +14,7 @@ public class TieflingEffects : IEffectCollector
         _oid = objectId;
         _hasHeritageFeat = HasHeritageFeat();
 
-        List<IntPtr>? effects = new List<IntPtr>
+        List<IntPtr>? effects = new()
         {
             NWScript.EffectSkillIncrease(NWScript.SKILL_BLUFF, 2),
             NWScript.EffectDamageResistance(NWScript.DAMAGE_TYPE_COLD, 5),

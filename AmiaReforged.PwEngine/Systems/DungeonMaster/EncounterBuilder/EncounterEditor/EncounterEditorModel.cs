@@ -103,7 +103,7 @@ public sealed class EncounterEditorModel(NwPlayer player)
             return;
         }
 
-        EncounterEntry entry = new EncounterEntry
+        EncounterEntry entry = new()
         {
             Name = creature.Name,
             SerializedString = maybeSerialized,

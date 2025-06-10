@@ -17,7 +17,7 @@ public class SvirfneblinEffects : IEffectCollector
 
         int spellResistance = GetSpellResistanceBasedOnFeat();
 
-        List<IntPtr>? effectsForObject = new List<IntPtr>
+        List<IntPtr>? effectsForObject = new()
         {
             NWScript.EffectSpellResistanceIncrease(spellResistance)
         };

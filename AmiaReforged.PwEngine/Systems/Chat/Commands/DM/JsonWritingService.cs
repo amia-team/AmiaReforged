@@ -102,7 +102,7 @@ public class JsonWritingService
 
     private string[] GetEncounterResRefs(NwArea area)
     {
-        List<string> resRefs = new List<string>();
+        List<string> resRefs = new();
 
         foreach (string variableName in area.LocalVariables.Where(v => v.Name.Contains("_spawn")).Select(v => v.Name))
         {

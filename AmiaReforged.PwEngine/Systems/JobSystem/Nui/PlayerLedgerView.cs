@@ -58,7 +58,7 @@ public sealed class PlayerLedgerView : ScryView<PlayerLedgerPresenter>
             }
 
         ];
-        NuiColumn nuiElement = new NuiColumn()
+        NuiColumn nuiElement = new()
         {
             Children =
             {

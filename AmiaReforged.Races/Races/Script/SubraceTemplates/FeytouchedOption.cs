@@ -14,7 +14,7 @@ public class FeytouchedOption : ISubraceApplier
 
         SetSubRaceMod(nwnObjectId);
 
-        TemplateRunner templateRunner = new TemplateRunner();
+        TemplateRunner templateRunner = new();
 
         TemplateRunner.Run(nwnObjectId);
 

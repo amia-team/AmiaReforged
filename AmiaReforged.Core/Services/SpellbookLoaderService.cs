@@ -77,6 +77,6 @@ public class SpellbookLoaderService
         }
 
         Log.Error($"Spellbook with ID {spellbookId} not found.");
-        return new SpellbookViewModel();
+        return new();
     }
 }

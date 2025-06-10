@@ -7,7 +7,7 @@ public class KoboldEffects : IEffectCollector
 {
     public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        return new List<IntPtr>
+        return new()
         {
             NWScript.EffectSkillIncrease(NWScript.SKILL_SET_TRAP, 4),
             NWScript.EffectSkillIncrease(NWScript.SKILL_SEARCH, 4)

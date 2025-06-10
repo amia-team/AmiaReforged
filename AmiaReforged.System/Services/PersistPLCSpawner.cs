@@ -34,7 +34,7 @@ public class PersistPlcSpawner
         {
             NwArea? plcArea = _serverAreas.FirstOrDefault(a => a.ResRef == plc.AreaResRef);
             if(plcArea == null) continue;
-            Vector3 plcVector = new Vector3(plc.X, plc.Y, plc.Z);
+            Vector3 plcVector = new(plc.X, plc.Y, plc.Z);
             Location? plcLocation = NWScript.Location(plcArea, plcVector, plc.Orientation);
             
             if (plcLocation == null) continue;

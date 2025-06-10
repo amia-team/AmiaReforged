@@ -14,7 +14,7 @@ public class LizardfolkEffects : IEffectCollector
         _oid = objectId;
         _hasHeritageFeat = HasHeritageFeat();
 
-        List<IntPtr>? effects = new List<IntPtr>
+        List<IntPtr>? effects = new()
         {
             NWScript.EffectSkillIncrease(NWScript.SKILL_TUMBLE, 4),
         };

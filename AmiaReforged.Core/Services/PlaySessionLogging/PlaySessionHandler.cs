@@ -17,7 +17,7 @@ public class PlaySessionHandler
 
     public void StartSessionFor(NwPlayer player)
     {
-        _sessions.TryAdd(player.PlayerName, new PlaySession(player, _scheduler));
+        _sessions.TryAdd(player.PlayerName, new(player, _scheduler));
     }
 
     public PlaySession? GetSessionFor(string name) => _sessions[name];

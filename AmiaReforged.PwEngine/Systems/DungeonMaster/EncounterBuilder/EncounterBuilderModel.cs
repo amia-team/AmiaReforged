@@ -112,7 +112,7 @@ public sealed class EncounterBuilderModel(NwPlayer player)
         );
     }
 
-    protected void OnUpdate(EncounterBuilderModel me)
+    private void OnUpdate(EncounterBuilderModel me)
     {
         Update?.Invoke(me, EventArgs.Empty);
     }
@@ -135,7 +135,7 @@ public sealed class EncounterBuilderModel(NwPlayer player)
         SelectedEncounter.SpawnEncounters(spawnLocation!, SelectedFaction);
     }
 
-    public NwFaction SelectedFaction { get; set; }
+    private NwFaction SelectedFaction { get; set; }
 
-    public Encounter SelectedEncounter { get; set; }
+    private Encounter SelectedEncounter { get; set; }
 }

@@ -23,7 +23,7 @@ public static class TemplateMaker
     {
         uint templateItem = NWScript.GetItemPossessedBy(nwnObjectId, TemplateItem.TemplateItemResRef);
 
-        return new RacialTemplate(nwnObjectId)
+        return new(nwnObjectId)
         {
             StrBonus = NWScript.GetLocalInt(templateItem, "str_mod"),
             DexBonus = NWScript.GetLocalInt(templateItem, "dex_mod"),

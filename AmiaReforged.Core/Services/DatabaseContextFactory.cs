@@ -8,6 +8,6 @@ public class DatabaseContextFactory : IDbContextFactory<AmiaDbContext>
 {
     public AmiaDbContext CreateDbContext()
     {
-        return new AmiaDbContext();
+        return new();
     }
 }

@@ -15,8 +15,8 @@ public class EconomyServiceTests
     [OneTimeSetUp]
     public void Setup()
     {
-        LoggingConfiguration config = new LoggingConfiguration();
-        ConsoleTarget consoleTarget = new ConsoleTarget("console")
+        LoggingConfiguration config = new();
+        ConsoleTarget consoleTarget = new("console")
         {
             Layout = "${longdate} ${level:uppercase=true} ${message} ${exception:format=tostring}"
         };

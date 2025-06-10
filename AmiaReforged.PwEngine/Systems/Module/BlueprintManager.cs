@@ -14,7 +14,7 @@ public sealed class BlueprintManager
 
     public List<IBlueprint> GetMatchingBlueprints(BlueprintObjectType objectType, string search, int max)
     {
-        List<IBlueprint> results = new List<IBlueprint>();
+        List<IBlueprint> results = new();
         // First, try to get equal results from each source
         int each = max / _blueprintSources.Count;
 

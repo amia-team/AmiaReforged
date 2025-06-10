@@ -22,7 +22,7 @@ public class GeneralFeatHandler
         if (obj.Player.LoginCreature == null) return;
         if (!obj.Player.LoginCreature.IsValid) return;
         
-        MonkeyGrip mg = new MonkeyGrip(obj.Player.LoginCreature);
+        MonkeyGrip mg = new(obj.Player.LoginCreature);
 
         if (mg.IsMonkeyGripped())
         {

@@ -7,7 +7,7 @@ public class GhostwiseEffects : IEffectCollector
 {
     public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        return new List<IntPtr>
+        return new()
         {
             NWScript.EffectSkillDecrease(NWScript.SKILL_SPOT, 2),
             NWScript.EffectSkillDecrease(NWScript.SKILL_CONCENTRATION, 2),

@@ -13,7 +13,7 @@ public class EarthGenasiOption : ISubraceApplier
 
         SetSubRaceMod(nwnObjectId);
 
-        TemplateRunner templateRunner = new TemplateRunner();
+        TemplateRunner templateRunner = new();
 
         TemplateRunner.Run(nwnObjectId);
 

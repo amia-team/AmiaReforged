@@ -6,7 +6,7 @@ public static class RaceAdjustmentUtils
 {
     static RaceAdjustmentUtils()
     {
-        BaseRaceDict = new Dictionary<int, RacialTemplate>
+        BaseRaceDict = new()
         {
             {(int) BaseRace.Human, GetHumanAdjustments()},
             {(int) BaseRace.Halfling, GetHalflingAdjustments()},

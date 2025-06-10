@@ -44,7 +44,7 @@ public static class ManagedRaces
 
     static ManagedRaces()
     {
-        RaceEffects = new Dictionary<int, IEffectCollector>
+        RaceEffects = new()
         {
             {(int) RacialType.Duergar, new DuergarEffects()},
             {(int) RacialType.Drow, new DrowEffects()},
@@ -71,7 +71,7 @@ public static class ManagedRaces
             {(int) RacialType.Dragon, new HalfDragonEffects()},
         };
 
-        RaceHeritageAbilities = new Dictionary<int, IHeritageAbilities>
+        RaceHeritageAbilities = new()
         {
             {(int) RacialType.Drow, new DrowHeritageAbilities()},
             {(int) RacialType.Ogrillon, new OgrillonHeritageAbilities()},

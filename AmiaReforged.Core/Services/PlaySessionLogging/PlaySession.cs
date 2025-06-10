@@ -27,7 +27,7 @@ public class PlaySession : IDisposable
     {
         Player = player;
         SessionStart = DateTime.UtcNow;
-        DbFactory = new DatabaseContextFactory();
+        DbFactory = new();
         Scheduler = scheduler;
 
         StartSession();
@@ -41,7 +41,7 @@ public class PlaySession : IDisposable
         // TODO: Change this to use a strategy pattern when we have more than one login type.
         if (!Player.IsDM) return;
 
-        context.DmLogins.Add(new DmLogin
+        context.DmLogins.Add(new()
         {
             CdKey = Player.CDKey,
             LoginName = Player.PlayerName,

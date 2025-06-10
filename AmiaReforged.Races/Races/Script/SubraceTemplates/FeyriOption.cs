@@ -25,7 +25,7 @@ public class FeyriOption : ISubraceApplier
 
         SetSubraceModifiers(nwnObjectId);
 
-        TemplateRunner? templateRunner = new TemplateRunner();
+        TemplateRunner? templateRunner = new();
 
         TemplateRunner.Run(nwnObjectId);
         CreaturePlugin.SetRacialType(nwnObjectId, NWScript.RACIAL_TYPE_OUTSIDER);

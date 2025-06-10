@@ -18,7 +18,7 @@ internal sealed class Palette
 
     [Inject] public ResourceManager ResourceManager { private get; init; } = null!;
 
-    private readonly List<PaletteBlueprint> _blueprints = new List<PaletteBlueprint>();
+    private readonly List<PaletteBlueprint> _blueprints = new();
 
     public Palette(string palettePrefix, BlueprintObjectType paletteType)
     {
@@ -92,7 +92,7 @@ internal sealed class Palette
                 faction = creatureFactionField.Value<string>();
             }
 
-            _blueprints.Add(new PaletteBlueprint
+            _blueprints.Add(new()
             {
                 ResRef = resRef,
                 Name = name,

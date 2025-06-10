@@ -43,7 +43,7 @@ public static class EffectApplier
 
     private static IEnumerable<IntPtr> TagEffects(IEnumerable<IntPtr> supernaturalEffects)
     {
-        List<IntPtr> taggedEffects = new List<IntPtr>();
+        List<IntPtr> taggedEffects = new();
 
         foreach (IntPtr effect in supernaturalEffects)
         {

@@ -14,7 +14,7 @@ public class FeytouchedEffects : IEffectCollector
         _oid = objectId;
         _hasHeritageFeat = HasHeritageFeat();
 
-        List<IntPtr>? effectsForObject = new List<IntPtr>();
+        List<IntPtr>? effectsForObject = new();
 
         AddHeritageEffectsIfObjectHasFeat(effectsForObject);
 
