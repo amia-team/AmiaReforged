@@ -46,7 +46,7 @@ public class BindingOfMaggotsEnter
                 () => FloatingTextStringOnCreature(
                     WarlockConstants.String(message: "Soul Larvae can be summoned again."), caster, 0));
             // Summon new
-            SummonUtility.SummonMany(VFX_COM_CHUNK_RED_SMALL, VFX_COM_CHUNK_RED_SMALL, summonDuration, summonCount,
+            SummonUtility.SummonMany(VFX_COM_CHUNK_RED_SMALL, VFX_IMP_DESTRUCTION, summonDuration, summonCount,
                 "wlkfiend", location, 0.5f, 2f, 0.5f, 1.5f);
         }
 

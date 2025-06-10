@@ -95,7 +95,7 @@ public class LoudDecay
                 WarlockConstants.String(message: "Violet Fungi can be summoned again."), caster, 0));
         
         // Summon new
-        SummonUtility.SummonMany(VFX_FNF_GAS_EXPLOSION_NATURE, VFX_IMP_DESTRUCTION, summonDuration, summonCount, 
+        SummonUtility.SummonMany(VFX_FNF_GAS_EXPLOSION_NATURE, VFX_FNF_GAS_EXPLOSION_NATURE, summonDuration, summonCount, 
             "wlkaberrant", location, 1f, 9f, 3f, 4f);
         
         DelayCommand(4.1f, () => SummonUtility.SetSummonsFacing(summonCount, location));
