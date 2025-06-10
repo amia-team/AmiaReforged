@@ -31,9 +31,11 @@ public static class EldritchSpear
 
         while (GetIsObjectValid(currentTarget) == TRUE)
         {
+            if (currentTarget == targetObject) continue;
+            
             if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
             {
-                SignalEvent(targetObject, EventSpellCastAt(caster, 982));
+                SignalEvent(currentTarget, EventSpellCastAt(caster, 982));
 
                 EssenceEffectApplier aoeEffectApplier =
                     EssenceEffectFactory.CreateEssenceEffect(essenceType, currentTarget, caster);
