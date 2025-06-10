@@ -32,7 +32,9 @@ public class DifficultyClassCalculator
             ComputationRuleFor? attribute = type.GetCustomAttribute<ComputationRuleFor>();
             if (attribute == null) continue;
 
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             IComputableDifficulty? instance = (IComputableDifficulty)Activator.CreateInstance(type);
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
             if (instance == null) continue;
 

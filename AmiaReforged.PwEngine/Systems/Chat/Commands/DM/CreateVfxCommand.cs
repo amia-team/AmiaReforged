@@ -59,7 +59,10 @@ public class CreateVfx : IChatCommand
 
     private void CreateDurVfx(ModuleEvents.OnPlayerTarget obj)
     {
-        NwCreature playerCreature = obj.Player.ControlledCreature;
+        NwCreature? playerCreature = obj.Player.ControlledCreature;
+        
+        if(playerCreature is null) return;
+        
         int vfxId = playerCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value;
         float vfxScale;
         VisualEffectTableEntry vfx = NwGameTables.VisualEffectTable[vfxId];

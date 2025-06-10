@@ -87,7 +87,7 @@ public sealed class NpcBankModel(NwPlayer player)
         });
     }
 
-    public NwFaction SelectedFaction { get; set; }
+    private NwFaction SelectedFaction { get; set; } = null!;
 
     private void ValidateAndSpawn(ModuleEvents.OnPlayerTarget obj)
     {

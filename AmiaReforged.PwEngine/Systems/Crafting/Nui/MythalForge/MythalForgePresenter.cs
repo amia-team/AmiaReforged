@@ -72,7 +72,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private void PreventMunchkins(ModuleEvents.OnUnacquireItem obj)
     {
-        if (!obj.Item.ResRef.Contains(value: "mythal")) return;
+        NwItem? item = obj.Item;
+        
+        if(item == null) return;
+        if (!item.ResRef.Contains(value: "mythal")) return;
 
         GenericWindow
             .Builder()
@@ -85,7 +88,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName +
                                               " tried to drop a mythal while crafting.");
-        _player.LoginCreature.AcquireItem(obj.Item);
+        _player.LoginCreature?.AcquireItem(item);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)

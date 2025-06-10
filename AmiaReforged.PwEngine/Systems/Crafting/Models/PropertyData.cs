@@ -101,7 +101,6 @@ public class PropertyData
         }
 
         public string Type { get; set; }
-        public string HitChance { get; set; }
         public string SaveDc { get; set; }
 
         public ItemProperty OriginalProperty { get; }
