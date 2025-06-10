@@ -2,21 +2,13 @@
 
 public sealed class ResetTimeKeeperSingleton
 {
-    private static ResetTimeKeeperSingleton _instance;
+    private static ResetTimeKeeperSingleton? _instance;
 
     private ResetTimeKeeperSingleton()
     {
     }
 
-    public static ResetTimeKeeperSingleton Instance
-    {
-        get
-        {
-            if (_instance == null) _instance = new();
-
-            return _instance;
-        }
-    }
+    public static ResetTimeKeeperSingleton Instance => _instance ??= new();
 
     public long ResetStartTime { get; set; }
 
