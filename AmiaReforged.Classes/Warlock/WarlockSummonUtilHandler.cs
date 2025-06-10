@@ -38,7 +38,7 @@ public class WarlockSummonUtilHandler
         
         async void DelayedMakeDestroyable()
         {
-            await NwTask.Delay(TimeSpan.FromSeconds(1));
+            await NwTask.Delay(TimeSpan.FromSeconds(6));
         
             foreach (NwCreature associate in warlock.Associates)
                 if (associate.ResRef.Contains("wlk"))
