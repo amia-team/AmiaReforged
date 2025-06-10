@@ -8,8 +8,8 @@ public static class SpellResistanceProperties
     public static readonly CraftingCategory SpellResistances = new(categoryId: "spell_resistance")
     {
         Label = "Spell Resistance",
-        Properties = new[]
-        {
+        Properties =
+        [
             // Unattainable misc ones. 10, 12, 14, 16, 18 are not available to be crafted but only have 1 power cost.
             new CraftingProperty
             {
@@ -97,6 +97,6 @@ public static class SpellResistanceProperties
                 PowerCost = 4,
                 CraftingTier = CraftingTier.Wondrous
             }
-        }
+        ]
     };
 }

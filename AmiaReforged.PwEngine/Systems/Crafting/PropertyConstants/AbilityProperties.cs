@@ -12,8 +12,8 @@ public static class AbilityProperties
     public static readonly CraftingCategory Abilities = new(categoryId: "ability_selection")
     {
         Label = "Ability Bonus",
-        Properties = new[]
-        {
+        Properties =
+        [
             // Intermediate
             new CraftingProperty
             {
@@ -308,7 +308,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             }
-        },
+        ],
         BaseDifficulty = 5
     };
 }

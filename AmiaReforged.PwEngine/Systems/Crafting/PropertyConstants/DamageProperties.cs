@@ -28,8 +28,8 @@ public static class DamageProperties
     {
         Label = "Damage Bonus",
         // +1 (minor)
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -252,7 +252,7 @@ public static class DamageProperties
                 GoldCost = MythalCost1D8,
                 CraftingTier = CraftingTier.Greater
             }
-        },
+        ],
         BaseDifficulty = 10
     };
 
@@ -263,8 +263,8 @@ public static class DamageProperties
     {
         Label = "Damage Bonus",
         // +1 (minor)
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -487,7 +487,7 @@ public static class DamageProperties
                 GoldCost = MythalCost2D4,
                 CraftingTier = CraftingTier.Greater
             }
-        },
+        ],
         BaseDifficulty = 15
     };
 
@@ -498,8 +498,8 @@ public static class DamageProperties
     {
         Label = "Damage Bonus",
         // 1d2 (minor)
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -777,7 +777,7 @@ public static class DamageProperties
                 CraftingTier = CraftingTier.Flawless,
                 GoldCost = GloveCost5
             }
-        },
+        ],
         BaseDifficulty = 10
     };
 
@@ -785,8 +785,8 @@ public static class DamageProperties
     public static readonly CraftingCategory MassiveCriticals = new(categoryId: "massive_crits_damage")
     {
         Label = "Massive Criticals",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -801,7 +801,7 @@ public static class DamageProperties
                 GuiLabel = "1d8 Massive Criticals",
                 CraftingTier = CraftingTier.Greater
             }
-        },
+        ],
         BaseDifficulty = 15
     };
 
@@ -811,8 +811,8 @@ public static class DamageProperties
     public static readonly CraftingCategory Mighty = new(categoryId: "mighty_damage")
     {
         Label = "Mighty",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -848,7 +848,7 @@ public static class DamageProperties
                 GuiLabel = "+5 Mighty",
                 CraftingTier = CraftingTier.Flawless
             }
-        },
+        ],
         BaseDifficulty = 15
     };
 
@@ -856,8 +856,8 @@ public static class DamageProperties
     {
         Label = "Damage Bonus",
         // +1 (minor)
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -1080,7 +1080,7 @@ public static class DamageProperties
                 GoldCost = MythalCost1D8,
                 CraftingTier = CraftingTier.Greater
             }
-        },
+        ],
         BaseDifficulty = 10
     };
 }

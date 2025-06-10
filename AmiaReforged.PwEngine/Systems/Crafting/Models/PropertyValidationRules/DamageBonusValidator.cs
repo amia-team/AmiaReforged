@@ -6,21 +6,21 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 [ValidationRuleFor(Property = ItemPropertyType.DamageBonus)]
 public class DamageBonusValidator : IValidationRule
 {
-    private List<string> _elementalTypes = new()
-    {
+    private List<string> _elementalTypes =
+    [
         "Acid",
         "Cold",
         "Electricity",
         "Fire",
         "Sonic"
-    };
+    ];
 
-    private List<string> _physicalTypes = new()
-    {
+    private List<string> _physicalTypes =
+    [
         "Bludgeoning",
         "Piercing",
         "Slashing"
-    };
+    ];
 
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)

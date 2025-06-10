@@ -18,8 +18,8 @@ public static class SkillProperties
     public static readonly CraftingCategory Advantageous = new(categoryId: "advantageous")
     {
         Label = "Beneficial Skills",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 4,
@@ -460,7 +460,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             }
-        },
+        ],
         BaseDifficulty = 8
     };
 
@@ -470,8 +470,8 @@ public static class SkillProperties
     public static readonly CraftingCategory Personal = new(categoryId: "personal")
     {
         Label = "Roleplay/Personal Skills",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 0,
@@ -632,7 +632,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             }
-        },
+        ],
         BaseDifficulty = 8
     };
 }

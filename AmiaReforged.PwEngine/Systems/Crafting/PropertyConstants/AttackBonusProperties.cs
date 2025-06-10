@@ -20,8 +20,8 @@ public static class AttackBonusProperties
     public static readonly CraftingCategory AttackBonus = new(categoryId: "attack_bonus")
     {
         Label = "Attack Bonus",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -62,15 +62,15 @@ public static class AttackBonusProperties
                 GoldCost = MythalCostAb5,
                 CraftingTier = CraftingTier.Flawless
             }
-        },
+        ],
         BaseDifficulty = 5
     };
 
     public static readonly CraftingCategory EnhancementBonus = new(categoryId: "enhancement_bonus")
     {
         Label = "Enhancement Bonus",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -111,7 +111,7 @@ public static class AttackBonusProperties
                 GoldCost = MythalCostEnhancement5,
                 CraftingTier = CraftingTier.Flawless
             }
-        },
+        ],
         BaseDifficulty = 8
     };
 }

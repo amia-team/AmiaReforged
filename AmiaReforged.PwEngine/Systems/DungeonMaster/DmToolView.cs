@@ -26,8 +26,8 @@ public sealed class DmToolView : ScryView<DmToolPresenter>
 
     public override NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> rowTemplate = new()
-        {
+        List<NuiListTemplateCell> rowTemplate =
+        [
             new(new NuiButtonImage(resRef: "dm_goto")
             {
                 Id = "btn_openwin",
@@ -38,34 +38,36 @@ public sealed class DmToolView : ScryView<DmToolPresenter>
                 VariableSize = false,
                 Width = 35f
             },
+
             new(new NuiLabel(WindowNames)
             {
                 VerticalAlign = NuiVAlign.Middle
             })
-        };
+        ];
 
         NuiColumn root = new()
         {
-            Children = new()
-            {
+            Children =
+            [
                 new NuiRow
                 {
                     Height = 40f,
-                    Children = new()
-                    {
+                    Children =
+                    [
                         new NuiTextEdit(label: "Search for tools...", Search, 255, false),
                         new NuiButtonImage(resRef: "isk_search")
                         {
                             Id = "btn_search",
                             Aspect = 1f
                         }.Assign(out SearchButton)
-                    }
+                    ]
                 },
+
                 new NuiList(rowTemplate, WindowCount)
                 {
                     RowHeight = 35f
                 }
-            }
+            ]
         };
 
         return root;

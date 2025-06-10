@@ -40,34 +40,37 @@ public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWind
     {
         NuiColumn root = new()
         {
-            Children = new()
-            {
+            Children =
+            [
                 NuiUtils.Assign(new()
                 {
                     Entries = ClassNames,
                     Selected = Selection
                 }, out ClassComboBox),
+
                 new NuiSpacer(),
                 new NuiRow
                 {
-                    Children = new()
-                    {
+                    Children =
+                    [
                         new NuiLabel(label: "Spellbook Name")
                         {
                             Aspect = 2f
                         },
+
                         new NuiTextEdit(label: "Enter a Name", SpellbookName, 255, false)
-                    }
+                    ]
                 },
+
                 new NuiRow
                 {
-                    Children = new()
-                    {
+                    Children =
+                    [
                         NuiUtils.Assign(new(label: "Create") { Id = "create_spellbook_db" }, out CreateButton),
                         NuiUtils.Assign(new(label: "Cancel"), out CancelButton)
-                    }
+                    ]
                 }
-            }
+            ]
         };
 
         return root;

@@ -10,8 +10,8 @@ public static class MeleeOnHitProperties
     {
         // Divine DC 20
         Label = "On Hit",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
@@ -268,6 +268,6 @@ public static class MeleeOnHitProperties
                 PowerCost = 6,
                 CraftingTier = CraftingTier.Unattainable
             }
-        }
+        ]
     };
 }

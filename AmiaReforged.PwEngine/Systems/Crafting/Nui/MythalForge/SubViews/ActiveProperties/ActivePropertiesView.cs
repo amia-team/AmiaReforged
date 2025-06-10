@@ -23,8 +23,8 @@ public class ActivePropertiesView : IScryView
 
     public NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> cells = new()
-        {
+        List<NuiListTemplateCell> cells =
+        [
             new(new NuiLabel(PropertyNames)),
             new(new NuiGroup
             {
@@ -39,6 +39,7 @@ public class ActivePropertiesView : IScryView
                 Width = 30f,
                 VariableSize = false
             },
+
             new(new NuiButtonImage(resRef: "ir_cntrspell")
             {
                 Id = RemovePropertyConst,
@@ -48,7 +49,7 @@ public class ActivePropertiesView : IScryView
                 Width = 30f,
                 VariableSize = false
             }
-        };
+        ];
 
         return new NuiColumn
         {

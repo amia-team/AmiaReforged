@@ -30,8 +30,8 @@ public static class GenericItemProperties
     public static readonly CraftingCategory ElementalResistances = new(categoryId: "elemental_resists")
     {
         Label = "Elemental Resistances",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -179,7 +179,7 @@ public static class GenericItemProperties
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
             }
-        },
+        ],
         BaseDifficulty = 13
     };
 
@@ -189,8 +189,8 @@ public static class GenericItemProperties
     public static readonly CraftingCategory PhysicalDamageResistances = new(categoryId: "physical_resists")
     {
         Label = "Physical Damage Resistance",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 2,
@@ -220,7 +220,7 @@ public static class GenericItemProperties
                 GoldCost = ResistanceCost3,
                 CraftingTier = CraftingTier.Divine
             }
-        },
+        ],
         BaseDifficulty = 18
     };
 
@@ -231,8 +231,8 @@ public static class GenericItemProperties
     public static readonly CraftingCategory DamageReductions = new(categoryId: "damage_reduction")
     {
         Label = "Damage Reduction",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -273,15 +273,15 @@ public static class GenericItemProperties
                 GoldCost = ResistanceCost5,
                 CraftingTier = CraftingTier.Flawless
             }
-        },
+        ],
         BaseDifficulty = 18
     };
 
     public static readonly CraftingCategory Armor = new(categoryId: "armor")
     {
         Label = "Armor Class",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -322,7 +322,7 @@ public static class GenericItemProperties
                 GoldCost = AcCost5,
                 CraftingTier = CraftingTier.Flawless
             }
-        },
+        ],
         BaseDifficulty = 9
     };
 
@@ -332,8 +332,8 @@ public static class GenericItemProperties
     public static readonly CraftingCategory VampiricRegeneration = new(categoryId: "vampiric_regeneration")
     {
         Label = "Vampiric Regeneration",
-        Properties = new[]
-        {
+        Properties =
+        [
             // +1 (Intermediate)
             new CraftingProperty
             {
@@ -361,15 +361,15 @@ public static class GenericItemProperties
                 GoldCost = MythalCostVregen3,
                 CraftingTier = CraftingTier.Flawless
             }
-        },
+        ],
         BaseDifficulty = 10
     };
 
     public static readonly CraftingCategory Regeneration = new(categoryId: "regeneration")
     {
         Label = "Regeneration",
-        Properties = new[]
-        {
+        Properties =
+        [
             // Intermediate, +1 Regeneration costs 2.
             new CraftingProperty
             {
@@ -406,15 +406,15 @@ public static class GenericItemProperties
                 GoldCost = MythalCostRegen3,
                 CraftingTier = CraftingTier.Wondrous
             }
-        },
+        ],
         BaseDifficulty = 6
     };
 
     public static readonly CraftingCategory Other = new(categoryId: "others")
     {
         Label = "Keen",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -423,7 +423,7 @@ public static class GenericItemProperties
                 GoldCost = MythalKeenCost,
                 CraftingTier = CraftingTier.Perfect
             }
-        },
+        ],
         BaseDifficulty = 15
     };
 }

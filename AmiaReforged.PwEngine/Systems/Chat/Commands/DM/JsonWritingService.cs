@@ -20,7 +20,7 @@ public class JsonWritingService
     private NwArea? _area;
     private readonly NwObjectDataMapper _mapper;
 
-    private static readonly string[] VarPrefixes = { "day_spawn", "night_spawn" };
+    private static readonly string[] VarPrefixes = ["day_spawn", "night_spawn"];
 
     private readonly Dictionary<string, CreatureData> _encounterCreatures = new();
 
@@ -100,7 +100,7 @@ public class JsonWritingService
 
     private string[] GetEncounterResRefs(NwArea area)
     {
-        List<string> resRefs = new();
+        List<string> resRefs = [];
 
         foreach (string variableName in area.LocalVariables.Where(v => v.Name.Contains("_spawn")).Select(v => v.Name))
         {

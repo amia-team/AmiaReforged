@@ -33,29 +33,31 @@ public sealed class CharacterBiographyView : ScryView<CharacterBiographyPresente
     {
         NuiColumn root = new()
         {
-            Children = new()
-            {
+            Children =
+            [
                 new NuiTextEdit(label: "Edit Bio", CharacterBiography, 10000, true)
                 {
                     WordWrap = true,
                     Height = 400f,
                     Width = 400f
                 },
+
                 new NuiRow
                 {
-                    Children = new()
-                    {
+                    Children =
+                    [
                         NuiUtils.Assign(new(label: "Save")
                         {
                             Id = "save"
                         }, out SaveButton),
+
                         NuiUtils.Assign(new(label: "Discard Changes")
                         {
                             Id = "discard"
                         }, out DiscardButton)
-                    }
+                    ]
                 }
-            }
+            ]
         };
 
         return root;

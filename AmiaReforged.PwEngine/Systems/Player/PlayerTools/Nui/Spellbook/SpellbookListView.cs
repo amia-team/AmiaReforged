@@ -41,8 +41,8 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
 
     public override NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> rowTemplate = new()
-        {
+        List<NuiListTemplateCell> rowTemplate =
+        [
             new(new NuiButtonImage(resRef: "isk_lore")
             {
                 Id = "btn_openbook",
@@ -53,6 +53,7 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
                 VariableSize = false,
                 Width = 35f
             },
+
             new(new NuiButtonImage(resRef: "ir_tmp_spawn")
             {
                 Id = "btn_deletebook",
@@ -63,45 +64,49 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
                 VariableSize = false,
                 Width = 35f
             },
+
             new(new NuiLabel(SpellbookNames)
             {
                 VerticalAlign = NuiVAlign.Middle
             }),
+
             new(new NuiLabel(SpellbookIds)
             {
                 Visible = false,
                 Aspect = 1f
             })
-        };
+        ];
 
         NuiColumn root = new()
         {
-            Children = new()
-            {
+            Children =
+            [
                 new NuiRow
                 {
                     Height = 40f,
-                    Children = new()
-                    {
+                    Children =
+                    [
                         new NuiButtonImage(resRef: "ir_learnscroll")
                         {
                             Id = "btn_createbook",
                             Tooltip = "Create New Spell Book",
                             Aspect = 1f
                         }.Assign(out CreateSpellbookButton),
+
                         new NuiTextEdit(label: "Search spellbooks...", Search, 255, false),
                         new NuiButtonImage(resRef: "isk_search")
                         {
                             Id = "btn_search",
                             Aspect = 1f
                         }.Assign(out SearchButton)
-                    }
+                    ]
                 },
+
                 new NuiList(rowTemplate, SpellbookCount)
                 {
                     RowHeight = 35f
                 }
-            }
+            ]
         };
 
         return root;

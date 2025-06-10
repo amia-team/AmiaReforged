@@ -56,8 +56,8 @@ public static class ItemPropertyHelper
 
     private static int GetPowerCost(ItemProperty ip)
     {
-        List<ItemPropertyType> noCost = new()
-        {
+        List<ItemPropertyType> noCost =
+        [
             ItemPropertyType.DecreasedAbilityScore,
             ItemPropertyType.DecreasedAc,
             ItemPropertyType.DecreasedSavingThrows,
@@ -74,7 +74,7 @@ public static class ItemPropertyHelper
             ItemPropertyType.UseLimitationRacialType,
             ItemPropertyType.UseLimitationSpecificAlignment,
             ItemPropertyType.NoDamage
-        };
+        ];
 
         return noCost.Any(it => it == ip.Property.PropertyType) ? 0 : 2;
     }

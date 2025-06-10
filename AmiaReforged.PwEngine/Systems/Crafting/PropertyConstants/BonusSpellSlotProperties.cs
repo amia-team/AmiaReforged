@@ -19,8 +19,8 @@ public static class BonusSpellSlotProperties
     public static readonly CraftingCategory AssassinBonusSpells = new(categoryId: "assassin_bonus_spells")
     {
         Label = "Assassin Bonus Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -53,7 +53,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             }
-        },
+        ],
         ExclusiveToClass = true,
         ExclusiveClass = ClassType.Assassin,
         BaseDifficulty = 25
@@ -62,8 +62,8 @@ public static class BonusSpellSlotProperties
     public static readonly CraftingCategory BardBonusSpells = new(categoryId: "bard_bonus_spells")
     {
         Label = "Bard Bonus Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -120,7 +120,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot7,
                 CraftingTier = CraftingTier.Perfect
             }
-        },
+        ],
         ExclusiveToClass = true,
         ExclusiveClass = ClassType.Bard,
         BaseDifficulty = 25
@@ -129,8 +129,8 @@ public static class BonusSpellSlotProperties
     public static readonly CraftingCategory BlackguardBonusSpells = new(categoryId: "blackguard_bonus_spells")
     {
         Label = "Blackguard Bonus Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -163,7 +163,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             }
-        },
+        ],
         ExclusiveToClass = true,
         ExclusiveClass = ClassType.Blackguard,
         BaseDifficulty = 25
@@ -172,8 +172,8 @@ public static class BonusSpellSlotProperties
     public static readonly CraftingCategory ClericBonusSpells = new(categoryId: "cleric_bonus_spells")
     {
         Label = "Cleric Bonus Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -254,7 +254,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             }
-        },
+        ],
         ExclusiveToClass = true,
         ExclusiveClass = ClassType.Cleric,
         BaseDifficulty = 25
@@ -263,8 +263,8 @@ public static class BonusSpellSlotProperties
     public static readonly CraftingCategory DruidBonusSpells = new(categoryId: "druid_bonus_spells")
     {
         Label = "Druid Bonus Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -345,7 +345,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             }
-        },
+        ],
         ExclusiveToClass = true,
         ExclusiveClass = ClassType.Druid,
         BaseDifficulty = 25
@@ -354,8 +354,8 @@ public static class BonusSpellSlotProperties
     public static readonly CraftingCategory PaladinBonusSpells = new(categoryId: "paladin_bonus_spells")
     {
         Label = "Paladin Bonus Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -388,7 +388,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             }
-        },
+        ],
         ExclusiveToClass = true,
         ExclusiveClass = ClassType.Paladin,
         BaseDifficulty = 25
@@ -397,8 +397,8 @@ public static class BonusSpellSlotProperties
     public static readonly CraftingCategory RangerBonusSpells = new(categoryId: "ranger_bonus_spells")
     {
         Label = "Ranger Bonus Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -431,7 +431,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             }
-        },
+        ],
         ExclusiveToClass = true,
         ExclusiveClass = ClassType.Ranger,
         BaseDifficulty = 25
@@ -440,8 +440,8 @@ public static class BonusSpellSlotProperties
     public static readonly CraftingCategory SorcererBonusSpells = new(categoryId: "sorcerer_bonus_spells")
     {
         Label = "Sorcerer Bonus Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -522,7 +522,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             }
-        },
+        ],
         ExclusiveToClass = true,
         ExclusiveClass = ClassType.Sorcerer,
         BaseDifficulty = 25
@@ -531,8 +531,8 @@ public static class BonusSpellSlotProperties
     public static readonly CraftingCategory WizardBonusSpells = new(categoryId: "wizard_bonus_spells")
     {
         Label = "Wizard Bonus Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 1,
@@ -613,7 +613,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             }
-        },
+        ],
         ExclusiveToClass = true,
         ExclusiveClass = ClassType.Wizard,
         BaseDifficulty = 25

@@ -32,28 +32,30 @@ public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWi
     {
         NuiColumn root = new()
         {
-            Children = new()
-            {
+            Children =
+            [
                 new NuiRow
                 {
-                    Children = new()
-                    {
+                    Children =
+                    [
                         new NuiLabel(label: "Quickslot Name")
                         {
                             Aspect = 2f
                         },
+
                         new NuiTextEdit(label: "Enter a Name", QuickslotName, 255, false)
-                    }
+                    ]
                 },
+
                 new NuiRow
                 {
-                    Children = new()
-                    {
+                    Children =
+                    [
                         NuiUtils.Assign(new(label: "Create") { Id = "create_quickslot_db" }, out CreateButton),
                         NuiUtils.Assign(new(label: "Cancel") { Id = "cancel_quickslot_db" }, out CancelButton)
-                    }
+                    ]
                 }
-            }
+            ]
         };
         return root;
     }

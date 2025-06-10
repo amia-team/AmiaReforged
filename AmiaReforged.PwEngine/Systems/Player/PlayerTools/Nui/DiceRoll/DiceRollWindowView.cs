@@ -52,89 +52,93 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
         {
             Element = new NuiColumn
             {
-                Children = new()
-                {
+                Children =
+                [
                     new NuiRow
                     {
-                        Children = new()
-                        {
+                        Children =
+                        [
                             new NuiCombo
                             {
                                 Id = "roll_button_group",
                                 Selected = Selection,
                                 Entries = ButtonGroupEntries
                             }
-                        }
+                        ]
                     },
+
                     new NuiRow
                     {
-                        Children = new()
-                        {
-                            new NuiButton(label: "Roll!") { Id = "go_button" }.Assign(out GoButton)
-                        }
+                        Children = [new NuiButton(label: "Roll!") { Id = "go_button" }.Assign(out GoButton)]
                     }
-                }
+                ]
             }
         };
         NuiColumn root = new()
         {
-            Children = new()
-            {
+            Children =
+            [
                 new NuiGroup
                 {
                     Element = new NuiColumn
                     {
-                        Children = new()
-                        {
+                        Children =
+                        [
                             new NuiRow
                             {
-                                Children = new()
-                                {
+                                Children =
+                                [
                                     new NuiButton(label: "Numbered Die")
                                     {
                                         Id = "numbered_die", Width = 114f, Height = 37f
                                     }.Assign(out NumberRollButton),
+
                                     new NuiButton(label: "Saving Throw")
                                     {
                                         Id = "save_throw", Width = 114f, Height = 37f
                                     }.Assign(out SavingThrowRollButton)
-                                }
+                                ]
                             },
+
                             new NuiRow
                             {
-                                Children = new()
-                                {
+                                Children =
+                                [
                                     new NuiButton(label: "Skill Check")
                                     {
                                         Id = "skill_check", Width = 114f, Height = 37f
                                     }.Assign(out SkillRollButton),
+
                                     new NuiButton(label: "Ability Check")
                                     {
                                         Id = "ability_check", Width = 114f, Height = 37f
                                     }.Assign(out AbilityRollButton)
-                                }
+                                ]
                             },
+
                             new NuiRow
                             {
-                                Children = new()
-                                {
+                                Children =
+                                [
                                     new NuiButton(label: "Special Roll")
                                     {
                                         Id = "special_roll", Width = 114f, Height = 37f
                                     }.Assign(out SpecialRollButton),
+
                                     new NuiButton(label: "Reports")
                                     {
                                         Id = "reports", Width = 114f, Height = 37f
                                     }.Assign(out ReportsButton)
-                                }
+                                ]
                             }
-                        }
+                        ]
                     },
                     Height = 170f,
                     Width = 251f
                 },
+
                 RollGroup
-            }
+            ]
         };
         return root;
     }

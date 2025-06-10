@@ -28,8 +28,8 @@ public static class SavingThrowProperties
     public static readonly CraftingCategory SpecificSaves = new(categoryId: "specific_saves")
     {
         Label = "Save vs Specific",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 2,
@@ -238,15 +238,15 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             }
-        },
+        ],
         BaseDifficulty = 15
     };
 
     public static readonly CraftingCategory UniversalSaves = new(categoryId: "universal_saves")
     {
         Label = "Universal Saves",
-        Properties = new[]
-        {
+        Properties =
+        [
             // Universal saves...
             new CraftingProperty
             {
@@ -294,15 +294,15 @@ public static class SavingThrowProperties
                 GuiLabel = "+6 Universal",
                 CraftingTier = CraftingTier.Wondrous
             }
-        },
+        ],
         BaseDifficulty = 10
     };
 
     public static readonly CraftingCategory GeneralSaves = new(categoryId: "general_saves")
     {
         Label = "Saving Throws",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 4,
@@ -375,7 +375,7 @@ public static class SavingThrowProperties
                 GoldCost = GeneralSaveCost1,
                 CraftingTier = CraftingTier.Intermediate
             }
-        },
+        ],
         BaseDifficulty = 8
     };
 }

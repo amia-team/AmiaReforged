@@ -7,7 +7,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 public class CastSpellValidator : IValidationRule
 {
     private static readonly string[] Fluff =
-    {
+    [
         "Aid (3)",
         "Bless (2)",
         "Cat's Grace (3)",
@@ -15,7 +15,7 @@ public class CastSpellValidator : IValidationRule
         "Endurance (3)",
         "Expeditious Retreat (5)",
         "Light (1)"
-    };
+    ];
 
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)

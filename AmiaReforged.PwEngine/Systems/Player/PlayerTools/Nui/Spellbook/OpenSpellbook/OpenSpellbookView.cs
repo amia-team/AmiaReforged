@@ -44,21 +44,22 @@ public sealed class OpenSpellbookView : ScryView<OpenSpellbookPresenter>, IToolW
     {
         NuiColumn root = new()
         {
-            Children = new()
-            {
+            Children =
+            [
                 new NuiGroup
                 {
                     Element = new NuiRow
                     {
-                        Children = new()
-                        {
+                        Children =
+                        [
                             new NuiGroup { Element = new NuiLabel(SpellbookName) },
                             new NuiGroup { Element = new NuiLabel(SpellbookClass) }
-                        }
+                        ]
                     },
                     Height = 50f,
                     Width = 560f
                 },
+
                 new NuiGroup
                 {
                     Id = "cantrips",
@@ -66,23 +67,25 @@ public sealed class OpenSpellbookView : ScryView<OpenSpellbookPresenter>, IToolW
                     Width = 560f,
                     Scrollbars = NuiScrollbars.Both
                 }.Assign(out Spells),
+
                 new NuiRow
                 {
-                    Children = new()
-                    {
+                    Children =
+                    [
                         new NuiButton(label: "Load Spellbook")
                         {
                             Id = "btn_loadspellbook",
                             Width = 130f
                         }.Assign(out LoadSpellbookButton),
+
                         new NuiButton(label: "Close")
                         {
                             Id = "btn_closespellbook",
                             Width = 130f
                         }.Assign(out CloseSpellbookButton)
-                    }
+                    ]
                 }
-            }
+            ]
         };
 
         return root;

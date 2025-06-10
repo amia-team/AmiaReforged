@@ -31,7 +31,7 @@ public class CraftingPropertyData
     {
         foreach (int item in ItemTypeConstants.EquippableItems())
         {
-            List<CraftingCategory> properties = new();
+            List<CraftingCategory> properties = [];
 
             AddEquippedItemProperties(properties);
 
@@ -41,7 +41,7 @@ public class CraftingPropertyData
 
     private void SetupMagicStaves()
     {
-        List<CraftingCategory> properties = new();
+        List<CraftingCategory> properties = [];
 
         AddEquippedItemProperties(properties);
 
@@ -52,13 +52,13 @@ public class CraftingPropertyData
     private void SetupAmulets()
     {
         // This list of properties is different because natural armor has its own unique costs.
-        List<CraftingCategory> properties = new()
-        {
+        List<CraftingCategory> properties =
+        [
             new(categoryId: "natural_armor")
             {
                 Label = "Armor",
-                Properties = new[]
-                {
+                Properties =
+                [
                     new CraftingProperty
                     {
                         PowerCost = 1,
@@ -99,26 +99,23 @@ public class CraftingPropertyData
                         CraftingTier = CraftingTier.Flawless,
                         GoldCost = GenericItemProperties.AcCost5
                     }
-                }
-            }
-        };
+                ]
+            },
 
-        properties.Add(GenericItemProperties.ElementalResistances);
-        properties.Add(GenericItemProperties.DamageReductions);
-        properties.Add(GenericItemProperties.PhysicalDamageResistances);
-        properties.Add(GenericItemProperties.Regeneration);
+            GenericItemProperties.ElementalResistances,
+            GenericItemProperties.DamageReductions,
+            GenericItemProperties.PhysicalDamageResistances,
+            GenericItemProperties.Regeneration,
+            SavingThrowProperties.SpecificSaves,
+            SavingThrowProperties.GeneralSaves,
+            SavingThrowProperties.UniversalSaves,
+            SkillProperties.Personal,
+            SkillProperties.Advantageous,
+            AbilityProperties.Abilities,
+            CastSpellProperties.FluffSpells,
+            CastSpellProperties.BeneficialSpells
 
-        properties.Add(SavingThrowProperties.SpecificSaves);
-        properties.Add(SavingThrowProperties.GeneralSaves);
-        properties.Add(SavingThrowProperties.UniversalSaves);
-
-        properties.Add(SkillProperties.Personal);
-        properties.Add(SkillProperties.Advantageous);
-
-        properties.Add(AbilityProperties.Abilities);
-
-        properties.Add(CastSpellProperties.FluffSpells);
-        properties.Add(CastSpellProperties.BeneficialSpells);
+        ];
 
 
         Properties.TryAdd(NWScript.BASE_ITEM_AMULET, properties);
@@ -126,7 +123,7 @@ public class CraftingPropertyData
 
     private void SetupGloves()
     {
-        List<CraftingCategory> properties = new();
+        List<CraftingCategory> properties = [];
 
         AddEquippedItemProperties(properties);
 
@@ -139,8 +136,8 @@ public class CraftingPropertyData
         properties.Add(new(categoryId: "massive_criticals")
         {
             Label = "Massive Criticals",
-            Properties = new[]
-            {
+            Properties =
+            [
                 new CraftingProperty
                 {
                     PowerCost = 1,
@@ -149,7 +146,7 @@ public class CraftingPropertyData
                     CraftingTier = CraftingTier.Flawless,
                     GoldCost = 20000
                 }
-            }
+            ]
         });
 
         properties.Add(GenericItemProperties.VampiricRegeneration);
@@ -194,7 +191,7 @@ public class CraftingPropertyData
     {
         foreach (int weapon in ItemTypeConstants.MeleeWeapons())
         {
-            List<CraftingCategory> properties = new() { DamageProperties.OneHanders };
+            List<CraftingCategory> properties = [DamageProperties.OneHanders];
 
             AddSharedWeaponProperties(properties);
 
@@ -206,7 +203,7 @@ public class CraftingPropertyData
     {
         foreach (int weapon in ItemTypeConstants.Melee2HWeapons())
         {
-            List<CraftingCategory> properties = new() { DamageProperties.TwoHanders };
+            List<CraftingCategory> properties = [DamageProperties.TwoHanders];
 
             AddSharedWeaponProperties(properties);
 
@@ -240,11 +237,11 @@ public class CraftingPropertyData
     {
         foreach (int weapon in ItemTypeConstants.ThrownWeapons())
         {
-            List<CraftingCategory> properties = new()
-            {
+            List<CraftingCategory> properties =
+            [
                 DamageProperties.OneHanders,
                 GenericItemProperties.Other
-            };
+            ];
 
             AddSharedWeaponProperties(properties);
 
@@ -256,8 +253,8 @@ public class CraftingPropertyData
     {
         foreach (int weapon in ItemTypeConstants.RangedWeapons())
         {
-            List<CraftingCategory> properties = new()
-            {
+            List<CraftingCategory> properties =
+            [
                 AttackBonusProperties.AttackBonus,
                 DamageProperties.Mighty,
                 DamageProperties.MassiveCriticals,
@@ -269,8 +266,8 @@ public class CraftingPropertyData
                 new(categoryId: "ranged_massive_criticals")
                 {
                     Label = "Massive Criticals",
-                    Properties = new[]
-                    {
+                    Properties =
+                    [
                         new CraftingProperty
                         {
                             PowerCost = 1,
@@ -285,9 +282,9 @@ public class CraftingPropertyData
                             GuiLabel = "2d12 Massive Criticals",
                             CraftingTier = CraftingTier.Wondrous
                         }
-                    }
+                    ]
                 }
-            };
+            ];
 
             Properties.TryAdd(weapon, properties);
         }
@@ -297,12 +294,12 @@ public class CraftingPropertyData
     {
         foreach (int ammo in ItemTypeConstants.Ammo())
         {
-            List<CraftingCategory> properties = new()
-            {
+            List<CraftingCategory> properties =
+            [
                 DamageProperties.Ammo,
                 GenericItemProperties.VampiricRegeneration,
                 AmmoOnHitProperties.OnHits
-            };
+            ];
 
             Properties.TryAdd(ammo, properties);
         }
@@ -310,7 +307,7 @@ public class CraftingPropertyData
 
     public IReadOnlyList<CraftingProperty> UncategorizedPropertiesFor(int baseItemType)
     {
-        List<CraftingProperty?> properties = new();
+        List<CraftingProperty?> properties = [];
 
         foreach (CraftingCategory category in Properties[baseItemType])
         {

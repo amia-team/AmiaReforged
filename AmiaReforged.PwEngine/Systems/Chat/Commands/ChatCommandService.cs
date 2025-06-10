@@ -70,7 +70,7 @@ public class ChatCommandService
 
         string command = match.Groups[1].Value;
         string argsString = match.Groups[2].Value;
-        string[] args = string.IsNullOrEmpty(argsString) ? Array.Empty<string>() : argsString.Split(' ');
+        string[] args = string.IsNullOrEmpty(argsString) ? [] : argsString.Split(' ');
 
         return (command, args);
     }

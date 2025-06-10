@@ -96,8 +96,8 @@ public class NwObjectDataMapper
 
     private List<SkillData> MapFromSkills(NwCreature creature)
     {
-        List<Skill> skills = new()
-        {
+        List<Skill> skills =
+        [
             Skill.Concentration,
             Skill.Discipline,
             Skill.Heal,
@@ -108,7 +108,7 @@ public class NwObjectDataMapper
             Skill.Spot,
             Skill.Listen,
             Skill.Spellcraft
-        };
+        ];
 
         return skills.Select(skill => new SkillData
         {

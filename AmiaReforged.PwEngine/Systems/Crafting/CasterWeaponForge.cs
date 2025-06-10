@@ -12,12 +12,12 @@ public class CasterWeaponForge
 {
     private const string ForgeTag = "caster_weapon_forge";
 
-    private List<Spell> _spellWhiteList = new()
-    {
+    private List<Spell> _spellWhiteList =
+    [
         Spell.Restoration,
         Spell.LightningBolt,
         Spell.HealingCircle
-    };
+    ];
 
     public CasterWeaponForge()
     {

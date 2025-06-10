@@ -33,8 +33,8 @@ public class EmoteWindowView : ScryView<EmoteWindowPresenter>, IToolWindow
 
     public override NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> emoteCells = new()
-        {
+        List<NuiListTemplateCell> emoteCells =
+        [
             new(new NuiRow
             {
                 Children =
@@ -54,7 +54,7 @@ public class EmoteWindowView : ScryView<EmoteWindowPresenter>, IToolWindow
                 Width = 200f,
                 VariableSize = false
             }
-        };
+        ];
 
         NuiColumn root = new()
         {

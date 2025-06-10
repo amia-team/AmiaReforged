@@ -28,12 +28,13 @@ public class ChangelistView : IScryView
     /// <returns>A nui element intended only for use as an element of a larger view.</returns>
     public NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> cells = new()
-        {
+        List<NuiListTemplateCell> cells =
+        [
             new(new NuiLabel(PropertyLabel)
             {
                 ForegroundColor = Colors
             }),
+
             new(new NuiGroup
             {
                 Element = new NuiLabel(CostString)
@@ -47,6 +48,7 @@ public class ChangelistView : IScryView
                 Width = 30f,
                 VariableSize = false
             },
+
             new(new NuiButtonImage(resRef: "ir_abort")
             {
                 Id = RemoveFromChangeList,
@@ -56,7 +58,7 @@ public class ChangelistView : IScryView
                 Width = 30f,
                 VariableSize = false
             }
-        };
+        ];
         return new NuiColumn
         {
             Children =

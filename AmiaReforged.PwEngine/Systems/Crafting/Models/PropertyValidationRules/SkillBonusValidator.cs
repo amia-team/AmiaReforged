@@ -6,8 +6,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 [ValidationRuleFor(Property = ItemPropertyType.SkillBonus)]
 public class SkillBonusValidator : IValidationRule
 {
-    private readonly List<string> _personalSkills = new()
-    {
+    private readonly List<string> _personalSkills =
+    [
         "Appraise",
         "Bluff",
         "Craft Armor",
@@ -21,7 +21,7 @@ public class SkillBonusValidator : IValidationRule
         "Ride",
         "Tumble",
         "Use Magic Device"
-    };
+    ];
 
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)

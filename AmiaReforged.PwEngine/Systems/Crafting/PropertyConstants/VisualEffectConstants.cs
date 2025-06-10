@@ -10,8 +10,8 @@ public static class VisualEffectConstants
     public static readonly CraftingCategory VisualEffects = new(categoryId: "vfx")
     {
         Label = "Visual Effects",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 PowerCost = 0,
@@ -68,6 +68,6 @@ public static class VisualEffectConstants
                 GoldCost = VfxCost,
                 CraftingTier = CraftingTier.Greater
             }
-        }
+        ]
     };
 }

@@ -42,8 +42,8 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
 
     public override NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> rowTemplate = new()
-        {
+        List<NuiListTemplateCell> rowTemplate =
+        [
             new(new NuiButtonImage(resRef: "ir_xability")
             {
                 Id = "btn_viewslots",
@@ -54,6 +54,7 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
                 VariableSize = false,
                 Width = 35f
             },
+
             new(new NuiButtonImage(resRef: "ir_tmp_spawn")
             {
                 Id = "btn_deleteslots",
@@ -64,32 +65,35 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
                 VariableSize = false,
                 Width = 35f
             },
+
             new(new NuiLabel(QuickslotNames)
             {
                 VerticalAlign = NuiVAlign.Middle
             }),
+
             new(new NuiLabel(QuickslotIds)
             {
                 Visible = false,
                 Aspect = 1f
             })
-        };
+        ];
 
         NuiColumn root = new()
         {
-            Children = new()
-            {
+            Children =
+            [
                 new NuiRow
                 {
                     Height = 40f,
-                    Children = new()
-                    {
+                    Children =
+                    [
                         new NuiButtonImage(resRef: "ir_rage")
                         {
                             Id = "btn_createslots",
                             Aspect = 1f,
                             Tooltip = "Save your hotbar loadout"
                         }.Assign(out CreateQuickslotsButton),
+
                         new NuiTextEdit(label: "Search quickslots...", Search, 255, false),
                         new NuiButtonImage(resRef: "isk_search")
                         {
@@ -97,13 +101,14 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
                             Aspect = 1f,
                             Tooltip = "Search for a quickslot configuration."
                         }.Assign(out SearchButton)
-                    }
+                    ]
                 },
+
                 new NuiList(rowTemplate, QuickslotCount)
                 {
                     RowHeight = 35f
                 }
-            }
+            ]
         };
 
         return root;

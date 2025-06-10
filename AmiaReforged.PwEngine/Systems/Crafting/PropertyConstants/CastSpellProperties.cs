@@ -22,8 +22,8 @@ public class CastSpellProperties
     public static readonly CraftingCategory BeneficialSpells = new(categoryId: "beneficial_spells")
     {
         Label = "Beneficial Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BALAGARNSIRONHORN_7,
@@ -116,7 +116,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Intermediate,
                 GoldCost = 10000
             }
-        },
+        ],
         BaseDifficulty = 16
     };
 
@@ -131,8 +131,8 @@ public class CastSpellProperties
     public static readonly CraftingCategory FluffSpells = new(categoryId: "fluff_spells")
     {
         Label = "Fluff Spells",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_AID_3,
@@ -198,7 +198,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Minor,
                 GoldCost = 1000
             }
-        },
+        ],
         BaseDifficulty = 16
     };
 }

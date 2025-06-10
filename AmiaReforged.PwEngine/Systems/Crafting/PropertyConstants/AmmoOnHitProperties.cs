@@ -9,8 +9,8 @@ public static class AmmoOnHitProperties
     public static readonly CraftingCategory OnHits = new(categoryId: "ammo_onhits")
     {
         Label = "On Hit",
-        Properties = new[]
-        {
+        Properties =
+        [
             new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18, HitEffect.AbilityDrain(IPAbility.Charisma)),
@@ -243,6 +243,6 @@ public static class AmmoOnHitProperties
                 PowerCost = 6,
                 CraftingTier = CraftingTier.Wondrous
             }
-        }
+        ]
     };
 }
