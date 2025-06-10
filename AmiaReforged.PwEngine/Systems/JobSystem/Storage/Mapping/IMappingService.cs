@@ -7,19 +7,7 @@
 /// <typeparam name="TB">Assumed to be any type 'B' that was sent from A or can be sent to A</typeparam>
 public interface IMappingService<TA, TB> : IMapAtoB<TA, TB>, IMapBtoA<TA, TB>
 {
-    /// <summary>
-    ///     Maps to A given B
-    /// </summary>
-    /// <param name="b">The object 'B' to map onto A</param>
-    /// <returns></returns>
-    public TA MapFrom(TB b);
 
-    /// <summary>
-    ///     Maps from A given B
-    /// </summary>
-    /// <param name="a">The object 'A' to map onto B</param>
-    /// <returns></returns>
-    public TB? MapTo(TA a);
 }
 
 public interface IMapAtoB<out TA, in TB>

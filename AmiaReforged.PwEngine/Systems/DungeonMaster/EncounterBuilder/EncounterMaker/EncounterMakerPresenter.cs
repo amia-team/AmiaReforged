@@ -19,7 +19,7 @@ public sealed class EncounterMakerPresenter : ScryPresenter<EncounterMakerView>
     
     public delegate void CloseEventHandler(EncounterMakerPresenter? me, EventArgs e);
     
-    public event CloseEventHandler? Closing;
+    public event CloseEventHandler? OnClosing;
 
     public EncounterMakerPresenter(EncounterMakerView view, NwPlayer player)
     {
@@ -89,13 +89,13 @@ public sealed class EncounterMakerPresenter : ScryPresenter<EncounterMakerView>
 
     public override void Close()
     {
-        OnClosing(this);
+        OnOnClosing(this);
         
         Token().Close();
     }
 
-    private void OnClosing(EncounterMakerPresenter? me)
+    private void OnOnClosing(EncounterMakerPresenter? me)
     {
-        Closing?.Invoke(me, EventArgs.Empty);
+        OnClosing?.Invoke(me, EventArgs.Empty);
     }
 }

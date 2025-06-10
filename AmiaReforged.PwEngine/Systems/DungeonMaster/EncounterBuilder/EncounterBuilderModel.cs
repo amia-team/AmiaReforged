@@ -59,7 +59,7 @@ public sealed class EncounterBuilderModel(NwPlayer player)
         EncounterMakerPresenter encounterMakerPresenter = window.Presenter;
         Director.Value.OpenWindow(encounterMakerPresenter);
 
-        encounterMakerPresenter.Closing += Reload;
+        encounterMakerPresenter.OnClosing += Reload;
     }
 
     private void Reload(EncounterMakerPresenter? me, EventArgs e)
@@ -69,7 +69,7 @@ public sealed class EncounterBuilderModel(NwPlayer player)
 
         OnUpdate(this);
 
-        me!.Closing -= Reload;
+        me!.OnClosing -= Reload;
     }
 
     public void OpenEncounterEditor(int eventDataArrayIndex)
@@ -135,7 +135,7 @@ public sealed class EncounterBuilderModel(NwPlayer player)
         SelectedEncounter.SpawnEncounters(spawnLocation!, SelectedFaction);
     }
 
-    private NwFaction SelectedFaction { get; set; }
+    private NwFaction SelectedFaction { get; set; } = null!;
 
-    private Encounter SelectedEncounter { get; set; }
+    private Encounter SelectedEncounter { get; set; } = null!;
 }

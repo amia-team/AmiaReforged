@@ -95,4 +95,5 @@ public partial class JobSystemMappingService(
 
     [GeneratedRegex(pattern: "<.*?>")]
     private static partial Regex MyRegex();
+
 }
