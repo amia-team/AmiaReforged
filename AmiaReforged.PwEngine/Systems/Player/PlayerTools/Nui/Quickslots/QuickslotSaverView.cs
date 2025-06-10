@@ -8,8 +8,8 @@ namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Quickslots;
 
 public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToolWindow
 {
-    public NuiButtonImage CreateQuickslotsButton;
-    public NuiButtonImage DeleteQuickslotsButton;
+    public NuiButtonImage CreateQuickslotsButton = null!;
+    public NuiButtonImage DeleteQuickslotsButton = null!;
     public NuiBind<int> QuickslotCount = new(key: "quickslot_count");
     public NuiBind<string> QuickslotIds = new(key: "qs_ids");
     public NuiBind<string> QuickslotNames = new(key: "qs_names");
@@ -19,8 +19,8 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
     public NuiBind<string> Search = new(key: "search_val");
 
     // Buttons
-    public NuiButtonImage SearchButton;
-    public NuiButtonImage ViewQuickslotsButton;
+    public NuiButtonImage SearchButton = null!;
+    public NuiButtonImage ViewQuickslotsButton = null!;
 
     public QuickslotSaverView(NwPlayer player)
     {
@@ -29,13 +29,11 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
         injector.Inject(Presenter);
     }
 
-    public NuiWindow? WindowTemplate { get; }
-
     public override QuickslotSaverPresenter Presenter { get; protected set; }
     public string Id => "playertools.quickslots";
     public bool ListInPlayerTools => true;
     public string Title => "Quickbar Loadouts";
-    public string CategoryTag { get; }
+    public string CategoryTag { get; } = "Quickbar";
     public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 
     public bool RequiresPersistedCharacter => true;
