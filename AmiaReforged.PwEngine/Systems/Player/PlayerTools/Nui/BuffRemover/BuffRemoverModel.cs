@@ -45,7 +45,7 @@ public class BuffRemoverModel
     {
         StringBuilder labelBuilder = new();
 
-        string spellName = effect.Spell.Name.ToString();
+        string spellName = effect.Spell?.Name.ToString() ?? string.Empty;
 
         if (!spellName.IsNullOrEmpty())
         {
