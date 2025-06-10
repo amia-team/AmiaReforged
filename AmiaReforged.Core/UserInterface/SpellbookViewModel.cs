@@ -10,7 +10,7 @@ public class SpellbookViewModel
     public string Name { get; init; }
     public long Id { get; set; }
     public string Class { get; init; }
-    public Dictionary<byte, List<PreparedSpellModel>>? SpellBook { get; set; } = new();
+    public Dictionary<byte, List<PreparedSpellModel>?>? SpellBook { get; set; } = new();
 
     public static SpellbookViewModel FromDatabaseModel(SavedSpellbook savedBook)
     {
@@ -40,7 +40,7 @@ public class SpellbookViewModel
         
         if (SpellBook != null)
         {
-            foreach (KeyValuePair<byte, List<PreparedSpellModel>> keyValuePair in SpellBook)
+            foreach (KeyValuePair<byte, List<PreparedSpellModel>?> keyValuePair in SpellBook)
             {
                 spellbookDictString += $"Level {keyValuePair.Key}:\n";
                 spellbookDictString = keyValuePair.Value.Aggregate(spellbookDictString, (current, preparedSpellModel) => current + $"{preparedSpellModel}\n");

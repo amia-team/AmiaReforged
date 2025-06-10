@@ -102,7 +102,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         }
     }
 
-    private async void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
+    private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
         if (eventData.ElementId == View.SearchButton.Id)
         {
