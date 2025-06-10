@@ -1,6 +1,5 @@
 using AmiaReforged.Core.Services;
 using AmiaReforged.PwEngine.Systems.Player.PlayerId;
-using AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;

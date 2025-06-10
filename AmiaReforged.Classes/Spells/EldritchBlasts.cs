@@ -3,7 +3,6 @@ using AmiaReforged.Classes.Warlock.Types;
 using AmiaReforged.Classes.Warlock.Types.EssenceEffects;
 using AmiaReforged.Classes.Warlock.Types.Shapes;
 using NLog;
-using NLog.Fluent;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells;

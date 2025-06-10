@@ -2,7 +2,6 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NLog.Fluent;
 using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.RayofFrost;

@@ -1,4 +1,3 @@
-using AmiaReforged.Core.Models;
 using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;

@@ -2,7 +2,6 @@
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core;
 
 
 namespace AmiaReforged.Classes.GeneralFeats;

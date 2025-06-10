@@ -1,10 +1,8 @@
-using AmiaReforged.PwEngine.Systems.DungeonMaster.NpcBank;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NLog.Fluent;
 
 namespace AmiaReforged.PwEngine.Systems.DungeonMaster.EncounterBuilder.EncounterMaker;
 

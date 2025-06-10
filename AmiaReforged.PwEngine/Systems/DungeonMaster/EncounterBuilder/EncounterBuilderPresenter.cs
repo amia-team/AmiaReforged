@@ -4,7 +4,6 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using JetBrains.Annotations;
-using Microsoft.IdentityModel.Tokens;
 
 namespace AmiaReforged.PwEngine.Systems.DungeonMaster.EncounterBuilder;
 

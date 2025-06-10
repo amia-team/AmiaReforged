@@ -3,7 +3,6 @@ using System.Text.RegularExpressions;
 using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using Anvil.API;
 using NLog;
-using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 

@@ -1,10 +1,7 @@
 ﻿using System.Text.RegularExpressions;
-using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
-using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 using Anvil.Services;
-using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 

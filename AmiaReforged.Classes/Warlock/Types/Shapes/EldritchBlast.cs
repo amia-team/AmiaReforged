@@ -1,7 +1,5 @@
 ﻿using AmiaReforged.Classes.Warlock.Types.EssenceEffects;
-using Anvil.API;
 using NLog;
-using NLog.Fluent;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Warlock.Types.Shapes;

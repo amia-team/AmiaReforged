@@ -1,6 +1,5 @@
 using System.Text.Json;
 using AmiaReforged.Core.Models;
-using NLog.Fluent;
 
 namespace AmiaReforged.Core.UserInterface;
 

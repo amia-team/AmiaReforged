@@ -4,7 +4,6 @@ using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui;
 

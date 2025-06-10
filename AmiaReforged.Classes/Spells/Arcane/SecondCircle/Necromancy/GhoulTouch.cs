@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 

@@ -1,6 +1,5 @@
 using AmiaReforged.Classes.EffectUtils;
 using Anvil.API;
-using NLog;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Warlock;

@@ -1,10 +1,8 @@
-using AmiaReforged.Core.Models;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.DungeonMaster.NpcBank;
 

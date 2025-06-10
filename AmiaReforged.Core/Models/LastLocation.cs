@@ -2,9 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AmiaReforged.Core.Models;
 
-using System.Numerics;
-using Anvil.API;
-
 public class LastLocation
 {
     [Key] public int Id { get; set; }

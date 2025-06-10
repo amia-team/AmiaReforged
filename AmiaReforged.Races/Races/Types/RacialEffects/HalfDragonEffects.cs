@@ -1,6 +1,5 @@
 ﻿using AmiaReforged.Races.Races.Script.Types;
 using NLog;
-using NLog.Fluent;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Races.Races.Types.RacialEffects;

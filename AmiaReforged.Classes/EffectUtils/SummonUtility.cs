@@ -1,6 +1,4 @@
 ﻿using System.Numerics;
-using Anvil.API;
-using NWN.Core;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.EffectUtils;
