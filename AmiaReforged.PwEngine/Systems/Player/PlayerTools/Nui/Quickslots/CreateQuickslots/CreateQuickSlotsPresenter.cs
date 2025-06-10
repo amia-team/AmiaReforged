@@ -21,8 +21,7 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
         View = toolView;
     }
 
-    [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; }
-    [Inject] private Lazy<WindowDirector> WindowManager { get; set; }
+    [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; } = null!;
 
     public override CreateQuickslotsView View { get; }
 
