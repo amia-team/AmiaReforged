@@ -114,7 +114,7 @@ public class EncounterBuilderPresenter : ScryPresenter<EncounterBuilderView>
 
             NwFaction faction = NwFaction.FromStandardFaction(selectedFaction)!;
 
-            Model.PromptSpawn(eventData.ArrayIndex, selectedFaction);
+            Model.PromptSpawn(eventData.ArrayIndex, faction);
         }
         else if (eventData.ElementId == View.EditEncounterButton.Id && validIndex)
         {

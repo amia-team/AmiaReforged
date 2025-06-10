@@ -19,9 +19,9 @@ public class CreateVfx : IChatCommand
             string? vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
 
             NwCreature? callerControlledCreature = caller.ControlledCreature;
-            
+
             if (callerControlledCreature is null) return Task.CompletedTask;
-            
+
             callerControlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value = vfxId;
             if (args[1] != string.Empty)
             {
@@ -60,9 +60,8 @@ public class CreateVfx : IChatCommand
     private void CreateDurVfx(ModuleEvents.OnPlayerTarget obj)
     {
         NwCreature? playerCreature = obj.Player.ControlledCreature;
-        
-        if(playerCreature is null) return;
-        
+        if (playerCreature is null) return;
+
         int vfxId = playerCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value;
         float vfxScale;
         VisualEffectTableEntry vfx = NwGameTables.VisualEffectTable[vfxId];
@@ -90,9 +89,9 @@ public class CreateVfx : IChatCommand
 
         if (obj.TargetObject is NwPlaceable targetPlaceable)
         {
-            if (playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").HasValue)
-                vfxScale = playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value;
-            else vfxScale = targetPlaceable.VisualTransform.Scale;
+            vfxScale = playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").HasValue
+                ? playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value
+                : targetPlaceable.VisualTransform.Scale;
             Effect durVfx = Effect.VisualEffect(vfx, false, vfxScale);
             durVfx.SubType = EffectSubType.Unyielding;
             durVfx.Tag = "dm_persistentvfx";
@@ -106,14 +105,20 @@ public class CreateVfx : IChatCommand
 
     private void CreateFnfVfx(ModuleEvents.OnPlayerTarget obj)
     {
-        NwCreature playerCreature = obj.Player.ControlledCreature;
+        NwCreature? playerCreature = obj.Player.ControlledCreature;
+        if (playerCreature is null) return;
+
         int vfxId = playerCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value;
-        float vfxScale;
-        if (playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").HasValue)
-            vfxScale = playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value;
-        else vfxScale = 1f;
+
+        float vfxScale = playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").HasValue
+            ? playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value
+            : 1f;
+
         VisualEffectTableEntry vfx = NwGameTables.VisualEffectTable[vfxId];
-        NwArea currentArea = obj.Player.ControlledCreature.Area;
+
+        NwArea? currentArea = playerCreature.Area;
+        if (currentArea is null) return;
+
         Location targetLocation = Location.Create(currentArea, obj.TargetPosition, 0);
 
         if (obj.TargetObject is NwCreature creature)
