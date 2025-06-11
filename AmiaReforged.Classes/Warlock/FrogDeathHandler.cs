@@ -28,8 +28,7 @@ public class FrogDeathHandler
             if (!isRussianDoll) return;
 
             NwCreature summon = obj.KilledCreature;
-            NwCreature? warlock = summon.Master;
-            
+            NwCreature warlock = summon.Master;
             if (warlock == null) return;
 
             string slaadTier = summon.ResRef;
