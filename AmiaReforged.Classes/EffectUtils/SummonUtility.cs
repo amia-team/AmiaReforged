@@ -102,7 +102,7 @@ public static class SummonUtility
                 NwCreature nearestHostile = associate.GetNearestCreatures().
                     First(creature => creature.IsReactionTypeHostile(associate));
                      
-                await associate.ActionAttackTarget(nearestHostile);
+                _ = associate.ActionAttackTarget(nearestHostile);
             }
         
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, summoner);
