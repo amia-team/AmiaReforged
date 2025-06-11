@@ -196,10 +196,6 @@ public class WarlockSummonStatsHandler
         switch (summonTier)
         {
             case 1:
-                for (int i = 1; i < 1; i++)
-                {
-                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
-                }
 
                 summon.MaxHP = 30;
                 summon.HP = 30;
@@ -346,7 +342,7 @@ public class WarlockSummonStatsHandler
 
         foreach (NwFeat feat in summon.Feats)
         {
-            if (feat.Id == 289 || feat.Id == 226) continue;
+            if (feat.Id is 289 or 226) continue;
             summon.RemoveFeat(feat);
         }
     }
@@ -366,11 +362,7 @@ public class WarlockSummonStatsHandler
         switch (summonTier)
         {
             case 1:
-                for (int i = 1; i < 1; i++)
-                {
-                    summon.LevelUpHenchman(ClassType.Elemental, PackageType.Elemental);
-                }
-
+                
                 summon.MaxHP = 30;
                 summon.HP = 30;
                 summon.BaseAC = 0;
@@ -547,16 +539,11 @@ public class WarlockSummonStatsHandler
 
         int summonTier = SummonUtility.GetSummonTier(obj.Owner);
         Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
-        int concealment = default;
+        int concealment = 0;
 
         switch (summonTier)
         {
             case 1:
-                for (int i = 1; i < 1; i++)
-                {
-                    summon.LevelUpHenchman(ClassType.Fey, PackageType.Fey);
-                }
-
                 summon.MaxHP = 30;
                 summon.HP = 30;
                 summon.BaseAC = 0;
@@ -720,10 +707,6 @@ public class WarlockSummonStatsHandler
         switch (summonTier)
         {
             case 1:
-                for (int i = 1; i < 1; i++)
-                {
-                    summon.LevelUpHenchman(ClassType.Vermin, PackageType.Vermin);
-                }
 
                 summon.MaxHP = 30;
                 summon.HP = 30;
@@ -876,127 +859,132 @@ public class WarlockSummonStatsHandler
         Effect damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1, DamageType.BaseWeapon);
         string slaadTier = summon.ResRef;
 
-        if (summonTier == 1 && slaadTier == "wlkslaadred")
+        switch (summonTier)
         {
-            for (int i = 1; i < 1; i++)
+            case 1 when slaadTier == "wlkslaadred":
+                summon.MaxHP = 30;
+                summon.HP = 30;
+                summon.BaseAC = 0;
+                summon.SetSkillRank(Skill.Discipline, 4);
+                summon.SetBaseSavingThrow(SavingThrow.Fortitude, 4);
+                summon.SetBaseSavingThrow(SavingThrow.Reflex, 4);
+                summon.SetBaseSavingThrow(SavingThrow.Will, 4);
+                summon.BaseAttackCount = 1;
+                summon.VisualTransform.Scale = 0.7f;
+                break;
+            case >= 2 when slaadTier == "wlkslaadred":
             {
-                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
-            }
+                for (int i = 1; i < 5; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
 
-            summon.MaxHP = 30;
-            summon.HP = 30;
-            summon.BaseAC = 0;
-            summon.SetSkillRank(Skill.Discipline, 4);
-            summon.SetBaseSavingThrow(SavingThrow.Fortitude, 4);
-            summon.SetBaseSavingThrow(SavingThrow.Reflex, 4);
-            summon.SetBaseSavingThrow(SavingThrow.Will, 4);
-            summon.BaseAttackCount = 1;
-            summon.VisualTransform.Scale = 0.7f;
+                summon.MaxHP = 60;
+                summon.HP = 60;
+                summon.BaseAC = 6;
+                summon.SetsRawAbilityScore(Ability.Strength, 12);
+                summon.BaseAttackBonus = 3;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d4, DamageType.BaseWeapon);
+                summon.SetSkillRank(Skill.Discipline, 8);
+                summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
+                summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
+                summon.SetBaseSavingThrow(SavingThrow.Will, 8);
+                summon.BaseAttackCount = 1;
+                summon.VisualTransform.Scale = 0.7f;
+                break;
+            }
         }
 
-        if (summonTier >= 2 && slaadTier == "wlkslaadred")
+        switch (summonTier)
         {
-            for (int i = 1; i < 5; i++)
+            case 3 when slaadTier == "wlkslaadblue":
             {
-                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
-            }
+                for (int i = 1; i < 10; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
 
-            summon.MaxHP = 60;
-            summon.HP = 60;
-            summon.BaseAC = 6;
-            summon.SetsRawAbilityScore(Ability.Strength, 12);
-            summon.BaseAttackBonus = 3;
-            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d4, DamageType.BaseWeapon);
-            summon.SetSkillRank(Skill.Discipline, 8);
-            summon.SetBaseSavingThrow(SavingThrow.Fortitude, 8);
-            summon.SetBaseSavingThrow(SavingThrow.Reflex, 8);
-            summon.SetBaseSavingThrow(SavingThrow.Will, 8);
-            summon.BaseAttackCount = 1;
-            summon.VisualTransform.Scale = 0.7f;
+                summon.MaxHP = 90;
+                summon.HP = 90;
+                summon.BaseAC = 12;
+                summon.SetsRawAbilityScore(Ability.Strength, 14);
+                summon.BaseAttackBonus = 6;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d6, DamageType.BaseWeapon);
+                summon.SetSkillRank(Skill.Discipline, 12);
+                summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
+                summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
+                summon.SetBaseSavingThrow(SavingThrow.Will, 12);
+                summon.BaseAttackCount = 1;
+                summon.VisualTransform.Scale = 0.8f;
+                break;
+            }
+            case >= 4 when slaadTier == "wlkslaadblue":
+            {
+                for (int i = 1; i < 15; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
+
+                summon.MaxHP = 120;
+                summon.HP = 120;
+                summon.BaseAC = 18;
+                summon.SetsRawAbilityScore(Ability.Strength, 16);
+                summon.BaseAttackBonus = 9;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d6, DamageType.BaseWeapon);
+                summon.SetSkillRank(Skill.Discipline, 16);
+                summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
+                summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
+                summon.SetBaseSavingThrow(SavingThrow.Will, 16);
+                summon.BaseAttackCount = 2;
+                summon.VisualTransform.Scale = 0.8f;
+                break;
+            }
         }
 
-        if (summonTier == 3 && slaadTier == "wlkslaadblue")
+        switch (summonTier)
         {
-            for (int i = 1; i < 10; i++)
+            case 5 when slaadTier == "wlkslaadgreen":
             {
-                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                for (int i = 1; i < 20; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
+
+                summon.MaxHP = 150;
+                summon.HP = 150;
+                summon.BaseAC = 24;
+                summon.SetsRawAbilityScore(Ability.Strength, 18);
+                summon.BaseAttackBonus = 12;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d8, DamageType.BaseWeapon);
+                summon.SetSkillRank(Skill.Discipline, 20);
+                summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
+                summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
+                summon.SetBaseSavingThrow(SavingThrow.Will, 20);
+                summon.BaseAttackCount = 2;
+                summon.VisualTransform.Scale = 0.9f;
+                break;
             }
-
-            summon.MaxHP = 90;
-            summon.HP = 90;
-            summon.BaseAC = 12;
-            summon.SetsRawAbilityScore(Ability.Strength, 14);
-            summon.BaseAttackBonus = 6;
-            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus1d6, DamageType.BaseWeapon);
-            summon.SetSkillRank(Skill.Discipline, 12);
-            summon.SetBaseSavingThrow(SavingThrow.Fortitude, 12);
-            summon.SetBaseSavingThrow(SavingThrow.Reflex, 12);
-            summon.SetBaseSavingThrow(SavingThrow.Will, 12);
-            summon.BaseAttackCount = 1;
-            summon.VisualTransform.Scale = 0.8f;
-        }
-
-        if (summonTier >= 4 && slaadTier == "wlkslaadblue")
-        {
-            for (int i = 1; i < 15; i++)
+            case >= 6 when slaadTier == "wlkslaadgreen":
             {
-                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                for (int i = 1; i < 25; i++)
+                {
+                    summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
+                }
+
+                summon.MaxHP = 180;
+                summon.HP = 180;
+                summon.BaseAC = 30;
+                summon.SetsRawAbilityScore(Ability.Strength, 20);
+                summon.BaseAttackBonus = 15;
+                damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d10, DamageType.BaseWeapon);
+                summon.SetSkillRank(Skill.Discipline, 24);
+                summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
+                summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
+                summon.SetBaseSavingThrow(SavingThrow.Will, 24);
+                summon.BaseAttackCount = 3;
+                summon.VisualTransform.Scale = 0.9f;
+                break;
             }
-
-            summon.MaxHP = 120;
-            summon.HP = 120;
-            summon.BaseAC = 18;
-            summon.SetsRawAbilityScore(Ability.Strength, 16);
-            summon.BaseAttackBonus = 9;
-            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d6, DamageType.BaseWeapon);
-            summon.SetSkillRank(Skill.Discipline, 16);
-            summon.SetBaseSavingThrow(SavingThrow.Fortitude, 16);
-            summon.SetBaseSavingThrow(SavingThrow.Reflex, 16);
-            summon.SetBaseSavingThrow(SavingThrow.Will, 16);
-            summon.BaseAttackCount = 2;
-            summon.VisualTransform.Scale = 0.8f;
-        }
-
-        if (summonTier == 5 && slaadTier == "wlkslaadgreen")
-        {
-            for (int i = 1; i < 20; i++)
-            {
-                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
-            }
-
-            summon.MaxHP = 150;
-            summon.HP = 150;
-            summon.BaseAC = 24;
-            summon.SetsRawAbilityScore(Ability.Strength, 18);
-            summon.BaseAttackBonus = 12;
-            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d8, DamageType.BaseWeapon);
-            summon.SetSkillRank(Skill.Discipline, 20);
-            summon.SetBaseSavingThrow(SavingThrow.Fortitude, 20);
-            summon.SetBaseSavingThrow(SavingThrow.Reflex, 20);
-            summon.SetBaseSavingThrow(SavingThrow.Will, 20);
-            summon.BaseAttackCount = 2;
-            summon.VisualTransform.Scale = 0.9f;
-        }
-
-        if (summonTier >= 6 && slaadTier == "wlkslaadgreen")
-        {
-            for (int i = 1; i < 25; i++)
-            {
-                summon.LevelUpHenchman(ClassType.Outsider, PackageType.Outsider);
-            }
-
-            summon.MaxHP = 180;
-            summon.HP = 180;
-            summon.BaseAC = 30;
-            summon.SetsRawAbilityScore(Ability.Strength, 20);
-            summon.BaseAttackBonus = 15;
-            damageIncrease = Effect.DamageIncrease((int)DamageBonus.Plus2d10, DamageType.BaseWeapon);
-            summon.SetSkillRank(Skill.Discipline, 24);
-            summon.SetBaseSavingThrow(SavingThrow.Fortitude, 24);
-            summon.SetBaseSavingThrow(SavingThrow.Reflex, 24);
-            summon.SetBaseSavingThrow(SavingThrow.Will, 24);
-            summon.BaseAttackCount = 3;
-            summon.VisualTransform.Scale = 0.9f;
         }
 
         if (summonTier == 7 && slaadTier == "wlkslaadgray")
@@ -1047,10 +1035,10 @@ public class WarlockSummonStatsHandler
         // for subsequent slaadi spawning in WarlockSummonUtilHandler => OnFrogDeathRussianDoll
         foreach (Effect effect in warlock.ActiveEffects)
         {
-            if (effect.Tag == "frogduration")
-                if (effect.DurationRemaining !=
-                    NWScript.RoundsToSeconds(SummonUtility.PactSummonDuration(warlock)))
-                    return;
+            if (effect.Tag != "frogduration") continue;
+            
+            if (TimeSpan.FromSeconds(effect.DurationRemaining) != NwTimeSpan.FromRounds(SummonUtility.PactSummonDuration(warlock)))
+                return;
         }
 
         Effect durationEffect = Effect.VisualEffect(VfxType.None);
