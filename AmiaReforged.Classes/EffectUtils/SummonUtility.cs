@@ -65,35 +65,28 @@ public static class SummonUtility
                 associate.Unsummon();
         }
         
-        DelayedSummonMany();
+        // Hide the stupid "unsummoning creature" message
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, warlock);
+        
+        for (int i = 1; i <= summonCount; i++)
+        {
+            foreach (NwCreature associate in warlock.Associates)
+                if (associate.ResRef.Contains("wlk"))
+                    associate.IsDestroyable = false;
+            
+            float delay = NwEffects.RandomFloat(minDelay, maxDelay);
+            
+            IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
+            
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay, 
+                nUnsummonVisualEffectId: unsummonVfx);
+            
+            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
+        }
         
         DelayedMakeDestroyable();
         
         return;
-        
-        async void DelayedSummonMany()
-        {
-            await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
-            
-            // Hide the stupid "unsummoning creature" message
-            FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, warlock);
-        
-            for (int i = 1; i <= summonCount; i++)
-            {
-                foreach (NwCreature associate in warlock.Associates)
-                    if (associate.ResRef.Contains("wlk"))
-                        associate.IsDestroyable = false;
-            
-                float delay = NwEffects.RandomFloat(minDelay, maxDelay);
-            
-                IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
-            
-                IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay, 
-                    nUnsummonVisualEffectId: unsummonVfx);
-            
-                ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
-            }
-        }
         
         async void DelayedMakeDestroyable()
         {
