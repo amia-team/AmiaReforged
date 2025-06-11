@@ -40,14 +40,24 @@ public class BindingOfMaggotsEnter
         // If summonCooldown is active, don't summon; else summon and set summonCooldown
         if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) == FALSE)
         {
+            // Unsummon previous warlock summons
+            NwCreature? warlock = caster.ToNwObject() as NwCreature;
+            if (warlock == null) return;
+        
+            foreach (NwCreature associate in warlock.Associates)
+            {
+                if (associate.ResRef.Contains("wlk"))
+                    associate.Unsummon();
+            }
+            
+            SummonUtility.SummonMany(warlock, VFX_IMP_DESTRUCTION, VFX_IMP_DESTRUCTION, summonDuration, summonCount,
+                "wlkfiend", location, 0.5f, 2f, 0.8f, 1.8f);
+            
             // Apply summonCooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
             DelayCommand(summonCooldown,
                 () => FloatingTextStringOnCreature(
                     WarlockConstants.String(message: "Soul Larvae can be summoned again."), caster, 0));
-            // Summon new
-            SummonUtility.SummonMany(VFX_COM_CHUNK_RED_SMALL, VFX_IMP_DESTRUCTION, summonDuration, summonCount,
-                "wlkfiend", location, 0.5f, 2f, 0.5f, 1.5f);
         }
 
         //---------------------------

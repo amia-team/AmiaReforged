@@ -6,15 +6,15 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Warlock;
 
-[ServiceBinding(typeof(WarlockSummonUtilHandler))]
-public class WarlockSummonUtilHandler
+[ServiceBinding(typeof(FrogDeathHandler))]
+public class FrogDeathHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public WarlockSummonUtilHandler()
+    public FrogDeathHandler()
     {
         NwModule.Instance.OnAssociateAdd += AllowMultipleSummons;
-        Log.Info(message: "Warlock Summon Util Handler initialized.");
+        Log.Info(message: "Frog Death Handler initialized.");
     }
     
     /// <summary>

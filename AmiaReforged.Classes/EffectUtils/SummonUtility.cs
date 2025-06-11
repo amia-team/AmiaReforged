@@ -1,4 +1,6 @@
 ﻿using System.Numerics;
+using Anvil.API;
+using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.EffectUtils;
@@ -53,19 +55,48 @@ public static class SummonUtility
             }
     }
 
-    public static void SummonMany(int summonVfx, int unsummonVfx, float summonDuration, int summonCount, string summonResRef,
-        IntPtr location, float minLoc, float maxLoc, float minDelay, float maxDelay)
+    public static void SummonMany(NwCreature warlock, int summonVfx, int unsummonVfx, float summonDuration, 
+        int summonCount, string summonResRef, IntPtr location, float minLoc, float maxLoc, float minDelay, float maxDelay)
     {
+        // First unsummon previous warlock summons
+        foreach (NwCreature associate in warlock.Associates)
+        {
+            if (associate.ResRef.Contains("wlk"))
+                associate.Unsummon();
+        }
+        
+        // Hide the stupid "unsummoning creature" message
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, warlock);
+        
         for (int i = 1; i <= summonCount; i++)
         {
+            foreach (NwCreature associate in warlock.Associates)
+                if (associate.ResRef.Contains("wlk"))
+                    associate.IsDestroyable = false;
+            
             float delay = NwEffects.RandomFloat(minDelay, maxDelay);
             
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
             
-            IntPtr summonCreature = EffectSummonCreature(summonResRef, nUnsummonVisualEffectId: unsummonVfx);
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay, 
+                nUnsummonVisualEffectId: unsummonVfx);
             
-            DelayCommand(delay, () => 
-                ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration));
+            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
+        }
+        
+        DelayedMakeDestroyable();
+        
+        return;
+        
+        async void DelayedMakeDestroyable()
+        {
+            await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
+        
+            foreach (NwCreature associate in warlock.Associates)
+                if (associate.ResRef.Contains("wlk"))
+                    associate.IsDestroyable = true;
+            
+            FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, warlock);
         }
     }
 

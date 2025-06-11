@@ -1,5 +1,6 @@
 using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
+using Anvil.API;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
@@ -117,15 +118,19 @@ public class PrimordialGust
         // If summonCooldown is off and spell has hit a valid target, summon; else don't summon
         if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) != FALSE) return;
         
+        NwCreature? warlock = caster.ToNwObject() as NwCreature;
+        if (warlock == null) return;
+        
+        SummonUtility.SummonMany(warlock, VFX_FNF_SUMMON_MONSTER_1, VFX_FNF_SUMMON_MONSTER_1, summonDuration, summonCount,
+            "wlkelemental", location, 0.5f, 2f, 0.8f, 1.8f);
+        
+        DelayCommand(1.9f, () => SummonUtility.SetSummonsFacing(summonCount, location));
+        
         // Apply cooldown
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
         
         DelayCommand(summonCooldown,
             () => FloatingTextStringOnCreature(WarlockConstants.String(message: "Mephits can be summoned again."),
                 caster, 0));
-        
-        SummonUtility.SummonMany(VFX_IMP_ELEMENTAL_PROTECTION, VFX_FNF_SUMMON_MONSTER_1, summonDuration, summonCount,
-            "wlkelemental", location, 0.5f, 2f, 0.5f, 1.5f);
-        DelayCommand(1.6f, () => SummonUtility.SetSummonsFacing(summonCount, location));
     }
 }
