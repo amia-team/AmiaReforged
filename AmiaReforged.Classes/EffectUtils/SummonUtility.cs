@@ -72,12 +72,12 @@ public static class SummonUtility
         
         for (int i = 1; i <= summonCount; i++)
         {
-            float delay = NwEffects.RandomFloat(minDelay, maxDelay);
-            
             // Set summons undestroyable so they don't get unsummoned
             foreach (NwCreature associate in summoner.Associates)
                 if (associate.AssociateType == AssociateType.Summoned)
                     associate.IsDestroyable = false;
+            
+            float delay = NwEffects.RandomFloat(minDelay, maxDelay);
             
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
             
