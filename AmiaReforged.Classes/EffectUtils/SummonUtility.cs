@@ -80,6 +80,7 @@ public static class SummonUtility
             
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
             
+            await warlock.WaitForObjectContext();
             IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay, 
                 nUnsummonVisualEffectId: unsummonVfx);
             
