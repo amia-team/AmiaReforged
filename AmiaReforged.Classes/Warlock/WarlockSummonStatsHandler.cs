@@ -39,10 +39,6 @@ public class WarlockSummonStatsHandler
         switch (summonTier)
         {
             case 1:
-                for (int i = 1; i < 1; i++)
-                {
-                    summon.LevelUpHenchman(ClassType.Aberration, PackageType.Aberration);
-                }
 
                 summon.MaxHP = 30;
                 summon.HP = 30;
