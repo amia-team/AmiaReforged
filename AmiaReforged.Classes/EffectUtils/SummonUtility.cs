@@ -77,6 +77,8 @@ public static class SummonUtility
                 if (associate.AssociateType == AssociateType.Summoned)
                     associate.IsDestroyable = false;
             
+            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+            
             float delay = NwEffects.RandomFloat(minDelay, maxDelay);
             
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
