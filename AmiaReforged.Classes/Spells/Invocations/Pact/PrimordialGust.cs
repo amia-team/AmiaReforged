@@ -121,7 +121,7 @@ public class PrimordialGust
         NwCreature? warlock = caster.ToNwObject() as NwCreature;
         if (warlock == null) return;
         
-        SummonUtility.SummonMany(warlock, VFX_FNF_SUMMON_MONSTER_1, VFX_FNF_SUMMON_MONSTER_1, summonDuration, summonCount,
+        _ = SummonUtility.SummonMany(warlock, VFX_FNF_SUMMON_MONSTER_1, VFX_FNF_SUMMON_MONSTER_1, summonDuration, summonCount,
             "wlkelemental", location, 0.5f, 2f, 0.8f, 1.8f);
         
         DelayCommand(1.9f, () => SummonUtility.SetSummonsFacing(summonCount, location));

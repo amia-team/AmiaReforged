@@ -55,7 +55,7 @@ public static class SummonUtility
             }
     }
 
-    public static void SummonMany(NwCreature warlock, int summonVfx, int unsummonVfx, float summonDuration, 
+    public static async Task SummonMany(NwCreature warlock, int summonVfx, int unsummonVfx, float summonDuration, 
         int summonCount, string summonResRef, IntPtr location, float minLoc, float maxLoc, float minDelay, float maxDelay)
     {
         // First unsummon previous warlock summons
@@ -64,6 +64,8 @@ public static class SummonUtility
             if (associate.ResRef.Contains("wlk"))
                 associate.Unsummon();
         }
+        
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
         // Hide the stupid "unsummoning creature" message
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, warlock);
@@ -84,20 +86,13 @@ public static class SummonUtility
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
         }
         
-        DelayedMakeDestroyable();
+        await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
         
-        return;
-        
-        async void DelayedMakeDestroyable()
-        {
-            await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
-        
-            foreach (NwCreature associate in warlock.Associates)
-                if (associate.ResRef.Contains("wlk"))
-                    associate.IsDestroyable = true;
+        foreach (NwCreature associate in warlock.Associates)
+            if (associate.ResRef.Contains("wlk"))
+                associate.IsDestroyable = true;
             
-            FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, warlock);
-        }
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, warlock);
     }
 
     public static bool IsPactSummon(uint target) =>

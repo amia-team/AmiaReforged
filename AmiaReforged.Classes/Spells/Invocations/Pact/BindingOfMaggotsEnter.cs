@@ -50,7 +50,7 @@ public class BindingOfMaggotsEnter
                     associate.Unsummon();
             }
             
-            SummonUtility.SummonMany(warlock, VFX_IMP_DESTRUCTION, VFX_IMP_DESTRUCTION, summonDuration, summonCount,
+            _ = SummonUtility.SummonMany(warlock, VFX_IMP_DESTRUCTION, VFX_IMP_DESTRUCTION, summonDuration, summonCount,
                 "wlkfiend", location, 0.5f, 2f, 0.8f, 1.8f);
             
             // Apply summonCooldown
