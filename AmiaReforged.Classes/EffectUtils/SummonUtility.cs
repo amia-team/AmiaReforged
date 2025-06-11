@@ -55,45 +55,57 @@ public static class SummonUtility
             }
     }
 
-    public static async Task SummonMany(NwCreature warlock, int summonVfx, int unsummonVfx, float summonDuration, 
+    public static async Task SummonMany(NwCreature summoner, int summonVfx, int unsummonVfx, float summonDuration, 
         int summonCount, string summonResRef, IntPtr location, float minLoc, float maxLoc, float minDelay, float maxDelay)
     {
-        // First unsummon previous warlock summons
-        foreach (NwCreature associate in warlock.Associates)
+        // First unsummon previous summons, because we need to make the new summons undestroyable
+        foreach (NwCreature associate in summoner.Associates)
         {
-            if (associate.ResRef.Contains("wlk"))
+            if (associate.AssociateType == AssociateType.Summoned)
                 associate.Unsummon();
         }
         
         await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
         // Hide the stupid "unsummoning creature" message
-        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, warlock);
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
         
         for (int i = 1; i <= summonCount; i++)
         {
-            foreach (NwCreature associate in warlock.Associates)
-                if (associate.ResRef.Contains("wlk"))
-                    associate.IsDestroyable = false;
-            
             float delay = NwEffects.RandomFloat(minDelay, maxDelay);
+            
+            // Set summons undestroyable so they don't get unsummoned
+            foreach (NwCreature associate in summoner.Associates)
+                if (associate.AssociateType == AssociateType.Summoned)
+                    associate.IsDestroyable = false;
             
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
             
-            await warlock.WaitForObjectContext();
+            await summoner.WaitForObjectContext();
             IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay, 
                 nUnsummonVisualEffectId: unsummonVfx);
             
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
         }
         
+        // Wait a bit so we can make summons destroyable again
         await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
         
-        foreach (NwCreature associate in warlock.Associates)
-            if (associate.ResRef.Contains("wlk"))
+        foreach (NwCreature associate in summoner.Associates)
+            if (associate.AssociateType == AssociateType.Summoned)
+            {
                 associate.IsDestroyable = true;
-            
-        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, warlock);
+
+                if (!summoner.IsInCombat) continue;
+                
+                // Also make sure the summons attack, for some reason multiple summons makes them pretty confused
+                NwCreature nearestHostile = associate.GetNearestCreatures().
+                    First(creature => creature.IsReactionTypeHostile(associate));
+                     
+                await associate.ActionAttackTarget(nearestHostile);
+            }
+        
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, summoner);
     }
 
     public static bool IsPactSummon(uint target) =>
