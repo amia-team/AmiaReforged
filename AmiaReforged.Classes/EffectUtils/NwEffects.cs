@@ -83,7 +83,7 @@ public static class NwEffects
     ///     C# implementation of MyResistSpell that is infinitely less convoluted.
     /// </summary>
     /// <param name="caster">The creature that cast the spell.</param>
-    /// <param name=" target">The creature that is the  target of the spell.</param>
+    /// <param name="target">The creature that is the  target of the spell.</param>
     public static bool ResistSpell(uint caster, uint target)
     {
         int resistSpell = NWScript.ResistSpell(caster, target);
@@ -147,7 +147,7 @@ public static class NwEffects
     public static float RandomFloat(float minFloat, float maxFloat)
     {
         float floatRange = (maxFloat - minFloat) * 100;
-        int randomInt = Random(FloatToInt(floatRange)) + 1;
+        float randomInt = Random(FloatToInt(floatRange)) + 1;
         return randomInt / 100 + minFloat;
     }
 
