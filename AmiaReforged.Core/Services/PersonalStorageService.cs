@@ -214,51 +214,58 @@ public class PersonalStorageService
 
     private async void PopulateChest(PlaceableEvents.OnOpen obj)
     {
-        if (obj.OpenedBy == null) return;
-        NwPlaceable chest = obj.Placeable;
-
-        NWScript.SetLocalInt(chest, "populatingChest", NWScript.TRUE);
-        NWScript.SetLocalInt(chest, ChestInUse, NWScript.TRUE);
-
-        NwPlayer? player = obj.OpenedBy.ControllingPlayer;
-        NwItem? pcKey = player?.LoginCreature?.FindItemWithTag(DsPckey);
-
-        InitIfNewBankMember(pcKey);
-
-        string ownerId = DoesChestHaveOwnerId(obj.Placeable, out bool hasOwnerId);
-
-        switch (hasOwnerId)
+        try
         {
-            case true:
-            {
-                if (pcKey != null) NWScript.SetLocalString(chest, "chest_owner", pcKey.Name);
-                NwItem? key = player?.LoginCreature?.FindItemWithTag(ownerId);
+            if (obj.OpenedBy == null) return;
+            NwPlaceable chest = obj.Placeable;
 
-                await HandleHomeStorage(key, player!, chest);
-                await NwTask.SwitchToMainThread();
-                break;
-            }
-            case false when pcKey != null:
-            {
-                NWScript.SetLocalString(chest, "chest_owner", pcKey.Name);
+            NWScript.SetLocalInt(chest, "populatingChest", NWScript.TRUE);
+            NWScript.SetLocalInt(chest, ChestInUse, NWScript.TRUE);
 
-                if (player != null)
+            NwPlayer? player = obj.OpenedBy.ControllingPlayer;
+            NwItem? pcKey = player?.LoginCreature?.FindItemWithTag(DsPckey);
+
+            InitIfNewBankMember(pcKey);
+
+            string ownerId = DoesChestHaveOwnerId(obj.Placeable, out bool hasOwnerId);
+
+            switch (hasOwnerId)
+            {
+                case true:
                 {
-                    IEnumerable<StoredItem> dbItems = await GetStoredItems(player);
+                    if (pcKey != null) NWScript.SetLocalString(chest, "chest_owner", pcKey.Name);
+                    NwItem? key = player?.LoginCreature?.FindItemWithTag(ownerId);
+
+                    await HandleHomeStorage(key, player!, chest);
                     await NwTask.SwitchToMainThread();
-
-                    foreach (StoredItem item in dbItems)
-                    {
-                        NwObject? itemParsed = Json.Parse(item.ItemJson).ToNwObject<NwItem>(chest.Location, chest);
-                        NWScript.SetLocalString(itemParsed, "db_guid", item.ItemId.ToString());
-                    }
+                    break;
                 }
+                case false when pcKey != null:
+                {
+                    NWScript.SetLocalString(chest, "chest_owner", pcKey.Name);
 
-                break;
+                    if (player != null)
+                    {
+                        IEnumerable<StoredItem> dbItems = await GetStoredItems(player);
+                        await NwTask.SwitchToMainThread();
+
+                        foreach (StoredItem item in dbItems)
+                        {
+                            NwObject? itemParsed = Json.Parse(item.ItemJson).ToNwObject<NwItem>(chest.Location, chest);
+                            NWScript.SetLocalString(itemParsed, "db_guid", item.ItemId.ToString());
+                        }
+                    }
+
+                    break;
+                }
             }
-        }
         
-        NWScript.SetLocalInt(chest, "populatingChest", 0);
+            NWScript.SetLocalInt(chest, "populatingChest", 0);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
     }
 
     private static void InitIfNewBankMember(NwItem? pcKey)
