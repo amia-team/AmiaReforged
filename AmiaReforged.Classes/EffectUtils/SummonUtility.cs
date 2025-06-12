@@ -65,7 +65,7 @@ public static class SummonUtility
                 associate.Unsummon();
         }
         
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+        await NwTask.Delay(TimeSpan.FromSeconds(1));
         
         // Hide the stupid "unsummoning creature" message
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
