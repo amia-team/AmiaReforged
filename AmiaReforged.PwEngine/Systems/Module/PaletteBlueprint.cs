@@ -4,12 +4,12 @@ namespace AmiaReforged.PwEngine.Systems.Module;
 
 internal sealed class PaletteBlueprint : IBlueprint
 {
-    public string ResRef { get; init; }
-    public string FullName { get; init; }
-    public string Name { get; init; }
-    public string Category { get; init; }
+    public required string ResRef { get; init; }
+    public required string FullName { get; init; }
+    public required string Name { get; init; }
+    public required string Category { get; init; }
     public float? ChallengeRating { get; init; }
-    public string Faction { get; init; }
+    public required string Faction { get; init; }
     public BlueprintObjectType ObjectType { get; init; }
 
     public NwObject? Create(Location location)
@@ -29,7 +29,7 @@ internal sealed class PaletteBlueprint : IBlueprint
         };
     }
 
-    public NwItem? Create(NwGameObject owner)
+    public NwItem? Create(NwGameObject? owner)
     {
         if (ObjectType is not BlueprintObjectType.Item || owner == null)
         {

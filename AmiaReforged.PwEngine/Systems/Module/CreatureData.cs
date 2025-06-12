@@ -2,10 +2,10 @@ namespace AmiaReforged.PwEngine.Systems.Module;
 
 public class CreatureData
 {
-    public string TemplateResRef { get; set; }
-    public string FullName { get; set; }
+    public string? TemplateResRef { get; set; }
+    public string? FullName { get; set; }
     public List<string> FoundInAreas { get; set; } = new();
-    public string FirstClassName { get; set; }
+    public string? FirstClassName { get; set; }
     public string? SecondClassName { get; set; }
     public string? ThirdClassName { get; set; }
     public int Level { get; set; }
@@ -97,40 +97,40 @@ public class SpellPowerData
 
 public class SpecialAbilityData
 {
-    public string Name { get; set; }
+    public string? Name { get; set; }
     public byte CasterLevel { get; set; }
 }
 
 public class CreatureEventData
 {
-    public string OnBlocked { get; set; }
-    public string OnUserDefined { get; set; }
-    public string OnDeath { get; set; }
-    public string OnDamaged { get; set; }
-    public string OnConversation { get; set; }
-    public string OnDisturbed { get; set; }
-    public string OnHeartbeat { get; set; }
-    public string OnCombatRoundEnd { get; set; }
-    public string OnPhysicalAttacked { get; set; }
-    public string OnPerception { get; set; }
-    public string OnRested { get; set; }
-    public string OnSpawn { get; set; }
-    public string OnSpellCast { get; set; }
+    public string? OnBlocked { get; set; }
+    public string? OnUserDefined { get; set; }
+    public string? OnDeath { get; set; }
+    public string? OnDamaged { get; set; }
+    public string? OnConversation { get; set; }
+    public string? OnDisturbed { get; set; }
+    public string? OnHeartbeat { get; set; }
+    public string? OnCombatRoundEnd { get; set; }
+    public string? OnPhysicalAttacked { get; set; }
+    public string? OnPerception { get; set; }
+    public string? OnRested { get; set; }
+    public string? OnSpawn { get; set; }
+    public string? OnSpellCast { get; set; }
 }
 
 public class InventoryData
 {
-    public IEnumerable<ItemData> Items { get; set; }
+    public IEnumerable<ItemData>? Items { get; set; }
 }
 
 public class ItemData
 {
-    public string Name { get; set; }
-    public string Type { get; set; }
-    public IEnumerable<ItemPropertyData> ItemProperties { get; set; }
+    public string? Name { get; set; }
+    public string? Type { get; set; }
+    public IEnumerable<ItemPropertyData>? ItemProperties { get; set; }
 }
 
 public class ItemPropertyData
 {
-    public string ItemProperty { get; set; } 
+    public string? ItemProperty { get; set; } 
 }
