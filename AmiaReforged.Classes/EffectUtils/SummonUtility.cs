@@ -79,9 +79,12 @@ public static class SummonUtility
             
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
             
-            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay, 
-                nUnsummonVisualEffectId: unsummonVfx);
+            await NwTask.Delay(TimeSpan.FromSeconds(delay));
             
+            await summoner.WaitForObjectContext();
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, 
+                nUnsummonVisualEffectId: unsummonVfx);
+
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
         }
         
