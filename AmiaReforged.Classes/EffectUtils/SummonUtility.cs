@@ -79,7 +79,6 @@ public static class SummonUtility
             
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
             
-            await summoner.WaitForObjectContext();
             IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay, 
                 nUnsummonVisualEffectId: unsummonVfx);
             
@@ -87,7 +86,7 @@ public static class SummonUtility
         }
         
         // Wait a bit so we can make summons destroyable again
-        await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 2));
+        await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
         
         foreach (NwCreature associate in summoner.Associates)
             if (associate.AssociateType == AssociateType.Summoned)
