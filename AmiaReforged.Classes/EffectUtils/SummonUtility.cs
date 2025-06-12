@@ -70,19 +70,20 @@ public static class SummonUtility
         
         for (int i = 1; i <= summonCount; i++)
         {
-            float delay = NwEffects.RandomFloat(minDelay, maxDelay);
-            
-            IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
-            
-            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay,
-                nUnsummonVisualEffectId: unsummonVfx);
-
-            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
-            
             // Set summons undestroyable so they don't get unsummoned
             foreach (NwCreature associate in summoner.Associates)
                 if (associate.AssociateType == AssociateType.Summoned)
                     associate.IsDestroyable = false;
+            
+            float delay = NwEffects.RandomFloat(minDelay, maxDelay);
+            
+            IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
+            
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx,
+                nUnsummonVisualEffectId: unsummonVfx);
+
+            DelayCommand(delay, () => AssignCommand(summoner, () => 
+                ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration)));
         }
         
         // Wait a bit so we can make summons destroyable again
