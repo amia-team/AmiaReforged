@@ -65,8 +65,6 @@ public static class SummonUtility
                 associate.Unsummon();
         }
         
-        await NwTask.Delay(TimeSpan.FromSeconds(1));
-        
         // Hide the stupid "unsummoning creature" message
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
         
@@ -89,7 +87,7 @@ public static class SummonUtility
         }
         
         // Wait a bit so we can make summons destroyable again
-        await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
+        await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 2));
         
         foreach (NwCreature associate in summoner.Associates)
             if (associate.AssociateType == AssociateType.Summoned)
