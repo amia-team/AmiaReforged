@@ -124,14 +124,6 @@ public static class SummonUtility
             if (associate.ResRef == summonResRef)
             {
                 associate.IsDestroyable = true;
-
-                if (!summoner.IsInCombat) continue;
-                
-                // Also make sure the summons attack, for some reason multiple summons makes them pretty confused
-                NwCreature nearestHostile = associate.GetNearestCreatures().
-                    First(creature => creature.IsReactionTypeHostile(associate));
-                     
-                _ = associate.ActionAttackTarget(nearestHostile);
             }
         
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, summoner);
