@@ -77,7 +77,7 @@ public static class SummonUtility
         // First unsummon previous summons, because we need to make the new summons undestroyable
         foreach (NwCreature associate in summoner.Associates)
         {
-            if (associate.AssociateType == AssociateType.Summoned)
+            if (associate.ResRef == summonResRef)
                 associate.Unsummon();
         }
         
@@ -101,6 +101,10 @@ public static class SummonUtility
         
         for (int i = 1; i <= summonCount; i++)
         {
+            foreach (NwCreature associate in summoner.Associates)
+                if (associate.ResRef == summonResRef)
+                    associate.IsDestroyable = false;
+            
             IntPtr randomSummonLocation = 
                 GetRandomLocationAroundPoint(summonLocation, NwEffects.RandomFloat(minDist, maxDist));
             
@@ -111,12 +115,6 @@ public static class SummonUtility
             
             DelayCommand(summonDelay, () =>
                 ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration));
-            
-            DelayCommand(summonDelay + 0.1f, () => 
-                SetIsDestroyable(FALSE,FALSE,FALSE, 
-                    GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner,i)));
-
-            minDelay += 0.2f;
         }
         
         // Wait a bit so we can make summons destroyable again
