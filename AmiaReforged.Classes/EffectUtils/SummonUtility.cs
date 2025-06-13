@@ -55,8 +55,24 @@ public static class SummonUtility
             }
     }
 
-    public static async Task SummonMany(NwCreature summoner, int summonVfx, int unsummonVfx, float summonDuration, 
-        int summonCount, string summonResRef, IntPtr location, float minLoc, float maxLoc, float minDelay, float maxDelay)
+    /// <summary>
+    /// Use this for when you want your spell to summon multiple creatures of the same creature resref.
+    /// </summary>
+    /// <param name="summoner">The creature doing the summoning</param>
+    /// <param name="summonVfx">Vfx played when the summon appears, use one-shot vfxs</param>
+    /// <param name="unsummonVfx">Vfx played when the summon disappears, use one-shot vfxs</param>
+    /// <param name="summonDuration">The summons' duration</param>
+    /// <param name="summonCount">How many summons you want to have</param>
+    /// <param name="summonResRef">The resref of the creature you want to summon</param>
+    /// <param name="summonLocation">The summon location, usually GetSpellTargetLocation</param>
+    /// /// <param name="minDelay"></param>
+    /// <param name="maxDelay"></param>
+    /// <param name="minDist">The minimum distance from the summon location; this varies the summoning location across
+    /// the multiple summons</param>
+    /// <param name="maxDist">The maximum distance from the summon location; this varies the summoning location across
+    /// the multiple summons</param>
+    public static async Task SummonMany(NwCreature summoner, int summonVfx, int unsummonVfx, float summonDuration, int summonCount, 
+        string summonResRef, IntPtr summonLocation, float minDelay, float maxDelay, float minDist, float maxDist)
     {
         // First unsummon previous summons, because we need to make the new summons undestroyable
         foreach (NwCreature associate in summoner.Associates)
@@ -68,28 +84,46 @@ public static class SummonUtility
         // Hide the stupid "unsummoning creature" message
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
         
-        for (int i = 1; i <= summonCount; i++)
+        // If there's only one summon, summon that at the summon location, skips the extra work for multiple summoning
+        if (summonCount == 1)
         {
-            // Set summons undestroyable so they don't get unsummoned
-            foreach (NwCreature associate in summoner.Associates)
-                if (associate.AssociateType == AssociateType.Summoned)
-                    associate.IsDestroyable = false;
+            float summonDelay = NwEffects.RandomFloat(minDelay, maxDelay);
             
-            float delay = NwEffects.RandomFloat(minDelay, maxDelay);
-            
-            IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
-            
-            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay,
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, summonDelay,
                 nUnsummonVisualEffectId: unsummonVfx);
             
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
+
+            return;
+        }
+        
+        // If there are more summons, do the loopy loop for multiple summons
+        
+        for (int i = 1; i <= summonCount; i++)
+        {
+            IntPtr randomSummonLocation = 
+                GetRandomLocationAroundPoint(summonLocation, NwEffects.RandomFloat(minDist, maxDist));
+            
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx,
+                nUnsummonVisualEffectId: unsummonVfx);
+            
+            float summonDelay = NwEffects.RandomFloat(minDelay, maxDelay);
+            
+            DelayCommand(summonDelay, () =>
+                ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration));
+            
+            DelayCommand(summonDelay + 0.1f, () => 
+                SetIsDestroyable(FALSE,FALSE,FALSE, 
+                    GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner,i)));
+
+            minDelay += 0.2f;
         }
         
         // Wait a bit so we can make summons destroyable again
         await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
         
         foreach (NwCreature associate in summoner.Associates)
-            if (associate.AssociateType == AssociateType.Summoned)
+            if (associate.ResRef == summonResRef)
             {
                 associate.IsDestroyable = true;
 
