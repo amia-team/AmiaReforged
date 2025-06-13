@@ -114,7 +114,13 @@ public static class SummonUtility
         // Loop summoning
         for (int i = 0; i < summonCount; i++)
         {
-            await NwTask.Delay(TimeSpan.FromSeconds(delayArray[i]));
+            float delay;
+            if (i == 0)
+                delay = delayArray[i];
+            else
+                delay = delayArray[i] - delayArray[i - 1];
+
+            await NwTask.Delay(TimeSpan.FromSeconds(delay));
             
             IntPtr randomSummonLocation = 
                 GetRandomLocationAroundPoint(summonLocation, NwEffects.RandomFloat(minDist, maxDist));
@@ -134,7 +140,7 @@ public static class SummonUtility
         
         // Wait a bit so we can make summons destroyable again
         float newDelay = maxDelay + summonCount * 0.1f + 1;
-        await NwTask.Delay(TimeSpan.FromSeconds(newDelay + 1));
+        await NwTask.Delay(TimeSpan.FromSeconds(newDelay));
         
         foreach (NwCreature associate in summoner.Associates)
             if (associate.ResRef == summonResRef)
