@@ -117,21 +117,12 @@ public static class SummonUtility
             IntPtr randomSummonLocation = 
                 GetRandomLocationAroundPoint(summonLocation, NwEffects.RandomFloat(minDist, maxDist));
             
-            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx,
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delayArray[i],
                 nUnsummonVisualEffectId: unsummonVfx);
-            
-            DelayCommand(delayArray[i], () =>
-                ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration));
+
+            int nth = i++;
+            SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nth));
         }
-        
-        // Loop making summons undestroyable; note: NWScript starts indexing at 1
-        for (int i = 1; i <= summonCount; i++)
-        {
-            int nth = i;
-            DelayCommand(delayArray[i] + 0.1f, () =>
-                SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nth)));
-        }
-        
         
         // Wait a bit so we can make summons destroyable again
         await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
