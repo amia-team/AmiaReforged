@@ -143,9 +143,6 @@ public static class SummonUtility
                     currentAssociate.Tag = "my_little_summon" + i;
                 }
         }
-        
-        // Add a wee delay to make sure everything's summoned
-        await NwTask.Delay(TimeSpan.FromSeconds(0.5f));
 
         for (int i = 0; i < summonCount; i++)
         {
