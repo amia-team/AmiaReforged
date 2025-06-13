@@ -99,22 +99,33 @@ public static class SummonUtility
         
         // If there are more summons, do the loopy loop for multiple summons
         
-        for (int i = 1; i <= summonCount; i++)
+        // First populate an array with the delays for the summons
+        float[] delayArray = new float[summonCount];
+        
+        for (int i = 0; i < summonCount; i++)
         {
-            foreach (NwCreature associate in summoner.Associates)
-                if (associate.ResRef == summonResRef)
-                    associate.IsDestroyable = false;
-            
+            float summonDelay = NwEffects.RandomFloat(minDelay, maxDelay);
+            delayArray[i] = summonDelay;
+        }
+        
+        // Sort from lowest to highest
+        Array.Sort(delayArray);
+        
+        // Loop summoning
+        for (int i = 0; i < summonCount; i++)
+        {
             IntPtr randomSummonLocation = 
                 GetRandomLocationAroundPoint(summonLocation, NwEffects.RandomFloat(minDist, maxDist));
             
             IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx,
                 nUnsummonVisualEffectId: unsummonVfx);
             
-            float summonDelay = NwEffects.RandomFloat(minDelay, maxDelay);
-            
-            DelayCommand(summonDelay, () =>
+            DelayCommand(delayArray[i], () =>
                 ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration));
+
+            int i1 = i++;
+            DelayCommand(delayArray[i], () =>
+                SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, i1)));
         }
         
         // Wait a bit so we can make summons destroyable again
