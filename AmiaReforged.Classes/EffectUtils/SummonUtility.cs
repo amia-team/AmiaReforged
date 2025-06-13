@@ -122,11 +122,16 @@ public static class SummonUtility
             
             DelayCommand(delayArray[i], () =>
                 ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration));
-
-            int i1 = i++;
-            DelayCommand(delayArray[i], () =>
-                SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, i1)));
         }
+        
+        // Loop making summons undestroyable; note: NWScript starts indexing at 1
+        for (int i = 0; i < summonCount; i++)
+        {
+            int nth = i;
+            DelayCommand(delayArray[i] + 0.01f, () =>
+                SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nth)));
+        }
+        
         
         // Wait a bit so we can make summons destroyable again
         await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
