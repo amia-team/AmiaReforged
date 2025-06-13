@@ -99,6 +99,9 @@ public static class SummonUtility
         
         // If there are more summons, do the loopy loop for multiple summons
         
+        VisualEffectTableEntry newSummonVfx = NwGameTables.VisualEffectTable[summonVfx];
+        VisualEffectTableEntry newUnsummonVfx = NwGameTables.VisualEffectTable[unsummonVfx];
+        
         // First populate an array with the delays for the summons
         float[] delayArray = new float[summonCount];
         
@@ -114,27 +117,27 @@ public static class SummonUtility
         // Loop summoning
         for (int i = 0; i < summonCount; i++)
         {
-            await NwTask.Delay(TimeSpan.FromSeconds(delayArray[i]));
+            float delay = delayArray[i] - delayArray[i - 1];
+            await NwTask.Delay(TimeSpan.FromSeconds(delay));
             
-            IntPtr randomSummonLocation = 
+            Location? randomSummonLocation = 
                 GetRandomLocationAroundPoint(summonLocation, NwEffects.RandomFloat(minDist, maxDist));
+            if (randomSummonLocation == null) return;
+            
+            NwCreature? summon = NwCreature.Create(summonResRef, randomSummonLocation);
+            if (summon == null) return;
 
+            summon.IsDestroyable = false;
+            
             await summoner.WaitForObjectContext();
             
-            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx,
-                nUnsummonVisualEffectId: unsummonVfx);
+            Effect summonEffect = Effect.SummonCreature(summon, newSummonVfx, unsummonVfx: newUnsummonVfx);
             
-            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration);
-            
-            await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
-
-            int nthSummon = i + 1;
-            SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nthSummon));
+            randomSummonLocation.ApplyEffect(EffectDuration.Temporary, summonEffect, TimeSpan.FromSeconds(summonDuration));
         }
         
         // Wait a bit so we can make summons destroyable again
-        float newDelay = maxDelay + summonCount * 0.1f + 1;
-        await NwTask.Delay(TimeSpan.FromSeconds(newDelay + 1));
+        await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
         
         foreach (NwCreature associate in summoner.Associates)
             if (associate.ResRef == summonResRef)
