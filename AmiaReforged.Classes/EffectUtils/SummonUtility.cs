@@ -75,14 +75,7 @@ public static class SummonUtility
                 if (associate.AssociateType == AssociateType.Summoned)
                     associate.IsDestroyable = false;
             
-            float currentMinDelay = minDelay;
-            
-            if (i > 1)
-            {
-                currentMinDelay += 0.1f;
-            }
-            
-            float delay = NwEffects.RandomFloat(currentMinDelay, maxDelay);
+            float delay = NwEffects.RandomFloat(minDelay, maxDelay);
             
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
             
