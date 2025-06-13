@@ -74,13 +74,15 @@ public static class SummonUtility
             foreach (NwCreature associate in summoner.Associates)
                 if (associate.AssociateType == AssociateType.Summoned)
                     associate.IsDestroyable = false;
-
+            
+            float currentMinDelay = minDelay;
+            
             if (i > 1)
             {
-                minDelay += 0.1f;
+                currentMinDelay += 0.1f;
             }
             
-            float delay = NwEffects.RandomFloat(minDelay, maxDelay);
+            float delay = NwEffects.RandomFloat(currentMinDelay, maxDelay);
             
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
             
