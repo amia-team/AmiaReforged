@@ -111,9 +111,6 @@ public static class SummonUtility
         // Sort from lowest to highest
         Array.Sort(delayArray);
         
-        // Make an empty list where to store our summons
-        List<NwCreature> myLittleSummons = new ();
-        
         // Loop summoning
         for (int i = 0; i < summonCount; i++)
         {
@@ -143,25 +140,27 @@ public static class SummonUtility
                 if (!associatesBeforeSummon.Contains(currentAssociate))
                 {
                     currentAssociate.IsDestroyable = false;
-                    
-                    myLittleSummons.Add(currentAssociate);
+                    currentAssociate.Tag = "my_little_summon" + i;
                 }
         }
         
         // Add a wee delay to make sure everything's summoned
         await NwTask.Delay(TimeSpan.FromSeconds(0.5f));
 
-        foreach (NwCreature summon in myLittleSummons)
+        for (int i = 0; i < summonCount; i++)
         {
-            summon.IsDestroyable = true;
+            NwCreature myLittleSummon = summoner.Associates.First(summon => 
+                summon.Tag == "my_little_summon" + i);
 
-            if (!summoner.IsInCombat) continue;
+            myLittleSummon.IsDestroyable = true;
             
             // Also make sure the summons attack, for some reason multiple summons makes them pretty confused
-            NwCreature nearestHostile = summon.GetNearestCreatures().
-                First(creature => creature.IsReactionTypeHostile(summon));
+            NwCreature? nearestHostile = myLittleSummon.GetNearestCreatures().
+                FirstOrDefault(creature => creature.IsReactionTypeHostile(myLittleSummon));
+
+            if (nearestHostile == null) continue;
                  
-            _ = summon.ActionAttackTarget(nearestHostile);
+            _ = myLittleSummon.ActionAttackTarget(nearestHostile);
         }
         
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, summoner);
