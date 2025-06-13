@@ -141,7 +141,7 @@ public static class SummonUtility
         }
         
         // Add a wee delay to make sure everything's summoned
-        await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
+        await NwTask.Delay(TimeSpan.FromSeconds(0.5f));
         
         foreach (NwCreature associate in summoner.Associates)
             if (associate.ResRef == summonResRef)
