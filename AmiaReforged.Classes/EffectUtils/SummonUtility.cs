@@ -132,14 +132,14 @@ public static class SummonUtility
             
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration);
             
-            await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
+            await NwTask.Delay(TimeSpan.FromSeconds(0.01f));
 
             int nthSummon = i + 1;
-            SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nthSummon));
+            SetIsDestroyable(FALSE, FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nthSummon));
         }
         
         // Wait a bit so we can make summons destroyable again
-        float newDelay = maxDelay + summonCount * 0.1f + 1;
+        float newDelay = maxDelay + summonCount + 1;
         await NwTask.Delay(TimeSpan.FromSeconds(newDelay));
         
         foreach (NwCreature associate in summoner.Associates)
