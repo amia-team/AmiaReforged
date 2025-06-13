@@ -67,11 +67,17 @@ public static class SummonUtility
         
         // Hide the stupid "unsummoning creature" message
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
+
+        float delay = minDelay;
         
         for (int i = 1; i <= summonCount; i++)
         {
-            float delay = NwEffects.RandomFloat(minDelay, maxDelay);
-            
+            if (i > 1)
+            {
+                minDelay += 0.2f;
+                delay = NwEffects.RandomFloat(minDelay, maxDelay);
+            }
+
             IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
             
             IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delay,
