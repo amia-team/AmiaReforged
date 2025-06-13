@@ -111,6 +111,9 @@ public static class SummonUtility
         // Sort from lowest to highest
         Array.Sort(delayArray);
         
+        // Make an empty list where to store our summons
+        List<NwCreature> myLittleSummons = new ();
+        
         // Loop summoning
         for (int i = 0; i < summonCount; i++)
         {
@@ -130,32 +133,36 @@ public static class SummonUtility
             IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx,
                 nUnsummonVisualEffectId: unsummonVfx);
             
+            HashSet<NwCreature> associatesBeforeSummon = new (summoner.Associates);
+            
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration);
             
             await NwTask.Delay(TimeSpan.FromSeconds(0.01f));
             
-            // Don't set undestroyable on the last loop
-            if (i >= summonCount - 1) continue;
-            int nthSummon = i + 1;
-            SetIsDestroyable(FALSE, FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nthSummon));
+            foreach (NwCreature currentAssociate in summoner.Associates)
+                if (!associatesBeforeSummon.Contains(currentAssociate))
+                {
+                    currentAssociate.IsDestroyable = false;
+                    
+                    myLittleSummons.Add(currentAssociate);
+                }
         }
         
         // Add a wee delay to make sure everything's summoned
         await NwTask.Delay(TimeSpan.FromSeconds(0.5f));
-        
-        foreach (NwCreature associate in summoner.Associates)
-            if (associate.ResRef == summonResRef)
-            {
-                associate.IsDestroyable = true;
 
-                if (!summoner.IsInCombat) continue;
-                
-                // Also make sure the summons attack, for some reason multiple summons makes them pretty confused
-                NwCreature nearestHostile = associate.GetNearestCreatures().
-                    First(creature => creature.IsReactionTypeHostile(associate));
-                     
-                _ = associate.ActionAttackTarget(nearestHostile);
-            }
+        foreach (NwCreature summon in myLittleSummons)
+        {
+            summon.IsDestroyable = true;
+
+            if (!summoner.IsInCombat) continue;
+            
+            // Also make sure the summons attack, for some reason multiple summons makes them pretty confused
+            NwCreature nearestHostile = summon.GetNearestCreatures().
+                First(creature => creature.IsReactionTypeHostile(summon));
+                 
+            _ = summon.ActionAttackTarget(nearestHostile);
+        }
         
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, summoner);
     }
