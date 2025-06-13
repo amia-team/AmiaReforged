@@ -119,6 +119,8 @@ public static class SummonUtility
             
             IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delayArray[i],
                 nUnsummonVisualEffectId: unsummonVfx);
+            
+            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration);
 
             int nth = i++;
             SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nth));
