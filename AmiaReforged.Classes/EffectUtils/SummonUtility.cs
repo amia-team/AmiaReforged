@@ -72,6 +72,11 @@ public static class SummonUtility
         
         for (int i = 1; i <= summonCount; i++)
         {
+            // Set summons undestroyable so they don't get unsummoned
+            foreach (NwCreature associate in summoner.Associates)
+                if (associate.AssociateType == AssociateType.Summoned)
+                    associate.IsDestroyable = false;
+            
             if (i > 1)
             {
                 minDelay += 0.2f;
@@ -84,11 +89,6 @@ public static class SummonUtility
                 nUnsummonVisualEffectId: unsummonVfx);
             
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
-            
-            // Set summons undestroyable so they don't get unsummoned
-            foreach (NwCreature associate in summoner.Associates)
-                if (associate.AssociateType == AssociateType.Summoned)
-                    associate.IsDestroyable = false;
         }
         
         // Wait a bit so we can make summons destroyable again
