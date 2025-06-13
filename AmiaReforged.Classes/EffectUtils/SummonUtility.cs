@@ -138,10 +138,6 @@ public static class SummonUtility
             SetIsDestroyable(FALSE, FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nthSummon));
         }
         
-        // Wait a bit so we can make summons destroyable again
-        float newDelay = maxDelay + summonCount + 1;
-        await NwTask.Delay(TimeSpan.FromSeconds(newDelay));
-        
         foreach (NwCreature associate in summoner.Associates)
             if (associate.ResRef == summonResRef)
             {
