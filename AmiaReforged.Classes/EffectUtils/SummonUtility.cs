@@ -125,7 +125,7 @@ public static class SummonUtility
         }
         
         // Loop making summons undestroyable; note: NWScript starts indexing at 1
-        for (int i = 0; i < summonCount; i++)
+        for (int i = 1; i <= summonCount; i++)
         {
             int nth = i;
             DelayCommand(delayArray[i] + 0.01f, () =>
