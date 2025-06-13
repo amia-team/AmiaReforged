@@ -114,20 +114,25 @@ public static class SummonUtility
         // Loop summoning
         for (int i = 0; i < summonCount; i++)
         {
+            await NwTask.Delay(TimeSpan.FromSeconds(delayArray[i]));
+            
             IntPtr randomSummonLocation = 
                 GetRandomLocationAroundPoint(summonLocation, NwEffects.RandomFloat(minDist, maxDist));
             
-            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, delayArray[i],
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx,
                 nUnsummonVisualEffectId: unsummonVfx);
             
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration);
+            
+            await NwTask.Delay(TimeSpan.FromSeconds(0.1f));
 
-            int nth = i++;
-            SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nth));
+            int nthSummon = i + 1;
+            SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nthSummon));
         }
         
         // Wait a bit so we can make summons destroyable again
-        await NwTask.Delay(TimeSpan.FromSeconds(maxDelay + 1));
+        float newDelay = maxDelay + summonCount * 0.1f + 1;
+        await NwTask.Delay(TimeSpan.FromSeconds(newDelay + 1));
         
         foreach (NwCreature associate in summoner.Associates)
             if (associate.ResRef == summonResRef)
