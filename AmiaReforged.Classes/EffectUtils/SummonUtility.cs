@@ -128,7 +128,7 @@ public static class SummonUtility
         for (int i = 1; i <= summonCount; i++)
         {
             int nth = i;
-            DelayCommand(delayArray[i] + 0.01f, () =>
+            DelayCommand(delayArray[i] + 0.1f, () =>
                 SetIsDestroyable(FALSE, oObject: GetAssociate(ASSOCIATE_TYPE_SUMMONED, summoner, nth)));
         }
         
