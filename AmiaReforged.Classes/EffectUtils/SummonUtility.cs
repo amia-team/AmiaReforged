@@ -138,26 +138,22 @@ public static class SummonUtility
             
             foreach (NwCreature currentAssociate in summoner.Associates)
                 if (!associatesBeforeSummon.Contains(currentAssociate))
-                {
                     currentAssociate.IsDestroyable = false;
-                    currentAssociate.Tag = "my_little_summon" + i;
-                }
         }
 
-        for (int i = 0; i < summonCount; i++)
+        foreach (NwCreature associate in summoner.Associates)
         {
-            NwCreature myLittleSummon = summoner.Associates.First(summon => 
-                summon.Tag == "my_little_summon" + i);
-
-            myLittleSummon.IsDestroyable = true;
+            if (associate.ResRef != summonResRef) continue;
+            
+            associate.IsDestroyable = true;
             
             // Also make sure the summons attack, for some reason multiple summons makes them pretty confused
-            NwCreature? nearestHostile = myLittleSummon.GetNearestCreatures().
-                FirstOrDefault(creature => creature.IsReactionTypeHostile(myLittleSummon));
+            NwCreature? nearestHostile = associate.GetNearestCreatures().
+                FirstOrDefault(creature => creature.IsReactionTypeHostile(associate));
 
             if (nearestHostile == null) continue;
                  
-            _ = myLittleSummon.ActionAttackTarget(nearestHostile);
+            _ = associate.ActionAttackTarget(nearestHostile);
         }
         
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, summoner);
