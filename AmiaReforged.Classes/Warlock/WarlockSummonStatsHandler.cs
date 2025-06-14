@@ -842,9 +842,7 @@ public class WarlockSummonStatsHandler
     private void OnSummonAdjustSlaad(OnAssociateAdd obj)
     {
         if (NWScript.GetLevelByClass(57, obj.Owner) <= 0) return;
-        bool isSlaad = obj.Associate.ResRef == "wlkslaadred" || obj.Associate.ResRef == "wlkslaadblue" ||
-                       obj.Associate.ResRef == "wlkslaadgreen"
-                       || obj.Associate.ResRef == "wlkslaadgray";
+        bool isSlaad = obj.Associate.ResRef is "wlkslaadred" or "wlkslaadblue" or "wlkslaadgreen" or "wlkslaadgray";
         if (!isSlaad) return;
         if (obj.AssociateType != AssociateType.Summoned) return;
 
