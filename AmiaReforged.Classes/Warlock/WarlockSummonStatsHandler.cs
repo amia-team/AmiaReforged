@@ -171,7 +171,7 @@ public class WarlockSummonStatsHandler
 
         foreach (NwFeat feat in summon.Feats)
         {
-            if (feat.Id == 289 || feat.Id == 226) continue;
+            if (feat.FeatType is Feat.UncannyReflex or Feat.WeaponProficiencyCreature) continue;
             summon.RemoveFeat(feat);
         }
     }
@@ -338,7 +338,7 @@ public class WarlockSummonStatsHandler
 
         foreach (NwFeat feat in summon.Feats)
         {
-            if (feat.Id is 289 or 226) continue;
+            if (feat.FeatType is Feat.UncannyReflex or Feat.WeaponProficiencyCreature) continue;
             summon.RemoveFeat(feat);
         }
     }
@@ -346,7 +346,7 @@ public class WarlockSummonStatsHandler
     private void OnSummonAdjustElemental(OnAssociateAdd obj)
     {
         if (NWScript.GetLevelByClass(57, obj.Owner) <= 0) return;
-        bool isElemental = obj.Associate.ResRef == "wlkelemental";
+        bool isElemental = obj.Associate.ResRef.Contains("wlkelemental");
         if (!isElemental) return;
         if (obj.AssociateType != AssociateType.Summoned) return;
 
@@ -480,46 +480,29 @@ public class WarlockSummonStatsHandler
         summon.BaseAttackCount = 1;
         summon.Size = CreatureSize.Medium;
 
-        DamageType element = default;
-
-        if (summon.Tag.Contains('1'))
+        DamageType[]? elements = summon.ResRef switch
         {
-            element = DamageType.Fire;
-            summon.Appearance = NwGameTables.AppearanceTable.GetRow(109);
-            summon.Name = "Summoned Fire Mephit";
-        }
-
-        if (summon.Tag.Contains('2'))
+            "wlkelemental" => [DamageType.Fire],
+            "wlkelementalwat" => [DamageType.Cold],
+            "wlkelementalstea" => [DamageType.Fire, DamageType.Cold],
+            _ => null
+        };
+        if (elements == null) return;
+        
+        foreach (DamageType element in elements)
         {
-            element = DamageType.Cold;
-            summon.Appearance = NwGameTables.AppearanceTable.GetRow(115);
-            summon.PortraitResRef = "po_mepwater_";
-            summon.Name = "Summoned Water Mephit";
+            Effect elementalEffects = Effect.LinkEffects(Effect.DamageIncrease(1, element), 
+                Effect.DamageImmunityIncrease(element, 100));
+            elementalEffects.SubType = EffectSubType.Supernatural;
+            summon.ApplyEffect(EffectDuration.Permanent, elementalEffects);
         }
-
-        if (summon.Tag.Contains('3'))
-        {
-            element = DamageType.Fire;
-            Effect coldElement = Effect.LinkEffects(Effect.DamageIncrease(1, DamageType.Cold),
-                Effect.DamageImmunityIncrease(DamageType.Cold, 100));
-            coldElement.SubType = EffectSubType.Supernatural;
-            summon.ApplyEffect(EffectDuration.Permanent, coldElement);
-            summon.Appearance = NwGameTables.AppearanceTable.GetRow(113);
-            summon.PortraitResRef = "po_mepsteam_";
-            summon.Name = "Summoned Steam Mephit";
-        }
-
-        Effect elementalEffects =
-            Effect.LinkEffects(Effect.DamageIncrease(1, element), Effect.DamageImmunityIncrease(element, 100));
-        elementalEffects.SubType = EffectSubType.Supernatural;
-        summon.ApplyEffect(EffectDuration.Permanent, elementalEffects);
-
+        
         damageIncrease.SubType = EffectSubType.Supernatural;
         summon.ApplyEffect(EffectDuration.Permanent, damageIncrease);
-
+        
         foreach (NwFeat feat in summon.Feats)
         {
-            if (feat.Id == 289 || feat.Id == 226) continue;
+            if (feat.FeatType is Feat.UncannyReflex or Feat.WeaponProficiencyCreature) continue;
             summon.RemoveFeat(feat);
         }
     }
@@ -683,7 +666,7 @@ public class WarlockSummonStatsHandler
 
         foreach (NwFeat feat in summon.Feats)
         {
-            if (feat.Id == 289 || feat.Id == 226) continue;
+            if (feat.FeatType is Feat.UncannyReflex or Feat.WeaponProficiencyCreature) continue;
             summon.RemoveFeat(feat);
         }
     }
@@ -834,7 +817,7 @@ public class WarlockSummonStatsHandler
 
         foreach (NwFeat feat in summon.Feats)
         {
-            if (feat.Id == 289 || feat.Id == 226) continue;
+            if (feat.FeatType is Feat.UncannyReflex or Feat.WeaponProficiencyCreature) continue;
             summon.RemoveFeat(feat);
         }
     }
@@ -1021,7 +1004,7 @@ public class WarlockSummonStatsHandler
 
         foreach (NwFeat feat in summon.Feats)
         {
-            if (feat.Id == 289 || feat.Id == 226) continue;
+            if (feat.FeatType is Feat.UncannyReflex or Feat.WeaponProficiencyCreature) continue;
             summon.RemoveFeat(feat);
         }
 
