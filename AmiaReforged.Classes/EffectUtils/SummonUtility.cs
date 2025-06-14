@@ -74,9 +74,6 @@ public static class SummonUtility
     public static async Task SummonMany(NwCreature summoner, int summonVfx, int unsummonVfx, float summonDuration, int summonCount, 
         string summonResRef, IntPtr summonLocation, float minDelay, float maxDelay, float minDist, float maxDist)
     {
-        // Hide the stupid "unsummoning creature" message
-        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
-        
         // If there's only one summon, summon that at the summon location, skips the extra work for multiple summoning
         if (summonCount == 1)
         {
@@ -89,6 +86,9 @@ public static class SummonUtility
 
             return;
         }
+        
+        // For multi summoning, hide the stupid "unsummoning creature" message
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
         
         // If there are more summons, do the loopy loop for multiple summons
         
@@ -171,21 +171,21 @@ public static class SummonUtility
     public static async Task SummonManyDifferent(NwCreature summoner, int summonVfx, int unsummonVfx, float summonDuration, 
         int summonCount, string[] summonResRefs, IntPtr summonLocation, float minDelay, float maxDelay, float minDist, float maxDist)
     {
-        // Hide the stupid "unsummoning creature" message
-        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
-        
         // If there's only one summon, summon that at the summon location, skips the extra work for multiple summoning
         if (summonCount == 1)
         {
             float summonDelay = NwEffects.RandomFloat(minDelay, maxDelay);
             
-            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, summonDelay,
+            IntPtr summonCreature = EffectSummonCreature(summonResRefs[0], summonVfx, summonDelay,
                 nUnsummonVisualEffectId: unsummonVfx);
             
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
 
             return;
         }
+        
+        // For multi summoning, hide the stupid "unsummoning creature" message
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
         
         // If there are more summons, do the loopy loop for multiple summons
         
