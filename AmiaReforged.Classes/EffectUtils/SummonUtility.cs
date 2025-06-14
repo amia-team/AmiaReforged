@@ -217,7 +217,7 @@ public static class SummonUtility
 
             await summoner.WaitForObjectContext();
             
-            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx,
+            IntPtr summonCreature = EffectSummonCreature(summonResRefs[i], summonVfx,
                 nUnsummonVisualEffectId: unsummonVfx);
             
             HashSet<NwCreature> associatesBeforeSummon = new (summoner.Associates);
@@ -233,7 +233,7 @@ public static class SummonUtility
 
         foreach (NwCreature associate in summoner.Associates)
         {
-            if (associate.ResRef != summonResRef) continue;
+            if (!summonResRefs.Contains(associate.ResRef)) continue;
             
             associate.IsDestroyable = true;
             
