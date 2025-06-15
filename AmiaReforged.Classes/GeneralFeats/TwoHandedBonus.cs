@@ -21,11 +21,11 @@ public static class TwoHandedBonus
 
         Effect twoHandedAbEffect = Effect.AttackIncrease(twoHandedExtraAbBonus);
         
-        Effect twoHandedBonusEffects = Effect.LinkEffects(twoHandedDamageEffect, twoHandedAbEffect);
-        twoHandedBonusEffects.SubType = EffectSubType.Unyielding;
-        twoHandedBonusEffects.Tag = "twohandedbonus";
+        Effect twoHandedBonusEffect = Effect.LinkEffects(twoHandedDamageEffect, twoHandedAbEffect);
+        twoHandedBonusEffect.SubType = EffectSubType.Unyielding;
+        twoHandedBonusEffect.Tag = "twohandedbonus";
         
-        return twoHandedBonusEffects;
+        return twoHandedBonusEffect;
     }
 
     public static void ApplyTwoHandedBonusEffect(NwCreature creature)
