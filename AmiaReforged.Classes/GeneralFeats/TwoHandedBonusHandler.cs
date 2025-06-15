@@ -21,7 +21,7 @@ public class TwoHandedBonusHandler
         eventService.SubscribeAll<OnItemUnequip, OnItemUnequip.Factory>(OnUnequipApplyTwoHanded, EventCallbackType.After);
         NwModule.Instance.OnEffectApply += OnStrengthGainApplyTwoHanded;
         NwModule.Instance.OnEffectRemove += OnStrengthRemoveApplyTwoHanded;
-        Log.Info(message: "Monk Static Bonuses Service initialized.");
+        Log.Info(message: "TwoHandedBonusHandler initialized.");
     }
     
     private static void OnEquipApplyTwoHanded(OnItemEquip eventData)
