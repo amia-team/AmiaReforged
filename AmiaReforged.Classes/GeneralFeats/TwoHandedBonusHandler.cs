@@ -16,9 +16,7 @@ public class TwoHandedBonusHandler
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
 
         if (environment == "live") return;
-
-        /*eventService.SubscribeAll<OnLoadCharacterFinish, OnLoadCharacterFinish.Factory>(OnLoadApplyTwoHanded,
-            EventCallbackType.After);*/
+        
         eventService.SubscribeAll<OnItemEquip, OnItemEquip.Factory>(OnEquipApplyTwoHanded, EventCallbackType.After);
         eventService.SubscribeAll<OnItemUnequip, OnItemUnequip.Factory>(OnUnequipApplyTwoHanded, EventCallbackType.After);
         NwModule.Instance.OnEffectApply += OnStrengthGainApplyTwoHanded;
@@ -26,13 +24,6 @@ public class TwoHandedBonusHandler
         Log.Info(message: "Monk Static Bonuses Service initialized.");
     }
     
-    private static void OnLoadApplyTwoHanded(OnLoadCharacterFinish eventData)
-    {
-        if (eventData.Player.ControlledCreature is not { } creature) return;
-        
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
-    }
-
     private static void OnEquipApplyTwoHanded(OnItemEquip eventData)
     {
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
