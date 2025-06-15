@@ -19,7 +19,7 @@ public class TwoHandedBonusHandler
         
         eventService.SubscribeAll<OnItemEquip, OnItemEquip.Factory>(OnEquipApplyTwoHanded, EventCallbackType.After);
         eventService.SubscribeAll<OnItemUnequip, OnItemUnequip.Factory>(OnUnequipApplyTwoHanded, EventCallbackType.After);
-        NwModule.Instance.OnEffectApply += OnStrengthGainApplyTwoHanded;
+        NwModule.Instance.OnEffectApply += OnStrengthApplyApplyTwoHanded;
         NwModule.Instance.OnEffectRemove += OnStrengthRemoveApplyTwoHanded;
         Log.Info(message: "TwoHandedBonusHandler initialized.");
     }
@@ -36,11 +36,12 @@ public class TwoHandedBonusHandler
         _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
 
-    private static void OnStrengthGainApplyTwoHanded(OnEffectApply eventData)
+    private static void OnStrengthApplyApplyTwoHanded(OnEffectApply eventData)
     {
         if (eventData.Object is not NwCreature creature) return;
         if (!creature.IsPlayerControlled) return;
-        if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
+        if (eventData.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease) &&
+                eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
         
         _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
@@ -49,7 +50,8 @@ public class TwoHandedBonusHandler
     {
         if (eventData.Object is not NwCreature creature) return;
         if (!creature.IsPlayerControlled) return;
-        if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
+        if (eventData.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease) &&
+            eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
         
         _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
