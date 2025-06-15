@@ -30,7 +30,8 @@ public static class TwoHandedBonus
 
     public static void ApplyTwoHandedBonusEffect(NwCreature creature)
     {
-        NwPlayer? player = creature.ControllingPlayer;
+        // Safe to suppress: the caller of this code returns before executing if the creature isn't player controlled
+        NwPlayer player = creature.ControllingPlayer!;
         
         // Before applying, always remove existing two-handed bonus first
         Effect? twoHandedBonus = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == "twohandedbonus");
@@ -42,7 +43,7 @@ public static class TwoHandedBonus
         if (rightHandItem == null)
         {
             if (twoHandedBonus != null)
-                player?.SendServerMessage("Two-handed bonus removed");
+                player.SendServerMessage("Two-handed bonus removed");
             
             return;
         }
@@ -55,7 +56,7 @@ public static class TwoHandedBonus
         if (weaponSize <= creatureSize)
         {
             if (twoHandedBonus != null)
-                player?.SendServerMessage("Two-handed bonus removed");
+                player.SendServerMessage("Two-handed bonus removed");
 
             return;
         }
@@ -65,7 +66,7 @@ public static class TwoHandedBonus
         
         // If the two-handed bonus was already there, it means that it was adjusted by levelling or str buffs/debuffs
         if (twoHandedBonus != null)
-            player?.SendServerMessage("Two-handed bonus adjusted");
+            player.SendServerMessage("Two-handed bonus adjusted");
         
         // Otherwise we know that the bonus wasn't there and has been applied for the first time
         player?.SendServerMessage("Two-handed bonus applied");
