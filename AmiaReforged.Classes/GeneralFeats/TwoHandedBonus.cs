@@ -28,8 +28,11 @@ public static class TwoHandedBonus
         return twoHandedBonusEffect;
     }
 
-    public static void ApplyTwoHandedBonusEffect(NwCreature creature)
+    public static async Task ApplyTwoHandedBonusEffect(NwCreature creature)
     {
+        // A slight delay to give time for things to happen
+        await NwTask.Delay(TimeSpan.FromSeconds(0.1));
+        
         // Safe to suppress: the caller of this code returns before executing if the creature isn't player controlled
         NwPlayer player = creature.ControllingPlayer!;
         

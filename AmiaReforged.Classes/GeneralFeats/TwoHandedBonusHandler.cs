@@ -27,13 +27,13 @@ public class TwoHandedBonusHandler
     private static void OnEquipApplyTwoHanded(OnItemEquip eventData)
     {
         if (!eventData.EquippedBy.IsPlayerControlled) return;
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
+        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
     }
     
     private static void OnUnequipApplyTwoHanded(OnItemUnequip eventData)
     {
         if (!eventData.Creature.IsPlayerControlled) return;
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
+        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
 
     private static void OnStrengthGainApplyTwoHanded(OnEffectApply eventData)
@@ -42,7 +42,7 @@ public class TwoHandedBonusHandler
         if (!creature.IsPlayerControlled) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
         
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
+        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
 
     private static void OnStrengthRemoveApplyTwoHanded(OnEffectRemove eventData)
@@ -51,7 +51,7 @@ public class TwoHandedBonusHandler
         if (!creature.IsPlayerControlled) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
         
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
+        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
     
     
