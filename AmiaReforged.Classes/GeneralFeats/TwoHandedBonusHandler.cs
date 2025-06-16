@@ -39,7 +39,7 @@ public class TwoHandedBonusHandler
         bool doesNotAffectStrength = !(affectsAbility && affectsStrength);
         
         // The item must either be wieldable or affect strength
-        if (isNotWieldable || doesNotAffectStrength) return;
+        if (isNotWieldable && doesNotAffectStrength) return;
         
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
     }
@@ -65,7 +65,7 @@ public class TwoHandedBonusHandler
         bool doesNotAffectStrength = !(affectsAbility && affectsStrength);
 
         // The item must either be wieldable or affect strength
-        if (isNotWieldable || doesNotAffectStrength) return;
+        if (isNotWieldable && doesNotAffectStrength) return;
         
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
