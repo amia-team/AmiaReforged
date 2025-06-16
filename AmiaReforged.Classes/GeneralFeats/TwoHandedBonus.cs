@@ -48,7 +48,7 @@ public static class TwoHandedBonus
         if (rightHandItem == null)
         {
             if (hasTwoHandedBonus)
-                player.SendServerMessage("Two-handed bonus removed");
+                player.SendServerMessage("Two-handed weapon bonus removed.");
             
             return;
         }
@@ -61,7 +61,7 @@ public static class TwoHandedBonus
         if (weaponSize <= creatureSize)
         {
             if (hasTwoHandedBonus)
-                player.SendServerMessage("Two-handed bonus removed");
+                player.SendServerMessage("Two-handed weapon bonus removed.");
 
             return;
         }
@@ -72,13 +72,13 @@ public static class TwoHandedBonus
         // If the two-handed bonus was already there, it means that it was adjusted by levelling or str buffs/debuffs
         if (hasTwoHandedBonus)
         {
-            player.SendServerMessage("Two-handed bonus adjusted");
+            player.SendServerMessage("Two-handed weapon bonus adjusted.");
             return;
         }
             
         
         // Otherwise we know that the bonus wasn't there and has been applied for the first time
-        player.SendServerMessage("Two-handed bonus applied");
+        player.SendServerMessage("Two-handed weapon bonus applied.");
     }
     
 }
