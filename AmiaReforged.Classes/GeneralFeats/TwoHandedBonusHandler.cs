@@ -22,6 +22,7 @@ public class TwoHandedBonusHandler
         NwModule.Instance.OnEffectApply += OnStrengthApplyApplyTwoHanded;
         NwModule.Instance.OnEffectRemove += OnStrengthRemoveApplyTwoHanded;
         eventService.SubscribeAll<OnPolymorphApply, OnPolymorphApply.Factory>(OnPolymorphApplyTwoHanded, EventCallbackType.After);
+        eventService.SubscribeAll<OnPolymorphRemove, OnPolymorphRemove.Factory>(OnPolymorphRemoveTwoHanded, EventCallbackType.After);
         Log.Info(message: "TwoHandedBonusHandler initialized.");
     }
     
@@ -62,6 +63,13 @@ public class TwoHandedBonusHandler
     }
 
     private static void OnPolymorphApplyTwoHanded(OnPolymorphApply eventData)
+    {
+        if (!eventData.Creature.IsPlayerControlled) return;
+        
+        TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
+    }
+    
+    private static void OnPolymorphRemoveTwoHanded(OnPolymorphRemove eventData)
     {
         if (!eventData.Creature.IsPlayerControlled) return;
         
