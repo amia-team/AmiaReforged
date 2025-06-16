@@ -47,7 +47,6 @@ public class TwoHandedBonusHandler
 
         if (eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.RightHand or EquipmentSlots.LeftHand or
             leftOrRightHandItem or oneHandedWeapon or twoHandedWeapon)) return;
-
         
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
