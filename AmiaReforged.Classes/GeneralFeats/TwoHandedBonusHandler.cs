@@ -35,16 +35,7 @@ public class TwoHandedBonusHandler
     private static void OnUnequipApplyTwoHanded(OnItemUnequip eventData)
     {
         if (!eventData.Creature.IsPlayerControlled) return;
-        
-        // These are hex-coded EquipableSlots from baseitems.2da to match EquipmentSlots for basic weapons
-        const EquipmentSlots leftOrRightHandItem = EquipmentSlots.RightHand | EquipmentSlots.LeftHand;
-        const EquipmentSlots creatureWeapon = EquipmentSlots.CreatureWeaponBite | EquipmentSlots.CreatureWeaponLeft 
-            | EquipmentSlots.CreatureWeaponRight;
-        const EquipmentSlots oneHandedWeapon = leftOrRightHandItem | creatureWeapon;
-        const EquipmentSlots twoHandedWeapon = EquipmentSlots.RightHand | creatureWeapon;
-
-        if (eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.RightHand or EquipmentSlots.LeftHand or
-            leftOrRightHandItem or oneHandedWeapon or twoHandedWeapon)) return;
+        if (eventData.Item.BaseItem.WeaponWieldType == BaseItemWeaponWieldType.CannotWield) return;
         
         _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
