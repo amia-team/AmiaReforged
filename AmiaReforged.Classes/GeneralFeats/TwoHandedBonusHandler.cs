@@ -29,7 +29,7 @@ public class TwoHandedBonusHandler
         if (!eventData.EquippedBy.IsPlayerControlled) return;
         if (eventData.Slot is not (InventorySlot.RightHand or InventorySlot.LeftHand)) return;
         
-        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
+        TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
     }
     
     private static void OnUnequipApplyTwoHanded(OnItemUnequip eventData)
@@ -37,7 +37,7 @@ public class TwoHandedBonusHandler
         if (!eventData.Creature.IsPlayerControlled) return;
         if (eventData.Item.BaseItem.WeaponWieldType == BaseItemWeaponWieldType.CannotWield) return;
         
-        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
+        TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
 
     private static void OnStrengthApplyApplyTwoHanded(OnEffectApply eventData)
@@ -47,7 +47,7 @@ public class TwoHandedBonusHandler
         if (eventData.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease)) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
         
-        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
+        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
 
     private static void OnStrengthRemoveApplyTwoHanded(OnEffectRemove eventData)
@@ -57,7 +57,7 @@ public class TwoHandedBonusHandler
         if (eventData.Effect.EffectType is not (EffectType.AbilityIncrease or EffectType.AbilityDecrease)) return;
         if (eventData.Effect.IntParams[0] is not (int)Ability.Strength) return;
         
-        _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
+        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
     
     
