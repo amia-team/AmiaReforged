@@ -30,22 +30,38 @@ public static class TwoHandedBonus
 
     public static async Task ApplyTwoHandedBonusEffect(NwCreature creature)
     {
-        // Before applying, always remove existing two-handed bonus first
+        // Safe to suppress: the caller of this code returns before executing if the creature isn't player controlled
+        NwPlayer player = creature.ControllingPlayer!;
         Effect? twoHandedBonus = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == "twohandedbonus");
+        NwItem? weapon = creature.GetItemInSlot(InventorySlot.RightHand);
+        
+        // Check if the creature has a pre-existing two-handed bonus; always remove it before reapplying the new one
         bool hasTwoHandedBonus = twoHandedBonus != null;
         
         if (hasTwoHandedBonus)
             creature.RemoveEffect(twoHandedBonus!);
         
+        // Check if the creature doesn't have a right hand item
+        bool hasNoWeapon = weapon == null;
+        
+        // We know that in order for the weapon to be twohanded,
+        // the weapon size must always be (one size) larger than the creature
+        int weaponSize = (int)weapon!.BaseItem.WeaponSize;
+        int creatureSize = (int)creature.Size;
+        
+        bool weaponIsNotTwoHanded = weaponSize <= creatureSize;
+        
+        // Check if the weapon is ranged (safe to suppress) 
+        bool weaponIsRanged = weapon.IsRangedWeapon;
+        
+        // Check if the weapon is a UBAB weapon
+        bool weaponIsMonkWeapon = weapon.BaseItem.IsMonkWeapon;
+
         // A slight delay to give time for things to happen
         await NwTask.Delay(TimeSpan.FromSeconds(0.1));
         
-        // Safe to suppress: the caller of this code returns before executing if the creature isn't player controlled
-        NwPlayer player = creature.ControllingPlayer!;
-        
-        NwItem? rightHandItem = creature.GetItemInSlot(InventorySlot.RightHand);
-
-        if (rightHandItem == null)
+        // Disqualifiers for two-handed bonus
+        if (hasNoWeapon || weaponIsNotTwoHanded || weaponIsRanged || weaponIsMonkWeapon)
         {
             if (hasTwoHandedBonus)
                 player.SendServerMessage("Two-handed weapon bonus removed.");
@@ -53,29 +69,16 @@ public static class TwoHandedBonus
             return;
         }
         
-        // We know that in order for the weapon to be twohanded,
-        // the weapon size must always be (one size) larger than the creature
-        int weaponSize = (int)rightHandItem.BaseItem.WeaponSize;
-        int creatureSize = (int)creature.Size;
-        
-        if (weaponSize <= creatureSize)
-        {
-            if (hasTwoHandedBonus)
-                player.SendServerMessage("Two-handed weapon bonus removed.");
-
-            return;
-        }
-        
+        // If the code made it this far, we have qualified for two-handed bonus!
         Effect twoHandedBonusEffect = TwoHandedBonusEffect(creature);
         creature.ApplyEffect(EffectDuration.Permanent, twoHandedBonusEffect);
         
-        // If the two-handed bonus was already there, it means that it was adjusted by levelling or str buffs/debuffs
+        // If the bonus was already there, we know it was adjusted by str buffs/debuffs or buffs/debuffs wearing off
         if (hasTwoHandedBonus)
         {
             player.SendServerMessage("Two-handed weapon bonus adjusted.");
             return;
         }
-            
         
         // Otherwise we know that the bonus wasn't there and has been applied for the first time
         player.SendServerMessage("Two-handed weapon bonus applied.");
