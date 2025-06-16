@@ -38,12 +38,13 @@ public class TwoHandedBonusHandler
         
         // These are hex-coded EquipableSlots from baseitems.2da to match EquipmentSlots for basic weapons
         const EquipmentSlots leftOrRightHandItem = EquipmentSlots.RightHand | EquipmentSlots.LeftHand;
-        const EquipmentSlots leftOrRightHandOrCreatureItem =
-            EquipmentSlots.RightHand | EquipmentSlots.LeftHand | EquipmentSlots.CreatureWeaponBite
-            | EquipmentSlots.CreatureWeaponLeft | EquipmentSlots.CreatureWeaponRight;
+        const EquipmentSlots creatureWeapon = EquipmentSlots.CreatureWeaponBite | EquipmentSlots.CreatureWeaponLeft 
+            | EquipmentSlots.CreatureWeaponRight;
+        const EquipmentSlots oneHandedWeapon = leftOrRightHandItem | creatureWeapon;
+        const EquipmentSlots twoHandedWeapon = EquipmentSlots.RightHand | creatureWeapon;
 
         if (eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.RightHand or EquipmentSlots.LeftHand or
-            leftOrRightHandItem or leftOrRightHandOrCreatureItem)) return;
+            leftOrRightHandItem or oneHandedWeapon or twoHandedWeapon)) return;
         
         _ = TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
