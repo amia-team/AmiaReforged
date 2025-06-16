@@ -16,10 +16,7 @@ public static class TwoHandedBonus
         int extraTwoHandedDamageBonus = strengthModifier - baseTwoHandedDamageBonus;
 
         Effect twoHandedDamageEffect = Effect.DamageIncrease(extraTwoHandedDamageBonus, DamageType.BaseWeapon);
-
-        const int twoHandedExtraAbBonus = 2;
-
-        Effect twoHandedAbEffect = Effect.AttackIncrease(twoHandedExtraAbBonus);
+        Effect twoHandedAbEffect = Effect.AttackIncrease(2);
         
         Effect twoHandedBonusEffect = Effect.LinkEffects(twoHandedDamageEffect, twoHandedAbEffect);
         twoHandedBonusEffect.SubType = EffectSubType.Unyielding;
