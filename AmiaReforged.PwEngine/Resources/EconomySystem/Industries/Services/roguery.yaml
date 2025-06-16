@@ -1,0 +1,11 @@
+name: "Roguery"
+description: "Roguery encompasses many criminal elements from vagabonds to assassins and everything in between."
+fields:
+  - Assassin
+  - Bandit
+  - Burglar
+  - Gambler
+  - Slaver
+  - Smuggler
+  - Spy
+  - Thug

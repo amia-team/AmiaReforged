@@ -1,0 +1,6 @@
+name: "Jewellery"
+description: "Jewellery encompasses the crafting of decorative and ceremonial items from precious metals, gems, and fine materials. It includes the shaping, setting, and embellishing of jewels, rings, amulets, and other adornments worn for status, beauty, or magical purpose."
+fields:
+  - Jeweller           # Crafts finished jewellery pieces using metals and gemstones
+  - Lapidarist         # Cuts, polishes, and prepares gems and stones for setting
+  - Engraver           # Carves designs, runes, or heraldry into jewellery or metalwork

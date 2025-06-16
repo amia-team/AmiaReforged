@@ -1,0 +1,6 @@
+name: "Stoneworking"
+description: "Stoneworking encompasses masonry and building with stone"
+fields:
+  - Mason
+  - Paver
+  - Stonecutter

@@ -1,0 +1,12 @@
+name: "Performing"
+description: "The performing arts encompass a wide range of disciplines where artists express themselves through live performances."
+fields:
+  - Actor
+  - Artist
+  - Dancer
+  - Instrumentalist
+  - Jester
+  - Poet
+  - Singer
+  - Speaker
+  - Trickster

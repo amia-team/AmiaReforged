@@ -1,8 +1,10 @@
 ItemType: MiscSmall
 Type: Ore
 NamingScheme: "%Material% Ore"
+Actions_Associated:
+  - Harvest
 MaterialTags:
-  - Adamantine
+  - Adamant
   - Mithral
   - Gold
   - Silver
