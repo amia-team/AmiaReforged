@@ -29,7 +29,17 @@ public class TwoHandedBonusHandler
     private static void OnEquipApplyTwoHanded(OnItemEquip eventData)
     {
         if (!eventData.EquippedBy.IsPlayerControlled) return;
-        if (eventData.Slot is not (InventorySlot.RightHand or InventorySlot.LeftHand)) return;
+        
+        bool isNotWieldable = eventData.Slot is not (InventorySlot.RightHand or InventorySlot.LeftHand);
+        
+        bool affectsAbility = eventData.Item.ItemProperties.Any(p => 
+            p.Property.PropertyType is ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore);
+        bool affectsStrength = eventData.Item.ItemProperties.Any(p => p.IntParams[0] == (int)Ability.Strength);
+        
+        bool doesNotAffectStrength = !(affectsAbility && affectsStrength);
+        
+        // The item must either be wieldable or affect strength
+        if (isNotWieldable || doesNotAffectStrength) return;
         
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
     }
@@ -45,8 +55,17 @@ public class TwoHandedBonusHandler
         const EquipmentSlots oneHandedWeapon = leftOrRightHandItem | creatureWeapon;
         const EquipmentSlots twoHandedWeapon = EquipmentSlots.RightHand | creatureWeapon;
 
-        if (eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.RightHand or EquipmentSlots.LeftHand or
-            leftOrRightHandItem or oneHandedWeapon or twoHandedWeapon)) return;
+        bool isNotWieldable = eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.RightHand
+            or EquipmentSlots.LeftHand or leftOrRightHandItem or oneHandedWeapon or twoHandedWeapon);
+        
+        bool affectsAbility = eventData.Item.ItemProperties.Any(p => 
+            p.Property.PropertyType is ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore);
+        bool affectsStrength = eventData.Item.ItemProperties.Any(p => p.IntParams[0] == (int)Ability.Strength);
+        
+        bool doesNotAffectStrength = !(affectsAbility && affectsStrength);
+
+        // The item must either be wieldable or affect strength
+        if (isNotWieldable || doesNotAffectStrength) return;
         
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
