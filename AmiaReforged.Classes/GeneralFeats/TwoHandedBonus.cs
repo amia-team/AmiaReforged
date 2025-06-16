@@ -28,7 +28,7 @@ public static class TwoHandedBonus
         return twoHandedBonusEffect;
     }
 
-    public static async Task ApplyTwoHandedBonusEffect(NwCreature creature)
+    public static void ApplyTwoHandedBonusEffect(NwCreature creature)
     {
         // Safe to suppress: the caller of this code returns before executing if the creature isn't player controlled
         NwPlayer player = creature.ControllingPlayer!;
@@ -56,12 +56,12 @@ public static class TwoHandedBonus
         
         // Check if the weapon is a UBAB weapon
         bool weaponIsMonkWeapon = weapon.BaseItem.IsMonkWeapon;
-
-        // A slight delay to give time for things to happen
-        await NwTask.Delay(TimeSpan.FromSeconds(0.1));
+        
+        // Check if the weapon is double-sided
+        bool weaponIsDoubleSided = weapon.BaseItem.WeaponWieldType == BaseItemWeaponWieldType.DoubleSided;
         
         // Disqualifiers for two-handed bonus
-        if (hasNoWeapon || weaponIsNotTwoHanded || weaponIsRanged || weaponIsMonkWeapon)
+        if (hasNoWeapon || weaponIsNotTwoHanded || weaponIsRanged || weaponIsMonkWeapon || weaponIsDoubleSided)
         {
             if (hasTwoHandedBonus)
                 player.SendServerMessage("Two-handed weapon bonus removed.");
