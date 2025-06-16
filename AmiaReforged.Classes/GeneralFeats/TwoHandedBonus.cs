@@ -30,6 +30,9 @@ public static class TwoHandedBonus
 
     public static async Task ApplyTwoHandedBonusEffect(NwCreature creature)
     {
+        // Add a slight delay, otherwise the code runs before it has the chance to check for the state post equipping
+        await NwTask.Delay(TimeSpan.FromSeconds(0.1));
+        
         // Safe to suppress: the caller of this code returns before executing if the creature isn't player controlled
         NwPlayer player = creature.ControllingPlayer!;
         Effect? twoHandedBonus = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == "twohandedbonus");
