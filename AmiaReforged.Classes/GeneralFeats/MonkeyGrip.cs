@@ -75,12 +75,12 @@ public class MonkeyGrip(NwCreature player)
         // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.MoveSilently)!, 4), mgPenalty);
         // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Spot)!, 4), mgPenalty);
         // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Listen)!, 4), mgPenalty);
-        // mgPenalty = Effect.LinkEffects(Effect.ACIncrease(1));
         mgPenalty.SubType = EffectSubType.Supernatural;
         mgPenalty.Tag = "mg_penalty";
         player.ApplyEffect(EffectDuration.Instant, NWScript.EffectVisualEffect(2527));
 
         player.ApplyEffect(EffectDuration.Permanent, mgPenalty);
+        player.SpeakString("GIMME THE MONEY");
         PlayerPlugin.UpdateCharacterSheet(player);
     }
 
