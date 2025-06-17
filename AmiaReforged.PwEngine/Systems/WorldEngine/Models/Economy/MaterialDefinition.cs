@@ -1,8 +1,8 @@
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
-namespace AmiaReforged.PwEngine.Systems.Economy.DomainModels;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Models.Economy;
 
-public class Material
+public class MaterialDefinition
 {
     public MaterialEnum MaterialType { get; set; }
     public float CostModifier { get; set;  }

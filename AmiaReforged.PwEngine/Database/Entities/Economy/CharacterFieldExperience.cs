@@ -10,7 +10,7 @@ public class CharacterFieldExperience
     public float Experience { get; set; }
 
     public required long CharacterId { get; set; }
-    [ForeignKey("CharacterId")] public required WorldCharacter Character { get; set; }
+    [ForeignKey("CharacterId")] public required PersistedWorldCharacter Character { get; set; }
     
     
 }

@@ -1,8 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using AmiaReforged.PwEngine.Systems.WorldEngine;
 
 namespace AmiaReforged.PwEngine.Database.Entities;
 
-public class WorldCharacter
+public class PersistedWorldCharacter
 {
     [Key] public long Id { get; set; }
     

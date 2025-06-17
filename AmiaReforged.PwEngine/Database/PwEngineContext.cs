@@ -10,7 +10,7 @@ namespace AmiaReforged.PwEngine.Database;
 public class PwEngineContext : DbContext
 {
     private readonly string _connectionString = ConnectionString();
-    public DbSet<WorldCharacter> WorldCharacters { get; set; } = null!;
+    public DbSet<PersistedWorldCharacter> WorldCharacters { get; set; } = null!;
     public DbSet<ItemStorage> StorageContainers { get; set; } = null!;
     public DbSet<JobItem> Items { get; set; } = null!;
     public DbSet<StoredJobItem> StoredJobItems { get; set; } = null!;

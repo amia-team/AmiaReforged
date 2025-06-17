@@ -23,6 +23,7 @@
     <ItemGroup>
       <Folder Include="CommandQuery\Spellbook\" />
       <Folder Include="Migrations" />
+      <Folder Include="Models\World\Economy\" />
     </ItemGroup>
 
 </Project>

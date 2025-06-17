@@ -1,4 +1,6 @@
 using AmiaReforged.PwEngine.Systems.Economy.DomainModels;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Models;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Models.Economy;
 using NLog;
 using YamlDotNet.Serialization;
 
@@ -14,7 +16,7 @@ public class EconomyService
     public List<PersistentResource> PersistentResources { get; set; } = new();
     public List<CultivatedResource> CultivatedResources { get; set; } = new();
     public List<Profession> Professions { get; set; } = new();
-    public List<Material> Materials { get; set; } = new();
+    public List<MaterialDefinition> Materials { get; set; } = new();
     public List<EnvironmentTrait> EnvironmentTraits { get; set; } = new();
     public List<Innovation> Innovations { get; set; } = new();
 
@@ -54,8 +56,8 @@ public class EconomyService
             {
                 using StreamReader reader = new(file);
                 string yamlContents = reader.ReadToEnd();
-                Material material = _deserializer.Deserialize<Material>(yamlContents);
-                Materials.Add(material);
+                MaterialDefinition materialDefinition = _deserializer.Deserialize<MaterialDefinition>(yamlContents);
+                Materials.Add(materialDefinition);
             }
             catch (Exception ex)
             {
@@ -66,7 +68,7 @@ public class EconomyService
 
     private void LoadEnvironmentTraits()
     {
-        string resourcesDirectory = Path.Combine(_resourcesPath, "EnvironmentTraits");
+        string resourcesDirectory = Path.Combine(_resourcesPath, "Environments");
         foreach (string file in Directory.GetFiles(resourcesDirectory, "*.yaml", SearchOption.AllDirectories))
         {
             try
