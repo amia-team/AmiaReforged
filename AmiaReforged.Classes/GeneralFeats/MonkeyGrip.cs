@@ -80,7 +80,6 @@ public class MonkeyGrip(NwCreature player)
         player.ApplyEffect(EffectDuration.Instant, NWScript.EffectVisualEffect(2527));
 
         player.ApplyEffect(EffectDuration.Permanent, mgPenalty);
-        player.SpeakString("GIMME THE MONEY");
         PlayerPlugin.UpdateCharacterSheet(player);
     }
 
