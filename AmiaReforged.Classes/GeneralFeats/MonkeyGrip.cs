@@ -1,5 +1,7 @@
-﻿using Anvil.API;
+﻿using System.Reflection.PortableExecutable;
+using Anvil.API;
 using NWN.Core;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.GeneralFeats;
 
@@ -74,11 +76,12 @@ public class MonkeyGrip(NwCreature player)
         // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Spot)!, 4), mgPenalty);
         // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Listen)!, 4), mgPenalty);
         // mgPenalty = Effect.LinkEffects(Effect.ACIncrease(1));
-        // mgPenalty.SubType = EffectSubType.Supernatural;
+        mgPenalty.SubType = EffectSubType.Supernatural;
         mgPenalty.Tag = "mg_penalty";
         player.ApplyEffect(EffectDuration.Instant, NWScript.EffectVisualEffect(2527));
 
         player.ApplyEffect(EffectDuration.Permanent, mgPenalty);
+        PlayerPlugin.UpdateCharacterSheet(player);
     }
 
     public void RemoveMgPenalty()
@@ -88,6 +91,7 @@ public class MonkeyGrip(NwCreature player)
         if (mgPenalty is not null)
         {
             player.RemoveEffect(mgPenalty);
+            PlayerPlugin.UpdateCharacterSheet(player);
         }
     }
 }
