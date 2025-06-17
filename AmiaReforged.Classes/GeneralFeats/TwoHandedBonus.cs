@@ -31,7 +31,7 @@ public static class TwoHandedBonus
     public static void ApplyTwoHandedBonusEffect(NwCreature creature)
     {
         // Two-handed bonus only affects player characters
-        NwPlayer player = creature.ControllingPlayer;
+        NwPlayer? player = creature.ControllingPlayer;
         if (player == null) return;
         
         Effect? twoHandedBonus = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == "twohandedbonus");
