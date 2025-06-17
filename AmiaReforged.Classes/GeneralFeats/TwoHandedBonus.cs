@@ -30,8 +30,10 @@ public static class TwoHandedBonus
 
     public static void ApplyTwoHandedBonusEffect(NwCreature creature)
     {
-        // Safe to suppress: the caller of this code returns before executing if the creature isn't player controlled
-        NwPlayer player = creature.ControllingPlayer!;
+        // Two-handed bonus only affects player characters
+        NwPlayer player = creature.ControllingPlayer;
+        if (player == null) return;
+        
         Effect? twoHandedBonus = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == "twohandedbonus");
         NwItem? weapon = creature.GetItemInSlot(InventorySlot.RightHand);
         
