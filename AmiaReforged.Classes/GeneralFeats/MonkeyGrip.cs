@@ -33,9 +33,21 @@ public class MonkeyGrip(NwCreature player)
         {
             player.Size = (CreatureSize)baseSize;
             NwItem? offhand = player.GetItemInSlot(InventorySlot.LeftHand);
-            if (offhand is not null)
+            NwItem? mainhand = player.GetItemInSlot(InventorySlot.RightHand);
+            if (mainhand != null)
             {
-                player.ActionUnequipItem(offhand);
+                int weaponSize = (int)mainhand.BaseItem.WeaponSize;
+                int creatureSize = (int)player.Size;
+                if (offhand is not null)
+                {
+                    player.ActionUnequipItem(offhand);
+                    NWScript.FloatingTextStringOnCreature("Monkey Grip disabled. Unequipping offhand.", player);
+                }
+                if (weaponSize >= (creatureSize + 2))
+                {
+                    player.ActionUnequipItem(mainhand);
+                    NWScript.FloatingTextStringOnCreature("Monkey Grip disabled. Unequipping oversized weapon.", player);
+                }
             }
 
             RemoveMgPenalty();
@@ -70,7 +82,7 @@ public class MonkeyGrip(NwCreature player)
             player.RemoveEffect(existing);
         }
         
-        Effect mgPenalty = Effect.AttackDecrease(2);
+        Effect mgPenalty = Effect.AttackDecrease(1);
         // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Hide)!, 4), mgPenalty);
         // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.MoveSilently)!, 4), mgPenalty);
         // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Spot)!, 4), mgPenalty);
