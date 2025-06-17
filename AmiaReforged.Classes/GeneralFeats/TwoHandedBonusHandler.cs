@@ -40,11 +40,11 @@ public class TwoHandedBonusHandler
         }
         
         // If the item property doesn't affect abilities, we know to return early
-        if (eventData.Item.ItemProperties.Any(p => p.Property.PropertyType is not 
-                (ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore))) return;
-        
+        ItemProperty? abilityProperty = eventData.Item.ItemProperties.FirstOrDefault(p => p.Property.PropertyType is
+            ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore);
+
         // If the ability affected isn't strength, we know to return early; otherwise we check for two-handed bonus
-        if (eventData.Item.ItemProperties.Any(p => p.IntParams[0] is not (int)Ability.Strength)) return;
+        if (abilityProperty?.IntParams[0] is not (int)Ability.Strength) return;
         
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
     }
@@ -71,11 +71,11 @@ public class TwoHandedBonusHandler
         }
         
         // If the item property doesn't affect abilities, we know to return early
-        if (eventData.Item.ItemProperties.Any(p => p.Property.PropertyType is not 
-                (ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore))) return;
-        
+        ItemProperty? abilityProperty = eventData.Item.ItemProperties.FirstOrDefault(p => p.Property.PropertyType is
+            ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore);
+
         // If the ability affected isn't strength, we know to return early; otherwise we check for two-handed bonus
-        if (eventData.Item.ItemProperties.Any(p => p.IntParams[0] is not (int)Ability.Strength)) return;
+        if (abilityProperty?.IntParams[0] is not (int)Ability.Strength) return;
         
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
