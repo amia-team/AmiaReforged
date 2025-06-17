@@ -30,16 +30,21 @@ public class TwoHandedBonusHandler
     {
         if (!eventData.EquippedBy.IsPlayerControlled) return;
         
-        bool isNotWieldable = eventData.Slot is not (InventorySlot.RightHand or InventorySlot.LeftHand);
+        bool isWieldable = eventData.Slot is InventorySlot.RightHand or InventorySlot.LeftHand;
         
-        bool affectsAbility = eventData.Item.ItemProperties.Any(p => 
-            p.Property.PropertyType is ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore);
-        bool affectsStrength = eventData.Item.ItemProperties.Any(p => p.IntParams[0] == (int)Ability.Strength);
+        // If the item is wieldable, we want to check for two-handed bonus and can return code early
+        if (isWieldable)
+        {
+            TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
+            return;
+        }
         
-        bool doesNotAffectStrength = !(affectsAbility && affectsStrength);
+        // If the item property doesn't affect abilities, we know to return early
+        if (eventData.Item.ItemProperties.Any(p => p.Property.PropertyType is not 
+                (ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore))) return;
         
-        // The item must either be wieldable or affect strength
-        if (isNotWieldable && doesNotAffectStrength) return;
+        // If the ability affected isn't strength, we know to return early; otherwise we check for two-handed bonus
+        if (eventData.Item.ItemProperties.Any(p => p.IntParams[0] is not (int)Ability.Strength)) return;
         
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.EquippedBy);
     }
@@ -55,17 +60,22 @@ public class TwoHandedBonusHandler
         const EquipmentSlots oneHandedWeapon = leftOrRightHandItem | creatureWeapon;
         const EquipmentSlots twoHandedWeapon = EquipmentSlots.RightHand | creatureWeapon;
 
-        bool isNotWieldable = eventData.Item.BaseItem.EquipmentSlots is not (EquipmentSlots.RightHand
-            or EquipmentSlots.LeftHand or leftOrRightHandItem or oneHandedWeapon or twoHandedWeapon);
+        bool isWieldable = eventData.Item.BaseItem.EquipmentSlots is EquipmentSlots.RightHand
+            or EquipmentSlots.LeftHand or leftOrRightHandItem or oneHandedWeapon or twoHandedWeapon;
         
-        bool affectsAbility = eventData.Item.ItemProperties.Any(p => 
-            p.Property.PropertyType is ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore);
-        bool affectsStrength = eventData.Item.ItemProperties.Any(p => p.IntParams[0] == (int)Ability.Strength);
+        // If the item is wieldable, we want to check for two-handed bonus and can return code early
+        if (isWieldable)
+        {
+            TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
+            return;
+        }
         
-        bool doesNotAffectStrength = !(affectsAbility && affectsStrength);
-
-        // The item must either be wieldable or affect strength
-        if (isNotWieldable && doesNotAffectStrength) return;
+        // If the item property doesn't affect abilities, we know to return early
+        if (eventData.Item.ItemProperties.Any(p => p.Property.PropertyType is not 
+                (ItemPropertyType.AbilityBonus or ItemPropertyType.DecreasedAbilityScore))) return;
+        
+        // If the ability affected isn't strength, we know to return early; otherwise we check for two-handed bonus
+        if (eventData.Item.ItemProperties.Any(p => p.IntParams[0] is not (int)Ability.Strength)) return;
         
         TwoHandedBonus.ApplyTwoHandedBonusEffect(eventData.Creature);
     }
