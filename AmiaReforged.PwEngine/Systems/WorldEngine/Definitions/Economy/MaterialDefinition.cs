@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Models.Economy;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 
 public class MaterialDefinition
 {

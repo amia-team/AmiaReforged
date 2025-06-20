@@ -1,6 +1,5 @@
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Models;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Models.Economy;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Systems.Economy.DomainModels;

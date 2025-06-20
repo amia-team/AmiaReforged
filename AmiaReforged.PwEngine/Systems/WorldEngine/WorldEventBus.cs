@@ -1,7 +1,7 @@
 using System.Runtime.Serialization;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Models.Economy;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
@@ -41,7 +41,7 @@ public class WorldCharacter : IAmiaEntity
 {
 }
 
-[ServiceBinding(typeof(WorldEventBus))]
+// [ServiceBinding(typeof(WorldEventBus))]
 public class WorldEventBus
 {
 }

@@ -1,16 +1,16 @@
 using AmiaReforged.Core;
 using AmiaReforged.Core.Models.World;
 using AmiaReforged.Core.Services;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Models;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Models.Economy;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using Anvil.Services;
 using NLog;
 using YamlDotNet.Serialization;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
-[ServiceBinding(typeof(WorldEngine))]
-public class WorldEngine
+// [ServiceBinding(typeof(WorldEngineLoader))]
+public class WorldEngineLoader
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -23,8 +23,9 @@ public class WorldEngine
     public List<ClimateDefinition> Climates { get; private set; } = [];
     public List<MaterialDefinition> Materials { get; private set; } = [];
     public List<NodeDefinition> ResourceNodes { get; private set; } = [];
+    public List<RegionDefinition> Regions { get; private set; } = [];
 
-    public WorldEngine(IWorldConfigProvider config)
+    public WorldEngineLoader(IWorldConfigProvider config)
     {
         _config = config;
         _resourcesPath = Environment.GetEnvironmentVariable("ECONOMY_RESOURCES_PATH") ?? string.Empty;
@@ -38,11 +39,33 @@ public class WorldEngine
         LoadMaterials();
         LoadResourceNodes();
         LoadClimates();
-        // Load Region definitions
-        // Load Material definitions
-        // Load Resource Node definitions
-        // Load Industries
-        // Load Recipe definitions
+        LoadRegions();
+    }
+
+    private void LoadRegions()
+    {
+        string resourcesDirectory = Path.Combine(_resourcesPath, "Regions");
+        foreach (string file in Directory.GetFiles(resourcesDirectory, "*.yaml", SearchOption.AllDirectories))
+        {
+            try
+            {
+                using StreamReader reader = new(file);
+                string yamlContents = reader.ReadToEnd();
+                RegionDefinition region = _deserializer.Deserialize<RegionDefinition>(yamlContents);
+
+                ClimateDefinition? climate = Climates.FirstOrDefault(c => c.Tag == region.ClimateTag);
+                if (climate != null)
+                {
+                    region.Climate = climate;
+                }
+
+                Regions.Add(region);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"Failed to load {file}");
+            }
+        }
     }
 
     private void LoadMaterials()
@@ -99,6 +122,14 @@ public class WorldEngine
             {
                 Log.Error(ex, $"Failed to load {file}");
             }
+        }
+
+        foreach (ClimateDefinition climateDefinition in from climateDefinition in Climates
+                 let climatesWithCurrentTag = Climates.Where(c => c.Tag == climateDefinition.Tag).ToList()
+                 where climatesWithCurrentTag.Count > 1
+                 select climateDefinition)
+        {
+            Log.Error($"({climateDefinition.Name}) Multiple climates with the same tag: {climateDefinition.Tag}");
         }
     }
 

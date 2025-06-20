@@ -1,5 +1,3 @@
 Name: "Temperate Forest"
 Description: "A temperate forest is a lush, green biome characterized by high levels of precipitation, mild temperatures, and dense vegetation. It features towering trees, such as conifers and broadleaf evergreens, along with a rich understory of ferns and mosses. The climate is typically cool and humid, with distinct seasons, including wet winters and dry summers. This environment supports a diverse array of wildlife, including various bird species, mammals, and amphibians."
-WhitelistedNodeTags:
-  - ore_node_iron
-  - ore_node_copper
+Tag: temperate_forest

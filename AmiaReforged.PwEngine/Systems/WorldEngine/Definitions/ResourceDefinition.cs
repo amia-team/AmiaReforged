@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Models;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Definitions;
 
 public class ResourceDefinition
 {

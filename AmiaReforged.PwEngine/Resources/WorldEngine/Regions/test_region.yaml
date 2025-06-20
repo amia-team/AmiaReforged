@@ -1,0 +1,9 @@
+Name: "Test Region"
+ClimateTag: temperate_grassland
+Areas:
+  - ResRef: zwrldsettlemnt
+    SettlementReference: zworld_test_settlement
+  - ResRef: zworldttemprat
+    SettlementReference: zworld_test_settlement
+    SpawnableNodes:
+      - ore_node_copper

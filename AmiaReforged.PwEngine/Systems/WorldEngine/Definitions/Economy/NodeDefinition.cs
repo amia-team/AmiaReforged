@@ -1,7 +1,6 @@
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
-using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Models.Economy;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 
 public class NodeDefinition
 {

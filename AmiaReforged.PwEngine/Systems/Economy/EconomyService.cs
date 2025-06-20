@@ -1,6 +1,5 @@
 using AmiaReforged.PwEngine.Systems.Economy.DomainModels;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Models;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Models.Economy;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using NLog;
 using YamlDotNet.Serialization;
 

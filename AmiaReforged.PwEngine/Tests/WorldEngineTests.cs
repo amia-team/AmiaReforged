@@ -11,7 +11,7 @@ namespace AmiaReforged.PwEngine.Tests;
 [TestFixture]
 public class WorldEngineTests
 {
-    private WorldEngine _engine = null!;
+    private WorldEngineLoader _engineLoader = null!;
 
     [OneTimeSetUp]
     public void SetUp()
@@ -33,14 +33,14 @@ public class WorldEngineTests
         Mock<IWorldConfigProvider> fakeConfig = new Mock<IWorldConfigProvider>();
         fakeConfig.Setup(c => c.GetBoolean(It.IsAny<string>())).Returns(true);
 
-        _engine = new(fakeConfig.Object);
+        _engineLoader = new(fakeConfig.Object);
     }
 
     [Test]
     public void Should_Find_Resources_Directory()
     {
         Assert.That(
-            _engine.ResourceDirectoryExists(),
+            _engineLoader.ResourceDirectoryExists(),
             Is.True,
             "Resource directory should exist"
         );
@@ -50,7 +50,7 @@ public class WorldEngineTests
     public void Should_Find_Materials()
     {
         Assert.That(
-            _engine.Materials,
+            _engineLoader.Materials,
             Is.Not.Empty,
             "Materials should have been loaded."
         );
@@ -60,25 +60,39 @@ public class WorldEngineTests
     public void Should_Find_ResourceNodes()
     {
         Assert.That(
-            _engine.ResourceNodes,
+            _engineLoader.ResourceNodes,
             Is.Not.Empty,
             "Resource Nodes should have been loaded."
         );
     }
-    
+
     [Test]
     public void Should_Find_Environments()
     {
         Assert.That(
-            _engine.Climates,
+            _engineLoader.Climates,
             Is.Not.Empty,
             "Climates should not be empty"
         );
+    }
 
+    [Test]
+    public void Should_Find_Regions()
+    {
         Assert.That(
-            _engine.Climates.All(c => c.WhitelistedNodeTags.Count > 0),
+            _engineLoader.Regions,
+            Is.Not.Empty,
+            "Regions should have been loaded."
+        );
+    }
+
+    [Test]
+    public void Should_Have_No_Empty_Regions()
+    {
+        Assert.That(
+            _engineLoader.Regions.All(r => r.Areas.Count > 0),
             Is.True,
-            "Climates must always have a list of allowed resources"
+            "A region must have at least one area assigned."
         );
     }
 }

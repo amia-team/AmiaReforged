@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Models;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Definitions;
 
 public class Industry
 {
