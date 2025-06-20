@@ -12,5 +12,5 @@ public class ItemStorageUser
     [ForeignKey(name: "ItemStorageId")] public ItemStorage? ItemStorage { get; set; }
 
     public long WorldCharacterId { get; set; }
-    [ForeignKey(name: "WorldCharacterId")] public WorldCharacter? WorldCharacter { get; set; }
+    [ForeignKey(name: "WorldCharacterId")] public PersistedWorldCharacter? WorldCharacter { get; set; }
 }

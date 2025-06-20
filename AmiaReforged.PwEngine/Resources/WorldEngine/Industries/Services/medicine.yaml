@@ -1,0 +1,9 @@
+name: "Medicine"
+description: "Medicine as an industry encompasses fields surrounding treatment of patients for all ailments, be they physical, mental, or spiritual."
+fields:
+  - Apothecary
+  - Bone Doctor
+  - Hospitaller
+  - Physician
+  - Plague Doctor
+  - Surgeon

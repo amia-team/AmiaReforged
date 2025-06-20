@@ -1,0 +1,7 @@
+name: SellItem
+base_time: 0.1
+output_type:
+  - item_transfer_ownership
+  - yield_money
+event_emits:
+  - on_item_sold

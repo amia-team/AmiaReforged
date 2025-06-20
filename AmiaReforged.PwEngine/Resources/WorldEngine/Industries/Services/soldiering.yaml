@@ -1,0 +1,10 @@
+name: "Soldiering"
+description: "Soldiers are professional combatants, often serving under a nation or liege lord as a man-at-arms. Some soldiers take to freelancing and monster hunting."
+fields:
+  - Armsmaster # A professional practitioner of a martial art, often associated with guilds and specific orders.
+  - Bailiff
+  - Captain # A leader who specializes in commanding groups of soldiers into battle. Specializes in tactical warfare.
+  - Knight # A special noble-only field that blends stewardship and combat specializations.
+  - Monster Hunter # Slayers of large monsters, often associated with guilds and occasionally solo itinerants.
+  - Scout # Soldiers specialized in pathfinding, reconnaissance, and surveillance. 
+  - Templar # Undead hunters and slayers of rampant occultists.

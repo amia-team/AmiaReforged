@@ -1,0 +1,7 @@
+name: "Hunting"
+description: "Hunting encompasses fishing and hunting animals"
+fields:
+  - Hunter
+  - Fisher
+  - Tracker
+  - Trapper

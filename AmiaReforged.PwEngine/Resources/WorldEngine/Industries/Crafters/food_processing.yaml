@@ -1,0 +1,11 @@
+id: food_processing
+name: "Food Processing"
+description: "Food processing encompasses the conversion of raw food or edibles into more complex forms, such as brewing, cooking, or distillation"
+fields:
+  - Baker # Prepares cakes and bread from already milled flour
+  - Brewer # Brews grains and other goods into drinks
+  - Butcher # Prepares carcasses into usable cuts of meat.
+  - Cook # Makes general meals
+  - Confectioner # Candy maker
+  - Distiller # Distills brews into strong liquors
+  - Vintner # Specialist who focuses on the creation of wine from fruits

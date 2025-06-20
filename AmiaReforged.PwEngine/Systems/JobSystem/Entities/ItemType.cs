@@ -5,6 +5,7 @@ public enum ItemType
     Armor,
     Weapon,
     Gem,
+    Geode,
     Ore,
     Ingot,
     Log,

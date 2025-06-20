@@ -1,0 +1,8 @@
+name: SpyOnSettlement
+base_time: 0.1
+output_type:
+  - collect_information
+  - roll_intrigue
+  - reduce_agent_influence
+event_emits:
+  - spy_on_settlement

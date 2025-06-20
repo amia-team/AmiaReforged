@@ -1,0 +1,8 @@
+name: "Farming"
+description: "Farming is a broad industry that encompasses growing crops all the way to herding animals"
+fields:
+  - Beekeeper
+  - Farmer
+  - Gardener
+  - Herder
+  - Miller

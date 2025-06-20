@@ -2,7 +2,7 @@ OreItemDefinition:
   BaseType: MiscSmall
   Category: Ore
   SupportedMaterials:
-    - Adamantine
+    - Adamant
     - ColdIron
     - Copper
     - Gold

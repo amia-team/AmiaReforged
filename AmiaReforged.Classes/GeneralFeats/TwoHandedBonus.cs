@@ -13,9 +13,12 @@ public static class TwoHandedBonus
         int baseTwoHandedDamageBonus = (int)(strengthModifier * 1.5 - strengthModifier);
         
         // Infer Amia-specific extra damage based on the base bonus
-        int extraTwoHandedDamageBonus = strengthModifier - baseTwoHandedDamageBonus;
+        int twoHandedDamageInt = strengthModifier - baseTwoHandedDamageBonus;
+        // Apparently values 6 to 15 in bonus dmg are weird; the incremental scaling cuts off at value 5 and continues
+        // from value 16, so if our twohand damage bonus > 5, we add 10 to continue the incremental damage scaling 
+        int twoHandedDamageBonus = twoHandedDamageInt > 5 ? twoHandedDamageInt + 10 : twoHandedDamageInt;
 
-        Effect twoHandedDamageEffect = Effect.DamageIncrease(extraTwoHandedDamageBonus, DamageType.BaseWeapon);
+        Effect twoHandedDamageEffect = Effect.DamageIncrease(twoHandedDamageBonus, DamageType.BaseWeapon);
         Effect twoHandedAbEffect = Effect.AttackIncrease(2);
         
         Effect twoHandedBonusEffect = Effect.LinkEffects(twoHandedDamageEffect, twoHandedAbEffect);
@@ -27,8 +30,10 @@ public static class TwoHandedBonus
 
     public static void ApplyTwoHandedBonusEffect(NwCreature creature)
     {
-        // Safe to suppress: the caller of this code returns before executing if the creature isn't player controlled
-        NwPlayer player = creature.ControllingPlayer!;
+        // Two-handed bonus only affects player characters
+        NwPlayer? player = creature.ControllingPlayer;
+        if (player == null) return;
+        
         Effect? twoHandedBonus = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == "twohandedbonus");
         NwItem? weapon = creature.GetItemInSlot(InventorySlot.RightHand);
         

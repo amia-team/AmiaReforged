@@ -1,8 +1,12 @@
-ItemType: MiscSmall
+ResRef: econ_ore
 Type: Ore
+Tags:
+  - ore
 NamingScheme: "%Material% Ore"
+Actions_Associated:
+  - Harvest
 MaterialTags:
-  - Adamantine
+  - Adamant
   - Mithral
   - Gold
   - Silver
