@@ -44,15 +44,14 @@ public class MonkeyGrip(NwCreature creature)
         int baseSize = NWScript.GetLocalInt(pcKey, LocalIntBaseSize);
 
         // Store the base size to the character's PC key if it has not yet been set
-        if (baseSize == NWScript.CREATURE_SIZE_INVALID)
-        {
-            baseSize = (int)creature.Size;
-            NWScript.SetLocalInt(pcKey, LocalIntBaseSize, baseSize);
+        if (baseSize != NWScript.CREATURE_SIZE_INVALID) return baseSize;
+        
+        baseSize = (int)creature.Size;
+        NWScript.SetLocalInt(pcKey, LocalIntBaseSize, baseSize);
 
-            if (creature.IsPlayerControlled(out NwPlayer? _))
-            {
-                NWScript.ExportSingleCharacter(creature);
-            }
+        if (creature.IsPlayerControlled(out NwPlayer? _))
+        {
+            NWScript.ExportSingleCharacter(creature);
         }
 
         return baseSize;
