@@ -110,7 +110,7 @@ public class MonkeyGrip(NwCreature player)
         PlayerPlugin.UpdateCharacterSheet(player);
     }
 
-    public void RemoveMgPenalty()
+    private void RemoveMgPenalty()
     {
         Effect? mgPenalty = player.ActiveEffects.FirstOrDefault(e => e.Tag == "mg_penalty");
 
