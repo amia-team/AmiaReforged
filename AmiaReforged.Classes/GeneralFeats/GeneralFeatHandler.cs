@@ -1,7 +1,9 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.PwEngine.Systems.Crafting;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 
 namespace AmiaReforged.Classes.GeneralFeats;
@@ -36,6 +38,18 @@ public class GeneralFeatHandler
         if (gameCharacter is null)
         {
             Log.Info("Could not convert object self to NWCreature");
+            return;
+        }
+
+        NwItem? mainHand = gameCharacter.GetItemInSlot(InventorySlot.RightHand);
+
+        if (mainHand == null) return;
+
+        bool isCasterWeapon = NWScript.GetLocalInt(mainHand, CasterWeaponForge.LocalIntCasterWeapon) == NWScript.TRUE;
+
+        if (isCasterWeapon)
+        {
+            NWScript.SendMessageToPC(gameCharacter, "You cannot monkey grip a caster weapon!");
             return;
         }
 

@@ -18,4 +18,8 @@
         <None Remove="Jenkinsfile"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\AmiaReforged.PwEngine\AmiaReforged.PwEngine.csproj" />
+    </ItemGroup>
+
 </Project>
