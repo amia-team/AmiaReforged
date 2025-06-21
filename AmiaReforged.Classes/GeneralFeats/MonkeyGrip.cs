@@ -19,9 +19,7 @@ public class MonkeyGrip(NwCreature creature)
 
         bool shouldApplyMg = creature.Size == (CreatureSize)baseSize;
 
-        CreatureSize targetSize = shouldApplyMg
-            ? (CreatureSize)Math.Clamp(baseSize + 1, 0, 5)
-            : (CreatureSize)baseSize;
+        CreatureSize targetSize = shouldApplyMg ? (CreatureSize)Math.Clamp(baseSize + 1, 0, 5) : (CreatureSize)baseSize;
 
         creature.Size = targetSize;
 
@@ -58,18 +56,6 @@ public class MonkeyGrip(NwCreature creature)
         }
 
         return baseSize;
-    }
-
-    private void ApplyVisualEffect()
-    {
-        Effect? mgEffect = NWScript.EffectVisualEffect(MonkeyGripVisualEffect);
-        if (mgEffect is null)
-        {
-            LogManager.GetCurrentClassLogger().Error("MonkeyGrip effect is null");
-            return;
-        }
-
-        creature.ApplyEffect(EffectDuration.Instant, mgEffect);
     }
 
     private void UnequipOffhand()
@@ -126,5 +112,17 @@ public class MonkeyGrip(NwCreature creature)
             creature.RemoveEffect(mgPenalty);
             PlayerPlugin.UpdateCharacterSheet(creature);
         }
+    }
+
+    private void ApplyVisualEffect()
+    {
+        Effect? mgEffect = NWScript.EffectVisualEffect(MonkeyGripVisualEffect);
+        if (mgEffect is null)
+        {
+            LogManager.GetCurrentClassLogger().Error("MonkeyGrip effect is null");
+            return;
+        }
+
+        creature.ApplyEffect(EffectDuration.Instant, mgEffect);
     }
 }
