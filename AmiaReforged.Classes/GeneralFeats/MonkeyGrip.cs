@@ -107,16 +107,16 @@ public class MonkeyGrip(NwCreature creature)
     {
         Effect? mgPenalty = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "mg_penalty");
 
-        if (mgPenalty is not null)
-        {
-            creature.RemoveEffect(mgPenalty);
-            PlayerPlugin.UpdateCharacterSheet(creature);
-        }
+        if (mgPenalty is null) return;
+        
+        creature.RemoveEffect(mgPenalty);
+        PlayerPlugin.UpdateCharacterSheet(creature);
     }
 
     private void ApplyVisualEffect()
     {
         Effect? mgEffect = NWScript.EffectVisualEffect(MonkeyGripVisualEffect);
+        
         if (mgEffect is null)
         {
             LogManager.GetCurrentClassLogger().Error("MonkeyGrip effect is null");
