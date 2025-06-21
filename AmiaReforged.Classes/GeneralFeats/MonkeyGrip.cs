@@ -16,13 +16,13 @@ public class MonkeyGrip(NwCreature creature)
         int baseSize = GetBaseSize();
 
         bool shouldApplyMg = creature.Size == (CreatureSize)baseSize;
-        
-        CreatureSize targetSize = shouldApplyMg 
+
+        CreatureSize targetSize = shouldApplyMg
             ? (CreatureSize)Math.Clamp(baseSize + 1, 0, 5)
             : (CreatureSize)baseSize;
-        
+
         creature.Size = targetSize;
-        
+
         if (shouldApplyMg)
         {
             ApplyMgPenalty();
@@ -43,12 +43,16 @@ public class MonkeyGrip(NwCreature creature)
 
         int baseSize = NWScript.GetLocalInt(pcKey, "base_size");
 
-        // Set the int if it hasn't been set...
-        if (baseSize == 0)
+        // Store the base size to the character's PC key if it has not yet been set
+        if (baseSize == NWScript.CREATURE_SIZE_INVALID)
         {
             baseSize = (int)creature.Size;
             NWScript.SetLocalInt(pcKey, "base_size", baseSize);
-            
+
+            if (creature.IsPlayerControlled(out NwPlayer? _))
+            {
+                NWScript.ExportSingleCharacter(creature);
+            }
         }
 
         return baseSize;
@@ -62,7 +66,7 @@ public class MonkeyGrip(NwCreature creature)
             LogManager.GetCurrentClassLogger().Error("MonkeyGrip effect is null");
             return;
         }
-            
+
         creature.ApplyEffect(EffectDuration.Instant, mgEffect);
     }
 
@@ -100,7 +104,7 @@ public class MonkeyGrip(NwCreature creature)
         {
             creature.RemoveEffect(existing);
         }
-        
+
         Effect mgPenalty = Effect.AttackDecrease(2);
         mgPenalty.SubType = EffectSubType.Supernatural;
         mgPenalty.Tag = "mg_penalty";
