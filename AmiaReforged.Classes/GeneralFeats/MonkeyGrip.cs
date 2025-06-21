@@ -10,6 +10,8 @@ namespace AmiaReforged.Classes.GeneralFeats;
 public class MonkeyGrip(NwCreature creature)
 {
     private const int MonkeyGripVisualEffect = 2527;
+    private const string LocalIntBaseSize = "base_size";
+    private const string PcKeyTag = "ds_pckey";
 
     public void ChangeSize()
     {
@@ -37,17 +39,17 @@ public class MonkeyGrip(NwCreature creature)
 
     private int GetBaseSize()
     {
-        NwItem? pcKey = creature.FindItemWithTag("ds_pckey");
+        NwItem? pcKey = creature.FindItemWithTag(PcKeyTag);
 
         if (pcKey is null) return 0;
 
-        int baseSize = NWScript.GetLocalInt(pcKey, "base_size");
+        int baseSize = NWScript.GetLocalInt(pcKey, LocalIntBaseSize);
 
         // Store the base size to the character's PC key if it has not yet been set
         if (baseSize == NWScript.CREATURE_SIZE_INVALID)
         {
             baseSize = (int)creature.Size;
-            NWScript.SetLocalInt(pcKey, "base_size", baseSize);
+            NWScript.SetLocalInt(pcKey, LocalIntBaseSize, baseSize);
 
             if (creature.IsPlayerControlled(out NwPlayer? _))
             {
@@ -81,17 +83,17 @@ public class MonkeyGrip(NwCreature creature)
 
     public bool IsMonkeyGripped()
     {
-        NwItem? pcKey = creature.FindItemWithTag("ds_pckey");
+        NwItem? pcKey = creature.FindItemWithTag(PcKeyTag);
 
         if (pcKey is null) return false;
 
-        int baseSize = NWScript.GetLocalInt(pcKey, "base_size");
+        int baseSize = NWScript.GetLocalInt(pcKey, LocalIntBaseSize);
 
         // Set the int if it hasn't been set...
         if (baseSize == 0)
         {
             baseSize = (int)creature.Size;
-            NWScript.SetLocalInt(pcKey, "base_size", baseSize);
+            NWScript.SetLocalInt(pcKey, LocalIntBaseSize, baseSize);
         }
 
         return creature.Size != (CreatureSize)baseSize;
