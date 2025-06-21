@@ -1,108 +1,127 @@
 ﻿using System.Reflection.PortableExecutable;
 using Anvil.API;
+using NLog;
+using NLog.Fluent;
 using NWN.Core;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.GeneralFeats;
 
-public class MonkeyGrip(NwCreature player)
+public class MonkeyGrip(NwCreature creature)
 {
+    private const int MonkeyGripVisualEffect = 2527;
+    private const string LocalIntBaseSize = "base_size";
+    private const string PcKeyTag = "ds_pckey";
+
     public void ChangeSize()
     {
-        NwItem? pcKey = player.FindItemWithTag("ds_pckey");
+        int baseSize = GetBaseSize();
 
-        if (pcKey is null) return;
+        bool shouldApplyMg = creature.Size == (CreatureSize)baseSize;
 
-        int baseSize = NWScript.GetLocalInt(pcKey, "base_size");
+        CreatureSize targetSize = shouldApplyMg ? (CreatureSize)Math.Clamp(baseSize + 1, 0, 5) : (CreatureSize)baseSize;
 
-        // Set the int if it hasn't been set...
-        if (baseSize == 0)
+        creature.Size = targetSize;
+
+        if (shouldApplyMg)
         {
-            baseSize = (int)player.Size;
-            NWScript.SetLocalInt(pcKey, "base_size", baseSize);
-        }
-
-        if (player.Size == (CreatureSize)baseSize)
-        {
-            CreatureSize newSize = (CreatureSize)(int.Clamp(baseSize + 1, 0, 5));
-            player.Size = newSize;
-
             ApplyMgPenalty();
         }
         else
         {
-            player.Size = (CreatureSize)baseSize;
-            NwItem? offhand = player.GetItemInSlot(InventorySlot.LeftHand);
-            NwItem? mainhand = player.GetItemInSlot(InventorySlot.RightHand);
-            if (mainhand != null)
-            {
-                int weaponSize = (int)mainhand.BaseItem.WeaponSize;
-                int creatureSize = (int)player.Size;
-                if (offhand is not null)
-                {
-                    player.ActionUnequipItem(offhand);
-                    NWScript.FloatingTextStringOnCreature("Monkey Grip disabled. Unequipping offhand.", player);
-                }
-                if (weaponSize >= (creatureSize + 2))
-                {
-                    player.ActionUnequipItem(mainhand);
-                    NWScript.FloatingTextStringOnCreature("Monkey Grip disabled. Unequipping oversized weapon.", player);
-                }
-            }
-
+            UnequipOffhand();
             RemoveMgPenalty();
-            player.ApplyEffect(EffectDuration.Instant, NWScript.EffectVisualEffect(2527));
-            
+            ApplyVisualEffect();
+        }
+    }
+
+    private int GetBaseSize()
+    {
+        NwItem? pcKey = creature.FindItemWithTag(PcKeyTag);
+
+        if (pcKey is null) return 0;
+
+        int baseSize = NWScript.GetLocalInt(pcKey, LocalIntBaseSize);
+
+        // Store the base size to the character's PC key if it has not yet been set
+        if (baseSize != NWScript.CREATURE_SIZE_INVALID) return baseSize;
+        
+        baseSize = (int)creature.Size;
+        NWScript.SetLocalInt(pcKey, LocalIntBaseSize, baseSize);
+
+        if (creature.IsPlayerControlled(out NwPlayer? _))
+        {
+            NWScript.ExportSingleCharacter(creature);
+        }
+
+        return baseSize;
+    }
+
+    private void UnequipOffhand()
+    {
+        NwItem? offhand = creature.GetItemInSlot(InventorySlot.LeftHand);
+        if (offhand is not null)
+        {
+            creature.ActionUnequipItem(offhand);
         }
     }
 
     public bool IsMonkeyGripped()
     {
-        NwItem? pcKey = player.FindItemWithTag("ds_pckey");
+        NwItem? pcKey = creature.FindItemWithTag(PcKeyTag);
 
         if (pcKey is null) return false;
 
-        int baseSize = NWScript.GetLocalInt(pcKey, "base_size");
+        int baseSize = NWScript.GetLocalInt(pcKey, LocalIntBaseSize);
 
         // Set the int if it hasn't been set...
         if (baseSize == 0)
         {
-            baseSize = (int)player.Size;
-            NWScript.SetLocalInt(pcKey, "base_size", baseSize);
+            baseSize = (int)creature.Size;
+            NWScript.SetLocalInt(pcKey, LocalIntBaseSize, baseSize);
         }
 
-        return player.Size != (CreatureSize)baseSize;
+        return creature.Size != (CreatureSize)baseSize;
     }
 
     public void ApplyMgPenalty()
     {
-        Effect? existing = player.ActiveEffects.FirstOrDefault(effect => effect.Tag == "mg_penalty");
+        Effect? existing = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == "mg_penalty");
         if (existing is not null)
         {
-            player.RemoveEffect(existing);
+            creature.RemoveEffect(existing);
         }
-        
-        Effect mgPenalty = Effect.AttackDecrease(1);
-        // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Hide)!, 4), mgPenalty);
-        // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.MoveSilently)!, 4), mgPenalty);
-        // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Spot)!, 4), mgPenalty);
-        // mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Listen)!, 4), mgPenalty);
+
+        Effect mgPenalty = Effect.AttackDecrease(2);
         mgPenalty.SubType = EffectSubType.Supernatural;
         mgPenalty.Tag = "mg_penalty";
-        player.ApplyEffect(EffectDuration.Instant, NWScript.EffectVisualEffect(2527));
 
-        player.ApplyEffect(EffectDuration.Permanent, mgPenalty);
-        PlayerPlugin.UpdateCharacterSheet(player);
+        ApplyVisualEffect();
+
+        creature.ApplyEffect(EffectDuration.Permanent, mgPenalty);
+        PlayerPlugin.UpdateCharacterSheet(creature);
     }
 
-    public void RemoveMgPenalty()
+    private void RemoveMgPenalty()
     {
-        Effect? mgPenalty = player.ActiveEffects.FirstOrDefault(e => e.Tag == "mg_penalty");
+        Effect? mgPenalty = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "mg_penalty");
 
-        if (mgPenalty is not null)
+        if (mgPenalty is null) return;
+        
+        creature.RemoveEffect(mgPenalty);
+        PlayerPlugin.UpdateCharacterSheet(creature);
+    }
+
+    private void ApplyVisualEffect()
+    {
+        Effect? mgEffect = NWScript.EffectVisualEffect(MonkeyGripVisualEffect);
+        
+        if (mgEffect is null)
         {
-            player.RemoveEffect(mgPenalty);
-            PlayerPlugin.UpdateCharacterSheet(player);
+            LogManager.GetCurrentClassLogger().Error("MonkeyGrip effect is null");
+            return;
         }
+
+        creature.ApplyEffect(EffectDuration.Instant, mgEffect);
     }
 }

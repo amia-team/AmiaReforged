@@ -29,18 +29,17 @@ public class GeneralFeatHandler
         }
     }
 
-    // TODO: Add script handler
     [ScriptHandler(scriptName: "monkey_grip")]
     public void OnMonkeyGrip(CallInfo info)
     {
-        NwCreature? playerCharacter = info.ObjectSelf as NwCreature;
-        if (playerCharacter is null)
+        NwCreature? gameCharacter = info.ObjectSelf as NwCreature;
+        if (gameCharacter is null)
         {
             Log.Info("Could not convert object self to NWCreature");
             return;
         }
 
-        MonkeyGrip mg = new(playerCharacter);
+        MonkeyGrip mg = new(gameCharacter);
         mg.ChangeSize();
     }
 }
