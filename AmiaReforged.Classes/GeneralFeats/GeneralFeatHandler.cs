@@ -29,7 +29,6 @@ public class GeneralFeatHandler
         }
     }
 
-    // TODO: Add script handler
     [ScriptHandler(scriptName: "monkey_grip")]
     public void OnMonkeyGrip(CallInfo info)
     {
