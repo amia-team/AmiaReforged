@@ -104,9 +104,6 @@ public class SpellCastingService
                 targetIsInParty = player.PartyMembers.Any(p => p.LoginCreature == targetCreature) ||
                                   casterCreature.Associates.Any(a => a == targetCreature);
 
-            spell.DoSpellResist(targetCreature, casterCreature);
-
-
             if (targetIsInParty)
             {
                 NWScript.SendMessageToPC(casterCreature,
