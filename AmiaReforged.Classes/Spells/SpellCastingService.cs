@@ -121,7 +121,7 @@ public class SpellCastingService
             spell.DoSpellResist(targetCreature, casterCreature);
         }
 
-        DoCasterLevelOverride(casterCreature, eventData);
+        // DoCasterLevelOverride(casterCreature, eventData);
 
         spell.OnSpellImpact(eventData);
 
