@@ -125,7 +125,7 @@ public class SpellCastingService
 
         spell.OnSpellImpact(eventData);
 
-        RevertCasterLevelOverride(casterCreature);
+        // RevertCasterLevelOverride(casterCreature);
 
         spell.CheckedSpellResistance = false;
 
