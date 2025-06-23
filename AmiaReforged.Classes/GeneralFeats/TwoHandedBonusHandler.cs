@@ -13,10 +13,6 @@ public class TwoHandedBonusHandler
 
     public TwoHandedBonusHandler(EventService eventService)
     {
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-
-        if (environment == "live") return;
-        
         eventService.SubscribeAll<OnItemEquip, OnItemEquip.Factory>(OnEquipApplyTwoHanded, EventCallbackType.After);
         eventService.SubscribeAll<OnItemUnequip, OnItemUnequip.Factory>(OnUnequipApplyTwoHanded, EventCallbackType.After);
         NwModule.Instance.OnEffectApply += OnStrengthApplyApplyTwoHanded;
