@@ -134,7 +134,6 @@ public class CasterWeaponForge
             return;
         }
 
-        // TODO: Factor in material, quality, and other flavor properties
         if (weapon.ItemProperties.Any())
         {
             GenericWindow
