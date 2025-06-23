@@ -167,12 +167,12 @@ public class MythalForgeInitializer
 
         if (NWScript.GetLocalString(obj.Player.LoginCreature, LvarTargetingMode) != TargetingModeMythalForge) return;
 
-        int isCasterWeapon = NWScript.GetLocalInt(item, sVarName: "CASTER_WEAPON");
         int baseItemType = NWScript.GetBaseItemType(item);
 
-        bool is2H = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
-        if (isCasterWeapon == NWScript.TRUE)
-            baseItemType = is2H ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+        bool isTwoHander = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
+        bool isCasterWeapon = NWScript.GetLocalInt(item, sVarName: "CASTER_WEAPON") == NWScript.TRUE;
+        if (isCasterWeapon)
+            baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
 
         bool itemListingNotFound =
             !_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories);
