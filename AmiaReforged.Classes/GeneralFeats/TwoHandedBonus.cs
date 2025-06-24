@@ -37,6 +37,7 @@ public static class TwoHandedBonus
         Effect? twoHandedBonus = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == "twohandedbonus");
         NwItem? weapon = creature.GetItemInSlot(InventorySlot.RightHand);
         
+        
         // Check if the creature has a pre-existing two-handed bonus; always remove it before reapplying the new one
         bool hasTwoHandedBonus = twoHandedBonus != null;
         
@@ -45,6 +46,9 @@ public static class TwoHandedBonus
         
         // Check if the creature doesn't have a right hand item
         bool hasNoWeapon = weapon == null;
+        
+        // There's nothing left to check here, exit early.
+        if(hasNoWeapon) return;
         
         // We know that in order for the weapon to be twohanded,
         // the weapon size must always be (one size) larger than the creature
