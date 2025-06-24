@@ -294,7 +294,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         bool canAfford = Model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
         Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
         Token().SetBindValue(View.GoldCostTooltip, canAfford ? "" : "You cannot afford this.");
-        bool validAction = canAfford && Model.CanMakeCheck();
+        bool validAction = canAfford && Model.CanMakeCheck() && Model.RemainingPowers >= Model.MaxBudget;
         Token().SetBindValue(View.ApplyEnabled, validAction);
         Token().SetBindValue(View.EncourageGold, !canAfford);
     }
