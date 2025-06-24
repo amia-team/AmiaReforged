@@ -12,7 +12,7 @@ public static class VisualEffectConstants
         Label = "Visual Effects",
         Properties =
         [
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertyVisualEffect(NWScript.ITEM_VISUAL_ACID)!,
@@ -20,7 +20,7 @@ public static class VisualEffectConstants
                 GoldCost = VfxCost,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertyVisualEffect(NWScript.ITEM_VISUAL_COLD)!,
@@ -28,7 +28,7 @@ public static class VisualEffectConstants
                 GoldCost = VfxCost,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertyVisualEffect(NWScript.ITEM_VISUAL_FIRE)!,
@@ -36,7 +36,7 @@ public static class VisualEffectConstants
                 GoldCost = VfxCost,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertyVisualEffect(NWScript.ITEM_VISUAL_ELECTRICAL)!,
@@ -44,7 +44,7 @@ public static class VisualEffectConstants
                 GoldCost = VfxCost,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertyVisualEffect(NWScript.ITEM_VISUAL_SONIC)!,
@@ -52,7 +52,7 @@ public static class VisualEffectConstants
                 GoldCost = VfxCost,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertyVisualEffect(NWScript.ITEM_VISUAL_HOLY)!,
@@ -60,7 +60,7 @@ public static class VisualEffectConstants
                 GoldCost = VfxCost,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertyVisualEffect(NWScript.ITEM_VISUAL_EVIL)!,

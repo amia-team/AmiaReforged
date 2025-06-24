@@ -20,7 +20,7 @@ public static class SkillProperties
         Label = "Beneficial Skills",
         Properties =
         [
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_ANIMAL_EMPATHY, 10)!,
@@ -28,7 +28,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CONCENTRATION, 10)!,
@@ -36,7 +36,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_TRAP, 10)!,
@@ -44,7 +44,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_DISABLE_TRAP, 10)!,
@@ -52,7 +52,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_DISCIPLINE, 10)!,
@@ -60,7 +60,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_HEAL, 10)!,
@@ -68,7 +68,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_HIDE, 10)!,
@@ -76,7 +76,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_LISTEN, 10)!,
@@ -84,7 +84,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_MOVE_SILENTLY, 10)!,
@@ -92,7 +92,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_OPEN_LOCK, 10)!,
@@ -100,7 +100,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PARRY, 10)!,
@@ -108,7 +108,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PERFORM, 10)!,
@@ -116,7 +116,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SEARCH, 10)!,
@@ -124,7 +124,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SET_TRAP, 10)!,
@@ -132,7 +132,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SPELLCRAFT, 10)!,
@@ -140,7 +140,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SPOT, 10)!,
@@ -148,7 +148,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_TAUNT, 10)!,
@@ -156,7 +156,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_USE_MAGIC_DEVICE, 10)!,
@@ -164,7 +164,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_ANIMAL_EMPATHY, 5)!,
@@ -172,7 +172,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CONCENTRATION, 5)!,
@@ -180,7 +180,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_TRAP, 5)!,
@@ -188,7 +188,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_DISABLE_TRAP, 5)!,
@@ -196,7 +196,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_DISCIPLINE, 5)!,
@@ -204,7 +204,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_HEAL, 5)!,
@@ -212,7 +212,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_HIDE, 5)!,
@@ -220,7 +220,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_LISTEN, 5)!,
@@ -228,7 +228,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_MOVE_SILENTLY, 5)!,
@@ -236,7 +236,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_OPEN_LOCK, 5)!,
@@ -244,7 +244,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PARRY, 5)!,
@@ -252,7 +252,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PERFORM, 5)!,
@@ -260,7 +260,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SEARCH, 5)!,
@@ -268,7 +268,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SET_TRAP, 5)!,
@@ -276,7 +276,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SPELLCRAFT, 5)!,
@@ -284,7 +284,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SPOT, 5)!,
@@ -292,7 +292,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_TAUNT, 5)!,
@@ -300,7 +300,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_USE_MAGIC_DEVICE, 5)!,
@@ -308,7 +308,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_ANIMAL_EMPATHY, 2)!,
@@ -316,7 +316,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_APPRAISE, 2)!,
@@ -324,7 +324,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CONCENTRATION, 2)!,
@@ -332,7 +332,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_TRAP, 2)!,
@@ -340,7 +340,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_DISABLE_TRAP, 2)!,
@@ -348,7 +348,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_DISCIPLINE, 2)!,
@@ -356,7 +356,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_HEAL, 2)!,
@@ -364,7 +364,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_HIDE, 2)!,
@@ -372,7 +372,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_LISTEN, 2)!,
@@ -380,7 +380,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_MOVE_SILENTLY, 2)!,
@@ -388,7 +388,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_OPEN_LOCK, 2)!,
@@ -396,7 +396,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PARRY, 2)!,
@@ -404,7 +404,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PERFORM, 2)!,
@@ -412,7 +412,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SEARCH, 2)!,
@@ -420,7 +420,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SET_TRAP, 2)!,
@@ -428,7 +428,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SPELLCRAFT, 2)!,
@@ -436,7 +436,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_SPOT, 2)!,
@@ -444,7 +444,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_TAUNT, 2)!,
@@ -452,7 +452,7 @@ public static class SkillProperties
                 GoldCost = SkillCost0,
                 CraftingTier = CraftingTier.Lesser
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_USE_MAGIC_DEVICE, 2)!,
@@ -472,7 +472,7 @@ public static class SkillProperties
         Label = "Roleplay/Personal Skills",
         Properties =
         [
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_APPRAISE, 5)!,
@@ -480,7 +480,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_BLUFF, 5)!,
@@ -488,7 +488,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_ARMOR, 5)!,
@@ -496,7 +496,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_WEAPON, 5)!,
@@ -504,7 +504,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_INTIMIDATE, 5)!,
@@ -512,7 +512,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_LORE, 5)!,
@@ -520,7 +520,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PERSUADE, 5)!,
@@ -528,7 +528,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PICK_POCKET, 5)!,
@@ -536,7 +536,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_RIDE, 5)!,
@@ -544,7 +544,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 0,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_TUMBLE, 5)!,
@@ -552,7 +552,7 @@ public static class SkillProperties
                 GoldCost = SkillCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_APPRAISE, 10)!,
@@ -560,7 +560,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_BLUFF, 10)!,
@@ -568,7 +568,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_ARMOR, 10)!,
@@ -576,7 +576,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_CRAFT_WEAPON, 10)!,
@@ -584,7 +584,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_INTIMIDATE, 10)!,
@@ -592,7 +592,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_LORE, 10)!,
@@ -600,7 +600,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PERSUADE, 10)!,
@@ -608,7 +608,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_PICK_POCKET, 10)!,
@@ -616,7 +616,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_RIDE, 10)!,
@@ -624,7 +624,7 @@ public static class SkillProperties
                 GoldCost = SkillCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertySkillBonus(NWScript.SKILL_TUMBLE, 10)!,

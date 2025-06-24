@@ -59,7 +59,7 @@ public class CraftingPropertyData
                 Label = "Armor",
                 Properties =
                 [
-                    new CraftingProperty
+                    new()
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(1)!,
@@ -67,7 +67,7 @@ public class CraftingPropertyData
                         CraftingTier = CraftingTier.Minor,
                         GoldCost = GenericItemProperties.AcCost1
                     },
-                    new CraftingProperty
+                    new()
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(2)!,
@@ -75,7 +75,7 @@ public class CraftingPropertyData
                         CraftingTier = CraftingTier.Lesser,
                         GoldCost = GenericItemProperties.AcCost2
                     },
-                    new CraftingProperty
+                    new()
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(3)!,
@@ -83,7 +83,7 @@ public class CraftingPropertyData
                         CraftingTier = CraftingTier.Intermediate,
                         GoldCost = GenericItemProperties.AcCost3
                     },
-                    new CraftingProperty
+                    new()
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(4)!,
@@ -91,7 +91,7 @@ public class CraftingPropertyData
                         CraftingTier = CraftingTier.Greater,
                         GoldCost = GenericItemProperties.AcCost4
                     },
-                    new CraftingProperty
+                    new()
                     {
                         PowerCost = 2,
                         ItemProperty = NWScript.ItemPropertyACBonus(5)!,
@@ -138,7 +138,7 @@ public class CraftingPropertyData
             Label = "Massive Criticals",
             Properties =
             [
-                new CraftingProperty
+                new()
                 {
                     PowerCost = 1,
                     ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
@@ -268,14 +268,14 @@ public class CraftingPropertyData
                     Label = "Massive Criticals",
                     Properties =
                     [
-                        new CraftingProperty
+                        new()
                         {
                             PowerCost = 1,
                             ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
                             GuiLabel = "1d12 Massive Criticals",
                             CraftingTier = CraftingTier.Wondrous
                         },
-                        new CraftingProperty
+                        new()
                         {
                             PowerCost = 2,
                             ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d12)!,

@@ -15,7 +15,7 @@ public static class AbilityProperties
         Properties =
         [
             // Intermediate
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_STR, 1)!,
@@ -23,7 +23,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_DEX, 1)!,
@@ -31,7 +31,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CON, 1)!,
@@ -39,7 +39,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_INT, 1)!,
@@ -47,7 +47,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_WIS, 1)!,
@@ -55,7 +55,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CHA, 1)!,
@@ -64,7 +64,7 @@ public static class AbilityProperties
                 CraftingTier = CraftingTier.Intermediate
             },
             // Greater
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_STR, 2)!,
@@ -72,7 +72,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_DEX, 2)!,
@@ -80,7 +80,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CON, 2)!,
@@ -88,7 +88,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_INT, 2)!,
@@ -96,7 +96,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_WIS, 2)!,
@@ -104,7 +104,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility2,
                 CraftingTier = CraftingTier.Greater
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CHA, 2)!,
@@ -113,7 +113,7 @@ public static class AbilityProperties
                 CraftingTier = CraftingTier.Greater
             },
             // Flawless
-            new CraftingProperty
+            new()
             {
                 PowerCost = 6,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_STR, 3)!,
@@ -121,7 +121,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Flawless
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 6,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_DEX, 3)!,
@@ -129,7 +129,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Flawless
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 6,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CON, 3)!,
@@ -137,7 +137,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Flawless
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 6,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_INT, 3)!,
@@ -145,7 +145,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Flawless
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 6,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_WIS, 3)!,
@@ -153,7 +153,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Flawless
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 6,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CHA, 3)!,
@@ -162,7 +162,7 @@ public static class AbilityProperties
                 CraftingTier = CraftingTier.Flawless
             },
             // Dreamcoin - +4
-            new CraftingProperty
+            new()
             {
                 PowerCost = 8,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_STR, 4)!,
@@ -170,7 +170,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 8,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_DEX, 4)!,
@@ -178,7 +178,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 8,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CON, 4)!,
@@ -186,7 +186,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 8,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_INT, 4)!,
@@ -194,7 +194,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 8,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_WIS, 4)!,
@@ -202,7 +202,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 8,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CHA, 4)!,
@@ -211,7 +211,7 @@ public static class AbilityProperties
                 CraftingTier = CraftingTier.Wondrous
             },
             // Dreamcoin - +5
-            new CraftingProperty
+            new()
             {
                 PowerCost = 10,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_STR, 5)!,
@@ -219,7 +219,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 10,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_DEX, 5)!,
@@ -227,7 +227,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 10,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CON, 5)!,
@@ -235,7 +235,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 10,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_INT, 5)!,
@@ -243,7 +243,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 10,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_WIS, 5)!,
@@ -251,7 +251,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 10,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CHA, 5)!,
@@ -260,7 +260,7 @@ public static class AbilityProperties
                 CraftingTier = CraftingTier.Wondrous
             },
             // DreamCoin - +6
-            new CraftingProperty
+            new()
             {
                 PowerCost = 12,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_STR, 6)!,
@@ -268,7 +268,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 12,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_DEX, 6)!,
@@ -276,7 +276,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 12,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CON, 6)!,
@@ -284,7 +284,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 12,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_INT, 6)!,
@@ -292,7 +292,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 12,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_WIS, 6)!,
@@ -300,7 +300,7 @@ public static class AbilityProperties
                 GoldCost = MythalCostAbility3,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 PowerCost = 12,
                 ItemProperty = NWScript.ItemPropertyAbilityBonus(NWScript.IP_CONST_ABILITY_CHA, 6)!,

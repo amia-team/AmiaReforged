@@ -12,7 +12,7 @@ public static class MeleeOnHitProperties
         Label = "On Hit",
         Properties =
         [
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Blindness(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -20,7 +20,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Confusion(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -28,7 +28,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Daze(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -36,7 +36,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Deafness(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -44,14 +44,14 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20, HitEffect.Disease(DiseaseType.MummyRot)),
                 GuiLabel = "Disease: Mummy Rot DC 20, 50%/2 rounds",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Doom(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -59,7 +59,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Fear(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -67,7 +67,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Hold(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -75,21 +75,21 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20, HitEffect.Knock()),
                 GuiLabel = "Knockdown: DC 20, 50%/2 rounds",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20, HitEffect.LevelDrain()),
                 GuiLabel = "Level Drain: DC 20, 50%/2 rounds",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.ItemPoison(IPPoisonDamage.Constitution1d2)),
@@ -97,7 +97,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Silence(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -105,7 +105,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Sleep(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -113,7 +113,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Slow(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -121,7 +121,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Stun(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -129,7 +129,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20, HitEffect.Wounding(10)),
                 GuiLabel = "Wounding: DC 20, 50%/2 rounds",
@@ -137,7 +137,7 @@ public static class MeleeOnHitProperties
                 CraftingTier = CraftingTier.Divine
             },
             // Wonderforged, DC 22
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Blindness(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -145,7 +145,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Confusion(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -153,7 +153,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Daze(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -161,7 +161,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Deafness(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -169,14 +169,14 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.Disease(DiseaseType.MummyRot)),
                 GuiLabel = "Disease: Mummy Rot DC 22, 50%/2 rounds",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Doom(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -184,7 +184,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Fear(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -192,7 +192,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Hold(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -200,21 +200,21 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.Knock()),
                 GuiLabel = "Knock: DC 22, 50%/2 rounds",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.LevelDrain()),
                 GuiLabel = "Level Drain: DC 22, 50%/2 rounds",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.ItemPoison(IPPoisonDamage.Constitution1d2)),
@@ -222,7 +222,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Silence(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -230,7 +230,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Sleep(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -238,7 +238,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Slow(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -246,7 +246,7 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Stun(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -254,14 +254,14 @@ public static class MeleeOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.Wounding(10)),
                 GuiLabel = "Wounding: DC 22, 50%/2 rounds",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new CraftingProperty
+            new()
             {
                 ItemProperty = NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_FREEZE, 10)!,
                 GuiLabel = "Freeze (Slow 3 rounds,  CL 10)",

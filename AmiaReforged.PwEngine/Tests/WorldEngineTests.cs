@@ -30,7 +30,7 @@ public class WorldEngineTests
 
         Environment.SetEnvironmentVariable("ECONOMY_RESOURCES_PATH", TestConfig.ResourcesPath);
 
-        Mock<IWorldConfigProvider> fakeConfig = new Mock<IWorldConfigProvider>();
+        Mock<IWorldConfigProvider> fakeConfig = new();
         fakeConfig.Setup(c => c.GetBoolean(It.IsAny<string>())).Returns(true);
 
         _engineLoader = new(fakeConfig.Object);
