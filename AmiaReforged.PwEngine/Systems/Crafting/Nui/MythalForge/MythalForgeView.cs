@@ -41,7 +41,7 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
         Presenter = new(this, propertyData, budget, item, player, validator, dcCalculator);
 
         CategoryView = new(Presenter);
-        ActivePropertiesView = new(Presenter);
+        ActivePropertiesView = new();
         ChangelistView = new(Presenter);
     }
 

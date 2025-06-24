@@ -40,7 +40,11 @@ public static class ItemPropertyHelper
 
     public static CraftingProperty ToCraftingProperty(ItemProperty ip)
     {
-        string gameLabel = GameLabel(ip);
+        LogManager.GetCurrentClassLogger().Info("Converting unknown property to something useable...");
+
+        string gameLabel = FullPropertyDescription(ip);
+
+        LogManager.GetCurrentClassLogger().Info($"{gameLabel}");
 
         gameLabel = gameLabel.Replace(oldValue: "_", newValue: " ");
 
@@ -165,8 +169,8 @@ public static class ItemPropertyHelper
 
     public static bool PropertiesAreSame(ItemProperty property1, ItemProperty property2)
     {
-        string label1 = GameLabel(property1);
-        string label2 = GameLabel(property2);
+        string label1 = FullPropertyDescription(property1);
+        string label2 = FullPropertyDescription(property2);
         bool propertiesAreSame = label1 == label2;
         if (property1.Property.PropertyType == ItemPropertyType.OnHitProperties &&
             property2.Property.PropertyType == ItemPropertyType.OnHitProperties
@@ -229,13 +233,13 @@ public static class ItemPropertyHelper
         if (property.Property.GameStrRef == null) return description.ToString();
 
         description.Append(property.Property.GameStrRef.ToString());
-        
+
         ItemPropertySubTypeTableEntry? subType = property.SubType;
         if (subType != null)
         {
             description.Append($" {subType.Name}");
         }
-        
+
         ItemPropertyParamTableEntry? param1Value = property.Param1TableValue;
         ItemPropertyCostTableEntry? costTableValue = property.CostTableValue;
 

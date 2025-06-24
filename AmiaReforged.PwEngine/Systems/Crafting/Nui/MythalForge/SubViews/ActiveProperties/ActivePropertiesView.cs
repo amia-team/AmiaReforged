@@ -7,11 +7,6 @@ public class ActivePropertiesView : IScryView
 {
     private const string RemovePropertyConst = "remove_property";
 
-
-    public ActivePropertiesView(IScryPresenter presenter)
-    {
-    }
-
     public string RemoveProperty => RemovePropertyConst;
 
     public NuiBind<string> PropertyNames { get; } = new(key: "ip_names");
