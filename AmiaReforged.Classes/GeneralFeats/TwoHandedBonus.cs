@@ -44,7 +44,13 @@ public static class TwoHandedBonus
             creature.RemoveEffect(twoHandedBonus!);
         
         // Check if the creature doesn't have a right hand item
-        bool hasNoWeapon = weapon == null;
+        if (weapon == null)
+        {
+            if (hasTwoHandedBonus)
+                player.SendServerMessage("Two-handed weapon bonus removed.");
+            
+            return;
+        }
         
         // We know that in order for the weapon to be twohanded,
         // the weapon size must always be (one size) larger than the creature
@@ -52,18 +58,35 @@ public static class TwoHandedBonus
         int creatureSize = (int)creature.Size;
         
         bool weaponIsNotTwoHanded = weaponSize <= creatureSize;
+        if (weaponIsNotTwoHanded)
+        {
+            if (hasTwoHandedBonus)
+                player.SendServerMessage("Two-handed weapon bonus removed.");
+            
+            return;
+        }
         
-        // Check if the weapon is ranged (safe to suppress) 
-        bool weaponIsRanged = weapon.IsRangedWeapon;
+        // Check if the weapon is ranged
+        if (weapon.IsRangedWeapon)
+        {
+            if (hasTwoHandedBonus)
+                player.SendServerMessage("Two-handed weapon bonus removed.");
+            
+            return;
+        }
         
         // Check if the weapon is a UBAB weapon
-        bool weaponIsMonkWeapon = weapon.BaseItem.IsMonkWeapon;
+        if (weapon.BaseItem.IsMonkWeapon)
+        {
+            if (hasTwoHandedBonus)
+                player.SendServerMessage("Two-handed weapon bonus removed.");
+            
+            return;
+        }
         
         // Check if the weapon is double-sided
         bool weaponIsDoubleSided = weapon.BaseItem.WeaponWieldType == BaseItemWeaponWieldType.DoubleSided;
-        
-        // Disqualifiers for two-handed bonus
-        if (hasNoWeapon || weaponIsNotTwoHanded || weaponIsRanged || weaponIsMonkWeapon || weaponIsDoubleSided)
+        if (weaponIsDoubleSided)
         {
             if (hasTwoHandedBonus)
                 player.SendServerMessage("Two-handed weapon bonus removed.");
