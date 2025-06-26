@@ -93,6 +93,11 @@ public class MonkeyGrip(NwCreature creature)
         }
 
         Effect mgPenalty = Effect.AttackDecrease(2);
+        mgPenalty = Effect.LinkEffects(Effect.ACIncrease(1));
+        mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Hide)!, 4), mgPenalty);
+        mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.MoveSilently)!, 4), mgPenalty);
+        mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Spot)!, 4), mgPenalty);
+        mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Listen)!, 4), mgPenalty);
         mgPenalty.SubType = EffectSubType.Supernatural;
         mgPenalty.Tag = "mg_penalty";
 
