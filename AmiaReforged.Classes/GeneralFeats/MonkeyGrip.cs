@@ -90,7 +90,12 @@ public class MonkeyGrip(NwCreature creature)
             creature.RemoveEffect(existing);
         }
 
-        Effect mgPenalty = Effect.AttackDecrease(2);
+        Effect mgPenalty = Effect.LinkEffects(Effect.AttackDecrease(1), Effect.ACIncrease(1),
+            Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Hide)!, 4),
+            Effect.SkillIncrease(NwSkill.FromSkillType(Skill.MoveSilently)!, 4),
+            Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Spot)!, 4),
+            Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Listen)!, 4));
+        
         mgPenalty.SubType = EffectSubType.Unyielding;
         mgPenalty.Tag = "mg_penalty";
 
