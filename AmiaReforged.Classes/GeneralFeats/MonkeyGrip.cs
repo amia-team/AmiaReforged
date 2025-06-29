@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+using Anvil.API;
 using NLog;
 using NWN.Core;
 using NWN.Core.NWNX;

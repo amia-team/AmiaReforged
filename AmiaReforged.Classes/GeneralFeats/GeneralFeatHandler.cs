@@ -15,13 +15,13 @@ public class GeneralFeatHandler
 
     public GeneralFeatHandler()
     {
-        NwModule.Instance.OnLoadCharacterFinish += RemoveMonkeyGrip;
-    }
+        NwModule.Instance.OnClientEnter += RemoveMonkeyGrip;
     
     /// <summary>
     /// Relogging apparently loses the changed creature size
     /// </summary>
-    private void RemoveMonkeyGrip(OnLoadCharacterFinish obj)
+
+    private void RemoveMonkeyGrip(ModuleEvents.OnClientEnter obj)
     {
         if (obj.Player.LoginCreature is not {} loginCreature) return;
         
