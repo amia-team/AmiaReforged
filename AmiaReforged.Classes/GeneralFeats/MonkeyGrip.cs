@@ -1,7 +1,5 @@
-﻿using System.Reflection.PortableExecutable;
-using Anvil.API;
+﻿using Anvil.API;
 using NLog;
-using NLog.Fluent;
 using NWN.Core;
 using NWN.Core.NWNX;
 
