@@ -1,7 +1,5 @@
-﻿using System.Reflection.PortableExecutable;
-using Anvil.API;
+﻿using Anvil.API;
 using NLog;
-using NLog.Fluent;
 using NWN.Core;
 using NWN.Core.NWNX;
 
@@ -57,7 +55,7 @@ public class MonkeyGrip(NwCreature creature)
         return baseSize;
     }
 
-    private void UnequipOffhand()
+    public void UnequipOffhand()
     {
         NwItem? offhand = creature.GetItemInSlot(InventorySlot.LeftHand);
         if (offhand is not null)
@@ -66,25 +64,25 @@ public class MonkeyGrip(NwCreature creature)
         }
     }
 
-    public bool IsMonkeyGripped()
+    public bool IsLoggedInMonkeyGripped()
     {
-        NwItem? pcKey = creature.FindItemWithTag(PcKeyTag);
+        NwItem? mainHandItem = creature.GetItemInSlot(InventorySlot.RightHand);
+        if (mainHandItem is null) 
+            return false;
+        
+        NwItem? offHandItem = creature.GetItemInSlot(InventorySlot.LeftHand);
+        if (offHandItem is null)
+            return false;
+        
+        int weaponSize = (int)mainHandItem.BaseItem.WeaponSize;
+        int creatureSize = (int)creature.Size;
 
-        if (pcKey is null) return false;
-
-        int baseSize = NWScript.GetLocalInt(pcKey, LocalIntBaseSize);
-
-        // Set the int if it hasn't been set...
-        if (baseSize == 0)
-        {
-            baseSize = (int)creature.Size;
-            NWScript.SetLocalInt(pcKey, LocalIntBaseSize, baseSize);
-        }
-
-        return creature.Size != (CreatureSize)baseSize;
+        // We know that the creature has logged in while monkey gripped if the creature is wielding an offhand item
+        // while they are also wielding a weapon larger than their own size
+        return weaponSize > creatureSize;
     }
 
-    public void ApplyMgPenalty()
+    private void ApplyMgPenalty()
     {
         Effect? existing = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == "mg_penalty");
         if (existing is not null)
@@ -92,13 +90,13 @@ public class MonkeyGrip(NwCreature creature)
             creature.RemoveEffect(existing);
         }
 
-        Effect mgPenalty = Effect.AttackDecrease(2);
-        mgPenalty = Effect.LinkEffects(Effect.ACIncrease(1));
-        mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Hide)!, 4), mgPenalty);
-        mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.MoveSilently)!, 4), mgPenalty);
-        mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Spot)!, 4), mgPenalty);
-        mgPenalty = Effect.LinkEffects(Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Listen)!, 4), mgPenalty);
-        mgPenalty.SubType = EffectSubType.Supernatural;
+        Effect mgPenalty = Effect.LinkEffects(Effect.AttackDecrease(1), Effect.ACIncrease(1),
+            Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Hide)!, 4),
+            Effect.SkillIncrease(NwSkill.FromSkillType(Skill.MoveSilently)!, 4),
+            Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Spot)!, 4),
+            Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Listen)!, 4));
+        
+        mgPenalty.SubType = EffectSubType.Unyielding;
         mgPenalty.Tag = "mg_penalty";
 
         ApplyVisualEffect();
@@ -107,7 +105,7 @@ public class MonkeyGrip(NwCreature creature)
         PlayerPlugin.UpdateCharacterSheet(creature);
     }
 
-    private void RemoveMgPenalty()
+    public void RemoveMgPenalty()
     {
         Effect? mgPenalty = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "mg_penalty");
 
