@@ -91,7 +91,7 @@ public class MonkeyGrip(NwCreature creature)
         }
 
         Effect mgPenalty = Effect.AttackDecrease(2);
-        mgPenalty.SubType = EffectSubType.Supernatural;
+        mgPenalty.SubType = EffectSubType.Unyielding;
         mgPenalty.Tag = "mg_penalty";
 
         ApplyVisualEffect();
