@@ -97,7 +97,6 @@ public class MonkeyGrip(NwCreature creature)
             Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Listen)!, 4));
         
         mgPenalty.SubType = EffectSubType.Unyielding;
-
         mgPenalty.Tag = "mg_penalty";
 
         ApplyVisualEffect();
