@@ -167,7 +167,7 @@ public class MythalForgeModel
 
 
                 bool passesValidation = operation.Result == ValidationEnum.Valid;
-                bool canAfford = property.Internal.PowerCost <= RemainingPowers;
+                bool canAfford = property.Internal.PowerCost <= RemainingPowers || property.Internal.PowerCost == 0; // Free powers don't contribute to affordability
                 bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
                 property.Selectable = passesValidation &&
                                       canAfford &&

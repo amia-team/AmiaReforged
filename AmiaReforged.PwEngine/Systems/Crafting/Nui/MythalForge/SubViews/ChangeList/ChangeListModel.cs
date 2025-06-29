@@ -80,7 +80,7 @@ public class ChangeListModel
         ChangelistEntry? entry = _addedProperties.FirstOrDefault(p => p.Property == craftingProperty);
 
         if (entry == null) return;
-        Log.Info($"Undoing addition of {entry.Label}");
+
         _addedProperties.Remove(entry);
     }
 

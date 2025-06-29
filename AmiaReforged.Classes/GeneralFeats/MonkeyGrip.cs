@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+using Anvil.API;
 using NLog;
 using NWN.Core;
 using NWN.Core.NWNX;
@@ -97,6 +97,7 @@ public class MonkeyGrip(NwCreature creature)
             Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Listen)!, 4));
         
         mgPenalty.SubType = EffectSubType.Unyielding;
+
         mgPenalty.Tag = "mg_penalty";
 
         ApplyVisualEffect();
