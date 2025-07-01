@@ -3,8 +3,7 @@ using Anvil.Services;
 
 namespace AmiaReforged.Classes.Ranger;
 
-[ServiceBinding(typeof(EpicCompanionHandler))]
-public class EpicCompanionHandler
+public static class EpicCompanionHandler
 {
     private const string EpicCompanionAppearance = "epic_companion_appearance";
     private const string PcKeyTag = "ds_pckey";
