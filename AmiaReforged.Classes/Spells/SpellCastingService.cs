@@ -99,22 +99,11 @@ public class SpellCastingService
         {
             bool targetIsInParty = false;
 
-            if (casterCreature.IsPlayerControlled(out NwPlayer? player))
-                targetIsInParty = player.PartyMembers.Any(p => p.LoginCreature == targetCreature) ||
-                                  casterCreature.Associates.Any(a => a == targetCreature);
-
-            if (targetIsInParty)
-            {
-                NWScript.SendMessageToPC(casterCreature,
-                    szMessage: "You cannot target a friendly creature with this spell.");
-                return ScriptHandleResult.Handled;
-            }
-
-            if (eventData.Spell.IsHostileSpell)
-                if (!targetCreature.PlotFlag || !targetCreature.Immortal)
-                    NWScript.AdjustReputation(caster, target, -100);
-
-            spell.DoSpellResist(targetCreature, casterCreature);
+            if (casterCreature.IsLoginPlayerCharacter)
+                targetIsInParty = casterCreature.Faction.GetMembers().Any(member => member == targetCreature);
+            
+            if (!targetIsInParty && eventData.Spell.IsHostileSpell)
+                spell.DoSpellResist(targetCreature, casterCreature);
         }
 
         DoCasterLevelOverride(casterCreature, eventData);
