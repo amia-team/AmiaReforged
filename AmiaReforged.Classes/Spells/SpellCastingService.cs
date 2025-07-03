@@ -95,14 +95,13 @@ public class SpellCastingService
             return ScriptHandleResult.Handled;
         }
 
-        if (target is NwCreature targetCreature)
+        if (casterCreature is { IsLoginPlayerCharacter: true, IsDMAvatar: false } 
+            && target is NwCreature targetCreature 
+            && eventData.Spell.IsHostileSpell)
         {
-            bool targetIsInParty = false;
-
-            if (casterCreature.IsLoginPlayerCharacter)
-                targetIsInParty = casterCreature.Faction.GetMembers().Any(member => member == targetCreature);
+            bool targetIsInParty = casterCreature.Faction.GetMembers().Any(member => member == targetCreature);
             
-            if (!targetIsInParty && eventData.Spell.IsHostileSpell)
+            if (targetIsInParty == false)
             {
                 spell.DoSpellResist(targetCreature, casterCreature);
                 CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
