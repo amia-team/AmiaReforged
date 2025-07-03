@@ -35,16 +35,16 @@ public class SpellCastingService
     {
         if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
         if (obj.Spell is null) return;
-        if (obj.Caster is not NwCreature character) return;
+        if (obj.Caster is not NwCreature caster) return;
 
         // Don't restrict raise dead and resurrection in the "Welcome to Amia!" area
-        bool isWelcomeArea = character.Area?.ResRef == WelcomeAreaResRef;
+        bool isWelcomeArea = caster.Area?.ResRef == WelcomeAreaResRef;
 
         if (isWelcomeArea && obj.Spell.SpellType is Spell.RaiseDead or Spell.Resurrection)
             return;
 
         // Don't restrict DM avatars, let the hellballs rolL! DM possessed NPCs are still restricted.
-        if (character.IsDMAvatar) return;
+        if (caster.IsDMAvatar) return;
 
         // Don't restrict items that use Unique Power or Unique Power Self unless it's a recall stone
         if (obj.Item is not null && obj.Spell.ImpactScript == UniquePowerScriptName &&
@@ -52,7 +52,7 @@ public class SpellCastingService
             return;
 
         // Restrict casting in no casting areas
-        bool isNoCastingArea = character.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1;
+        bool isNoCastingArea = caster.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1;
 
         if (isNoCastingArea)
         {
@@ -63,12 +63,11 @@ public class SpellCastingService
         }
 
         // Restrict hostile spellcasting in no PvP areas
-        if (character.Area?.PVPSetting == PVPSetting.None && obj.Spell.IsHostileSpell &&
-            obj.TargetObject.IsPlayerControlled(out NwPlayer? _))
-        {
-            player.SendServerMessage("PVP is not allowed in this area.");
-            obj.PreventSpellCast = true;
-        }
+        if (caster.Area?.PVPSetting != PVPSetting.None || !obj.Spell.IsHostileSpell || obj.TargetObject == caster ||
+            !obj.TargetObject.IsPlayerControlled(out NwPlayer? _)) return;
+        
+        player.SendServerMessage("PVP is not allowed in this area.");
+        obj.PreventSpellCast = true;
     }
 
     private ScriptHandleResult HandleSpellImpact(CallInfo callInfo)
