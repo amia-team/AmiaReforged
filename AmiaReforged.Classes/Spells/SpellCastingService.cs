@@ -103,7 +103,10 @@ public class SpellCastingService
                 targetIsInParty = casterCreature.Faction.GetMembers().Any(member => member == targetCreature);
             
             if (!targetIsInParty && eventData.Spell.IsHostileSpell)
+            {
                 spell.DoSpellResist(targetCreature, casterCreature);
+                CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
+            }
         }
 
         DoCasterLevelOverride(casterCreature, eventData);
