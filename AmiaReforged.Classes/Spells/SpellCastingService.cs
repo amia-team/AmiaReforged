@@ -108,6 +108,13 @@ public class SpellCastingService
             }
         }
 
+        if (target is NwItem targetItem && eventData.Item is null)
+        {
+            CraftSpell craftSpell = new(eventData); 
+            craftSpell.DoCraftSpell(targetItem);
+        }
+            
+
         DoCasterLevelOverride(casterCreature, eventData);
 
         spell.OnSpellImpact(eventData);
