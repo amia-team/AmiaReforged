@@ -1,77 +1,177 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Anvil.API;
 using Anvil.API.Events;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AmiaReforged.Classes.Spells;
 
-public class CraftSpell(SpellEvents.OnSpellCast eventData)
+public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 {
-    private const string SpellPropertiesTableName = "iprp_spells";
-    private static readonly TwoDimArray? SpellPropertiesTable = NwGameTables.GetTable(SpellPropertiesTableName);
+    private static readonly TwoDimArray? SpellPropTable = NwGameTables.GetTable("iprp_spells");
+    private const int SpellFailVfx = 292;
 
-    public void DoCraftSpell(NwItem targetItem)
+    private readonly bool _isEmptyScroll = targetItem.ResRef == "x2_it_cfm_bscrl";
+    private readonly bool _isEmptyWand = targetItem.ResRef == "x2_it_cfm_wand";
+    private readonly bool _isEmptyPotion = targetItem.ResRef is "x2_it_cfm_pbottl" or "it_cfm_pbten" or "x2_it_pcpotion";
+
+    public void DoCraftSpell()
     {
-        if (SpellPropertiesTable == null) return;
+        if (SpellPropTable == null) return;
         if (eventData.Caster == null) return;
         
         NwCreature caster = (NwCreature)eventData.Caster;
         
         if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
         
-        bool isEmptyScroll = targetItem.ResRef == "x2_it_cfm_bscrl";
-        bool isEmptyWand = targetItem.ResRef == "x2_it_cfm_wand";
-        bool isEmptyPotion = targetItem.ResRef is "x2_it_cfm_pbottl" or "it_cfm_pbten" or "x2_it_pcpotion";
-        
-        int? spellProp = GetHighestClSpellProp(SpellPropertiesTable);
+        (int SpellPropId, int SpellPropCl)? spellPropIdAndCl = GetSpellPropIdAndCl(SpellPropTable);
 
-        if (spellProp == null)
+        if (spellPropIdAndCl == null)
         {
             player.SendServerMessage("Craft spell failed! There is no item property associated with this spell.");
+            ApplySpellFailVfx(caster);
             return;
         }
-
-        ItemProperty castSpellProperty = ItemProperty.CastSpell((IPCastSpell)spellProp, IPCastSpellNumUses.ChargePerUse1);
+        
+        int spellPropId = spellPropIdAndCl.Value.SpellPropId;
+        int spellPropCl = spellPropIdAndCl.Value.SpellPropCl;
+        int spellInnateLevel = eventData.Spell.InnateSpellLevel;
+        
+        if (_isEmptyScroll)
+        {
+            if (!caster.KnowsFeat(Feat.ScribeScroll!))
+            {
+                player.SendServerMessage("Scribe scroll failed! You don't know the feat Scribe Scroll.");
+                ApplySpellFailVfx(caster);
+                return;
+            }
             
-        if (isEmptyScroll)
-        {
-            if (!caster.KnowsFeat(Feat.ScribeScroll!)) return;
+            int scribeCost = CalculateScribeCost(spellPropCl, spellInnateLevel);
+            if (caster.Gold < scribeCost)
+            {
+                player.SendServerMessage
+                    ($"Scribe scroll failed! You don't have enough gold. The cost to scribe this stack is {scribeCost} GP.");
+                ApplySpellFailVfx(caster);
+                return;
+            }
 
-            ScribeScroll(castSpellProperty);
+            ScribeScroll(caster, spellPropId, scribeCost);
         }
 
-        if (isEmptyWand)
+        if (_isEmptyWand)
         {
-            if (!caster.KnowsFeat(Feat.CraftWand!)) return;
-            if (eventData.Spell.InnateSpellLevel > 4) return;
-
-            CraftWand(castSpellProperty);
-        }
-
-        if (isEmptyPotion)
-        {
-            if (!caster.KnowsFeat(Feat.BrewPotion!)) return;
-            if (eventData.Spell.InnateSpellLevel > 3) return;
-
-            BrewPotion(castSpellProperty);
-        }
+            if (!caster.KnowsFeat(Feat.CraftWand!))
+            {
+                player.SendServerMessage("Craft wand failed! You don't know the feat Craft Wand.");
+                ApplySpellFailVfx(caster);
+                return;
+            }
             
+            if (spellInnateLevel > 4) 
+            {
+                player.SendServerMessage
+                    ($"Craft wand failed! Innate spell level must be 4 or lower. The innate level of this spell is {spellInnateLevel}");
+                ApplySpellFailVfx(caster);
+                return;
+            }
+
+            int craftWandCost = CalculateCraftWandCost(spellPropCl, spellInnateLevel);
+            if (caster.Gold < craftWandCost)
+            {
+                player.SendServerMessage
+                    ($"Craft wand failed! You don't have enough gold. The cost to craft this wand is {craftWandCost} GP.");
+                ApplySpellFailVfx(caster);
+                return;
+            }
+            
+            NwClass? casterClass = eventData.SpellCastClass;
+            if (casterClass == null)
+            {
+                player.SendServerMessage
+                    ("Craft wand failed! Caster class wasn't recognized.");
+                ApplySpellFailVfx(caster);
+                return;
+            }
+            int casterLevel = caster.Classes.First(cl => cl.Class == casterClass).Level;
+
+            CraftWand(caster, spellPropId, craftWandCost, casterLevel);
+        }
+
+        if (_isEmptyPotion)
+        {
+            if (!caster.KnowsFeat(Feat.BrewPotion!))
+            {
+                player.SendServerMessage("Brew potion failed! You don't know the feat Brew Potion.");
+                ApplySpellFailVfx(caster);
+                return;
+            }
+            
+            if (spellInnateLevel > 3) 
+            {
+                player.SendServerMessage
+                    ($"Brew potion failed! Innate spell level must be 3 or lower. The innate level of this spell is {spellInnateLevel}");
+                ApplySpellFailVfx(caster);
+                return;
+            }
+
+            int brewPotionCost = CalculateBrewPotionCost(spellPropCl, spellInnateLevel);
+            if (caster.Gold < brewPotionCost)
+            {
+                player.SendServerMessage
+                    ($"Brew potion failed! You don't have enough gold. The cost to brew this stack is {brewPotionCost} GP.");
+                ApplySpellFailVfx(caster);
+                return;
+            }
+
+            BrewPotion(caster, spellPropId, brewPotionCost);
+        }
+        
+    }
+
+    private void ScribeScroll(NwCreature caster, int spellPropId, int scribeCost)
+    {
+        targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
+            EffectDuration.Permanent);
+        // Apparently scrolls do some hardcoded voodoo so check ingame what happens here
+
+        caster.Gold -= (uint)scribeCost;
+    }
+
+    private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
+        spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
+    
+    private void CraftWand(NwCreature caster, int spellPropId, int craftWandCost, int casterLevel)
+    {
+        targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.ChargePerUse1), 
+            EffectDuration.Permanent);
+
+        targetItem.ItemCharges = casterLevel + 20;
+        // Apparently wands do some hardcoded voodoo so check ingame what happens here
+        
+        caster.Gold -= (uint)craftWandCost;
     }
     
-    private void ScribeScroll(ItemProperty spellPropTable)
+    private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
+        spellPropCl * spellInnateLevel * 750;
+    
+    private void BrewPotion(NwCreature caster, int spellPropId, int brewPotionCost)
     {
-        throw new NotImplementedException();
-    }
-    private void BrewPotion(ItemProperty castSpellProperty)
-    {
-        throw new NotImplementedException();
+        targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
+            EffectDuration.Permanent);
+        
+        // Apparently potions do some hardcoded voodoo so check ingame what happens here
+        
+        caster.Gold -= (uint)brewPotionCost;
     }
     
-    private void CraftWand(ItemProperty castSpellProperty)
-    {
-        throw new NotImplementedException();
-    }
+    private int CalculateBrewPotionCost(int spellPropCl, int spellInnateLevel) =>
+        (int)(spellPropCl * spellInnateLevel * 12.5 * targetItem.StackSize);
 
-    private int? GetHighestClSpellProp(TwoDimArray spellPropTable)
+    private static void ApplySpellFailVfx(NwCreature caster)
+    {
+        caster.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)SpellFailVfx));
+    }
+    
+    private (int SpellPropId, int SpellPropCl)? GetSpellPropIdAndCl(TwoDimArray spellPropTable)
     {
         int spellId = eventData.Spell.Id;
 
@@ -85,18 +185,19 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData)
         if (spellPropRows.Count == 0)
             return null;
         
-        Dictionary<int, int?> spellPropClByRow = [];
+        List<(int SpellPropId, int SpellPropCl)> spellPropIdAndClList = [];
         foreach (int row in spellPropRows)
         {
             int? spellPropCl = spellPropTable.GetInt(row, "CasterLvl");
-            if (spellPropCl == null) continue;
-            
-            spellPropClByRow.Add(row, spellPropCl);
+            if (spellPropCl.HasValue)
+                spellPropIdAndClList.Add((row, spellPropCl.Value));
         }
-        
-        if (spellPropClByRow.Count == 0)
-            return null;
 
-        return spellPropClByRow.MaxBy(entry => entry.Value).Key;
+        if (spellPropIdAndClList.Count == 0) return null;
+
+        (int SpellPropId, int SpellPropCl) spellPropIdAndCl = 
+            spellPropIdAndClList.MaxBy(entry => entry.SpellPropCl);
+
+        return spellPropIdAndCl;
     }
 }

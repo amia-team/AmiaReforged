@@ -110,8 +110,8 @@ public class SpellCastingService
 
         if (target is NwItem targetItem && eventData.Item is null)
         {
-            CraftSpell craftSpell = new(eventData); 
-            craftSpell.DoCraftSpell(targetItem);
+            CraftSpell craftSpell = new(eventData, targetItem); 
+            craftSpell.DoCraftSpell();
         }
             
 
