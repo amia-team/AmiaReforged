@@ -75,7 +75,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            _ = ScribeScroll(caster, spellPropId, scribeCost);
+            ScribeScroll(caster, spellPropId, scribeCost);
         }
 
         if (_isEmptyWand)
@@ -148,16 +148,20 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
     }
 
-    private async Task ScribeScroll(NwCreature caster, int spellPropId, int scribeCost)
+    private void ScribeScroll(NwCreature caster, int spellPropId, int scribeCost)
     {
-        NwItem? spellScroll = await NwItem.Create("it_sparscr003", caster, targetItem.StackSize);
+        Location? casterLocation = caster.Location;
+        if (casterLocation == null) return;
+        
+        NwItem? spellScroll = NwItem.Create("it_sparscr003", casterLocation, false, targetItem.StackSize);
         if (spellScroll == null) return;
         
         spellScroll.RemoveItemProperties();
         
         spellScroll.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
-        // Apparently scrolls do some hardcoded voodoo so check ingame what happens here
+
+        caster.GiveItem(spellScroll);
 
         caster.Gold -= (uint)scribeCost;
     }
