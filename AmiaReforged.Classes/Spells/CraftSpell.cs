@@ -31,6 +31,13 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             ApplySpellFailVfx(caster);
             return;
         }
+
+        if (targetItem.HasItemProperty(ItemPropertyType.CastSpell))
+        {
+            player.SendServerMessage($"Craft spell failed! {targetItem.Name} has already been spell crafted.");
+            ApplySpellFailVfx(caster);
+            return;
+        }
         
         if (eventData.Item != null)
         {
