@@ -75,7 +75,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            ScribeScroll(caster, spellPropId, scribeCost);
+            _ = ScribeScroll(caster, spellPropId, scribeCost);
         }
 
         if (_isEmptyWand)
@@ -148,20 +148,19 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
     }
 
-    private void ScribeScroll(NwCreature caster, int spellPropId, int scribeCost)
+    private async Task ScribeScroll(NwCreature caster, int spellPropId, int scribeCost)
     {
-        Location? casterLocation = caster.Location;
-        if (casterLocation == null) return;
-        
-        NwItem spellScroll = NwItem.Create("it_sparscr003", casterLocation, false, targetItem.StackSize);
-        if (spellScroll == null) return;
+        NwItem? spellScroll = await NwItem.Create("x2_it_spdvscr201", caster, targetItem.StackSize);
+        if (spellScroll == null)
+        {
+            ApplySpellFailVfx(caster);
+            return;
+        }
         
         spellScroll.RemoveItemProperties();
         
         spellScroll.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
-
-        caster.GiveItem(spellScroll);
 
         caster.Gold -= (uint)scribeCost;
     }
