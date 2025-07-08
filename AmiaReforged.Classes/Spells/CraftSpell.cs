@@ -1,7 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AmiaReforged.Classes.Spells;
 
@@ -77,7 +75,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            ScribeScroll(caster, spellPropId, scribeCost);
+            _ = ScribeScroll(caster, spellPropId, scribeCost);
         }
 
         if (_isEmptyWand)
@@ -150,10 +148,14 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
     }
 
-    private void ScribeScroll(NwCreature caster, int spellPropId, int scribeCost)
+    private async Task ScribeScroll(NwCreature caster, int spellPropId, int scribeCost)
     {
-        targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
-        targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
+        NwItem? spellScroll = await NwItem.Create("it_sparscr003", caster, targetItem.StackSize);
+        if (spellScroll == null) return;
+        
+        spellScroll.RemoveItemProperties();
+        
+        spellScroll.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
         // Apparently scrolls do some hardcoded voodoo so check ingame what happens here
 
