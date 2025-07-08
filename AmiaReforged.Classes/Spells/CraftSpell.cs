@@ -152,7 +152,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
     private void ScribeScroll(NwCreature caster, int spellPropId, int scribeCost)
     {
-        targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
+        targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.EnchantedScroll)!;
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
         // Apparently scrolls do some hardcoded voodoo so check ingame what happens here
