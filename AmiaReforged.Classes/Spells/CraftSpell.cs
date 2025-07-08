@@ -23,6 +23,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
         if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
         
+        if (!(_isEmptyScroll || _isEmptyWand || _isEmptyPotion)) return;
+        
         if (caster.Inventory.Items.All(item => item != targetItem))
         {
             player.SendServerMessage($"Craft spell failed! {targetItem.Name} must be in your inventory.");
