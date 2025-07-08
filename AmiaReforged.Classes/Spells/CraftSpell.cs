@@ -153,7 +153,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         Location? casterLocation = caster.Location;
         if (casterLocation == null) return;
         
-        NwItem? spellScroll = NwItem.Create("it_sparscr003", casterLocation, false, targetItem.StackSize);
+        NwItem spellScroll = NwItem.Create("it_sparscr003", casterLocation, false, targetItem.StackSize);
         if (spellScroll == null) return;
         
         spellScroll.RemoveItemProperties();
