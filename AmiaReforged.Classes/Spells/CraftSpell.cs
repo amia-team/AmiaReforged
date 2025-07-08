@@ -20,8 +20,22 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         if (eventData.Caster == null) return;
         
         NwCreature caster = (NwCreature)eventData.Caster;
-        
+
         if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
+        
+        if (caster.Inventory.Items.All(item => item != targetItem))
+        {
+            player.SendServerMessage($"Craft spell failed! {targetItem.Name} must be in your inventory.");
+            ApplySpellFailVfx(caster);
+            return;
+        }
+        
+        if (eventData.Item != null)
+        {
+            player.SendServerMessage("Craft spell failed! You can only craft spells when casting from a spellbook.");
+            ApplySpellFailVfx(caster);
+            return;
+        }
         
         (int SpellPropId, int SpellPropCl)? spellPropIdAndCl = GetSpellPropIdAndCl(SpellPropTable);
 

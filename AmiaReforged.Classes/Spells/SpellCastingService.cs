@@ -107,8 +107,8 @@ public class SpellCastingService
                 CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
             }
         }
-
-        if (target is NwItem targetItem && eventData.Item is null)
+        
+        if (target is NwItem targetItem)
         {
             CraftSpell craftSpell = new(eventData, targetItem); 
             craftSpell.DoCraftSpell();
