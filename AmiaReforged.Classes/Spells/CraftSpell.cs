@@ -161,18 +161,23 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
         
-        SetScrollNameAndDescription();
+        Location? casterLocation = caster.Location;
+        if (casterLocation == null) return;
+
+        NwItem scribedScroll = targetItem.Clone(casterLocation);
         
-        caster.AcquireItem(targetItem);
+        SetScrollNameAndDescription(scribedScroll);
+        
+        caster.AcquireItem(scribedScroll);
     }
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
         spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
     
-    private void SetScrollNameAndDescription()
+    private void SetScrollNameAndDescription(NwItem scribedScroll)
     {
-        targetItem.Name = eventData.Spell.Name.ToString();
-        targetItem.Description = eventData.Spell.Description.ToString();
+        scribedScroll.Name = eventData.Spell.Name.ToString();
+        scribedScroll.Description = eventData.Spell.Description.ToString();
     }
     
     private void CraftWand(NwCreature caster, int spellPropId, int craftWandCost, int casterLevel)
