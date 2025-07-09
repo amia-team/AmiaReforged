@@ -163,7 +163,6 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             EffectDuration.Permanent);
 
         targetItem.Clone(caster);
-        targetItem.Destroy();
     }
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
