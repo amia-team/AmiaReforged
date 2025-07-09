@@ -166,6 +166,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
         NwItem scribedScroll = targetItem.Clone(casterLocation);
         
+        targetItem.Destroy();
+        
         SetScrollNameAndDescription(scribedScroll);
         
         caster.AcquireItem(scribedScroll);
