@@ -161,8 +161,13 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         SetScrollNameAndDescription();
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
-
-        targetItem.Clone(caster);
+        
+        Location? casterLocation = caster.Location;
+        if (casterLocation == null) return;
+        
+        NwItem scribedScroll = targetItem.Clone(casterLocation);
+        targetItem.Destroy();
+        caster.GiveItem(scribedScroll);
     }
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
