@@ -158,7 +158,6 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private void ScribeScroll(NwCreature caster, int spellPropId)
     {
         targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
-        SetScrollNameAndDescription();
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
         
@@ -166,14 +165,18 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         if (casterLocation == null) return;
         
         NwItem scribedScroll = targetItem.Clone(casterLocation);
+        
         targetItem.Destroy();
-        caster.GiveItem(scribedScroll);
+        
+        SetScrollNameAndDescription(scribedScroll);
+        
+        caster.AcquireItem(scribedScroll);
     }
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
         spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
     
-    private void SetScrollNameAndDescription()
+    private void SetScrollNameAndDescription(NwItem scribedScroll)
     {
         targetItem.Name = eventData.Spell.Name.ToString();
         targetItem.Description = eventData.Spell.Description.ToString();
