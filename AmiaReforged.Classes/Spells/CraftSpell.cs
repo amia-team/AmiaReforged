@@ -149,10 +149,10 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
     }
 
-    private static void ChargeForSpellCraft(NwPlayer player, NwCreature caster, int spellCraftCost)
+    private void ChargeForSpellCraft(NwPlayer player, NwCreature caster, int spellCraftCost)
     {
         caster.Gold -= (uint)spellCraftCost;
-        player.SendServerMessage($"Lost {spellCraftCost} GP.");
+        player.SendServerMessage($"Lost {spellCraftCost} GP for crafting {targetItem.Name}.");
     }
 
     private void ScribeScroll(NwCreature caster, int spellPropId)
