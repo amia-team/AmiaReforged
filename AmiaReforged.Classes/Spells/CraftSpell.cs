@@ -158,6 +158,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private void ScribeScroll(NwCreature caster, int spellPropId)
     {
         targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
+        
+        targetItem.Destroy();
 
         caster.GiveItem(targetItem);
 
