@@ -75,7 +75,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            _ = ScribeScroll(caster, spellPropId, scribeCost);
+            ScribeScroll(caster, spellPropId);
+            ChargeForSpellCraft(player, caster, scribeCost);
         }
 
         if (_isEmptyWand)
@@ -148,25 +149,32 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
     }
 
-    private async Task ScribeScroll(NwCreature caster, int spellPropId, int scribeCost)
+    private static void ChargeForSpellCraft(NwPlayer player, NwCreature caster, int spellCraftCost)
     {
-        NwItem? spellScroll = await NwItem.Create("x2_it_spdvscr201", caster, targetItem.StackSize);
-        if (spellScroll == null)
-        {
-            ApplySpellFailVfx(caster);
-            return;
-        }
-        
-        spellScroll.RemoveItemProperties();
-        
-        spellScroll.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
-            EffectDuration.Permanent);
+        caster.Gold -= (uint)spellCraftCost;
+        player.SendServerMessage($"Lost {spellCraftCost} GP.");
+    }
 
-        caster.Gold -= (uint)scribeCost;
+    private void ScribeScroll(NwCreature caster, int spellPropId)
+    {
+        targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
+
+        caster.GiveItem(targetItem);
+
+        SetScrollNameAndDescription();
+        
+        targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
+            EffectDuration.Permanent);
     }
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
         spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
+    
+    private void SetScrollNameAndDescription()
+    {
+        targetItem.Name = eventData.Spell.Name.ToString();
+        targetItem.Description = eventData.Spell.Description.ToString();
+    }
     
     private void CraftWand(NwCreature caster, int spellPropId, int craftWandCost, int casterLevel)
     {
