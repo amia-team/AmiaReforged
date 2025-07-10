@@ -10,8 +10,8 @@
     <ItemGroup>
         <PackageReference Include="JetBrains.Annotations" Version="2022.1.0"/>
         <PackageReference Include="NUnit" Version="4.3.2"/>
-        <PackageReference Include="NWN.Anvil" Version="8193.37.2" />
-        <PackageReference Include="NWN.Core" Version="8193.37.3" />
+        <PackageReference Include="NWN.Anvil" Version="8193.37.2"/>
+        <PackageReference Include="NWN.Core" Version="8193.37.3"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -19,7 +19,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\AmiaReforged.PwEngine\AmiaReforged.PwEngine.csproj" />
+        <ProjectReference Include="..\AmiaReforged.PwEngine\AmiaReforged.PwEngine.csproj"/>
+        <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj"/>
     </ItemGroup>
 
 </Project>
