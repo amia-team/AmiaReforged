@@ -181,8 +181,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
     private void AddClassRestrictions()
     {
-        foreach(NwClass c in NwRuleset.Classes.Where(i => i.IsPlayerClass))
-            if(_spell.GetSpellLevelForClass(c) >= 0)
+        foreach (NwClass c in NwRuleset.Classes.Where(c => c.IsPlayerClass))
+            if (_spell.GetSpellLevelForClass(c) != -1)
                 targetItem.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
     }
 
