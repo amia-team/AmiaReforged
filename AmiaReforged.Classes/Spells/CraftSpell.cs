@@ -75,7 +75,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            ScribeScroll(caster, spellPropId);
+            _ = ScribeScroll(caster, spellPropId);
             ChargeForSpellCraft(player, caster, scribeCost);
         }
 
@@ -155,7 +155,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         player.SendServerMessage($"Lost {spellCraftCost} GP for crafting {targetItem.Name}.");
     }
 
-    private void ScribeScroll(NwCreature caster, int spellPropId)
+    private async Task ScribeScroll(NwCreature caster, int spellPropId)
     {
         targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
@@ -167,6 +167,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         NwItem scribedScroll = targetItem.Clone(casterLocation);
         
         targetItem.Destroy();
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
         SetScrollNameAndDescription(scribedScroll);
         
