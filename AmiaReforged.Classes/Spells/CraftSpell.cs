@@ -163,6 +163,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
 
+        AddClassRestrictions();
         
         Location? casterLocation = caster.Location;
         if (casterLocation == null) return;
@@ -176,6 +177,13 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         SetScrollNameAndDescription(scribedScroll);
         
         caster.AcquireItem(scribedScroll);
+    }
+
+    private void AddClassRestrictions()
+    {
+        foreach(NwClass c in NwRuleset.Classes.Where(i => i.IsPlayerClass))
+            if(_spell.GetSpellLevelForClass(c) >= 0)
+                targetItem.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
     }
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
