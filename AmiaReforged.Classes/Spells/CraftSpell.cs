@@ -12,6 +12,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private readonly bool _isEmptyWand = targetItem.ResRef == "x2_it_cfm_wand";
     private readonly bool _isEmptyPotion = targetItem.ResRef is "x2_it_cfm_pbottl" or "it_cfm_pbten" or "x2_it_pcpotion";
 
+    private readonly NwSpell _spell = eventData.Spell;
+
     public void DoCraftSpell()
     {
         if (SpellPropTable == null) return;
@@ -55,7 +57,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         int spellPropId = spellPropIdAndCl.Value.SpellPropId;
         int spellPropCl = spellPropIdAndCl.Value.SpellPropCl;
-        int spellInnateLevel = eventData.Spell.InnateSpellLevel;
+        int spellInnateLevel = _spell.InnateSpellLevel;
         
         if (_isEmptyScroll)
         {
@@ -160,6 +162,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
+
         
         Location? casterLocation = caster.Location;
         if (casterLocation == null) return;
@@ -180,8 +183,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     
     private void SetScrollNameAndDescription(NwItem scribedScroll)
     {
-        scribedScroll.Name = eventData.Spell.Name.ToString();
-        scribedScroll.Description = eventData.Spell.Description.ToString();
+        scribedScroll.Name = _spell.Name.ToString();
+        scribedScroll.Description = _spell.Description.ToString();
     }
     
     private void CraftWand(NwCreature caster, int spellPropId, int craftWandCost, int casterLevel)
@@ -218,7 +221,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     
     private (int SpellPropId, int SpellPropCl)? GetSpellPropIdAndCl(TwoDimArray spellPropTable)
     {
-        int spellId = eventData.Spell.Id;
+        int spellId = _spell.Id;
 
         List<int> spellPropRows = [];
         for (int i = 0; i < spellPropTable.RowCount; i++)
