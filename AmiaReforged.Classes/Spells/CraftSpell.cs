@@ -215,9 +215,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellPropCl * spellInnateLevel * 750;
     
-    private void BrewPotion(NwCreature caster, int spellPropId, int brewPotionCost)
+    private void BrewPotion(NwCreature caster, int spellPropId)
     {
-        targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
+        targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.EnchantedPotion)!;
         
         NwModule.Instance.MoveObjectToLimbo(targetItem);
         
@@ -226,9 +226,15 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
         SetPotionAppearance(targetItem);
         
-        // Apparently potions do some hardcoded voodoo so check ingame what happens here
+        SetPotionNameAndDescription(targetItem);
         
-        caster.Gold -= (uint)brewPotionCost;
+        caster.AcquireItem(targetItem);
+    }
+
+    private void SetPotionNameAndDescription(NwItem brewedPotion)
+    {
+        brewedPotion.Name = "Potion of "+_spell.Name;
+        brewedPotion.Description = _spell.Description.ToString();
     }
 
     private void SetPotionAppearance(NwItem brewedPotion)
