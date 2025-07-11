@@ -159,6 +159,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             }
 
             BrewPotion(caster, spellPropId);
+            ChargeForSpellCraft(player, caster, brewPotionCost);
+            ApplySpellCraftSuccessVfx(caster);
         }
         
     }
