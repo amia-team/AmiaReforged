@@ -6,12 +6,7 @@ namespace AmiaReforged.Core.Services;
 [ServiceBinding(typeof(QuickslotLoader))]
 public class QuickslotLoader
 {
-    private readonly IRepository<SavedQuickslots, long> _quickslotRepository;
-
-    public QuickslotLoader()
-    {
-        _quickslotRepository = new Repository<SavedQuickslots, long>(new AmiaDbContext());
-    }
+    private readonly Repository<SavedQuickslots, long> _quickslotRepository = new(new AmiaDbContext());
 
     public async Task<IEnumerable<SavedQuickslots>> LoadQuickslots(Guid playerId) =>
         await _quickslotRepository.FindAll(q => q.PlayerCharacterId == playerId);
