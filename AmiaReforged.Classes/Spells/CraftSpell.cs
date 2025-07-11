@@ -217,11 +217,11 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private async Task BrewPotion(NwCreature caster, int spellPropId, int brewPotionCost)
     {
         targetItem.Destroy();
-
-        await caster.WaitForObjectContext();
-        NwItem? brewedPotion = await NwItem.Create(MagicPotion, caster, targetItem.StackSize);
         
-        targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
+        NwItem? brewedPotion = await NwItem.Create(MagicPotion, caster, targetItem.StackSize);
+        if (brewedPotion == null) return;
+        
+        brewedPotion.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
         
         // Apparently potions do some hardcoded voodoo so check ingame what happens here
