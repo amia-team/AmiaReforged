@@ -225,12 +225,12 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
-
-        SetPotionAppearance(targetItem);
         
         SetPotionNameAndDescription(targetItem);
         
         caster.AcquireItem(targetItem);
+        
+        SetPotionAppearance(targetItem);
     }
 
     private void SetPotionNameAndDescription(NwItem brewedPotion)
