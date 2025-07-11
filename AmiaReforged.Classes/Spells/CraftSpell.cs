@@ -158,7 +158,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            BrewPotion(caster, spellPropId);
+            BrewPotion(spellPropId);
             ChargeForSpellCraft(player, caster, brewPotionCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -219,7 +219,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 1 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
     
-    private void BrewPotion(NwCreature caster, int spellPropId)
+    private void BrewPotion(int spellPropId)
     {
         targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.EnchantedPotion)!;
         
@@ -228,7 +228,12 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         SetPotionNameAndDescription(targetItem);
         
-        SetPotionAppearance(targetItem);
+        byte potionColor = GetPotionColor();
+        
+        targetItem.Appearance.ChangeAppearance(_ =>
+        {
+            targetItem.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, potionColor);
+        });
     }
 
     private void SetPotionNameAndDescription(NwItem brewedPotion)
@@ -237,9 +242,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         brewedPotion.Description = _spell.Description.ToString();
     }
 
-    private void SetPotionAppearance(NwItem brewedPotion)
+    private byte GetPotionColor()
     {
-        byte potionColor = _spell.SpellSchool switch
+        return _spell.SpellSchool switch
         {
             SpellSchool.Abjuration => PotionColorBlue,
             SpellSchool.Conjuration => PotionColorViolet,
@@ -251,17 +256,6 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             SpellSchool.Transmutation => PotionColorOrange,
             _ => PotionColorTeal
         };
-
-        brewedPotion.Appearance.ChangeAppearance(_ =>
-        {
-            brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, 7);
-            brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, 7);
-            brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, 9);
-            brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, 1);
-            brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, 1);
-            brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, potionColor);
-        });
-
     }
 
     private int CalculateBrewPotionCost(int spellPropCl, int spellInnateLevel) =>
