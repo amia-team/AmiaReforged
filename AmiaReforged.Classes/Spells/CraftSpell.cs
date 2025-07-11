@@ -80,7 +80,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            _ = ScribeScroll(caster, spellPropId);
+            ScribeScroll(caster, spellPropId);
             ChargeForSpellCraft(player, caster, scribeCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -168,7 +168,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 item.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
     }
 
-    private async Task ScribeScroll(NwCreature caster, int spellPropId)
+    private void ScribeScroll(NwCreature caster, int spellPropId)
     {
         targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
         
@@ -178,8 +178,6 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         AddClassRestrictions(targetItem);
         
         NwModule.Instance.MoveObjectToLimbo(targetItem);
-
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
         SetScrollNameAndDescription(targetItem);
         
