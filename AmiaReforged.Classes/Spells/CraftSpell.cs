@@ -219,6 +219,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     
     private void BrewPotion(NwCreature caster, int spellPropId)
     {
+        SetPotionAppearance(targetItem);
         targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.EnchantedPotion)!;
         
         NwModule.Instance.MoveObjectToLimbo(targetItem);
@@ -229,8 +230,6 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         SetPotionNameAndDescription(targetItem);
         
         caster.AcquireItem(targetItem);
-        
-        SetPotionAppearance(targetItem);
     }
 
     private void SetPotionNameAndDescription(NwItem brewedPotion)
