@@ -20,7 +20,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\AmiaReforged.PwEngine\AmiaReforged.PwEngine.csproj"/>
-        <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj"/>
     </ItemGroup>
 
 </Project>
