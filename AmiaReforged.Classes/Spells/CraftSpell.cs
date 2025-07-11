@@ -214,8 +214,13 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellPropCl * spellInnateLevel * 750;
     
-    private void BrewPotion(NwCreature caster, int spellPropId, int brewPotionCost)
+    private async Task BrewPotion(NwCreature caster, int spellPropId, int brewPotionCost)
     {
+        targetItem.Destroy();
+
+        await caster.WaitForObjectContext();
+        NwItem? brewedPotion = await NwItem.Create(MagicPotion, caster, targetItem.StackSize);
+        
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
         
