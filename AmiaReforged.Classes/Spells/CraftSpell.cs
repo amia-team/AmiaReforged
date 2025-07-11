@@ -221,17 +221,14 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     
     private void BrewPotion(NwCreature caster, int spellPropId)
     {
-        SetPotionAppearance(targetItem);
         targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.EnchantedPotion)!;
-        
-        NwModule.Instance.MoveObjectToLimbo(targetItem);
         
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
         
         SetPotionNameAndDescription(targetItem);
         
-        caster.AcquireItem(targetItem);
+        SetPotionAppearance(targetItem);
     }
 
     private void SetPotionNameAndDescription(NwItem brewedPotion)
@@ -242,13 +239,6 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
     private void SetPotionAppearance(NwItem brewedPotion)
     {
-        brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, 7);
-        brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, 7);
-        brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, 9);
-        
-        brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, 1);
-        brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, 1);
-        
         byte potionColor = _spell.SpellSchool switch
         {
             SpellSchool.Abjuration => PotionColorBlue,
@@ -261,7 +251,17 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             SpellSchool.Transmutation => PotionColorOrange,
             _ => PotionColorTeal
         };
-        brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, potionColor);
+
+        brewedPotion.Appearance.ChangeAppearance(_ =>
+        {
+            brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, 7);
+            brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, 7);
+            brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, 9);
+            brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, 1);
+            brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, 1);
+            brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, potionColor);
+        });
+
     }
 
     private int CalculateBrewPotionCost(int spellPropCl, int spellInnateLevel) =>
