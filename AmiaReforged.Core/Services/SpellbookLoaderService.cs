@@ -69,11 +69,9 @@ public class SpellbookLoaderService
 
         if (spellbook != null)
         {
-            Log.Info($"Spellbook with ID {spellbookId} found in the database.");
             return SpellbookViewModel.FromDatabaseModel(spellbook);
         }
 
-        Log.Error($"Spellbook with ID {spellbookId} not found.");
         return new();
     }
 }

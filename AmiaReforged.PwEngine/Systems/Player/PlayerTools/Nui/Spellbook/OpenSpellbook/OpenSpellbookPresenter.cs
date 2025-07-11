@@ -327,8 +327,11 @@ public sealed class SpellbookMemorizer
                     Log.Info(message: "No more spells to memorize.");
                     break;
                 }
-
-                PreparedSpellModel spell = spells[spellSlot];
+                
+                PreparedSpellModel? spell = spells.ElementAtOrDefault(spellSlot);
+                
+                if (spell == null) continue;
+                
                 MemorizedSpellSlot memorized = classInfo.GetMemorizedSpellSlots(spellLevel)[spellSlot];
                 if (!spell.IsPopulated) continue;
 
