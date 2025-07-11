@@ -232,7 +232,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     
     private void BrewPotion(int spellPropId)
     {
-        targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.EnchantedPotion)!;
+        targetItem.BaseItem = BaseItemType.EnchantedPotion!;
         
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
