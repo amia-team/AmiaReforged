@@ -161,11 +161,11 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         player.SendServerMessage($"Lost {spellCraftCost} GP for crafting {targetItem.Name}.");
     }
     
-    private void AddClassRestrictions()
+    private void AddClassRestrictions(NwItem item)
     {
         foreach (NwClass c in NwRuleset.Classes.Where(c => c.IsPlayerClass))
             if (_spell.GetSpellLevelForClass(c) != 255)
-                targetItem.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
+                item.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
     }
 
     private async Task ScribeScroll(NwCreature caster, int spellPropId)
@@ -175,20 +175,15 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
 
-        AddClassRestrictions();
+        AddClassRestrictions(targetItem);
         
-        Location? casterLocation = caster.Location;
-        if (casterLocation == null) return;
-
-        NwItem scribedScroll = targetItem.Clone(casterLocation);
-        
-        targetItem.Destroy();
+        NwModule.Instance.MoveObjectToLimbo(targetItem);
 
         await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
-        SetScrollNameAndDescription(scribedScroll);
+        SetScrollNameAndDescription(targetItem);
         
-        caster.AcquireItem(scribedScroll);
+        caster.AcquireItem(targetItem);
     }
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
@@ -223,12 +218,19 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         brewedPotion.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
+
+        SetPotionAppearance(brewedPotion);
         
         // Apparently potions do some hardcoded voodoo so check ingame what happens here
         
         caster.Gold -= (uint)brewPotionCost;
     }
-    
+
+    private void SetPotionAppearance(NwItem brewedPotion)
+    {
+        
+    }
+
     private int CalculateBrewPotionCost(int spellPropCl, int spellInnateLevel) =>
         (int)(spellPropCl * spellInnateLevel * 12.5 * targetItem.StackSize);
 
