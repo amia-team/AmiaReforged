@@ -228,12 +228,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         SetPotionNameAndDescription(targetItem);
         
-        byte potionColor = GetPotionColor();
-        
-        targetItem.Appearance.ChangeAppearance(_ =>
-        {
-            targetItem.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, potionColor);
-        });
+        targetItem.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor());
     }
 
     private void SetPotionNameAndDescription(NwItem brewedPotion)
