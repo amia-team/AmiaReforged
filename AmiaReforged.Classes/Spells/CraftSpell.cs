@@ -217,6 +217,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         SetWandNameAndDescription(targetItem);
         
+        AddClassRestrictions(targetItem);
+        
         targetItem.Appearance.ChangeAppearance(appearance => 
             appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, 3));
     }
@@ -241,7 +243,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         // This isn't working!
         targetItem.Appearance.ChangeAppearance(appearance => 
-            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, 3));
+            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
     }
 
     private void SetPotionNameAndDescription(NwItem brewedPotion)
