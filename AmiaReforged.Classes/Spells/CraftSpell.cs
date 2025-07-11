@@ -79,6 +79,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
             _ = ScribeScroll(caster, spellPropId);
             ChargeForSpellCraft(player, caster, scribeCost);
+            ApplySpellCraftSuccessVfx(caster);
         }
 
         if (_isEmptyWand)
@@ -226,6 +227,11 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private static void ApplySpellCraftFailVfx(NwCreature caster)
     {
         caster.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)SpellFailVfx));
+    }
+    
+    private static void ApplySpellCraftSuccessVfx(NwCreature caster)
+    {
+        caster.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfPwstun, fScale: 0.5f));
     }
     
     private (int SpellPropId, int SpellPropCl)? GetSpellPropIdAndCl(TwoDimArray spellPropTable)
