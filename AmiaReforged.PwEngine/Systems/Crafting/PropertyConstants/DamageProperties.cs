@@ -831,21 +831,21 @@ public static class DamageProperties
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyMaxRangeStrengthMod(3)!,
-                GuiLabel = "+3 Mighty",
+                GuiLabel = "Mighty +3",
                 CraftingTier = CraftingTier.Intermediate
             },
             new()
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyMaxRangeStrengthMod(4)!,
-                GuiLabel = "+4 Mighty",
+                GuiLabel = "Mighty +4",
                 CraftingTier = CraftingTier.Greater
             },
             new()
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyMaxRangeStrengthMod(5)!,
-                GuiLabel = "+5 Mighty",
+                GuiLabel = "Mighty +5",
                 CraftingTier = CraftingTier.Flawless
             }
         ],
