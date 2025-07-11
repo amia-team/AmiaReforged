@@ -9,7 +9,7 @@ public class LiarsDiceGame
     public LiarsDiceGame(List<(string name, bool isAI, int buyIn)> playerData)
     {
         _players = playerData.Select(pd => new DicePlayer(pd.name, 5, pd.buyIn)).ToList();
-        _observers = new();
+        _observers = new List<IGameObserver>();
         _bids = new Dictionary<DicePlayer, (int, int)?>();
     }
 
@@ -28,15 +28,15 @@ public class LiarsDiceGame
 
     public void StartGame()
     {
-        NotifyObservers(new(message: "Game has started!"));
+        NotifyObservers(new GameUpdate(message: "Game has started!"));
         BeginBiddingPhase();
     }
 
     private async void BeginBiddingPhase()
     {
-        NotifyObservers(new(message: "Players are placing bids..."));
+        NotifyObservers(new GameUpdate(message: "Players are placing bids..."));
         await Task.Delay(5000); // Simulated async bidding phase
-        NotifyObservers(new(message: "All bids are in!"));
+        NotifyObservers(new GameUpdate(message: "All bids are in!"));
         ResolveBidding();
     }
 
@@ -46,7 +46,7 @@ public class LiarsDiceGame
             return;
 
         _bids[dicePlayer] = (quantity, faceValue);
-        NotifyObservers(new($"{dicePlayer.Name} has placed a bid."));
+        NotifyObservers(new GameUpdate($"{dicePlayer.Name} has placed a bid."));
     }
 
     public void Fold(DicePlayer dicePlayer)
@@ -55,14 +55,14 @@ public class LiarsDiceGame
             return;
 
         dicePlayer.Fold();
-        NotifyObservers(new($"{dicePlayer.Name} has folded."));
+        NotifyObservers(new GameUpdate($"{dicePlayer.Name} has folded."));
     }
 
     private void ResolveBidding()
     {
         if (_bids.Count == 0)
         {
-            NotifyObservers(new(message: "No valid bids. Game over."));
+            NotifyObservers(new GameUpdate(message: "No valid bids. Game over."));
             return;
         }
 
@@ -74,17 +74,17 @@ public class LiarsDiceGame
 
         if (totalCount >= lastBid.Value.quantity)
         {
-            NotifyObservers(new($"Challenge failed! {lastBidder.Name} wins this round."));
+            NotifyObservers(new GameUpdate($"Challenge failed! {lastBidder.Name} wins this round."));
         }
         else
         {
-            NotifyObservers(new($"Challenge successful! {lastBidder.Name} loses a die."));
+            NotifyObservers(new GameUpdate($"Challenge successful! {lastBidder.Name} loses a die."));
             lastBidder.LoseDie();
         }
 
         if (_players.Count(p => !p.IsEliminated) == 1)
         {
-            NotifyObservers(new($"{_players.First(p => !p.IsEliminated).Name} wins!"));
+            NotifyObservers(new GameUpdate($"{_players.First(p => !p.IsEliminated).Name} wins!"));
         }
         else
         {

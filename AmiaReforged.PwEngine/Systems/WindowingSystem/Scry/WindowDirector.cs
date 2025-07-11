@@ -76,7 +76,7 @@ public sealed class WindowDirector : IDisposable
     /// <param name="obj">The event object containing details about the client enter event.</param>
     private void RegisterPlayer(ModuleEvents.OnClientEnter obj)
     {
-        _activeWindows.Add(obj.Player, new());
+        _activeWindows.Add(obj.Player, new List<IScryPresenter>());
     }
 
     /// <summary>
@@ -100,7 +100,7 @@ public sealed class WindowDirector : IDisposable
 
         _tokens.TryAdd(window.Token(), window);
         _activeWindows.TryGetValue(window.Token().Player, out List<IScryPresenter>? playerWindows);
-        _linkedTokens.TryAdd(window.Token(), new());
+        _linkedTokens.TryAdd(window.Token(), new List<NuiWindowToken>());
 
         playerWindows?.Add(window);
         window.Closing += (_, _) => CloseWindow(window.Token().Player, window.GetType());

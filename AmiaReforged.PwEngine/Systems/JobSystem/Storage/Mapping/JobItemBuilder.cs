@@ -9,7 +9,7 @@ public class JobItemBuilder : IJobItemBuilder
     private JobItemBuilder()
     {
         // Prevent instantiation of this fluent builder.
-        _jobItem = new();
+        _jobItem = new JobItem();
     }
 
 

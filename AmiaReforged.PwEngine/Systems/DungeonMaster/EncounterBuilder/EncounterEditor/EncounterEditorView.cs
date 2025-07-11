@@ -29,7 +29,7 @@ public class EncounterEditorView : ScryView<EncounterEditorPresenter>, IDmWindow
 
     public EncounterEditorView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new EncounterEditorPresenter(this, player);
     }
 
     public override NuiLayout RootLayout()

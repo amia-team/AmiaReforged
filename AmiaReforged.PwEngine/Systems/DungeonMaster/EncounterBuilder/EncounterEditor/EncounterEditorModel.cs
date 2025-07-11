@@ -52,7 +52,7 @@ public sealed class EncounterEditorModel(NwPlayer player)
 
     public void PromptAdd()
     {
-        player.EnterTargetMode(ValidateAndAdd, new()
+        player.EnterTargetMode(ValidateAndAdd, new TargetModeSettings
         {
             CursorType = MouseCursor.Create,
             ValidTargets = ObjectTypes.Creature

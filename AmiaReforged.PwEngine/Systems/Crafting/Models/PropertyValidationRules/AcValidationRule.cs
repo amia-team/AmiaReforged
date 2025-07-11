@@ -26,7 +26,7 @@ public class AcValidationRule : IValidationRule
             errorMessage = "AC Bonus already exists on this item.";
         }
 
-        return new()
+        return new ValidationResult
         {
             Result = @enum,
             ErrorMessage = errorMessage

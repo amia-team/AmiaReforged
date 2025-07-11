@@ -10,7 +10,7 @@ public class WebhookTest
     public void SetUp()
     {
         _webhookSender =
-            new(
+            new WebhookSender(
                 webhookUri:
                 "https://discord.com/api/webhooks/967871266356854864/hAV6hfaX2TY4OjMZK63ffC47-e_j8ijLxey_3_Ku8mGRarcsjiaeatQAbrFTaJq37ZOs");
     }

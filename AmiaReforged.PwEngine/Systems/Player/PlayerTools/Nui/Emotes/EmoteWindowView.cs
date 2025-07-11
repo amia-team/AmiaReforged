@@ -19,7 +19,7 @@ public class EmoteWindowView : ScryView<EmoteWindowPresenter>, IToolWindow
 
     public EmoteWindowView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new EmoteWindowPresenter(this, player);
     }
 
     public sealed override EmoteWindowPresenter Presenter { get; protected set; }

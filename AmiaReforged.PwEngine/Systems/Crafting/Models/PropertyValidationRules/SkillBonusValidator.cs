@@ -84,7 +84,7 @@ public class SkillBonusValidator : IValidationRule
         result = hasMaxSkill ? ValidationEnum.LimitReached : result;
         error = hasMaxSkill ? "Free personal skill bonus limit reached." : error;
 
-        return new()
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = error
@@ -122,7 +122,7 @@ public class SkillBonusValidator : IValidationRule
         result = anySkill ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
         error = anySkill ? "Skill already exists on this item." : string.Empty;
 
-        return new()
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = error

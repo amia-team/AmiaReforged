@@ -39,7 +39,7 @@ public class SavingThrowValidator : IValidationRule
         ValidationEnum result = onItem ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
         string error = onItem ? $"{savingThrow.ThrowType} saving throw already exists on this item." : string.Empty;
 
-        return new()
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = error

@@ -57,7 +57,7 @@ public sealed class SimplePopupPresenter : ScryPresenter<SimplePopupView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), _title)
+        _window = new NuiWindow(View.RootLayout(), _title)
         {
             Geometry = new NuiRect(500f, 500f, 400f, 300f),
             Resizable = false

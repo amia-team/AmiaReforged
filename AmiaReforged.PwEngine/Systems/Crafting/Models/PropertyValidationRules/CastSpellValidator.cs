@@ -48,7 +48,7 @@ public class CastSpellValidator : IValidationRule
         // Look for any fluff spells in the item or changelist
         bool fluffExists = allCastSpells.Any(x => Fluff.Contains(x.SpellName));
 
-        return new()
+        return new ValidationResult
         {
             Result = fluffExists ? ValidationEnum.LimitReached : ValidationEnum.Valid,
             ErrorMessage = fluffExists ? "Only one fluff spell can be added to an item." : string.Empty
@@ -74,7 +74,7 @@ public class CastSpellValidator : IValidationRule
         // Now we only care if the same spell exists in the item or the changelist
         bool alreadyExists = allCastSpells.Any(x => x.SpellName == castSpell.SpellName);
 
-        return new()
+        return new ValidationResult
         {
             Result = alreadyExists ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid,
             ErrorMessage = alreadyExists ? $"{castSpell.SpellName} already exists on the item." : string.Empty

@@ -39,7 +39,7 @@ public sealed class PlayerLedgerView : ScryView<PlayerLedgerPresenter>
 
     public PlayerLedgerView(NwPlayer player)
     {
-        Presenter = new(player, this);
+        Presenter = new PlayerLedgerPresenter(player, this);
     }
 
     public override NuiLayout RootLayout()

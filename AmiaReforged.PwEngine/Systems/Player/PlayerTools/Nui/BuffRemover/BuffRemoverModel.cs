@@ -79,7 +79,7 @@ public class BuffRemoverModel
         {
             _player.SendServerMessage(ZoltanIsStupidMessage,
                 ColorConstants.Red);
-            return new();
+            return new List<Effect>();
         }
 
         // First, we want all linked effects...Limit only one linked effect, because we will

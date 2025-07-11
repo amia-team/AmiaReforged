@@ -39,9 +39,9 @@ public class MythalForgeModel
 
         IReadOnlyList<CraftingCategory> categories = data.Properties[baseType];
 
-        MythalCategoryModel = new(item, player, categories);
-        ChangeListModel = new();
-        ActivePropertiesModel = new(item, categories);
+        MythalCategoryModel = new MythalCategoryModel(item, player, categories);
+        ChangeListModel = new ChangeListModel();
+        ActivePropertiesModel = new ActivePropertiesModel(item, categories);
     }
 
     public ChangeListModel ChangeListModel { get; }

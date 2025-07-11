@@ -19,7 +19,7 @@ public class NpcBankPresenter : ScryPresenter<NpcBankView>
     {
         _npcBankView = npcBankView;
         _player = player;
-        Model = new(player);
+        Model = new NpcBankModel(player);
 
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Model);
@@ -30,7 +30,7 @@ public class NpcBankPresenter : ScryPresenter<NpcBankView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f)
         };

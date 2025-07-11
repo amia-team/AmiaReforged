@@ -9,10 +9,10 @@ public static class NuiUtils
         List<NuiComboEntry> entries = new();
         foreach (T value in Enum.GetValues<T>())
         {
-            entries.Add(new(value.ToString(), (int)(value as object)));
+            entries.Add(new NuiComboEntry(value.ToString(), (int)(value as object)));
         }
 
-        return new()
+        return new NuiCombo
         {
             Entries = entries,
             Selected = selected

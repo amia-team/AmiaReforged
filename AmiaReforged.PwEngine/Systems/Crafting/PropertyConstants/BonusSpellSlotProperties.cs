@@ -21,7 +21,7 @@ public static class BonusSpellSlotProperties
         Label = "Assassin Bonus Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.CLASS_TYPE_ASSASSIN, 1)!,
@@ -29,7 +29,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot1,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.CLASS_TYPE_ASSASSIN, 2)!,
@@ -37,7 +37,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot2,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.CLASS_TYPE_ASSASSIN, 3)!,
@@ -45,7 +45,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot3,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.CLASS_TYPE_ASSASSIN, 4)!,
@@ -64,7 +64,7 @@ public static class BonusSpellSlotProperties
         Label = "Bard Bonus Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_BARD, 0)!,
@@ -72,7 +72,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot1,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_BARD, 1)!,
@@ -80,7 +80,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot2,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_BARD, 2)!,
@@ -88,7 +88,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot3,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_BARD, 3)!,
@@ -96,7 +96,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_BARD, 4)!,
@@ -104,7 +104,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot5,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_BARD, 5)!,
@@ -112,7 +112,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot6,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_BARD, 6)!,
@@ -131,7 +131,7 @@ public static class BonusSpellSlotProperties
         Label = "Blackguard Bonus Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.CLASS_TYPE_BLACKGUARD, 1)!,
@@ -139,7 +139,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot1,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.CLASS_TYPE_BLACKGUARD, 2)!,
@@ -147,7 +147,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot2,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.CLASS_TYPE_BLACKGUARD, 3)!,
@@ -155,7 +155,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot3,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.CLASS_TYPE_BLACKGUARD, 4)!,
@@ -174,7 +174,7 @@ public static class BonusSpellSlotProperties
         Label = "Cleric Bonus Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_CLERIC, 0)!,
@@ -182,7 +182,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot1,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_CLERIC, 1)!,
@@ -190,7 +190,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot2,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_CLERIC, 2)!,
@@ -198,7 +198,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot3,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_CLERIC, 3)!,
@@ -206,7 +206,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_CLERIC, 4)!,
@@ -214,7 +214,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot5,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_CLERIC, 5)!,
@@ -222,7 +222,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot6,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_CLERIC, 6)!,
@@ -230,7 +230,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot7,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_CLERIC, 7)!,
@@ -238,7 +238,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot8,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_CLERIC, 8)!,
@@ -246,7 +246,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_CLERIC, 9)!,
@@ -265,7 +265,7 @@ public static class BonusSpellSlotProperties
         Label = "Druid Bonus Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_DRUID, 0)!,
@@ -273,7 +273,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot1,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_DRUID, 1)!,
@@ -281,7 +281,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot2,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_DRUID, 2)!,
@@ -289,7 +289,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot3,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_DRUID, 3)!,
@@ -297,7 +297,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_DRUID, 4)!,
@@ -305,7 +305,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot5,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_DRUID, 5)!,
@@ -313,7 +313,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot6,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_DRUID, 6)!,
@@ -321,7 +321,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot7,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_DRUID, 7)!,
@@ -329,7 +329,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot8,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_DRUID, 8)!,
@@ -337,7 +337,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_DRUID, 9)!,
@@ -356,7 +356,7 @@ public static class BonusSpellSlotProperties
         Label = "Paladin Bonus Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_PALADIN, 1)!,
@@ -364,7 +364,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot1,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_PALADIN, 2)!,
@@ -372,7 +372,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot2,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_PALADIN, 3)!,
@@ -380,7 +380,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot3,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_PALADIN, 4)!,
@@ -399,7 +399,7 @@ public static class BonusSpellSlotProperties
         Label = "Ranger Bonus Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_RANGER, 1)!,
@@ -407,7 +407,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot1,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_RANGER, 2)!,
@@ -415,7 +415,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot2,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_RANGER, 3)!,
@@ -423,7 +423,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot3,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_RANGER, 4)!,
@@ -442,7 +442,7 @@ public static class BonusSpellSlotProperties
         Label = "Sorcerer Bonus Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_SORCERER, 0)!,
@@ -450,7 +450,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot1,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_SORCERER, 1)!,
@@ -458,7 +458,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot2,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_SORCERER, 2)!,
@@ -466,7 +466,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot3,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_SORCERER, 3)!,
@@ -474,7 +474,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_SORCERER, 4)!,
@@ -482,7 +482,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot5,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_SORCERER, 5)!,
@@ -490,7 +490,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot6,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_SORCERER, 6)!,
@@ -498,7 +498,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot7,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_SORCERER, 7)!,
@@ -506,7 +506,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot8,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_SORCERER, 8)!,
@@ -514,7 +514,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_SORCERER, 9)!,
@@ -533,7 +533,7 @@ public static class BonusSpellSlotProperties
         Label = "Wizard Bonus Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_WIZARD, 0)!,
@@ -541,7 +541,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot1,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_WIZARD, 1)!,
@@ -549,7 +549,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot2,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_WIZARD, 2)!,
@@ -557,7 +557,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot3,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_WIZARD, 3)!,
@@ -565,7 +565,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_WIZARD, 4)!,
@@ -573,7 +573,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot5,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_WIZARD, 5)!,
@@ -581,7 +581,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot6,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_WIZARD, 6)!,
@@ -589,7 +589,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot7,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_WIZARD, 7)!,
@@ -597,7 +597,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot8,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_WIZARD, 8)!,
@@ -605,7 +605,7 @@ public static class BonusSpellSlotProperties
                 GoldCost = MythalCostBslot9,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusLevelSpell(NWScript.IP_CONST_CLASS_WIZARD, 9)!,

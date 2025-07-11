@@ -14,7 +14,7 @@ public class EmoteWindowPresenter : ScryPresenter<EmoteWindowView>
     {
         View = emoteWindowView;
         _player = player;
-        Model = new(player);
+        Model = new EmoteModel(player);
     }
 
     private EmoteModel Model { get; }
@@ -27,7 +27,7 @@ public class EmoteWindowPresenter : ScryPresenter<EmoteWindowView>
     {
         Model.InitAllEmotes();
         // View.PopulateEmoteLayout(Model.Emotes.Values);
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(300, 300, 400, 500)
         };

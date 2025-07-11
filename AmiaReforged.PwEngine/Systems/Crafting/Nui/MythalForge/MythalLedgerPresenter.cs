@@ -47,7 +47,7 @@ public class MythalLedgerPresenter : ScryPresenter<MythalLedgerView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), title: "Mythal Ledger")
+        _window = new NuiWindow(View.RootLayout(), title: "Mythal Ledger")
         {
             Id = "mythal_ledger",
             Geometry = new NuiRect(1600, 500, 300, 300),

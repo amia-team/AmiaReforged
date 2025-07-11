@@ -17,7 +17,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
     {
         _player = player;
         View = toolView;
-        Model = new(player);
+        Model = new PlayerToolsModel(player);
     }
 
     [Inject] private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
@@ -32,7 +32,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), title: "Player Tools")
+        _window = new NuiWindow(View.RootLayout(), title: "Player Tools")
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f)
         };

@@ -121,7 +121,7 @@ public sealed class EncounterBuilderModel(NwPlayer player)
     {
         SelectedEncounter = VisibleEncounters.ToArray()[eventDataArrayIndex];
         SelectedFaction = faction;
-        player.EnterTargetMode(ValidateAndSpawn, new()
+        player.EnterTargetMode(ValidateAndSpawn, new TargetModeSettings
         {
             CursorType = MouseCursor.Action,
             ValidTargets = ObjectTypes.Tile

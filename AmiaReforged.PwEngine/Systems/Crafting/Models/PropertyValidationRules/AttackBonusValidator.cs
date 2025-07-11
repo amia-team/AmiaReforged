@@ -26,7 +26,7 @@ public class AttackBonusValidator : IValidationRule
             ? "Attack Bonus already exists on this item."
             : string.Empty;
 
-        return new()
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = error

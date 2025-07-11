@@ -80,7 +80,7 @@ public sealed class NpcBankModel(NwPlayer player)
     {
         SelectedNpc = VisibleNpcs.ToArray()[eventDataArrayIndex];
         SelectedFaction = faction;
-        player.EnterTargetMode(ValidateAndSpawn, new()
+        player.EnterTargetMode(ValidateAndSpawn, new TargetModeSettings
         {
             CursorType = MouseCursor.Action,
             ValidTargets = ObjectTypes.Tile
@@ -109,7 +109,7 @@ public sealed class NpcBankModel(NwPlayer player)
 
     public void PromptAdd()
     {
-        player.EnterTargetMode(ValidateAndAdd, new()
+        player.EnterTargetMode(ValidateAndAdd, new TargetModeSettings
         {
             CursorType = MouseCursor.Create,
             ValidTargets = ObjectTypes.Creature

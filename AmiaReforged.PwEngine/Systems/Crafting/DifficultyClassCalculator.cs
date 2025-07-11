@@ -16,7 +16,7 @@ public class DifficultyClassCalculator
 
     public DifficultyClassCalculator()
     {
-        _difficulties = new();
+        _difficulties = new Dictionary<ItemPropertyType, IComputableDifficulty>();
 
         LoadDifficulties();
     }

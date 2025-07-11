@@ -14,7 +14,7 @@ public class PropertyValidator
 
     public PropertyValidator()
     {
-        _validationRules = new();
+        _validationRules = new Dictionary<ItemPropertyType, IValidationRule>();
 
         LoadValidationRules();
     }
@@ -45,7 +45,7 @@ public class PropertyValidator
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
         if (!_validationRules.TryGetValue(incoming.ItemProperty.Property.PropertyType, out IValidationRule? operation))
-            return new()
+            return new ValidationResult
             {
                 Result = ValidationEnum.Valid
             };

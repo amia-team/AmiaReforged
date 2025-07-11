@@ -23,7 +23,7 @@ public sealed class DmToolPresenter(DmToolView view, NwPlayer player) : ScryPres
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), title: "DM Tools")
+        _window = new NuiWindow(View.RootLayout(), title: "DM Tools")
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f)
         };

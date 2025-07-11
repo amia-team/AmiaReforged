@@ -15,7 +15,7 @@ public class GetVfx : IChatCommand
         if (!caller.IsDM) return Task.CompletedTask;
 
         caller.EnterTargetMode(GetDurVfx,
-            new() { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
+            new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
         return Task.CompletedTask;
     }
 

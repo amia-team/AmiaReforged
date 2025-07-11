@@ -7,7 +7,7 @@ public class OrcEffects : IEffectCollector
 {
     public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        return new()
+        return new List<IntPtr>
         {
             NWScript.EffectSkillIncrease(NWScript.SKILL_INTIMIDATE, 4),
             NWScript.EffectSkillIncrease(NWScript.SKILL_DISCIPLINE, 4)

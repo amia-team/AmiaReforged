@@ -33,7 +33,7 @@ public class WorldEngineTests
         Mock<IWorldConfigProvider> fakeConfig = new();
         fakeConfig.Setup(c => c.GetBoolean(It.IsAny<string>())).Returns(true);
 
-        _engineLoader = new(fakeConfig.Object);
+        _engineLoader = new WorldEngineLoader(fakeConfig.Object);
     }
 
     [Test]

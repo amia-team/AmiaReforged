@@ -29,7 +29,7 @@ public class OnHitCastSpellValidator : IValidationRule
             message = "OnHit properties cannot be stacked.";
         }
 
-        return new()
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = message

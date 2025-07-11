@@ -59,7 +59,7 @@ public class CraftingPropertyData
                 Label = "Armor",
                 Properties =
                 [
-                    new()
+                    new CraftingProperty
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(1)!,
@@ -67,7 +67,7 @@ public class CraftingPropertyData
                         CraftingTier = CraftingTier.Minor,
                         GoldCost = GenericItemProperties.AcCost1
                     },
-                    new()
+                    new CraftingProperty
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(2)!,
@@ -75,7 +75,7 @@ public class CraftingPropertyData
                         CraftingTier = CraftingTier.Lesser,
                         GoldCost = GenericItemProperties.AcCost2
                     },
-                    new()
+                    new CraftingProperty
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(3)!,
@@ -83,7 +83,7 @@ public class CraftingPropertyData
                         CraftingTier = CraftingTier.Intermediate,
                         GoldCost = GenericItemProperties.AcCost3
                     },
-                    new()
+                    new CraftingProperty
                     {
                         PowerCost = 1,
                         ItemProperty = NWScript.ItemPropertyACBonus(4)!,
@@ -91,7 +91,7 @@ public class CraftingPropertyData
                         CraftingTier = CraftingTier.Greater,
                         GoldCost = GenericItemProperties.AcCost4
                     },
-                    new()
+                    new CraftingProperty
                     {
                         PowerCost = 2,
                         ItemProperty = NWScript.ItemPropertyACBonus(5)!,
@@ -133,12 +133,12 @@ public class CraftingPropertyData
         properties.Add(MeleeOnHitProperties.OnHits);
 
         // Gauntlets have another tier of massive criticals.
-        properties.Add(new(categoryId: "massive_criticals")
+        properties.Add(new CraftingCategory(categoryId: "massive_criticals")
         {
             Label = "Massive Criticals",
             Properties =
             [
-                new()
+                new CraftingProperty
                 {
                     PowerCost = 1,
                     ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
@@ -268,14 +268,14 @@ public class CraftingPropertyData
                     Label = "Massive Criticals",
                     Properties =
                     [
-                        new()
+                        new CraftingProperty
                         {
                             PowerCost = 1,
                             ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
                             GuiLabel = "1d12 Massive Criticals",
                             CraftingTier = CraftingTier.Wondrous
                         },
-                        new()
+                        new CraftingProperty
                         {
                             PowerCost = 2,
                             ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d12)!,

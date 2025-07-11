@@ -45,12 +45,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         CraftingBudgetService budget,
         NwItem item, NwPlayer player, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
-        Model = new(item, propertyData, budget, player, validator, dcCalculator);
+        Model = new MythalForgeModel(item, propertyData, budget, player, validator, dcCalculator);
         View = toolView;
         _player = player;
         _creating = false;
 
-        _ledgerView = new(this, player);
+        _ledgerView = new MythalLedgerView(this, player);
 
         if (player.LoginCreature != null) player.LoginCreature.OnUnacquireItem += PreventMunchkins;
     }
@@ -180,7 +180,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         // N.B: Other things can happen here, so if you're following this as an example
         // you can do more than just create the window here. The window is supposed to be created here, but you might
         // want to initialize other data that might not be present at construction time.
-        _window = new(View.RootLayout(), WindowTitle)
+        _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
             Geometry = new NuiRect(400f, 400f, 1200f, 640f)
         };

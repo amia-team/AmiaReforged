@@ -92,7 +92,7 @@ internal sealed class Palette
                 faction = creatureFactionField.Value<string>();
             }
 
-            _blueprints.Add(new()
+            _blueprints.Add(new PaletteBlueprint
             {
                 ResRef = resRef,
                 Name = name,

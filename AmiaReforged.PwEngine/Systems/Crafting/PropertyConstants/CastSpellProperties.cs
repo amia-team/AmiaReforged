@@ -24,7 +24,7 @@ public class CastSpellProperties
         Label = "Beneficial Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BALAGARNSIRONHORN_7,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -33,7 +33,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Intermediate,
                 GoldCost = 5000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BARKSKIN_12,
                     IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
@@ -42,7 +42,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Intermediate,
                 GoldCost = 5000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_WAR_CRY_7,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -51,7 +51,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Intermediate,
                 GoldCost = 8000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty =
                     ItemPropertyCastSpell(CustomCastBlessWeapon17, IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -60,7 +60,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Intermediate,
                 GoldCost = 15000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_CATS_GRACE_15,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -70,7 +70,7 @@ public class CastSpellProperties
                 GoldCost = 5000
             },
             // bull's strength
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BULLS_STRENGTH_15,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -80,7 +80,7 @@ public class CastSpellProperties
                 GoldCost = 5000
             },
             // endurance
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_ENDURANCE_15,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -89,7 +89,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Intermediate,
                 GoldCost = 5000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty =
                     ItemPropertyCastSpell(IP_CONST_CASTSPELL_HASTE_10, IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -98,7 +98,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Intermediate,
                 GoldCost = 10000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_IMPROVED_INVISIBILITY_7,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -107,7 +107,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Intermediate,
                 GoldCost = 10000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(CustomCastBattletide9,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -133,7 +133,7 @@ public class CastSpellProperties
         Label = "Fluff Spells",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_AID_3,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -142,7 +142,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Minor,
                 GoldCost = 1000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BLESS_2,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -151,7 +151,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Minor,
                 GoldCost = 1000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_CATS_GRACE_3,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -161,7 +161,7 @@ public class CastSpellProperties
                 GoldCost = 1000
             },
             // bull's strength
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BULLS_STRENGTH_3,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -171,7 +171,7 @@ public class CastSpellProperties
                 GoldCost = 1000
             },
             // endurance
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_ENDURANCE_3,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -180,7 +180,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Minor,
                 GoldCost = 1000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_EXPEDITIOUS_RETREAT_5,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
@@ -189,7 +189,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Minor,
                 GoldCost = 1000
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_LIGHT_1,
                     IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,

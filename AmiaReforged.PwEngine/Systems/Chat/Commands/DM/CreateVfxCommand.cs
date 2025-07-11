@@ -33,7 +33,7 @@ public class CreateVfx : IChatCommand
             if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "D")
             {
                 caller.EnterTargetMode(CreateDurVfx,
-                    new() { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
+                    new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
                 caller.FloatingTextString(
                     $"Creating duration-type visual effect {vfxLabel}. The effect is permanent! You can remove it with \"./removevfx\".",
                     false);

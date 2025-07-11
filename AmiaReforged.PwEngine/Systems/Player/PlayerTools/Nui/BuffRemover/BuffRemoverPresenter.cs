@@ -14,7 +14,7 @@ public class BuffRemoverPresenter : ScryPresenter<BuffRemoverView>
     {
         View = view;
         _player = player;
-        Model = new(player);
+        Model = new BuffRemoverModel(player);
 
         NwCreature? character = player.LoginCreature;
 
@@ -48,7 +48,7 @@ public class BuffRemoverPresenter : ScryPresenter<BuffRemoverView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(400, 400, 250f, 500f)
             // Resizable = false TODO: Uncomment when UX is done

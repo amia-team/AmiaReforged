@@ -24,7 +24,7 @@ public class EncounterBuilderPresenter : ScryPresenter<EncounterBuilderView>
         _view = view;
         _player = player;
 
-        Model = new(_player);
+        Model = new EncounterBuilderModel(_player);
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Model);
     }
@@ -33,7 +33,7 @@ public class EncounterBuilderPresenter : ScryPresenter<EncounterBuilderView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f)
         };

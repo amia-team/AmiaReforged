@@ -13,7 +13,7 @@ public class MiniQuest
     {
         _questGiver = questGiver;
         _player = player;
-        _miniQuestReward = new();
+        _miniQuestReward = new MiniQuestReward();
     }
 
     public void ProcessReward()

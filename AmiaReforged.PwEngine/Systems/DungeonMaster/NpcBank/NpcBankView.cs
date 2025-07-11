@@ -24,7 +24,7 @@ public class NpcBankView : ScryView<NpcBankPresenter>, IDmWindow
 
     public NpcBankView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new NpcBankPresenter(this, player);
 
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);

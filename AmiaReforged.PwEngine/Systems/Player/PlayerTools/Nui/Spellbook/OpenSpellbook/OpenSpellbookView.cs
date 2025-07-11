@@ -26,7 +26,7 @@ public sealed class OpenSpellbookView : ScryView<OpenSpellbookPresenter>, IToolW
 
     public OpenSpellbookView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new OpenSpellbookPresenter(this, player);
     }
 
     public override OpenSpellbookPresenter Presenter { get; protected set; }

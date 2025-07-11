@@ -22,7 +22,7 @@ public class EconomyService
     public EconomyService()
     {
         _resourcesPath = Environment.GetEnvironmentVariable("ECONOMY_RESOURCES_PATH") ?? string.Empty;
-        _deserializer = new();
+        _deserializer = new Deserializer();
         
         LoadYamlFiles();
     }

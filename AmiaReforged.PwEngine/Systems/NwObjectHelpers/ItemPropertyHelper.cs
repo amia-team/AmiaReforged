@@ -48,7 +48,7 @@ public static class ItemPropertyHelper
 
         gameLabel = gameLabel.Replace(oldValue: "_", newValue: " ");
 
-        return new()
+        return new CraftingProperty
         {
             ItemProperty = ip,
             GuiLabel = gameLabel,

@@ -34,10 +34,10 @@ public class TrapService
         // EventsPlugin.SubscribeEvent("NWNX_ON_TRAP_RECOVER_AFTER", TrapRecoverScript);
 
         NwModule.Instance.OnAcquireItem += OnRecoverTrap;
-        _trapDictionary = new()
+        _trapDictionary = new Dictionary<string, Dictionary<TrapBaseType, TrapBaseType>>
         {
             {
-                ElectricTrapComponent, new()
+                ElectricTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
                 {
                     { TrapBaseType.MinorElectrical, TrapBaseType.AverageElectrical },
                     { TrapBaseType.AverageElectrical, TrapBaseType.StrongElectrical },
@@ -46,7 +46,7 @@ public class TrapService
                 }
             },
             {
-                FireTrapComponent, new()
+                FireTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
                 {
                     { TrapBaseType.MinorFire, TrapBaseType.AverageFire },
                     { TrapBaseType.AverageFire, TrapBaseType.StrongFire },
@@ -55,7 +55,7 @@ public class TrapService
                 }
             },
             {
-                SonicTrapComponent, new()
+                SonicTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
                 {
                     { TrapBaseType.MinorSonic, TrapBaseType.AverageSonic },
                     { TrapBaseType.AverageSonic, TrapBaseType.StrongSonic },
@@ -64,7 +64,7 @@ public class TrapService
                 }
             },
             {
-                ColdTrapComponent, new()
+                ColdTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
                 {
                     { TrapBaseType.MinorFrost, TrapBaseType.AverageFrost },
                     { TrapBaseType.AverageFrost, TrapBaseType.StrongFrost },
@@ -73,7 +73,7 @@ public class TrapService
                 }
             },
             {
-                GasTrapComponent, new()
+                GasTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
                 {
                     { TrapBaseType.MinorGas, TrapBaseType.AverageGas },
                     { TrapBaseType.AverageGas, TrapBaseType.StrongGas },
@@ -81,7 +81,7 @@ public class TrapService
                 }
             },
             {
-                HolyTrapComponent, new()
+                HolyTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
                 {
                     { TrapBaseType.MinorHoly, TrapBaseType.AverageHoly },
                     { TrapBaseType.AverageHoly, TrapBaseType.StrongHoly },
@@ -89,7 +89,7 @@ public class TrapService
                 }
             },
             {
-                TangleTrapComponent, new()
+                TangleTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
                 {
                     { TrapBaseType.MinorTangle, TrapBaseType.AverageTangle },
                     { TrapBaseType.AverageTangle, TrapBaseType.StrongTangle },
@@ -97,7 +97,7 @@ public class TrapService
                 }
             },
             {
-                NegativeTrapComponent, new()
+                NegativeTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
                 {
                     { TrapBaseType.MinorNegative, TrapBaseType.AverageNegative },
                     { TrapBaseType.AverageNegative, TrapBaseType.StrongNegative },
@@ -105,7 +105,7 @@ public class TrapService
                 }
             },
             {
-                SpikeTrapComponent, new()
+                SpikeTrapComponent, new Dictionary<TrapBaseType, TrapBaseType>
                 {
                     { TrapBaseType.MinorSpike, TrapBaseType.AverageSpike },
                     { TrapBaseType.AverageSpike, TrapBaseType.StrongSpike },
@@ -114,7 +114,7 @@ public class TrapService
             }
         };
 
-        _trapComponentDictionary = new()
+        _trapComponentDictionary = new Dictionary<TrapBaseType, string>
         {
             { TrapBaseType.MinorElectrical, ElectricTrapComponent },
             { TrapBaseType.AverageElectrical, ElectricTrapComponent },

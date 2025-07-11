@@ -26,7 +26,7 @@ public class OpenSpellbookPresenter(OpenSpellbookView toolView, NwPlayer player)
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Resizable = false,
             Geometry = new NuiRect(500f, 100f, 580f, 500f)
@@ -213,7 +213,7 @@ public class OpenSpellbookPresenter(OpenSpellbookView toolView, NwPlayer player)
         for (byte f = 0; f <= 9; f++)
         {
             Log.Info($"Iteration {f}");
-            spellRows.Add(new());
+            spellRows.Add(new NuiRow());
             if (!preparedSpells.TryGetValue(f, out List<PreparedSpellModel>? _)) break;
 
             spellRow.TryAdd(f, []);
@@ -234,11 +234,11 @@ public class OpenSpellbookPresenter(OpenSpellbookView toolView, NwPlayer player)
                 spellRow[f].Add(prep);
             }
 
-            spellRows[f] = new()
+            spellRows[f] = new NuiRow
             {
                 Height = 50f,
                 Visible = true,
-                Children = new(spellRow[f])
+                Children = new List<NuiElement>(spellRow[f])
             };
         }
 

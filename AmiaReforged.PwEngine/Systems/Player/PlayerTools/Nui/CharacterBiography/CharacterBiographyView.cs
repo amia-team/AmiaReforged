@@ -15,7 +15,7 @@ public sealed class CharacterBiographyView : ScryView<CharacterBiographyPresente
 
     public CharacterBiographyView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new CharacterBiographyPresenter(this, player);
 
         CategoryTag = "Character";
     }
@@ -46,12 +46,12 @@ public sealed class CharacterBiographyView : ScryView<CharacterBiographyPresente
                 {
                     Children =
                     [
-                        NuiUtils.Assign(new(label: "Save")
+                        NuiUtils.Assign(new NuiButton(label: "Save")
                         {
                             Id = "save"
                         }, out SaveButton),
 
-                        NuiUtils.Assign(new(label: "Discard Changes")
+                        NuiUtils.Assign(new NuiButton(label: "Discard Changes")
                         {
                             Id = "discard"
                         }, out DiscardButton)
