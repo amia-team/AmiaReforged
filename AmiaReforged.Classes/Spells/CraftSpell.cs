@@ -195,7 +195,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     }
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
-        spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
+        spellInnateLevel == 1 
+            ? spellPropCl * 1 * 25 * targetItem.StackSize 
+            : spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
     
     private void SetScrollNameAndDescription(NwItem scribedScroll)
     {
@@ -215,7 +217,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     }
     
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
-        spellPropCl * spellInnateLevel * 750;
+        spellInnateLevel == 1 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
     
     private void BrewPotion(NwCreature caster, int spellPropId)
     {
@@ -263,7 +265,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     }
 
     private int CalculateBrewPotionCost(int spellPropCl, int spellInnateLevel) =>
-        (int)(spellPropCl * spellInnateLevel * 12.5 * targetItem.StackSize);
+        (int)(spellInnateLevel == 0 
+            ? spellPropCl * 1 * 12.5 * targetItem.StackSize 
+            : spellPropCl * spellInnateLevel * 12.5 * targetItem.StackSize); 
 
     private static void ApplySpellCraftFailVfx(NwCreature caster)
     {
