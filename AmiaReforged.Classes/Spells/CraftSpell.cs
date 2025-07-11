@@ -128,7 +128,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             }
             int casterLevel = caster.Classes.First(cl => cl.Class == casterClass).Level;
 
-            CraftWand(caster, spellPropId, craftWandCost, casterLevel);
+            CraftWand(spellPropId, casterLevel);
+            ChargeForSpellCraft(player, caster, craftWandCost);
+            ApplySpellCraftSuccessVfx(caster);
         }
 
         if (_isEmptyPotion)
@@ -204,17 +206,25 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         scribedScroll.Description = _spell.Description.ToString();
     }
     
-    private void CraftWand(NwCreature caster, int spellPropId, int craftWandCost, int casterLevel)
+    private void CraftWand(int spellPropId, int casterLevel)
     {
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.ChargePerUse1), 
             EffectDuration.Permanent);
 
         targetItem.ItemCharges = casterLevel + 20;
-        // Apparently wands do some hardcoded voodoo so check ingame what happens here
         
-        caster.Gold -= (uint)craftWandCost;
+        SetWandNameAndDescription(targetItem);
+        
+        targetItem.Appearance.ChangeAppearance(appearance => 
+            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, 3));
     }
-    
+
+    private void SetWandNameAndDescription(NwItem craftedWand)
+    {
+        craftedWand.Name = "Wand of "+_spell.Name;
+        craftedWand.Description = _spell.Description.ToString();
+    }
+
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 1 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
     
@@ -226,9 +236,10 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             EffectDuration.Permanent);
         
         SetPotionNameAndDescription(targetItem);
-
+        
+        // This isn't working!
         targetItem.Appearance.ChangeAppearance(appearance => 
-            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
+            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, 3));
     }
 
     private void SetPotionNameAndDescription(NwItem brewedPotion)
