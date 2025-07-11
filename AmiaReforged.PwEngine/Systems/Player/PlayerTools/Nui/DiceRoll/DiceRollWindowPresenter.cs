@@ -30,7 +30,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 271f, 400f),
             Resizable = false
@@ -142,7 +142,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.ReportCharacterLevel, 4)
         ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.ReportTouchAttackAc },
             { 1, DiceRollStringConstants.ReportFlatFootedAc },
@@ -168,7 +168,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.RollTouchAttackWis, 7)
         ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.CounterBluffListen },
             { 1, DiceRollStringConstants.CounterBluffSpot },
@@ -195,7 +195,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.Charisma, 5)
         ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.Strength },
             { 1, DiceRollStringConstants.Dexterity },
@@ -241,7 +241,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.UseMagicDevice, 26)
         ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.AnimalEmpathy },
             { 1, DiceRollStringConstants.Appraise },
@@ -290,7 +290,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.D100, 8)
         ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.D2 },
             { 1, DiceRollStringConstants.D3 },
@@ -315,7 +315,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.Will, 2)
         ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.Fortitude },
             { 1, DiceRollStringConstants.Reflex },

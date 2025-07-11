@@ -33,7 +33,7 @@ public class OnHitValidator : IValidationRule
         }
 
 
-        return new()
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = message

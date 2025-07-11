@@ -24,7 +24,7 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
 
     public DiceRollWindowView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new DiceRollWindowPresenter(this, player);
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);
     }
@@ -48,7 +48,7 @@ public sealed class DiceRollWindowView : ScryView<DiceRollWindowPresenter>, IToo
 
     public override NuiLayout RootLayout()
     {
-        RollGroup = new()
+        RollGroup = new NuiGroup
         {
             Element = new NuiColumn
             {

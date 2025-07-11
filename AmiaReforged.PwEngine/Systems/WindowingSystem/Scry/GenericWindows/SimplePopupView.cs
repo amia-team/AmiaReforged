@@ -11,14 +11,14 @@ public sealed class SimplePopupView : ScryView<SimplePopupPresenter>
     {
         _message = message;
         IgnoreButton = ignoreButton;
-        Presenter = new(player, this, title);
+        Presenter = new SimplePopupPresenter(player, this, title);
     }
 
     public SimplePopupView(NwPlayer player, Action outcome, string message, string title, bool ignoreButton = false)
     {
         _message = message;
         IgnoreButton = ignoreButton;
-        Presenter = new(player, this, outcome, title);
+        Presenter = new SimplePopupPresenter(player, this, outcome, title);
     }
 
     public override SimplePopupPresenter Presenter { get; protected set; }

@@ -21,7 +21,7 @@ public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWind
 
     public CreateSpellbookView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new CreateSpellbookPresenter(this, player);
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);
     }
@@ -42,7 +42,7 @@ public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWind
         {
             Children =
             [
-                NuiUtils.Assign(new()
+                NuiUtils.Assign(new NuiCombo
                 {
                     Entries = ClassNames,
                     Selected = Selection
@@ -66,8 +66,8 @@ public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWind
                 {
                     Children =
                     [
-                        NuiUtils.Assign(new(label: "Create") { Id = "create_spellbook_db" }, out CreateButton),
-                        NuiUtils.Assign(new(label: "Cancel"), out CancelButton)
+                        NuiUtils.Assign(new NuiButton(label: "Create") { Id = "create_spellbook_db" }, out CreateButton),
+                        NuiUtils.Assign(new NuiButton(label: "Cancel"), out CancelButton)
                     ]
                 }
             ]

@@ -19,7 +19,7 @@ public sealed class DmToolView : ScryView<DmToolPresenter>
 
     public DmToolView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new DmToolPresenter(this, player);
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);
     }

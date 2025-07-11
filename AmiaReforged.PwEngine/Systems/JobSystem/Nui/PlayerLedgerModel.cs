@@ -7,11 +7,11 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem.Nui;
 [CreatedAtRuntime]
 public sealed class PlayerLedgerModel(NwPlayer player)
 {
-    private CharacterLedger Ledger { get; set; } = new(new(player));
+    private CharacterLedger Ledger { get; set; } = new(new CharacterDataSource(player));
     
     public void RefreshLedger()
     {
-        Ledger = new(new(player));
+        Ledger = new CharacterLedger(new CharacterDataSource(player));
     }
 
     public LedgerCategoryViewModel? ViewModelFor(ItemType type)
@@ -39,7 +39,7 @@ public sealed class LedgerCategoryViewModel
         // Now we need to just populate our class with the grouped items
         foreach (KeyValuePair<MaterialEnum, List<LedgerItem>> group in groupedItems)
         {
-            CategoryEntries.TryAdd(group.Key, new(group.Value));
+            CategoryEntries.TryAdd(group.Key, new LedgerSubEntryViewModel(group.Value));
         }
     }
 

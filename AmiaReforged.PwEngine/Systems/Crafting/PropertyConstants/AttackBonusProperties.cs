@@ -22,7 +22,7 @@ public static class AttackBonusProperties
         Label = "Attack Bonus",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyAttackBonus(1)!,
@@ -30,7 +30,7 @@ public static class AttackBonusProperties
                 GoldCost = MythalCostAb1,
                 CraftingTier = CraftingTier.Minor
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyAttackBonus(2)!,
@@ -38,7 +38,7 @@ public static class AttackBonusProperties
                 GoldCost = MythalCostAb2,
                 CraftingTier = CraftingTier.Lesser
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyAttackBonus(3)!,
@@ -46,7 +46,7 @@ public static class AttackBonusProperties
                 GoldCost = MythalCostAb3,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyAttackBonus(4)!,
@@ -54,7 +54,7 @@ public static class AttackBonusProperties
                 GoldCost = MythalCostAb4,
                 CraftingTier = CraftingTier.Greater
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyAttackBonus(5)!,
@@ -71,7 +71,7 @@ public static class AttackBonusProperties
         Label = "Enhancement Bonus",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyEnhancementBonus(1)!,
@@ -79,7 +79,7 @@ public static class AttackBonusProperties
                 GoldCost = MythalCostEnhancement1,
                 CraftingTier = CraftingTier.Minor
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyEnhancementBonus(2)!,
@@ -87,7 +87,7 @@ public static class AttackBonusProperties
                 GoldCost = MythalCostEnhancement2,
                 CraftingTier = CraftingTier.Lesser
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyEnhancementBonus(3)!,
@@ -95,7 +95,7 @@ public static class AttackBonusProperties
                 GoldCost = MythalCostEnhancement3,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyEnhancementBonus(4)!,
@@ -103,7 +103,7 @@ public static class AttackBonusProperties
                 GoldCost = MythalCostEnhancement4,
                 CraftingTier = CraftingTier.Greater
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyEnhancementBonus(5)!,

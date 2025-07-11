@@ -26,7 +26,7 @@ public sealed class EncounterMakerPresenter : ScryPresenter<EncounterMakerView>
         View = view;
         _player = player;
 
-        Model = new(player);
+        Model = new EncounterMakerModel(player);
 
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Model);
@@ -34,7 +34,7 @@ public sealed class EncounterMakerPresenter : ScryPresenter<EncounterMakerView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f)
         };

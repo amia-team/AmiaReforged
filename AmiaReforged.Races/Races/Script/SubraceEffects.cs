@@ -40,7 +40,7 @@ public static class SubraceEffects
             "half dragon" => new HalfDragonEffects().GatherEffectsForObject(nwnObjectId),
             "half-dragon" => new HalfDragonEffects().GatherEffectsForObject(nwnObjectId),
             "dragon" => new HalfDragonEffects().GatherEffectsForObject(nwnObjectId),
-            _ => new()
+            _ => new List<IntPtr>()
         };
     }
 }

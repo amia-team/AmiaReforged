@@ -13,7 +13,7 @@ public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWi
 
     public CreateQuickslotsView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new CreateQuickSlotsPresenter(this, player);
     }
 
     public sealed override CreateQuickSlotsPresenter Presenter { get; protected set; }
@@ -49,8 +49,8 @@ public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWi
                 {
                     Children =
                     [
-                        NuiUtils.Assign(new(label: "Create") { Id = "create_quickslot_db" }, out CreateButton),
-                        NuiUtils.Assign(new(label: "Cancel") { Id = "cancel_quickslot_db" }, out CancelButton)
+                        NuiUtils.Assign(new NuiButton(label: "Create") { Id = "create_quickslot_db" }, out CreateButton),
+                        NuiUtils.Assign(new NuiButton(label: "Cancel") { Id = "cancel_quickslot_db" }, out CancelButton)
                     ]
                 }
             ]

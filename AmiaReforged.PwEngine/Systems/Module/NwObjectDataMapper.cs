@@ -191,7 +191,7 @@ public class NwObjectDataMapper
     {
         List<ItemData> items = creatureInventory.Items.Select(MapFromItem).ToList();
 
-        return new()
+        return new InventoryData
         {
             Items = items
         };
@@ -199,7 +199,7 @@ public class NwObjectDataMapper
 
     private ItemData MapFromItem(NwItem? itm)
     {
-        if (itm is null) return new();
+        if (itm is null) return new ItemData();
 
         ItemData data = new()
         {

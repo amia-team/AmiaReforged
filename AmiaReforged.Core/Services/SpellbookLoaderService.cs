@@ -72,6 +72,6 @@ public class SpellbookLoaderService
             return SpellbookViewModel.FromDatabaseModel(spellbook);
         }
 
-        return new();
+        return new SpellbookViewModel();
     }
 }

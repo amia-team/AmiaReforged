@@ -20,7 +20,7 @@ public class DamageReductionValidator : IValidationRule
         bool alreadyExists = onItem && !alreadyRemoved ||
                              hasBeenAdded;
 
-        return new()
+        return new ValidationResult
         {
             Result = alreadyExists ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid,
             ErrorMessage = alreadyExists ? "Damage Reduction already exists on this item." : string.Empty

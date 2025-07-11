@@ -14,7 +14,7 @@ public class BuffRemoverView : ScryView<BuffRemoverPresenter>, IToolWindow
 
     public BuffRemoverView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new BuffRemoverPresenter(this, player);
     }
 
     public sealed override BuffRemoverPresenter Presenter { get; protected set; }

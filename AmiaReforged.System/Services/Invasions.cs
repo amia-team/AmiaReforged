@@ -14,8 +14,8 @@ public class Invasions
         string invasionName, string overflow, int alternateMessage)
     {
         // Make sure the Waypoint lists are cleaned
-        _waypointMasterList = new();
-        _waypointOverflowMasterList = new();
+        _waypointMasterList = new List<uint>();
+        _waypointOverflowMasterList = new List<uint>();
         //
 
         GenerateSpawnWaypointList(waypoint);

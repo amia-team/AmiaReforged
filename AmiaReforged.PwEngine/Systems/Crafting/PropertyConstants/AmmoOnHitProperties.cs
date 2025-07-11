@@ -11,14 +11,14 @@ public static class AmmoOnHitProperties
         Label = "On Hit",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18, HitEffect.AbilityDrain(IPAbility.Charisma)),
                 GuiLabel = "Ability Drain: Cha, DC 18",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty =
                     ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18, HitEffect.AbilityDrain(IPAbility.Constitution)),
@@ -26,7 +26,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty =
                     ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18, HitEffect.AbilityDrain(IPAbility.Dexterity)),
@@ -34,14 +34,14 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18, HitEffect.AbilityDrain(IPAbility.Strength)),
                 GuiLabel = "Ability Drain: Str, DC 18",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty =
                     ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18, HitEffect.AbilityDrain(IPAbility.Intelligence)),
@@ -49,14 +49,14 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18, HitEffect.AbilityDrain(IPAbility.Wisdom)),
                 GuiLabel = "Ability Drain: Wis, DC 18",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18,
                     HitEffect.Blindness(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -64,7 +64,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Confusion(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -72,7 +72,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18,
                     HitEffect.Daze(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -80,7 +80,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18,
                     HitEffect.Deafness(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -88,14 +88,14 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18, HitEffect.Disease(DiseaseType.MummyRot)),
                 GuiLabel = "Disease, DC 18",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.Fear(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -103,7 +103,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18,
                     HitEffect.Hold(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -112,21 +112,21 @@ public static class AmmoOnHitProperties
                 CraftingTier = CraftingTier.Wondrous
             },
             // knock() dc20
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20, HitEffect.Knock()),
                 GuiLabel = "Knock: DC 20, 50%/2 rounds",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC16, HitEffect.LevelDrain()),
                 GuiLabel = "Level Drain: DC 16",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.ItemPoison(IPPoisonDamage.Constitution1d2)),
@@ -134,7 +134,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Divine
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18,
                     HitEffect.Silence(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -142,7 +142,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18,
                     HitEffect.Sleep(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -150,7 +150,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18,
                     HitEffect.Slow(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -158,7 +158,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC18,
                     HitEffect.Stun(IPOnHitDuration.Duration50Pct2Rounds)),
@@ -166,14 +166,14 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20, HitEffect.Wounding(12)),
                 GuiLabel = "Wounding, DC 20",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.SlayRace(NwRace.FromRacialType(RacialType.Aberration)!)),
@@ -181,7 +181,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.SlayRace(NwRace.FromRacialType(RacialType.Construct)!)),
@@ -189,7 +189,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.SlayRace(NwRace.FromRacialType(RacialType.Elemental)!)),
@@ -197,7 +197,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.SlayRace(NwRace.FromRacialType(RacialType.MagicalBeast)!)),
@@ -205,7 +205,7 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
                     HitEffect.SlayRace(NwRace.FromRacialType(RacialType.Undead)!)),
@@ -213,14 +213,14 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_FREEZE, 10)!,
                 GuiLabel = "Freeze (Slow 3 rounds,  CL 10)",
                 PowerCost = 6,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty =
                     NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_FLESH_TO_STONE, 10)!,
@@ -228,14 +228,14 @@ public static class AmmoOnHitProperties
                 PowerCost = 6,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_GREASE, 10)!,
                 GuiLabel = "Grease (CL 8)",
                 PowerCost = 6,
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty =
                     NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_GREATER_DISPELLING, 10)!,

@@ -19,7 +19,7 @@ public class SpellDecoratorFactory
             var attribute = type.GetCustomAttribute<DecoratesSpell>();
             if (attribute != null)
             {
-                if (!_decorators.ContainsKey(attribute.SpellType)) _decorators[attribute.SpellType] = new();
+                if (!_decorators.ContainsKey(attribute.SpellType)) _decorators[attribute.SpellType] = new List<Type>();
                 _decorators[attribute.SpellType].Add(type);
             }
         }

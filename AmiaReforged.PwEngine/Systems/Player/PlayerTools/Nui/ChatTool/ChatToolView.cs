@@ -17,7 +17,7 @@ public class ChatToolView : ScryView<ChatToolPresenter>, IToolWindow
 
     public ChatToolView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new ChatToolPresenter(this, player);
     }
 
     public sealed override ChatToolPresenter Presenter { get; protected set; }

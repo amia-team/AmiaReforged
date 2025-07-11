@@ -6,7 +6,7 @@ public static class RaceAdjustmentUtils
 {
     static RaceAdjustmentUtils()
     {
-        BaseRaceDict = new()
+        BaseRaceDict = new Dictionary<int, RacialTemplate>
         {
             {(int) BaseRace.Human, GetHumanAdjustments()},
             {(int) BaseRace.Halfling, GetHalflingAdjustments()},
@@ -22,7 +22,7 @@ public static class RaceAdjustmentUtils
 
     private static RacialTemplate GetHalflingAdjustments()
     {
-        return new()
+        return new RacialTemplate
         {
             StrBonus = 0,
             DexBonus = 0,
@@ -35,7 +35,7 @@ public static class RaceAdjustmentUtils
 
     private static RacialTemplate GetElfAdjustments()
     {
-        return new()
+        return new RacialTemplate
         {
             StrBonus = 0,
             DexBonus = 0,
@@ -48,7 +48,7 @@ public static class RaceAdjustmentUtils
 
     private static RacialTemplate GetHalfOrcAdjustments()
     {
-        return new()
+        return new RacialTemplate
         {
             StrBonus = 0,
             DexBonus = 0,
@@ -61,7 +61,7 @@ public static class RaceAdjustmentUtils
 
     private static RacialTemplate GetGnomeAdjustments()
     {
-        return new()
+        return new RacialTemplate
         {
             StrBonus = 0,
             DexBonus = 0,
@@ -74,7 +74,7 @@ public static class RaceAdjustmentUtils
 
     private static RacialTemplate GetDwarfAdjustments()
     {
-        return new()
+        return new RacialTemplate
         {
             StrBonus = 0,
             DexBonus = 0,
@@ -87,7 +87,7 @@ public static class RaceAdjustmentUtils
 
     private static RacialTemplate GetHumanAdjustments()
     {
-        return new()
+        return new RacialTemplate
         {
             StrBonus = 0,
             IntBonus = 0,
@@ -100,7 +100,7 @@ public static class RaceAdjustmentUtils
 
     private static RacialTemplate GetHalfElfAdjustments()
     {
-        return new()
+        return new RacialTemplate
         {
             StrBonus = 0,
             IntBonus = 0,

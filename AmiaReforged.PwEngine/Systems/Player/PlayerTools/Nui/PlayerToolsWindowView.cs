@@ -17,7 +17,7 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
 
     public PlayerToolsWindowView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new PlayerToolsWindowPresenter(this, player);
     }
 
     public override PlayerToolsWindowPresenter Presenter { get; protected set; }

@@ -23,7 +23,7 @@ public class SpellbookListView : ScryView<SpellbookListPresenter>, IToolWindow
 
     public SpellbookListView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new SpellbookListPresenter(this, player);
 
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);

@@ -11,35 +11,35 @@ public static class SpellResistanceProperties
         Properties =
         [
             // Unattainable misc ones. 10, 12, 14, 16, 18 are not available to be crafted but only have 1 power cost.
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_10)!,
                 GuiLabel = "Spell Resistance +10",
                 PowerCost = 1,
                 CraftingTier = CraftingTier.Unattainable
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_12)!,
                 GuiLabel = "Spell Resistance +12",
                 PowerCost = 1,
                 CraftingTier = CraftingTier.Unattainable
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_14)!,
                 GuiLabel = "Spell Resistance +14",
                 PowerCost = 1,
                 CraftingTier = CraftingTier.Unattainable
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_16)!,
                 GuiLabel = "Spell Resistance +16",
                 PowerCost = 1,
                 CraftingTier = CraftingTier.Unattainable
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_18)!,
                 GuiLabel = "Spell Resistance +18",
@@ -47,42 +47,42 @@ public static class SpellResistanceProperties
                 CraftingTier = CraftingTier.Unattainable
             },
             // Perfect
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_20)!,
                 GuiLabel = "Spell Resistance +20",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_22)!,
                 GuiLabel = "Spell Resistance +22",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Unattainable
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_24)!,
                 GuiLabel = "Spell Resistance +24",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Unattainable
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_26)!,
                 GuiLabel = "Spell Resistance +26",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Unattainable
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_28)!,
                 GuiLabel = "Spell Resistance +28",
                 PowerCost = 3,
                 CraftingTier = CraftingTier.Unattainable
             },
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_30)!,
                 GuiLabel = "Spell Resistance +30",
@@ -90,7 +90,7 @@ public static class SpellResistanceProperties
                 CraftingTier = CraftingTier.Unattainable
             },
             // Wondrous
-            new()
+            new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_32)!,
                 GuiLabel = "Spell Resistance +32",

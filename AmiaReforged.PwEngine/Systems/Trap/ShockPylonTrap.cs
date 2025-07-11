@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using System.Numerics;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
@@ -17,7 +18,7 @@ public class ShockPylonTrap
 
         foreach (NwPlaceable trap in traps)
         {
-            if (trap.Area != null && !_activeTraps.ContainsKey(trap.Area)) _activeTraps.Add(trap.Area, new());
+            if (trap.Area != null && !_activeTraps.ContainsKey(trap.Area)) _activeTraps.Add(trap.Area, new List<NwPlaceable>());
 
             if (trap.Area != null) _activeTraps[trap.Area].Add(trap);
 
@@ -31,7 +32,7 @@ public class ShockPylonTrap
     private static void ApplyBeamEffects(NwPlaceable origin, NwPlaceable target)
     {
         Effect beam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, origin, NWScript.BODY_NODE_CHEST, 0,
-            2.5f, new(0, 0, 3))!;
+            2.5f, new Vector3(0, 0, 3))!;
         target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(2));
 
 
@@ -43,7 +44,7 @@ public class ShockPylonTrap
         {
             // beam
             Effect creatureBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, origin, NWScript.BODY_NODE_CHEST, 0,
-                2.5f, new(0, 0, 3))!;
+                2.5f, new Vector3(0, 0, 3))!;
 
             creature.ApplyEffect(EffectDuration.Temporary, creatureBeam, TimeSpan.FromSeconds(2));
 
@@ -59,7 +60,7 @@ public class ShockPylonTrap
     {
         if (obj.ResRef != MeatZapper) return;
 
-        if (!_activeTraps.ContainsKey(obj.Area)) _activeTraps.Add(obj.Area, new());
+        if (!_activeTraps.ContainsKey(obj.Area)) _activeTraps.Add(obj.Area, new List<NwPlaceable>());
 
         RegisterNewTraps(obj.Area);
     }
@@ -110,7 +111,7 @@ public class ShockPylonTrap
             // beam
             Effect creatureBeam = NWScript.EffectBeam(NWScript.VFX_BEAM_LIGHTNING, objPlaceable,
                 NWScript.BODY_NODE_CHEST, 0,
-                2.5f, new(0, 0, 3))!;
+                2.5f, new Vector3(0, 0, 3))!;
 
             creature.ApplyEffect(EffectDuration.Temporary, creatureBeam, TimeSpan.FromSeconds(2));
 

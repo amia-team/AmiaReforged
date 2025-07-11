@@ -24,7 +24,7 @@ public sealed class QuickslotSaverView : ScryView<QuickslotSaverPresenter>, IToo
 
     public QuickslotSaverView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new QuickslotSaverPresenter(this, player);
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);
     }

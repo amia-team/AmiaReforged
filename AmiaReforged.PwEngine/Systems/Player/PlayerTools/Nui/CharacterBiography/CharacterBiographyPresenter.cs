@@ -22,7 +22,7 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(500f, 100f, 470, 560f),
             Resizable = false

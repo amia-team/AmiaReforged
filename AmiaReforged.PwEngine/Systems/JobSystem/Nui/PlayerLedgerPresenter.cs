@@ -18,7 +18,7 @@ public sealed class PlayerLedgerPresenter(NwPlayer player, PlayerLedgerView view
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), "Your Job System Ledger")
+        _window = new NuiWindow(View.RootLayout(), "Your Job System Ledger")
         {
             Geometry = new NuiRect(200, 200, 640, 480)
         };

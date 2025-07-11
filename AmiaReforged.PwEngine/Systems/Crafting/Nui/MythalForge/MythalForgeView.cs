@@ -38,11 +38,11 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
     public MythalForgeView(CraftingPropertyData propertyData, CraftingBudgetService budget, NwItem item,
         NwPlayer player, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
-        Presenter = new(this, propertyData, budget, item, player, validator, dcCalculator);
+        Presenter = new MythalForgePresenter(this, propertyData, budget, item, player, validator, dcCalculator);
 
-        CategoryView = new(Presenter);
-        ActivePropertiesView = new();
-        ChangelistView = new(Presenter);
+        CategoryView = new MythalCategoryView(Presenter);
+        ActivePropertiesView = new ActivePropertiesView();
+        ChangelistView = new ChangelistView(Presenter);
     }
 
     /// <summary>

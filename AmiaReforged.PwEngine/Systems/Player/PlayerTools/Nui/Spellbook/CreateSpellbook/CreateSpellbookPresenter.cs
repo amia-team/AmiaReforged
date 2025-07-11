@@ -63,7 +63,7 @@ public class CreateSpellbookPresenter(CreateSpellbookView toolView, NwPlayer pla
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0, 0, 400, 300),
             Closable = true,

@@ -12,7 +12,7 @@ public sealed class EncounterMakerView : ScryView<EncounterMakerPresenter>, IDmW
 
     public EncounterMakerView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new EncounterMakerPresenter(this, player);
     }
 
     public override EncounterMakerPresenter Presenter { get; protected set; }

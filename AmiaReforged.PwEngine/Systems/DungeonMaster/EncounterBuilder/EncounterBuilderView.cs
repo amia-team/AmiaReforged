@@ -29,7 +29,7 @@ public class EncounterBuilderView : ScryView<EncounterBuilderPresenter>, IDmWind
 
     public EncounterBuilderView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new EncounterBuilderPresenter(this, player);
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);
     }

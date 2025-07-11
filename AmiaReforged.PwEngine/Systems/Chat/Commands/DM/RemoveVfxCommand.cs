@@ -23,7 +23,7 @@ public class RemoveVfx : IChatCommand
             if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "D")
             {
                 caller.EnterTargetMode(RemoveDurVfx,
-                    new() { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
+                    new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
                 caller.FloatingTextString($"Removing {vfxLabel}!", false);
                 return Task.CompletedTask;
             }

@@ -30,7 +30,7 @@ public static class SavingThrowProperties
         Label = "Save vs Specific",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_ACID, 6)!,
@@ -38,7 +38,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_COLD, 6)!,
@@ -46,7 +46,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_ELECTRICAL, 6)!,
@@ -54,7 +54,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_FIRE, 6)!,
@@ -62,7 +62,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_SONIC, 6)!,
@@ -70,7 +70,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_NEGATIVE, 6)!,
@@ -78,7 +78,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_POISON, 6)!,
@@ -86,7 +86,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_POSITIVE, 6)!,
@@ -94,7 +94,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_FEAR, 6)!,
@@ -102,7 +102,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_DISEASE, 6)!,
@@ -110,7 +110,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_DIVINE, 6)!,
@@ -118,7 +118,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_MINDAFFECTING, 6)!,
@@ -126,7 +126,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_DEATH, 6)!,
@@ -134,7 +134,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_ACID, 3)!,
@@ -142,7 +142,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_COLD, 3)!,
@@ -150,7 +150,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_ELECTRICAL, 3)!,
@@ -158,7 +158,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_FIRE, 3)!,
@@ -166,7 +166,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_SONIC, 3)!,
@@ -174,7 +174,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_NEGATIVE, 3)!,
@@ -182,7 +182,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_POISON, 3)!,
@@ -190,7 +190,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_POSITIVE, 3)!,
@@ -198,7 +198,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_FEAR, 3)!,
@@ -206,7 +206,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_DISEASE, 3)!,
@@ -214,7 +214,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_DIVINE, 3)!,
@@ -222,7 +222,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_MINDAFFECTING, 3)!,
@@ -230,7 +230,7 @@ public static class SavingThrowProperties
                 GoldCost = SpecificSaveCost2,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_DEATH, 3)!,
@@ -248,7 +248,7 @@ public static class SavingThrowProperties
         Properties =
         [
             // Universal saves...
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_UNIVERSAL, 1)!,
@@ -256,7 +256,7 @@ public static class SavingThrowProperties
                 GoldCost = UniversalSaveCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_UNIVERSAL, 2)!,
@@ -264,7 +264,7 @@ public static class SavingThrowProperties
                 GoldCost = UniversalSaveCost2,
                 CraftingTier = CraftingTier.Greater
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 6,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_UNIVERSAL, 3)!,
@@ -272,7 +272,7 @@ public static class SavingThrowProperties
                 GoldCost = UniversalSaveCost3,
                 CraftingTier = CraftingTier.Flawless
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 8,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_UNIVERSAL, 4)!,
@@ -280,14 +280,14 @@ public static class SavingThrowProperties
                 GoldCost = UniversalSaveCost4,
                 CraftingTier = CraftingTier.Perfect
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 10,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_UNIVERSAL, 5)!,
                 GuiLabel = "+5 Universal",
                 CraftingTier = CraftingTier.Wondrous
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 12,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrowVsX(NWScript.IP_CONST_SAVEVS_UNIVERSAL, 6)!,
@@ -303,7 +303,7 @@ public static class SavingThrowProperties
         Label = "Saving Throws",
         Properties =
         [
-            new()
+            new CraftingProperty
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrow(NWScript.IP_CONST_SAVEBASETYPE_WILL, 6)!,
@@ -311,7 +311,7 @@ public static class SavingThrowProperties
                 GoldCost = GeneralSaveCost5,
                 CraftingTier = CraftingTier.Greater
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrow(NWScript.IP_CONST_SAVEBASETYPE_FORTITUDE, 6)!,
@@ -319,7 +319,7 @@ public static class SavingThrowProperties
                 GoldCost = GeneralSaveCost5,
                 CraftingTier = CraftingTier.Greater
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 4,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrow(NWScript.IP_CONST_SAVEBASETYPE_REFLEX, 6)!,
@@ -327,7 +327,7 @@ public static class SavingThrowProperties
                 GoldCost = GeneralSaveCost5,
                 CraftingTier = CraftingTier.Greater
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrow(NWScript.IP_CONST_SAVEBASETYPE_WILL, 3)!,
@@ -335,7 +335,7 @@ public static class SavingThrowProperties
                 GoldCost = GeneralSaveCost3,
                 CraftingTier = CraftingTier.Greater
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrow(NWScript.IP_CONST_SAVEBASETYPE_FORTITUDE, 3)!,
@@ -343,7 +343,7 @@ public static class SavingThrowProperties
                 GoldCost = GeneralSaveCost3,
                 CraftingTier = CraftingTier.Greater
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrow(NWScript.IP_CONST_SAVEBASETYPE_REFLEX, 3)!,
@@ -351,7 +351,7 @@ public static class SavingThrowProperties
                 GoldCost = GeneralSaveCost3,
                 CraftingTier = CraftingTier.Greater
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrow(NWScript.IP_CONST_SAVEBASETYPE_WILL, 1)!,
@@ -359,7 +359,7 @@ public static class SavingThrowProperties
                 GoldCost = GeneralSaveCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrow(NWScript.IP_CONST_SAVEBASETYPE_FORTITUDE, 1)!,
@@ -367,7 +367,7 @@ public static class SavingThrowProperties
                 GoldCost = GeneralSaveCost1,
                 CraftingTier = CraftingTier.Intermediate
             },
-            new()
+            new CraftingProperty
             {
                 PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyBonusSavingThrow(NWScript.IP_CONST_SAVEBASETYPE_REFLEX, 1)!,

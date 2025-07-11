@@ -12,9 +12,9 @@ public class CharacterDataSource(NwPlayer player) : ILedgerDataSource
     public List<LedgerEntry> LoadEntries()
     {
         NwCreature? creature = player.LoginCreature;
-        if (creature == null) return new();
+        if (creature == null) return new List<LedgerEntry>();
         JobSystemMappingService? mapper = AnvilCore.GetService<JobSystemMappingService>();
-        if (mapper == null) return new();
+        if (mapper == null) return new List<LedgerEntry>();
         
         List<LedgerEntry> entries = new();
         

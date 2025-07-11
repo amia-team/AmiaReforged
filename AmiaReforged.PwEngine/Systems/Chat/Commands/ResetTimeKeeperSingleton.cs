@@ -8,7 +8,7 @@ public sealed class ResetTimeKeeperSingleton
     {
     }
 
-    public static ResetTimeKeeperSingleton Instance => _instance ??= new();
+    public static ResetTimeKeeperSingleton Instance => _instance ??= new ResetTimeKeeperSingleton();
 
     public long ResetStartTime { get; set; }
 

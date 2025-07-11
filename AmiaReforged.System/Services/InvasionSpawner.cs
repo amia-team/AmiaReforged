@@ -70,7 +70,7 @@ public class InvasionSpawner
         {
             if (await _invasionService.InvasionRecordExists(AreaResRef) == false)
             {
-                newRecord = new();
+                newRecord = new InvasionRecord();
                 newRecord.AreaZone = AreaResRef;
                 newRecord.InvasionPercent = random.Next(5, 25);
                 newRecord.RealmChaos = 1;
