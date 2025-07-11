@@ -3,7 +3,8 @@ using Anvil.Services;
 
 namespace AmiaReforged.Classes.Ranger;
 
-public static class EpicCompanionHandler
+[ServiceBinding(typeof(EpicCompanionHandler))]
+public class EpicCompanionHandler
 {
     private const string EpicCompanionAppearance = "epic_companion_appearance";
     private const string PcKeyTag = "ds_pckey";
@@ -13,7 +14,7 @@ public static class EpicCompanionHandler
     /// nw_s2_animalcom; we should bring that to C# at some point!
     /// </summary>
     [ScriptHandler(scriptName: "epic_ac")]
-    public static void OnEpicCompanion(CallInfo info)
+    public void OnEpicCompanion(CallInfo info)
     {
         if (info.ObjectSelf is not NwCreature creature) return;
         
