@@ -28,21 +28,21 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         if (caster.Inventory.Items.All(item => item != targetItem))
         {
             player.SendServerMessage($"Craft spell failed! {targetItem.Name} must be in your inventory.");
-            ApplySpellFailVfx(caster);
+            ApplySpellCraftFailVfx(caster);
             return;
         }
 
         if (targetItem.HasItemProperty(ItemPropertyType.CastSpell))
         {
             player.SendServerMessage($"Craft spell failed! {targetItem.Name} has already been spell crafted.");
-            ApplySpellFailVfx(caster);
+            ApplySpellCraftFailVfx(caster);
             return;
         }
         
         if (eventData.Item != null)
         {
             player.SendServerMessage("Craft spell failed! You can only craft spells when casting from a spellbook.");
-            ApplySpellFailVfx(caster);
+            ApplySpellCraftFailVfx(caster);
             return;
         }
         
@@ -51,7 +51,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         if (spellPropIdAndCl == null)
         {
             player.SendServerMessage("Craft spell failed! There is no item property associated with this spell.");
-            ApplySpellFailVfx(caster);
+            ApplySpellCraftFailVfx(caster);
             return;
         }
         
@@ -64,7 +64,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             if (!caster.KnowsFeat(Feat.ScribeScroll!))
             {
                 player.SendServerMessage("Scribe scroll failed! You don't know the feat Scribe Scroll.");
-                ApplySpellFailVfx(caster);
+                ApplySpellCraftFailVfx(caster);
                 return;
             }
             
@@ -73,7 +73,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             {
                 player.SendServerMessage
                     ($"Scribe scroll failed! You don't have enough gold. The cost to scribe this stack is {scribeCost} GP.");
-                ApplySpellFailVfx(caster);
+                ApplySpellCraftFailVfx(caster);
                 return;
             }
 
@@ -86,7 +86,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             if (!caster.KnowsFeat(Feat.CraftWand!))
             {
                 player.SendServerMessage("Craft wand failed! You don't know the feat Craft Wand.");
-                ApplySpellFailVfx(caster);
+                ApplySpellCraftFailVfx(caster);
                 return;
             }
             
@@ -94,7 +94,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             {
                 player.SendServerMessage
                     ($"Craft wand failed! Innate spell level must be 4 or lower. The innate level of this spell is {spellInnateLevel}");
-                ApplySpellFailVfx(caster);
+                ApplySpellCraftFailVfx(caster);
                 return;
             }
 
@@ -103,7 +103,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             {
                 player.SendServerMessage
                     ($"Craft wand failed! You don't have enough gold. The cost to craft this wand is {craftWandCost} GP.");
-                ApplySpellFailVfx(caster);
+                ApplySpellCraftFailVfx(caster);
                 return;
             }
             
@@ -112,7 +112,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             {
                 player.SendServerMessage
                     ("Craft wand failed! Caster class wasn't recognized.");
-                ApplySpellFailVfx(caster);
+                ApplySpellCraftFailVfx(caster);
                 return;
             }
             int casterLevel = caster.Classes.First(cl => cl.Class == casterClass).Level;
@@ -125,7 +125,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             if (!caster.KnowsFeat(Feat.BrewPotion!))
             {
                 player.SendServerMessage("Brew potion failed! You don't know the feat Brew Potion.");
-                ApplySpellFailVfx(caster);
+                ApplySpellCraftFailVfx(caster);
                 return;
             }
             
@@ -133,7 +133,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             {
                 player.SendServerMessage
                     ($"Brew potion failed! Innate spell level must be 3 or lower. The innate level of this spell is {spellInnateLevel}");
-                ApplySpellFailVfx(caster);
+                ApplySpellCraftFailVfx(caster);
                 return;
             }
 
@@ -142,7 +142,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             {
                 player.SendServerMessage
                     ($"Brew potion failed! You don't have enough gold. The cost to brew this stack is {brewPotionCost} GP.");
-                ApplySpellFailVfx(caster);
+                ApplySpellCraftFailVfx(caster);
                 return;
             }
 
@@ -223,7 +223,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private int CalculateBrewPotionCost(int spellPropCl, int spellInnateLevel) =>
         (int)(spellPropCl * spellInnateLevel * 12.5 * targetItem.StackSize);
 
-    private static void ApplySpellFailVfx(NwCreature caster)
+    private static void ApplySpellCraftFailVfx(NwCreature caster)
     {
         caster.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect((VfxType)SpellFailVfx));
     }
