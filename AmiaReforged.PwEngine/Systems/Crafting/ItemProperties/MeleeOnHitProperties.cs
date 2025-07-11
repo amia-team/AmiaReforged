@@ -2,7 +2,7 @@ using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using Anvil.API;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
+namespace AmiaReforged.PwEngine.Systems.Crafting.ItemProperties;
 
 public static class MeleeOnHitProperties
 {

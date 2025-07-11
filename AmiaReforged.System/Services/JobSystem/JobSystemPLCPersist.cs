@@ -5,7 +5,7 @@ using Anvil.API;
 using Anvil.Services;
 using NWN.Core;
 
-namespace AmiaReforged.System.Services;
+namespace AmiaReforged.System.Services.JobSystem;
 
 // [ServiceBinding(typeof(JobSystemPLCPersist))]
 public class JobSystemPLCPersist

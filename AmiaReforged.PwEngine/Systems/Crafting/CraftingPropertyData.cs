@@ -1,5 +1,5 @@
-﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
-using AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
+﻿using AmiaReforged.PwEngine.Systems.Crafting.ItemProperties;
+using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using Anvil.API;
 using Anvil.Services;
 using NWN.Core;

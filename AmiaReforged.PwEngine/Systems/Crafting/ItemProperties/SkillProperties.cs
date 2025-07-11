@@ -1,7 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
+namespace AmiaReforged.PwEngine.Systems.Crafting.ItemProperties;
 
 /// <summary>
 ///     Constants for advantageous and RP flavor (Personal) skills.

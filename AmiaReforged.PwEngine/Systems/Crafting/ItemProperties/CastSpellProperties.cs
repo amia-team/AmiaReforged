@@ -1,7 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.PwEngine.Systems.Crafting.PropertyConstants;
+namespace AmiaReforged.PwEngine.Systems.Crafting.ItemProperties;
 
 public class CastSpellProperties
 {
