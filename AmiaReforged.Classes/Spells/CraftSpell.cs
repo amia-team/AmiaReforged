@@ -38,21 +38,21 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         if (caster.Inventory.Items.All(item => item != targetItem))
         {
-            player.SendServerMessage($"Craft spell failed! {targetItem.Name} must be in your inventory.");
+            player.SendServerMessage($"Spell craft failed! {targetItem.Name} must be in your inventory.");
             ApplySpellCraftFailVfx(caster);
             return;
         }
 
         if (targetItem.HasItemProperty(ItemPropertyType.CastSpell))
         {
-            player.SendServerMessage($"Craft spell failed! {targetItem.Name} has already been spell crafted.");
+            player.SendServerMessage($"Spell craft failed! {targetItem.Name} has already been spell crafted.");
             ApplySpellCraftFailVfx(caster);
             return;
         }
         
         if (eventData.Item != null)
         {
-            player.SendServerMessage("Craft spell failed! You can only craft spells when casting from a spellbook.");
+            player.SendServerMessage("Spell craft failed! You can only craft spells when casting from a spellbook.");
             ApplySpellCraftFailVfx(caster);
             return;
         }
@@ -61,7 +61,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
         if (spellPropIdAndCl == null)
         {
-            player.SendServerMessage("Craft spell failed! There is no item property associated with this spell.");
+            player.SendServerMessage("Spell craft failed! There is no item property associated with this spell.");
             ApplySpellCraftFailVfx(caster);
             return;
         }
