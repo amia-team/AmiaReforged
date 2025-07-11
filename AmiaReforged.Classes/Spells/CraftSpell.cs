@@ -14,6 +14,17 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
     private readonly NwSpell _spell = eventData.Spell;
 
+    private const int PotionColorYellow = 0;
+    private const int PotionColorTeal = 1;
+    private const int PotionColorOrange = 2;
+    private const int PotionColorRed = 3;
+    private const int PotionColorViolet = 4;
+    private const int PotionColorGreen = 5;
+    private const int PotionColorBlack = 6;
+    private const int PotionColorDarkViolet = 7;
+    private const int PotionColorWhite = 8;
+    private const int PotionColorBlue = 9;
+
     public void DoCraftSpell()
     {
         if (SpellPropTable == null) return;
@@ -169,12 +180,12 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     {
         targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
         
+        NwModule.Instance.MoveObjectToLimbo(targetItem);
+        
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
 
         AddClassRestrictions(targetItem);
-        
-        NwModule.Instance.MoveObjectToLimbo(targetItem);
         
         SetScrollNameAndDescription(targetItem);
         
@@ -206,15 +217,14 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     
     private void BrewPotion(NwCreature caster, int spellPropId, int brewPotionCost)
     {
-        targetItem.Destroy();
+        targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
         
-        NwItem? brewedPotion = await NwItem.Create(MagicPotion, caster, targetItem.StackSize);
-        if (brewedPotion == null) return;
+        NwModule.Instance.MoveObjectToLimbo(targetItem);
         
-        brewedPotion.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
+        targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
 
-        SetPotionAppearance(brewedPotion);
+        SetPotionAppearance(targetItem);
         
         // Apparently potions do some hardcoded voodoo so check ingame what happens here
         
@@ -223,7 +233,26 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
     private void SetPotionAppearance(NwItem brewedPotion)
     {
+        brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, 7);
+        brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, 7);
+        brewedPotion.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, 9);
         
+        brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, 1);
+        brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, 1);
+        
+        byte potionColor = _spell.SpellSchool switch
+        {
+            SpellSchool.Abjuration => PotionColorBlue,
+            SpellSchool.Conjuration => PotionColorViolet,
+            SpellSchool.Divination => PotionColorWhite,
+            SpellSchool.Enchantment => PotionColorDarkViolet,
+            SpellSchool.Evocation => PotionColorRed,
+            SpellSchool.Illusion => PotionColorGreen,
+            SpellSchool.Necromancy => PotionColorBlack,
+            SpellSchool.Transmutation => PotionColorOrange,
+            _ => PotionColorTeal
+        };
+        brewedPotion.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, potionColor);
     }
 
     private int CalculateBrewPotionCost(int spellPropCl, int spellInnateLevel) =>
