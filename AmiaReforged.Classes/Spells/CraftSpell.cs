@@ -14,16 +14,15 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
     private readonly NwSpell _spell = eventData.Spell;
 
-    private const int PotionColorYellow = 0;
-    private const int PotionColorTeal = 1;
-    private const int PotionColorOrange = 2;
-    private const int PotionColorRed = 3;
-    private const int PotionColorViolet = 4;
-    private const int PotionColorGreen = 5;
-    private const int PotionColorBlack = 6;
-    private const int PotionColorDarkViolet = 7;
-    private const int PotionColorWhite = 8;
-    private const int PotionColorBlue = 9;
+    private const byte PotionColorYellow = 0;
+    private const byte PotionColorGreen = 1;
+    private const byte PotionColorOrange = 2;
+    private const byte PotionColorRed = 3;
+    private const byte PotionColorViolet = 4;
+    private const byte PotionColorBlack = 6;
+    private const byte PotionColorDarkViolet = 7;
+    private const byte PotionColorWhite = 8;
+    private const byte PotionColorBlue = 9;
 
     public void DoCraftSpell()
     {
@@ -228,7 +227,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         SetPotionNameAndDescription(targetItem);
 
-        targetItem.Appearance.ChangeAppearance(appearance =>
+        targetItem.Appearance.ChangeAppearance(appearance => 
             appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
     }
 
@@ -242,15 +241,15 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     {
         return _spell.SpellSchool switch
         {
-            SpellSchool.Abjuration => PotionColorBlue,
+            SpellSchool.Abjuration => PotionColorYellow,
             SpellSchool.Conjuration => PotionColorViolet,
-            SpellSchool.Divination => PotionColorWhite,
+            SpellSchool.Divination => PotionColorBlue,
             SpellSchool.Enchantment => PotionColorDarkViolet,
             SpellSchool.Evocation => PotionColorRed,
             SpellSchool.Illusion => PotionColorGreen,
             SpellSchool.Necromancy => PotionColorBlack,
             SpellSchool.Transmutation => PotionColorOrange,
-            _ => PotionColorTeal
+            _ => PotionColorWhite
         };
     }
 
