@@ -12,6 +12,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private readonly bool _isEmptyWand = targetItem.BaseItem.ItemType == BaseItemType.BlankWand;
     private readonly bool _isEmptyPotion = targetItem.BaseItem.ItemType == BaseItemType.BlankPotion;
 
+    private const string MagicWand = "x2_it_pcwand";
+    private const string MagicPotion = "x2_it_potion";
+
     private readonly NwSpell _spell = eventData.Spell;
 
     public void DoCraftSpell()
