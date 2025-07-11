@@ -8,9 +8,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private static readonly TwoDimArray? SpellPropTable = NwGameTables.GetTable("iprp_spells");
     private const int SpellFailVfx = 292;
 
-    private readonly bool _isEmptyScroll = targetItem.ResRef == "x2_it_cfm_bscrl";
-    private readonly bool _isEmptyWand = targetItem.ResRef == "x2_it_cfm_wand";
-    private readonly bool _isEmptyPotion = targetItem.ResRef is "x2_it_cfm_pbottl" or "it_cfm_pbten" or "x2_it_pcpotion";
+    private readonly bool _isEmptyScroll = targetItem.BaseItem.ItemType == BaseItemType.BlankScroll;
+    private readonly bool _isEmptyWand = targetItem.BaseItem.ItemType == BaseItemType.BlankWand;
+    private readonly bool _isEmptyPotion = targetItem.BaseItem.ItemType == BaseItemType.BlankPotion;
 
     private readonly NwSpell _spell = eventData.Spell;
 
