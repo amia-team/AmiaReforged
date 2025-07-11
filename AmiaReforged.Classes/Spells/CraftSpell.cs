@@ -227,8 +227,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             EffectDuration.Permanent);
         
         SetPotionNameAndDescription(targetItem);
-        
-        targetItem.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor());
+
+        targetItem.Appearance.ChangeAppearance(appearance =>
+            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
     }
 
     private void SetPotionNameAndDescription(NwItem brewedPotion)
