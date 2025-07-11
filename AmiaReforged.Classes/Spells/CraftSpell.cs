@@ -158,7 +158,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private void ChargeForSpellCraft(NwPlayer player, NwCreature caster, int spellCraftCost)
     {
         caster.Gold -= (uint)spellCraftCost;
-        player.SendServerMessage($"Lost {spellCraftCost} GP for crafting {targetItem.Name}.");
+        player.SendServerMessage($"Lost {spellCraftCost} GP.");
     }
     
     private void AddClassRestrictions(NwItem item)
