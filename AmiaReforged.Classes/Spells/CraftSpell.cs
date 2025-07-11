@@ -181,7 +181,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
     private void ScribeScroll(NwCreature caster, int spellPropId)
     {
-        targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
+        targetItem.BaseItem = BaseItemType.SpellScroll!;
         
         NwModule.Instance.MoveObjectToLimbo(targetItem);
         
@@ -208,6 +208,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     
     private void CraftWand(int spellPropId, int casterLevel)
     {
+        targetItem.BaseItem = BaseItemType.EnchantedWand!;
+        
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.ChargePerUse1), 
             EffectDuration.Permanent);
 
