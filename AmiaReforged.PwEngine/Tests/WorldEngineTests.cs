@@ -29,7 +29,8 @@ public class WorldEngineTests
         Trace.Listeners.Add(new ConsoleTraceListener());
 
         Environment.SetEnvironmentVariable("ECONOMY_RESOURCES_PATH", TestConfig.ResourcesPath);
-
+        Console.WriteLine("TEST PATH: " + TestConfig.ResourcesPath);
+        Console.WriteLine("DIR EXISTS: " + Directory.Exists(TestConfig.ResourcesPath));
         Mock<IWorldConfigProvider> fakeConfig = new();
         fakeConfig.Setup(c => c.GetBoolean(It.IsAny<string>())).Returns(true);
 
