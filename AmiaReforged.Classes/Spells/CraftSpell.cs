@@ -156,10 +156,18 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         caster.Gold -= (uint)spellCraftCost;
         player.SendServerMessage($"Lost {spellCraftCost} GP for crafting {targetItem.Name}.");
     }
+    
+    private void AddClassRestrictions()
+    {
+        foreach (NwClass c in NwRuleset.Classes.Where(c => c.IsPlayerClass))
+            if (_spell.GetSpellLevelForClass(c) != 255)
+                targetItem.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
+    }
 
     private async Task ScribeScroll(NwCreature caster, int spellPropId)
     {
         targetItem.BaseItem = NwBaseItem.FromItemType(BaseItemType.SpellScroll)!;
+        
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
 
@@ -177,13 +185,6 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         SetScrollNameAndDescription(scribedScroll);
         
         caster.AcquireItem(scribedScroll);
-    }
-
-    private void AddClassRestrictions()
-    {
-        foreach (NwClass c in NwRuleset.Classes.Where(c => c.IsPlayerClass))
-            if (NWN.Core.NWScript.GetSpellLevelByClass(c.Id, _spell.Id) != -1)
-                targetItem.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
     }
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
