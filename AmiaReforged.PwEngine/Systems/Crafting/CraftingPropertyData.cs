@@ -240,7 +240,6 @@ public class CraftingPropertyData
             List<CraftingCategory> properties =
             [
                 DamageProperties.OneHanders,
-                GenericItemProperties.Other
             ];
 
             AddSharedWeaponProperties(properties);
