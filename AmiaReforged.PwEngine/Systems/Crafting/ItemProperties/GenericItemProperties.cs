@@ -346,7 +346,7 @@ public static class GenericItemProperties
             // +2 (Greater)
             new CraftingProperty
             {
-                PowerCost = 2,
+                PowerCost = 1,
                 ItemProperty = NWScript.ItemPropertyVampiricRegeneration(2)!,
                 GuiLabel = "+2 Vampiric Regeneration",
                 GoldCost = MythalCostVregen2,
@@ -355,7 +355,7 @@ public static class GenericItemProperties
             // +3 (Flawless)
             new CraftingProperty
             {
-                PowerCost = 3,
+                PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyVampiricRegeneration(3)!,
                 GuiLabel = "+3 Vampiric Regeneration",
                 GoldCost = MythalCostVregen3,

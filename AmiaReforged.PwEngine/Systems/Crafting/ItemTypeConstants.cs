@@ -3,8 +3,7 @@
 namespace AmiaReforged.PwEngine.Systems.Crafting;
 
 /// <summary>
-///     A static class to naively categorize item types. This is used to determine what items can be used in crafting
-///     recipes.
+///     A class containing collections of items grouped to specific item categories to simplify querying which categories items belong to.
 /// </summary>
 public static class ItemTypeConstants
 {
