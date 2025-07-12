@@ -24,6 +24,16 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private const byte PotionColorWhite = 8;
     private const byte PotionColorBlue = 9;
 
+    private const byte WandColorGrey = 0;
+    private const byte WandColorBlack = 1;
+    private const byte WandColorOrange = 2;
+    private const byte WandColorYellow = 3;
+    private const byte WandColorGreen = 4;
+    private const byte WandColorBlue = 5;
+    private const byte WandColorDarkBlue = 6;
+    private const byte WandColorViolet = 7;
+    
+
     public void DoCraftSpell()
     {
         if (SpellPropTable == null) return;
@@ -215,8 +225,28 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         AddClassRestrictions(targetItem);
         
-        targetItem.Appearance.ChangeAppearance(appearance => 
-            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, 3));
+        // Isn't working!
+        targetItem.Appearance.ChangeAppearance(appearance =>
+        {
+            appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, 8);
+            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, GetWandColor());
+        });
+    }
+
+    private byte GetWandColor()
+    {
+        return _spell.SpellSchool switch
+        {
+            SpellSchool.Abjuration => WandColorYellow,
+            SpellSchool.Conjuration => WandColorViolet,
+            SpellSchool.Divination => WandColorBlue,
+            SpellSchool.Enchantment => WandColorDarkBlue,
+            SpellSchool.Evocation => WandColorOrange,
+            SpellSchool.Illusion => WandColorGreen,
+            SpellSchool.Necromancy => WandColorBlack,
+            SpellSchool.Transmutation => WandColorOrange,
+            _ => WandColorGrey
+        };
     }
 
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
@@ -233,10 +263,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         targetItem.Description = _spell.Description.ToString();
         
         // This isn't working!
-        NwItem brewedPotion = targetItem.Appearance.ChangeAppearance(appearance => 
-            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
-        
-        brewedPotion.Appearance.ChangeAppearance(appearance => 
+        targetItem.Appearance.ChangeAppearance(appearance => 
             appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
     }
 
