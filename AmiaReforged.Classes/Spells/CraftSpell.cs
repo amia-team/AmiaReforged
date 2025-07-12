@@ -190,7 +190,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
         AddClassRestrictions(targetItem);
         
-        SetScrollNameAndDescription(targetItem);
+        targetItem.Name = _spell.Name.ToString();
+        targetItem.Description = _spell.Description.ToString();
         
         caster.AcquireItem(targetItem);
     }
@@ -199,12 +200,6 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         spellInnateLevel == 1 
             ? spellPropCl * 1 * 25 * targetItem.StackSize 
             : spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
-    
-    private void SetScrollNameAndDescription(NwItem scribedScroll)
-    {
-        scribedScroll.Name = _spell.Name.ToString();
-        scribedScroll.Description = _spell.Description.ToString();
-    }
     
     private void CraftWand(int spellPropId, int casterLevel)
     {
@@ -215,7 +210,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
         targetItem.ItemCharges = casterLevel + 20;
         
-        SetWandNameAndDescription(targetItem);
+        targetItem.Name = "Wand of "+_spell.Name;
+        targetItem.Description = _spell.Description.ToString();
         
         AddClassRestrictions(targetItem);
         
@@ -223,33 +219,25 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, 3));
     }
 
-    private void SetWandNameAndDescription(NwItem craftedWand)
-    {
-        craftedWand.Name = "Wand of "+_spell.Name;
-        craftedWand.Description = _spell.Description.ToString();
-    }
-
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 1 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
     
     private void BrewPotion(int spellPropId)
     {
-        // targetItem.BaseItem = BaseItemType.EnchantedPotion!;
+        targetItem.BaseItem = BaseItemType.EnchantedPotion!;
         
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
         
-        SetPotionNameAndDescription(targetItem);
+        targetItem.Name = "Potion of "+_spell.Name;
+        targetItem.Description = _spell.Description.ToString();
         
         // This isn't working!
-        targetItem.Appearance.ChangeAppearance(appearance => 
+        NwItem brewedPotion = targetItem.Appearance.ChangeAppearance(appearance => 
             appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
-    }
-
-    private void SetPotionNameAndDescription(NwItem brewedPotion)
-    {
-        brewedPotion.Name = "Potion of "+_spell.Name;
-        brewedPotion.Description = _spell.Description.ToString();
+        
+        brewedPotion.Appearance.ChangeAppearance(appearance => 
+            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
     }
 
     private byte GetPotionColor()
