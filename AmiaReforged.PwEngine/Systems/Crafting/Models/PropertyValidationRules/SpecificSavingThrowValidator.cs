@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using Anvil.API;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
@@ -61,6 +62,7 @@ public class SpecificSavingThrowValidator : IValidationRule
 
             ThrowType = model.SubTypeName;
             Bonus = int.Parse(model.PropertyBonus);
+            LogManager.GetCurrentClassLogger().Info(Bonus);
         }
 
         public string ThrowType { get; }
