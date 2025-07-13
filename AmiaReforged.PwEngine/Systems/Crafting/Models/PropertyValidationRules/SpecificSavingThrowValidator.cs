@@ -26,12 +26,22 @@ public class SpecificSavingThrowValidator : IValidationRule
                         x.State != ChangeListModel.ChangeState.Removed)
             .Select(x => new SavingThrow(x.Property)));
 
+        int cumulative = savingThrows.Sum(x => x.Bonus);
+        bool capped = cumulative > 6;
         // Check if the saving throw already exists on the item
         bool onItem = savingThrows.Any(x => x.ThrowType == savingThrow.ThrowType);
 
         // The bonus is irrelevant, we just don't want it to already exist on the item or in the changelist
         ValidationEnum result = onItem ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        string error = onItem ? $"{savingThrow.ThrowType} saving throw already exists on this item." : string.Empty;
+        string error = string.Empty;
+        if (capped)
+        {
+            error = $"You have reached the maximum number of specific saves on an item.";
+        }
+        else if (onItem)
+        {
+            error = $"{savingThrow.ThrowType} saving throw already exists on this item.";
+        }
 
         return new ValidationResult
         {

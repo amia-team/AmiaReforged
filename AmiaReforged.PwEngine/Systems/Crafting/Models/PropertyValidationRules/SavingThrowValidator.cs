@@ -31,9 +31,13 @@ public class SavingThrowValidator : IValidationRule
 
         bool inItemProperties = savingThrows.Any(x => x.ThrowType == savingThrow.ThrowType);
         bool wasNotRemoved = removed.All(x => x.ThrowType != savingThrow.ThrowType);
-        bool inChangeList = changelist.Any(x => x.ThrowType == savingThrow.ThrowType);
-
-        bool onItem = inItemProperties && wasNotRemoved || inChangeList;
+        IEnumerable<SavingThrow> enumeratedChangelist = changelist as SavingThrow[] ?? changelist.ToArray();
+        bool inChangeList = enumeratedChangelist.Any(x => x.ThrowType == savingThrow.ThrowType);
+        int cumulativeBonuses = enumeratedChangelist.Sum(x => x.Bonus) + savingThrows.Sum(x => x.Bonus);
+        bool capped = cumulativeBonuses > 6;
+        
+        bool onItem = inItemProperties && wasNotRemoved || inChangeList || capped;
+        
 
         // The bonus is irrelevant, we just don't want it to already exist on the item or in the changelist
         ValidationEnum result = onItem ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
