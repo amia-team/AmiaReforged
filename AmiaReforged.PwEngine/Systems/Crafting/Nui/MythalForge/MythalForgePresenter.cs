@@ -124,6 +124,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             MythalCategoryModel.MythalProperty p = Model.ActivePropertiesModel.GetVisibleProperties()[index];
 
             Model.RemoveActiveProperty(p);
+            Model.RefreshCategories();
         }
 
         if (eventData.ElementId == ChangelistView.RemoveFromChangeList)
