@@ -30,8 +30,10 @@ public class SpecificSavingThrowValidator : IValidationRule
             .Select(x => new SavingThrow(x.Property)));
 
         int cumulative = savingThrows.Sum(x => x.Bonus);
+        
         LogManager.GetCurrentClassLogger().Info(cumulative);
         bool capped = cumulative > 6;
+        
         // Check if the saving throw already exists on the item
         bool onItem = savingThrows.Any(x => x.ThrowType == savingThrow.ThrowType);
 

@@ -155,7 +155,7 @@ public class MythalForgeModel
     public void RefreshCategories()
     {
         MythalCategoryModel.UpdateFromRemainingBudget(RemainingPowers);
-
+        
         foreach (MythalCategoryModel.MythalCategory category in MythalCategoryModel.Categories)
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
@@ -164,7 +164,6 @@ public class MythalForgeModel
                     _validator.Validate(property,
                         ActivePropertiesModel.GetVisibleProperties().Select(m => m.Internal.ItemProperty),
                         ChangeListModel.ChangeList());
-
 
                 bool passesValidation = operation.Result == ValidationEnum.Valid;
                 bool canAfford = property.Internal.PowerCost <= RemainingPowers || property.Internal.PowerCost == 0; // Free powers don't contribute to affordability

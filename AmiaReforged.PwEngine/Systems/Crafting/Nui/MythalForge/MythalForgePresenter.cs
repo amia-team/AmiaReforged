@@ -109,7 +109,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         if (Model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
                 out MythalCategoryModel.MythalProperty? property))
+        {
             Model.AddNewProperty(property);
+            Model.RefreshCategories();
+        }
 
         if (eventData.ElementId == MythalForgeView.ApplyNameButtonId)
             if (ApplyName())
