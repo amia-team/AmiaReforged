@@ -17,7 +17,8 @@ public class SpecificSavingThrowValidator : IValidationRule
 
         // Get all of the saving throw bonuses on the item
         List<SavingThrow> savingThrows = itemProperties
-            .Where(x => x.Property.PropertyType == ItemPropertyType.SavingThrowBonusSpecific)
+            .Where(x => x.Property.PropertyType == ItemPropertyType.SavingThrowBonusSpecific ||
+                        x.Property.PropertyType == ItemPropertyType.SavingThrowBonus)
             .Select(x => new SavingThrow(x))
             .ToList();
 
@@ -28,11 +29,11 @@ public class SpecificSavingThrowValidator : IValidationRule
             .Select(x => new SavingThrow(x.Property)));
 
         int cumulative = savingThrows.Sum(x => x.Bonus);
+        LogManager.GetCurrentClassLogger().Info(cumulative);
         bool capped = cumulative > 6;
         // Check if the saving throw already exists on the item
         bool onItem = savingThrows.Any(x => x.ThrowType == savingThrow.ThrowType);
 
-        // The bonus is irrelevant, we just don't want it to already exist on the item or in the changelist
         ValidationEnum result = onItem || capped ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
         string error = string.Empty;
         if (capped)
@@ -62,7 +63,6 @@ public class SpecificSavingThrowValidator : IValidationRule
 
             ThrowType = model.SubTypeName;
             Bonus = int.Parse(model.PropertyBonus);
-            LogManager.GetCurrentClassLogger().Info(Bonus);
         }
 
         public string ThrowType { get; }
