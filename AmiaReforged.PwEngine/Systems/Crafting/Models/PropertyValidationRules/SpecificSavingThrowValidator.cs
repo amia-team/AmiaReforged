@@ -32,7 +32,7 @@ public class SpecificSavingThrowValidator : IValidationRule
         bool onItem = savingThrows.Any(x => x.ThrowType == savingThrow.ThrowType);
 
         // The bonus is irrelevant, we just don't want it to already exist on the item or in the changelist
-        ValidationEnum result = onItem ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
+        ValidationEnum result = onItem || capped ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
         string error = string.Empty;
         if (capped)
         {
