@@ -41,7 +41,7 @@ public class SpecificSavingThrowValidator : IValidationRule
         string error = string.Empty;
         if (capped)
         {
-            error = $"You have reached the maximum number of specific saves on an item.";
+            error = $"You have reached the maximum number of saves on an item.";
             return SetResult(result, error);
         }
 
