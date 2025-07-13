@@ -15,16 +15,17 @@ public class SpecificSavingThrowValidator : IValidationRule
     {
         SavingThrow savingThrow = new(incoming);
 
-        // Get all of the saving throw bonuses on the item
+        // Get all the saving throw bonuses on the item
         List<SavingThrow> savingThrows = itemProperties
-            .Where(x => x.Property.PropertyType == ItemPropertyType.SavingThrowBonusSpecific ||
-                        x.Property.PropertyType == ItemPropertyType.SavingThrowBonus)
+            .Where(x => x.Property.PropertyType is ItemPropertyType.SavingThrowBonusSpecific
+                or ItemPropertyType.SavingThrowBonus)
             .Select(x => new SavingThrow(x))
             .ToList();
 
         // And in the changelist (if it's not being removed)
         savingThrows.AddRange(changelistProperties
-            .Where(x => x.BasePropertyType == ItemPropertyType.SavingThrowBonusSpecific &&
+            .Where(x => x.BasePropertyType == ItemPropertyType.SavingThrowBonusSpecific ||
+                        x.BasePropertyType == ItemPropertyType.SavingThrowBonus &&
                         x.State != ChangeListModel.ChangeState.Removed)
             .Select(x => new SavingThrow(x.Property)));
 
@@ -39,12 +40,24 @@ public class SpecificSavingThrowValidator : IValidationRule
         if (capped)
         {
             error = $"You have reached the maximum number of specific saves on an item.";
-        }
-        else if (onItem)
-        {
-            error = $"{savingThrow.ThrowType} saving throw already exists on this item.";
+            return SetResult(result, error);
         }
 
+        if (onItem)
+        {
+            error = $"{savingThrow.ThrowType} saving throw already exists on this item.";
+            return SetResult(ValidationEnum.CannotStackSameSubtype, error);
+        }
+
+        return new ValidationResult
+        {
+            Result = result,
+            ErrorMessage = error
+        };
+    }
+
+    private static ValidationResult SetResult(ValidationEnum result, string error)
+    {
         return new ValidationResult
         {
             Result = result,
@@ -66,6 +79,6 @@ public class SpecificSavingThrowValidator : IValidationRule
         }
 
         public string ThrowType { get; }
-        public int Bonus { get; set; }
+        public int Bonus { get; }
     }
 }
