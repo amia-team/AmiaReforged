@@ -155,7 +155,7 @@ public class MythalForgeModel
     public void RefreshCategories()
     {
         MythalCategoryModel.UpdateFromRemainingBudget(RemainingPowers);
-        
+
         foreach (MythalCategoryModel.MythalCategory category in MythalCategoryModel.Categories)
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
@@ -166,7 +166,9 @@ public class MythalForgeModel
                         ChangeListModel.ChangeList());
 
                 bool passesValidation = operation.Result == ValidationEnum.Valid;
-                bool canAfford = property.Internal.PowerCost <= RemainingPowers || property.Internal.PowerCost == 0; // Free powers don't contribute to affordability
+                bool canAfford =
+                    property.Internal.PowerCost <= RemainingPowers ||
+                    property.Internal.PowerCost == 0; // Free powers don't contribute to affordability
                 bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
                 property.Selectable = passesValidation &&
                                       canAfford &&
@@ -242,9 +244,23 @@ public class MythalForgeModel
 
     public void UndoRemoval(CraftingProperty property)
     {
-        List<ChangeListModel.ChangelistEntry> additions = ChangeListModel.ChangeList().Where(e =>
-            e.State != ChangeListModel.ChangeState.Removed && e.Property.ItemProperty.Property.PropertyType ==
-            property.ItemProperty.Property.PropertyType).ToList();
+        List<ChangeListModel.ChangelistEntry> additions;
+        ItemPropertyType baseType = property.ItemProperty.Property.PropertyType;
+        if (baseType == ItemPropertyType.SavingThrowBonus ||
+            baseType == ItemPropertyType.SavingThrowBonusSpecific)
+        {
+            additions = ChangeListModel.ChangeList().Where(e =>
+                    e.State != ChangeListModel.ChangeState.Removed && e.Property.ItemProperty.Property.PropertyType ==
+                    baseType || e.Property.ItemProperty.Property.PropertyType ==
+                    ItemPropertyType.SavingThrowBonusSpecific)
+                .ToList();
+        }
+        else
+        {
+            additions = ChangeListModel.ChangeList().Where(e =>
+                e.State != ChangeListModel.ChangeState.Removed && e.Property.ItemProperty.Property.PropertyType ==
+                baseType).ToList();
+        }
 
         ChangeListModel.UndoRemoval(property);
         ActivePropertiesModel.RevealProperty(property);
@@ -258,15 +274,6 @@ public class MythalForgeModel
 
             if (!passesValidation) UndoAddition(entry.Property);
         }
-    }
-
-    public string StatusMessageForApply()
-    {
-        string status = "";
-        bool canAfford = ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
-        if (!canAfford) status += "You don't have enough gold. ";
-
-        return status;
     }
 }
 
