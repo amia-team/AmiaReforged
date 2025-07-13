@@ -34,7 +34,7 @@ public class SavingThrowValidator : IValidationRule
         IEnumerable<SavingThrow> enumeratedChangelist = changelist as SavingThrow[] ?? changelist.ToArray();
         bool inChangeList = enumeratedChangelist.Any(x => x.ThrowType == savingThrow.ThrowType);
         int cumulativeBonuses = enumeratedChangelist.Sum(x => x.Bonus) + savingThrows.Sum(x => x.Bonus);
-        bool capped = cumulativeBonuses > 6;
+        bool capped = cumulativeBonuses >= 6;
         
         bool onItem = inItemProperties && wasNotRemoved || inChangeList || capped;
         
