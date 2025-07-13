@@ -246,8 +246,10 @@ public class MythalForgeModel
     {
         List<ChangeListModel.ChangelistEntry> additions;
         ItemPropertyType baseType = property.ItemProperty.Property.PropertyType;
-        if (baseType == ItemPropertyType.SavingThrowBonus ||
-            baseType == ItemPropertyType.SavingThrowBonusSpecific)
+
+        // Quick workaround for dealing with saving throws....
+        // We should eventually switch this to a better model that allows for specifying maximum bonuses....
+        if (baseType is ItemPropertyType.SavingThrowBonus or ItemPropertyType.SavingThrowBonusSpecific)
         {
             additions = ChangeListModel.ChangeList().Where(e =>
                     e.State != ChangeListModel.ChangeState.Removed && e.Property.ItemProperty.Property.PropertyType ==
