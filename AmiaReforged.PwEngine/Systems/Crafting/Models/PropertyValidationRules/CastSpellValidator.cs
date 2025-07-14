@@ -77,7 +77,7 @@ public class CastSpellValidator : IValidationRule
         return new ValidationResult
         {
             Result = alreadyExists ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid,
-            ErrorMessage = alreadyExists ? $"{castSpell.SpellName} already exists on the item." : string.Empty
+            ErrorMessage = alreadyExists ? "You can only have one beneficial spell per item" : string.Empty
         };
     }
 
