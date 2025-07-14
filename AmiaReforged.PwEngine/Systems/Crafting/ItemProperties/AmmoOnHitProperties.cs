@@ -226,14 +226,14 @@ public static class AmmoOnHitProperties
                     NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_FLESH_TO_STONE, 10)!,
                 GuiLabel = "Flesh to Stone (CL 10)",
                 PowerCost = 6,
-                CraftingTier = CraftingTier.Wondrous
+                CraftingTier = CraftingTier.Unattainable
             },
             new CraftingProperty
             {
                 ItemProperty = NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_GREASE, 10)!,
                 GuiLabel = "Grease (CL 8)",
                 PowerCost = 6,
-                CraftingTier = CraftingTier.Wondrous
+                CraftingTier = CraftingTier.Unattainable
             },
             new CraftingProperty
             {
@@ -241,7 +241,7 @@ public static class AmmoOnHitProperties
                     NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_GREATER_DISPELLING, 10)!,
                 GuiLabel = "Greater Dispelling (CL 20)",
                 PowerCost = 6,
-                CraftingTier = CraftingTier.Wondrous
+                CraftingTier = CraftingTier.Unattainable
             }
         ]
     };
