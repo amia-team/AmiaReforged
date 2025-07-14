@@ -20,7 +20,7 @@ public class CastSpellProperties
     private const int IpConstCastSpellUltravision3 = 309;
     private const int IpConstCastSpellFlameWeapon3 = 477;
     private const int IpConstCastSpellGedlees3 = 458;
-    
+
     private const int IpConstCastSpellMestilsHangoverBreath5 = 461;
     private const int IpConstCastSpellScintSphere5 = 464;
     private const int IpConstCastSpellEdgyFlameWeapon5 = 483;
@@ -433,7 +433,7 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Lesser,
                 GoldCost = 10000
             },
-            
+
             // Intermediate powers
             new CraftingProperty
             {
@@ -668,9 +668,7 @@ public class CastSpellProperties
                 PowerCost = 0,
                 CraftingTier = CraftingTier.Intermediate,
                 GoldCost = 15000
-            },
-
-            
+            }
         ],
         BaseDifficulty = 16
     };
