@@ -66,7 +66,7 @@ public static class AmmoOnHitProperties
             },
             new CraftingProperty
             {
-                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
+                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Confusion(IPOnHitDuration.Duration50Pct2Rounds)),
                 GuiLabel = "Confusion, DC 20",
                 PowerCost = 2,
@@ -97,7 +97,7 @@ public static class AmmoOnHitProperties
             },
             new CraftingProperty
             {
-                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
+                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.Fear(IPOnHitDuration.Duration50Pct2Rounds)),
                 GuiLabel = "Fear, DC 20",
                 PowerCost = 2,
@@ -111,10 +111,10 @@ public static class AmmoOnHitProperties
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
-            // knock() dc20
+            // knock() DC22
             new CraftingProperty
             {
-                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20, HitEffect.Knock()),
+                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.Knock()),
                 GuiLabel = "Knock: DC 20, 50%/2 rounds",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
@@ -168,14 +168,14 @@ public static class AmmoOnHitProperties
             },
             new CraftingProperty
             {
-                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20, HitEffect.Wounding(12)),
+                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22, HitEffect.Wounding(12)),
                 GuiLabel = "Wounding, DC 20",
                 PowerCost = 2,
                 CraftingTier = CraftingTier.Wondrous
             },
             new CraftingProperty
             {
-                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
+                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.SlayRace(NwRace.FromRacialType(RacialType.Aberration)!)),
                 GuiLabel = "Slay Aberration",
                 PowerCost = 2,
@@ -183,7 +183,7 @@ public static class AmmoOnHitProperties
             },
             new CraftingProperty
             {
-                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
+                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.SlayRace(NwRace.FromRacialType(RacialType.Construct)!)),
                 GuiLabel = "Slay Construct",
                 PowerCost = 2,
@@ -191,7 +191,7 @@ public static class AmmoOnHitProperties
             },
             new CraftingProperty
             {
-                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
+                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.SlayRace(NwRace.FromRacialType(RacialType.Elemental)!)),
                 GuiLabel = "Slay Elemental",
                 PowerCost = 2,
@@ -199,7 +199,7 @@ public static class AmmoOnHitProperties
             },
             new CraftingProperty
             {
-                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
+                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.SlayRace(NwRace.FromRacialType(RacialType.MagicalBeast)!)),
                 GuiLabel = "Slay Magical Beast",
                 PowerCost = 2,
@@ -207,7 +207,7 @@ public static class AmmoOnHitProperties
             },
             new CraftingProperty
             {
-                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC20,
+                ItemProperty = ItemProperty.OnHitEffect(IPOnHitSaveDC.DC22,
                     HitEffect.SlayRace(NwRace.FromRacialType(RacialType.Undead)!)),
                 GuiLabel = "Slay Undead",
                 PowerCost = 2,
