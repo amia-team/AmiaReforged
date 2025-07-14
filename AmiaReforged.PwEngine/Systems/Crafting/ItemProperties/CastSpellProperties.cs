@@ -20,6 +20,12 @@ public class CastSpellProperties
     private const int IpConstCastSpellUltravision3 = 309;
     private const int IpConstCastSpellFlameWeapon3 = 477;
     private const int IpConstCastSpellGedlees3 = 458;
+    
+    private const int IpConstCastSpellMestilsHangoverBreath5 = 461;
+    private const int IpConstCastSpellScintSphere5 = 464;
+    private const int IpConstCastSpellEdgyFlameWeapon5 = 483;
+    private const int IpConstCastSpellGlyphWarding5 = 484;
+    private const int IpConstCastSpellMagicVestments5 = 481;
 
     /* Useful spells:
      - Aura of Vitality (13)
@@ -427,6 +433,244 @@ public class CastSpellProperties
                 CraftingTier = CraftingTier.Lesser,
                 GoldCost = 10000
             },
+            
+            // Intermediate powers
+            new CraftingProperty
+            {
+                GuiLabel = "Clairaudience/Clairvoyance (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_CLAIRAUDIENCE_CLAIRVOYANCE_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Clarity (3) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_CLARITY_3,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Find Traps (3) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_FIND_TRAPS_3,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Fireball (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_FIREBALL_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Flame Arrow (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_FLAME_ARROW_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Haste (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_HASTE_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Hold Person (3) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_HOLD_PERSON_3,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Invisibility Sphere (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_INVISIBILITY_SPHERE_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Lightning Bolt (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_LIGHTNING_BOLT_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Magic Circle Against Alignment (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_MAGIC_CIRCLE_AGAINST_ALIGNMENT_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Mestil's Acid Breath (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IpConstCastSpellMestilsHangoverBreath5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Scintillating Sphere (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IpConstCastSpellScintSphere5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Slow (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_SLOW_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Stinking Cloud (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_STINKING_CLOUD_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Summon Creature III (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_SUMMON_CREATURE_III_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Vampiric Touch (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_VAMPIRIC_TOUCH_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Contagion (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_CONTAGION_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Cure Serious Wounds (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_CURE_SERIOUS_WOUNDS_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Darkfire (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IpConstCastSpellEdgyFlameWeapon5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Glyph of Warding (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IpConstCastSpellGlyphWarding5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Magic Vestment (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IpConstCastSpellMagicVestments5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Negative Energy Protection (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_NEGATIVE_ENERGY_PROTECTION_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Remove Blindness/Deafness (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_REMOVE_BLINDNESS_DEAFNESS_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Remove Curse (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_REMOVE_CURSE_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Remove Disease (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_REMOVE_DISEASE_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+            new CraftingProperty
+            {
+                GuiLabel = "Searing Light (5) 1/Day",
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_SEARING_LIGHT_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Intermediate,
+                GoldCost = 15000
+            },
+
+            
         ],
         BaseDifficulty = 16
     };
