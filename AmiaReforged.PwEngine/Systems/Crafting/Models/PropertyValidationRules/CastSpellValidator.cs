@@ -72,7 +72,7 @@ public class CastSpellValidator : IValidationRule
         List<CastSpell> allCastSpells = castSpellsInChangelist.Concat(castSpellsInItem).ToList();
 
         // Now we only care if the same spell exists in the item or the changelist
-        bool alreadyExists = allCastSpells.Any(x => x.SpellName == castSpell.SpellName);
+        bool alreadyExists = allCastSpells.Count != 0;
 
         return new ValidationResult
         {
