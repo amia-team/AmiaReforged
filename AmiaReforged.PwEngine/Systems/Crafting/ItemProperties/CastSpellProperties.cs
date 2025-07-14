@@ -8,6 +8,12 @@ public class CastSpellProperties
     private const int CustomCastBattletide9 = 455;
 
     private const int CustomCastBlessWeapon17 = 517;
+
+    private const int IpConstCastspellHorizikaulsBoom2 = 459;
+    private const int IpConstCastspellIceDagger2 = 478;
+    private const int IpConstCastspellMagicWeapon = 479;
+    private const int IpConstCastspellShelgarns2 = 469;
+    
     /* Useful spells:
      - Aura of Vitality (13)
 - Belagarn's Iron Horn (7)
@@ -24,98 +30,196 @@ public class CastSpellProperties
         Label = "Beneficial Spells",
         Properties =
         [
+            // Lesser powers
             new CraftingProperty
             {
-                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BALAGARNSIRONHORN_7,
-                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Balagarn's Iron Horn (7) / 2 Per Day",
-                PowerCost = 2,
-                CraftingTier = CraftingTier.Intermediate,
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BURNING_HANDS_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Burning Hands (5) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
                 GoldCost = 5000
             },
             new CraftingProperty
             {
-                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BARKSKIN_12,
-                    IP_CONST_CASTSPELL_NUMUSES_3_USES_PER_DAY)!,
-                GuiLabel = "Barkskin (12) / 3 Per Day",
-                PowerCost = 2,
-                CraftingTier = CraftingTier.Intermediate,
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_CHARM_PERSON_2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Charm Person (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
                 GoldCost = 5000
             },
             new CraftingProperty
             {
-                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_WAR_CRY_7,
-                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "War Cry (7) / 2 Per Day",
-                PowerCost = 2,
-                CraftingTier = CraftingTier.Intermediate,
-                GoldCost = 8000
-            },
-            new CraftingProperty
-            {
-                ItemProperty =
-                    ItemPropertyCastSpell(CustomCastBlessWeapon17, IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Bless Weapon (17) / 2 Per Day",
-                PowerCost = 2,
-                CraftingTier = CraftingTier.Intermediate,
-                GoldCost = 15000
-            },
-            new CraftingProperty
-            {
-                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_CATS_GRACE_15,
-                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Cat's Grace (15) / 2 Per Day",
-                PowerCost = 2,
-                CraftingTier = CraftingTier.Intermediate,
-                GoldCost = 5000
-            },
-            // bull's strength
-            new CraftingProperty
-            {
-                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BULLS_STRENGTH_15,
-                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Bull's Strength (15) / 2 Per Day",
-                PowerCost = 2,
-                CraftingTier = CraftingTier.Intermediate,
-                GoldCost = 5000
-            },
-            // endurance
-            new CraftingProperty
-            {
-                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_ENDURANCE_15,
-                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Endurance (15) / 2 Per Day",
-                PowerCost = 2,
-                CraftingTier = CraftingTier.Intermediate,
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_COLOR_SPRAY_2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Color Spray (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
                 GoldCost = 5000
             },
             new CraftingProperty
             {
-                ItemProperty =
-                    ItemPropertyCastSpell(IP_CONST_CASTSPELL_HASTE_10, IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Haste (10) / 2 Per Day",
-                PowerCost = 2,
-                CraftingTier = CraftingTier.Intermediate,
-                GoldCost = 10000
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_GREASE_2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Grease (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
             },
             new CraftingProperty
             {
-                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_IMPROVED_INVISIBILITY_7,
-                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Improved Invisibility (7) / 2 Per Day",
-                PowerCost = 2,
-                CraftingTier = CraftingTier.Intermediate,
-                GoldCost = 10000
+                ItemProperty = ItemPropertyCastSpell(IpConstCastspellHorizikaulsBoom2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Horizikaul's Boom (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
             },
             new CraftingProperty
             {
-                ItemProperty = ItemPropertyCastSpell(CustomCastBattletide9,
-                    IP_CONST_CASTSPELL_NUMUSES_2_USES_PER_DAY)!,
-                GuiLabel = "Battletide (9) / 2 Per Day",
-                PowerCost = 2,
-                CraftingTier = CraftingTier.Intermediate,
-                GoldCost = 10000
-            }
+                ItemProperty = ItemPropertyCastSpell(IpConstCastspellIceDagger2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Ice Dagger (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_IDENTIFY_3,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Identify (3) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_MAGE_ARMOR_2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Mage Armor (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_MAGIC_MISSILE_3,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Magic Missile (3) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IpConstCastspellMagicWeapon,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Magic Weapon (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_RAY_OF_ENFEEBLEMENT_2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Ray of Enfeeblement (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_SCARE_2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Scare (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_SCARE_2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Scare (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IpConstCastspellShelgarns2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Shelgarn's Persistent Blade (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_SLEEP_2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Sleep (5) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_SUMMON_CREATURE_I_2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Summon Creature I (5) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_BANE_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Bane (5) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_DOOM_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Doom (5) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_INFLICT_LIGHT_WOUNDS_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Inflict Light Wounds (5) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_REMOVE_FEAR_2,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Remove Fear (2) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
+            new CraftingProperty
+            {
+                ItemProperty = ItemPropertyCastSpell(IP_CONST_CASTSPELL_SHIELD_OF_FAITH_5,
+                    IP_CONST_CASTSPELL_NUMUSES_1_USE_PER_DAY)!,
+                GuiLabel = "Shield of Faith (5) 1/Day",
+                PowerCost = 0,
+                CraftingTier = CraftingTier.Lesser,
+                GoldCost = 5000
+            },
         ],
         BaseDifficulty = 16
     };
