@@ -1331,7 +1331,7 @@ public static class DamageProperties
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyUnlimitedAmmo(UnlimitedAmmoAcid)!,
-                GuiLabel = "1d6 Acid",
+                GuiLabel = "Unlimited Ammo: 1d6 Acid",
                 GoldCost = GoldCostUnlimitedAmmoIntermediate,
                 CraftingTier = CraftingTier.Intermediate
             },
@@ -1339,7 +1339,7 @@ public static class DamageProperties
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyUnlimitedAmmo(NWScript.IP_CONST_UNLIMITEDAMMO_1D6COLD)!,
-                GuiLabel = "1d6 Cold",
+                GuiLabel = "Unlimited Ammo: 1d6 Cold",
                 GoldCost = GoldCostUnlimitedAmmoIntermediate,
                 CraftingTier = CraftingTier.Intermediate
             },
@@ -1347,7 +1347,7 @@ public static class DamageProperties
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyUnlimitedAmmo(NWScript.IP_CONST_UNLIMITEDAMMO_1D6FIRE)!,
-                GuiLabel = "1d6 Fire",
+                GuiLabel = "Unlimited Ammo: 1d6 Fire",
                 GoldCost = GoldCostUnlimitedAmmoIntermediate,
                 CraftingTier = CraftingTier.Intermediate
             },
@@ -1355,7 +1355,7 @@ public static class DamageProperties
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyUnlimitedAmmo(UnlimitedAmmoSonic)!,
-                GuiLabel = "1d6 Sonic",
+                GuiLabel = "Unlimited Ammo: 1d6 Sonic",
                 GoldCost = GoldCostUnlimitedAmmoIntermediate,
                 CraftingTier = CraftingTier.Intermediate
             },
@@ -1363,7 +1363,7 @@ public static class DamageProperties
             {
                 PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyUnlimitedAmmo(UnlimitedAmmoPlusFiveDamage)!,
-                GuiLabel = "+5 Damage",
+                GuiLabel = "Unlimited Ammo: +5 Damage",
                 GoldCost = GoldCostUnlimitedAmmoIntermediate,
                 CraftingTier = CraftingTier.Flawless
             },
