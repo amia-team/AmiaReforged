@@ -64,10 +64,16 @@ public class SkillBonusValidator : IValidationRule
         List<SkillBonus> addedFreebies = skillsInChangelist.Where(x => x.Bonus == 5).ToList();
         List<SkillBonus> existingFreebies = skillsInItem.Where(x => x.Bonus == 5).ToList();
         bool hasMaxSkill = skillBonus.Bonus == 5 && addedFreebies.Count > 0 || existingFreebies.Count > 0;
-        bool hasTenPersonalAlready = skillsInChangelist.Any(x => x.Bonus == 10 && skillBonus.Bonus == 5) || skillsInItem.Any(x => x.Bonus == 10 &&  skillBonus.Bonus == 5);
+        bool hasTenPersonalAlready = skillsInChangelist.Any(x => x.Bonus == 10 && skillBonus.Bonus == 5) ||
+                                     skillsInItem.Any(x => x.Bonus == 10 && skillBonus.Bonus == 5);
+
+        bool skillExists = skillsInChangelist.Any(x => x.Skill == skillBonus.Skill) ||
+                           skillsInChangelist.Any(x => x.Skill == skillBonus.Skill);
 
         result = hasMaxSkill ? ValidationEnum.LimitReached : result;
-        error = hasMaxSkill ? "Free personal skill bonus limit reached." : hasTenPersonalAlready ? "You can't stack the same personal skill twice." : error;
+        error = hasMaxSkill ? "Free personal skill bonus limit reached." :
+            hasTenPersonalAlready ? "You can't stack the same personal skill twice." :
+            skillExists ? $"You already have {skillBonus.Skill} on this item" : error;
 
 
         return new ValidationResult
