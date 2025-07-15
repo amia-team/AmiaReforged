@@ -63,7 +63,7 @@ public class SkillBonusValidator : IValidationRule
         // Check if any of the existing skills are +5 since there may only be one
         List<SkillBonus> addedFreebies = skillsInChangelist.Where(x => x.Bonus == 5).ToList();
         List<SkillBonus> existingFreebies = skillsInItem.Where(x => x.Bonus == 5).ToList();
-        bool hasMaxSkill = addedFreebies.Count > 0 || existingFreebies.Count > 0;
+        bool hasMaxSkill = skillBonus.Bonus == 5 && addedFreebies.Count > 0 || existingFreebies.Count > 0;
         bool hasTenPersonalAlready = skillsInChangelist.Any(x => x.Bonus == 10 && skillBonus.Bonus == 5) || existingFreebies.Any(x => x.Bonus == 10 &&  skillBonus.Bonus == 5);
 
         result = hasMaxSkill ? ValidationEnum.LimitReached : result;
