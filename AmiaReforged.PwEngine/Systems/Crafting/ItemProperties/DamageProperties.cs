@@ -999,6 +999,43 @@ public static class DamageProperties
         ],
         BaseDifficulty = 15
     };
+    
+    public static readonly CraftingCategory MassiveCriticalsRanged = new(categoryId: "massive_crits_damage")
+    {
+        Label = "Massive Criticals",
+        Properties =
+        [
+            new CraftingProperty
+            {
+                PowerCost = 1,
+                ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
+                GuiLabel = "1d6 Massive Criticals",
+                CraftingTier = CraftingTier.Lesser
+            },
+            new CraftingProperty
+            {
+                PowerCost = 1,
+                ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
+                GuiLabel = "1d8 Massive Criticals",
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 1,
+                ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
+                GuiLabel = "1d12 Massive Criticals",
+                CraftingTier = CraftingTier.Greater
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
+                GuiLabel = "2d12 Massive Criticals",
+                CraftingTier = CraftingTier.Flawless
+            },
+        ],
+        BaseDifficulty = 15
+    };
 
     /// <summary>
     ///     See https://lexicon.nwn.wiki/index.php/ItemPropertyMaxRangeStrengthMod for more information.
