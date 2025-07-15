@@ -23,22 +23,6 @@ public class SkillBonusValidator : IValidationRule
         "Use Magic Device"
     ];
 
-    public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
-        List<ChangeListModel.ChangelistEntry> changelistProperties)
-    {
-        SkillBonus skillBonus = new(incoming);
-
-        bool isPersonalSkill = _personalSkills.Contains(skillBonus.Skill);
-        if (isPersonalSkill)
-        {
-            // Logic for personal skills
-        }
-
-        return isPersonalSkill
-            ? ValidatePersonalSkill(skillBonus, itemProperties, changelistProperties)
-            : ValidateBeneficialSkill(skillBonus, itemProperties, changelistProperties);
-    }
-
     private ValidationResult ValidatePersonalSkill(SkillBonus skillBonus, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
@@ -80,15 +64,34 @@ public class SkillBonusValidator : IValidationRule
         List<SkillBonus> addedFreebies = skillsInChangelist.Where(x => x.Bonus == 5).ToList();
         List<SkillBonus> existingFreebies = skillsInItem.Where(x => x.Bonus == 5).ToList();
         bool hasMaxSkill = addedFreebies.Count > 0 || existingFreebies.Count > 0;
+        bool hasTenPersonalAlready =
+            skillsInChangelist.Any(x => x.Bonus == 10) || existingFreebies.Any(x => x.Bonus == 10);
 
         result = hasMaxSkill ? ValidationEnum.LimitReached : result;
-        error = hasMaxSkill ? "Free personal skill bonus limit reached." : error;
+        error = hasMaxSkill || hasTenPersonalAlready ? "Free personal skill bonus limit reached." : error;
+
 
         return new ValidationResult
         {
             Result = result,
             ErrorMessage = error
         };
+    }
+
+    public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
+        List<ChangeListModel.ChangelistEntry> changelistProperties)
+    {
+        SkillBonus skillBonus = new(incoming);
+
+        bool isPersonalSkill = _personalSkills.Contains(skillBonus.Skill);
+        if (isPersonalSkill)
+        {
+            // Logic for personal skills
+        }
+
+        return isPersonalSkill
+            ? ValidatePersonalSkill(skillBonus, itemProperties, changelistProperties)
+            : ValidateBeneficialSkill(skillBonus, itemProperties, changelistProperties);
     }
 
     private ValidationResult ValidateBeneficialSkill(SkillBonus skillBonus, IEnumerable<ItemProperty> itemProperties,
