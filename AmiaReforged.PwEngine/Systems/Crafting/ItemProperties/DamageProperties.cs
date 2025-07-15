@@ -18,6 +18,12 @@ public static class DamageProperties
     private const int GloveGoldCost1d6 = 10000;
     private const int GloveGoldCost4 = 20000;
     private const int GloveGoldCost5 = 50000;
+    private const int GoldCostUnlimitedAmmoIntermediate = 100000;
+    
+    
+    private const int UnlimitedAmmoSonic = 17;
+    private const int UnlimitedAmmoAcid = 16;
+    private const int UnlimitedAmmoPlusFiveDamage = 15;
 
 
     /// <summary>
@@ -1314,5 +1320,54 @@ public static class DamageProperties
             }
         ],
         BaseDifficulty = 10
+    };
+
+    public static readonly CraftingCategory UnlimitedAmmo = new(categoryId: "infinite_ammo")
+    {
+        Label = "Unlimited Ammo",
+        Properties =
+        [
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertyUnlimitedAmmo(UnlimitedAmmoAcid)!,
+                GuiLabel = "1d6 Acid",
+                GoldCost = GoldCostUnlimitedAmmoIntermediate,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertyUnlimitedAmmo(NWScript.IP_CONST_UNLIMITEDAMMO_1D6COLD)!,
+                GuiLabel = "1d6 Cold",
+                GoldCost = GoldCostUnlimitedAmmoIntermediate,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertyUnlimitedAmmo(NWScript.IP_CONST_UNLIMITEDAMMO_1D6FIRE)!,
+                GuiLabel = "1d6 Fire",
+                GoldCost = GoldCostUnlimitedAmmoIntermediate,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertyUnlimitedAmmo(UnlimitedAmmoSonic)!,
+                GuiLabel = "1d6 Sonic",
+                GoldCost = GoldCostUnlimitedAmmoIntermediate,
+                CraftingTier = CraftingTier.Intermediate
+            },
+            new CraftingProperty
+            {
+                PowerCost = 2,
+                ItemProperty = NWScript.ItemPropertyUnlimitedAmmo(UnlimitedAmmoPlusFiveDamage)!,
+                GuiLabel = "+5 Damage",
+                GoldCost = GoldCostUnlimitedAmmoIntermediate,
+                CraftingTier = CraftingTier.Flawless
+            },
+        ],
+        BaseDifficulty = 6
     };
 }

@@ -257,6 +257,7 @@ public class CraftingPropertyData
                 AttackBonusProperties.AttackBonus,
                 DamageProperties.Mighty,
                 DamageProperties.MassiveCriticalsRanged,
+                DamageProperties.UnlimitedAmmo,
                 SkillProperties.Advantageous,
                 SkillProperties.Personal,
                 GenericItemProperties.Regeneration,
