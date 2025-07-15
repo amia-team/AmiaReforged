@@ -58,22 +58,19 @@ public class SkillBonusValidator : IValidationRule
         bool anySkill = notRemoved || inChangelist;
 
         ValidationEnum result = anySkill ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        string error = anySkill ? "Personal skill already exists on this item." : string.Empty;
 
         // Check if any of the existing skills are +5 since there may only be one
         List<SkillBonus> addedFreebies = skillsInChangelist.Where(x => x.Bonus == 5).ToList();
         List<SkillBonus> existingFreebies = skillsInItem.Where(x => x.Bonus == 5).ToList();
         bool hasMaxSkill = skillBonus.Bonus == 5 && addedFreebies.Count > 0 || existingFreebies.Count > 0;
-        bool hasTenPersonalAlready = skillsInChangelist.Any(x => x.Bonus == 10 && skillBonus.Bonus == 5) ||
-                                     skillsInItem.Any(x => x.Bonus == 10 && skillBonus.Bonus == 5);
+        bool hasTenPersonalAlready = skillsInChangelist.Any(x => x.Bonus == 10) ||
+                                     skillsInItem.Any(x => x.Bonus == 10) && skillBonus.Bonus == 5;
 
-        bool skillExists = skillsInChangelist.Any(x => x.Skill == skillBonus.Skill) ||
-                           skillsInChangelist.Any(x => x.Skill == skillBonus.Skill);
 
         result = hasMaxSkill ? ValidationEnum.LimitReached : result;
-        error = hasMaxSkill ? "Free personal skill bonus limit reached." :
+        string error = hasMaxSkill ? "Free personal skill bonus limit reached." :
             hasTenPersonalAlready ? "You can't stack the same personal skill twice." :
-            skillExists ? $"You already have {skillBonus.Skill} on this item" : error;
+            anySkill ? $"You already have {skillBonus.Skill} on this item" : "";
 
 
         return new ValidationResult
