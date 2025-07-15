@@ -217,8 +217,8 @@ public static class AmmoOnHitProperties
             {
                 ItemProperty = NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_FREEZE, 10)!,
                 GuiLabel = "Freeze (Slow 3 rounds,  CL 10)",
-                PowerCost = 6,
-                CraftingTier = CraftingTier.Wondrous
+                PowerCost = 3,
+                CraftingTier = CraftingTier.Divine
             },
             new CraftingProperty
             {

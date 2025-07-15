@@ -95,7 +95,7 @@ public static class SpellResistanceProperties
                 ItemProperty = NWScript.ItemPropertyBonusSpellResistance(NWScript.IP_CONST_SPELLRESISTANCEBONUS_32)!,
                 GuiLabel = "Spell Resistance +32",
                 PowerCost = 4,
-                CraftingTier = CraftingTier.Wondrous
+                CraftingTier = CraftingTier.Perfect
             }
         ]
     };

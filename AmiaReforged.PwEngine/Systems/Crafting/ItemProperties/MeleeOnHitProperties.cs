@@ -265,8 +265,8 @@ public static class MeleeOnHitProperties
             {
                 ItemProperty = NWScript.ItemPropertyOnHitCastSpell(NWScript.IP_CONST_ONHIT_CASTSPELL_FREEZE, 10)!,
                 GuiLabel = "Freeze (Slow 3 rounds,  CL 10)",
-                PowerCost = 6,
-                CraftingTier = CraftingTier.Unattainable
+                PowerCost = 3,
+                CraftingTier = CraftingTier.Divine
             }
         ]
     };
