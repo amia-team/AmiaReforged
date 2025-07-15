@@ -66,8 +66,7 @@ public class SkillBonusValidator : IValidationRule
 
 
         result = hasMaxSkill ? ValidationEnum.LimitReached : result;
-        string error = hasMaxSkill ? "Free personal skill bonus limit reached." :
-            // hasTenPersonalAlready ? "FOO FOFOFO." :
+        string error = hasMaxSkill ? "Free personal skill bonus limit reached (The first +5 is factored into the point cost)." :
             anySkill ? $"You already have {skillBonus.Skill} on this item" : "";
 
 
