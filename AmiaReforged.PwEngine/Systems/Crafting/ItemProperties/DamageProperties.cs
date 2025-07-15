@@ -5,17 +5,19 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.ItemProperties;
 
 public static class DamageProperties
 {
-    private const int MythalCost1D = 500;
-    private const int MythalCost1D4 = 5000;
-    private const int MythalCost1D6 = 20000;
-    private const int MythalCost1D8 = 50000;
-    private const int MythalCost2D4 = 100000;
+    private const int MeleeGoldCost1Damage = 500;
+    private const int MeleeGoldCost1D4 = 5000;
+    private const int MeleeGoldCost1D6 = 20000;
+    private const int MeleeGoldCost1D8 = 50000;
+    private const int MeleeGoldCost1D10 = 100000;
+    private const int MeleeGoldCost2D4 = 100000;
+    private const int MeleeGoldCost2D6 = 150000;
 
-    private const int GloveCost1 = 1000;
-    private const int GloveCost2 = 5000;
-    private const int GloveCost3 = 10000;
-    private const int GloveCost4 = 20000;
-    private const int GloveCost5 = 50000;
+    private const int GloveGoldCost1Damage = 1000;
+    private const int GloveGoldCost1d4 = 5000;
+    private const int GloveGoldCost1d6 = 10000;
+    private const int GloveGoldCost4 = 20000;
+    private const int GloveGoldCost5 = 50000;
 
 
     /// <summary>
@@ -36,7 +38,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Acid ",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -45,7 +47,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Cold",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -54,7 +56,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Electrical",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -63,7 +65,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Fire",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -72,7 +74,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Negative",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -81,7 +83,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Sonic",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
 
@@ -92,7 +94,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Acid",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -101,7 +103,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Cold",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -110,7 +112,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Electrical",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -119,7 +121,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Fire",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -128,7 +130,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Negative",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -137,7 +139,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Sonic",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
 
@@ -148,7 +150,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Acid",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -157,7 +159,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Cold",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -166,7 +168,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Electrical",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -175,7 +177,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Fire",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -184,7 +186,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Negative",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -193,7 +195,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Sonic",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
 
@@ -204,7 +206,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Acid",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -213,7 +215,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Cold",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -222,7 +224,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Electrical",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -231,7 +233,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Fire",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -240,7 +242,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Negative",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -249,9 +251,92 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Sonic",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
-            }
+            },
+            
+            // 1d10 (Flawless)
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
+                    NWScript.IP_CONST_DAMAGEBONUS_1d10)!,
+                GuiLabel = "1d10 Acid",
+                GoldCost = MeleeGoldCost1D10,
+                CraftingTier = CraftingTier.Flawless
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
+                    NWScript.IP_CONST_DAMAGEBONUS_1d10)!,
+                GuiLabel = "1d10 Cold",
+                GoldCost = MeleeGoldCost1D10,
+                CraftingTier = CraftingTier.Flawless
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
+                    NWScript.IP_CONST_DAMAGEBONUS_1d10)!,
+                GuiLabel = "1d10 Electrical",
+                GoldCost = MeleeGoldCost1D10,
+                CraftingTier = CraftingTier.Flawless
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
+                    NWScript.IP_CONST_DAMAGEBONUS_1d10)!,
+                GuiLabel = "1d10 Fire",
+                GoldCost = MeleeGoldCost1D10,
+                CraftingTier = CraftingTier.Flawless
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
+                    NWScript.IP_CONST_DAMAGEBONUS_1d10)!,
+                GuiLabel = "1d10 Negative",
+                GoldCost = MeleeGoldCost1D10,
+                CraftingTier = CraftingTier.Flawless
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
+                    NWScript.IP_CONST_DAMAGEBONUS_1d10)!,
+                GuiLabel = "1d10 Sonic",
+                GoldCost = MeleeGoldCost1D10,
+                CraftingTier = CraftingTier.Flawless
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_BLUDGEONING,
+                    NWScript.IP_CONST_DAMAGEBONUS_1d10)!,
+                GuiLabel = "1d10 Bludgeoning",
+                GoldCost = MeleeGoldCost1D10,
+                CraftingTier = CraftingTier.Flawless
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_PIERCING,
+                    NWScript.IP_CONST_DAMAGEBONUS_1d10)!,
+                GuiLabel = "1d10 Piercing",
+                GoldCost = MeleeGoldCost1D10,
+                CraftingTier = CraftingTier.Flawless
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SLASHING,
+                    NWScript.IP_CONST_DAMAGEBONUS_1d10)!,
+                GuiLabel = "1d10 Slashing",
+                GoldCost = MeleeGoldCost1D10,
+                CraftingTier = CraftingTier.Flawless
+            },
         ],
         BaseDifficulty = 10
     };
@@ -271,7 +356,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Acid",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -280,7 +365,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Cold",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -289,7 +374,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Electrical",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -298,7 +383,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Fire",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -307,7 +392,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Negative",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -316,7 +401,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Sonic",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
 
@@ -327,7 +412,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Acid",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -336,7 +421,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Cold",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -345,7 +430,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Electrical",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -354,7 +439,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Fire",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -363,7 +448,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Negative",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -372,7 +457,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Sonic",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
 
@@ -383,7 +468,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Acid",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -392,7 +477,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Cold",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -401,7 +486,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Electrical",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -410,7 +495,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Fire",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -419,7 +504,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Negative",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -428,7 +513,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Sonic",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
 
@@ -439,7 +524,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_2d4)!,
                 GuiLabel = "2d4 Acid",
-                GoldCost = MythalCost2D4,
+                GoldCost = MeleeGoldCost2D4,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -448,7 +533,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_2d4)!,
                 GuiLabel = "2d4 Cold",
-                GoldCost = MythalCost2D4,
+                GoldCost = MeleeGoldCost2D4,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -457,7 +542,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_2d4)!,
                 GuiLabel = "2d4 Electrical",
-                GoldCost = MythalCost2D4,
+                GoldCost = MeleeGoldCost2D4,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -466,7 +551,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_2d4)!,
                 GuiLabel = "2d4 Fire",
-                GoldCost = MythalCost2D4,
+                GoldCost = MeleeGoldCost2D4,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -475,7 +560,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_2d4)!,
                 GuiLabel = "2d4 Negative",
-                GoldCost = MythalCost2D4,
+                GoldCost = MeleeGoldCost2D4,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -484,7 +569,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_2d4)!,
                 GuiLabel = "2d4 Sonic",
-                GoldCost = MythalCost2D4,
+                GoldCost = MeleeGoldCost2D4,
                 CraftingTier = CraftingTier.Greater
             },
             
@@ -496,7 +581,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Acid",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = MeleeGoldCost2D6
             },
             new CraftingProperty
             {
@@ -505,7 +590,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Cold",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = MeleeGoldCost2D6
             },
             new CraftingProperty
             {
@@ -514,7 +599,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Electrical",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = MeleeGoldCost2D6
             },
             new CraftingProperty
             {
@@ -523,7 +608,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Fire",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = MeleeGoldCost2D6
             },
             new CraftingProperty
             {
@@ -532,7 +617,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Negative",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = MeleeGoldCost2D6
             },
             new CraftingProperty
             {
@@ -541,7 +626,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Sonic",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = MeleeGoldCost2D6
             },
             new CraftingProperty
             {
@@ -550,7 +635,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Bludgeoning",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = MeleeGoldCost2D6
             },
             new CraftingProperty
             {
@@ -559,7 +644,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Piercing",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = MeleeGoldCost2D6
             },
             new CraftingProperty
             {
@@ -568,7 +653,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Slashing",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = MeleeGoldCost2D6
             },
         ],
         BaseDifficulty = 15
@@ -590,7 +675,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "1d2 Acid",
                 CraftingTier = CraftingTier.Minor,
-                GoldCost = GloveCost1
+                GoldCost = GloveGoldCost1Damage
             },
             new CraftingProperty
             {
@@ -599,7 +684,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "1d2 Cold",
                 CraftingTier = CraftingTier.Minor,
-                GoldCost = GloveCost1
+                GoldCost = GloveGoldCost1Damage
             },
             new CraftingProperty
             {
@@ -616,7 +701,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "1d2 Fire",
                 CraftingTier = CraftingTier.Minor,
-                GoldCost = GloveCost1
+                GoldCost = GloveGoldCost1Damage
             },
             new CraftingProperty
             {
@@ -625,7 +710,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "1d2 Negative",
                 CraftingTier = CraftingTier.Minor,
-                GoldCost = GloveCost1
+                GoldCost = GloveGoldCost1Damage
             },
             new CraftingProperty
             {
@@ -634,7 +719,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "1d2 Sonic",
                 CraftingTier = CraftingTier.Minor,
-                GoldCost = GloveCost1
+                GoldCost = GloveGoldCost1Damage
             },
 
             // 1d4 (lesser)
@@ -645,7 +730,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Acid",
                 CraftingTier = CraftingTier.Lesser,
-                GoldCost = GloveCost2
+                GoldCost = GloveGoldCost1d4
             },
             new CraftingProperty
             {
@@ -654,7 +739,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Cold",
                 CraftingTier = CraftingTier.Lesser,
-                GoldCost = GloveCost2
+                GoldCost = GloveGoldCost1d4
             },
             new CraftingProperty
             {
@@ -663,7 +748,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Electrical",
                 CraftingTier = CraftingTier.Lesser,
-                GoldCost = GloveCost2
+                GoldCost = GloveGoldCost1d4
             },
             new CraftingProperty
             {
@@ -672,7 +757,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Fire",
                 CraftingTier = CraftingTier.Lesser,
-                GoldCost = GloveCost2
+                GoldCost = GloveGoldCost1d4
             },
             new CraftingProperty
             {
@@ -681,7 +766,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Negative",
                 CraftingTier = CraftingTier.Lesser,
-                GoldCost = GloveCost2
+                GoldCost = GloveGoldCost1d4
             },
             new CraftingProperty
             {
@@ -690,7 +775,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Sonic",
                 CraftingTier = CraftingTier.Lesser,
-                GoldCost = GloveCost2
+                GoldCost = GloveGoldCost1d4
             },
 
             // 1d6 (intermediate)
@@ -701,7 +786,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Acid",
                 CraftingTier = CraftingTier.Intermediate,
-                GoldCost = GloveCost3
+                GoldCost = GloveGoldCost1d6
             },
             new CraftingProperty
             {
@@ -710,7 +795,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Cold",
                 CraftingTier = CraftingTier.Intermediate,
-                GoldCost = GloveCost3
+                GoldCost = GloveGoldCost1d6
             },
             new CraftingProperty
             {
@@ -719,7 +804,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Electrical",
                 CraftingTier = CraftingTier.Intermediate,
-                GoldCost = GloveCost3
+                GoldCost = GloveGoldCost1d6
             },
             new CraftingProperty
             {
@@ -728,7 +813,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Fire",
                 CraftingTier = CraftingTier.Intermediate,
-                GoldCost = GloveCost3
+                GoldCost = GloveGoldCost1d6
             },
             new CraftingProperty
             {
@@ -737,7 +822,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Negative",
                 CraftingTier = CraftingTier.Intermediate,
-                GoldCost = GloveCost3
+                GoldCost = GloveGoldCost1d6
             },
             new CraftingProperty
             {
@@ -746,7 +831,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Sonic",
                 CraftingTier = CraftingTier.Intermediate,
-                GoldCost = GloveCost3
+                GoldCost = GloveGoldCost1d6
             },
 
             // 1d8 (greater)
@@ -757,7 +842,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Acid",
                 CraftingTier = CraftingTier.Greater,
-                GoldCost = GloveCost4
+                GoldCost = GloveGoldCost4
             },
             new CraftingProperty
             {
@@ -766,7 +851,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Cold",
                 CraftingTier = CraftingTier.Greater,
-                GoldCost = GloveCost4
+                GoldCost = GloveGoldCost4
             },
             new CraftingProperty
             {
@@ -775,7 +860,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Electrical",
                 CraftingTier = CraftingTier.Greater,
-                GoldCost = GloveCost4
+                GoldCost = GloveGoldCost4
             },
             new CraftingProperty
             {
@@ -784,7 +869,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Fire",
                 CraftingTier = CraftingTier.Greater,
-                GoldCost = GloveCost4
+                GoldCost = GloveGoldCost4
             },
             new CraftingProperty
             {
@@ -793,7 +878,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Negative",
                 CraftingTier = CraftingTier.Greater,
-                GoldCost = GloveCost4
+                GoldCost = GloveGoldCost4
             },
             new CraftingProperty
             {
@@ -802,7 +887,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Sonic",
                 CraftingTier = CraftingTier.Greater,
-                GoldCost = GloveCost4
+                GoldCost = GloveGoldCost4
             },
 
             // 2d6 (flawless)
@@ -813,7 +898,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Acid",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = GloveGoldCost5
             },
             new CraftingProperty
             {
@@ -822,7 +907,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Cold",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = GloveGoldCost5
             },
             new CraftingProperty
             {
@@ -831,7 +916,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Electrical",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = GloveGoldCost5
             },
             new CraftingProperty
             {
@@ -840,7 +925,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Fire",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = GloveGoldCost5
             },
             new CraftingProperty
             {
@@ -849,7 +934,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Negative",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = GloveGoldCost5
             },
             new CraftingProperty
             {
@@ -858,7 +943,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Sonic",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = GloveGoldCost5
             },
             new CraftingProperty
             {
@@ -867,7 +952,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Bludgeoning",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = GloveGoldCost5
             },
             new CraftingProperty
             {
@@ -876,7 +961,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Piercing",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = GloveGoldCost5
             },
             new CraftingProperty
             {
@@ -885,7 +970,7 @@ public static class DamageProperties
                     NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
                 GuiLabel = "2d6 Slashing",
                 CraftingTier = CraftingTier.Flawless,
-                GoldCost = GloveCost5
+                GoldCost = GloveGoldCost5
             },
         ],
         BaseDifficulty = 10
@@ -974,7 +1059,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Acid",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -983,7 +1068,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Cold",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -992,7 +1077,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Electrical",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -1001,7 +1086,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Fire",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -1010,7 +1095,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Negative",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
             new CraftingProperty
@@ -1019,7 +1104,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1)!,
                 GuiLabel = "+1 Sonic",
-                GoldCost = MythalCost1D,
+                GoldCost = MeleeGoldCost1Damage,
                 CraftingTier = CraftingTier.Minor
             },
 
@@ -1030,7 +1115,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Acid",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -1039,7 +1124,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Cold",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -1048,7 +1133,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Electrical",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -1057,7 +1142,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Fire",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -1066,7 +1151,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Negative",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
             new CraftingProperty
@@ -1075,7 +1160,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1d4)!,
                 GuiLabel = "1d4 Sonic",
-                GoldCost = MythalCost1D4,
+                GoldCost = MeleeGoldCost1D4,
                 CraftingTier = CraftingTier.Lesser
             },
 
@@ -1086,7 +1171,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Acid",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -1095,7 +1180,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Cold",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -1104,7 +1189,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Electrical",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -1113,7 +1198,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Fire",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -1122,7 +1207,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Negative",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
             new CraftingProperty
@@ -1131,7 +1216,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1d6)!,
                 GuiLabel = "1d6 Sonic",
-                GoldCost = MythalCost1D6,
+                GoldCost = MeleeGoldCost1D6,
                 CraftingTier = CraftingTier.Intermediate
             },
 
@@ -1142,7 +1227,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Acid",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -1151,7 +1236,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Cold",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -1160,7 +1245,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Electrical",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -1169,7 +1254,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Fire",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -1178,7 +1263,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Negative",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             },
             new CraftingProperty
@@ -1187,7 +1272,7 @@ public static class DamageProperties
                 ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
                     NWScript.IP_CONST_DAMAGEBONUS_1d8)!,
                 GuiLabel = "1d8 Sonic",
-                GoldCost = MythalCost1D8,
+                GoldCost = MeleeGoldCost1D8,
                 CraftingTier = CraftingTier.Greater
             }
         ],
