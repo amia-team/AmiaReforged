@@ -486,7 +486,90 @@ public static class DamageProperties
                 GuiLabel = "2d4 Sonic",
                 GoldCost = MythalCost2D4,
                 CraftingTier = CraftingTier.Greater
-            }
+            },
+            
+            // 2d6 (Flawless)
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ACID,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Acid",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_COLD,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Cold",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_ELECTRICAL,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Electrical",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_FIRE,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Fire",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_NEGATIVE,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Negative",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SONIC,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Sonic",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_BLUDGEONING,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Bludgeoning",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_PIERCING,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Piercing",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SLASHING,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Slashing",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
         ],
         BaseDifficulty = 15
     };
@@ -776,7 +859,34 @@ public static class DamageProperties
                 GuiLabel = "2d6 Sonic",
                 CraftingTier = CraftingTier.Flawless,
                 GoldCost = GloveCost5
-            }
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_BLUDGEONING,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Bludgeoning",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_PIERCING,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Piercing",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
+            new CraftingProperty
+            {
+                PowerCost = 3,
+                ItemProperty = NWScript.ItemPropertyDamageBonus(NWScript.IP_CONST_DAMAGETYPE_SLASHING,
+                    NWScript.IP_CONST_DAMAGEBONUS_2d6)!,
+                GuiLabel = "2d6 Slashing",
+                CraftingTier = CraftingTier.Flawless,
+                GoldCost = GloveCost5
+            },
         ],
         BaseDifficulty = 10
     };
