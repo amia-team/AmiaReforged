@@ -69,7 +69,7 @@ public class SkillBonusValidator : IValidationRule
 
         result = hasMaxSkill ? ValidationEnum.LimitReached : result;
         string error = hasMaxSkill ? "Free personal skill bonus limit reached." :
-            hasTenPersonalAlready ? "You can't stack the same personal skill twice." :
+            hasTenPersonalAlready ? "FOO FOFOFO." :
             anySkill ? $"You already have {skillBonus.Skill} on this item" : "";
 
 
