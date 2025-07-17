@@ -114,7 +114,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             if (spellInnateLevel > 4) 
             {
                 player.SendServerMessage
-                    ($"Craft wand failed! Innate spell level must be 4 or lower. The innate level of this spell is {spellInnateLevel}");
+                    ($"Craft wand failed! Innate spell level must be 4 or lower. The innate level of this spell is {spellInnateLevel}.");
                 ApplySpellCraftFailVfx(caster);
                 return;
             }
@@ -155,7 +155,15 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             if (spellInnateLevel > 3) 
             {
                 player.SendServerMessage
-                    ($"Brew potion failed! Innate spell level must be 3 or lower. The innate level of this spell is {spellInnateLevel}");
+                    ($"Brew potion failed! Innate spell level must be 3 or lower. The innate level of this spell is {spellInnateLevel}.");
+                ApplySpellCraftFailVfx(caster);
+                return;
+            }
+
+            if (_spell.IsHostileSpell)
+            {
+                player.SendServerMessage
+                    ("Brew potion failed! You cannot brew a potion from a hostile spell.");
                 ApplySpellCraftFailVfx(caster);
                 return;
             }
