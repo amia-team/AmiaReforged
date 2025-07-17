@@ -235,11 +235,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         AddClassRestrictions(targetItem);
         
-        targetItem.Appearance.ChangeAppearance(appearance =>
-        {
-            appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, 8);
-            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, GetWandColor());
-        });
+        targetItem.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, 8);
+        targetItem.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, GetWandColor());
         
         caster.AcquireItem(targetItem);
     }
@@ -275,8 +272,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         targetItem.Name = "Potion of "+_spell.Name;
         targetItem.Description = _spell.Description.ToString();
         
-        targetItem.Appearance.ChangeAppearance(appearance => 
-            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
+        targetItem.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor());
         
         caster.AcquireItem(targetItem);
     }
