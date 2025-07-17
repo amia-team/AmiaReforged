@@ -138,7 +138,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             }
             int casterLevel = caster.Classes.First(cl => cl.Class == casterClass).Level;
 
-            CraftWand(caster, spellPropId, casterLevel);
+            CraftWand(spellPropId, casterLevel);
             ChargeForSpellCraft(player, caster, craftWandCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -177,7 +177,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            BrewPotion(caster, spellPropId);
+            BrewPotion(spellPropId);
             ChargeForSpellCraft(player, caster, brewPotionCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -219,11 +219,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             ? spellPropCl * 1 * 25 * targetItem.StackSize 
             : spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
     
-    private void CraftWand(NwCreature caster, int spellPropId, int casterLevel)
+    private void CraftWand(int spellPropId, int casterLevel)
     {
         targetItem.BaseItem = BaseItemType.EnchantedWand!;
-        
-        NwModule.Instance.MoveObjectToLimbo(targetItem);
         
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.ChargePerUse1), 
             EffectDuration.Permanent);
@@ -235,13 +233,12 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         AddClassRestrictions(targetItem);
         
+        // Isn't working!
         targetItem.Appearance.ChangeAppearance(appearance =>
         {
             appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, 8);
             appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, GetWandColor());
         });
-        
-        caster.AcquireItem(targetItem);
     }
 
     private byte GetWandColor()
@@ -263,11 +260,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 1 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
     
-    private void BrewPotion(NwCreature caster, int spellPropId)
+    private void BrewPotion(int spellPropId)
     {
         targetItem.BaseItem = BaseItemType.EnchantedPotion!;
-        
-        NwModule.Instance.MoveObjectToLimbo(targetItem);
         
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
@@ -275,10 +270,9 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         targetItem.Name = "Potion of "+_spell.Name;
         targetItem.Description = _spell.Description.ToString();
         
+        // This isn't working!
         targetItem.Appearance.ChangeAppearance(appearance => 
             appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
-        
-        caster.AcquireItem(targetItem);
     }
 
     private byte GetPotionColor()
