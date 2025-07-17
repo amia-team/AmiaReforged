@@ -138,7 +138,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             }
             int casterLevel = caster.Classes.First(cl => cl.Class == casterClass).Level;
 
-            CraftWand(caster, spellPropId, casterLevel);
+            _ = CraftWand(caster, spellPropId, casterLevel);
             ChargeForSpellCraft(player, caster, craftWandCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -177,7 +177,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            BrewPotion(caster, spellPropId);
+            _ = BrewPotion(caster, spellPropId);
             ChargeForSpellCraft(player, caster, brewPotionCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -219,7 +219,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             ? spellPropCl * 1 * 25 * targetItem.StackSize 
             : spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
     
-    private void CraftWand(NwCreature caster, int spellPropId, int casterLevel)
+    private async Task CraftWand(NwCreature caster, int spellPropId, int casterLevel)
     {
         targetItem.BaseItem = BaseItemType.EnchantedWand!;
         
@@ -237,6 +237,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         
         targetItem.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, 8);
         targetItem.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, GetWandColor());
+        
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
         caster.AcquireItem(targetItem);
     }
@@ -260,7 +262,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 1 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
     
-    private void BrewPotion(NwCreature caster, int spellPropId)
+    private async Task BrewPotion(NwCreature caster, int spellPropId)
     {
         targetItem.BaseItem = BaseItemType.EnchantedPotion!;
         
@@ -273,6 +275,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         targetItem.Description = _spell.Description.ToString();
         
         targetItem.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor());
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
         caster.AcquireItem(targetItem);
     }
