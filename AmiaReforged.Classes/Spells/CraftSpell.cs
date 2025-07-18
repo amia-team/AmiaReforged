@@ -273,7 +273,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         NwItem brewedPotion = targetItem.Clone(location);
         NwModule.Instance.MoveObjectToLimbo(brewedPotion);
 
-        await NwTask.Delay(TimeSpan.FromSeconds(1));
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
         targetItem.Destroy();
         
