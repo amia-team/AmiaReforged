@@ -267,8 +267,6 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             EffectDuration.Permanent);
         targetItem.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor());
         
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-        
         Location? location = caster.Location;
         if (location == null) return;
 
