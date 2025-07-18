@@ -177,7 +177,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            BrewPotion(caster, spellPropId);
+            BrewPotion(spellPropId);
             ChargeForSpellCraft(player, caster, brewPotionCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -260,25 +260,19 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 0 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
     
-    private void BrewPotion(NwCreature caster, int spellPropId)
+    private void BrewPotion(int spellPropId)
     {
         targetItem.BaseItem = BaseItemType.EnchantedPotion!;
+        
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
-        targetItem.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor());
         
-        Location? location = caster.Location;
-        if (location == null) return;
-
-        NwItem brewedPotion = targetItem.Clone(location);
-        NwModule.Instance.MoveObjectToLimbo(brewedPotion);
+        targetItem.Name = "Potion of "+_spell.Name;
+        targetItem.Description = _spell.Description.ToString();
         
-        targetItem.Destroy();
-        
-        brewedPotion.Name = "Potion of "+_spell.Name;
-        brewedPotion.Description = _spell.Description.ToString();
-            
-        caster.AcquireItem(brewedPotion);
+        // This isn't working!
+        targetItem.Appearance.ChangeAppearance(appearance => 
+            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
     }
 
     private byte GetPotionColor()
