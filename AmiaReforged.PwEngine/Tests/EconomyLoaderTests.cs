@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace AmiaReforged.PwEngine.Tests;
 
 [TestFixture]
-public class WorldEngineTests
+public class EconomyLoaderTests
 {
     private WorldEngineLoader _engineLoader = null!;
 

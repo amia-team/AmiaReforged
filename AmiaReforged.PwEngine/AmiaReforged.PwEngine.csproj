@@ -26,7 +26,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Resources\WorldEngine\InnovationEffects\" />
         <Folder Include="Systems\MiniGame\LiarsDice\Nui\"/>
         <Folder Include="Systems\MiniGame\LiarsDice\Tests\"/>
     </ItemGroup>
