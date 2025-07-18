@@ -270,11 +270,13 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
         targetItem.Name = "Potion of "+_spell.Name;
         targetItem.Description = _spell.Description.ToString();
 
-        byte potionColor = GetPotionColor();
-
         // This isn't working!
-        targetItem.Appearance.ChangeAppearance(appearance => 
-            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, potionColor));
+        targetItem.Appearance.ChangeAppearance(appearance =>
+        {
+            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor());
+            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, GetPotionColor());
+            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, GetPotionColor());
+        });
     }
 
     private byte GetPotionColor()
