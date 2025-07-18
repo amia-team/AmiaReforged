@@ -13,7 +13,7 @@ public class EpicCompanionHandler
     /// This script opts in and out of the Epic Companion appearance. Rest of the functionality is handled by
     /// nw_s2_animalcom; we should bring that to C# at some point!
     /// </summary>
-    [ScriptHandler(scriptName: "epic_ac")]
+    [ScriptHandler(scriptName: "epic_companion")]
     public void OnEpicCompanion(CallInfo info)
     {
         if (info.ObjectSelf is not NwCreature creature) return;
