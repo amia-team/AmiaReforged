@@ -177,7 +177,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            BrewPotion(caster, spellPropId);
+            _ = BrewPotion(caster, spellPropId);
             ChargeForSpellCraft(player, caster, brewPotionCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -260,7 +260,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 0 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
     
-    private void BrewPotion(NwCreature caster, int spellPropId)
+    private async Task BrewPotion(NwCreature caster, int spellPropId)
     {
         targetItem.BaseItem = BaseItemType.EnchantedPotion!;
         targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
@@ -272,6 +272,8 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
         NwItem brewedPotion = targetItem.Clone(location);
         NwModule.Instance.MoveObjectToLimbo(brewedPotion);
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         
         targetItem.Destroy();
         
