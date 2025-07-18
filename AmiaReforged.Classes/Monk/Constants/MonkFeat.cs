@@ -19,9 +19,9 @@ public static class MonkFeat
     public const int CrashingMeteor = 1227;
     public const int SwingingCenser = 1228;
     public const int IroncladBull = 1229;
-    public const int ChardalynSand = 1230;
+    public const int FickleStrand = 1230;
     public const int CrackedVessel = 1231;
-    public const int CrystalTides = 1241;
+    public const int HiddenSpring = 1241;
     public const int StunningStrike = 1341;
     public const int EagleStrike = 1342;
     public const int AxiomaticStrike = 1343;
@@ -29,4 +29,5 @@ public static class MonkFeat
     public const int KiShout = 1346;
     public const int BodyKiPoint = 1347;
     public const int SpiritKiPoint = 1353;
+    public const int MonkFightingStyle = 1356;
 }

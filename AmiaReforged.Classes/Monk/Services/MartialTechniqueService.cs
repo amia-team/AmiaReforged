@@ -2,6 +2,7 @@
 
 using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
+using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -98,7 +99,7 @@ public class MartialTechniqueService
     private async void EnterMartialTechnique(OnCombatRoundStart eventData)
     {
         // Creature must be monk
-        if (eventData.Creature.GetClassInfo(NwClass.FromClassType(ClassType.Monk)) is null) return;
+        if (eventData.Creature.GetClassInfo(ClassType.Monk) is null) return;
 
         NwCreature monk = eventData.Creature;
         LocalVariableInt queuedTechnique = monk.GetObjectVariable<LocalVariableInt>(MartialTechnique);
@@ -174,7 +175,7 @@ public class MartialTechniqueService
     private static void OnHitApplyTechnique(OnCreatureAttack attackData)
     {
         // Creature must be monk
-        if (attackData.Attacker.GetClassInfo(NwClass.FromClassType(ClassType.Monk)) is null) return;
+        if (attackData.Attacker.GetClassInfo(ClassType.Monk) is null) return;
         NwCreature monk = attackData.Attacker;
 
         // Can't have the cooldown active for martial technique procs
@@ -264,13 +265,19 @@ public class MartialTechniqueService
     
     private static bool PreventMartialTechnique(NwCreature monk, string techniqueName)
     {
+        bool hasRangedWeapon = false;
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
         bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
                                       && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is
                                           BaseItemCategory.Torches;
 
-        bool isTechniquePrevented = hasArmor || hasShield || hasFocusWithoutUnarmed;
+
+        if (MonkUtils.GetMonkPath(monk) != PathType.HiddenSpring 
+            && MonkUtils.GetKiFocus(monk) != KiFocus.KiFocus2 && monk.IsRangedWeaponEquipped)
+            hasRangedWeapon = true;
+
+        bool isTechniquePrevented = hasArmor || hasShield || hasFocusWithoutUnarmed || hasRangedWeapon;
 
         if (!monk.IsPlayerControlled(out NwPlayer? player)) return isTechniquePrevented;
 
@@ -278,8 +285,10 @@ public class MartialTechniqueService
             player.SendServerMessage($"Wearing an armor has prevented your {techniqueName}.");
         if (hasShield)
             player.SendServerMessage($"Wielding a shield has prevented your {techniqueName}.");
-        if (hasFocusWithoutUnarmed) 
+        if (hasFocusWithoutUnarmed)
             player.SendServerMessage($"Wielding a focus without being unarmed has prevented your {techniqueName}.");
+        if (hasRangedWeapon)
+            player.SendServerMessage($"Wielding a ranged weapon has prevented your {techniqueName}.");
 
         return isTechniquePrevented;
     }

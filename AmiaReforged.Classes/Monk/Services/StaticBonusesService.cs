@@ -61,6 +61,16 @@ public class StaticBonusesService
 
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        
+        // Block wisdom attack bonus for ranged weapons
+        if (monk.IsRangedWeaponEquipped)
+        {
+            WisdomAttackBonus.UnsetWisdomAttackBonus(monk);
+            return;
+        }
+        
+        // This checks only for the wis monk path
+        WisdomAttackBonus.SetWisdomAttackBonus(monk);
     }
 
     private static async void OnUnequipApplyBonuses(OnItemUnequip eventData)
@@ -90,6 +100,9 @@ public class StaticBonusesService
 
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        
+        // This checks only for the wis monk path
+        WisdomAttackBonus.SetWisdomAttackBonus(monk);
     }
 
     private static async void OnLevelUpCheckBonuses(OnLevelUp eventData)
@@ -105,6 +118,9 @@ public class StaticBonusesService
 
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        
+        // This checks only for the wis monk path
+        WisdomAttackBonus.SetWisdomAttackBonus(monk);
     }
 
     private static async void OnLevelDownCheckBonuses(OnLevelDown eventData)
@@ -120,6 +136,9 @@ public class StaticBonusesService
 
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        
+        // This checks only for the wis monk path
+        WisdomAttackBonus.SetWisdomAttackBonus(monk);
     }
 
     private static void OnWisdomApplyCheckBonuses(OnEffectApply eventData)
@@ -141,6 +160,9 @@ public class StaticBonusesService
             await NwTask.Delay(TimeSpan.FromMilliseconds(1));
             monkEffects = StaticBonuses.GetEffect(monk);
             monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+            
+            // This checks only for the wis monk path
+            WisdomAttackBonus.SetWisdomAttackBonus(monk);
         }
     }
 
@@ -163,6 +185,9 @@ public class StaticBonusesService
             await NwTask.Delay(TimeSpan.FromMilliseconds(1));
             monkEffects = StaticBonuses.GetEffect(monk);
             monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+            
+            // This checks only for the wis monk path
+            WisdomAttackBonus.SetWisdomAttackBonus(monk);
         }
     }
 }

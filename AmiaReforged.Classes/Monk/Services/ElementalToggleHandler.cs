@@ -38,11 +38,11 @@ public class ElementalToggleHandler
 
         string elementalName = elementalType switch
         {
-            MonkElemental.Fire => "FIRE",
-            MonkElemental.Water => "WATER",
-            MonkElemental.Air => "AIR",
-            MonkElemental.Earth => "EARTH",
-            _ => "FIRE"
+            MonkElemental.Fire => "Fire",
+            MonkElemental.Water => "Water",
+            MonkElemental.Air => "Air",
+            MonkElemental.Earth => "Earth",
+            _ => "Fire"
         };
 
         string elementalSound = elementalType switch
@@ -62,13 +62,9 @@ public class ElementalToggleHandler
             MonkElemental.Earth => ColorConstants.Green,
             _ => ColorConstants.Orange
         };
-
-        string elementalString = "Elemental type set to ";
-        elementalString.ColorString(MonkColors.MonkColorScheme);
         elementalName.ColorString(elementalColor);
-        elementalString += elementalName;
 
         monk.PlaySound(elementalSound);
-        player.FloatingTextString(elementalString, false, false);
+        player.FloatingTextString($"*Activated {elementalName}*", false, false);
     }
 }

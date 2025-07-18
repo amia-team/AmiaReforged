@@ -6,8 +6,8 @@ public enum PathType
 {
     CrashingMeteor = 0,
     SwingingCenser = 1,
-    CrystalTides = 2,
-    ChardalynSand = 3,
+    HiddenSpring = 2,
+    FickleStrand = 3,
     IroncladBull = 4,
     CrackedVessel = 5,
     EchoingValley = 6

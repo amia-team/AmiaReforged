@@ -6,26 +6,44 @@ using Anvil.API;
 
 namespace AmiaReforged.Classes.Monk;
 
-public static class MonkUtilFunctions
+public static class MonkUtils
 {
     /// <summary>
     ///     Returns the monk's path type
     /// </summary>
     public static PathType? GetMonkPath(NwCreature monk)
     {
+        // Check for Path of Enlightenment PrC as a failsafe
+        if (monk.GetClassInfo(NwClass.FromClassId(50)) is not null) return null;
+            
         NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => feat.Id is MonkFeat.CrashingMeteor
-            or MonkFeat.SwingingCenser or MonkFeat.CrystalTides or MonkFeat.ChardalynSand
+            or MonkFeat.SwingingCenser or MonkFeat.HiddenSpring or MonkFeat.FickleStrand
             or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley);
 
         return pathFeat?.Id switch
         {
             MonkFeat.CrashingMeteor => PathType.CrashingMeteor,
             MonkFeat.SwingingCenser => PathType.SwingingCenser,
-            MonkFeat.CrystalTides => PathType.CrystalTides,
-            MonkFeat.ChardalynSand => PathType.ChardalynSand,
+            MonkFeat.HiddenSpring => PathType.HiddenSpring,
+            MonkFeat.FickleStrand => PathType.FickleStrand,
             MonkFeat.IroncladBull => PathType.IroncladBull,
             MonkFeat.CrackedVessel => PathType.CrackedVessel,
             MonkFeat.EchoingValley => PathType.EchoingValley,
+            _ => null
+        };
+    }
+    
+    /// <summary>
+    /// Use in tandem with GetMonkPath, ie if GetMonkPath is not null, you can get the KiFocus. UPDATE TO USE MONK FEATS WHEN IMPLEMENTED!!!
+    /// </summary>
+    /// <returns>Ki Focus tier for scaling monk powers</returns>
+    public static KiFocus? GetKiFocus(NwCreature monk)
+    {
+        return monk.GetClassInfo(ClassType.Monk)!.Level switch
+        {
+            >= 18 and < 24 => KiFocus.KiFocus1,
+            >= 24 and < 30 => KiFocus.KiFocus2,
+            30 => KiFocus.KiFocus3,
             _ => null
         };
     }
@@ -50,50 +68,16 @@ public static class MonkUtilFunctions
     {
         float vfxDefaultSize = visualEffect switch
         {
-            VfxType.ImpFrostL or VfxType.ImpAcidS => 1f,
+            VfxType.ImpFrostL or VfxType.ImpAcidS or VfxType.ImpBlindDeafM => 1f,
             VfxType.FnfLosEvil10 or (VfxType)1046 => RadiusSize.Medium,
             VfxType.FnfFireball => RadiusSize.Huge,
             VfxType.FnfElectricExplosion => RadiusSize.Gargantuan,
-            VfxType.FnfHowlOdd or VfxType.FnfHowlMind => RadiusSize.Colossal,
+            VfxType.FnfHowlOdd or VfxType.FnfHowlMind or VfxType.FnfLosEvil30 or VfxType.FnfFirestorm => RadiusSize.Colossal,
             _ => RadiusSize.Large
         };
 
         float vfxScale = desiredSize / vfxDefaultSize;
         return Effect.VisualEffect(visualEffect, false, vfxScale);
-    }
-
-    /// <summary>
-    ///     A simpler version of NWN's spellsIsTarget() adjusted to Amia's difficulty setting. Don't use if it doesn't simplify
-    ///     AoE spell targeting.
-    /// </summary>
-    /// <param name="creaturesOnly">true if you want to only affect creatures</param>
-    /// <param name="affectsSelf">true if you want to affect yourself</param>
-    /// <param name="alliesOnly">true if you to affect only allies</param>
-    /// <returns>Valid target for spell effect</returns>
-    public static bool IsValidTarget(NwObject targetObject, NwCreature caster, bool creaturesOnly, bool affectsSelf,
-        bool alliesOnly)
-    {
-        if (targetObject == caster) return affectsSelf;
-        if (creaturesOnly)
-        {
-            if (targetObject is not NwCreature targetCreature) return false;
-            if (alliesOnly)
-            {
-                if (caster.IsReactionTypeFriendly(targetCreature))
-                    return true;
-            }
-            else if (caster.IsReactionTypeHostile(targetCreature))
-            {
-                return true;
-            }
-        }
-        else if (targetObject is NwCreature targetCreature && !caster.IsReactionTypeFriendly(targetCreature)
-                 || targetObject is NwPlaceable || targetObject is NwDoor)
-        {
-            return true;
-        }
-
-        return false;
     }
 
     /// <summary>
@@ -103,8 +87,7 @@ public static class MonkUtilFunctions
     {
         if (!player.IsValid) return;
         if (player.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "monk_debug").Value != 1) return;
-
-        debugString2.ColorString(MonkColors.MonkColorScheme);
+        
         player.SendServerMessage($"DEBUG: {debugString1} {debugString2}");
     }
 

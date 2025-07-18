@@ -41,8 +41,7 @@ public class SpiritTechniqueHandler
             castData.PreventSpellCast = true;
             if (monk.IsPlayerControlled(out NwPlayer? player))
                 player.SendServerMessage
-                ($"Cannot use {castData.Spell.FeatReference.Name} because your spirit ki is depleted.",
-                    MonkColors.MonkColorScheme);
+                    ($"Cannot use {castData.Spell.FeatReference.Name} because your Spirit Ki Points are depleted.");
             return;
         }
 

@@ -1,4 +1,3 @@
-using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
@@ -10,22 +9,21 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 
 public static class CrashingMeteor
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnUseFeat? 
-            wholenessData = null, OnCreatureAttack? attackData = null)
+    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
     {
         switch (technique)
         {
             case TechniqueType.Stunning:
-                AugmentStunning(attackData);
+                AugmentStunningStrike(attackData);
                 break;
             case TechniqueType.Axiomatic:
-                AugmentAxiomatic(attackData);
+                AugmentAxiomaticStrike(attackData);
                 break;
             case TechniqueType.KiShout:
                 AugmentKiShout(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholeness(wholenessData);
+                AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(castData);
@@ -43,32 +41,31 @@ public static class CrashingMeteor
     }
 
     /// <summary>
-    ///     Stunning Strike deals 2d6 elemental damage in a medium area around the target. The damage isn’t multiplied by
+    ///     Stunning Strike deals 2d6 elemental damage in a large area around the target. The damage isn’t multiplied by
     ///     critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental
     ///     damage.
     /// </summary>
-    private static void AugmentStunning(OnCreatureAttack attackData)
+    private static void AugmentStunningStrike(OnCreatureAttack attackData)
     {
         StunningStrike.DoStunningStrike(attackData);
 
         NwCreature monk = attackData.Attacker;
-        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int diceAmount = monkLevel switch
+        DamageType elementalType = MonkUtils.GetElementalType(monk);
+        int dc = MonkUtils.CalculateMonkDc(monk);
+        int diceAmount = MonkUtils.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
-            MonkLevel.KiFocusIii => 8,
+            KiFocus.KiFocus1 => 4,
+            KiFocus.KiFocus2 => 6,
+            KiFocus.KiFocus3 => 8,
             _ => 2
         };
         Effect elementalAoeVfx = elementalType switch
         {
-            DamageType.Fire => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Medium),
-            DamageType.Cold => MonkUtilFunctions.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Medium),
-            DamageType.Electrical => MonkUtilFunctions.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Medium),
-            DamageType.Acid => MonkUtilFunctions.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Medium),
-            _ => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Medium)
+            DamageType.Fire => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large),
+            DamageType.Cold => MonkUtils.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
+            DamageType.Electrical => MonkUtils.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
+            DamageType.Acid => MonkUtils.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
+            _ => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large)
         };
         Effect elementalDamageVfx = elementalType switch
         {
@@ -88,7 +85,7 @@ public static class CrashingMeteor
         };
 
         attackData.Target.ApplyEffect(EffectDuration.Instant, elementalAoeVfx);
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true,
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
@@ -130,20 +127,19 @@ public static class CrashingMeteor
     ///     Axiomatic Strike deals +1 bonus elemental damage to the target, with an additional +1 for every Ki Focus,
     ///     to a maximum of +4 elemental damage.
     /// </summary>
-    private static void AugmentAxiomatic(OnCreatureAttack attackData)
+    private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
     {
         AxiomaticStrike.DoAxiomaticStrike(attackData);
 
         NwCreature monk = attackData.Attacker;
-        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
+        DamageType elementalType = MonkUtils.GetElementalType(monk);
         DamageData<short> damageData = attackData.DamageData;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
         short elementalDamage = damageData.GetDamageByType(elementalType);
-        short bonusDamageElemental = monkLevel switch
+        short bonusDamageElemental = MonkUtils.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 2,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 3,
-            MonkLevel.KiFocusIii => 4,
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
             _ => 1
         };
 
@@ -152,31 +148,30 @@ public static class CrashingMeteor
     }
 
     /// <summary>
-    ///     Wholeness of Body deals 2d6 elemental damage in a medium area round the monk, with a successful reflex save
+    ///     Wholeness of Body deals 2d6 elemental damage in a large area round the monk, with a successful reflex save
     ///     halving the damage. Each Ki Focus adds 2d6 damage to a maximum of 8d6 elemental damage.
     /// </summary>
-    private static void AugmentWholeness(OnUseFeat wholenessData)
+    private static void AugmentWholenessOfBody(OnSpellCast castData)
     {
-        WholenessOfBody.DoWholenessOfBody(wholenessData);
+        WholenessOfBody.DoWholenessOfBody(castData);
 
-        NwCreature monk = wholenessData.Creature;
-        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int diceAmount = monkLevel switch
+        NwCreature monk = (NwCreature)castData.Caster;
+        DamageType elementalType = MonkUtils.GetElementalType(monk);
+        int dc = MonkUtils.CalculateMonkDc(monk);
+        int diceAmount = MonkUtils.GetKiFocus(monk) switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 4,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 6,
-            MonkLevel.KiFocusIii => 8,
+            KiFocus.KiFocus1 => 4,
+            KiFocus.KiFocus2 => 6,
+            KiFocus.KiFocus3 => 8,
             _ => 2
         };
         Effect elementalAoeVfx = elementalType switch
         {
-            DamageType.Fire => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Medium),
-            DamageType.Cold => MonkUtilFunctions.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Medium),
-            DamageType.Electrical => MonkUtilFunctions.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Medium),
-            DamageType.Acid => MonkUtilFunctions.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Medium),
-            _ => MonkUtilFunctions.ResizedVfx(VfxType.FnfFireball, RadiusSize.Medium)
+            DamageType.Fire => MonkUtils.ResizedVfx(VfxType.FnfFirestorm, RadiusSize.Large),
+            DamageType.Cold => MonkUtils.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
+            DamageType.Electrical => MonkUtils.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
+            DamageType.Acid => MonkUtils.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
+            _ => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large)
         };
         Effect elementalDamageVfx = elementalType switch
         {
@@ -196,7 +191,7 @@ public static class CrashingMeteor
         };
 
         monk.ApplyEffect(EffectDuration.Instant, elementalAoeVfx);
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true,
+        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
@@ -242,14 +237,23 @@ public static class CrashingMeteor
     private static void AugmentKiShout(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        DamageType elementalType = MonkUtilFunctions.GetElementalType(monk);
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int dc = MonkUtilFunctions.CalculateMonkDc(monk);
-        int vulnerabilityPct = monkLevel switch
+        DamageType elementalType = MonkUtils.GetElementalType(monk);
+        VfxType elementalDamageVfx = elementalType switch
         {
-            >= MonkLevel.KiFocusI and < MonkLevel.KiFocusIi => 20,
-            >= MonkLevel.KiFocusIi and < MonkLevel.KiFocusIii => 30,
-            MonkLevel.KiFocusIii => 40,
+            DamageType.Fire => VfxType.ImpFlameS,
+            DamageType.Cold => VfxType.ImpFrostS,
+            DamageType.Electrical => VfxType.ComHitElectrical,
+            DamageType.Acid => VfxType.ImpAcidS,
+            _ => VfxType.ImpFlameS
+        };
+        
+        KiShout.DoKiShout(castData, elementalType, elementalDamageVfx);
+        
+        int vulnerabilityPct = MonkUtils.GetKiFocus(monk) switch
+        {
+            KiFocus.KiFocus1 => 20,
+            KiFocus.KiFocus2 => 30,
+            KiFocus.KiFocus3 => 40,
             _ => 10
         };
         VfxType elementalVfx = elementalType switch
@@ -260,51 +264,18 @@ public static class CrashingMeteor
             DamageType.Acid => VfxType.DurAuraPulseGreenBlack,
             _ => VfxType.DurAuraPulseOrangeBlack
         };
-        VfxType elementalDamageVfx = elementalType switch
-        {
-            DamageType.Fire => VfxType.ImpFlameS,
-            DamageType.Cold => VfxType.ImpFrostS,
-            DamageType.Electrical => VfxType.ComHitElectrical,
-            DamageType.Acid => VfxType.ImpAcidS,
-            _ => VfxType.ImpFlameS
-        };
-
-        // Regular ki shout effect
-        Effect kiShoutVfx = Effect.VisualEffect(VfxType.FnfHowlMind);
-        Effect kiShoutEffect = Effect.Stunned();
-        kiShoutEffect.SubType = EffectSubType.Supernatural;
-        TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
+        
 
         // Elemental effect
         Effect elementalEffect = Effect.LinkEffects(Effect.DamageImmunityDecrease(elementalType, vulnerabilityPct),
             Effect.VisualEffect(elementalVfx));
-        elementalEffect.SubType = EffectSubType.Supernatural;
-
-        monk.ApplyEffect(EffectDuration.Instant, kiShoutVfx);
+        
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
             if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
-
-            CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.AbilityHowlSonic)!);
-
-            int damageAmount = Random.Shared.Roll(4, monkLevel);
-            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, elementalType),
-                Effect.VisualEffect(elementalDamageVfx));
-
-            creatureInShape.ApplyEffect(EffectDuration.Temporary, elementalEffect, effectDuration);
-            creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
-
-            SavingThrowResult savingThrowResult =
-                creatureInShape.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
-
-            if (savingThrowResult is SavingThrowResult.Failure)
-            {
-                creatureInShape.ApplyEffect(EffectDuration.Temporary, kiShoutEffect, effectDuration);
-                continue;
-            }
-
-            creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+            
+            creatureInShape.ApplyEffect(EffectDuration.Temporary, elementalEffect, NwTimeSpan.FromRounds(3));
         }
     }
 }

@@ -20,42 +20,19 @@ public class BodyTechniqueHandler
         if (environment == "live") return;
 
         // Register method to listen for the OnSpellCast event.
-        NwModule.Instance.OnUseFeat += OnCastWholenessOfBody;
-        NwModule.Instance.OnSpellCast += OnCastEmptyBodyOrKiBarrier;
+        NwModule.Instance.OnSpellCast += CastBodyTechnique;
         Log.Info(message: "Monk Body Technique Handler initialized.");
     }
 
-    private static void OnCastWholenessOfBody(OnUseFeat wholenessData)
-    {
-        if (wholenessData.Creature.GetClassInfo(ClassType.Monk) is null) return;
-        
-        if (wholenessData.Feat.Id is not MonkFeat.WholenessOfBody) return;
-        
-        NwCreature monk =  wholenessData.Creature;
-        NwFeat bodyKiPointFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!;
-
-        if (!monk.KnowsFeat(bodyKiPointFeat) || monk.GetFeatRemainingUses(bodyKiPointFeat) < 1)
-        {
-            if (monk.IsPlayerControlled(out NwPlayer? player))
-                player.SendServerMessage
-                ($"Cannot use {wholenessData.Feat.Name} because your body ki is depleted.");
-            return;
-        }
-        
-        WholenessOfBody.CastWholenessOfBody(wholenessData);
-        
-        monk.DecrementRemainingFeatUses(bodyKiPointFeat);
-    }
-
-    private static void OnCastEmptyBodyOrKiBarrier(OnSpellCast castData)
+    private static void CastBodyTechnique(OnSpellCast castData)
     {
         if (castData.Caster is not NwCreature monk) return;
         if (castData.Spell?.FeatReference is null) return;
         if (monk.GetClassInfo(ClassType.Monk) is null) return;
 
         int technique = castData.Spell.FeatReference.Id;
-        
-        if (technique is not (MonkFeat.EmptyBody or MonkFeat.KiBarrier)) return;
+        bool isBodyTechnique = technique is MonkFeat.EmptyBody or MonkFeat.KiBarrier or MonkFeat.WholenessOfBody;
+        if (!isBodyTechnique) return;
 
         NwFeat bodyKiPointFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!;
 
@@ -64,12 +41,15 @@ public class BodyTechniqueHandler
             castData.PreventSpellCast = true;
             if (monk.IsPlayerControlled(out NwPlayer? player))
                 player.SendServerMessage
-                    ($"Cannot use {castData.Spell.FeatReference.Name} because your body ki is depleted.");
+                    ($"Cannot use {castData.Spell.FeatReference.Name} because your Body Ki Points are depleted.");
             return;
         }
 
         switch (technique)
         {
+            case MonkFeat.WholenessOfBody:
+                WholenessOfBody.CastWholenessOfBody(castData);
+                break;
             case MonkFeat.EmptyBody:
                 EmptyBody.CastEmptyBody(castData);
                 break;
@@ -80,7 +60,4 @@ public class BodyTechniqueHandler
 
         monk.DecrementRemainingFeatUses(bodyKiPointFeat);
     }
-    
-        
-    
 }
