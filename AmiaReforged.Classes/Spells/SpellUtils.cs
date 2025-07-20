@@ -141,7 +141,7 @@ public class SpellUtils
     }
 
     private static int CalculateMonkWildMagicDc(NwCreature creature, int spellLevel) => 
-        MonkUtilFunctions.CalculateMonkDc(creature) - 9 + spellLevel;
+        MonkUtils.CalculateMonkDc(creature) - 9 + spellLevel;
 
     private static int CalculateShifterDc(NwCreature creature)
     {
