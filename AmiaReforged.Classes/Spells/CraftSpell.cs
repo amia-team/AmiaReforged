@@ -14,26 +14,28 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
     private readonly NwSpell _spell = eventData.Spell;
 
-    private const byte PotionColorYellow = 0;
-    private const byte PotionColorGreen = 1;
-    private const byte PotionColorOrange = 2;
-    private const byte PotionColorRed = 3;
-    private const byte PotionColorViolet = 4;
-    private const byte PotionColorBlack = 6;
-    private const byte PotionColorDarkViolet = 7;
-    private const byte PotionColorWhite = 8;
-    private const byte PotionColorBlue = 9;
+    private const string PotionAbjuration = "brewpot_abju";
+    private const string PotionConjuration = "brewpot_conj";
+    private const string PotionDivination = "brewpot_divi";
+    private const string PotionEnchantment = "brewpot_ench";
+    private const string PotionEvocation = "brewpot_evoc";
+    private const string PotionIllusion = "brewpot_illu";
+    private const string PotionNecromancy = "brewpot_necr";
+    private const string PotionTransmutation = "brewpot_tran";
+    private const string PotionUniversal = "x2_it_pcpotion";
 
-    private const byte WandColorGrey = 0;
-    private const byte WandColorBlack = 1;
-    private const byte WandColorOrange = 2;
-    private const byte WandColorYellow = 3;
-    private const byte WandColorGreen = 4;
-    private const byte WandColorBlue = 5;
-    private const byte WandColorDarkBlue = 6;
-    private const byte WandColorViolet = 7;
+    private const string WandAbjuration = "craftwand_abju";
+    private const string WandConjuration = "craftwand_conj";
+    private const string WandDivination = "craftwand_divi";
+    private const string WandEnchantment = "craftwand_ench";
+    private const string WandEvocation = "craftwand_evoc";
+    private const string WandIllusion = "craftwand_illu";
+    private const string WandNecromancy = "craftwand_nec";
+    private const string WandTransmutation = "craftwand_tran";
+    private const string WandUniversal = "x2_it_pcwand";
+
+    private const string SpellScroll = "x2_it_spdvscr201";
     
-
     public void DoCraftSpell()
     {
         if (SpellPropTable == null) return;
@@ -138,7 +140,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             }
             int casterLevel = caster.Classes.First(cl => cl.Class == casterClass).Level;
 
-            CraftWand(spellPropId, casterLevel);
+            CraftWand(caster, spellPropId, casterLevel);
             ChargeForSpellCraft(player, caster, craftWandCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -177,7 +179,7 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            BrewPotion(spellPropId);
+            BrewPotion(caster, spellPropId);
             ChargeForSpellCraft(player, caster, brewPotionCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -199,19 +201,25 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
 
     private void ScribeScroll(NwCreature caster, int spellPropId)
     {
-        targetItem.BaseItem = BaseItemType.SpellScroll!;
+        if (caster.Location == null) return;
         
-        NwModule.Instance.MoveObjectToLimbo(targetItem);
+        NwItem? scribedScroll = NwItem.Create(SpellScroll, caster.Location);
+        if (scribedScroll == null) return;
         
-        targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
+        if (targetItem.StackSize == 1)
+            targetItem.Destroy();
+        else
+            targetItem.StackSize--;
+        
+        scribedScroll.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
 
-        AddClassRestrictions(targetItem);
+        AddClassRestrictions(scribedScroll);
         
-        targetItem.Name = _spell.Name.ToString();
-        targetItem.Description = _spell.Description.ToString();
+        scribedScroll.Name = _spell.Name.ToString();
+        scribedScroll.Description = _spell.Description.ToString();
         
-        caster.AcquireItem(targetItem);
+        caster.AcquireItem(scribedScroll);
     }
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
@@ -219,75 +227,84 @@ public class CraftSpell(SpellEvents.OnSpellCast eventData, NwItem targetItem)
             ? spellPropCl * 1 * 25 * targetItem.StackSize 
             : spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
     
-    private void CraftWand(int spellPropId, int casterLevel)
+    private void CraftWand(NwCreature caster, int spellPropId, int casterLevel)
     {
-        targetItem.BaseItem = BaseItemType.EnchantedWand!;
+        if (caster.Location == null) return;
         
-        targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.ChargePerUse1), 
+        NwItem? craftedWand = NwItem.Create(GetWandBySchool(), caster.Location);
+        if (craftedWand == null) return;
+        
+        if (targetItem.StackSize == 1)
+            targetItem.Destroy();
+        else
+            targetItem.StackSize--;
+         
+        
+        craftedWand.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.ChargePerUse1), 
             EffectDuration.Permanent);
 
-        targetItem.ItemCharges = casterLevel + 20;
+        craftedWand.ItemCharges = casterLevel + 20;
         
-        targetItem.Name = "Wand of "+_spell.Name;
-        targetItem.Description = _spell.Description.ToString();
+        craftedWand.Name = "Wand of "+_spell.Name;
+        craftedWand.Description = _spell.Description.ToString();
         
-        AddClassRestrictions(targetItem);
+        AddClassRestrictions(craftedWand);
         
-        // Isn't working!
-        targetItem.Appearance.ChangeAppearance(appearance =>
-        {
-            appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, 8);
-            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, GetWandColor());
-        });
+        caster.AcquireItem(craftedWand);
     }
 
-    private byte GetWandColor()
+    private string GetWandBySchool()
     {
         return _spell.SpellSchool switch
         {
-            SpellSchool.Abjuration => WandColorYellow,
-            SpellSchool.Conjuration => WandColorViolet,
-            SpellSchool.Divination => WandColorBlue,
-            SpellSchool.Enchantment => WandColorDarkBlue,
-            SpellSchool.Evocation => WandColorOrange,
-            SpellSchool.Illusion => WandColorGreen,
-            SpellSchool.Necromancy => WandColorBlack,
-            SpellSchool.Transmutation => WandColorOrange,
-            _ => WandColorGrey
+            SpellSchool.Abjuration => WandAbjuration,
+            SpellSchool.Conjuration => WandConjuration,
+            SpellSchool.Divination => WandDivination,
+            SpellSchool.Enchantment => WandEnchantment,
+            SpellSchool.Evocation => WandEvocation,
+            SpellSchool.Illusion => WandIllusion,
+            SpellSchool.Necromancy => WandNecromancy,
+            SpellSchool.Transmutation => WandTransmutation,
+            _ => WandUniversal
         };
     }
 
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 0 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
     
-    private void BrewPotion(int spellPropId)
+    private void BrewPotion(NwCreature caster, int spellPropId)
     {
-        targetItem.BaseItem = BaseItemType.EnchantedPotion!;
+        int stackSize = targetItem.StackSize;
+
+        if (caster.Location == null) return;
         
-        targetItem.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
+        NwItem? brewedPotion = NwItem.Create(GetPotionBySchool(), caster.Location, stackSize: stackSize);
+        if (brewedPotion == null) return;
+        
+        targetItem.Destroy();
+        
+        brewedPotion.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse), 
             EffectDuration.Permanent);
         
-        targetItem.Name = "Potion of "+_spell.Name;
-        targetItem.Description = _spell.Description.ToString();
+        brewedPotion.Name = "Potion of "+_spell.Name;
+        brewedPotion.Description = _spell.Description.ToString();
         
-        // This isn't working!
-        targetItem.Appearance.ChangeAppearance(appearance => 
-            appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, GetPotionColor()));
+        caster.AcquireItem(brewedPotion);   
     }
 
-    private byte GetPotionColor()
+    private string GetPotionBySchool()
     {
         return _spell.SpellSchool switch
         {
-            SpellSchool.Abjuration => PotionColorYellow,
-            SpellSchool.Conjuration => PotionColorViolet,
-            SpellSchool.Divination => PotionColorBlue,
-            SpellSchool.Enchantment => PotionColorDarkViolet,
-            SpellSchool.Evocation => PotionColorRed,
-            SpellSchool.Illusion => PotionColorGreen,
-            SpellSchool.Necromancy => PotionColorBlack,
-            SpellSchool.Transmutation => PotionColorOrange,
-            _ => PotionColorWhite
+            SpellSchool.Abjuration => PotionAbjuration,
+            SpellSchool.Conjuration => PotionConjuration,
+            SpellSchool.Divination => PotionDivination,
+            SpellSchool.Enchantment => PotionEnchantment,
+            SpellSchool.Evocation => PotionEvocation,
+            SpellSchool.Illusion => PotionIllusion,
+            SpellSchool.Necromancy => PotionNecromancy,
+            SpellSchool.Transmutation => PotionTransmutation,
+            _ => PotionUniversal
         };
     }
 
