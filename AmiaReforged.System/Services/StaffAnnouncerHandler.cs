@@ -13,7 +13,7 @@ public class StaffAnnouncerHandler
         string message = NWScript.GetLocalString(NWScript.GetModule(), sVarName: "staffMessage");
         if (string.Equals(message, b: "")) message = "Empty Variable";
 
-        var instance = new JoinWebhookService();
+        JoinWebhookService instance = new JoinWebhookService();
         _ = instance.LaunchStaffMessage(message);
     }
 }

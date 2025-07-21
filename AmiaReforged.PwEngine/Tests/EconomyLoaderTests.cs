@@ -11,7 +11,7 @@ namespace AmiaReforged.PwEngine.Tests;
 [TestFixture]
 public class EconomyLoaderTests
 {
-    private WorldEngineLoader _engineLoader = null!;
+    private WorldEngine _engine = null!;
 
     [OneTimeSetUp]
     public void SetUp()
@@ -34,14 +34,14 @@ public class EconomyLoaderTests
         Mock<IWorldConfigProvider> fakeConfig = new();
         fakeConfig.Setup(c => c.GetBoolean(It.IsAny<string>())).Returns(true);
 
-        _engineLoader = new WorldEngineLoader(fakeConfig.Object);
+        _engine = new WorldEngine(fakeConfig.Object, []);
     }
 
     [Test]
     public void Should_Find_Resources_Directory()
     {
         Assert.That(
-            _engineLoader.ResourceDirectoryExists(),
+            _engine.ResourceDirectoryExists(),
             Is.True,
             "Resource directory should exist"
         );
@@ -51,7 +51,7 @@ public class EconomyLoaderTests
     public void Should_Find_Materials()
     {
         Assert.That(
-            _engineLoader.Materials,
+            _engine.Materials,
             Is.Not.Empty,
             "Materials should have been loaded."
         );
@@ -61,7 +61,7 @@ public class EconomyLoaderTests
     public void Should_Find_ResourceNodes()
     {
         Assert.That(
-            _engineLoader.ResourceNodes,
+            _engine.ResourceNodes,
             Is.Not.Empty,
             "Resource Nodes should have been loaded."
         );
@@ -71,7 +71,7 @@ public class EconomyLoaderTests
     public void Should_Find_Environments()
     {
         Assert.That(
-            _engineLoader.Climates,
+            _engine.Climates,
             Is.Not.Empty,
             "Climates should not be empty"
         );
@@ -81,7 +81,7 @@ public class EconomyLoaderTests
     public void Should_Find_Regions()
     {
         Assert.That(
-            _engineLoader.Regions,
+            _engine.Regions,
             Is.Not.Empty,
             "Regions should have been loaded."
         );
@@ -91,7 +91,7 @@ public class EconomyLoaderTests
     public void Should_Have_No_Empty_Regions()
     {
         Assert.That(
-            _engineLoader.Regions.All(r => r.Areas.Count > 0),
+            _engine.Regions.All(r => r.Areas.Count > 0),
             Is.True,
             "A region must have at least one area assigned."
         );

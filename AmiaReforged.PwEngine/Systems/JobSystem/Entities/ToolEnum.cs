@@ -8,6 +8,6 @@ public enum ToolEnum
     Froe,
     Hammer,
     Chisel,
-    Pickaxe,
+    PickAxe,
     Shovel
 }

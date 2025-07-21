@@ -11,12 +11,12 @@ public class SpellDecoratorFactory
     public SpellDecoratorFactory()
     {
         // Scan for all classes decorated with the DecoratesSpell attribute
-        var decoratedTypes = Assembly.GetExecutingAssembly().GetTypes()
+        IEnumerable<Type> decoratedTypes = Assembly.GetExecutingAssembly().GetTypes()
             .Where(t => t.GetCustomAttribute<DecoratesSpell>() != null);
 
-        foreach (var type in decoratedTypes)
+        foreach (Type type in decoratedTypes)
         {
-            var attribute = type.GetCustomAttribute<DecoratesSpell>();
+            DecoratesSpell? attribute = type.GetCustomAttribute<DecoratesSpell>();
             if (attribute != null)
             {
                 if (!_decorators.ContainsKey(attribute.SpellType)) _decorators[attribute.SpellType] = new List<Type>();

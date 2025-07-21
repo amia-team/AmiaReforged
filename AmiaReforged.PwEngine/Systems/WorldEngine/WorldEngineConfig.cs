@@ -1,0 +1,42 @@
+using AmiaReforged.Core;
+using AmiaReforged.Core.Models.World;
+using AmiaReforged.Core.Services;
+using Anvil.Services;
+using NLog;
+
+namespace AmiaReforged.PwEngine.Systems.WorldEngine;
+
+[ServiceBinding(typeof(IWorldConfigProvider))]
+public class WorldEngineConfig(DatabaseContextFactory factory) : IWorldConfigProvider
+{
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly AmiaDbContext _ctx = factory.CreateDbContext();
+
+    public bool GetBoolean(string key)
+    {
+        bool value = false;
+
+        try
+        {
+            WorldConfiguration? entry = _ctx.WorldEngineConfig.FirstOrDefault(b =>
+                b.Key == key && b.ValueType == WorldConfigConstants.ConfigTypeBool);
+
+            if (entry != null) value = bool.Parse(entry.Value);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+
+        return value;
+    }
+
+    public int? GetInt(string key)
+    {
+        return null;
+    }
+
+    public float? GetFloat(string key) => null;
+
+    public string? GetString(string key) => null;
+}

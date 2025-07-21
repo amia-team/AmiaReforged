@@ -1,33 +1,32 @@
-using AmiaReforged.Core;
-using AmiaReforged.Core.Models.World;
-using AmiaReforged.Core.Services;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
-using Anvil.Services;
+using Anvil.API;
 using NLog;
 using YamlDotNet.Serialization;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
 // [ServiceBinding(typeof(WorldEngineLoader))]
-public class WorldEngineLoader
+public class WorldEngine
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly IWorldConfigProvider _config;
+    private readonly IEnumerable<ISubSystemInitializer> _initalizers;
     private readonly Deserializer _deserializer = new();
 
     private readonly string _resourcesPath;
 
 
-    public List<ClimateDefinition> Climates { get; private set; } = [];
-    public List<MaterialDefinition> Materials { get; private set; } = [];
-    public List<NodeDefinition> ResourceNodes { get; private set; } = [];
-    public List<RegionDefinition> Regions { get; private set; } = [];
+    public List<ClimateDefinition> Climates { get; } = [];
+    public List<MaterialDefinition> Materials { get; } = [];
+    public List<NodeDefinition> ResourceNodes { get; } = [];
+    public List<RegionDefinition> Regions { get; } = [];
 
-    public WorldEngineLoader(IWorldConfigProvider config)
+    public WorldEngine(IWorldConfigProvider config, IEnumerable<ISubSystemInitializer> initalizers)
     {
         _config = config;
+        _initalizers = initalizers;
         _resourcesPath = Environment.GetEnvironmentVariable("ECONOMY_RESOURCES_PATH") ?? string.Empty;
 
         LoadAllDefinitions();
@@ -140,10 +139,23 @@ public class WorldEngineLoader
         if (!initialized)
         {
             DoFirstTimeSetUp();
+            return;
         }
     }
 
     private void DoFirstTimeSetUp()
+    {
+        foreach (ISubSystemInitializer subSystemInitializer in _initalizers)
+        {
+            subSystemInitializer.Init(this);
+        }
+    }
+
+    private void SeedRandomAgents()
+    {
+    }
+
+    private void SeedOres()
     {
     }
 
@@ -151,53 +163,4 @@ public class WorldEngineLoader
     {
         return Directory.Exists(_resourcesPath);
     }
-}
-
-internal static class WorldConfigConstants
-{
-    public const string InitializedKey = "economy_initialized";
-    public const string ConfigTypeBool = "bool";
-}
-
-[ServiceBinding(typeof(IWorldConfigProvider))]
-public class WorldEngineConfig(DatabaseContextFactory factory) : IWorldConfigProvider
-{
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly AmiaDbContext _ctx = factory.CreateDbContext();
-
-    public bool GetBoolean(string key)
-    {
-        bool value = false;
-
-        try
-        {
-            WorldConfiguration? entry = _ctx.WorldEngineConfig.FirstOrDefault(b =>
-                b.Key == key && b.ValueType == WorldConfigConstants.ConfigTypeBool);
-
-            if (entry != null) value = bool.Parse(entry.Value);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e);
-        }
-
-        return value;
-    }
-
-    public int? GetInt(string key)
-    {
-        return null;
-    }
-
-    public float? GetFloat(string key) => null;
-
-    public string? GetString(string key) => null;
-}
-
-public interface IWorldConfigProvider
-{
-    public bool GetBoolean(string key);
-    public int? GetInt(string key);
-    public float? GetFloat(string key);
-    public string? GetString(string key);
 }
