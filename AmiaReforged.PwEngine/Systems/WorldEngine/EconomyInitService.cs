@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Economy.ResourceNodes;
 using Anvil.API;
 using NLog;
 using YamlDotNet.Serialization;
@@ -7,7 +8,7 @@ using YamlDotNet.Serialization;
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
 // [ServiceBinding(typeof(WorldEngineLoader))]
-public class WorldEngine
+public class EconomyInitService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -20,10 +21,12 @@ public class WorldEngine
 
     public List<ClimateDefinition> Climates { get; } = [];
     public List<MaterialDefinition> Materials { get; } = [];
-    public List<NodeDefinition> ResourceNodes { get; } = [];
+    public List<ResourceNodeDefinition> NodeDefinitions { get; } = [];
     public List<RegionDefinition> Regions { get; } = [];
+    
+    public List<ResourceNodeInstance> ResourceInstances { get; } = [];
 
-    public WorldEngine(IWorldConfigProvider config, IEnumerable<ISubSystemInitializer> initalizers)
+    public EconomyInitService(IWorldConfigProvider config, IEnumerable<ISubSystemInitializer> initalizers)
     {
         _config = config;
         _initalizers = initalizers;
@@ -95,8 +98,8 @@ public class WorldEngine
             {
                 using StreamReader reader = new(file);
                 string yamlContents = reader.ReadToEnd();
-                NodeDefinition definition = _deserializer.Deserialize<NodeDefinition>(yamlContents);
-                ResourceNodes.Add(definition);
+                ResourceNodeDefinition definition = _deserializer.Deserialize<ResourceNodeDefinition>(yamlContents);
+                NodeDefinitions.Add(definition);
             }
             catch (Exception ex)
             {

@@ -11,7 +11,7 @@ namespace AmiaReforged.PwEngine.Tests;
 [TestFixture]
 public class EconomyLoaderTests
 {
-    private WorldEngine _engine = null!;
+    private EconomyInitService _engine = null!;
 
     [OneTimeSetUp]
     public void SetUp()
@@ -34,7 +34,7 @@ public class EconomyLoaderTests
         Mock<IWorldConfigProvider> fakeConfig = new();
         fakeConfig.Setup(c => c.GetBoolean(It.IsAny<string>())).Returns(true);
 
-        _engine = new WorldEngine(fakeConfig.Object, []);
+        _engine = new EconomyInitService(fakeConfig.Object, []);
     }
 
     [Test]
@@ -61,7 +61,7 @@ public class EconomyLoaderTests
     public void Should_Find_ResourceNodes()
     {
         Assert.That(
-            _engine.ResourceNodes,
+            _engine.NodeDefinitions,
             Is.Not.Empty,
             "Resource Nodes should have been loaded."
         );

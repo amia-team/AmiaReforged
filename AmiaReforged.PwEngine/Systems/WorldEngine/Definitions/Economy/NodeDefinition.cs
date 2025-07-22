@@ -1,4 +1,7 @@
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Economy.ResourceNodes;
+using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 
@@ -10,6 +13,16 @@ public class NodeDefinition
     public required string Description { get; set; }
 
     public List<ItemYieldDescription> Yield { get; set; } = new();
+    public ResourceType Type { get; set; }
+    public int Appearance { get; set; } = 1;
+}
+
+public class ResourceNodeInstance
+{
+    public required ResourceNodeDefinition Definition { get; set; }
+    public NwPlaceable? Instance { get; set; }
+    public required SavedLocation Location { get; set; }
+    public float Richness { get; set; }
 }
 
 public class ItemYieldDescription

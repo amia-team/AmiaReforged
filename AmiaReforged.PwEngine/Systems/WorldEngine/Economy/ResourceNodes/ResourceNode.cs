@@ -33,6 +33,8 @@ public class ResourceNodeDefinition
     /// Amount of time in rounds it takes to complete one harvest cycle.
     /// </summary>
     public required int HarvestTime { get; set; }
+
+    public ResourceType Type { get; set; }
 }
 
 public class ResourceNode

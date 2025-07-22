@@ -1,0 +1,6 @@
+Name: Smelt Native Copper Nuggets
+AmountModifier: RichnessAndQuality
+QualityModifier: AverageQualities
+RequiredItems:
+  - ItemTag: ore_copper_native
+    Amount: 1
