@@ -1,3 +1,4 @@
+using AmiaReforged.Core.Models;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Economy.ResourceNodes;

@@ -11,7 +11,7 @@ namespace AmiaReforged.PwEngine.Tests;
 [TestFixture]
 public class EconomyLoaderTests
 {
-    private EconomyInitService _engine = null!;
+    private EconomySubsystem _engine = null!;
 
     [OneTimeSetUp]
     public void SetUp()
@@ -34,7 +34,7 @@ public class EconomyLoaderTests
         Mock<IWorldConfigProvider> fakeConfig = new();
         fakeConfig.Setup(c => c.GetBoolean(It.IsAny<string>())).Returns(true);
 
-        _engine = new EconomyInitService(fakeConfig.Object, []);
+        _engine = new EconomySubsystem(fakeConfig.Object, [], null!);
     }
 
     [Test]

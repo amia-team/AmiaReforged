@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Numerics;
-using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Database.Entities;
+namespace AmiaReforged.Core.Models;
 
 public class SavedLocation
 {

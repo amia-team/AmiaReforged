@@ -1,14 +1,15 @@
+using AmiaReforged.Core;
+using AmiaReforged.Core.Services;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Economy.ResourceNodes;
-using Anvil.API;
 using NLog;
 using YamlDotNet.Serialization;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
 // [ServiceBinding(typeof(WorldEngineLoader))]
-public class EconomyInitService
+public class EconomySubsystem
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -17,20 +18,22 @@ public class EconomyInitService
     private readonly Deserializer _deserializer = new();
 
     private readonly string _resourcesPath;
+    private readonly AmiaDbContext _ctx;
 
 
     public List<ClimateDefinition> Climates { get; } = [];
     public List<MaterialDefinition> Materials { get; } = [];
     public List<ResourceNodeDefinition> NodeDefinitions { get; } = [];
     public List<RegionDefinition> Regions { get; } = [];
-    
+
     public List<ResourceNodeInstance> ResourceInstances { get; } = [];
 
-    public EconomyInitService(IWorldConfigProvider config, IEnumerable<ISubSystemInitializer> initalizers)
+    public EconomySubsystem(IWorldConfigProvider config, IEnumerable<ISubSystemInitializer> initalizers, DatabaseContextFactory factory)
     {
         _config = config;
         _initalizers = initalizers;
         _resourcesPath = Environment.GetEnvironmentVariable("ECONOMY_RESOURCES_PATH") ?? string.Empty;
+        _ctx = factory.CreateDbContext();
 
         LoadAllDefinitions();
         Startup();
@@ -154,16 +157,14 @@ public class EconomyInitService
         }
     }
 
-    private void SeedRandomAgents()
-    {
-    }
-
-    private void SeedOres()
-    {
-    }
 
     public bool ResourceDirectoryExists()
     {
         return Directory.Exists(_resourcesPath);
+    }
+
+    public void PersistNode(ResourceNodeInstance resourceNodeInstance)
+    {
+
     }
 }

@@ -8,8 +8,8 @@ public class NodeHarvestService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private readonly EconomyInitService _engine;
-    public NodeHarvestService(EconomyInitService engine)
+    private readonly WorldEngine.EconomySubsystem _engine;
+    public NodeHarvestService(WorldEngine.EconomySubsystem engine)
     {
         _engine = engine;
 
