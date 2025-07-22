@@ -38,9 +38,9 @@ public static class PostgresConfig
 
     private static string GetDatabase()
     {
-        string database = Environment.GetEnvironmentVariable(variable: "POSTGRES_DB")!;
+        string database = Environment.GetEnvironmentVariable(variable: "PW_DB")!;
         if (!string.IsNullOrEmpty(database)) return database;
-        Log.Warn(message: "POSTGRES_DATABASE environment variable not set, defaulting to amia");
+        Log.Warn(message: "POSTGRES_DATABASE environment variable not set, defaulting to pw_engine");
         database = "amia";
 
         return database;

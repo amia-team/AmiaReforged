@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 
-namespace AmiaReforged.Core.Models;
+namespace AmiaReforged.PwEngine.Database.Entities;
 
 public class SavedLocation
 {
