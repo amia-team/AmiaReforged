@@ -2,9 +2,3 @@ ResRef: econ_msmall3
 Tag: ore_copper
 Name: "Native Copper Ore"
 Appearance: 9
-UsedIn:
-  - Workstation: Smelter 
-    YieldItem: ingot_copper
-    BaseAmount: 1
-    AmountModifier: AdditiveQuality
-    QualityModifier: AverageQualities
