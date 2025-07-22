@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -10,11 +11,10 @@ namespace AmiaReforged.PwEngine.Database;
 public class EconomyContext : DbContext
 {
     private readonly string _connectionString = ConnectionString();
-    public DbSet<PersistedWorldCharacter> WorldCharacters { get; set; } = null!;
-    public DbSet<ItemStorage> StorageContainers { get; set; } = null!;
-    public DbSet<JobItem> Items { get; set; } = null!;
-    public DbSet<StoredJobItem> StoredJobItems { get; set; } = null!;
-    public DbSet<ItemStorageUser> ItemStorageUsers { get; set; } = null!;
+
+    public DbSet<PersistentResourceNode> ExistingNodes { get; set; } = null!;
+    public DbSet<SavedLocation> SavedLocations { get; set; } = null!;
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
