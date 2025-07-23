@@ -3,3 +3,5 @@ Name: "Limonite Ore"
 Description: Limonite is a brownish, earthy iron ore formed through the weathering of other iron-rich minerals; it produces lower-grade iron when smelted.
 Tag: ore_limonite
 Appearance: 20
+MaxQuality: Good
+MinQuality: VeryPoor

@@ -8,7 +8,7 @@ using YamlDotNet.Serialization;
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy.YamlLoaders;
 
 [ServiceBinding(typeof(ResourceNodeLoader))]
-public class ResourceNodeLoader : ILoaderStrategy<ResourceNodeDefinition>
+public class ResourceNodeLoader : ILoader<ResourceNodeDefinition>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly Deserializer _deserializer = new();

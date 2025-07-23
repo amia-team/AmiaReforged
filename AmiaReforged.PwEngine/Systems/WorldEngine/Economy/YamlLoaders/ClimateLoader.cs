@@ -7,7 +7,7 @@ using YamlDotNet.Serialization;
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy.YamlLoaders;
 
 [ServiceBinding(typeof(ClimateLoader))]
-public class ClimateLoader : ILoaderStrategy<ClimateDefinition>
+public class ClimateLoader : ILoader<ClimateDefinition>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly Deserializer _deserializer = new();

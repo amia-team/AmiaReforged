@@ -3,3 +3,5 @@ Name: "Tetrahedrite Ore"
 Description: Tetrahedrite is a naturally occurring ore with a dark, metallic luster and a mottled appearance of grey and coppery tones. It is a common source of copper, though it also occasionally yields silver when smelted.
 Tag: ore_tetrahedrite
 Appearance: 9
+MaxQuality: VeryGood
+MinQuality: VeryPoor

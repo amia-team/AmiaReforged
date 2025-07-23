@@ -2,7 +2,7 @@ using YamlDotNet.Serialization;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy.YamlLoaders;
 
-public interface ILoaderStrategy<T>
+public interface ILoader<T>
 {
     List<T> LoadedResources { get; }
     List<ResourceLoadError> Failures { get; }

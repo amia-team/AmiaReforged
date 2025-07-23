@@ -22,8 +22,7 @@ public class EconomySubsystem
 
         if (!initialized)
         {
-            DoFirstTimeSetUp();
-            return;
+            // DoFirstTimeSetUp();
         }
 
         UpdateStoredDefinitions();

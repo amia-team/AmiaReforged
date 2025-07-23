@@ -1,4 +1,7 @@
-ResRef: econ_msmall3
+BaseItemResRef: econ_msmall3
 Tag: ore_copper
-Name: "Native Copper Ore"
+Name: "Copper Nugget"
+Description: "Reddish-brown metallic nuggets of pure copper found in their natural state. These pieces of native copper show characteristic dendritic or crystalline formations, occasionally with a weathered green patina on the surface. The metal's natural malleability and purity make it particularly valuable for crafting."
 Appearance: 9
+MaxQuality: Masterwork
+MinQuality: Average # Nuggets should never be of poor quality

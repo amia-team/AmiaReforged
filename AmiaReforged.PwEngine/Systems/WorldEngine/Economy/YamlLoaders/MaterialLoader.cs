@@ -8,7 +8,7 @@ using YamlDotNet.Serialization;
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy.YamlLoaders;
 
 [ServiceBinding(typeof(MaterialLoader))]
-public class MaterialLoader : ILoaderStrategy<MaterialDefinition>
+public class MaterialLoader : ILoader<MaterialDefinition>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public List<MaterialDefinition> LoadedResources { get; } = [];
