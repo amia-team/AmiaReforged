@@ -7,8 +7,7 @@ public class SavedLocation
 {
     [Key] public long Id { get; set; }
 
-    [Length(1, 16)] public required string AreaResRef { get; set; }
-
+    [StringLength(16, MinimumLength = 1)] public required string AreaResRef { get; set; }
     public required float X { get; set; }
     public required float Y { get; set; }
     public required float Z { get; set; }

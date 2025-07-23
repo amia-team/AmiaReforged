@@ -1,7 +1,0 @@
-name: "Post and Lintel"
-description: "The post-and-lintel system, a hallmark of ancient architecture, features horizontal stone beams (lintels) supported by vertical columns or posts, creating a timeless structural elegance. Your stone structures all provide +1 defense to their area."
-effect_tags:
-  - StructuralDefense1
-knowledge_tags:
-  - RecipePillar
-  - RecipeCromlech

@@ -1,7 +1,7 @@
 using AmiaReforged.Core.Models;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Economy.ResourceNodes;
 using Anvil.API;
 using Anvil.Services;
 using NLog;

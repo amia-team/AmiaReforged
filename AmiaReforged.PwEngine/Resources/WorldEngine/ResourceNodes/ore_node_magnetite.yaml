@@ -1,5 +1,6 @@
-BaseItemResRef: econ_msmall3
-Name: "Magnetite Ore"
+Name: "Magnetite"
+Tag: ore_node_magnetite
+Type: Ore
+Appearance: 4792 # Mine Deposit, Green
 Description: Magnetite is a naturally magnetic iron ore known for producing sturdy iron when smelted, often found in massive veins.
-Tag: ore_magnetite
-Appearance: 6
+HarvestAction: Attack

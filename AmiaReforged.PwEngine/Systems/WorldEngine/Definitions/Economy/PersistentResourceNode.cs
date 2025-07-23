@@ -13,4 +13,5 @@ public class PersistentResourceNode
     public string ResourceTag { get; set; } = null!;
 
     [ForeignKey("LocationId")] public SavedLocation Location { get; set; } = null!;
+    public float Richness { get; set; }
 }

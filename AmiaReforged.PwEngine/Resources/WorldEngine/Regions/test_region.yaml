@@ -1,4 +1,5 @@
 Name: "Test Region"
+Tag: test_region
 ClimateTag: temperate_grassland
 Areas:
   - ResRef: zwrldsettlemnt

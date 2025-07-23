@@ -1,6 +1,0 @@
-name: "Metalworking"
-description: "Metalworking encompasses smithing and shaping metals"
-fields:
-  - Armoursmith # A highly specialized and complicated field of metalworking
-  - Blacksmith # Toolmakers and creators of generally useful metal items
-  - Weaponsmith # Much like armoursmithing, but tends to be more pragmatic and less complex.

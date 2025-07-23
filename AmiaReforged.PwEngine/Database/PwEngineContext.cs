@@ -16,6 +16,8 @@ public class PwEngineContext : DbContext
     public DbSet<StoredJobItem> StoredJobItems { get; set; } = null!;
     public DbSet<ItemStorageUser> ItemStorageUsers { get; set; } = null!;
 
+    public DbSet<WorldConfiguration> WorldConfiguration { get; set; } = null!;
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -29,11 +31,11 @@ public class PwEngineContext : DbContext
     {
         NpgsqlConnectionStringBuilder connectionBuilder = new()
         {
-            Database = PostgresConfig.Database,
-            Host = PostgresConfig.Host,
-            Username = PostgresConfig.Username,
-            Password = PostgresConfig.Password,
-            Port = PostgresConfig.Port
+            Database = EngineDbConfig.Database,
+            Host = EngineDbConfig.Host,
+            Username = EngineDbConfig.Username,
+            Password = EngineDbConfig.Password,
+            Port = EngineDbConfig.Port
         };
         return connectionBuilder.ConnectionString;
     }

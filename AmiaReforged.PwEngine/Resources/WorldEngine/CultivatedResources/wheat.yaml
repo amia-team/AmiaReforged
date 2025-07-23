@@ -1,7 +1,0 @@
-ItemType: MiscSmall
-Type: Grain
-Name: Wheat
-TimeToHarvest: 1000
-EnvironmentTags:
-  - Temperate Grassland
-  - Temperate Forest
