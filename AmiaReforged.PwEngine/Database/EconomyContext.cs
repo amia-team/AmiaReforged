@@ -26,6 +26,14 @@ public class EconomyContext : DbContext
         }
     }
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ResourceNodeDefinition>()
+            .Property(e => e.YieldItems)
+            .HasColumnType("jsonb");
+    }
+
+
     private static string ConnectionString()
     {
         NpgsqlConnectionStringBuilder connectionBuilder = new()
