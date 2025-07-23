@@ -32,11 +32,25 @@ public class ResourceNodeDefinition
     public float ScaleVariance { get; set; } = 0.0f;
 
     /// <summary>
-    /// Amount of time in rounds it takes to complete one harvest cycle.
+    /// Baseline amount of time in rounds it takes to complete one harvest cycle.
     /// </summary>
-    public required int HarvestTime { get; set; }
+    public required int BaseHarvestTime { get; set; }
 
     public required ResourceType Type { get; set; }
 
+    /// <summary>
+    /// The type of action that must occur for a harvest attempt to be made.
+    /// </summary>
     public required HarvestActionEnum HarvestAction { get; set; }
+
+    public required int BaseQuantity { get; set; }
+
+    public class YieldItem
+    {
+        public required string ItemTag { get; set; }
+        public required float Chance { get; set; }
+    }
+
+    public List<YieldItem> YieldItems { get; set; } = new();
+
 }

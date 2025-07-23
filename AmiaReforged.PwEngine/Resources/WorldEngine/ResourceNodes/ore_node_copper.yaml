@@ -4,3 +4,10 @@ Type: Ore
 Appearance: 4792 # Mine Deposit, Green
 Description: Copper is a widely used metal found in many alloys, including bronze, which is nearly as effective as iron for forging weapons and armor, and brass.
 HarvestAction: Attack
+BaseHarvestTime: 1 # 1 Round
+BaseQuantity: 50 # 50 nuggets in a given node instance as a baseline, before factoring in richness and physical size.
+YieldItems:
+  - ItemTag: ore_copper_native
+    Chance: 1.0 # 100%
+  - ItemTag: geode_malachite
+    Chance: 0.05 # 5%

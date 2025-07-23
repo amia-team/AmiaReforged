@@ -80,7 +80,7 @@ public class OreNodeInitializer : ISubSystemInitializer
             {
                 if (NWScript.GetTag(current) == WorldConfigConstants.NodeSpawnPointRef)
                 {
-                    NwPlaceable? plc = NwPlaceable.Create(WorldConfigConstants.OrePlcRef,
+                    NwPlaceable? plc = NwPlaceable.Create(WorldConfigConstants.GenericNodePlcRef,
                         NWScript.GetLocation(current)!);
 
                     if (plc != null)

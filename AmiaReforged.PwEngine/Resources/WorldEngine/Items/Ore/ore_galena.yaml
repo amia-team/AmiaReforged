@@ -3,5 +3,6 @@ Name: "Galena Ore"
 Description: Galena is a heavy, silver-gray ore with a distinct, cubic crystal structure and a bright metallic sheen. It is the primary source of lead and often contains small but valuable quantities of silver, making it a prized find for dwarves seeking wealth as well as utility. Galena veins are typically found deep underground, embedded in layers of sedimentary or igneous stone, and are often associated with other valuable ores.
 Tag: ore_galena
 Appearance: 9
+ItemType: Ore
 MaxQuality: VeryGood
 MinQuality: VeryPoor

@@ -3,5 +3,6 @@ Name: "Cassiterite Ore"
 Description: Cassiterite is a tin-bearing ore with a dark, glassy sheen, used primarily to produce bronze when alloyed with copper.
 Tag: ore_cassiterite
 Appearance: 8
+ItemType: Ore
 MaxQuality: VeryGood
 MinQuality: VeryPoor

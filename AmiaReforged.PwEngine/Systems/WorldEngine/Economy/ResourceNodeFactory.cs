@@ -22,7 +22,7 @@ public class ResourceNodeFactory(EconomySubsystem economy)
             return;
         }
 
-        NwPlaceable? plc = NwPlaceable.Create(WorldConfigConstants.OrePlcRef, l);
+        NwPlaceable? plc = NwPlaceable.Create(WorldConfigConstants.GenericNodePlcRef, l);
 
         if (plc == null)
         {

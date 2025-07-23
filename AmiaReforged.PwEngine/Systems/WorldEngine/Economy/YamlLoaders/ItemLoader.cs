@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using Microsoft.IdentityModel.Tokens;
 using NLog;
 using YamlDotNet.Serialization;
@@ -67,6 +68,11 @@ public class ItemLoader : ILoader<ItemDefinition>
                     errors = $"Invalid quality range: Min quality must be less than, or equal to, max quality.;{errors}";
                 }
 
+                if (item.ItemType == ItemType.Undefined)
+                {
+                    errors = $"Invalid item type: Must be defined.;{errors}";
+                }
+
                 if (errors.IsNullOrEmpty())
                 {
                     LoadedResources.Add(item);
@@ -82,15 +88,4 @@ public class ItemLoader : ILoader<ItemDefinition>
             }
         }
     }
-}
-
-public class ItemDefinition
-{
-    public required string BaseItemResRef { get; set; }
-    public required string Name { get; set; }
-    public required string Tag { get; set; }
-    public required string Description { get; set; }
-    public required int Appearance { get; set; }
-    public QualityEnum MaxQuality { get; set; } = QualityEnum.Undefined;
-    public QualityEnum MinQuality { get; set; } = QualityEnum.Undefined;
 }

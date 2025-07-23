@@ -3,5 +3,6 @@ Name: "Hematite Ore"
 Description: Hematite is a dense, iron-rich ore with a reddish-black hue, commonly smelted to produce high-quality iron.
 Tag: ore_hematite
 Appearance: 3
+ItemType: Ore
 MaxQuality: VeryGood
 MinQuality: Poor

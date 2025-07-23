@@ -60,6 +60,37 @@ public class ResourceNodeLoader : ILoader<ResourceNodeDefinition>
                     errors = $"Harvest Action must be defined.;{errors}";
                 }
 
+                if (definition.BaseQuantity < 1)
+                {
+                    errors = $"Invalid base quantity: Must be greater than 0.;{errors}";
+                }
+
+                if (definition.BaseHarvestTime < 1)
+                {
+                    errors = $"Invalid base harvest time: Harvest time must always take at least 1 round (6 seconds).;{errors}";
+                }
+
+                if (definition.YieldItems.IsNullOrEmpty())
+                {
+                    errors = $"A resource node must always yield something.;{errors}";
+                }
+
+                if (definition.YieldItems.Count > 0)
+                {
+                    foreach (ResourceNodeDefinition.YieldItem yieldedItem in definition.YieldItems)
+                    {
+                        if (yieldedItem.ItemTag.IsNullOrEmpty())
+                        {
+                            errors = $"Invalid item tag: Must not be empty.;{errors}";
+                        }
+
+                        if (yieldedItem.Chance <= 0.01)
+                        {
+                            errors = $"Invalid chance: Must be greater than 0.01.;{errors}";
+                        }
+                    }
+                }
+
                 if (errors.IsNullOrEmpty())
                 {
                     LoadedResources.Add(definition);

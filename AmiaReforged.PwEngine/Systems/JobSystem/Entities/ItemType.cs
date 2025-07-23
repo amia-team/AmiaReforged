@@ -2,6 +2,7 @@
 
 public enum ItemType
 {
+    Undefined,
     Armor,
     Weapon,
     Gem,

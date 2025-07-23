@@ -7,5 +7,5 @@ internal static class WorldConfigConstants
 
     public const string ResourceNodeZoneRef = "worldengine_sp";
     public static string NodeSpawnPointRef { get; set; } = "worldengine_sp";
-    public static string OrePlcRef { get; set; } = "worldengine_ore";
+    public static string GenericNodePlcRef { get; set; } = "worldengine_harv";
 }
