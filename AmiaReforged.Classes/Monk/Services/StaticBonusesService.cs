@@ -33,7 +33,7 @@ public class StaticBonusesService
 
     private static void OnLoadApplyBonuses(OnLoadCharacterFinish eventData)
     {
-        if (eventData.Player.ControlledCreature is not NwCreature monk) return;
+        if (eventData.Player.ControlledCreature is not { } monk) return;
         if (monk.GetClassInfo(ClassType.Monk)?.Level is null or < StaticBonusLevel) return;
         if (monk.ActiveEffects.Any(effect => effect.Tag == "monk_staticbonuses")) return;
 
@@ -41,7 +41,7 @@ public class StaticBonusesService
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
     }
 
-    private static async void OnEquipApplyBonuses(OnItemEquip eventData)
+    private static void OnEquipApplyBonuses(OnItemEquip eventData)
     {
         if (eventData.EquippedBy.GetClassInfo(ClassType.Monk)?.Level is null or < StaticBonusLevel) return;
 
@@ -57,8 +57,6 @@ public class StaticBonusesService
 
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
 
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
         
@@ -73,7 +71,7 @@ public class StaticBonusesService
         WisdomAttackBonus.SetWisdomAttackBonus(monk);
     }
 
-    private static async void OnUnequipApplyBonuses(OnItemUnequip eventData)
+    private static void OnUnequipApplyBonuses(OnItemUnequip eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk)?.Level is null or < StaticBonusLevel) return;
 
@@ -96,8 +94,6 @@ public class StaticBonusesService
 
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
 
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
         
@@ -105,7 +101,7 @@ public class StaticBonusesService
         WisdomAttackBonus.SetWisdomAttackBonus(monk);
     }
 
-    private static async void OnLevelUpCheckBonuses(OnLevelUp eventData)
+    private static void OnLevelUpCheckBonuses(OnLevelUp eventData)
     {
         if (eventData.Creature.GetClassInfo(ClassType.Monk)?.Level is null or < StaticBonusLevel) return;
 
@@ -114,8 +110,6 @@ public class StaticBonusesService
 
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
 
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
         
@@ -123,7 +117,7 @@ public class StaticBonusesService
         WisdomAttackBonus.SetWisdomAttackBonus(monk);
     }
 
-    private static async void OnLevelDownCheckBonuses(OnLevelDown eventData)
+    private static void OnLevelDownCheckBonuses(OnLevelDown eventData)
     {
         NwCreature monk = eventData.Creature;
         Effect? monkEffects = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_staticbonuses");
@@ -131,8 +125,6 @@ public class StaticBonusesService
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
 
         if (monk.GetClassInfo(ClassType.Monk)?.Level is null or < StaticBonusLevel) return;
-
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
 
         monkEffects = StaticBonuses.GetEffect(monk);
         monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
@@ -151,19 +143,11 @@ public class StaticBonusesService
 
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
 
-        ApplyStaticBonuses();
-
-        return;
-
-        async void ApplyStaticBonuses()
-        {
-            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-            monkEffects = StaticBonuses.GetEffect(monk);
-            monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        monkEffects = StaticBonuses.GetEffect(monk);
+        monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
             
-            // This checks only for the wis monk path
-            WisdomAttackBonus.SetWisdomAttackBonus(monk);
-        }
+        // This checks only for the wis monk path
+        WisdomAttackBonus.SetWisdomAttackBonus(monk);
     }
 
     private static void OnWisdomRemoveCheckBonuses(OnEffectRemove eventData)
@@ -176,18 +160,10 @@ public class StaticBonusesService
 
         if (monkEffects is not null) monk.RemoveEffect(monkEffects);
 
-        ApplyStaticBonuses();
-
-        return;
-
-        async void ApplyStaticBonuses()
-        {
-            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-            monkEffects = StaticBonuses.GetEffect(monk);
-            monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
+        monkEffects = StaticBonuses.GetEffect(monk);
+        monk.ApplyEffect(EffectDuration.Permanent, monkEffects);
             
-            // This checks only for the wis monk path
-            WisdomAttackBonus.SetWisdomAttackBonus(monk);
-        }
+        // This checks only for the wis monk path
+        WisdomAttackBonus.SetWisdomAttackBonus(monk);
     }
 }

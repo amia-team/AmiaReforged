@@ -124,19 +124,11 @@ public class EchoingValleySummonHandler
         
         eventData.Associate.ApplyEffect(EffectDuration.Permanent, echoEffect);
         
-        DelayedMakeDestroyable();
-        return;
-        
-        async void DelayedMakeDestroyable()
-        {
-            await NwTask.Delay(TimeSpan.FromMilliseconds(1));
-        
-            foreach (NwCreature associate in monk.Associates)
-                if (associate.ResRef == "summon_echo")
-                    associate.IsDestroyable = true;
+        foreach (NwCreature associate in monk.Associates)
+            if (associate.ResRef == "summon_echo")
+                associate.IsDestroyable = true;
             
-            FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
-        }
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
     }
     
     /// <summary>
