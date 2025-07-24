@@ -70,11 +70,11 @@ public static class EchoingValley
         // Return if capped out
         if (echoCount == echoCap) return;
 
-        SummonEcho();
+        _ = SummonEcho();
 
         return;
 
-        async void SummonEcho()
+        async Task SummonEcho()
         {
             Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 3f);
 
@@ -147,11 +147,11 @@ public static class EchoingValley
 
         NwCreature monk = (NwCreature)castData.Caster;
 
-        SummonClone();
+        _ = SummonClone();
 
         return;
 
-        async void SummonClone()
+        async Task SummonClone()
         {
             Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 4f);
 

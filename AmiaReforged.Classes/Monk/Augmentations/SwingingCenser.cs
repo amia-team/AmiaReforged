@@ -202,12 +202,12 @@ public static class SwingingCenser
         Effect wholenessLink = Effect.LinkEffects(wholenessEffect, wholenessVfx);
         Effect aoeVfx = Effect.VisualEffect(VfxType.ImpPulseHoly);
 
-        WholenessPulse();
+        _ = WholenessPulse();
         return;
 
-        async void WholenessPulse()
+        async Task WholenessPulse()
         {
-            for (int i = 0; i < pulseAmount; i++) // Pulse amount
+            for (int i = 0; i < pulseAmount; i++)
             {
                 // If monk is dead or monk isn't valid, return
                 if (monk.IsDead || !monk.IsValid) return;
