@@ -27,6 +27,8 @@ public class StaticBuff
 
         if (abilitiesRestricted) return;
 
+        monkBuff = null;
+
         if (MonkDefenseFeat != null && monk.KnowsFeat(MonkDefenseFeat))
         {
             int wisMod = monk.GetAbilityModifier(Ability.Wisdom);
