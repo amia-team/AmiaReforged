@@ -87,7 +87,7 @@ public class MartialTechniqueService
             monk.RemoveEffect(effect);
             break;
         }
-        
+
         _martialEffect.SubType = EffectSubType.Unyielding;
         monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
     }
@@ -129,7 +129,7 @@ public class MartialTechniqueService
                 monk.RemoveEffect(effect);
                 break;
             }
-            
+
             queuedTechnique.Delete();
             _martialEffect.SubType = EffectSubType.Unyielding;
             monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
@@ -139,7 +139,7 @@ public class MartialTechniqueService
             monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is StunningTag or EagleTag or AxiomaticTag);
 
         if (technique is null) return;
-        
+
         // Check if gear restricts technique use
         string techniqueName = technique.Tag switch
         {
@@ -148,16 +148,16 @@ public class MartialTechniqueService
             AxiomaticTag => "Axiomatic Strike",
             _ => ""
         };
-        
+
         bool techniquePrevented = PreventMartialTechnique(monk, techniqueName);
-        
+
         if (techniquePrevented) return;
 
         // Remove martial technique from cooldown to allow hits to proc again
         foreach (Effect effect in monk.ActiveEffects)
         {
             if (effect.Tag is not MartialCooldownTag) continue;
-            
+
             monk.RemoveEffect(effect);
             break;
         }
@@ -166,7 +166,7 @@ public class MartialTechniqueService
         if (monk.GetObjectVariable<LocalVariableInt>(EagleStrikesCounter).HasValue)
             monk.GetObjectVariable<LocalVariableInt>(EagleStrikesCounter).Delete();
     }
-    
+
     /// <summary>
     ///     Applies the martial technique effects and cooldown on hit
     /// </summary>
@@ -181,13 +181,13 @@ public class MartialTechniqueService
 
         Effect? technique =
             monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is StunningTag or EagleTag or AxiomaticTag);
-        
+
         if (technique is null) return;
 
         // On hit, apply technique effects and cooldown
         bool isHit =
             attackData.AttackResult is AttackResult.Hit or AttackResult.AutomaticHit or AttackResult.CriticalHit;
-        
+
         if (!isHit) return;
 
         // Apply technique effects
@@ -220,7 +220,7 @@ public class MartialTechniqueService
         if (eagleCounter == 2)
             monk.ApplyEffect(EffectDuration.Permanent, martialCooldownEffect);
     }
-    
+
     /// <summary>
     ///     Cues the activation of the martial technique with a floaty text
     /// </summary>
@@ -229,7 +229,7 @@ public class MartialTechniqueService
         if (eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
 
         if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
-        
+
         string techniqueName = eventData.Effect.Tag switch
         {
             StunningTag => "Stunning Strike",
@@ -260,7 +260,7 @@ public class MartialTechniqueService
         player.FloatingTextString($"*{techniqueName} Deactivated*", false, false);
     }
 
-    
+
     private static bool PreventMartialTechnique(NwCreature monk, string techniqueName)
     {
         bool hasRangedWeapon = false;
@@ -271,13 +271,12 @@ public class MartialTechniqueService
                                           BaseItemCategory.Torches;
 
 
-        if (MonkUtils.GetMonkPath(monk) != PathType.HiddenSpring 
-            && MonkUtils.GetKiFocus(monk) != KiFocus.KiFocus2 && monk.IsRangedWeaponEquipped)
+        if (MonkUtils.GetMonkPath(monk) != PathType.HiddenSpring && monk.IsRangedWeaponEquipped)
             hasRangedWeapon = true;
 
-        bool isTechniquePrevented = hasArmor || hasShield || hasFocusWithoutUnarmed || hasRangedWeapon;
+        bool techniquePrevented = hasArmor || hasShield || hasFocusWithoutUnarmed || hasRangedWeapon;
 
-        if (!monk.IsPlayerControlled(out NwPlayer? player)) return isTechniquePrevented;
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return techniquePrevented;
 
         if (hasArmor)
             player.SendServerMessage($"Wearing an armor has prevented your {techniqueName}.");
@@ -288,6 +287,6 @@ public class MartialTechniqueService
         if (hasRangedWeapon)
             player.SendServerMessage($"Wielding a ranged weapon has prevented your {techniqueName}.");
 
-        return isTechniquePrevented;
+        return techniquePrevented;
     }
 }
