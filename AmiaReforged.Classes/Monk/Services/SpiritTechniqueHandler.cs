@@ -34,7 +34,7 @@ public class SpiritTechniqueHandler
         if (SpiritKiPointFeat == null) return;
 
         int technique = castData.Spell.FeatReference.Id;
-        bool isSpiritTechnique = technique is MonkFeat.KiShout or MonkFeat.QuiveringPalm;
+        bool isSpiritTechnique = technique is MonkFeat.KiShout or MonkFeat.QuiveringPalmNew;
 
         if (!isSpiritTechnique) return;
 
@@ -51,7 +51,7 @@ public class SpiritTechniqueHandler
             case MonkFeat.KiShout:
                 KiShout.CastKiShout(castData);
                 break;
-            case MonkFeat.QuiveringPalm:
+            case MonkFeat.QuiveringPalmNew:
                 QuiveringPalm.CastQuiveringPalm(castData);
                 break;
         }

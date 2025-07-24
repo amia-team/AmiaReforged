@@ -24,7 +24,7 @@ public static class MonkFeat
     public const int MonkSpeedNew = 1339;
     public const int MonkDefense = 1340;
     public const int StunningStrikeNew = 1341;
-    public const int NewQuiveringPalm = 1345;
+    public const int QuiveringPalmNew = 1345;
     public const int BodyKiPoint1 = 1347;
     public const int BodyKiPoint2 = 1348;
     public const int BodyKiPoint3 = 1349;

@@ -34,7 +34,7 @@ public class BodyTechniqueHandler
         if (BodyKiPointFeat == null) return;
 
         int technique = castData.Spell.FeatReference.Id;
-        bool isBodyTechnique = technique is MonkFeat.EmptyBody or MonkFeat.KiBarrier or MonkFeat.WholenessOfBody;
+        bool isBodyTechnique = technique is MonkFeat.EmptyBodyNew or MonkFeat.KiBarrier or MonkFeat.WholenessOfBodyNew;
         if (!isBodyTechnique) return;
 
         string abilityName = castData.Spell.FeatReference.Name.ToString();
@@ -47,10 +47,10 @@ public class BodyTechniqueHandler
 
         switch (technique)
         {
-            case MonkFeat.WholenessOfBody:
+            case MonkFeat.WholenessOfBodyNew:
                 WholenessOfBody.CastWholenessOfBody(castData);
                 break;
-            case MonkFeat.EmptyBody:
+            case MonkFeat.EmptyBodyNew:
                 EmptyBody.CastEmptyBody(castData);
                 break;
             case MonkFeat.KiBarrier:
