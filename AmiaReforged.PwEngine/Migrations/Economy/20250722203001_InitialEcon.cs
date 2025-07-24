@@ -1,9 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿#nullable disable
+
+using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-#nullable disable
-
-namespace AmiaReforged.PwEngine.Migrations
+namespace AmiaReforged.PwEngine.Migrations.Economy
 {
     /// <inheritdoc />
     public partial class InitialEcon : Migration

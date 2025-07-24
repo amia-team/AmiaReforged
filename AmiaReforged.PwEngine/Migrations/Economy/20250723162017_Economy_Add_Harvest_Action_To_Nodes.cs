@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿#nullable disable
 
-#nullable disable
+using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace AmiaReforged.PwEngine.Migrations
+namespace AmiaReforged.PwEngine.Migrations.Economy
 {
     /// <inheritdoc />
     public partial class Economy_Add_Harvest_Action_To_Nodes : Migration

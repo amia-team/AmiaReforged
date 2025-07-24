@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿#nullable disable
 
-#nullable disable
+using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace AmiaReforged.PwEngine.Migrations
+namespace AmiaReforged.PwEngine.Migrations.Economy
 {
     /// <inheritdoc />
     public partial class Econ_Add_Base_Quantity_Rename_Harvest_Time : Migration
