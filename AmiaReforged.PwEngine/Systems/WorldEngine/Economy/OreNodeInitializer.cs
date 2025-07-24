@@ -1,17 +1,16 @@
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
 
-[ServiceBinding(typeof(ISubSystemInitializer))]
-public class OreNodeInitializer : ISubSystemInitializer
+[ServiceBinding(typeof(IInitializable))]
+public class OreNodeInitializer : IInitializable
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private EconomySubsystem Economy { get; set; } = null!;

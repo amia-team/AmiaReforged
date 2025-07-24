@@ -8,11 +8,11 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
 [ServiceBinding(typeof(EconomySubsystem))]
 public class EconomySubsystem
 {
-    private readonly List<ISubSystemInitializer> _initializers;
+    private readonly List<IInitializable> _initializers;
     public EconomyDefinitions Definitions { get; }
     private EconomyPersistence Persistence { get; }
 
-    public EconomySubsystem(EconomyDefinitions definitions, EconomyPersistence persistence, IWorldConfigProvider config, IEnumerable<ISubSystemInitializer> initializers)
+    public EconomySubsystem(EconomyDefinitions definitions, EconomyPersistence persistence, IWorldConfigProvider config, IEnumerable<IInitializable> initializers)
     {
         Definitions = definitions;
         Persistence = persistence;
@@ -30,7 +30,7 @@ public class EconomySubsystem
 
     private void DoFirstTimeSetUp()
     {
-        foreach (ISubSystemInitializer subSystemInitializer in _initializers)
+        foreach (IInitializable subSystemInitializer in _initializers)
         {
             subSystemInitializer.Init(this);
         }
