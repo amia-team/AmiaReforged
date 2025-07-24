@@ -4,7 +4,7 @@ using Anvil.API;
 
 namespace AmiaReforged.Classes.Monk;
 
-public class StaticBuff
+public static class StaticBuff
 {
     private static readonly NwFeat? MonkDefenseFeat = NwFeat.FromFeatId(MonkFeat.MonkDefense);
     private static readonly NwFeat? MonkSpeedFeat = NwFeat.FromFeatId(MonkFeat.MonkSpeedNew);
