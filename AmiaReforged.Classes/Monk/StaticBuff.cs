@@ -13,9 +13,10 @@ public class StaticBuff
     {
         int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
-        foreach (Effect effect in monk.ActiveEffects)
-            if (effect.Tag == "monk_static_buff")
-                monk.RemoveEffect(effect);
+        Effect? monkBuff = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_static_buff");
+
+        if (monkBuff != null)
+                monk.RemoveEffect(monkBuff);
 
         bool abilitiesRestricted = AbilityRestricted(monk);
 
@@ -25,8 +26,6 @@ public class StaticBuff
         }
 
         if (abilitiesRestricted) return;
-
-        Effect? monkBuff = null;
 
         if (MonkDefenseFeat != null && monk.KnowsFeat(MonkDefenseFeat))
         {
