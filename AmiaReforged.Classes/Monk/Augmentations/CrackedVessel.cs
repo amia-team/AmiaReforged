@@ -211,17 +211,11 @@ public static class CrackedVessel
 
 
     private static bool IsInjured(NwCreature monk)
-    {
-        return monk.HP < monk.MaxHP * 0.75;
-    }
+        => monk.HP < monk.MaxHP * 0.75;
 
     private static bool IsBadlyWounded(NwCreature monk)
-    {
-        return monk.HP < monk.MaxHP * 0.50;
-    }
+        => monk.HP < monk.MaxHP * 0.50;
 
     private static bool IsNearDeath(NwCreature monk)
-    {
-        return monk.HP < monk.MaxHP * 0.25;
-    }
+        => monk.HP < monk.MaxHP * 0.25;
 }
