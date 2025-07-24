@@ -54,10 +54,11 @@ public static class IroncladBull
         // Target must be a hostile creature
         if (!monk.IsReactionTypeHostile((NwCreature)attackData.Target)) return;
 
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+        NwFeat? bodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
+        if (bodyKiFeat == null) return;
 
         // The effect only affects Body Ki Point recharge, so duh
-        if (monkLevel < MonkLevel.BodyKiPointsI) return;
+        if (!monk.KnowsFeat(bodyKiFeat)) return;
 
         int kiBodyRegenChance = MonkUtils.GetKiFocus(monk) switch
         {
@@ -70,7 +71,7 @@ public static class IroncladBull
         int d100Roll = Random.Shared.Roll(100);
 
         if (d100Roll <= kiBodyRegenChance)
-            monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
+                monk.IncrementRemainingFeatUses(bodyKiFeat);
     }
 
     /// <summary>
@@ -117,10 +118,7 @@ public static class IroncladBull
 
         int healAmount = monkLevel * 2 + extraHeal;
 
-        int overHealAmount = 0;
-
-        if (monk.HP + healAmount > monk.MaxHP)
-            overHealAmount = monk.HP + healAmount - monk.MaxHP;
+        int overHealAmount = monk.HP + healAmount > monk.MaxHP ? monk.HP + healAmount - monk.MaxHP : 0;
 
         Effect wholenessEffect = Effect.Heal(healAmount);
         Effect wholenessVfx = Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f);
