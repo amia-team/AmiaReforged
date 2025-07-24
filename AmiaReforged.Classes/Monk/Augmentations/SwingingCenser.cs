@@ -132,13 +132,15 @@ public static class SwingingCenser
         // If monk has Body Ki Points, mount up the heal counter to regenerate a body ki point
         void CheckHealCounter(int amountToCheck)
         {
+            NwFeat? bodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
+            if (bodyKiFeat == null) return;
+
+            if (!monk.KnowsFeat(bodyKiFeat)) return;
+
             LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>("swingingcenser_healcounter");
             healCounter.Value += amountToCheck;
 
             if (healCounter.Value < 100) return;
-
-            NwFeat? bodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
-            if (bodyKiFeat == null) return;
 
             monk.IncrementRemainingFeatUses(bodyKiFeat);
             healCounter.Delete();
