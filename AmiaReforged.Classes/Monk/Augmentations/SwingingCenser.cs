@@ -107,7 +107,7 @@ public static class SwingingCenser
                     continue;
 
                 // name and missing HP are added to the list
-                alliesHp.Add(monkAlly.Name, monkAlly.MaxHP - monk.HP);
+                alliesHp.Add(monkAlly.Name, monkAlly.MaxHP - monkAlly.HP);
             }
 
             // If no hurt allies were found, return
