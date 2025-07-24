@@ -1,28 +1,29 @@
-﻿#nullable disable
-
+﻿using System.Collections.Generic;
+using AmiaReforged.PwEngine.Database.Entities.Economy;
 using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
 
 namespace AmiaReforged.PwEngine.Migrations.Economy
 {
     /// <inheritdoc />
-    public partial class Economy_Add_Harvest_Action_To_Nodes : Migration
+    public partial class Econ_Add_Item_Yield_List : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(
-                name: "HarvestAction",
+            migrationBuilder.AddColumn<List<ResourceNodeDefinition.YieldItem>>(
+                name: "YieldItems",
                 table: "NodeDefinitions",
-                type: "integer",
-                nullable: false,
-                defaultValue: 0);
+                type: "jsonb",
+                nullable: false);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "HarvestAction",
+                name: "YieldItems",
                 table: "NodeDefinitions");
         }
     }

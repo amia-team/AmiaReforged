@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using AmiaReforged.PwEngine.Systems.WorldEngine;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Economy.HarvestActions;
 

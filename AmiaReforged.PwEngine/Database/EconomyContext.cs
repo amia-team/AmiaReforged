@@ -21,7 +21,11 @@ public class EconomyContext : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
-            optionsBuilder.UseNpgsql(_connectionString);
+            NpgsqlDataSourceBuilder dataSourceBuilder = new NpgsqlDataSourceBuilder(_connectionString);
+            dataSourceBuilder.EnableDynamicJson();
+            NpgsqlDataSource dataSource = dataSourceBuilder.Build();
+
+            optionsBuilder.UseNpgsql(dataSource);
             optionsBuilder.EnableSensitiveDataLogging();
         }
     }
