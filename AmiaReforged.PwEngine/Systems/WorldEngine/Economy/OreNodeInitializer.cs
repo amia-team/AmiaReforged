@@ -14,6 +14,7 @@ public class OreNodeInitializer : IInitializable
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private EconomySubsystem Economy { get; set; } = null!;
+
     public void Init(EconomySubsystem s)
     {
         Economy = s;
