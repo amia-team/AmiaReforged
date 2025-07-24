@@ -41,7 +41,7 @@ public static class MonkUtils
     /// <returns>Ki Focus tier for scaling monk powers</returns>
     public static KiFocus? GetKiFocus(NwCreature monk)
     {
-        return monk.GetClassInfo(ClassType.Monk)!.Level switch
+        return monk.GetClassInfo(ClassType.Monk)?.Level switch
         {
             >= 18 and < 24 => KiFocus.KiFocus1,
             >= 24 and < 30 => KiFocus.KiFocus2,
