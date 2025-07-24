@@ -15,32 +15,32 @@ public static class EchoingValley
         switch (technique)
         {
             case TechniqueType.Stunning:
-                AugmentStunningStrike(attackData);
+                if (attackData != null) AugmentStunningStrike(attackData);
                 break;
             case TechniqueType.EmptyBody:
-                AugmentEmptyBody(castData);
+                if (castData != null) AugmentEmptyBody(castData);
                 break;
             case TechniqueType.KiShout:
-                AugmentKiShout(castData);
+                if (castData != null) AugmentKiShout(castData);
                 break;
             case TechniqueType.Quivering:
-                AugmentQuiveringPalm(castData);
+                if (castData != null) AugmentQuiveringPalm(castData);
                 break;
             case TechniqueType.Eagle:
-                EagleStrike.DoEagleStrike(attackData);
+                if (attackData != null) EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.Axiomatic:
-                AxiomaticStrike.DoAxiomaticStrike(attackData);
+                if (attackData != null) AxiomaticStrike.DoAxiomaticStrike(attackData);
                 break;
             case TechniqueType.Wholeness:
-                WholenessOfBody.DoWholenessOfBody(castData);
+                if (castData != null) WholenessOfBody.DoWholenessOfBody(castData);
                 break;
             case TechniqueType.KiBarrier:
-                KiBarrier.DoKiBarrier(castData);
+                if (castData != null) KiBarrier.DoKiBarrier(castData);
                 break;
         }
     }
-    
+
     /// <summary>
     /// Stunning Strike summons an Echo to empower Stunning Strike with +1d4 bonus magical damage.
     /// Echoes last for two turns. Each Ki Focus allows an additional Echo to be summoned for an additional
@@ -49,12 +49,12 @@ public static class EchoingValley
     private static void AugmentStunningStrike(OnCreatureAttack attackData)
     {
         StunningStrike.DoStunningStrike(attackData);
-        
+
         NwCreature monk = attackData.Attacker;
-        
+
         if (attackData.Target is not NwCreature targetCreature) return;
         if (!targetCreature.IsReactionTypeHostile(monk)) return;
-        
+
         int echoCap = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
@@ -62,25 +62,25 @@ public static class EchoingValley
             KiFocus.KiFocus3 => 4,
             _ => 1
         };
-        
+
         // Check how many echoes monk has
-        int echoCount = monk.Associates.Count(associate => 
+        int echoCount = monk.Associates.Count(associate =>
             associate is { AssociateType: AssociateType.Summoned, ResRef: "summon_echo" });
-        
+
         // Return if capped out
         if (echoCount == echoCap) return;
 
         SummonEcho();
 
         return;
-        
+
         async void SummonEcho()
         {
             Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 3f);
-            
+
             if (summonLocation is null) return;
-            
-            Effect summonEcho = Effect.SummonCreature("summon_echo", VfxType.ImpMagicProtection!, 
+
+            Effect summonEcho = Effect.SummonCreature("summon_echo", VfxType.ImpMagicProtection!,
                 TimeSpan.FromSeconds(1), 0, VfxType.ImpGrease);
             TimeSpan summonDuration = NwTimeSpan.FromTurns(2);
 
@@ -88,21 +88,21 @@ public static class EchoingValley
             summonLocation.ApplyEffect(EffectDuration.Temporary, summonEcho, summonDuration);
         }
     }
-    
+
     /// <summary>
     /// Empty Body grants +1 bonus dodge AC for each Echo.
     /// </summary>
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
         EmptyBody.DoEmptyBody(castData);
-        
+
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         // Check how many echoes monk has
-        int echoCount = monk.Associates.Count(associate => 
+        int echoCount = monk.Associates.Count(associate =>
             associate is { AssociateType: AssociateType.Summoned, ResRef: "summon_echo" });
 
-        Effect emptyBodyEffect = Effect.LinkEffects(Effect.ACIncrease(echoCount), 
+        Effect emptyBodyEffect = Effect.LinkEffects(Effect.ACIncrease(echoCount),
             Effect.VisualEffect(VfxType.DurPdkFear));
         emptyBodyEffect.Tag = "emptybody_echoingvalley";
         TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
@@ -110,10 +110,10 @@ public static class EchoingValley
         foreach (Effect effect in monk.ActiveEffects)
             if (effect.Tag == "emptybody_echoingvalley")
                 monk.RemoveEffect(effect);
-        
+
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
     }
-    
+
     /// <summary>
     /// Ki Shout awakens the Echoes, granting them the ability to fight.
     /// </summary>
@@ -127,24 +127,24 @@ public static class EchoingValley
         kiShoutEffect.Tag = "kishout_echoingvalley";
 
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
-        {   
+        {
             // Must be echo and monk's associate
             if (!monk.Associates.Contains(nwObject) || nwObject.ResRef != "summon_echo") continue;
-            
+
             nwObject.Location?.ApplyEffect(EffectDuration.Instant, kiShoutEffect);
         }
     }
-    
+
     /// <summary>
     /// Quivering Palm creates an Echo of the targeted creature to fight alongside the monk for one turn.
     /// </summary>
     private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
         TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(castData);
-        
+
         if (castData.TargetObject is not NwCreature targetCreature) return;
         if (touchAttackResult == TouchAttackResult.Miss) return;
-        
+
         NwCreature monk = (NwCreature)castData.Caster;
 
         SummonClone();
@@ -154,9 +154,9 @@ public static class EchoingValley
         async void SummonClone()
         {
             Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 4f);
-            
+
             if (summonLocation is null) return;
-            
+
             Effect summonClone = Effect.SummonCreature(targetCreature, VfxType.FnfPwstun!);
             TimeSpan summonDuration = NwTimeSpan.FromTurns(1);
 

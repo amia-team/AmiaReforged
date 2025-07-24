@@ -15,28 +15,28 @@ public static class IroncladBull
         switch (technique)
         {
             case TechniqueType.Eagle:
-                AugmentEagleStrike(attackData);
+                if (attackData != null) AugmentEagleStrike(attackData);
                 break;
             case TechniqueType.KiBarrier:
-                AugmentKiBarrier(castData);
+                if (castData != null) AugmentKiBarrier(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholenessOfBody(castData);
+                if (castData != null) AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.Quivering:
-                AugmentQuiveringPalm(castData);
+                if (castData != null) AugmentQuiveringPalm(castData);
                 break;
             case TechniqueType.Stunning:
-                StunningStrike.DoStunningStrike(attackData);
+                if (attackData != null) StunningStrike.DoStunningStrike(attackData);
                 break;
             case TechniqueType.Axiomatic:
-                AxiomaticStrike.DoAxiomaticStrike(attackData);
+                if (attackData != null) AxiomaticStrike.DoAxiomaticStrike(attackData);
                 break;
             case TechniqueType.EmptyBody:
-                EmptyBody.DoEmptyBody(castData);
+                if (castData != null) EmptyBody.DoEmptyBody(castData);
                 break;
             case TechniqueType.KiShout:
-                KiShout.DoKiShout(castData);
+                if (castData != null) KiShout.DoKiShout(castData);
                 break;
         }
     }
@@ -54,7 +54,7 @@ public static class IroncladBull
         // Target must be a hostile creature
         if (!monk.IsReactionTypeHostile((NwCreature)attackData.Target)) return;
 
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
         // The effect only affects Body Ki Point recharge, so duh
         if (monkLevel < MonkLevel.BodyKiPointsI) return;
@@ -82,7 +82,7 @@ public static class IroncladBull
         KiBarrier.DoKiBarrier(castData);
 
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int resistanceAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 9,

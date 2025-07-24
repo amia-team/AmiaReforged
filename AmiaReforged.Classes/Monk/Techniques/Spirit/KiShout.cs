@@ -31,7 +31,7 @@ public static class KiShout
     public static void DoKiShout(OnSpellCast castData, DamageType damageType = DamageType.Sonic, VfxType damageVfx = VfxType.ImpSonic)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int dc = MonkUtils.CalculateMonkDc(monk);
         Effect kiShoutEffect = Effect.Stunned();
         kiShoutEffect.SubType = EffectSubType.Supernatural;

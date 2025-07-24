@@ -15,34 +15,32 @@ public static class SwingingCenser
         switch (technique)
         {
             case TechniqueType.Stunning:
-                AugmentStunningStrike(attackData);
+                if (attackData != null) AugmentStunningStrike(attackData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholenessOfBody(castData);
+                if (castData != null) AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.EmptyBody:
-                AugmentEmptyBody(castData);
+                if (castData != null) AugmentEmptyBody(castData);
                 break;
             case TechniqueType.KiShout:
-                AugmentKiShout(castData);
+                if (castData != null) AugmentKiShout(castData);
                 break;
             case TechniqueType.Eagle:
-                EagleStrike.DoEagleStrike(attackData);
+                if (attackData != null) EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.Axiomatic:
-                AxiomaticStrike.DoAxiomaticStrike(attackData);
+                if (attackData != null) AxiomaticStrike.DoAxiomaticStrike(attackData);
                 break;
             case TechniqueType.KiBarrier:
-                KiBarrier.DoKiBarrier(castData);
+                if (castData != null) KiBarrier.DoKiBarrier(castData);
                 break;
             case TechniqueType.Quivering:
-                QuiveringPalm.DoQuiveringPalm(castData);
+                if (castData != null) QuiveringPalm.DoQuiveringPalm(castData);
                 break;
-            default:
-                return;
         }
     }
-    
+
     /// <summary>
     /// Stunning Fist heals the monk or a nearby ally for 1d6 damage. Healing 100 damage with this attack regenerates
     /// a Body Ki Point. Each Ki Focus heals for an additional 1d6, to a maximum of 4d6 damage.
@@ -50,12 +48,12 @@ public static class SwingingCenser
     private static void AugmentStunningStrike(OnCreatureAttack attackData)
     {
         StunningStrike.DoStunningStrike(attackData);
-        
+
         NwCreature monk = attackData.Attacker;
-        
+
         // Target must be a hostile creature
         if (!monk.IsReactionTypeHostile((NwCreature)attackData.Target)) return;
-        
+
         int healAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => Random.Shared.Roll(6, 2),
@@ -63,49 +61,49 @@ public static class SwingingCenser
             KiFocus.KiFocus3 => Random.Shared.Roll(6, 4),
             _ => Random.Shared.Roll(6)
         };
-        
+
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHealingS, false, 0.7f);
-        
+
         // If monk's injured, heal monk
         int monkMissingHp = monk.MaxHP - monk.HP;
-        
+
         if (monkMissingHp > 0)
         {
             monk.ApplyEffect(EffectDuration.Instant,Effect.Heal(healAmount));
             monk.ApplyEffect(EffectDuration.Instant,healVfx);
         }
-        
+
         // If all heal is used to heal the monk's missing HP, we know there's no remainder and we can return code early
         int healRemainder = healAmount > monkMissingHp ? healAmount - monkMissingHp : 0;
-        
+
         if (healRemainder == 0)
         {
             CheckHealCounter(healAmount);
             return;
         }
-        
+
         // If the code wasn't returned, we know there's heal left and we use it on the ally
         // We use HealAlly to return an int with the amount that the ally was healed for
         int allyHealAmount = HealAlly();
-        
+
         // If there was any heal remainder left to bounce to the ally, we know that the amount the monk was healed
         // must be equal to the monk's missing HP; we add that with the ally heal amount and check the heal counter
         CheckHealCounter(monkMissingHp + allyHealAmount);
-        
+
         return;
-        
+
         int HealAlly()
         {
             // This is like a list, but it allows two variables per element
             Dictionary<string, int> alliesHp = new();
-            
+
             // Look for hurt friends in a medium area
             foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true))
             {
                 NwCreature monkAlly = (NwCreature)nwObject;
 
                 // Creature must be ally, injured, and alive
-                if (!(monk.IsReactionTypeFriendly(monkAlly) && monkAlly.HP < monkAlly.MaxHP && monkAlly.HP > -9)) 
+                if (!(monk.IsReactionTypeFriendly(monkAlly) && monkAlly.HP < monkAlly.MaxHP && monkAlly.HP > -9))
                     continue;
 
                 // name and missing HP are added to the list
@@ -114,23 +112,23 @@ public static class SwingingCenser
 
             // If no hurt allies were found, return
             if (alliesHp.Count == 0) return 0;
-            
+
             // If hurt allies were found, we use the name of the lowest HP ally to get that ally in shape
             string lowestHpName = alliesHp.MinBy(hp => hp.Value).Key;
             int missingHp = alliesHp.Min().Value;
-            
+
             NwGameObject allyToHeal = monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true).
                     First(ally => ally.Name == lowestHpName);
-            
+
             allyToHeal.ApplyEffect(EffectDuration.Instant, Effect.Heal(healRemainder));
             allyToHeal.ApplyEffect(EffectDuration.Instant, healVfx);
-            
+
             // We know that either all the heal is used or that it only heals up to the ally's missing HP,
             // so if the heal remainder is greater than missing HP, we return just the missing HP amount
             // but if the missing HP is greater than the heal remainder, all heal is used and we return the whole remainder
             return healRemainder > missingHp ? missingHp : healRemainder;
         }
-        
+
         // If monk has Body Ki Points, mount up the heal counter to regenerate a body ki point
         void CheckHealCounter(int amountToCheck)
         {
@@ -138,7 +136,7 @@ public static class SwingingCenser
             healCounter.Value += amountToCheck;
 
             if (healCounter.Value < 100) return;
-            
+
             monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
             healCounter.Delete();
         }
@@ -149,9 +147,9 @@ public static class SwingingCenser
     private static void AugmentKiShout(OnSpellCast castData)
     {
         KiShout.DoKiShout(castData);
-        
+
         NwCreature monk = (NwCreature)castData.Caster;
-        
+
         int abBonus = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
@@ -159,23 +157,23 @@ public static class SwingingCenser
             KiFocus.KiFocus3 => 4,
             _ => 1
         };
-        Effect abBonusEffect = Effect.LinkEffects(Effect.AttackIncrease(abBonus), 
+        Effect abBonusEffect = Effect.LinkEffects(Effect.AttackIncrease(abBonus),
             Effect.VisualEffect(VfxType.DurCessatePositive));
         Effect abBonusVfx = Effect.VisualEffect(VfxType.ImpHeadSonic);
         TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
-        
+
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal,
                      false))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
 
             if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
-            
+
             creatureInShape.ApplyEffect(EffectDuration.Temporary, abBonusEffect, effectDuration);
             creatureInShape.ApplyEffect(EffectDuration.Instant, abBonusVfx);
         }
     }
-    
+
     /// <summary>
     /// Wholeness of Body pulses in a large area around the monk, healing allies.
     /// Each Ki Focus adds a pulse to the heal, to a maximum of four pulses.
@@ -183,7 +181,7 @@ public static class SwingingCenser
     private static void AugmentWholenessOfBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int healAmount = monkLevel * 2;
 
         int pulseAmount = MonkUtils.GetKiFocus(monk) switch
@@ -209,7 +207,7 @@ public static class SwingingCenser
                 // If monk is dead or monk isn't valid, return
                 if (monk.IsDead || !monk.IsValid) return;
 
-                // AoE Holy Pulse fire at the base of the Monk  
+                // AoE Holy Pulse fire at the base of the Monk
                 monk.ApplyEffect(EffectDuration.Instant, aoeVfx);
 
                 foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large,
@@ -226,7 +224,7 @@ public static class SwingingCenser
             }
         }
     }
-    
+
     /// <summary>
     /// Empty Body creates a soothing winds in a large area around the monk, granting allies 50% concealment and
     /// 2 regeneration. Each Ki Focus increases the regeneration by 2, to a maximum of 8 regeneration.
@@ -234,13 +232,13 @@ public static class SwingingCenser
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int concealment = 50;
         TimeSpan regenTime = NwTimeSpan.FromRounds(1);
 
         // Adjust as appropriate. 1 round per monk level.
         TimeSpan effectTime = NwTimeSpan.FromRounds(monkLevel);
-        
+
         int regen = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 4,
@@ -256,10 +254,10 @@ public static class SwingingCenser
         Effect emptyBodyEffect = Effect.LinkEffects(emptyBodyConcealment, emptyBodyRegen, emptyBodyVfx);
         // Tag for later tracking
         emptyBodyEffect.Tag = "emptybody_swingingcenser";
-        
-        monk.Location!.ApplyEffect(EffectDuration.Instant, 
+
+        monk.Location!.ApplyEffect(EffectDuration.Instant,
             Effect.VisualEffect(VfxType.FnfDispelGreater, false, 0.3f));
-        
+
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large,
                      false))
         {
@@ -268,9 +266,9 @@ public static class SwingingCenser
             if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
 
             foreach (Effect effect in creatureInShape.ActiveEffects)
-                if (effect.Tag == "emptybody_swingingcenser") 
+                if (effect.Tag == "emptybody_swingingcenser")
                     creatureInShape.RemoveEffect(effect);
-            
+
             creatureInShape.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectTime);
         }
     }

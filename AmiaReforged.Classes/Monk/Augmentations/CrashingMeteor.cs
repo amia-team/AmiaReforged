@@ -14,28 +14,28 @@ public static class CrashingMeteor
         switch (technique)
         {
             case TechniqueType.Stunning:
-                AugmentStunningStrike(attackData);
+                if (attackData != null) AugmentStunningStrike(attackData);
                 break;
             case TechniqueType.Axiomatic:
-                AugmentAxiomaticStrike(attackData);
+                if (attackData != null) AugmentAxiomaticStrike(attackData);
                 break;
             case TechniqueType.KiShout:
-                AugmentKiShout(castData);
+                if (castData != null) AugmentKiShout(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholenessOfBody(castData);
+                if (castData != null) AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.KiBarrier:
-                KiBarrier.DoKiBarrier(castData);
+                if (castData != null) KiBarrier.DoKiBarrier(castData);
                 break;
             case TechniqueType.Eagle:
-                EagleStrike.DoEagleStrike(attackData);
+                if (attackData != null) EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.EmptyBody:
-                EmptyBody.DoEmptyBody(castData);
+                if (castData != null) EmptyBody.DoEmptyBody(castData);
                 break;
             case TechniqueType.Quivering:
-                QuiveringPalm.DoQuiveringPalm(castData);
+                if (castData != null) QuiveringPalm.DoQuiveringPalm(castData);
                 break;
         }
     }
@@ -246,9 +246,9 @@ public static class CrashingMeteor
             DamageType.Acid => VfxType.ImpAcidS,
             _ => VfxType.ImpFlameS
         };
-        
+
         KiShout.DoKiShout(castData, elementalType, elementalDamageVfx);
-        
+
         int vulnerabilityPct = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 20,
@@ -264,17 +264,17 @@ public static class CrashingMeteor
             DamageType.Acid => VfxType.DurAuraPulseGreenBlack,
             _ => VfxType.DurAuraPulseOrangeBlack
         };
-        
+
 
         // Elemental effect
         Effect elementalEffect = Effect.LinkEffects(Effect.DamageImmunityDecrease(elementalType, vulnerabilityPct),
             Effect.VisualEffect(elementalVfx));
-        
+
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
             if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
-            
+
             creatureInShape.ApplyEffect(EffectDuration.Temporary, elementalEffect, NwTimeSpan.FromRounds(3));
         }
     }

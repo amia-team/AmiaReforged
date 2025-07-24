@@ -15,28 +15,28 @@ public static class CrackedVessel
         switch (technique)
         {
             case TechniqueType.Axiomatic:
-                AugmentAxiomaticStrike(attackData);
+                if (attackData != null) AugmentAxiomaticStrike(attackData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholenessOfBody(castData);
+                if (castData != null) AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.EmptyBody:
-                AugmentEmptyBody(castData);
+                if (castData != null) AugmentEmptyBody(castData);
                 break;
             case TechniqueType.Quivering:
-                AugmentQuiveringPalm(castData);
+                if (castData != null) AugmentQuiveringPalm(castData);
                 break;
             case TechniqueType.Stunning:
-                StunningStrike.DoStunningStrike(attackData);
+                if (attackData != null) StunningStrike.DoStunningStrike(attackData);
                 break;
             case TechniqueType.Eagle:
-                EagleStrike.DoEagleStrike(attackData);
+                if (attackData != null) EagleStrike.DoEagleStrike(attackData);
                 break;
             case TechniqueType.KiBarrier:
-                KiBarrier.DoKiBarrier(castData);
+                if (castData != null) KiBarrier.DoKiBarrier(castData);
                 break;
             case TechniqueType.KiShout:
-                KiShout.DoKiShout(castData);
+                if (castData != null) KiShout.DoKiShout(castData);
                 break;
         }
     }
@@ -64,24 +64,24 @@ public static class CrackedVessel
         };
         int damageSides = IsInjured(monk) ? 2 : IsBadlyWounded(monk) ? 4 : IsNearDeath(monk) ? 6 : 0;
         int damageAmount = Random.Shared.Roll(damageSides, damageDice);
-        
+
         DamageData<short> damageData = attackData.DamageData;
         short negativeDamage = damageData.GetDamageByType(DamageType.Negative);
-        
+
         negativeDamage += (short)damageAmount;
         damageData.SetDamageByType(DamageType.Negative, negativeDamage);
-        
+
         if (!attackData.KillingBlow) return;
-        
+
         LocalVariableInt killCounter = monk.GetObjectVariable<LocalVariableInt>("crackedvessel_killcounter");
         killCounter.Value++;
 
         if (killCounter.Value < 3) return;
-            
+
         monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
         killCounter.Delete();
     }
-    
+
     /// <summary>
     /// Wholeness of Body unleashes 2d6 negative energy and physical damage in a large radius when the monk is injured,
     /// 2d8 when badly wounded, and 2d10 when near death. Fortitude saving throw halves the damage. Each Ki Focus
@@ -92,7 +92,7 @@ public static class CrackedVessel
         WholenessOfBody.DoWholenessOfBody(castData);
 
         NwCreature monk = (NwCreature)castData.Caster;
-        
+
         int dc = MonkUtils.CalculateMonkDc(monk);
         int damageDice = MonkUtils.GetKiFocus(monk) switch
         {
@@ -102,17 +102,17 @@ public static class CrackedVessel
             _ => 2
         };
         int damageSides = IsInjured(monk) ? 6 : IsBadlyWounded(monk) ? 8 : IsNearDeath(monk) ? 10 : 0;
-        
+
         Effect aoeVfx = MonkUtils.ResizedVfx(VfxType.FnfLosEvil30, RadiusSize.Large);
-        
+
         monk.ApplyEffect(EffectDuration.Instant, aoeVfx);
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, false))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
             if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
-            
+
             CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.Fireball)!);
-            
+
             SavingThrowResult savingThrowResult =
                 creatureInShape.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Negative, monk);
 
@@ -126,11 +126,11 @@ public static class CrackedVessel
 
             Effect wholenessEffect = Effect.LinkEffects(Effect.Damage(damageAmount, DamageType.Negative),
                 Effect.Damage(damageAmount, DamageType.Piercing), Effect.VisualEffect(VfxType.ImpNegativeEnergy));
-            
+
             creatureInShape.ApplyEffect(EffectDuration.Instant, wholenessEffect);
         }
     }
-    
+
     /// <summary>
     /// Empty Body grants 5% physical damage immunity when the monk is injured, 10% when badly wounded, and 15% when
     /// near death. This effect is only granted while the monk is in combat. Each Ki Focus grants 5% more physical
@@ -143,8 +143,8 @@ public static class CrackedVessel
         NwCreature monk = (NwCreature)castData.Caster;
 
         if (!monk.IsInCombat) return;
-        
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int pctImmunityBonus = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 5,
@@ -159,15 +159,15 @@ public static class CrackedVessel
             Effect.DamageIncrease(pctImmunityTotal, DamageType.Slashing),
             Effect.DamageIncrease(pctImmunityTotal, DamageType.Bludgeoning));
         emptyBodyEffect.Tag = "crackedvessel_emptybody";
-        
+
 
         foreach (Effect effect in monk.ActiveEffects)
-            if (effect.Tag == "crackedvessel_emptybody") 
+            if (effect.Tag == "crackedvessel_emptybody")
                 monk.RemoveEffect(effect);
-        
+
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect,  effectDuration);
     }
-    
+
     /// <summary>
     /// Quivering Palm inflicts 5% negative energy and physical damage vulnerability for three rounds.
     /// Each Ki Focus adds 5% to a maximum of 20%.
@@ -175,7 +175,7 @@ public static class CrackedVessel
     private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
         TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(castData);
-        
+
         if (castData.TargetObject is not NwCreature targetCreature) return;
         if (touchAttackResult is TouchAttackResult.Miss) return;
 
@@ -195,18 +195,18 @@ public static class CrackedVessel
             Effect.DamageImmunityDecrease(DamageType.Bludgeoning, pctVulnerability));
         TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
         quiveringEffect.Tag = "crackedvessel_quiveringpalm";
-        
+
         Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpNegativeEnergy, false, 0.7f);
-        
+
         foreach (Effect effect in targetCreature.ActiveEffects)
-            if (effect.Tag == "crackedvessel_quiveringpalm") 
+            if (effect.Tag == "crackedvessel_quiveringpalm")
                 targetCreature.RemoveEffect(effect);
-        
+
         targetCreature.ApplyEffect(EffectDuration.Temporary, quiveringEffect, effectDuration);
         targetCreature.ApplyEffect(EffectDuration.Instant, quiveringVfx);
     }
-    
-    
+
+
     private static bool IsInjured(NwCreature monk)
     {
         return monk.HP < monk.MaxHP * 0.75;
@@ -216,7 +216,7 @@ public static class CrackedVessel
     {
         return monk.HP < monk.MaxHP * 0.50;
     }
-    
+
     private static bool IsNearDeath(NwCreature monk)
     {
         return monk.HP < monk.MaxHP * 0.25;

@@ -14,34 +14,33 @@ public static class FickleStrand
     {
         switch (technique)
         {
-            
             case TechniqueType.Axiomatic:
-                AugmentAxiomaticStrike(attackData);
+                if (attackData != null) AugmentAxiomaticStrike(attackData);
                 break;
             case TechniqueType.Eagle:
-                AugmentEagleStrike(attackData);
+                if (attackData != null) AugmentEagleStrike(attackData);
                 break;
             case TechniqueType.KiShout:
-                AugmentKiShout(castData);
+                if (castData != null) AugmentKiShout(castData);
                 break;
             case TechniqueType.EmptyBody:
-                AugmentEmptyBody(castData);
+                if (castData != null) AugmentEmptyBody(castData);
                 break;
             case TechniqueType.Stunning:
-                StunningStrike.DoStunningStrike(attackData);
+                if (attackData != null) StunningStrike.DoStunningStrike(attackData);
                 break;
             case TechniqueType.Wholeness:
-                WholenessOfBody.DoWholenessOfBody(castData);
+                if (castData != null) WholenessOfBody.DoWholenessOfBody(castData);
                 break;
             case TechniqueType.KiBarrier:
-                KiBarrier.DoKiBarrier(castData);
+                if (castData != null) KiBarrier.DoKiBarrier(castData);
                 break;
             case TechniqueType.Quivering:
-                QuiveringPalm.DoQuiveringPalm(castData);
+                if (castData != null) QuiveringPalm.DoQuiveringPalm(castData);
                 break;
         }
     }
-    
+
     /// <summary>
     /// Eagle Strike has a 30% chance to impart a wild magic effect.
     /// Each Ki Focus makes potent effects more likely to occur.
@@ -49,19 +48,19 @@ public static class FickleStrand
     private static void AugmentEagleStrike(OnCreatureAttack attackData)
     {
         EagleStrike.DoEagleStrike(attackData);
-        
+
         if (attackData.Target is not NwCreature targetCreature) return;
-        
+
         NwCreature monk = attackData.Attacker;
-        
+
         if (!targetCreature.IsReactionTypeHostile(monk)) return;
-        
+
         int d100Roll = Random.Shared.Roll(100);
-        
+
         if (d100Roll <= 30)
             WildMagicEffects.DoWildMagic(monk, targetCreature);
     }
-    
+
     /// <summary>
     /// Axiomatic Strike deals +1 bonus magical damage. Each Ki Focus increases the damage by 1,
     /// to a maximum of +4 bonus magical damage.
@@ -92,8 +91,8 @@ public static class FickleStrand
     private static void AugmentEmptyBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+
         int spellsAbsorbed = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 4,
@@ -101,15 +100,15 @@ public static class FickleStrand
             KiFocus.KiFocus3 => 8,
             _ => 2
         };
-        
+
         Effect spellAbsorb = Effect.SpellLevelAbsorption(spellsAbsorbed);
         Effect spellAbsorbVfx = Effect.VisualEffect(VfxType.DurSpellturning);
         Effect emptyBodyEffect = Effect.LinkEffects(spellAbsorb, spellAbsorbVfx);
         TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
-        
+
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
     }
-    
+
     /// <summary>
     /// Ki Shout deals magical damage instead of sonic. In addition, it breaches enemy creatures of 1 magical defense
     /// according to the breach list. Each Ki Focus adds an additional breached magical defense, to a maximum of 4 magical effects.
@@ -119,7 +118,7 @@ public static class FickleStrand
         KiShout.DoKiShout(castData, DamageType.Magical, VfxType.ImpMagblue);
 
         NwCreature monk = (NwCreature)castData.Caster;
-        
+
         int spellsBreached = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
@@ -131,9 +130,9 @@ public static class FickleStrand
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
-            
+
             if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
-            
+
             NwEffects.DoBreach(creatureInShape, spellsBreached);
         }
     }
