@@ -97,5 +97,16 @@ public static class MonkUtils
     /// <summary>
     ///     A helper function for elements monk, gets the damage type based on the chosen element.
     /// </summary>
-
+    public static DamageType GetElementalType(NwCreature monk)
+    {
+        DamageType elementalType = monk.GetObjectVariable<LocalVariableInt>(MonkElemental.VarName).Value switch
+        {
+            MonkElemental.Fire => DamageType.Fire,
+            MonkElemental.Water => DamageType.Cold,
+            MonkElemental.Air => DamageType.Electrical,
+            MonkElemental.Earth => DamageType.Acid,
+            _ => DamageType.Fire
+        };
+        return elementalType;
+    }
 }
