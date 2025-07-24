@@ -137,7 +137,10 @@ public static class SwingingCenser
 
             if (healCounter.Value < 100) return;
 
-            monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
+            NwFeat? bodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
+            if (bodyKiFeat == null) return;
+
+            monk.IncrementRemainingFeatUses(bodyKiFeat);
             healCounter.Delete();
         }
     }
