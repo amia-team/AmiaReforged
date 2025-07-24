@@ -8,31 +8,33 @@ namespace AmiaReforged.Classes.Monk;
 
 public static class MonkUtils
 {
+    private static readonly NwClass? ObsoletePoeClass = NwClass.FromClassId(50);
+
     /// <summary>
     ///     Returns the monk's path type
     /// </summary>
     public static PathType? GetMonkPath(NwCreature monk)
     {
         // Check for Path of Enlightenment PrC as a failsafe
-        if (monk.GetClassInfo(NwClass.FromClassId(50)) is not null) return null;
-            
-        NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => feat.Id is MonkFeat.CrashingMeteor
-            or MonkFeat.SwingingCenser or MonkFeat.HiddenSpring or MonkFeat.FickleStrand
-            or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley);
+        if (monk.GetClassInfo(ObsoletePoeClass) is not null) return null;
+
+        NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => feat.Id is MonkFeat.PoeCrashingMeteor
+            or MonkFeat.PoeSwingingCenser or MonkFeat.PoeHiddenSpring or MonkFeat.PoeFickleStrand
+            or MonkFeat.PoeIroncladBull or MonkFeat.PoeCrackedVessel or MonkFeat.PoeEchoingValley);
 
         return pathFeat?.Id switch
         {
-            MonkFeat.CrashingMeteor => PathType.CrashingMeteor,
-            MonkFeat.SwingingCenser => PathType.SwingingCenser,
-            MonkFeat.HiddenSpring => PathType.HiddenSpring,
-            MonkFeat.FickleStrand => PathType.FickleStrand,
-            MonkFeat.IroncladBull => PathType.IroncladBull,
-            MonkFeat.CrackedVessel => PathType.CrackedVessel,
-            MonkFeat.EchoingValley => PathType.EchoingValley,
+            MonkFeat.PoeCrashingMeteor => PathType.CrashingMeteor,
+            MonkFeat.PoeSwingingCenser => PathType.SwingingCenser,
+            MonkFeat.PoeHiddenSpring => PathType.HiddenSpring,
+            MonkFeat.PoeFickleStrand => PathType.FickleStrand,
+            MonkFeat.PoeIroncladBull => PathType.IroncladBull,
+            MonkFeat.PoeCrackedVessel => PathType.CrackedVessel,
+            MonkFeat.PoeEchoingValley => PathType.EchoingValley,
             _ => null
         };
     }
-    
+
     /// <summary>
     /// Use in tandem with GetMonkPath, ie if GetMonkPath is not null, you can get the KiFocus. UPDATE TO USE MONK FEATS WHEN IMPLEMENTED!!!
     /// </summary>
@@ -86,24 +88,14 @@ public static class MonkUtils
     public static void MonkDebug(NwPlayer player, string debugString1, string debugString2)
     {
         if (!player.IsValid) return;
+        if (player.ControlledCreature is null) return;
         if (player.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "monk_debug").Value != 1) return;
-        
+
         player.SendServerMessage($"DEBUG: {debugString1} {debugString2}");
     }
 
     /// <summary>
     ///     A helper function for elements monk, gets the damage type based on the chosen element.
     /// </summary>
-    public static DamageType GetElementalType(NwCreature monk)
-    {
-        DamageType elementalType = monk.GetObjectVariable<LocalVariableInt>(MonkElemental.VarName).Value switch
-        {
-            MonkElemental.Fire => DamageType.Fire,
-            MonkElemental.Water => DamageType.Cold,
-            MonkElemental.Air => DamageType.Electrical,
-            MonkElemental.Earth => DamageType.Acid,
-            _ => DamageType.Fire
-        };
-        return elementalType;
-    }
+
 }

@@ -24,10 +24,8 @@ public class MonkDialogHandler
     private const VfxType EyesBlueHalflingFemale = (VfxType)333;
     private const VfxType EyesBlueHalfOrcMale = (VfxType)334;
     private const VfxType EyesBlueHalfOrcFemale = (VfxType)335;
-    
-    
 
-    public MonkDialogHandler(DialogService dialogService)
+    public MonkDialogHandler(DialogService? dialogService)
     {
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
 
@@ -41,49 +39,70 @@ public class MonkDialogHandler
         _log.Info(message: "Monk Eye Glow Feat Handler initialized.");
     }
 
-    [Inject] private DialogService DialogService { get; init; }
+    [Inject] private DialogService? DialogService { get; init; }
 
     /// <summary>
     ///     Opens the dialog menu for choosing the Path of Enlightenment
     /// </summary>
-    private static async void OpenPathDialog(OnUseFeat eventData)
+    private void OpenPathDialog(OnUseFeat eventData)
     {
-        if (eventData.Feat.Id is not MonkFeat.PathOfEnlightenment) return;
+        if (eventData.Feat.Id is not MonkFeat.PoeBase) return;
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
-        if (eventData.Creature.Feats.Any(feat => feat.Id is MonkFeat.CrashingMeteor
-                or MonkFeat.SwingingCenser or MonkFeat.HiddenSpring or MonkFeat.FickleStrand
-                or MonkFeat.IroncladBull or MonkFeat.CrackedVessel or MonkFeat.EchoingValley)) return;
+        if (eventData.Creature.Feats.Any(feat => feat.Id is MonkFeat.PoeCrashingMeteor
+                or MonkFeat.PoeSwingingCenser or MonkFeat.PoeHiddenSpring or MonkFeat.PoeFickleStrand
+                or MonkFeat.PoeIroncladBull or MonkFeat.PoeCrackedVessel or MonkFeat.PoeEchoingValley)) return;
 
-        await player.ActionStartConversation
-            (eventData.Creature, dialogResRef: "mont_path", true, false);
+        _ = StartConversation();
+
+        return;
+
+        async Task StartConversation()
+        {
+            await player.ActionStartConversation
+                (eventData.Creature, dialogResRef: "monk_path", true, false);
+        }
     }
 
     /// <summary>
     ///     Opens the dialog menu to set the eye glow
     /// </summary>
-    private static async void OpenEyeGlowDialog(OnUseFeat eventData)
+    private void OpenEyeGlowDialog(OnUseFeat eventData)
     {
         if (eventData.Feat.FeatType is not Feat.PerfectSelf) return;
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
-        await player.ActionStartConversation
-            (eventData.Creature, dialogResRef: "monk_eyeglow", true, false);
+        _ = StartConversation();
+
+        return;
+
+        async Task StartConversation()
+        {
+            await player.ActionStartConversation
+                (eventData.Creature, dialogResRef: "monk_eye_glow", true, false);
+        }
     }
-    
+
     /// <summary>
     ///     Opens the dialog menu to choose the fighting style
     /// </summary>
-    private async void OpenFightingStyleDialog(OnUseFeat eventData)
+    private void OpenFightingStyleDialog(OnUseFeat eventData)
     {
         if (eventData.Feat.Id is not MonkFeat.MonkFightingStyle) return;
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
-        await player.ActionStartConversation
-            (eventData.Creature, dialogResRef: "monk_fightingstyle", true, false);
+        _ = StartConversation();
+
+        return;
+
+        async Task StartConversation()
+        {
+            await player.ActionStartConversation
+                (eventData.Creature, dialogResRef: "monk_fighting_style", true, false);
+        }
     }
-    
-    
+
+
 
     [ScriptHandler(scriptName: "monk_path")]
     private void PathDialog(CallInfo info)
@@ -93,9 +112,14 @@ public class MonkDialogHandler
         if (eventData.PlayerSpeaker?.ControlledCreature is null) return;
 
         NwCreature monk = eventData.PlayerSpeaker.ControlledCreature;
+
+        if (DialogService == null) return;
+
         NodeType nodeType = DialogService.CurrentNodeType;
-        
-        if (nodeType == NodeType.StartingNode) DialogService.SetCurrentNodeText(text: "Select Path of Enlightenment:");
+
+        if (nodeType == NodeType.StartingNode)
+            DialogService.SetCurrentNodeText(text: "Select Path of Enlightenment:");
+
         if (nodeType == NodeType.ReplyNode)
         {
             string path = GivePathFeat(monk);
@@ -111,14 +135,19 @@ public class MonkDialogHandler
         if (eventData.PlayerSpeaker?.ControlledCreature is null) return;
 
         NwCreature monk = eventData.PlayerSpeaker.ControlledCreature;
+
+        if (DialogService == null) return;
+
         NodeType nodeType = DialogService.CurrentNodeType;
 
+        if (nodeType == NodeType.StartingNode)
+            DialogService.SetCurrentNodeText(text: "Select eye glow:");
 
-        if (nodeType == NodeType.StartingNode) DialogService.SetCurrentNodeText(text: "Select eye glow:");
-        if (nodeType == NodeType.ReplyNode) ApplyEyeGlow(monk);
+        if (nodeType == NodeType.ReplyNode)
+            ApplyEyeGlow(monk);
     }
-    
-    [ScriptHandler(scriptName: "monk_fightingstyle")]
+
+    [ScriptHandler(scriptName: "monk_fighting_style")]
     private void FightingStyleDialog(CallInfo info)
     {
         DialogEvents.AppearsWhen eventData = new();
@@ -126,10 +155,15 @@ public class MonkDialogHandler
         if (eventData.PlayerSpeaker?.ControlledCreature is null) return;
 
         NwCreature monk = eventData.PlayerSpeaker.ControlledCreature;
+
+        if (DialogService == null) return;
+
         NodeType nodeType = DialogService.CurrentNodeType;
 
 
-        if (nodeType == NodeType.StartingNode) DialogService.SetCurrentNodeText(text: "Select fighting style:");
+        if (nodeType == NodeType.StartingNode)
+            DialogService.SetCurrentNodeText(text: "Select fighting style:");
+
         if (nodeType == NodeType.ReplyNode)
         {
             string addedFeats = GiveFightingStyleFeats(monk);
@@ -147,48 +181,48 @@ public class MonkDialogHandler
 
         if (localInt(arg: "ds_check1").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.HiddenSpring)!);
-            return NwFeat.FromFeatId(MonkFeat.HiddenSpring)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PoeHiddenSpring)!);
+            return NwFeat.FromFeatId(MonkFeat.PoeHiddenSpring)!.Name.ToString();
         }
 
 
         if (localInt(arg: "ds_check2").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.EchoingValley)!);
-            return NwFeat.FromFeatId(MonkFeat.EchoingValley)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PoeEchoingValley)!);
+            return NwFeat.FromFeatId(MonkFeat.PoeEchoingValley)!.Name.ToString();
         }
 
 
         if (localInt(arg: "ds_check3").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.CrackedVessel)!);
-            return NwFeat.FromFeatId(MonkFeat.CrackedVessel)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PoeCrackedVessel)!);
+            return NwFeat.FromFeatId(MonkFeat.PoeCrackedVessel)!.Name.ToString();
         }
 
 
         if (localInt(arg: "ds_check4").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.CrashingMeteor)!);
-            return NwFeat.FromFeatId(MonkFeat.CrashingMeteor)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PoeCrashingMeteor)!);
+            return NwFeat.FromFeatId(MonkFeat.PoeCrashingMeteor)!.Name.ToString();
         }
 
 
         if (localInt(arg: "ds_check5").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.IroncladBull)!);
-            return NwFeat.FromFeatId(MonkFeat.IroncladBull)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PoeIroncladBull)!);
+            return NwFeat.FromFeatId(MonkFeat.PoeIroncladBull)!.Name.ToString();
         }
 
         if (localInt(arg: "ds_check6").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.SwingingCenser)!);
-            return NwFeat.FromFeatId(MonkFeat.SwingingCenser)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PoeSwingingCenser)!);
+            return NwFeat.FromFeatId(MonkFeat.PoeSwingingCenser)!.Name.ToString();
         }
 
         if (localInt(arg: "ds_check7").HasValue)
         {
-            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.FickleStrand)!);
-            return NwFeat.FromFeatId(MonkFeat.FickleStrand)!.Name.ToString();
+            monk.AddFeat(NwFeat.FromFeatId(MonkFeat.PoeFickleStrand)!);
+            return NwFeat.FromFeatId(MonkFeat.PoeFickleStrand)!.Name.ToString();
         }
 
         return "";
@@ -198,7 +232,7 @@ public class MonkDialogHandler
     {
         Effect monkEyeVfx = GetMonkEyeVfx(monk);
         monkEyeVfx.SubType = EffectSubType.Unyielding;
-        monkEyeVfx.Tag = "monk_eyeglow";
+        monkEyeVfx.Tag = "monk_eye_glow";
         monk.ApplyEffect(EffectDuration.Permanent, monkEyeVfx);
     }
 
@@ -365,20 +399,20 @@ public class MonkDialogHandler
         if (localInt(arg: "ds_check9").HasValue)
             foreach (Effect effect in monk.ActiveEffects)
             {
-                if (effect.Tag is "monk_eyeglow")
+                if (effect.Tag is "monk_eye_glow")
                     monk.RemoveEffect(effect);
             }
 
         return Effect.VisualEffect(eyeGlowVfx, false, scale);
     }
-    
+
     /// <summary>
     ///  At level 6 monk, choose between IKD, Imp Disarm, and Called Shot and Mobility
     /// </summary>
     private static string GiveFightingStyleFeats(NwCreature monk)
     {
         Func<string, LocalVariableInt> localInt = monk.GetObjectVariable<LocalVariableInt>;
-        
+
         // Improved Knockdown
         if (localInt(arg: "ds_check1").HasValue)
         {

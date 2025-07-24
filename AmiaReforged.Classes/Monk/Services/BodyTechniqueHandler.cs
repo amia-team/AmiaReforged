@@ -11,6 +11,8 @@ namespace AmiaReforged.Classes.Monk.Services;
 [ServiceBinding(typeof(BodyTechniqueHandler))]
 public class BodyTechniqueHandler
 {
+    private static readonly NwFeat? BodyKiPointFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
+
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public BodyTechniqueHandler()
@@ -29,19 +31,17 @@ public class BodyTechniqueHandler
         if (castData.Caster is not NwCreature monk) return;
         if (castData.Spell?.FeatReference is null) return;
         if (monk.GetClassInfo(ClassType.Monk) is null) return;
+        if (BodyKiPointFeat == null) return;
 
         int technique = castData.Spell.FeatReference.Id;
         bool isBodyTechnique = technique is MonkFeat.EmptyBody or MonkFeat.KiBarrier or MonkFeat.WholenessOfBody;
         if (!isBodyTechnique) return;
 
-        NwFeat bodyKiPointFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!;
+        string abilityName = castData.Spell.FeatReference.Name.ToString();
 
-        if (!monk.KnowsFeat(bodyKiPointFeat) || monk.GetFeatRemainingUses(bodyKiPointFeat) < 1)
+        if (AbilityRestricted(monk, abilityName))
         {
             castData.PreventSpellCast = true;
-            if (monk.IsPlayerControlled(out NwPlayer? player))
-                player.SendServerMessage
-                    ($"Cannot use {castData.Spell.FeatReference.Name} because your Body Ki Points are depleted.");
             return;
         }
 
@@ -58,6 +58,30 @@ public class BodyTechniqueHandler
                 break;
         }
 
-        monk.DecrementRemainingFeatUses(bodyKiPointFeat);
+        monk.DecrementRemainingFeatUses(BodyKiPointFeat);
+    }
+
+    private static bool AbilityRestricted(NwCreature monk, string abilityName)
+    {
+        bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
+        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
+        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
+                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is
+                                          BaseItemCategory.Torches;
+        bool noBodyKi = BodyKiPointFeat != null && (!monk.KnowsFeat(BodyKiPointFeat) || monk.GetFeatRemainingUses(BodyKiPointFeat) < 1);
+
+        if (monk.IsPlayerControlled(out NwPlayer? player))
+        {
+            if (hasArmor)
+                player.SendServerMessage($"Cannot use {abilityName} because you are wearing armor.");
+            if (hasShield)
+                player.SendServerMessage($"Cannot use {abilityName} because you are wielding a shield.");
+            if (hasFocusWithoutUnarmed)
+                player.SendServerMessage($"Cannot use {abilityName} because you are wielding a focus without being unarmed.");
+            if (noBodyKi)
+                player.SendServerMessage($"Cannot use {abilityName} because you have no Body Ki Points left.");
+        }
+
+        return hasArmor || hasShield || hasFocusWithoutUnarmed || noBodyKi;
     }
 }
