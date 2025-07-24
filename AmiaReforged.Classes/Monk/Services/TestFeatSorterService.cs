@@ -85,7 +85,7 @@ public class TestFeatSorterService
             foreach (NwFeat? feat in monkFeatsByLevel.OfType<NwFeat>().Where(monk.KnowsFeat))
             {
                 monk.RemoveFeat(feat);
-                player.SendServerMessage($"New feat {feat.Name} removed, because you are below the required level for this feat.");
+                player.SendServerMessage($"New feat {feat.Name} removed; you are below the required monk level {featLevel}.");
             }
         }
 
@@ -96,7 +96,7 @@ public class TestFeatSorterService
             foreach (NwFeat? feat in monkFeatsByLevel.OfType<NwFeat>().Where(feat => !monk.KnowsFeat(feat)))
             {
                 monk.AddFeat(feat);
-                player.SendServerMessage($"New feat {feat.Name} added.");
+                player.SendServerMessage($"New feat {feat.Name} added on monk level {featLevel}.");
             }
         }
     }
