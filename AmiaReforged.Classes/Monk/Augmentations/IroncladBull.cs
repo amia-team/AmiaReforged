@@ -99,16 +99,15 @@ public static class IroncladBull
     }
 
     /// <summary>
-    /// Wholeness of Body grants 20 temporary hit points until removed. Each Ki Focus increases the amount of temporary
-    /// hit points by 20, to a maximum of 80 temporary hit points.
+    /// Wholeness of Body heals for 20 extra hit points and grants overheal as temporary hit points.
+    /// Each Ki Focus increases the amount of extra hit points healed by 20, to a maximum of 80 extra hit points.
     /// </summary>
     private static void AugmentWholenessOfBody(OnSpellCast castData)
     {
-        WholenessOfBody.DoWholenessOfBody(castData);
-
         NwCreature monk = (NwCreature)castData.Caster;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
-        int tempHpAmount = MonkUtils.GetKiFocus(monk) switch
+        int extraHeal = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 40,
             KiFocus.KiFocus2 => 60,
@@ -116,7 +115,31 @@ public static class IroncladBull
             _ => 20
         };
 
-        monk.ApplyEffect(EffectDuration.Permanent, Effect.TemporaryHitpoints(tempHpAmount));
+        int healAmount = monkLevel * 2 + extraHeal;
+
+        int overHealAmount = 0;
+
+        if (monk.HP + healAmount > monk.MaxHP)
+            overHealAmount = monk.HP + healAmount - monk.MaxHP;
+
+        Effect wholenessEffect = Effect.Heal(healAmount);
+        Effect wholenessVfx = Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f);
+
+        monk.ApplyEffect(EffectDuration.Instant, wholenessEffect);
+        monk.ApplyEffect(EffectDuration.Instant, wholenessVfx);
+
+        if (overHealAmount == 0) return;
+
+        Effect? overHeal = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "wholeness_ironclad");
+        if (overHeal != null) monk.RemoveEffect(overHeal);
+
+        overHeal = Effect.LinkEffects(Effect.TemporaryHitpoints(overHealAmount),
+        Effect.VisualEffect(VfxType.DurProtGreaterStoneskin));
+
+        overHeal.SubType = EffectSubType.Extraordinary;
+        overHeal.Tag = "wholeness_ironclad";
+
+        monk.ApplyEffect(EffectDuration.Permanent, overHeal);
     }
 
     /// <summary>
