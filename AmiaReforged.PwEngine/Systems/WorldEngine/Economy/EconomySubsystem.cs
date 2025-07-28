@@ -20,7 +20,7 @@ public class EconomySubsystem
     public EconomyDefinitions Definitions { get; }
     private EconomyPersistence Persistence { get; }
 
-    private Dictionary<uint, ResourceNodeInstance> _nodeInstances = new();
+    private Dictionary<Guid, ResourceNodeInstance> _nodeInstances = new();
 
     public EconomySubsystem(EconomyDefinitions definitions, EconomyPersistence persistence, IWorldConfigProvider config,
         NodeSeeder nodeSeeder)
@@ -109,9 +109,9 @@ public class EconomySubsystem
     }
 
 
-    public void PersistNode(ResourceNodeInstance resourceNodeInstance)
+    public bool PersistNode(ResourceNodeInstance resourceNodeInstance)
     {
-        Persistence.StoreNewNode(resourceNodeInstance);
+        return Persistence.StoreNewNode(resourceNodeInstance);
     }
 
     public List<ResourceNodeDefinition> GetStoredDefinitions()
@@ -119,13 +119,19 @@ public class EconomySubsystem
         return Persistence.GetStoredDefinitions();
     }
 
-    public void RegisterPlc(NwPlaceable plc, ResourceNodeDefinition definition)
+    public void RegisterNode(NwPlaceable nodePlc, ResourceNodeInstance instance)
     {
+        _nodeInstances.TryAdd(nodePlc.UUID, instance);
 
-        switch (definition.HarvestAction)
+        RegisterPlcEvents(nodePlc, instance);
+    }
+
+    private void RegisterPlcEvents(NwPlaceable plc, ResourceNodeInstance instance)
+    {
+        switch (instance.Definition.HarvestAction)
         {
             case HarvestActionEnum.Undefined:
-                Log.Error($"Invalid harvest for node {definition.Tag}. Event not subscribed.");
+                Log.Error($"Invalid harvest for node {plc.Area?.Name}. Event not subscribed.");
                 break;
             case HarvestActionEnum.Attack:
                 plc.OnPhysicalAttacked += HarvestAttackableNode;
@@ -151,7 +157,6 @@ public class EconomySubsystem
         if (mainHand == null)
         {
             obj.Placeable.SpeakString("*This node cannot be harvested using your bare hands*", TalkVolume.Whisper);
-
         }
     }
 

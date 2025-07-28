@@ -84,7 +84,9 @@ public class NodeSeeder(EconomySubsystem economy)
             Scale = NWScript.GetObjectVisualTransform(plc, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE)
         };
 
-        economy.RegisterPlc(plc, resourceNodeDefinition);
-        economy.PersistNode(newInstance);
+        if (economy.PersistNode(newInstance))
+        {
+            economy.RegisterNode(plc, newInstance);
+        }
     }
 }

@@ -13,17 +13,20 @@ public class EconomyPersistence(PwContextFactory factory)
 
     private EconomyContext _context = factory.CreateEconomyContext();
 
-    public void StoreNewNode(ResourceNodeInstance resourceNodeInstance)
+    public bool StoreNewNode(ResourceNodeInstance resourceNodeInstance)
     {
         try
         {
             _context.Add(resourceNodeInstance);
             _context.SaveChanges();
+            return true;
         }
         catch (Exception ex)
         {
             Log.Error($"Failed to store a new node to the DB in {resourceNodeInstance.Location.AreaResRef}");
         }
+
+        return false;
     }
 
     public void UpdateDefinitions(EconomyDefinitions definitions)
