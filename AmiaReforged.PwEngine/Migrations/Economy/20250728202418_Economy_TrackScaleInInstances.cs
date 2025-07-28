@@ -1,11 +1,11 @@
-﻿#nullable disable
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-using Microsoft.EntityFrameworkCore.Migrations;
+#nullable disable
 
 namespace AmiaReforged.PwEngine.Migrations.Economy
 {
     /// <inheritdoc />
-    public partial class Economy_TrackNodeInstanceScale : Migration
+    public partial class Economy_TrackScaleInInstances : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

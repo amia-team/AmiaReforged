@@ -34,7 +34,7 @@ public class EconomySubsystem
         bool initialized = config.GetBoolean(WorldConfigConstants.InitializedKey);
         if (!initialized)
         {
-            // DoFirstTimeSetUp();
+            DoFirstTimeSetUp();
         }
     }
 
@@ -167,5 +167,6 @@ public class EconomySubsystem
 
     private void HarvestUsableNode(PlaceableEvents.OnUsed obj)
     {
+        // TODO: Implement
     }
 }
