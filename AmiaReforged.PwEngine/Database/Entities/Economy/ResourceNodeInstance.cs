@@ -13,7 +13,6 @@ public class ResourceNodeInstance
 
     public long LocationId { get; set; }
     [ForeignKey("LocationId")] public required SavedLocation Location { get; set; }
-    public float Richness { get; set; }
     public int Quantity { get; set; }
     public float Scale { get; set; }
 }

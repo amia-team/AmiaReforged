@@ -4,17 +4,20 @@ using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace AmiaReforged.PwEngine.Migrations
+namespace AmiaReforged.PwEngine.Migrations.Economy
 {
     [DbContext(typeof(EconomyContext))]
-    partial class EconomyContextModelSnapshot : ModelSnapshot
+    [Migration("20250728214930_Economy_DropRichnessFromModel")]
+    partial class Economy_DropRichnessFromModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
