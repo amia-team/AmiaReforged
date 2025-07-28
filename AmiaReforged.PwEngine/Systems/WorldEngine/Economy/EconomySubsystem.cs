@@ -36,6 +36,15 @@ public class EconomySubsystem
         {
             DoFirstTimeSetUp();
         }
+        else
+        {
+            SpawnNodesFromDb();
+        }
+    }
+
+    private void SpawnNodesFromDb()
+    {
+        List<ResourceNodeInstance> instances = Persistence.AllResourceNodes();
     }
 
     private void DoFirstTimeSetUp()

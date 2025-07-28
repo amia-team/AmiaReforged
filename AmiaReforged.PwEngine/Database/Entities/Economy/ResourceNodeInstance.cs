@@ -10,7 +10,6 @@ public class ResourceNodeInstance
 
     public string DefinitionId { get; set; }
     [ForeignKey("DefinitionId")] public required ResourceNodeDefinition Definition { get; set; }
-    public NwPlaceable? Instance { get; set; }
 
     public long LocationId { get; set; }
     [ForeignKey("LocationId")] public required SavedLocation Location { get; set; }

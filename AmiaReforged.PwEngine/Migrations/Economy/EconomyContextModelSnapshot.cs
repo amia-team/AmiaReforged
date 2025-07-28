@@ -63,6 +63,39 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.ToTable("NodeDefinitions");
                 });
 
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.ResourceNodeInstance", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("DefinitionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("LocationId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("Richness")
+                        .HasColumnType("real");
+
+                    b.Property<float>("Scale")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DefinitionId");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("NodeInstances");
+                });
+
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.SavedLocation", b =>
                 {
                     b.Property<long>("Id")
@@ -93,38 +126,21 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.ToTable("SavedLocations");
                 });
 
-            modelBuilder.Entity("AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy.PersistentResourceNode", b =>
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.ResourceNodeInstance", b =>
                 {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.ResourceNodeDefinition", "Definition")
+                        .WithMany()
+                        .HasForeignKey("DefinitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<long>("LocationId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("ResourceTag")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<float>("Richness")
-                        .HasColumnType("real");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LocationId");
-
-                    b.ToTable("ExistingNodes");
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy.PersistentResourceNode", b =>
-                {
                     b.HasOne("AmiaReforged.PwEngine.Database.Entities.SavedLocation", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Definition");
 
                     b.Navigation("Location");
                 });
