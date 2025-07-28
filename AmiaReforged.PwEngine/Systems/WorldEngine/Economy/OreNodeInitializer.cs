@@ -39,7 +39,7 @@ public class OreNodeInitializer : IInitializable
             }
 
             IEnumerable<NwTrigger> triggers = gameArea.FindObjectsOfTypeInArea<NwTrigger>()
-                .Where(t => t.ResRef == WorldConfigConstants.ResourceNodeZoneRef);
+                .Where(t => t.ResRef == WorldConfigConstants.ResourceNodeZoneTag);
 
             SetUpZone(triggers, area, ores);
         }
