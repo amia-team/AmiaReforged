@@ -125,7 +125,7 @@ public class EconomySubsystem
 
     public List<ResourceNodeDefinition> GetStoredDefinitions()
     {
-        return Persistence.GetStoredDefinitions();
+        return Persistence.AllResourceDefinitions();
     }
 
     public void RegisterNode(NwPlaceable nodePlc, ResourceNodeInstance instance)

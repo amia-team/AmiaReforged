@@ -53,7 +53,7 @@ public class EconomyPersistence(PwContextFactory factory)
         });
     }
 
-    public List<ResourceNodeDefinition> GetStoredDefinitions()
+    public List<ResourceNodeDefinition> AllResourceDefinitions()
     {
         return _context.NodeDefinitions.ToList();
     }
