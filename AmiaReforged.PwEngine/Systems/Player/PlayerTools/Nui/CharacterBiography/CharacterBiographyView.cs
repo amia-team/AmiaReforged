@@ -15,7 +15,7 @@ public sealed class CharacterBiographyView : ScryView<CharacterBiographyPresente
 
     public CharacterBiographyView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new CharacterBiographyPresenter(this, player);
 
         CategoryTag = "Character";
     }
@@ -33,29 +33,31 @@ public sealed class CharacterBiographyView : ScryView<CharacterBiographyPresente
     {
         NuiColumn root = new()
         {
-            Children = new()
-            {
+            Children =
+            [
                 new NuiTextEdit(label: "Edit Bio", CharacterBiography, 10000, true)
                 {
                     WordWrap = true,
                     Height = 400f,
                     Width = 400f
                 },
+
                 new NuiRow
                 {
-                    Children = new()
-                    {
-                        NuiUtils.Assign(new(label: "Save")
+                    Children =
+                    [
+                        NuiUtils.Assign(new NuiButton(label: "Save")
                         {
                             Id = "save"
                         }, out SaveButton),
-                        NuiUtils.Assign(new(label: "Discard Changes")
+
+                        NuiUtils.Assign(new NuiButton(label: "Discard Changes")
                         {
                             Id = "discard"
                         }, out DiscardButton)
-                    }
+                    ]
                 }
-            }
+            ]
         };
 
         return root;

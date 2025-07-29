@@ -23,7 +23,7 @@ public static class QuiveringPalm
 
         DoQuiveringPalm(castData);
     }
-    
+
     /// <summary>
     /// On a successful melee touch attack against an enemy creature, the target must make a fortitude save or die.
     /// If the target survives, it takes 1d6 bludgeoning damage per monk level.
@@ -39,7 +39,7 @@ public static class QuiveringPalm
         Effect quiveringEffect = Effect.Death(true);
         Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpDeath, false, 0.7f);
 
-        
+
 
         CreatureEvents.OnSpellCastAt.Signal(monk, targetCreature, castData.Spell!);
 
@@ -55,16 +55,16 @@ public static class QuiveringPalm
             targetCreature.ApplyEffect(EffectDuration.Instant, quiveringEffect);
             targetCreature.ApplyEffect(EffectDuration.Instant, quiveringVfx);
         }
-        
+
         if (savingThrowResult is SavingThrowResult.Success)
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
-        
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int damageAmount = Random.Shared.Roll(6, monkLevel);
 
         Effect quiveringDamage = Effect.LinkEffects(Effect.Damage(damageAmount, DamageType.Bludgeoning),
             Effect.VisualEffect(VfxType.ImpDivineStrikeHoly, false, 0.2f));
-        
+
         targetCreature.ApplyEffect(EffectDuration.Instant, quiveringDamage);
 
         return TouchAttackResult.Hit;

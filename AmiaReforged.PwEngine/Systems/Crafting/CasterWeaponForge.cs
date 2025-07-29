@@ -11,13 +11,14 @@ namespace AmiaReforged.PwEngine.Systems.Crafting;
 public class CasterWeaponForge
 {
     private const string ForgeTag = "caster_weapon_forge";
+    public const string LocalIntCasterWeapon = "CASTER_WEAPON";
 
-    private List<Spell> _spellWhiteList = new()
-    {
+    private List<Spell> _spellWhiteList =
+    [
         Spell.Restoration,
         Spell.LightningBolt,
         Spell.HealingCircle
-    };
+    ];
 
     public CasterWeaponForge()
     {
@@ -119,7 +120,7 @@ public class CasterWeaponForge
             return;
         }
 
-        if (NWScript.GetLocalInt(weapon, sVarName: "CASTER_WEAPON") == 1)
+        if (NWScript.GetLocalInt(weapon, sVarName: LocalIntCasterWeapon) == 1)
         {
             GenericWindow
                 .Builder()
@@ -133,7 +134,6 @@ public class CasterWeaponForge
             return;
         }
 
-        // TODO: Factor in material, quality, and other flavor properties
         if (weapon.ItemProperties.Any())
         {
             GenericWindow
@@ -150,6 +150,6 @@ public class CasterWeaponForge
 
         Effect visualEffect = Effect.VisualEffect(VfxType.ImpBlindDeafM);
         obj.Placeable.ApplyEffect(EffectDuration.Instant, visualEffect);
-        NWScript.SetLocalInt(weapon, sVarName: "CASTER_WEAPON", 1);
+        NWScript.SetLocalInt(weapon, sVarName: LocalIntCasterWeapon, 1);
     }
 }

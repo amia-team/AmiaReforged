@@ -1,5 +1,6 @@
 using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
+using Anvil.API;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Pact;
@@ -16,8 +17,6 @@ public class LoudDecay
         IntPtr loudVfx = EffectVisualEffect(2133); // VFX_FNF_LOUD_DECAY
 
         // Declaring variables for the summon part of the spell
-        uint summon = GetObjectByTag(sTag: "wlkAberrant");
-        int summonTier = warlockLevels / 5;
         int summonCount = warlockLevels switch
         {
             >= 1 and < 15 => 1,
@@ -88,18 +87,23 @@ public class LoudDecay
         //---------------------------
 
         // If summonCooldown is off and spell has hit a valid target, summon; else don't summon
-        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) == FALSE)
-        {
-            // Apply cooldown
-            ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown,
-                () => FloatingTextStringOnCreature(
-                    WarlockConstants.String(message: "Violet Fungi can be summoned again."), caster, 0));
-            // Summon new
-            SummonUtility.SummonMany(caster, summonDuration, summonCount, summonResRef: "wlkaberrant", location, 1f, 9f,
-                3f, 4f);
-            DelayCommand(4.1f, () => SummonUtility.SetSummonsFacing(summonCount, location));
-        }
+        if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) != FALSE) return;
+        
+        NwCreature? warlock = caster.ToNwObject() as NwCreature;
+        if (warlock == null) return;
+        
+        // Summon new
+        _ = SummonUtility.SummonMany(warlock, VFX_FNF_GAS_EXPLOSION_NATURE, VFX_FNF_GAS_EXPLOSION_NATURE, summonDuration, summonCount, 
+            "wlkaberrant", location, 1f, 9f, 3f, 4f);
+        
+        DelayCommand(4.1f, () => SummonUtility.SetSummonsFacing(summonCount, location));
+        
+        // Apply cooldown
+        ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
+        
+        DelayCommand(summonCooldown,
+            () => FloatingTextStringOnCreature(
+                WarlockConstants.String(message: "Violet Fungi can be summoned again."), caster, 0));
     }
 
     private void ApplyDelayedDamage(float delay, IntPtr loudDamage, uint currentTarget)

@@ -1,4 +1,3 @@
-using AmiaReforged.PwEngine.Systems.Chat.Commands;
 using AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 using Anvil.API;
 using Anvil.Services;
@@ -97,8 +96,8 @@ public class NwObjectDataMapper
 
     private List<SkillData> MapFromSkills(NwCreature creature)
     {
-        List<Skill> skills = new()
-        {
+        List<Skill> skills =
+        [
             Skill.Concentration,
             Skill.Discipline,
             Skill.Heal,
@@ -109,7 +108,7 @@ public class NwObjectDataMapper
             Skill.Spot,
             Skill.Listen,
             Skill.Spellcraft
-        };
+        ];
 
         return skills.Select(skill => new SkillData
         {
@@ -192,7 +191,7 @@ public class NwObjectDataMapper
     {
         List<ItemData> items = creatureInventory.Items.Select(MapFromItem).ToList();
 
-        return new()
+        return new InventoryData
         {
             Items = items
         };
@@ -200,7 +199,7 @@ public class NwObjectDataMapper
 
     private ItemData MapFromItem(NwItem? itm)
     {
-        if (itm is null) return new();
+        if (itm is null) return new ItemData();
 
         ItemData data = new()
         {

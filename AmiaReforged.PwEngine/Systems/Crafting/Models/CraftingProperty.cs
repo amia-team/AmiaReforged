@@ -8,7 +8,6 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Models;
 /// </summary>
 public class CraftingProperty
 {
-    public NuiButton Button;
     public required ItemProperty ItemProperty { get; init; }
     public required string GuiLabel { get; init; }
     public required int PowerCost { get; init; }

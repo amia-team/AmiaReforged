@@ -8,13 +8,10 @@ namespace AmiaReforged.Classes.Spells.Divine.Cantrips.CureMinorWounds;
 [ServiceBinding(typeof(CureMinorWounds))]
 public class CureMinorWounds : ISpell
 {
-    public ResistSpellResult Result { get; set; }
+    public bool CheckedSpellResistance { get; set; }
+    public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_CurMinW";
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        Result = creature.CheckResistSpell(caster);
-    }
+    
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -31,14 +28,14 @@ public class CureMinorWounds : ISpell
 
         int healAmount = CalculateHealAmount(casterCreature);
 
-        if (Result != ResistSpellResult.Failed || !skipTouchAttack) return;
+        if (ResistedSpell || !skipTouchAttack) return;
 
         ApplyEffect(eventData, healAmount);
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 
     private int CalculateHealAmount(NwCreature casterCreature)

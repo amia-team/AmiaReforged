@@ -15,13 +15,15 @@ public class RemoveVfx : IChatCommand
         try
         {
             int vfxId = int.Parse(args[0]);
-            string vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
-            string vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
-            caller.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value = vfxId;
+            string? vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
+            string? vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
+            NwCreature? controlledCreature = caller.ControlledCreature;
+            if(controlledCreature is null) return Task.CompletedTask;
+            controlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value = vfxId;
             if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "D")
             {
                 caller.EnterTargetMode(RemoveDurVfx,
-                    new() { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
+                    new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
                 caller.FloatingTextString($"Removing {vfxLabel}!", false);
                 return Task.CompletedTask;
             }
@@ -45,7 +47,11 @@ public class RemoveVfx : IChatCommand
 
     private void RemoveDurVfx(ModuleEvents.OnPlayerTarget obj)
     {
-        int vfxId = obj.Player.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value;
+        NwCreature? playerControlledCreature = obj.Player.ControlledCreature;
+        
+        if (playerControlledCreature is null) return;
+        
+        int vfxId = playerControlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value;
 
         if (obj.TargetObject is NwCreature targetCreature)
             foreach (Effect effect in targetCreature.ActiveEffects)

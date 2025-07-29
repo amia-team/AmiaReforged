@@ -23,14 +23,14 @@ public static class EmptyBody
 
         DoEmptyBody(castData);
     }
-    
+
     /// <summary>
     ///     The monk is given 50% concealment for rounds per monk level. Each use depletes a Body Ki Point.
     /// </summary>
     public static void DoEmptyBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         Effect emptyBodyEffect = Effect.LinkEffects(Effect.Concealment(50),
             Effect.VisualEffect(VfxType.DurInvisibility), Effect.VisualEffect(VfxType.DurCessatePositive));
         emptyBodyEffect.SubType = EffectSubType.Supernatural;

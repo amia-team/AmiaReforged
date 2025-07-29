@@ -9,7 +9,7 @@ public class JobItemBuilder : IJobItemBuilder
     private JobItemBuilder()
     {
         // Prevent instantiation of this fluent builder.
-        _jobItem = new();
+        _jobItem = new JobItem();
     }
 
 
@@ -61,19 +61,14 @@ public class JobItemBuilder : IJobItemBuilder
         return this;
     }
 
-    public IJobItemCreatorStep WithMaterial(MaterialEnum material)
+    public IJobItemIconStep WithMaterial(MaterialEnum material)
     {
         _jobItem.Material = material;
         return this;
     }
 
-    public IJobItemIconStep WithCreator(long creator)
-    {
-        _jobItem.WorldCharacterId = creator;
-        return this;
-    }
 
-    public IJobItemSerializedStep WithIconResRef(string iconResRef)
+    public IJobItemSerializedStep WithIconResRef(string? iconResRef)
     {
         _jobItem.IconResRef = iconResRef;
         return this;

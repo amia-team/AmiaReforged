@@ -13,9 +13,8 @@ public static class AugmentationApplier
     /// <param name="path">Path from GetMonkPath()</param>
     /// <param name="technique">Technique from which this function was called</param>
     /// <param name="castData">Use for body and spirit techniques</param>
-    /// <param name="wholenessData">Separate for Wholeness of Body, as an instant spell it uses other event data</param>
     /// <param name="attackData">Use for martial techniques</param>
-    public static void ApplyAugmentations(PathType? path, TechniqueType technique, OnSpellCast? castData = null, 
+    public static void ApplyAugmentations(PathType? path, TechniqueType technique, OnSpellCast? castData = null,
         OnCreatureAttack? attackData = null)
     {
         switch (path)

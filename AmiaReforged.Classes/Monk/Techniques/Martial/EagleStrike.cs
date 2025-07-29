@@ -17,13 +17,13 @@ public static class EagleStrike
 
         if (path != null)
         {
-            AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
+            AugmentationApplier.ApplyAugmentations(path, technique, attackData: attackData);
             return;
         }
 
         DoEagleStrike(attackData);
     }
-    
+
     /// <summary>
     /// On two successful hits per round against an enemy creature, the target must succeed at a reflex save or suffer
     /// a penalty of -2 to their armor class for two rounds.

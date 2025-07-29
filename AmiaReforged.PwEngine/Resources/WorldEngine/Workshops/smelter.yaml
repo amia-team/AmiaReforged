@@ -1,0 +1,8 @@
+WorkstationTag: econ_ws_smelter
+WorkstationRecipes:
+  - smelt_native_copper
+  - smelt_native_silver
+  - smelt_native_platinum
+  - smelt_galena
+  - smelt_hematite
+  - smelt_limonite

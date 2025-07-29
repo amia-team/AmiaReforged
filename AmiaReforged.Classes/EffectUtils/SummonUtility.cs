@@ -1,4 +1,6 @@
 ﻿using System.Numerics;
+using Anvil.API;
+using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.EffectUtils;
@@ -45,35 +47,206 @@ public static class SummonUtility
 
     public static void SetSummonsFacing(int summonCount, IntPtr location)
     {
-        if (summonCount == 1)
-        {
-            uint summon = GetAssociate(ASSOCIATE_TYPE_SUMMONED, OBJECT_SELF);
-            AssignCommand(summon, () => SetFacingPoint(GetPositionFromLocation(location)));
-        }
-
         if (summonCount > 1)
             for (int i = 1; i <= summonCount; i++)
             {
-                uint summon = GetAssociate(ASSOCIATE_TYPE_HENCHMAN, OBJECT_SELF, i);
+                uint summon = GetAssociate(ASSOCIATE_TYPE_SUMMONED, OBJECT_SELF, i);
                 AssignCommand(summon, () => SetFacingPoint(GetPositionFromLocation(location)));
             }
     }
 
-    public static void SummonMany(uint caster, float summonDuration, int summonCount, string summonResRef,
-        IntPtr location,
-        float minLoc, float maxLoc, float minDelay, float maxDelay)
+    /// <summary>
+    /// Use this for when you want your spell to summon multiple creatures of the same creature resref.
+    /// </summary>
+    /// <param name="summoner">The creature doing the summoning</param>
+    /// <param name="summonVfx">Vfx played when the summon appears, use one-shot vfxs</param>
+    /// <param name="unsummonVfx">Vfx played when the summon disappears, use one-shot vfxs</param>
+    /// <param name="summonDuration">The summons' duration</param>
+    /// <param name="summonCount">How many summons you want to have</param>
+    /// <param name="summonResRef">The resref of the creature you want to summon</param>
+    /// <param name="summonLocation">The summon location, usually GetSpellTargetLocation</param>
+    /// /// <param name="minDelay"></param>
+    /// <param name="maxDelay"></param>
+    /// <param name="minDist">The minimum distance from the summon location; this varies the summoning location across
+    /// the multiple summons</param>
+    /// <param name="maxDist">The maximum distance from the summon location; this varies the summoning location across
+    /// the multiple summons</param>
+    public static async Task SummonMany(NwCreature summoner, int summonVfx, int unsummonVfx, float summonDuration, int summonCount, 
+        string summonResRef, IntPtr summonLocation, float minDelay, float maxDelay, float minDist, float maxDist)
     {
-        for (int i = 1; i <= summonCount; i++)
+        // If there's only one summon, summon that at the summon location, skips the extra work for multiple summoning
+        if (summonCount == 1)
         {
-            float delay = NwEffects.RandomFloat(minDelay, maxDelay);
-            IntPtr summonLocation = GetRandomLocationAroundPoint(location, NwEffects.RandomFloat(minLoc, maxLoc));
-            float newDelay = delay + 0.1f;
-            string newTag = summonResRef + IntToString(i) + GetSubString(GetName(caster), 0, 2);
-            DelayCommand(delay, () => CreateObject(OBJECT_TYPE_CREATURE, summonResRef, summonLocation, 0, newTag));
-            DelayCommand(newDelay, () => AddHenchman(caster, GetObjectByTag(newTag)));
-            DelayCommand(newDelay,
-                () => DelayCommand(summonDuration, () => RemoveHenchman(caster, GetObjectByTag(newTag))));
+            float summonDelay = NwEffects.RandomFloat(minDelay, maxDelay);
+            
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx, summonDelay,
+                nUnsummonVisualEffectId: unsummonVfx);
+            
+            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
+
+            return;
         }
+        
+        // For multi summoning, hide the stupid "unsummoning creature" message
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
+        
+        // If there are more summons, do the loopy loop for multiple summons
+        
+        // First populate an array with the delays for the summons
+        float[] delayArray = new float[summonCount];
+        
+        for (int i = 0; i < summonCount; i++)
+        {
+            float summonDelay = NwEffects.RandomFloat(minDelay, maxDelay);
+            delayArray[i] = summonDelay;
+        }
+        
+        // Sort from lowest to highest
+        Array.Sort(delayArray);
+        
+        // Loop summoning
+        for (int i = 0; i < summonCount; i++)
+        {
+            float delay;
+            if (i == 0)
+                delay = delayArray[i];
+            else
+                delay = delayArray[i] - delayArray[i - 1];
+
+            await NwTask.Delay(TimeSpan.FromSeconds(delay));
+            
+            IntPtr randomSummonLocation = 
+                GetRandomLocationAroundPoint(summonLocation, NwEffects.RandomFloat(minDist, maxDist));
+
+            await summoner.WaitForObjectContext();
+            
+            IntPtr summonCreature = EffectSummonCreature(summonResRef, summonVfx,
+                nUnsummonVisualEffectId: unsummonVfx);
+            
+            HashSet<NwCreature> associatesBeforeSummon = new (summoner.Associates);
+            
+            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration);
+            
+            await NwTask.Delay(TimeSpan.FromSeconds(0.01f));
+            
+            foreach (NwCreature currentAssociate in summoner.Associates)
+                if (!associatesBeforeSummon.Contains(currentAssociate))
+                    currentAssociate.IsDestroyable = false;
+        }
+
+        foreach (NwCreature associate in summoner.Associates)
+        {
+            if (associate.ResRef != summonResRef) continue;
+            
+            associate.IsDestroyable = true;
+            
+            // Also make sure the summons attack, for some reason multiple summons makes them pretty confused
+            NwCreature? nearestHostile = associate.GetNearestCreatures().
+                FirstOrDefault(creature => creature.IsReactionTypeHostile(associate));
+
+            if (nearestHostile == null) continue;
+                 
+            _ = associate.ActionAttackTarget(nearestHostile);
+        }
+        
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, summoner);
+    }
+    
+    /// <summary>
+    /// Use this for when you want your spell to summon multiple creatures of different creature resrefs.
+    /// </summary>
+    /// <param name="summoner">The creature doing the summoning</param>
+    /// <param name="summonVfx">Vfx played when the summon appears, use one-shot vfxs</param>
+    /// <param name="unsummonVfx">Vfx played when the summon disappears, use one-shot vfxs</param>
+    /// <param name="summonDuration">The summons' duration</param>
+    /// <param name="summonCount">How many summons you want to have</param>
+    /// <param name="summonResRefs">String array containing the resrefs you want to summon</param>
+    /// <param name="summonLocation">The summon location, usually GetSpellTargetLocation</param>
+    /// /// <param name="minDelay"></param>
+    /// <param name="maxDelay"></param>
+    /// <param name="minDist">The minimum distance from the summon location; this varies the summoning location across
+    /// the multiple summons</param>
+    /// <param name="maxDist">The maximum distance from the summon location; this varies the summoning location across
+    /// the multiple summons</param>
+    public static async Task SummonManyDifferent(NwCreature summoner, int summonVfx, int unsummonVfx, float summonDuration, 
+        int summonCount, string[] summonResRefs, IntPtr summonLocation, float minDelay, float maxDelay, float minDist, float maxDist)
+    {
+        // If there's only one summon, summon that at the summon location, skips the extra work for multiple summoning
+        if (summonCount == 1)
+        {
+            float summonDelay = NwEffects.RandomFloat(minDelay, maxDelay);
+            
+            IntPtr summonCreature = EffectSummonCreature(summonResRefs[0], summonVfx, summonDelay,
+                nUnsummonVisualEffectId: unsummonVfx);
+            
+            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, summonLocation, summonDuration);
+
+            return;
+        }
+        
+        // For multi summoning, hide the stupid "unsummoning creature" message
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, summoner);
+        
+        // If there are more summons, do the loopy loop for multiple summons
+        
+        // First populate an array with the delays for the summons
+        float[] delayArray = new float[summonCount];
+        
+        for (int i = 0; i < summonCount; i++)
+        {
+            float summonDelay = NwEffects.RandomFloat(minDelay, maxDelay);
+            delayArray[i] = summonDelay;
+        }
+        
+        // Sort from lowest to highest
+        Array.Sort(delayArray);
+        
+        // Loop summoning
+        for (int i = 0; i < summonCount; i++)
+        {
+            float delay;
+            if (i == 0)
+                delay = delayArray[i];
+            else
+                delay = delayArray[i] - delayArray[i - 1];
+
+            await NwTask.Delay(TimeSpan.FromSeconds(delay));
+            
+            IntPtr randomSummonLocation = 
+                GetRandomLocationAroundPoint(summonLocation, NwEffects.RandomFloat(minDist, maxDist));
+
+            await summoner.WaitForObjectContext();
+            
+            IntPtr summonCreature = EffectSummonCreature(summonResRefs[i], summonVfx,
+                nUnsummonVisualEffectId: unsummonVfx);
+            
+            HashSet<NwCreature> associatesBeforeSummon = new (summoner.Associates);
+            
+            ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, summonCreature, randomSummonLocation, summonDuration);
+            
+            await NwTask.Delay(TimeSpan.FromSeconds(0.01f));
+            
+            foreach (NwCreature currentAssociate in summoner.Associates)
+                if (!associatesBeforeSummon.Contains(currentAssociate))
+                    currentAssociate.IsDestroyable = false;
+        }
+
+        foreach (NwCreature associate in summoner.Associates)
+        {
+            if (!summonResRefs.Contains(associate.ResRef)) continue;
+            
+            associate.IsDestroyable = true;
+            
+            // Also make sure the summons attack, for some reason multiple summons makes them pretty confused
+            NwCreature? nearestHostile = associate.GetNearestCreatures().
+                FirstOrDefault(creature => creature.IsReactionTypeHostile(associate));
+
+            if (nearestHostile == null) continue;
+                 
+            _ = associate.ActionAttackTarget(nearestHostile);
+        }
+        
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, summoner);
     }
 
     public static bool IsPactSummon(uint target) =>

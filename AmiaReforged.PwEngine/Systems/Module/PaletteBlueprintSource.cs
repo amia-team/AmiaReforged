@@ -15,7 +15,7 @@ internal sealed class PaletteBlueprintSource : IBlueprintSource
     private const string TriggerPaletteResRef = "triggerpal";
     private const string WaypointPaletteResRef = "waypointpal";
 
-    private readonly List<IBlueprint> _blueprints = new List<IBlueprint>();
+    private readonly List<IBlueprint> _blueprints = new();
 
     public PaletteBlueprintSource(InjectionService injectionService)
     {

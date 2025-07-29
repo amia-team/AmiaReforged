@@ -14,7 +14,7 @@ public class BuffRemoverView : ScryView<BuffRemoverPresenter>, IToolWindow
 
     public BuffRemoverView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new BuffRemoverPresenter(this, player);
     }
 
     public sealed override BuffRemoverPresenter Presenter { get; protected set; }
@@ -29,8 +29,8 @@ public class BuffRemoverView : ScryView<BuffRemoverPresenter>, IToolWindow
 
     public override NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> buffs = new()
-        {
+        List<NuiListTemplateCell> buffs =
+        [
             new(new NuiRow
             {
                 Children =
@@ -42,7 +42,7 @@ public class BuffRemoverView : ScryView<BuffRemoverPresenter>, IToolWindow
                     }
                 }
             })
-        };
+        ];
 
         NuiColumn root = new()
         {

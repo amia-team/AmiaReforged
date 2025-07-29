@@ -17,7 +17,7 @@ namespace AmiaReforged.Core.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.15")
+                .HasAnnotation("ProductVersion", "8.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -94,6 +94,58 @@ namespace AmiaReforged.Core.Migrations
                         .HasName("dreamcoin_records_pkey");
 
                     b.ToTable("dreamcoin_records", (string)null);
+                });
+
+            modelBuilder.Entity("AmiaReforged.Core.Models.Encounter", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("DmId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("EncounterSize")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DmId");
+
+                    b.ToTable("Encounters");
+                });
+
+            modelBuilder.Entity("AmiaReforged.Core.Models.EncounterEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("EncounterId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("SerializedString")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EncounterId");
+
+                    b.ToTable("EncounterEntries");
                 });
 
             modelBuilder.Entity("AmiaReforged.Core.Models.Faction.FactionCharacterRelation", b =>
@@ -242,6 +294,34 @@ namespace AmiaReforged.Core.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("LastLocation");
+                });
+
+            modelBuilder.Entity("AmiaReforged.Core.Models.Npc", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("DmCdKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Public")
+                        .HasColumnType("boolean");
+
+                    b.Property<byte[]>("Serialized")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Npcs");
                 });
 
             modelBuilder.Entity("AmiaReforged.Core.Models.PersistPLC", b =>
@@ -422,6 +502,28 @@ namespace AmiaReforged.Core.Migrations
                     b.Navigation("CdKeyNavigation");
                 });
 
+            modelBuilder.Entity("AmiaReforged.Core.Models.Encounter", b =>
+                {
+                    b.HasOne("AmiaReforged.Core.Models.Dm", "Dm")
+                        .WithMany()
+                        .HasForeignKey("DmId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Dm");
+                });
+
+            modelBuilder.Entity("AmiaReforged.Core.Models.EncounterEntry", b =>
+                {
+                    b.HasOne("AmiaReforged.Core.Models.Encounter", "Encounter")
+                        .WithMany("EncounterEntries")
+                        .HasForeignKey("EncounterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Encounter");
+                });
+
             modelBuilder.Entity("AmiaReforged.Core.Models.Faction.FactionCharacterRelation", b =>
                 {
                     b.HasOne("AmiaReforged.Core.Models.PlayerCharacter", "Character")
@@ -502,6 +604,11 @@ namespace AmiaReforged.Core.Migrations
                         .IsRequired();
 
                     b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("AmiaReforged.Core.Models.Encounter", b =>
+                {
+                    b.Navigation("EncounterEntries");
                 });
 
             modelBuilder.Entity("AmiaReforged.Core.Models.Faction.FactionEntity", b =>

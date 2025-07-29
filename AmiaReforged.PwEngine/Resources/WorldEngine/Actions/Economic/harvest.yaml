@@ -1,0 +1,7 @@
+name: Harvest
+base_time: 2.0
+output_type:
+  - yield_items
+  - node_delete
+event_emits:
+  - on_node_harvested

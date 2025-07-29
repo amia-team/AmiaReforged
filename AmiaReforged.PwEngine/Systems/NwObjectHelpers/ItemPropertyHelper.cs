@@ -3,7 +3,6 @@ using System.Text.RegularExpressions;
 using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using Anvil.API;
 using NLog;
-using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.NwObjectHelpers;
 
@@ -41,11 +40,15 @@ public static class ItemPropertyHelper
 
     public static CraftingProperty ToCraftingProperty(ItemProperty ip)
     {
-        string gameLabel = GameLabel(ip);
+        LogManager.GetCurrentClassLogger().Info("Converting unknown property to something useable...");
+
+        string gameLabel = FullPropertyDescription(ip);
+
+        LogManager.GetCurrentClassLogger().Info($"{gameLabel}");
 
         gameLabel = gameLabel.Replace(oldValue: "_", newValue: " ");
 
-        return new()
+        return new CraftingProperty
         {
             ItemProperty = ip,
             GuiLabel = gameLabel,
@@ -57,8 +60,8 @@ public static class ItemPropertyHelper
 
     private static int GetPowerCost(ItemProperty ip)
     {
-        List<ItemPropertyType> noCost = new()
-        {
+        List<ItemPropertyType> noCost =
+        [
             ItemPropertyType.DecreasedAbilityScore,
             ItemPropertyType.DecreasedAc,
             ItemPropertyType.DecreasedSavingThrows,
@@ -75,7 +78,7 @@ public static class ItemPropertyHelper
             ItemPropertyType.UseLimitationRacialType,
             ItemPropertyType.UseLimitationSpecificAlignment,
             ItemPropertyType.NoDamage
-        };
+        ];
 
         return noCost.Any(it => it == ip.Property.PropertyType) ? 0 : 2;
     }
@@ -166,8 +169,8 @@ public static class ItemPropertyHelper
 
     public static bool PropertiesAreSame(ItemProperty property1, ItemProperty property2)
     {
-        string label1 = GameLabel(property1);
-        string label2 = GameLabel(property2);
+        string label1 = FullPropertyDescription(property1);
+        string label2 = FullPropertyDescription(property2);
         bool propertiesAreSame = label1 == label2;
         if (property1.Property.PropertyType == ItemPropertyType.OnHitProperties &&
             property2.Property.PropertyType == ItemPropertyType.OnHitProperties
@@ -230,13 +233,13 @@ public static class ItemPropertyHelper
         if (property.Property.GameStrRef == null) return description.ToString();
 
         description.Append(property.Property.GameStrRef.ToString());
-        
+
         ItemPropertySubTypeTableEntry? subType = property.SubType;
         if (subType != null)
         {
             description.Append($" {subType.Name}");
         }
-        
+
         ItemPropertyParamTableEntry? param1Value = property.Param1TableValue;
         ItemPropertyCostTableEntry? costTableValue = property.CostTableValue;
 

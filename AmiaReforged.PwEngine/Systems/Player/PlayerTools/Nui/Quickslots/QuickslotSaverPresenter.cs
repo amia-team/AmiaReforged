@@ -28,8 +28,8 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
         View = toolView;
     }
 
-    [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; }
-    [Inject] private Lazy<WindowDirector> WindowDirector { get; set; }
+    [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; } = null!;
+    [Inject] private Lazy<WindowDirector> WindowDirector { get; set; } = null!;
 
     [Inject] private Lazy<PlayerDataService> PlayerDataService { get; set; }
 
@@ -38,7 +38,7 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f)
         };
@@ -77,6 +77,7 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
             _quickslots = (await QuickslotLoader.Value.LoadQuickslots(playerId)).ToList();
             await NwTask.SwitchToMainThread();
 
+            Token().SetBindValue(View.Search, string.Empty);
             RefreshQuickslotList();
         }
         catch (Exception e)
@@ -88,7 +89,7 @@ public class QuickslotSaverPresenter : ScryPresenter<QuickslotSaverView>
 
     private void RefreshQuickslotList()
     {
-        string search = Token().GetBindValue(View.Search)!;
+        string search = Token().GetBindValue(View.Search) ?? string.Empty;
         _visibleQuickslots = _quickslots.Where(q => q.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
             .ToList();
 

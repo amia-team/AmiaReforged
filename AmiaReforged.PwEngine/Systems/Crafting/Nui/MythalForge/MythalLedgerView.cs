@@ -19,7 +19,7 @@ public sealed class MythalLedgerView : ScryView<MythalLedgerPresenter>
     public MythalLedgerView(MythalForgePresenter parent, NwPlayer player)
     {
         Parent = parent;
-        Presenter = new(parent, player, this);
+        Presenter = new MythalLedgerPresenter(parent, player, this);
     }
 
     public override MythalLedgerPresenter Presenter { get; protected set; }

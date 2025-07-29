@@ -6,6 +6,8 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.FireBolt;
 [DecoratesSpell(typeof(FireBolt))]
 public class LingeringBurns : SpellDecorator
 {
+    private const string SavePenaltyTag = "FireBoltFocusDecorator";
+
     public LingeringBurns(ISpell spell) : base(spell)
     {
         Spell = spell;
@@ -27,16 +29,17 @@ public class LingeringBurns : SpellDecorator
 
         bool isEvocationFocused = basicFocus || greaterFocus || epicFocus;
 
-        if (isEvocationFocused && Result == ResistSpellResult.Failed)
+        if (isEvocationFocused && !ResistedSpell)
         {
             int fireSavePenalty = epicFocus ? 3 : greaterFocus ? 2 : basicFocus ? 1 : 0;
             int extraVulnerability = epicFocus ? 5 : 0;
             Effect savePenalty = Effect.SavingThrowDecrease(SavingThrow.All, fireSavePenalty, SavingThrowType.Fire);
             savePenalty = Effect.LinkEffects(Effect.DamageImmunityDecrease(DamageType.Fire, extraVulnerability),
                 savePenalty);
-            savePenalty.Tag = "FireBoltFocusDecorator";
+            savePenalty = Effect.LinkEffects(savePenalty, Effect.VisualEffect(VfxType.DurAuraFire));
+            savePenalty.Tag = SavePenaltyTag;
 
-            Effect? existing = target.ActiveEffects.FirstOrDefault(e => e.Tag == "FireBoltFocusDecorator");
+            Effect? existing = target.ActiveEffects.FirstOrDefault(e => e.Tag == SavePenaltyTag);
 
             if (existing != null) target.RemoveEffect(existing);
 

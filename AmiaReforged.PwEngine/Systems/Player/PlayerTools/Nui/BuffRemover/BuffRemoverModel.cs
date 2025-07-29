@@ -31,7 +31,7 @@ public class BuffRemoverModel
             string effectString = EffectString(effect);
             LogManager.GetCurrentClassLogger().Info($"{effectString}");
 
-            if (effectLabels.Any(e => e.StartsWith(effect.Spell.Name.ToString()))) continue;
+            if (effectLabels.Any(e => e.StartsWith(effect.Spell?.Name.ToString() ?? string.Empty))) continue;
 
             effectLabels.Add(effectString);
 
@@ -45,7 +45,7 @@ public class BuffRemoverModel
     {
         StringBuilder labelBuilder = new();
 
-        string spellName = effect.Spell.Name.ToString();
+        string spellName = effect.Spell?.Name.ToString() ?? string.Empty;
 
         if (!spellName.IsNullOrEmpty())
         {
@@ -56,12 +56,6 @@ public class BuffRemoverModel
 
         string effectLabel = effect.EffectType.ToString();
         labelBuilder.Append(effectLabel + ":");
-
-        // foreach (string? param in effect.StringParams)
-        // {
-        //     if (param.IsNullOrEmpty()) continue;
-        //     labelBuilder.Append(param + " ");
-        // }
 
         labelBuilder.Append(effect.IntParams[0]);
 
@@ -85,7 +79,7 @@ public class BuffRemoverModel
         {
             _player.SendServerMessage(ZoltanIsStupidMessage,
                 ColorConstants.Red);
-            return new();
+            return new List<Effect>();
         }
 
         // First, we want all linked effects...Limit only one linked effect, because we will

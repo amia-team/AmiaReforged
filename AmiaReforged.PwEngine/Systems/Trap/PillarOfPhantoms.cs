@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using System.Numerics;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
@@ -16,7 +17,7 @@ public class PillarOfPhantoms
         List<NwPlaceable> traps = NwObject.FindObjectsWithTag<NwPlaceable>(PillarOfPhantomsTag).ToList();
         foreach (NwPlaceable trap in traps)
         {
-            if (trap.Area != null && !_activeTraps.ContainsKey(trap.Area)) _activeTraps.Add(trap.Area, new());
+            if (trap.Area != null && !_activeTraps.ContainsKey(trap.Area)) _activeTraps.Add(trap.Area, new List<NwPlaceable>());
 
             if (trap.Area != null) _activeTraps[trap.Area].Add(trap);
 
@@ -32,9 +33,9 @@ public class PillarOfPhantoms
         if (obj.ObjectType != ObjectTypes.Placeable) return;
         if (obj.ResRef != PillarOfPhantomsTag) return;
 
-        if (!_activeTraps.ContainsKey(obj.Area)) _activeTraps.Add(obj.Area, new());
+        if (!_activeTraps.ContainsKey(obj.Area)) _activeTraps.Add(obj.Area, new List<NwPlaceable>());
 
-        obj.SpawnedObject.SpeakString(message: "OOooOo bitch");
+        obj.SpawnedObject?.SpeakString(message: "OOooOo bitch");
         RegisterNewTraps(obj.Area);
     }
 
@@ -57,38 +58,38 @@ public class PillarOfPhantoms
 
 
         // Get creatures that are player controlled within 25 meters of the trap
-        List<NwCreature> creatures = obj.Placeable.Area.FindObjectsOfTypeInArea<NwCreature>()
+        List<NwCreature>? creatures = obj.Placeable.Area?.FindObjectsOfTypeInArea<NwCreature>()
             .Where(c => c.IsPlayerControlled && c.Distance(obj.Placeable) <= 10f).ToList();
 
         obj.Placeable.SpeakString(message: "OooOOOoo");
+        if (creatures == null) return;
         foreach (NwCreature unused in creatures)
         {
             // Pick a random, valid location within 4 meters of the trap
             int randomXOffset = Random.Shared.Next(-4, 4);
             int randomYOffset = Random.Shared.Next(-4, 4);
             // The Z axis is shared with the trap, so we don't need to randomize it
+            if (obj.Placeable.Area == null) continue;
             Location spawnLocation = Location.Create(obj.Placeable.Area,
-                new(obj.Placeable.Position.X + randomXOffset, obj.Placeable.Position.Y + randomYOffset,
+                new Vector3(obj.Placeable.Position.X + randomXOffset, obj.Placeable.Position.Y + randomYOffset,
                     obj.Placeable.Position.Z),
                 obj.Placeable.Rotation);
 
             // Is it safe to spawn the phantom here?
-            if (spawnLocation.IsWalkable)
-            {
-                // Just to make sure, we're going to set the spawn location's Z value to its walkable height
-                Location trueSpawnLocation = Location.Create(obj.Placeable.Area,
-                    new(spawnLocation.Position.X, spawnLocation.Position.Y, spawnLocation.GroundHeight),
-                    obj.Placeable.Rotation);
-                NwCreature.Create(PillarPhantomTag, trueSpawnLocation);
-                Effect spawnVfx =
-                    Effect.VisualEffect(VfxType.FnfSummonUndead, false, Random.Shared.NextFloat(-1.5f, 1.5f));
-                Effect secondaryVfx =
-                    Effect.VisualEffect(VfxType.ImpRaiseDead, false, Random.Shared.NextFloat(-1.5f, 1.5f));
+            if (spawnLocation is not { IsWalkable: true }) continue;
+            // Just to make sure, we're going to set the spawn location's Z value to its walkable height
+            Location trueSpawnLocation = Location.Create(obj.Placeable.Area,
+                new Vector3(spawnLocation.Position.X, spawnLocation.Position.Y, spawnLocation.GroundHeight),
+                obj.Placeable.Rotation);
+            NwCreature.Create(PillarPhantomTag, trueSpawnLocation);
+            Effect spawnVfx =
+                Effect.VisualEffect(VfxType.FnfSummonUndead, false, Random.Shared.NextFloat(-1.5f, 1.5f));
+            Effect secondaryVfx =
+                Effect.VisualEffect(VfxType.ImpRaiseDead, false, Random.Shared.NextFloat(-1.5f, 1.5f));
 
-                // Apply at location
-                trueSpawnLocation.ApplyEffect(EffectDuration.Instant, spawnVfx);
-                trueSpawnLocation.ApplyEffect(EffectDuration.Instant, secondaryVfx);
-            }
+            // Apply at location
+            trueSpawnLocation.ApplyEffect(EffectDuration.Instant, spawnVfx);
+            trueSpawnLocation.ApplyEffect(EffectDuration.Instant, secondaryVfx);
         }
     }
 

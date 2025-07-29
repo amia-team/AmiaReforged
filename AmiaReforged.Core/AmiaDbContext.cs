@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Models.Faction;
+using AmiaReforged.Core.Models.World;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -24,6 +25,10 @@ public class AmiaDbContext : DbContext
     public DbSet<InvasionRecord> InvasionRecord { get; set; } = null!;
     public DbSet<LastLocation> LastLocation { get; set; } = null!;
     public DbSet<PersistPLC> PersistPLC { get; set; } = null!;
+    public DbSet<Encounter> Encounters { get; set; } = null!;
+    public DbSet<EncounterEntry> EncounterEntries { get; set; } = null!;
+    public DbSet<Npc> Npcs { get; set; } = null!;
+    public DbSet<WorldConfiguration> WorldEngineConfig { get; set; }
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

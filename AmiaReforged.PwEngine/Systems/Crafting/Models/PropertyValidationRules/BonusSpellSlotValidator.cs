@@ -43,7 +43,7 @@ public class BonusSpellSlotValidator : IValidationRule
             ? $"No more than three bonus spell slots of level {incomingBonusSpellSlot.Level} can be added to an item."
             : string.Empty;
 
-        return new()
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = error

@@ -6,5 +6,5 @@ public class ItemStorage
 {
     [Key] public long Id { get; set; }
 
-    public ICollection<StoredJobItem> Items { get; set; }
+    public virtual ICollection<StoredJobItem> Items { get; set; } = [];
 }

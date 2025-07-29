@@ -51,7 +51,7 @@ public class PersistentVfxService
         pcKey.GetObjectVariable<LocalVariableInt>("persistentvfx"+vfxId).Value = vfxId;
         pcKey.GetObjectVariable<LocalVariableFloat>("persistentvfx"+vfxId+"float").Value = vfxScale;
         pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"translate").Value = vfxTranslate;
-        pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate").Value = vfxTranslate;
+        pcKey.GetObjectVariable<LocalVariableStruct<Vector3>>("persistentvfx"+vfxId+"rotate").Value = vfxRotate;
     }
 
     /// <summary>
@@ -87,7 +87,9 @@ public class PersistentVfxService
     private void ApplyPersistentVfx(OnLoadCharacterFinish obj)
     {
         // Creature must be a normal player character
-        if (obj.Player.ControlledCreature is not NwCreature playerCharacter) return;
+        if (obj.Player.ControlledCreature is null) return;
+        NwCreature playerCharacter = obj.Player.ControlledCreature;
+        
         if (!playerCharacter.IsPlayerControlled) return;
         if (playerCharacter.IsDMPossessed) return;
 

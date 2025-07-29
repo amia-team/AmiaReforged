@@ -14,7 +14,7 @@ public class PropertyValidator
 
     public PropertyValidator()
     {
-        _validationRules = new();
+        _validationRules = new Dictionary<ItemPropertyType, IValidationRule>();
 
         LoadValidationRules();
     }
@@ -30,7 +30,10 @@ public class PropertyValidator
             ValidationRuleFor? attribute = type.GetCustomAttribute<ValidationRuleFor>();
             if (attribute == null) continue;
 
+            // Disabled with a pragma because this is absolutely necessary.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             IValidationRule? instance = (IValidationRule)Activator.CreateInstance(type);
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
             if (instance == null) continue;
 
@@ -42,7 +45,7 @@ public class PropertyValidator
         List<ChangeListModel.ChangelistEntry> changelistProperties)
     {
         if (!_validationRules.TryGetValue(incoming.ItemProperty.Property.PropertyType, out IValidationRule? operation))
-            return new()
+            return new ValidationResult
             {
                 Result = ValidationEnum.Valid
             };

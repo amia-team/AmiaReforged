@@ -1,6 +1,7 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.RayofFrost;
@@ -8,12 +9,8 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.RayofFrost;
 [ServiceBinding(typeof(ISpell))]
 public class RayOfFrost : ISpell
 {
-    public ResistSpellResult Result { get; set; }
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        Result = creature.CheckResistSpell(caster);
-    }
+    public bool CheckedSpellResistance { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public string ImpactScript => "NW_S0_RayFrost";
 
@@ -21,24 +18,29 @@ public class RayOfFrost : ISpell
     {
         NwGameObject? caster = eventData.Caster;
         if (caster == null) return;
-        if (caster is not NwCreature casterCreature) return;
+        if (caster is not NwCreature) return;
 
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
 
         Effect beam = Effect.Beam(VfxType.BeamCold, caster, BodyNode.Hand);
-        target.ApplyEffect(EffectDuration.Instant, beam);
-
+        target.ApplyEffect(EffectDuration.Temporary, beam, TimeSpan.FromSeconds(1.1));
+        
+        SpellUtils.SignalSpell(caster, target, eventData.Spell);
+        
+        if (ResistedSpell) return;
+        
         int numberOfDie = caster.CasterLevel / 2;
+        LogManager.GetCurrentClassLogger().Info($"Number of die: {numberOfDie}");
         int damage = NWScript.d3(numberOfDie);
 
         Effect damageEffect = Effect.Damage(damage, DamageType.Cold);
 
-        if (Result == ResistSpellResult.Failed) target.ApplyEffect(EffectDuration.Instant, damageEffect);
+        target.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 }

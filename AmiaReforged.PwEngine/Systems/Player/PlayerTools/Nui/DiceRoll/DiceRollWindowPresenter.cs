@@ -30,7 +30,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 271f, 400f),
             Resizable = false
@@ -76,15 +76,15 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        List<string> buttonIds = new()
-        {
+        List<string> buttonIds =
+        [
             "reports",
             "special_roll",
             "ability_check",
             "skill_check",
             "numbered_die",
             "save_throw"
-        };
+        ];
 
         if (buttonIds.Contains(eventData.ElementId))
             Token().SetBindValue<List<NuiComboEntry>>(View.ButtonGroupEntries,
@@ -133,16 +133,16 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     private List<NuiComboEntry> Reports()
     {
-        List<NuiComboEntry> diceOptions = new()
-        {
+        List<NuiComboEntry> diceOptions =
+        [
             new(DiceRollStringConstants.ReportTouchAttackAc, 0),
             new(DiceRollStringConstants.ReportFlatFootedAc, 1),
             new(DiceRollStringConstants.ReportRegularAc, 2),
             new(DiceRollStringConstants.ReportAlignment, 3),
             new(DiceRollStringConstants.ReportCharacterLevel, 4)
-        };
+        ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.ReportTouchAttackAc },
             { 1, DiceRollStringConstants.ReportFlatFootedAc },
@@ -156,8 +156,8 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     private List<NuiComboEntry> SpecialRoll()
     {
-        List<NuiComboEntry> diceOptions = new()
-        {
+        List<NuiComboEntry> diceOptions =
+        [
             new(DiceRollStringConstants.CounterBluffListen, 0),
             new(DiceRollStringConstants.CounterBluffSpot, 1),
             new(DiceRollStringConstants.RollGrappleCheck, 2),
@@ -166,9 +166,9 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.RollTouchAttackStr, 5),
             new(DiceRollStringConstants.RollTouchAttackDex, 6),
             new(DiceRollStringConstants.RollTouchAttackWis, 7)
-        };
+        ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.CounterBluffListen },
             { 1, DiceRollStringConstants.CounterBluffSpot },
@@ -185,17 +185,17 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     private List<NuiComboEntry> AbilityCheck()
     {
-        List<NuiComboEntry> diceOptions = new()
-        {
+        List<NuiComboEntry> diceOptions =
+        [
             new(DiceRollStringConstants.Strength, 0),
             new(DiceRollStringConstants.Dexterity, 1),
             new(DiceRollStringConstants.Constitution, 2),
             new(DiceRollStringConstants.Intelligence, 3),
             new(DiceRollStringConstants.Wisdom, 4),
             new(DiceRollStringConstants.Charisma, 5)
-        };
+        ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.Strength },
             { 1, DiceRollStringConstants.Dexterity },
@@ -210,8 +210,8 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     private List<NuiComboEntry> SkillCheck()
     {
-        List<NuiComboEntry> diceOptions = new()
-        {
+        List<NuiComboEntry> diceOptions =
+        [
             new(DiceRollStringConstants.AnimalEmpathy, 0),
             new(DiceRollStringConstants.Appraise, 1),
             new(DiceRollStringConstants.Bluff, 2),
@@ -239,9 +239,9 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.Taunt, 24),
             new(DiceRollStringConstants.Tumble, 25),
             new(DiceRollStringConstants.UseMagicDevice, 26)
-        };
+        ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.AnimalEmpathy },
             { 1, DiceRollStringConstants.Appraise },
@@ -277,8 +277,8 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     private List<NuiComboEntry> NumberedDie()
     {
-        List<NuiComboEntry> diceOptions = new()
-        {
+        List<NuiComboEntry> diceOptions =
+        [
             new(DiceRollStringConstants.D2, 0),
             new(DiceRollStringConstants.D3, 1),
             new(DiceRollStringConstants.D4, 2),
@@ -288,9 +288,9 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.D12, 6),
             new(DiceRollStringConstants.D20, 7),
             new(DiceRollStringConstants.D100, 8)
-        };
+        ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.D2 },
             { 1, DiceRollStringConstants.D3 },
@@ -308,14 +308,14 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
 
     private List<NuiComboEntry> SavingThrow()
     {
-        List<NuiComboEntry> diceOptions = new()
-        {
+        List<NuiComboEntry> diceOptions =
+        [
             new(DiceRollStringConstants.Fortitude, 0),
             new(DiceRollStringConstants.Reflex, 1),
             new(DiceRollStringConstants.Will, 2)
-        };
+        ];
 
-        RollButtonIds = new()
+        RollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.Fortitude },
             { 1, DiceRollStringConstants.Reflex },

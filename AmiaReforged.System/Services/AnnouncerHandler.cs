@@ -13,7 +13,7 @@ public class AnnouncerHandler
         string message = NWScript.GetLocalString(NWScript.GetModule(), sVarName: "announcerMessage");
         if (string.Equals(message, b: "")) message = "Empty Variable";
 
-        var instance = new JoinWebhookService();
+        JoinWebhookService instance = new JoinWebhookService();
         _ = instance.LaunchDiscordMessage(message);
     }
 }

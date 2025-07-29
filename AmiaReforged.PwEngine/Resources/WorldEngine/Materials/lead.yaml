@@ -1,0 +1,5 @@
+MaterialType: Lead
+CostModifier: 0.6
+DurabilityModifier: 0.5
+MagicModifier: 0.2
+WeightModifier: 1.5

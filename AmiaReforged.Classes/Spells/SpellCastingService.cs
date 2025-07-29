@@ -10,6 +10,9 @@ namespace AmiaReforged.Classes.Spells;
 [ServiceBinding(typeof(SpellCastingService))]
 public class SpellCastingService
 {
+    private const string WelcomeAreaResRef = "welcometotheeete";
+    private const string UniquePowerScriptName = "NW_S3_ActItem01";
+    private const string RecallResRef = "recall";
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly SpellDecoratorFactory _decoratorFactory;
     private readonly Dictionary<string, ISpell> _spellImpactHandlers = new();
@@ -24,6 +27,47 @@ public class SpellCastingService
             _spellImpactHandlers.Add(spell.ImpactScript, spell);
             scriptHandleFactory.RegisterScriptHandler(spell.ImpactScript, HandleSpellImpact);
         }
+
+        NwModule.Instance.OnSpellCast += PreventRestrictedCasts;
+    }
+
+    private void PreventRestrictedCasts(OnSpellCast obj)
+    {
+        if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
+        if (obj.Spell is null) return;
+        if (obj.Caster is not NwCreature caster) return;
+
+        // Don't restrict raise dead and resurrection in the "Welcome to Amia!" area
+        bool isWelcomeArea = caster.Area?.ResRef == WelcomeAreaResRef;
+
+        if (isWelcomeArea && obj.Spell.SpellType is Spell.RaiseDead or Spell.Resurrection)
+            return;
+
+        // Don't restrict DM avatars, let the hellballs rolL! DM possessed NPCs are still restricted.
+        if (caster.IsDMAvatar) return;
+
+        // Don't restrict items that use Unique Power or Unique Power Self unless it's a recall stone
+        if (obj.Item is not null && obj.Spell.ImpactScript == UniquePowerScriptName &&
+            !obj.Item.ResRef.Contains(RecallResRef))
+            return;
+
+        // Restrict casting in no casting areas
+        bool isNoCastingArea = caster.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1;
+
+        if (isNoCastingArea)
+        {
+            player.FloatingTextString("- You cannot cast magic in this area! -", false);
+
+            obj.PreventSpellCast = true;
+            return;
+        }
+
+        // Restrict hostile spellcasting in no PvP areas
+        if (caster.Area?.PVPSetting != PVPSetting.None || !obj.Spell.IsHostileSpell || obj.TargetObject == caster ||
+            !obj.TargetObject.IsPlayerControlled(out NwPlayer? _)) return;
+        
+        player.SendServerMessage("PVP is not allowed in this area.");
+        obj.PreventSpellCast = true;
     }
 
     private ScriptHandleResult HandleSpellImpact(CallInfo callInfo)
@@ -43,16 +87,7 @@ public class SpellCastingService
 
         if (target is null)
         {
-            // This is an AOE
-            if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
-            {
-                NWScript.FloatingTextStringOnCreature(sStringToDisplay: "- You cannot cast magic in this area! -",
-                    casterCreature,
-                    NWScript.FALSE);
-                return ScriptHandleResult.Handled;
-            }
-
-            DoCasterLevelOverride(casterCreature);
+            DoCasterLevelOverride(casterCreature, eventData);
 
             spell.OnSpellImpact(eventData);
 
@@ -60,58 +95,38 @@ public class SpellCastingService
             return ScriptHandleResult.Handled;
         }
 
-        if (casterCreature.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1)
+        if (casterCreature is { IsLoginPlayerCharacter: true, IsDMAvatar: false } 
+            && target is NwCreature targetCreature 
+            && eventData.Spell.IsHostileSpell)
         {
-            NWScript.FloatingTextStringOnCreature(sStringToDisplay: "- You cannot cast magic in this area! -",
-                casterCreature,
-                NWScript.FALSE);
-            return ScriptHandleResult.Handled;
+            bool targetIsInParty = casterCreature.Faction.GetMembers().Any(member => member == targetCreature);
+            
+            if (targetIsInParty == false)
+            {
+                spell.DoSpellResist(targetCreature, casterCreature);
+                CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
+            }
         }
-
-
-        if (target is NwCreature targetCreature)
+        
+        if (target is NwItem targetItem)
         {
-            bool targetIsInParty = false;
-
-            if (casterCreature.IsPlayerControlled(out NwPlayer? player))
-                targetIsInParty = player.PartyMembers.Any(p => p.LoginCreature == targetCreature) ||
-                                  casterCreature.Associates.Any(a => a == targetCreature);
-
-            PVPSetting? areaPvpSetting = casterCreature.Area?.PVPSetting;
-
-            spell.DoSpellResist(targetCreature, casterCreature);
-
-
-            if (targetIsInParty)
-            {
-                NWScript.SendMessageToPC(casterCreature,
-                    szMessage: "You cannot target a friendly creature with this spell.");
-                return ScriptHandleResult.Handled;
-            }
-
-            if (targetCreature.IsPlayerControlled && areaPvpSetting == PVPSetting.None)
-            {
-                NWScript.SendMessageToPC(casterCreature, szMessage: "PVP is not allowed in this area.");
-                return ScriptHandleResult.Handled;
-            }
-
-            if (eventData.Spell.IsHostileSpell)
-                if (!targetCreature.PlotFlag || !targetCreature.Immortal)
-                    NWScript.AdjustReputation(caster, target, -100);
-
-            spell.DoSpellResist(targetCreature, casterCreature);
+            CraftSpell craftSpell = new(eventData, targetItem); 
+            craftSpell.DoCraftSpell();
         }
+            
 
-        DoCasterLevelOverride(casterCreature);
+        DoCasterLevelOverride(casterCreature, eventData);
 
         spell.OnSpellImpact(eventData);
 
         RevertCasterLevelOverride(casterCreature);
 
+        spell.CheckedSpellResistance = false;
+
         return ScriptHandleResult.Handled;
     }
 
-    private void DoCasterLevelOverride(NwCreature casterCreature)
+    private void DoCasterLevelOverride(NwCreature casterCreature, SpellEvents.OnSpellCast eventData)
     {
         CreatureClassInfo? paleMaster =
             casterCreature.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.PaleMaster);
@@ -125,6 +140,10 @@ public class SpellCastingService
                 baseClassLevels += charClass.Level;
         }
 
+        int pmLevelMod = eventData.Spell.SpellSchool == SpellSchool.Necromancy
+            ? paleMaster.Level
+            : Math.Clamp(paleMaster.Level - 6, 0, paleMaster.Level); // Prevent negative integers
+        
         int levels = paleMaster.Level + baseClassLevels;
         CreaturePlugin.SetCasterLevelOverride(casterCreature, NWScript.CLASS_TYPE_PALE_MASTER, levels);
     }

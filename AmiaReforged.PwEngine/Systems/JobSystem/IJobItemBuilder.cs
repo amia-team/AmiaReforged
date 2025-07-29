@@ -44,7 +44,7 @@ public interface IJobItemQualityStep
 
 public interface IJobItemMaterialStep
 {
-    IJobItemCreatorStep WithMaterial(MaterialEnum material);
+    IJobItemIconStep WithMaterial(MaterialEnum material);
 }
 
 public interface IJobItemCreatorStep
@@ -54,7 +54,7 @@ public interface IJobItemCreatorStep
 
 public interface IJobItemIconStep
 {
-    IJobItemSerializedStep WithIconResRef(string iconResRef);
+    IJobItemSerializedStep WithIconResRef(string? iconResRef);
 }
 
 public interface IJobItemSerializedStep
@@ -69,6 +69,6 @@ public interface IJobItemBuildStep
 
 public interface IJobItemBuilder : IJobItemNamingStep, IJobItemDescriptionStep, IJobItemResRefStep,
     IJobItemBaseValueStep, IJobItemMagicStep, IJobItemDurabilityStep, IJobItemTypeStep, IJobItemQualityStep,
-    IJobItemMaterialStep, IJobItemCreatorStep, IJobItemIconStep, IJobItemSerializedStep, IJobItemBuildStep
+    IJobItemMaterialStep, IJobItemIconStep, IJobItemSerializedStep, IJobItemBuildStep
 {
 }

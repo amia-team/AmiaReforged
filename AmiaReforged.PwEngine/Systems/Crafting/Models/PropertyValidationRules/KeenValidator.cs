@@ -24,7 +24,7 @@ public class KeenValidator : IValidationRule
             ? "Keen already exists on this item."
             : string.Empty;
 
-        return new()
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = error

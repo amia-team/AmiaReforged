@@ -39,7 +39,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f)
         };
@@ -88,7 +88,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         }
 
         _spellbooks = SpellbookLoader.Value.LoadSpellbook(characterId);
-
+        Token().SetBindValue(View.Search, string.Empty);
         RefreshSpellbookList();
     }
 
@@ -102,7 +102,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         }
     }
 
-    private async void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
+    private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
         if (eventData.ElementId == View.SearchButton.Id)
         {
@@ -155,8 +155,14 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
         SpellbookViewModel? selectedSpellbook = _visibleSpellbooks?[eventData.ArrayIndex];
         if (selectedSpellbook == null) return;
 
-        string pcIdString = NWScript.GetLocalString(Token().Player.LoginCreature, sVarName: "pc_guid");
-        Guid pcId = Guid.Parse(pcIdString);
+
+        Guid pcId = PlayerIdService.Value.GetPlayerKey(Token().Player);
+        if (pcId == Guid.Empty)
+        {
+            Token().Player.SendServerMessage("Couldn't delete the selected spellbook. Please file a bug report");
+            return;
+        }
+        
         SpellbookLoader.Value.DeleteSpellbook(selectedSpellbook.Id, pcId);
 
         Token().Player.SendServerMessage($"Spellbook {selectedSpellbook.Name} has been deleted.");
@@ -187,7 +193,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
 
     private void RefreshSpellbookList()
     {
-        string search = Token().GetBindValue(View.Search)!;
+        string search = Token().GetBindValue(View.Search) ?? string.Empty;
         _visibleSpellbooks = _spellbooks.Where(book =>
                 book != null && book.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
             .ToList();

@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 using Microsoft.IdentityModel.Tokens;
 using NWN.Core;
 
@@ -17,7 +18,7 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
     {
         View = toolView;
         _player = player;
-        ToolModel = new(player);
+        ToolModel = new ChatToolModel(player);
     }
 
     private ChatToolModel ToolModel { get; }
@@ -27,7 +28,7 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(500f, 100f, 430, 610f),
             Resizable = true
@@ -69,7 +70,7 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
         {
             _player.FloatingTextString(message: "Pick an associate.", false);
 
-            _player.EnterTargetMode(ValidateAndSelect, new()
+            _player.EnterTargetMode(ValidateAndSelect, new TargetModeSettings
             {
                 CursorType = MouseCursor.Talk,
                 ValidTargets = ObjectTypes.Creature

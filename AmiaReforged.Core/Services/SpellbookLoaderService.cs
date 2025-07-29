@@ -1,10 +1,7 @@
 ﻿using AmiaReforged.Core.Models;
 using AmiaReforged.Core.UserInterface;
-using Anvil.API;
 using Anvil.Services;
-using Microsoft.EntityFrameworkCore;
 using NLog;
-using NWN.Core;
 
 namespace AmiaReforged.Core.Services;
 
@@ -72,11 +69,9 @@ public class SpellbookLoaderService
 
         if (spellbook != null)
         {
-            Log.Info($"Spellbook with ID {spellbookId} found in the database.");
             return SpellbookViewModel.FromDatabaseModel(spellbook);
         }
 
-        Log.Error($"Spellbook with ID {spellbookId} not found.");
         return new SpellbookViewModel();
     }
 }

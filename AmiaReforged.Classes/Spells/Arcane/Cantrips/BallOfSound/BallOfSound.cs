@@ -8,20 +8,16 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.BallOfSound;
 [ServiceBinding(typeof(ISpell))]
 public class BallOfSound : ISpell
 {
-    public ResistSpellResult Result { get; set; }
+    public bool CheckedSpellResistance { get; set; }
+    public bool ResistedSpell { get; set; }
     public string ImpactScript => "amx_csp_bsound";
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        Result = creature.CheckResistSpell(caster);
-    }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         if (eventData.Caster == null) return;
         if (eventData.Caster is not NwCreature casterCreature) return;
         if (eventData.TargetObject == null) return;
-        
+
         int damage = CalculateDamage(casterCreature);
 
         // Does more damage to petrified targets.
@@ -29,8 +25,10 @@ public class BallOfSound : ISpell
         {
             damage += damage / 2;
         }
-
-        if (Result != ResistSpellResult.Failed ||
+        
+        SpellUtils.SignalSpell(casterCreature, eventData.TargetObject, eventData.Spell);
+        
+        if (ResistedSpell ||
             eventData.TargetObject.ActiveEffects.Any(e => e.EffectType == EffectType.Deaf)) return;
 
         ApplyEffect(eventData, damage);
@@ -58,8 +56,8 @@ public class BallOfSound : ISpell
         eventData.TargetObject!.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 }

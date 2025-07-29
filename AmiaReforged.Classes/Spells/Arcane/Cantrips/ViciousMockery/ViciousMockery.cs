@@ -8,12 +8,8 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.ViciousMockery;
 [ServiceBinding(typeof(ISpell))]
 public class ViciousMockery : ISpell
 {
-    public ResistSpellResult Result { get; set; }
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        Result = creature.CheckResistSpell(caster);
-    }
+    public bool CheckedSpellResistance { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public string ImpactScript => "am_c_vicsmock";
 
@@ -52,37 +48,38 @@ public class ViciousMockery : ISpell
         int damage = NWScript.d4(caster.CasterLevel / 3 + focusDice);
 
         const int concentrationPenalty = 10;
+        
+        SpellUtils.SignalSpell(caster, target, eventData.Spell);
 
-        if (Result == ResistSpellResult.Failed)
+        if (ResistedSpell) return;
+        
+        Effect damageEffect = Effect.Damage(damage, DamageType.Sonic);
+        Effect skillPenalty =
+            Effect.SkillDecrease(NwSkill.FromSkillType(Skill.Concentration)!, concentrationPenalty);
+        skillPenalty.Tag = "VICIOUS_MOCKERY";
+        target.ApplyEffect(EffectDuration.Instant, damageEffect);
+
+
+        Effect? existingSkillPenalty =
+            targetCreature.ActiveEffects.SingleOrDefault(e => e.Tag == "VICIOUS_MOCKERY");
+        if (existingSkillPenalty != null) targetCreature.RemoveEffect(existingSkillPenalty);
+
+        if (hasEpicFocus)
         {
-            Effect damageEffect = Effect.Damage(damage, DamageType.Sonic);
-            Effect skillPenalty =
-                Effect.SkillDecrease(NwSkill.FromSkillType(Skill.Concentration)!, concentrationPenalty);
-            skillPenalty.Tag = "VICIOUS_MOCKERY";
-            target.ApplyEffect(EffectDuration.Instant, damageEffect);
+            targetCreature.ApplyEffect(EffectDuration.Temporary, skillPenalty, TimeSpan.FromSeconds(18));
+        }
+        else
+        {
+            SavingThrowResult result = targetCreature.RollSavingThrow(SavingThrow.Will,
+                10 + caster.CasterLevel + chaMod, SavingThrowType.Spell);
 
-
-            Effect? existingSkillPenalty =
-                targetCreature.ActiveEffects.SingleOrDefault(e => e.Tag == "VICIOUS_MOCKERY");
-            if (existingSkillPenalty != null) targetCreature.RemoveEffect(existingSkillPenalty);
-
-            if (hasEpicFocus)
-            {
+            if (result == SavingThrowResult.Failure)
                 targetCreature.ApplyEffect(EffectDuration.Temporary, skillPenalty, TimeSpan.FromSeconds(18));
-            }
-            else
-            {
-                SavingThrowResult result = targetCreature.RollSavingThrow(SavingThrow.Will,
-                    10 + caster.CasterLevel + chaMod, SavingThrowType.Spell);
-
-                if (result == SavingThrowResult.Failure)
-                    targetCreature.ApplyEffect(EffectDuration.Temporary, skillPenalty, TimeSpan.FromSeconds(18));
-            }
         }
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 }

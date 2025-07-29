@@ -21,8 +21,7 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
         View = toolView;
     }
 
-    [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; }
-    [Inject] private Lazy<WindowDirector> WindowManager { get; set; }
+    [Inject] private Lazy<QuickslotLoader> QuickslotLoader { get; set; } = null!;
 
     public override CreateQuickslotsView View { get; }
 
@@ -40,7 +39,7 @@ public class CreateQuickSlotsPresenter : ScryPresenter<CreateQuickslotsView>
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0, 0, 400, 300),
             Closable = true,

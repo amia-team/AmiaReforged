@@ -1,6 +1,5 @@
 using System.Text.Json;
 using AmiaReforged.Core.Models;
-using NLog.Fluent;
 
 namespace AmiaReforged.Core.UserInterface;
 
@@ -14,7 +13,7 @@ public class SpellbookViewModel
 
     public static SpellbookViewModel FromDatabaseModel(SavedSpellbook savedBook)
     {
-        SpellbookViewModel? spellbookViewModel = new()
+        SpellbookViewModel spellbookViewModel = new()
         {
             Name = savedBook.SpellbookName,
             Class = savedBook.ClassId.ToString(),
@@ -40,10 +39,10 @@ public class SpellbookViewModel
         
         if (SpellBook != null)
         {
-            foreach (KeyValuePair<byte, List<PreparedSpellModel>> keyValuePair in SpellBook)
+            foreach ((byte key, List<PreparedSpellModel> value) in SpellBook)
             {
-                spellbookDictString += $"Level {keyValuePair.Key}:\n";
-                spellbookDictString = keyValuePair.Value.Aggregate(spellbookDictString, (current, preparedSpellModel) => current + $"{preparedSpellModel}\n");
+                spellbookDictString += $"Level {key}:\n";
+                spellbookDictString = value.Aggregate(spellbookDictString, (current, preparedSpellModel) => current + $"{preparedSpellModel}\n");
             }
         }
         

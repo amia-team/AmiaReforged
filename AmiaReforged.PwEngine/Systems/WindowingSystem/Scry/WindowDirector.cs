@@ -3,6 +3,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using Action = System.Action;
 
 namespace AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 
@@ -75,7 +76,7 @@ public sealed class WindowDirector : IDisposable
     /// <param name="obj">The event object containing details about the client enter event.</param>
     private void RegisterPlayer(ModuleEvents.OnClientEnter obj)
     {
-        _activeWindows.Add(obj.Player, new());
+        _activeWindows.Add(obj.Player, new List<IScryPresenter>());
     }
 
     /// <summary>
@@ -99,7 +100,7 @@ public sealed class WindowDirector : IDisposable
 
         _tokens.TryAdd(window.Token(), window);
         _activeWindows.TryGetValue(window.Token().Player, out List<IScryPresenter>? playerWindows);
-        _linkedTokens.TryAdd(window.Token(), new());
+        _linkedTokens.TryAdd(window.Token(), new List<NuiWindowToken>());
 
         playerWindows?.Add(window);
         window.Closing += (_, _) => CloseWindow(window.Token().Player, window.GetType());
@@ -164,7 +165,7 @@ public sealed class WindowDirector : IDisposable
             _linkedTokens.TryGetValue(linkedToken, out List<NuiWindowToken>? linkedTokens);
             linkedTokens?.Add(linkedToken);
         }
-
+        
         SimplePopupView view = new(nwPlayer, message, title, ignoreButton);
         SimplePopupPresenter presenter = view.Presenter;
 
@@ -176,6 +177,13 @@ public sealed class WindowDirector : IDisposable
         SimplePopupView view = new(nwPlayer, message, title, ignoreButton);
         SimplePopupPresenter presenter = view.Presenter;
 
+        OpenWindow(presenter);
+    }
+    
+    public void OpenPopupWithReaction(NwPlayer nwPlayer, string title, string message, Action outcome, bool ignoreButton = false)
+    {
+        SimplePopupView view = new(nwPlayer, outcome, message, title, ignoreButton);
+        SimplePopupPresenter presenter = view.Presenter;
         OpenWindow(presenter);
     }
 }

@@ -15,28 +15,28 @@ public static class IroncladBull
         switch (technique)
         {
             case TechniqueType.Eagle:
-                AugmentEagleStrike(attackData);
+                if (attackData != null) AugmentEagleStrike(attackData);
                 break;
             case TechniqueType.KiBarrier:
-                AugmentKiBarrier(castData);
+                if (castData != null) AugmentKiBarrier(castData);
                 break;
             case TechniqueType.Wholeness:
-                AugmentWholenessOfBody(castData);
+                if (castData != null) AugmentWholenessOfBody(castData);
                 break;
             case TechniqueType.Quivering:
-                AugmentQuiveringPalm(castData);
+                if (castData != null) AugmentQuiveringPalm(castData);
                 break;
             case TechniqueType.Stunning:
-                StunningStrike.DoStunningStrike(attackData);
+                if (attackData != null) StunningStrike.DoStunningStrike(attackData);
                 break;
             case TechniqueType.Axiomatic:
-                AxiomaticStrike.DoAxiomaticStrike(attackData);
+                if (attackData != null) AxiomaticStrike.DoAxiomaticStrike(attackData);
                 break;
             case TechniqueType.EmptyBody:
-                EmptyBody.DoEmptyBody(castData);
+                if (castData != null) EmptyBody.DoEmptyBody(castData);
                 break;
             case TechniqueType.KiShout:
-                KiShout.DoKiShout(castData);
+                if (castData != null) KiShout.DoKiShout(castData);
                 break;
         }
     }
@@ -48,17 +48,18 @@ public static class IroncladBull
     private static void AugmentEagleStrike(OnCreatureAttack attackData)
     {
         EagleStrike.DoEagleStrike(attackData);
-        
+
         NwCreature monk = attackData.Attacker;
-        
+
         // Target must be a hostile creature
         if (!monk.IsReactionTypeHostile((NwCreature)attackData.Target)) return;
-        
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        
+
+        NwFeat? bodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
+        if (bodyKiFeat == null) return;
+
         // The effect only affects Body Ki Point recharge, so duh
-        if (monkLevel < MonkLevel.BodyKiPointsI) return;
-        
+        if (!monk.KnowsFeat(bodyKiFeat)) return;
+
         int kiBodyRegenChance = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
@@ -68,57 +69,77 @@ public static class IroncladBull
         };
 
         int d100Roll = Random.Shared.Roll(100);
-        
+
         if (d100Roll <= kiBodyRegenChance)
-            monk.IncrementRemainingFeatUses(NwFeat.FromFeatId(MonkFeat.BodyKiPoint)!);
+                monk.IncrementRemainingFeatUses(bodyKiFeat);
     }
-    
+
     /// <summary>
-    /// Ki Barrier grants 5/- physical damage resistance, with each Ki Focus increasing it by 5,
-    /// to a maximum of 20/- physical damage resistance.
+    /// Ki Barrier grants 6/- physical damage resistance, with each Ki Focus increasing it by 3,
+    /// to a maximum of 15/- physical damage resistance.
     /// </summary>
     private static void AugmentKiBarrier(OnSpellCast castData)
     {
         KiBarrier.DoKiBarrier(castData);
-        
+
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int resistanceAmount = MonkUtils.GetKiFocus(monk) switch
         {
-            KiFocus.KiFocus1 => 10,
-            KiFocus.KiFocus2 => 15,
-            KiFocus.KiFocus3 => 20,
-            _ => 5
+            KiFocus.KiFocus1 => 9,
+            KiFocus.KiFocus2 => 12,
+            KiFocus.KiFocus3 => 15,
+            _ => 6
         };
-        Effect kiBarrierEffect = Effect.LinkEffects(Effect.DamageResistance(DamageType.Bludgeoning, resistanceAmount), 
-            Effect.DamageResistance(DamageType.Slashing, resistanceAmount), 
+        Effect kiBarrierEffect = Effect.LinkEffects(Effect.DamageResistance(DamageType.Bludgeoning, resistanceAmount),
+            Effect.DamageResistance(DamageType.Slashing, resistanceAmount),
             Effect.DamageResistance(DamageType.Piercing, resistanceAmount), Effect.VisualEffect(VfxType.DurCessatePositive));
         TimeSpan effectDuration = NwTimeSpan.FromTurns(monkLevel);
-        
+
         monk.ApplyEffect(EffectDuration.Temporary, kiBarrierEffect, effectDuration);
     }
-    
+
     /// <summary>
-    /// Wholeness of Body grants 20 temporary hit points until removed. Each Ki Focus increases the amount of temporary
-    /// hit points by 20, to a maximum of 80 temporary hit points.
+    /// Wholeness of Body heals for 20 extra hit points and grants overheal as temporary hit points.
+    /// Each Ki Focus increases the amount of extra hit points healed by 20, to a maximum of 80 extra hit points.
     /// </summary>
     private static void AugmentWholenessOfBody(OnSpellCast castData)
     {
-        WholenessOfBody.DoWholenessOfBody(castData);
-        
         NwCreature monk = (NwCreature)castData.Caster;
-        
-        int tempHpAmount = MonkUtils.GetKiFocus(monk) switch
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+
+        int extraHeal = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 40,
             KiFocus.KiFocus2 => 60,
             KiFocus.KiFocus3 => 80,
             _ => 20
         };
-        
-        monk.ApplyEffect(EffectDuration.Permanent, Effect.TemporaryHitpoints(tempHpAmount));
+
+        int healAmount = monkLevel * 2 + extraHeal;
+
+        int overHealAmount = monk.HP + healAmount > monk.MaxHP ? monk.HP + healAmount - monk.MaxHP : 0;
+
+        Effect wholenessEffect = Effect.Heal(healAmount);
+        Effect wholenessVfx = Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f);
+
+        monk.ApplyEffect(EffectDuration.Instant, wholenessEffect);
+        monk.ApplyEffect(EffectDuration.Instant, wholenessVfx);
+
+        if (overHealAmount == 0) return;
+
+        Effect? overHeal = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "wholeness_ironclad");
+        if (overHeal != null) monk.RemoveEffect(overHeal);
+
+        overHeal = Effect.LinkEffects(Effect.TemporaryHitpoints(overHealAmount),
+        Effect.VisualEffect(VfxType.DurProtGreaterStoneskin));
+
+        overHeal.SubType = EffectSubType.Extraordinary;
+        overHeal.Tag = "wholeness_ironclad";
+
+        monk.ApplyEffect(EffectDuration.Permanent, overHeal);
     }
-    
+
     /// <summary>
     /// Quivering Palm binds the target with Stonehold for one round if they fail a reflex saving throw.
     /// Each Ki Focus increases the duration by one round, to a maximum of four rounds.
@@ -126,12 +147,12 @@ public static class IroncladBull
     private static void AugmentQuiveringPalm(OnSpellCast castData)
     {
         TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(castData);
-        
+
         if (castData.TargetObject is not NwCreature targetCreature) return;
         if (touchAttackResult is TouchAttackResult.Miss) return;
-        
+
         NwCreature monk = (NwCreature)castData.Caster;
-        
+
         int dc = MonkUtils.CalculateMonkDc(monk);
         int roundsAmount = MonkUtils.GetKiFocus(monk) switch
         {
@@ -144,14 +165,14 @@ public static class IroncladBull
         Effect quiveringEffect = Effect.LinkEffects(Effect.Paralyze(), Effect.VisualEffect(VfxType.DurStonehold));
         // Base game paralysis is stopped by mind immunity, so we do our own freedom check
         quiveringEffect.IgnoreImmunity = true;
-        
+
         TimeSpan quiveringDuration = NwTimeSpan.FromRounds(roundsAmount);
-        
+
         SavingThrowResult savingThrowResult =
             targetCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Paralysis, monk);
-        
+
         if (targetCreature.IsImmuneTo(ImmunityType.Paralysis)) return;
-        
+
         if (savingThrowResult is SavingThrowResult.Success)
         {
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));

@@ -12,6 +12,7 @@ public class DefensiveStance
     private const int EventsDefensiveStanceConst = 11;
     private const string CombatModeId = "COMBAT_MODE_ID";
     private const string DefensiveStanceEffectTag = "DEFENIVE_STANCE";
+    private const string DefensiveStanceTempHpTag = "DEFENIVE_STANCE_TEMP_HP";
     private readonly EventService _eventService;
 
     public DefensiveStance(EventService eventService)
@@ -92,17 +93,19 @@ public class DefensiveStance
         Effect acBonus = Effect.ACIncrease(ac);
 
         // Link the effects so they are all joined together.
-        Effect defensiveStance = Effect.LinkEffects(attackBonus, strengthBonus);
-        defensiveStance = Effect.LinkEffects(defensiveStance, tempHpBonus);
-        defensiveStance = Effect.LinkEffects(defensiveStance, savingThrowBonus);
-        defensiveStance = Effect.LinkEffects(defensiveStance, acBonus);
+        // Temp HP needs to be its own effect, lest the whole effect be yeeted with it
+        Effect defensiveStance = Effect.LinkEffects(attackBonus, strengthBonus, savingThrowBonus, acBonus);
 
         // Tag it and make it undispellable.
         defensiveStance.Tag = DefensiveStanceEffectTag;
         defensiveStance.SubType = EffectSubType.Supernatural;
+        
+        tempHpBonus.Tag = DefensiveStanceTempHpTag;
+        tempHpBonus.SubType = EffectSubType.Supernatural;
 
         // Apply it to the character.
         character.ApplyEffect(EffectDuration.Permanent, defensiveStance);
+        character.ApplyEffect(EffectDuration.Permanent, tempHpBonus);
     }
 
     [ScriptHandler(scriptName: "stance_defdr_off")]
@@ -123,6 +126,10 @@ public class DefensiveStance
         if (defensiveEffect == null) return;
 
         character.RemoveEffect(defensiveEffect);
+        
+        Effect? defensiveTempHpEffect = character.ActiveEffects.FirstOrDefault(e => e.Tag == DefensiveStanceTempHpTag);
+        if (defensiveTempHpEffect != null) 
+            character.RemoveEffect(defensiveTempHpEffect);
 
         player.FloatingTextString(message: "*Lets up their guard.*");
     }

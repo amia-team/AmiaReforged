@@ -5,15 +5,8 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.ChatTool;
 
-public partial class ChatToolModel
+public partial class ChatToolModel(NwPlayer player)
 {
-    private readonly NwPlayer _player;
-
-    public ChatToolModel(NwPlayer player)
-    {
-        _player = player;
-    }
-
     public string? NextMessage { get; set; }
     public string? ChatHistory { get; set; }
 
@@ -23,7 +16,7 @@ public partial class ChatToolModel
     {
         if (Selection == null)
         {
-            _player.SendServerMessage(message: "You must select an associate.", ColorConstants.Orange);
+            player.SendServerMessage(message: "You must select an associate.", ColorConstants.Orange);
             return;
         }
 
@@ -73,8 +66,8 @@ public partial class ChatToolModel
 
     public bool IsAnAssociate(NwCreature creature)
     {
-        bool isPlayer = creature == _player.ControlledCreature;
-        bool isOwnedByPlayer = _player.LoginCreature != null && _player.LoginCreature.Associates.Contains(creature);
+        bool isPlayer = creature == player.ControlledCreature;
+        bool isOwnedByPlayer = player.LoginCreature != null && player.LoginCreature.Associates.Contains(creature);
 
         return isPlayer || isOwnedByPlayer;
     }

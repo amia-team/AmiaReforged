@@ -37,7 +37,7 @@ public class ElectricJoltFocusDecorator : SpellDecorator
         bool isSpecialist = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==
                             SpellSchool.Evocation;
 
-        if (isEvocationFocused && Result == ResistSpellResult.Failed)
+        if (isEvocationFocused && !ResistedSpell)
         {
             int electricSavePenalty = epicFocus ? 3 : greaterFocus ? 2 : basicFocus ? 1 : 0;
             int extraVulnerability = epicFocus && isSpecialist ? SpecialistVulnerabilityPercentage : 0;

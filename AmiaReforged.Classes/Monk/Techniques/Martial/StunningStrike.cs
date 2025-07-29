@@ -17,13 +17,13 @@ public static class StunningStrike
 
         if (path != null)
         {
-            AugmentationApplier.ApplyAugmentations(path, technique, null, attackData);
+            AugmentationApplier.ApplyAugmentations(path, technique, attackData: attackData);
             return;
         }
 
         DoStunningStrike(attackData);
     }
-    
+
     /// <summary>
     /// On the first successful hit per round against an enemy creature, the target must succeed at a fortitude save
     /// or be stunned for one round.
@@ -45,9 +45,9 @@ public static class StunningStrike
 
         if (savingThrowResult is SavingThrowResult.Success)
             targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
-        
+
         targetCreature.ApplyEffect(EffectDuration.Temporary, stunningStrikeEffect, effectDuration);
-        
+
         return savingThrowResult;
     }
 }

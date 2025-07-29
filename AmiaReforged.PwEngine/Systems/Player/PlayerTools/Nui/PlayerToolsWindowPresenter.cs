@@ -4,14 +4,11 @@ using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui;
 
 public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindowView>
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
@@ -20,7 +17,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
     {
         _player = player;
         View = toolView;
-        Model = new(player);
+        Model = new PlayerToolsModel(player);
     }
 
     [Inject] private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
@@ -35,7 +32,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), title: "Player Tools")
+        _window = new NuiWindow(View.RootLayout(), title: "Player Tools")
         {
             Geometry = new NuiRect(0f, 100f, 400f, 600f)
         };
@@ -70,6 +67,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
                     "You haven't gone through the entry area yet. You'll want to do this if you want access to all functionality.",
                     false);
 
+        Token().SetBindValue(View.Search, string.Empty);
         RefreshWindowList();
     }
 

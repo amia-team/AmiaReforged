@@ -6,8 +6,8 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 [ValidationRuleFor(Property = ItemPropertyType.SkillBonus)]
 public class SkillBonusValidator : IValidationRule
 {
-    private readonly List<string> _personalSkills = new()
-    {
+    private readonly List<string> _personalSkills =
+    [
         "Appraise",
         "Bluff",
         "Craft Armor",
@@ -21,23 +21,7 @@ public class SkillBonusValidator : IValidationRule
         "Ride",
         "Tumble",
         "Use Magic Device"
-    };
-
-    public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
-        List<ChangeListModel.ChangelistEntry> changelistProperties)
-    {
-        SkillBonus skillBonus = new(incoming);
-
-        bool isPersonalSkill = _personalSkills.Contains(skillBonus.Skill);
-        if (isPersonalSkill)
-        {
-            // Logic for personal skills
-        }
-
-        return isPersonalSkill
-            ? ValidatePersonalSkill(skillBonus, itemProperties, changelistProperties)
-            : ValidateBeneficialSkill(skillBonus, itemProperties, changelistProperties);
-    }
+    ];
 
     private ValidationResult ValidatePersonalSkill(SkillBonus skillBonus, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
@@ -74,21 +58,39 @@ public class SkillBonusValidator : IValidationRule
         bool anySkill = notRemoved || inChangelist;
 
         ValidationEnum result = anySkill ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        string error = anySkill ? "Personal skill already exists on this item." : string.Empty;
 
         // Check if any of the existing skills are +5 since there may only be one
         List<SkillBonus> addedFreebies = skillsInChangelist.Where(x => x.Bonus == 5).ToList();
         List<SkillBonus> existingFreebies = skillsInItem.Where(x => x.Bonus == 5).ToList();
-        bool hasMaxSkill = addedFreebies.Count > 0 || existingFreebies.Count > 0;
+        bool hasMaxSkill = skillBonus.Bonus == 5 && skillsInChangelist.Count > 0 || skillsInItem.Count > 0;
+
 
         result = hasMaxSkill ? ValidationEnum.LimitReached : result;
-        error = hasMaxSkill ? "Free personal skill bonus limit reached." : error;
+        string error = hasMaxSkill ? "Free personal skill bonus limit reached (The first +5 is factored into the point cost)." :
+            anySkill ? $"You already have {skillBonus.Skill} on this item" : "";
 
-        return new()
+
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = error
         };
+    }
+
+    public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
+        List<ChangeListModel.ChangelistEntry> changelistProperties)
+    {
+        SkillBonus skillBonus = new(incoming);
+
+        bool isPersonalSkill = _personalSkills.Contains(skillBonus.Skill);
+        if (isPersonalSkill)
+        {
+            // Logic for personal skills
+        }
+
+        return isPersonalSkill
+            ? ValidatePersonalSkill(skillBonus, itemProperties, changelistProperties)
+            : ValidateBeneficialSkill(skillBonus, itemProperties, changelistProperties);
     }
 
     private ValidationResult ValidateBeneficialSkill(SkillBonus skillBonus, IEnumerable<ItemProperty> itemProperties,
@@ -122,7 +124,7 @@ public class SkillBonusValidator : IValidationRule
         result = anySkill ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
         error = anySkill ? "Skill already exists on this item." : string.Empty;
 
-        return new()
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = error

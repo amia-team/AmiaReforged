@@ -57,7 +57,7 @@ public static class EssenceVfx
             EssenceType.RemoveEssence => EffectVisualEffect(VFX_IMP_MAGBLUE, FALSE, 13.0f),
             EssenceType.Frightful => EffectVisualEffect(VFX_IMP_MAGBLUE, FALSE, 13.0f),
             EssenceType.Draining => EffectVisualEffect(VFX_IMP_MAGBLUE, FALSE, 13.0f),
-            EssenceType.Vitriolic => EffectVisualEffect(VFX_IMP_MAGBLUE, FALSE, 13.0f),
+            EssenceType.Vitriolic => EffectVisualEffect(VFX_IMP_ACID_S, FALSE, 6.0f),
             EssenceType.Screaming => EffectVisualEffect(VFX_FNF_SOUND_BURST, FALSE, 0.7f),
             EssenceType.Hellrime => EffectVisualEffect(VFX_IMP_FROST_L, FALSE, 4.0f),
             EssenceType.Utterdark => EffectVisualEffect(VFX_FNF_GAS_EXPLOSION_EVIL, FALSE, 6.0f),

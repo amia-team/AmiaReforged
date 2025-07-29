@@ -31,7 +31,7 @@ public class PropertyData
                 Property = property
             };
 
-            // Damage die always follow fornat: xdy where x and y are integers...Only ever one of these... 
+            // Damage die always follow format: xdy where x and y are integers...Only ever one of these... 
             Match match = Regex.Match(model.Label, pattern: @"(\d+)d(\d+)");
 
             // Split the label into the number of dice and the size of the die. It should have found something like 1d8, so split on the 'd'.
@@ -101,7 +101,6 @@ public class PropertyData
         }
 
         public string Type { get; set; }
-        public string HitChance { get; set; }
         public string SaveDc { get; set; }
 
         public ItemProperty OriginalProperty { get; }

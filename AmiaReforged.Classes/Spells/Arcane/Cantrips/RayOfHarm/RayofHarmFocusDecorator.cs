@@ -31,7 +31,7 @@ public class RayofHarmFocusDecorator : SpellDecorator
 
         bool isNecromancyFocused = basicFocus || greaterFocus || epicFocus;
 
-        if (isNecromancyFocused && Result == ResistSpellResult.Failed)
+        if (isNecromancyFocused && !ResistedSpell)
         {
             int reducedDamageAmount = epicFocus ? 6 : greaterFocus ? 4 : basicFocus ? 2 : 0;
 

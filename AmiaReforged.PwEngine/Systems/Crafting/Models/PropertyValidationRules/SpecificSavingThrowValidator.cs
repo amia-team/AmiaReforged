@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Systems.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using Anvil.API;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 
@@ -14,26 +15,52 @@ public class SpecificSavingThrowValidator : IValidationRule
     {
         SavingThrow savingThrow = new(incoming);
 
-        // Get all of the saving throw bonuses on the item
+        // Get all the saving throw bonuses on the item
         List<SavingThrow> savingThrows = itemProperties
-            .Where(x => x.Property.PropertyType == ItemPropertyType.SavingThrowBonusSpecific)
+            .Where(x => x.Property.PropertyType is ItemPropertyType.SavingThrowBonusSpecific
+                or ItemPropertyType.SavingThrowBonus)
             .Select(x => new SavingThrow(x))
             .ToList();
 
         // And in the changelist (if it's not being removed)
         savingThrows.AddRange(changelistProperties
-            .Where(x => x.BasePropertyType == ItemPropertyType.SavingThrowBonusSpecific &&
+            .Where(x => x.BasePropertyType == ItemPropertyType.SavingThrowBonusSpecific ||
+                        x.BasePropertyType == ItemPropertyType.SavingThrowBonus &&
                         x.State != ChangeListModel.ChangeState.Removed)
             .Select(x => new SavingThrow(x.Property)));
 
+        int cumulative = savingThrows.Sum(x => x.Bonus);
+        
+        LogManager.GetCurrentClassLogger().Info(cumulative);
+        bool capped = cumulative >= 6;
+        
         // Check if the saving throw already exists on the item
         bool onItem = savingThrows.Any(x => x.ThrowType == savingThrow.ThrowType);
 
-        // The bonus is irrelevant, we just don't want it to already exist on the item or in the changelist
-        ValidationEnum result = onItem ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
-        string error = onItem ? $"{savingThrow.ThrowType} saving throw already exists on this item." : string.Empty;
+        ValidationEnum result = onItem || capped ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid;
+        string error = string.Empty;
+        if (capped)
+        {
+            error = $"You have reached the maximum number of saves on an item.";
+            return SetResult(result, error);
+        }
 
-        return new()
+        if (onItem)
+        {
+            error = $"{savingThrow.ThrowType} saving throw already exists on this item.";
+            return SetResult(ValidationEnum.CannotStackSameSubtype, error);
+        }
+
+        return new ValidationResult
+        {
+            Result = result,
+            ErrorMessage = error
+        };
+    }
+
+    private static ValidationResult SetResult(ValidationEnum result, string error)
+    {
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = error
@@ -54,6 +81,6 @@ public class SpecificSavingThrowValidator : IValidationRule
         }
 
         public string ThrowType { get; }
-        public int Bonus { get; set; }
+        public int Bonus { get; }
     }
 }

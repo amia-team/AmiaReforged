@@ -21,7 +21,7 @@ public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWind
 
     public CreateSpellbookView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new CreateSpellbookPresenter(this, player);
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);
     }
@@ -40,34 +40,37 @@ public class CreateSpellbookView : ScryView<CreateSpellbookPresenter>, IToolWind
     {
         NuiColumn root = new()
         {
-            Children = new()
-            {
-                NuiUtils.Assign(new()
+            Children =
+            [
+                NuiUtils.Assign(new NuiCombo
                 {
                     Entries = ClassNames,
                     Selected = Selection
                 }, out ClassComboBox),
+
                 new NuiSpacer(),
                 new NuiRow
                 {
-                    Children = new()
-                    {
+                    Children =
+                    [
                         new NuiLabel(label: "Spellbook Name")
                         {
                             Aspect = 2f
                         },
+
                         new NuiTextEdit(label: "Enter a Name", SpellbookName, 255, false)
-                    }
+                    ]
                 },
+
                 new NuiRow
                 {
-                    Children = new()
-                    {
-                        NuiUtils.Assign(new(label: "Create") { Id = "create_spellbook_db" }, out CreateButton),
-                        NuiUtils.Assign(new(label: "Cancel"), out CancelButton)
-                    }
+                    Children =
+                    [
+                        NuiUtils.Assign(new NuiButton(label: "Create") { Id = "create_spellbook_db" }, out CreateButton),
+                        NuiUtils.Assign(new NuiButton(label: "Cancel"), out CancelButton)
+                    ]
                 }
-            }
+            ]
         };
 
         return root;

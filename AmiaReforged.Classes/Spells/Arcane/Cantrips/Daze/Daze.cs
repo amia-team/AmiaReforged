@@ -8,12 +8,16 @@ namespace AmiaReforged.Classes.Spells.Arcane.Cantrips.Daze;
 public class Daze : ISpell
 {
     private const double TwoRounds = 12;
-    public ResistSpellResult Result { get; set; }
+    public bool CheckedSpellResistance { get; set; }
+    public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_Daze";
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
+        ResistedSpell = creature.SpellResistanceCheck(caster)
+                        || creature.SpellImmunityCheck(caster)
+                        || creature.SpellAbsorptionLimitedCheck(caster)
+                        || creature.SpellAbsorptionUnlimitedCheck(caster);
     }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -21,8 +25,10 @@ public class Daze : ISpell
         if (eventData.Caster == null) return;
         if (eventData.Caster is not NwCreature casterCreature) return;
         if (eventData.TargetObject == null) return;
+        
+        SpellUtils.SignalSpell(casterCreature, eventData.TargetObject, eventData.Spell);
 
-        if (Result != ResistSpellResult.Failed) return;
+        if (ResistedSpell) return;
 
         Ability primaryAbility = Ability.Charisma;
         if (eventData.SpellCastClass != null) primaryAbility = eventData.SpellCastClass.PrimaryAbility;
@@ -54,8 +60,8 @@ public class Daze : ISpell
         eventData.TargetObject.ApplyEffect(EffectDuration.Temporary, dazeEffect, TimeSpan.FromSeconds(TwoRounds));
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 }

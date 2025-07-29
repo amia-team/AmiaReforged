@@ -8,13 +8,10 @@ namespace AmiaReforged.Classes.Spells.Divine.Cantrips.InflictMinorWounds;
 [ServiceBinding(typeof(ISpell))]
 public class InflictMinorWounds : ISpell
 {
-    public ResistSpellResult Result { get; set; }
+    public bool CheckedSpellResistance { get; set; }
+    public bool ResistedSpell { get; set; }
     public string ImpactScript => "X0_S0_Inflict";
-
-    public void DoSpellResist(NwCreature creature, NwCreature caster)
-    {
-        Result = creature.CheckResistSpell(caster);
-    }
+    
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -25,19 +22,21 @@ public class InflictMinorWounds : ISpell
         TouchAttackResult result = casterCreature.TouchAttackRanged(eventData.TargetObject, true);
 
         bool skipTouchAttack = NWScript.GetRacialType(eventData.TargetObject) == NWScript.RACIAL_TYPE_UNDEAD;
-
+        
+        SpellUtils.SignalSpell(casterCreature, eventData.TargetObject, eventData.Spell);
+        
         if (result != TouchAttackResult.Hit || !skipTouchAttack) return;
 
         int damage = CalculateDamage(casterCreature);
 
-        if (Result != ResistSpellResult.Failed || !skipTouchAttack) return;
+        if (ResistedSpell || !skipTouchAttack) return;
 
         ApplyEffect(eventData, damage);
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
+        ResistedSpell = result;
     }
 
     private int CalculateDamage(NwCreature casterCreature)

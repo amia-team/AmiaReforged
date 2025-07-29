@@ -13,7 +13,7 @@ public class MiniQuest
     {
         _questGiver = questGiver;
         _player = player;
-        _miniQuestReward = new();
+        _miniQuestReward = new MiniQuestReward();
     }
 
     public void ProcessReward()
@@ -24,7 +24,7 @@ public class MiniQuest
         string questTurnInItem = NWScript.GetLocalString(_questGiver, DynamicQuestLocals.MiniQuest.QuestItem);
 
         List<NwItem> questItems =
-            _player.LoginCreature.Inventory.Items.Where(x => x.ResRef == questTurnInItem).ToList();
+            _player.LoginCreature.Inventory.Items.Where(x => x.ResRef == questTurnInItem || x.Tag == questTurnInItem).ToList();
 
         bool hasNoQuestItems = questItems.Count == 0;
         string speakString = hasNoQuestItems

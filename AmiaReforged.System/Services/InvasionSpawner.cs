@@ -1,11 +1,12 @@
 using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Services;
+using Anvil.API;
 using Anvil.Services;
 using NWN.Core;
 
 namespace AmiaReforged.System.Services;
 
-[ServiceBinding(typeof(InvasionSpawner))]
+// [ServiceBinding(typeof(InvasionSpawner))]
 public class InvasionSpawner
 {
     private readonly Invasions _invasions;
@@ -69,11 +70,12 @@ public class InvasionSpawner
         {
             if (await _invasionService.InvasionRecordExists(AreaResRef) == false)
             {
-                newRecord = new();
+                newRecord = new InvasionRecord();
                 newRecord.AreaZone = AreaResRef;
                 newRecord.InvasionPercent = random.Next(5, 25);
                 newRecord.RealmChaos = 1;
                 await _invasionService.AddInvasionArea(newRecord);
+                await NwTask.SwitchToMainThread();
             }
             else
             {
@@ -118,8 +120,8 @@ public class InvasionSpawner
         }
         else // Picks a random one out of the successes to run and resets it
         {
-            var tempInvasion = invasionSuccess[ran];
-            var tempWP = waypointSuccess[ran];
+            InvasionRecord tempInvasion = invasionSuccess[ran];
+            uint tempWP = waypointSuccess[ran];
             tempInvasion.InvasionPercent = 1;
             tempInvasion.RealmChaos += random.Next(10, 15);
             await _invasionService.UpdateInvasionArea(tempInvasion);

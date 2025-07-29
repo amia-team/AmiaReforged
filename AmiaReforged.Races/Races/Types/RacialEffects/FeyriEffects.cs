@@ -7,7 +7,7 @@ public class FeyriEffects : IEffectCollector
 {
     public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        return new()
+        return new List<IntPtr>
         {
             NWScript.EffectDamageResistance(NWScript.DAMAGE_TYPE_FIRE, 10)
         };

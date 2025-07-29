@@ -7,23 +7,32 @@ public abstract class SpellDecorator : ISpell
 {
     protected ISpell Spell;
 
+    public bool CheckedSpellResistance { get; set; }
+
     protected SpellDecorator(ISpell spell)
     {
         Spell = spell;
     }
 
-    public ResistSpellResult Result { get; set; }
+    public bool ResistedSpell { get; set; }
 
     public void DoSpellResist(NwCreature creature, NwCreature caster)
     {
-        Result = creature.CheckResistSpell(caster);
-        Spell.SetSpellResistResult(Result);
+        if (CheckedSpellResistance) return;
+        ResistedSpell = caster.SpellAbsorptionLimitedCheck(creature)
+                        || caster.SpellAbsorptionUnlimitedCheck(creature)
+                        || caster.SpellImmunityCheck(creature)
+                        || caster.SpellResistanceCheck(creature);
+        
+        Spell.SetSpellResisted(ResistedSpell);
+        Spell.CheckedSpellResistance = true;
     }
 
-    public void SetSpellResistResult(ResistSpellResult result)
+    public void SetSpellResisted(bool result)
     {
-        Result = result;
-        Spell.SetSpellResistResult(Result);
+        ResistedSpell = result;
+        Spell.SetSpellResisted(ResistedSpell);
+        Spell.CheckedSpellResistance = true;
     }
 
     public virtual string ImpactScript => Spell.ImpactScript;

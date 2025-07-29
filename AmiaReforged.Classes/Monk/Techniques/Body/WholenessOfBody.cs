@@ -23,14 +23,14 @@ public static class WholenessOfBody
 
         DoWholenessOfBody(castData);
     }
-    
+
     /// <summary>
     ///     The monk can heal damage equal to twice their class level. Each use depletes a Body Ki Point.
     /// </summary>
     public static void DoWholenessOfBody(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int healAmount = monkLevel * 2;
         Effect wholenessEffect = Effect.Heal(healAmount);
         Effect wholenessVfx = Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f);

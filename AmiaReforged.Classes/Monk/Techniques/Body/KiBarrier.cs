@@ -23,24 +23,29 @@ public static class KiBarrier
 
         DoKiBarrier(castData);
     }
-    
+
     /// <summary>
-    /// The monk is given a damage reduction of 5/-. The barrier absorbs up to 10 points of physical damage for
-    /// every two monk levels and lasts for turns per monk level. Each use depletes a Body Ki Point.
+    /// The monk gains a +1 wisdom bonus. Each Ki Focus increases the bonus by +1, to a maximum of +4 at level 30 monk.
     /// </summary>
     public static void DoKiBarrier(OnSpellCast castData)
     {
         NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)!.Level;
-        int totalAbsorb = monkLevel / 2 * 10;
-        Effect kiBarrierEffect = Effect.LinkEffects(
-            Effect.DamageReduction(5, DamagePower.Plus20, totalAbsorb),
-            Effect.VisualEffect(VfxType.DurCessatePositive));
-        kiBarrierEffect.SubType = EffectSubType.Supernatural;
+        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+
+        int bonusWis = MonkUtils.GetKiFocus(monk) switch
+        {
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
+            _ => 1
+        };
+
+        Effect kiBarrier = Effect.AbilityIncrease(Ability.Wisdom, bonusWis);
         Effect kiBarrierVfx = Effect.VisualEffect(VfxType.ImpDeathWard, false, 0.7f);
+
         TimeSpan effectDuration = NwTimeSpan.FromTurns(monkLevel);
 
-        monk.ApplyEffect(EffectDuration.Temporary, kiBarrierEffect, effectDuration);
+        monk.ApplyEffect(EffectDuration.Temporary, kiBarrier, effectDuration);
         monk.ApplyEffect(EffectDuration.Instant, kiBarrierVfx);
     }
 }

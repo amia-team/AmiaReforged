@@ -24,10 +24,13 @@ public class PlaySessionHandler
 
     public void EndSessionFor(NwPlayer player)
     {
-        if (_sessions.TryGetValue(player.PlayerName, out PlaySession? session))
+        bool sessionExists = _sessions.TryGetValue(player.PlayerName, out PlaySession? session);
+        if (sessionExists)
         {
             session?.EndSession();
         }
+        
+        if(!sessionExists) return;
         
         _sessions[player.PlayerName]!.Dispose();
 

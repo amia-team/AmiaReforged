@@ -39,9 +39,9 @@ public class MythalForgeModel
 
         IReadOnlyList<CraftingCategory> categories = data.Properties[baseType];
 
-        MythalCategoryModel = new(item, player, categories);
-        ChangeListModel = new();
-        ActivePropertiesModel = new(item, categories);
+        MythalCategoryModel = new MythalCategoryModel(item, player, categories);
+        ChangeListModel = new ChangeListModel();
+        ActivePropertiesModel = new ActivePropertiesModel(item, categories);
     }
 
     public ChangeListModel ChangeListModel { get; }
@@ -165,9 +165,10 @@ public class MythalForgeModel
                         ActivePropertiesModel.GetVisibleProperties().Select(m => m.Internal.ItemProperty),
                         ChangeListModel.ChangeList());
 
-
                 bool passesValidation = operation.Result == ValidationEnum.Valid;
-                bool canAfford = property.Internal.PowerCost <= RemainingPowers;
+                bool canAfford =
+                    property.Internal.PowerCost <= RemainingPowers ||
+                    property.Internal.PowerCost == 0; // Free powers don't contribute to affordability
                 bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
                 property.Selectable = passesValidation &&
                                       canAfford &&
@@ -243,9 +244,25 @@ public class MythalForgeModel
 
     public void UndoRemoval(CraftingProperty property)
     {
-        List<ChangeListModel.ChangelistEntry> additions = ChangeListModel.ChangeList().Where(e =>
-            e.State != ChangeListModel.ChangeState.Removed && e.Property.ItemProperty.Property.PropertyType ==
-            property.ItemProperty.Property.PropertyType).ToList();
+        List<ChangeListModel.ChangelistEntry> additions;
+        ItemPropertyType baseType = property.ItemProperty.Property.PropertyType;
+
+        // Quick workaround for dealing with saving throws....
+        // We should eventually switch this to a better model that allows for specifying maximum bonuses....
+        if (baseType is ItemPropertyType.SavingThrowBonus or ItemPropertyType.SavingThrowBonusSpecific)
+        {
+            additions = ChangeListModel.ChangeList().Where(e =>
+                    e.State != ChangeListModel.ChangeState.Removed && e.Property.ItemProperty.Property.PropertyType ==
+                    baseType || e.Property.ItemProperty.Property.PropertyType ==
+                    ItemPropertyType.SavingThrowBonusSpecific)
+                .ToList();
+        }
+        else
+        {
+            additions = ChangeListModel.ChangeList().Where(e =>
+                e.State != ChangeListModel.ChangeState.Removed && e.Property.ItemProperty.Property.PropertyType ==
+                baseType).ToList();
+        }
 
         ChangeListModel.UndoRemoval(property);
         ActivePropertiesModel.RevealProperty(property);
@@ -259,15 +276,6 @@ public class MythalForgeModel
 
             if (!passesValidation) UndoAddition(entry.Property);
         }
-    }
-
-    public string StatusMessageForApply()
-    {
-        string status = "";
-        bool canAfford = ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
-        if (!canAfford) status += "You don't have enough gold. ";
-
-        return status;
     }
 }
 

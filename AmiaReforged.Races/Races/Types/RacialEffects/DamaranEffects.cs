@@ -7,7 +7,7 @@ public class DamaranEffects : IEffectCollector
 {
     public List<IntPtr> GatherEffectsForObject(uint objectId)
     {
-        return new()
+        return new List<IntPtr>
         {
             NWScript.EffectSavingThrowDecrease(NWScript.SAVING_THROW_FORT, 1)
         };

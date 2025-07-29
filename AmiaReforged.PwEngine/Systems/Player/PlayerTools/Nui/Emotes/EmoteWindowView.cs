@@ -19,11 +19,11 @@ public class EmoteWindowView : ScryView<EmoteWindowPresenter>, IToolWindow
 
     public EmoteWindowView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new EmoteWindowPresenter(this, player);
     }
 
     public sealed override EmoteWindowPresenter Presenter { get; protected set; }
-    public string Id => "playertoosl.emotewindow";
+    public string Id => "playertools.emotewindow";
     public bool ListInPlayerTools => false;
     public bool RequiresPersistedCharacter => false;
     public string Title => "Emotes";
@@ -33,8 +33,8 @@ public class EmoteWindowView : ScryView<EmoteWindowPresenter>, IToolWindow
 
     public override NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> emoteCells = new()
-        {
+        List<NuiListTemplateCell> emoteCells =
+        [
             new(new NuiRow
             {
                 Children =
@@ -54,7 +54,7 @@ public class EmoteWindowView : ScryView<EmoteWindowPresenter>, IToolWindow
                 Width = 200f,
                 VariableSize = false
             }
-        };
+        ];
 
         NuiColumn root = new()
         {

@@ -5,9 +5,21 @@ namespace AmiaReforged.Classes.Spells;
 
 public interface ISpell
 {
-    ResistSpellResult Result { get; set; }
+    bool CheckedSpellResistance { get; set; }
+    bool ResistedSpell { get; set; }
     string ImpactScript { get; }
-    void DoSpellResist(NwCreature creature, NwCreature caster);
+
+    void DoSpellResist(NwCreature creature, NwCreature caster)
+    {
+        if (CheckedSpellResistance) return;
+        ResistedSpell = caster.SpellAbsorptionLimitedCheck(creature)
+                        || caster.SpellAbsorptionUnlimitedCheck(creature)
+                        || caster.SpellImmunityCheck(creature)
+                        || caster.SpellResistanceCheck(creature);
+        
+        CheckedSpellResistance = true;
+    }
+
     void OnSpellImpact(SpellEvents.OnSpellCast eventData);
-    void SetSpellResistResult(ResistSpellResult result);
+    void SetSpellResisted(bool result);
 }

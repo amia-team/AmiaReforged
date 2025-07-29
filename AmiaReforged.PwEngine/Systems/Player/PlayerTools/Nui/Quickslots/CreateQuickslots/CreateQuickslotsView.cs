@@ -13,16 +13,14 @@ public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWi
 
     public CreateQuickslotsView(NwPlayer player)
     {
-        Presenter = new(this, player);
+        Presenter = new CreateQuickSlotsPresenter(this, player);
     }
-
-    public NuiWindow? WindowTemplate { get; }
 
     public sealed override CreateQuickSlotsPresenter Presenter { get; protected set; }
     public string Id => "playertools.quickslotscreate";
     public string Title => "Create Saved Quickslots";
     public string CategoryTag { get; } = null!;
-    public bool RequiresPersistedCharacter { get; }
+    public bool RequiresPersistedCharacter => true;
 
     public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 
@@ -32,28 +30,30 @@ public class CreateQuickslotsView : ScryView<CreateQuickSlotsPresenter>, IToolWi
     {
         NuiColumn root = new()
         {
-            Children = new()
-            {
+            Children =
+            [
                 new NuiRow
                 {
-                    Children = new()
-                    {
+                    Children =
+                    [
                         new NuiLabel(label: "Quickslot Name")
                         {
                             Aspect = 2f
                         },
+
                         new NuiTextEdit(label: "Enter a Name", QuickslotName, 255, false)
-                    }
+                    ]
                 },
+
                 new NuiRow
                 {
-                    Children = new()
-                    {
-                        NuiUtils.Assign(new(label: "Create") { Id = "create_quickslot_db" }, out CreateButton),
-                        NuiUtils.Assign(new(label: "Cancel") { Id = "cancel_quickslot_db" }, out CancelButton)
-                    }
+                    Children =
+                    [
+                        NuiUtils.Assign(new NuiButton(label: "Create") { Id = "create_quickslot_db" }, out CreateButton),
+                        NuiUtils.Assign(new NuiButton(label: "Cancel") { Id = "cancel_quickslot_db" }, out CancelButton)
+                    ]
                 }
-            }
+            ]
         };
         return root;
     }

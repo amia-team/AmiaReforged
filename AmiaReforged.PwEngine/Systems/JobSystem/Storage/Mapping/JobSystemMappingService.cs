@@ -1,9 +1,7 @@
 ﻿using System.Text.RegularExpressions;
-using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using Anvil.API;
 using Anvil.Services;
-using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 
@@ -11,43 +9,34 @@ namespace AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 ///     Maps job system items to their respective entities.
 /// </summary>
 [ServiceBinding(typeof(JobSystemMappingService))]
-public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
+public partial class JobSystemMappingService(
+    JobItemPropertyHandler propertyHandler,
+    QualityPropertyMapper qualityMapper)
+    : IMappingService<JobItem, NwItem>
 {
-    private readonly PwEngineContext _context;
-    private readonly JobItemPropertyHandler _propertyHandler;
-    private readonly QualityPropertyMapper _qualityMapper;
-
-    public JobSystemMappingService(PwEngineContext context, JobItemPropertyHandler propertyHandler,
-        QualityPropertyMapper qualityMapper)
-    {
-        _context = context;
-        _propertyHandler = propertyHandler;
-        _qualityMapper = qualityMapper;
-    }
 
     public JobItem MapFrom(NwItem item)
     {
-        IPQuality nwnQuality = GetQualityFromitem(item);
-        QualityEnum quality = _qualityMapper.MapFrom(nwnQuality);
+        IPQuality nwnQuality = GetQualityFromItem(item);
+        QualityEnum quality = qualityMapper.MapFrom(nwnQuality);
 
         const string replacement = "";
         string itemName = MyRegex().Replace(item.Name, replacement);
 
-        MaterialEnum material = GetMaterialFromItem(item);
+        item.Possessor?.SpeakString($"Processing {item.Name}");
 
-        long madeBy = long.TryParse(NWScript.GetLocalString(item, sVarName: "MadeBy"), out long result) ? result : 0;
+        MaterialEnum material = GetMaterialFromItem(item);
 
         return JobItemBuilder.CreateJobItem()
             .WithName(itemName)
             .WithDescription(item.Description)
             .WithResRef(item.ResRef)
-            .WithBaseValue(_propertyHandler.DeriveValue(quality, material))
-            .WithMagicModifier(_propertyHandler.DeriveMagic(quality, material))
-            .WithDurabilityModifier(_propertyHandler.DeriveDurability(quality, material))
-            .WithType(_propertyHandler.DeriveType(item.BaseItem.ItemType))
+            .WithBaseValue(propertyHandler.DeriveValue(quality, material))
+            .WithMagicModifier(propertyHandler.DeriveMagic(quality, material))
+            .WithDurabilityModifier(propertyHandler.DeriveDurability(quality, material))
+            .WithType(propertyHandler.DeriveType(item.BaseItem.ItemType))
             .WithQuality(quality)
             .WithMaterial(material)
-            .WithCreator(madeBy)
             .WithIconResRef(item.PortraitResRef)
             .WithSerializedData(item.Serialize()!)
             .Build();
@@ -60,7 +49,7 @@ public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
         return nwItem;
     }
 
-    private static IPQuality GetQualityFromitem(NwItem item)
+    private static IPQuality GetQualityFromItem(NwItem item)
     {
         ItemProperty? qualityProperty =
             item.ItemProperties.SingleOrDefault(p => p.Property.PropertyType == ItemPropertyType.Quality);
@@ -75,9 +64,13 @@ public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
     {
         ItemProperty? materialProperty =
             item.ItemProperties.SingleOrDefault(p => p.Property.PropertyType == ItemPropertyType.Material);
-        MaterialEnum material = materialProperty == null
-            ? MaterialEnum.None
-            : (MaterialEnum)materialProperty.SubType!.RowIndex;
+        if (materialProperty == null) return MaterialEnum.None;
+        
+        ItemPropertyCostTableEntry? costTableValue = materialProperty.CostTableValue;
+        if (costTableValue == null) return MaterialEnum.None;
+        string? value = costTableValue.Name.ToString();
+        if (string.IsNullOrEmpty(value)) return MaterialEnum.None;
+        MaterialEnum material = (MaterialEnum)costTableValue.RowIndex;
         return material;
     }
 
@@ -102,4 +95,5 @@ public partial class JobSystemMappingService : IMappingService<JobItem, NwItem>
 
     [GeneratedRegex(pattern: "<.*?>")]
     private static partial Regex MyRegex();
+
 }

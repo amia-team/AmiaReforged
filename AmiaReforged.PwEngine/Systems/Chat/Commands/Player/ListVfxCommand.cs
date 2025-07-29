@@ -12,7 +12,7 @@ public class ListVfx : IChatCommand
     {
         string vfxList = "ID  LABEL";
         int vfxId;
-        string vfxLabel;
+        string? vfxLabel;
 
         
         if (args[0].Contains(value: "inst"))
@@ -20,7 +20,7 @@ public class ListVfx : IChatCommand
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "F") continue;
 
-                vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
+                vfxLabel = NwGameTables.VisualEffectTable[i].Label?.ToLower();
                 vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
@@ -30,7 +30,7 @@ public class ListVfx : IChatCommand
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "D") continue;
 
-                vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
+                vfxLabel = NwGameTables.VisualEffectTable[i].Label?.ToLower();
                 vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
@@ -40,7 +40,7 @@ public class ListVfx : IChatCommand
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "P") continue;
 
-                vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
+                vfxLabel = NwGameTables.VisualEffectTable[i].Label?.ToLower();
                 vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
@@ -51,7 +51,7 @@ public class ListVfx : IChatCommand
             {
                 if (NwGameTables.VisualEffectTable[i].TypeFd != "B") continue;
 
-                vfxLabel = NwGameTables.VisualEffectTable[i].Label.ToLower();
+                vfxLabel = NwGameTables.VisualEffectTable[i].Label?.ToLower();
                 vfxId = NwGameTables.VisualEffectTable[i].RowIndex;
                 vfxList += $"\n{vfxId} {vfxLabel}";
             }
@@ -63,7 +63,12 @@ public class ListVfx : IChatCommand
             return Task.CompletedTask;
         }
 
-        NwPlaceable helperObject = NwPlaceable.Create(template: "ds_invis_obje001", caller.ControlledCreature.Location);
+        NwCreature? controlledCreature = caller.ControlledCreature;
+        if(controlledCreature is null) return Task.CompletedTask;
+        if(controlledCreature.Location is null) return Task.CompletedTask;
+        
+        NwPlaceable? helperObject = NwPlaceable.Create(template: "ds_invis_obje001", controlledCreature.Location);
+        if(helperObject is null) return Task.CompletedTask;
         helperObject.Description = vfxList;
         caller.ActionExamine(helperObject);
         helperObject.Destroy();

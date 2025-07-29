@@ -14,7 +14,7 @@ public class OrogEffects : IEffectCollector
         _oid = objectId;
         _hasHeritageFeat = HasHeritageFeat();
 
-        List<IntPtr>? orogEffects = new()
+        List<IntPtr> orogEffects = new()
         {
             NWScript.EffectSkillIncrease(NWScript.SKILL_CRAFT_ARMOR, 2),
             NWScript.EffectSkillIncrease(NWScript.SKILL_CRAFT_WEAPON, 2),

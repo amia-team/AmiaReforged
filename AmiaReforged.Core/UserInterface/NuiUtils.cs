@@ -6,7 +6,7 @@ public static class NuiUtils
 {
   public static NuiCombo CreateComboForEnum<T>(NuiBind<int> selected) where T : struct, Enum
   {
-    List<NuiComboEntry> entries = new List<NuiComboEntry>();
+    List<NuiComboEntry> entries = new();
     foreach (T value in Enum.GetValues<T>())
     {
       entries.Add(new NuiComboEntry(value.ToString(), (int)(value as object)));

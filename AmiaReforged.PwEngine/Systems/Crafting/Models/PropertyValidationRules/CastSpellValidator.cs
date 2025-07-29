@@ -7,7 +7,7 @@ namespace AmiaReforged.PwEngine.Systems.Crafting.Models.PropertyValidationRules;
 public class CastSpellValidator : IValidationRule
 {
     private static readonly string[] Fluff =
-    {
+    [
         "Aid (3)",
         "Bless (2)",
         "Cat's Grace (3)",
@@ -15,7 +15,7 @@ public class CastSpellValidator : IValidationRule
         "Endurance (3)",
         "Expeditious Retreat (5)",
         "Light (1)"
-    };
+    ];
 
     public ValidationResult Validate(CraftingProperty incoming, IEnumerable<ItemProperty> itemProperties,
         List<ChangeListModel.ChangelistEntry> changelistProperties)
@@ -48,7 +48,7 @@ public class CastSpellValidator : IValidationRule
         // Look for any fluff spells in the item or changelist
         bool fluffExists = allCastSpells.Any(x => Fluff.Contains(x.SpellName));
 
-        return new()
+        return new ValidationResult
         {
             Result = fluffExists ? ValidationEnum.LimitReached : ValidationEnum.Valid,
             ErrorMessage = fluffExists ? "Only one fluff spell can be added to an item." : string.Empty
@@ -72,12 +72,12 @@ public class CastSpellValidator : IValidationRule
         List<CastSpell> allCastSpells = castSpellsInChangelist.Concat(castSpellsInItem).ToList();
 
         // Now we only care if the same spell exists in the item or the changelist
-        bool alreadyExists = allCastSpells.Any(x => x.SpellName == castSpell.SpellName);
+        bool alreadyExists = allCastSpells.Count != 0;
 
-        return new()
+        return new ValidationResult
         {
             Result = alreadyExists ? ValidationEnum.CannotStackSameSubtype : ValidationEnum.Valid,
-            ErrorMessage = alreadyExists ? $"{castSpell.SpellName} already exists on the item." : string.Empty
+            ErrorMessage = alreadyExists ? "You can only have one beneficial spell per item" : string.Empty
         };
     }
 

@@ -7,14 +7,7 @@ public class ActivePropertiesView : IScryView
 {
     private const string RemovePropertyConst = "remove_property";
 
-
-    public ActivePropertiesView(IScryPresenter presenter)
-    {
-        Presenter = presenter;
-    }
-
     public string RemoveProperty => RemovePropertyConst;
-    public IScryPresenter Presenter { get; }
 
     public NuiBind<string> PropertyNames { get; } = new(key: "ip_names");
     public NuiBind<string> PropertyPowerCosts { get; } = new(key: "ip_power_costs");
@@ -23,8 +16,8 @@ public class ActivePropertiesView : IScryView
 
     public NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> cells = new()
-        {
+        List<NuiListTemplateCell> cells =
+        [
             new(new NuiLabel(PropertyNames)),
             new(new NuiGroup
             {
@@ -39,6 +32,7 @@ public class ActivePropertiesView : IScryView
                 Width = 30f,
                 VariableSize = false
             },
+
             new(new NuiButtonImage(resRef: "ir_cntrspell")
             {
                 Id = RemovePropertyConst,
@@ -48,7 +42,7 @@ public class ActivePropertiesView : IScryView
                 Width = 30f,
                 VariableSize = false
             }
-        };
+        ];
 
         return new NuiColumn
         {

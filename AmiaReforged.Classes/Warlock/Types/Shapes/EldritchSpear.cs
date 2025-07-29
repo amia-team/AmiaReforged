@@ -12,7 +12,7 @@ public static class EldritchSpear
         EssenceType essenceType = (EssenceType)GetLocalInt(GetItemPossessedBy(caster, sItemTag: "ds_pckey"),
             sVarName: "warlock_essence");
 
-        int touchAttackRanged = WarlockConstants.RangedTouch(targetObject);
+        int touchAttackRanged = WarlockConstants.RangedTouch(caster, targetObject);
         IntPtr location = GetLocation(targetObject);
 
         int damage = EldritchDamage.CalculateDamageAmount(caster);
@@ -31,9 +31,9 @@ public static class EldritchSpear
 
         while (GetIsObjectValid(currentTarget) == TRUE)
         {
-            if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster))
+            if (NwEffects.IsValidSpellTarget(currentTarget, 3, caster) && currentTarget != targetObject)
             {
-                SignalEvent(targetObject, EventSpellCastAt(caster, 982));
+                SignalEvent(currentTarget, EventSpellCastAt(caster, 982));
 
                 EssenceEffectApplier aoeEffectApplier =
                     EssenceEffectFactory.CreateEssenceEffect(essenceType, currentTarget, caster);

@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Anvil.API;
 using Anvil.Services;
-using Microsoft.IdentityModel.Tokens;
 using NLog;
 using NWN.Core.NWNX;
 

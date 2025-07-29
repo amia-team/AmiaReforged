@@ -45,12 +45,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         CraftingBudgetService budget,
         NwItem item, NwPlayer player, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
-        Model = new(item, propertyData, budget, player, validator, dcCalculator);
+        Model = new MythalForgeModel(item, propertyData, budget, player, validator, dcCalculator);
         View = toolView;
         _player = player;
         _creating = false;
 
-        _ledgerView = new(this, player);
+        _ledgerView = new MythalLedgerView(this, player);
 
         if (player.LoginCreature != null) player.LoginCreature.OnUnacquireItem += PreventMunchkins;
     }
@@ -72,7 +72,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
     private void PreventMunchkins(ModuleEvents.OnUnacquireItem obj)
     {
-        if (!obj.Item.ResRef.Contains(value: "mythal")) return;
+        NwItem? item = obj.Item;
+        
+        if(item == null) return;
+        if (!item.ResRef.Contains(value: "mythal")) return;
 
         GenericWindow
             .Builder()
@@ -85,7 +88,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName +
                                               " tried to drop a mythal while crafting.");
-        _player.LoginCreature.AcquireItem(obj.Item);
+        _player.LoginCreature?.AcquireItem(item);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
@@ -106,7 +109,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         if (Model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
                 out MythalCategoryModel.MythalProperty? property))
+        {
             Model.AddNewProperty(property);
+            Model.RefreshCategories();
+        }
 
         if (eventData.ElementId == MythalForgeView.ApplyNameButtonId)
             if (ApplyName())
@@ -118,6 +124,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             MythalCategoryModel.MythalProperty p = Model.ActivePropertiesModel.GetVisibleProperties()[index];
 
             Model.RemoveActiveProperty(p);
+            Model.RefreshCategories();
         }
 
         if (eventData.ElementId == ChangelistView.RemoveFromChangeList)
@@ -177,7 +184,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         // N.B: Other things can happen here, so if you're following this as an example
         // you can do more than just create the window here. The window is supposed to be created here, but you might
         // want to initialize other data that might not be present at construction time.
-        _window = new(View.RootLayout(), WindowTitle)
+        _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
             Geometry = new NuiRect(400f, 400f, 1200f, 640f)
         };
@@ -291,7 +298,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         bool canAfford = Model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
         Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
         Token().SetBindValue(View.GoldCostTooltip, canAfford ? "" : "You cannot afford this.");
-        bool validAction = canAfford && Model.CanMakeCheck();
+        bool validAction = canAfford && Model.CanMakeCheck() && Model.RemainingPowers <= Model.MaxBudget;
         Token().SetBindValue(View.ApplyEnabled, validAction);
         Token().SetBindValue(View.EncourageGold, !canAfford);
     }

@@ -19,9 +19,9 @@ public class MythalCategoryModel
         _item = item;
         _categories = categories;
 
-        _mythals = new(player);
+        _mythals = new MythalMap(player);
         _player = player;
-        Categories = new();
+        Categories = new List<MythalCategory>();
 
         SetupCategories();
     }
@@ -56,7 +56,7 @@ public class MythalCategoryModel
             MythalCategory modelCategory = new()
             {
                 Label = category.Label,
-                Properties = new(),
+                Properties = new List<MythalProperty>(),
                 BaseDifficulty = category.BaseDifficulty
             };
 

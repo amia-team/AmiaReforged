@@ -1,0 +1,33 @@
+# Metal cost factors. This is multiplied by the base cost of the item to get the final cost.
+Electrum: 2.4
+Platinum: 2.2
+Adamantine: 2.1
+Mithral: 2.0
+Gold: 1.95
+Silver: 1.75
+DarkSteel: 1.6
+AlchemicalSilver: 1.58
+ColdIron: 1.5
+Steel: 1.4
+Bronze: 1.4
+Brass: 1.35
+Iron: 1.0
+Zinc: 0.7
+Copper: 0.8
+Tin: 0.7
+Lead: 0.5
+
+# Gem cost factors
+Beljuril: 2.5
+Diamond: 2.5
+Emerald: 2.4
+Ruby: 2.3
+Sapphire: 2.2
+Amethyst: 2.1
+Aquamarine: 2.0
+Topaz: 1.9
+Tourmaline: 1.8
+Garnet: 1.7
+Opal: 1.6
+Pearl: 1.5
+

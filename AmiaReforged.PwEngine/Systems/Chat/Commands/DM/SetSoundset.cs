@@ -21,8 +21,10 @@ public class SetSoundset : IChatCommand
                 return Task.CompletedTask;
             }
 
+            if(caller.ControlledCreature == null) return Task.CompletedTask;
+            
             caller.ControlledCreature.GetObjectVariable<LocalVariableInt>(name: "soundsetid").Value = soundsetId;
-            caller.EnterTargetMode(SetCreatureSoundset, new() { ValidTargets = ObjectTypes.Creature });
+            caller.EnterTargetMode(SetCreatureSoundset, new TargetModeSettings { ValidTargets = ObjectTypes.Creature });
             caller.FloatingTextString($"Setting soundset id {soundsetId}!", false);
             return Task.CompletedTask;
         }
@@ -38,7 +40,8 @@ public class SetSoundset : IChatCommand
 
     private void SetCreatureSoundset(ModuleEvents.OnPlayerTarget obj)
     {
-        NwCreature targetCreature = (NwCreature)obj.TargetObject;
+        if(obj.TargetObject is not NwCreature targetCreature) return;
+        
         int soundsetId = targetCreature.GetObjectVariable<LocalVariableInt>(name: "soundsetid").Value;
 
         targetCreature.SoundSet = (ushort)soundsetId;

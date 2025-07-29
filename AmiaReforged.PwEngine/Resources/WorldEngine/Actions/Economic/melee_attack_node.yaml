@@ -1,0 +1,7 @@
+name: MeleeAttackNode
+base_time: 0.1
+output_type:
+  - node_damage
+  - yield_items
+event_emits:
+  - on_node_attacked

@@ -12,7 +12,6 @@ public class ChangelistView : IScryView
 
     public ChangelistView(IScryPresenter presenter)
     {
-        Presenter = presenter;
     }
 
     public NuiBind<string> PropertyLabel { get; } = new(key: "change_label");
@@ -20,7 +19,6 @@ public class ChangelistView : IScryView
     public NuiBind<Color> Colors { get; } = new(key: "changelist_colors");
     public string RemoveId => RemoveFromChangeList;
     public NuiBind<int> ChangeCount { get; } = new(key: "change_count");
-    public IScryPresenter Presenter { get; }
 
     /// <summary>
     ///     Only concerned with building a NuiGroup for the changelist panel.
@@ -28,12 +26,13 @@ public class ChangelistView : IScryView
     /// <returns>A nui element intended only for use as an element of a larger view.</returns>
     public NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> cells = new()
-        {
+        List<NuiListTemplateCell> cells =
+        [
             new(new NuiLabel(PropertyLabel)
             {
                 ForegroundColor = Colors
             }),
+
             new(new NuiGroup
             {
                 Element = new NuiLabel(CostString)
@@ -47,6 +46,7 @@ public class ChangelistView : IScryView
                 Width = 30f,
                 VariableSize = false
             },
+
             new(new NuiButtonImage(resRef: "ir_abort")
             {
                 Id = RemoveFromChangeList,
@@ -56,7 +56,7 @@ public class ChangelistView : IScryView
                 Width = 30f,
                 VariableSize = false
             }
-        };
+        ];
         return new NuiColumn
         {
             Children =

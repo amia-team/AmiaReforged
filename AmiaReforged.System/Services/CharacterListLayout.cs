@@ -33,11 +33,11 @@ public class CharacterListLayout
 
         NuiColumn root = new()
         {
-            Children = new()
+            Children = new List<NuiElement>
             {
                 new NuiRow
                 {
-                    Children = new(characterLabels)
+                    Children = new List<NuiElement>(characterLabels)
                 }
             }
         };

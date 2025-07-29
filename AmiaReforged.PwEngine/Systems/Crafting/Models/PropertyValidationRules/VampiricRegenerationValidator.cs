@@ -22,7 +22,7 @@ public class VampiricRegenerationValidator : IValidationRule
         ValidationEnum result = onItem ? ValidationEnum.PropertyNeverStacks : ValidationEnum.Valid;
         error = onItem ? "Vampiric Regeneration already exists on this item." : string.Empty;
 
-        return new()
+        return new ValidationResult
         {
             Result = result,
             ErrorMessage = error

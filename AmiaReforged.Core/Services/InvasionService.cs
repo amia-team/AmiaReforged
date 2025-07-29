@@ -1,7 +1,6 @@
 using System.Linq.Expressions;
 using AmiaReforged.Core.Helpers;
 using AmiaReforged.Core.Models;
-using Anvil.API;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -33,8 +32,6 @@ public class InvasionService
         {
             Log.Error(e, "Error saving invasion record");
         }
-
-        await _nwTaskHelper.TrySwitchToMainThread();
     }
 
     public async Task UpdateInvasionArea(InvasionRecord invasionRecord)

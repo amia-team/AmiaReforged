@@ -9,31 +9,24 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.OpenSpellbook;
 
-public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
+public class OpenSpellbookPresenter(OpenSpellbookView toolView, NwPlayer player) : ScryPresenter<OpenSpellbookView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly NwPlayer _player;
 
-    private SpellbookViewModel _spellbook;
+    private SpellbookViewModel _spellbook = null!;
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
-    public OpenSpellbookPresenter(OpenSpellbookView toolView, NwPlayer player)
-    {
-        View = toolView;
-        _player = player;
-    }
+    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; } = null!;
 
-    [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; }
-
-    public override OpenSpellbookView View { get; }
+    public override OpenSpellbookView View { get; } = toolView;
 
     public override NuiWindowToken Token() => _token;
 
 
     public override void InitBefore()
     {
-        _window = new(View.RootLayout(), View.Title)
+        _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Resizable = false,
             Geometry = new NuiRect(500f, 100f, 580f, 500f)
@@ -50,13 +43,13 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
         // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
-            _player.SendServerMessage(
+            player.SendServerMessage(
                 message: "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
 
-        _player.TryCreateNuiWindow(_window, out _token);
+        player.TryCreateNuiWindow(_window, out _token);
 
         string spellbookIdString =
             NWScript.GetLocalString(Token().Player.LoginCreature, sVarName: "selected_spellbook");
@@ -109,140 +102,143 @@ public class OpenSpellbookPresenter : ScryPresenter<OpenSpellbookView>
     }
 
     private static List<NuiImage> SpellbookLayout() =>
-        new()
+    [
+        new(resRef: "ir_level789")
         {
-            new(resRef: "ir_level789")
-            {
-                Tooltip = "Cantrips",
-                Height = 40f,
-                Width = 40f,
-                ImageAspect = NuiAspect.Fill,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            },
-            new(resRef: "ir_level1")
-            {
-                Tooltip = "Level 1",
-                Height = 40f,
-                Width = 40f,
-                ImageAspect = NuiAspect.Fill,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            },
-            new(resRef: "ir_level2")
-            {
-                Tooltip = "Level 2",
-                Height = 40f,
-                Width = 40f,
-                ImageAspect = NuiAspect.Fill,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            },
-            new(resRef: "ir_level3")
-            {
-                Tooltip = "Level 3",
-                Height = 40f,
-                Width = 40f,
-                ImageAspect = NuiAspect.Fill,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            },
-            new(resRef: "ir_level4")
-            {
-                Tooltip = "Level 4",
-                Height = 40f,
-                Width = 40f,
-                ImageAspect = NuiAspect.Fill,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            },
-            new(resRef: "ir_level5")
-            {
-                Tooltip = "Level 5",
-                Height = 40f,
-                Width = 40f,
-                ImageAspect = NuiAspect.Fill,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            },
-            new(resRef: "ir_level6")
-            {
-                Tooltip = "Level 6",
-                Height = 40f,
-                Width = 40f,
-                ImageAspect = NuiAspect.Fill,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            },
-            new(resRef: "ir_level789")
-            {
-                Tooltip = "Level 7",
-                Height = 40f,
-                Width = 40f,
-                ImageAspect = NuiAspect.Fill,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            },
-            new(resRef: "ir_level789")
-            {
-                Tooltip = "Level 8",
-                Height = 40f,
-                Width = 40f,
-                ImageAspect = NuiAspect.Fill,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            },
-            new(resRef: "ir_level789")
-            {
-                Tooltip = "Level 9",
-                Height = 40f,
-                Width = 40f,
-                ImageAspect = NuiAspect.Fill,
-                HorizontalAlign = NuiHAlign.Center,
-                VerticalAlign = NuiVAlign.Middle
-            }
-        };
+            Tooltip = "Cantrips",
+            Height = 40f,
+            Width = 40f,
+            ImageAspect = NuiAspect.Fill,
+            HorizontalAlign = NuiHAlign.Center,
+            VerticalAlign = NuiVAlign.Middle
+        },
 
-    private static List<NuiRow> PopulateSpellRows(Dictionary<byte, List<PreparedSpellModel>>? preparedSpells,
+        new(resRef: "ir_level1")
+        {
+            Tooltip = "Level 1",
+            Height = 40f,
+            Width = 40f,
+            ImageAspect = NuiAspect.Fill,
+            HorizontalAlign = NuiHAlign.Center,
+            VerticalAlign = NuiVAlign.Middle
+        },
+
+        new(resRef: "ir_level2")
+        {
+            Tooltip = "Level 2",
+            Height = 40f,
+            Width = 40f,
+            ImageAspect = NuiAspect.Fill,
+            HorizontalAlign = NuiHAlign.Center,
+            VerticalAlign = NuiVAlign.Middle
+        },
+
+        new(resRef: "ir_level3")
+        {
+            Tooltip = "Level 3",
+            Height = 40f,
+            Width = 40f,
+            ImageAspect = NuiAspect.Fill,
+            HorizontalAlign = NuiHAlign.Center,
+            VerticalAlign = NuiVAlign.Middle
+        },
+
+        new(resRef: "ir_level4")
+        {
+            Tooltip = "Level 4",
+            Height = 40f,
+            Width = 40f,
+            ImageAspect = NuiAspect.Fill,
+            HorizontalAlign = NuiHAlign.Center,
+            VerticalAlign = NuiVAlign.Middle
+        },
+
+        new(resRef: "ir_level5")
+        {
+            Tooltip = "Level 5",
+            Height = 40f,
+            Width = 40f,
+            ImageAspect = NuiAspect.Fill,
+            HorizontalAlign = NuiHAlign.Center,
+            VerticalAlign = NuiVAlign.Middle
+        },
+
+        new(resRef: "ir_level6")
+        {
+            Tooltip = "Level 6",
+            Height = 40f,
+            Width = 40f,
+            ImageAspect = NuiAspect.Fill,
+            HorizontalAlign = NuiHAlign.Center,
+            VerticalAlign = NuiVAlign.Middle
+        },
+
+        new(resRef: "ir_level789")
+        {
+            Tooltip = "Level 7",
+            Height = 40f,
+            Width = 40f,
+            ImageAspect = NuiAspect.Fill,
+            HorizontalAlign = NuiHAlign.Center,
+            VerticalAlign = NuiVAlign.Middle
+        },
+
+        new(resRef: "ir_level789")
+        {
+            Tooltip = "Level 8",
+            Height = 40f,
+            Width = 40f,
+            ImageAspect = NuiAspect.Fill,
+            HorizontalAlign = NuiHAlign.Center,
+            VerticalAlign = NuiVAlign.Middle
+        },
+
+        new(resRef: "ir_level789")
+        {
+            Tooltip = "Level 9",
+            Height = 40f,
+            Width = 40f,
+            ImageAspect = NuiAspect.Fill,
+            HorizontalAlign = NuiHAlign.Center,
+            VerticalAlign = NuiVAlign.Middle
+        }
+    ];
+
+    private static List<NuiRow> PopulateSpellRows(Dictionary<byte, List<PreparedSpellModel>?>? preparedSpells,
         List<NuiImage> spellLevelIcons)
     {
-        if (preparedSpells == null) return new();
+        if (preparedSpells == null) return [];
         Dictionary<int, List<NuiImage>> spellRow = new();
-        List<NuiRow> spellRows = new();
+        List<NuiRow> spellRows = [];
         for (byte f = 0; f <= 9; f++)
         {
             Log.Info($"Iteration {f}");
-            spellRows.Add(new());
-            if (!preparedSpells.ContainsKey(f)) break;
-            Log.Info($"Spell level {f} has {preparedSpells[f].Count} spells.");
-            spellRow.TryAdd(f, new());
+            spellRows.Add(new NuiRow());
+            if (!preparedSpells.TryGetValue(f, out List<PreparedSpellModel>? _)) break;
+
+            spellRow.TryAdd(f, []);
             spellRow[f].Add(spellLevelIcons[f]);
 
-            foreach (PreparedSpellModel s in preparedSpells[f])
+            foreach (NuiImage prep in from s in preparedSpells[f]
+                     let spellIconResRef = s.IconResRef == "" ? "ir_tmp_spawn" : s.IconResRef
+                     select new NuiImage(spellIconResRef)
+                     {
+                         Tooltip = s.SpellName,
+                         Height = 40f,
+                         Width = 40f,
+                         ImageAspect = NuiAspect.Fill,
+                         HorizontalAlign = NuiHAlign.Center,
+                         VerticalAlign = NuiVAlign.Middle
+                     })
             {
-                string spellIconResRef = s.IconResRef == "" ? "ir_tmp_spawn" : s.IconResRef;
-
-
-                Log.Info($"Processing spell {s.SpellName} with icon {spellIconResRef}");
-
-                NuiImage prep = new(spellIconResRef)
-                {
-                    Tooltip = s.SpellName,
-                    Height = 40f,
-                    Width = 40f,
-                    ImageAspect = NuiAspect.Fill,
-                    HorizontalAlign = NuiHAlign.Center,
-                    VerticalAlign = NuiVAlign.Middle
-                };
-
                 spellRow[f].Add(prep);
             }
 
-            spellRows[f] = new()
+            spellRows[f] = new NuiRow
             {
                 Height = 50f,
                 Visible = true,
-                Children = new(spellRow[f])
+                Children = new List<NuiElement>(spellRow[f])
             };
         }
 
@@ -303,14 +299,12 @@ public sealed class SpellbookMemorizer
 
         NwCreature playerCreature = _player.LoginCreature;
 
-        if (!playerCreature.Classes.Any(c => c.Class.Id == classId)) return;
+        if (playerCreature.Classes.All(c => c.Class.Id != classId)) return;
         CreatureClassInfo classInfo = playerCreature.Classes.First(c => c.Class.Id == classId);
 
 
         for (byte i = 0; i <= 9; i++)
         {
-            IReadOnlyList<PreparedSpellModel> spells = _spellbook.SpellBook[i];
-
             foreach (MemorizedSpellSlot spellSlot in classInfo.GetMemorizedSpellSlots(i))
             {
                 spellSlot.ClearMemorizedSpell();
@@ -322,17 +316,22 @@ public sealed class SpellbookMemorizer
         for (byte spellLevel = 0; spellLevel <= 9; spellLevel++)
         {
             Log.Info($"Memorizing spells for level {(int)spellLevel}");
-            IReadOnlyList<PreparedSpellModel> spells = _spellbook.SpellBook[spellLevel];
+
+            IReadOnlyList<PreparedSpellModel>? spells = _spellbook.SpellBook?[spellLevel];
 
             for (int spellSlot = 0; spellSlot < classInfo.GetMemorizedSpellSlots(spellLevel).Count; spellSlot++)
             {
+                if (spells == null) continue;
                 if (spellSlot > spells.Count)
                 {
                     Log.Info(message: "No more spells to memorize.");
                     break;
                 }
-
-                PreparedSpellModel spell = spells[spellSlot];
+                
+                PreparedSpellModel? spell = spells.ElementAtOrDefault(spellSlot);
+                
+                if (spell == null) continue;
+                
                 MemorizedSpellSlot memorized = classInfo.GetMemorizedSpellSlots(spellLevel)[spellSlot];
                 if (!spell.IsPopulated) continue;
 
