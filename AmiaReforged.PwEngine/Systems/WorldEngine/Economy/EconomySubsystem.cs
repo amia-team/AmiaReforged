@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using NLog;
 using NLog.Fluent;
 using NWN.Core;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
 
@@ -46,8 +47,54 @@ public class EconomySubsystem
 
     private void SpawnNodesFromDb()
     {
-        List<ResourceNodeInstance> instances = Persistence.AllResourceNodes();
+        const int batchSize = 50;
+        int skip = 0;
+        bool hasMore = true;
 
+        while (hasMore)
+        {
+            List<ResourceNodeInstance> instances = Persistence.AllResourceNodes().Skip(skip).Take(batchSize).ToList();
+
+            if (instances.Count == 0)
+            {
+                hasMore = false;
+                continue;
+            }
+
+            foreach (ResourceNodeInstance instance in instances)
+            {
+                NwArea? area = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == instance.Location.AreaResRef);
+                if (area == null)
+                {
+                    Log.Error($"Invalid area defined for {instance.Location.AreaResRef} with id {instance.Id}");
+                    continue;
+                }
+
+                Location location = Location.Create(area, instance.Location.Position, instance.Location.Orientation);
+
+                if (!location.IsValid)
+                {
+                    Log.Error($"Invalid location for resource node with id {instance.Id} in {area.ResRef}");
+                    continue;
+                }
+
+                NwPlaceable? plc = NwPlaceable.Create(WorldConfigConstants.GenericNodePlcRef, location);
+                if (plc == null)
+                {
+                    Log.Error($"Failed to generate PLC for {instance.Definition.Name} in {area.ResRef}");
+                    continue;
+                }
+
+                plc.Name = instance.Definition.Name;
+                plc.Tag = instance.Definition.Tag;
+                plc.VisualTransform.Scale = instance.Scale;
+                ObjectPlugin.SetAppearance(plc, instance.Definition.Appearance);
+
+                RegisterNode(plc, instance);
+            }
+
+            skip += batchSize;
+        }
     }
 
     private void DoFirstTimeSetUp()
