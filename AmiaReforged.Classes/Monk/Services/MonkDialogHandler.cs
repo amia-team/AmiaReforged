@@ -91,9 +91,41 @@ public class MonkDialogHandler
         if (eventData.Feat.Id is not MonkFeat.MonkFightingStyle) return;
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
-        _ = StartConversation();
+        NwCreature monk = eventData.Creature;
 
-        return;
+        LocalVariableInt fightingStyleVar = monk.GetObjectVariable<LocalVariableInt>("monk_fighting_style");
+
+        string featName = eventData.Feat.Name.ToString();
+
+        switch (fightingStyleVar.Value)
+        {
+            case 0:
+                _ = StartConversation();
+                break;
+            case 1:
+                if (monk.KnowsFeat(Feat.ImprovedKnockdown!))
+                {
+                    _ = StartConversation();
+                    return;
+                }
+
+                bool hasKnockdown = monk.ActiveEffects.Any(effect => effect.EffectType == EffectType.BonusFeat &&
+                                                                     effect.IntParams[0] == (int)Feat.Knockdown) &&
+                                    monk.ActiveEffects.Any(effect => effect.EffectType == EffectType.BonusFeat &&
+                                                                     effect.IntParams[0] == (int)Feat.ImprovedKnockdown);
+                if (hasKnockdown) return;
+
+                Effect fightingStyleEffect = Effect.LinkEffects(Effect.BonusFeat(Feat.Knockdown!),
+                    Effect.BonusFeat(Feat.ImprovedKnockdown!));
+                fightingStyleEffect.SubType = EffectSubType.Unyielding;
+                fightingStyleEffect.Tag = "monk_fighting_style";
+
+                monk.ApplyEffect(EffectDuration.Permanent, fightingStyleEffect);
+
+                player.SendServerMessage("");
+
+                return;
+        }
 
         async Task StartConversation()
         {
@@ -101,8 +133,6 @@ public class MonkDialogHandler
                 (eventData.Creature, dialogResRef: "monk_fighting_style", true, false);
         }
     }
-
-
 
     [ScriptHandler(scriptName: "monk_path")]
     private void PathDialog(CallInfo info)
@@ -127,7 +157,7 @@ public class MonkDialogHandler
         }
     }
 
-    [ScriptHandler(scriptName: "monk_eyeglow")]
+    [ScriptHandler(scriptName: "monk_eye_glow")]
     private void EyeGlowDialog(CallInfo info)
     {
         DialogEvents.AppearsWhen eventData = new();
@@ -413,13 +443,15 @@ public class MonkDialogHandler
     {
         Func<string, LocalVariableInt> localInt = monk.GetObjectVariable<LocalVariableInt>;
 
+        Effect featEffect;
         // Improved Knockdown
         if (localInt(arg: "ds_check1").HasValue)
         {
+            if (HasKnockdownFightingStyle(monk)) return "";
+
             monk.AddFeat(Feat.ImprovedKnockdown!, 6);
             return NwFeat.FromFeatType(Feat.ImprovedKnockdown)!.Name.ToString();
         }
-
 
         if (localInt(arg: "ds_check2").HasValue)
         {
@@ -436,4 +468,39 @@ public class MonkDialogHandler
 
         return "";
     }
+
+    private static bool HasKnockdownFightingStyle(NwCreature monk) =>
+         monk.ActiveEffects.Any(effect => effect.EffectType == EffectType.BonusFeat &&
+                                                                 effect.IntParams[0] == (int)Feat.Knockdown) &&
+                                monk.ActiveEffects.Any(effect => effect.EffectType == EffectType.BonusFeat &&
+                                                                 effect.IntParams[0] == (int)Feat.ImprovedKnockdown);
+    private static bool HasKnockdownStyleFeat(NwCreature monk) =>
+        monk.KnowsFeat(Feat.Knockdown!) || monk.KnowsFeat(Feat.ImprovedKnockdown!);
+
+    private static Effect KnockdownStyleEffect(NwCreature monk)
+        => Effect.LinkEffects(Effect.BonusFeat(Feat.Knockdown!), Effect.BonusFeat(Feat.ImprovedKnockdown!));
+
+    private static bool HasDisarmFightingStyle(NwCreature monk) =>
+        monk.ActiveEffects.Any(effect => effect.EffectType == EffectType.BonusFeat &&
+                                         effect.IntParams[0] == (int)Feat.Disarm) &&
+        monk.ActiveEffects.Any(effect => effect.EffectType == EffectType.BonusFeat &&
+                                         effect.IntParams[0] == (int)Feat.ImprovedDisarm);
+
+    private static bool HasDisarmStyleFeat(NwCreature monk) =>
+        monk.KnowsFeat(Feat.Disarm!) || monk.KnowsFeat(Feat.ImprovedDisarm!);
+
+    private static Effect DisarmStyleEffect(NwCreature monk)
+        => Effect.LinkEffects(Effect.BonusFeat(Feat.Disarm!), Effect.BonusFeat(Feat.ImprovedDisarm!));
+
+    private static bool HasRangedFightingStyle(NwCreature monk) =>
+        monk.ActiveEffects.Any(effect => effect.EffectType == EffectType.BonusFeat &&
+                                         effect.IntParams[0] == (int)Feat.CalledShot) &&
+        monk.ActiveEffects.Any(effect => effect.EffectType == EffectType.BonusFeat &&
+                                         effect.IntParams[0] == (int)Feat.Mobility);
+
+    private static bool HasRangedStyleFeat(NwCreature monk) =>
+        monk.KnowsFeat(Feat.Mobility!) || monk.KnowsFeat(Feat.CalledShot!);
+
+    private static Effect RangedStyleEffect(NwCreature monk)
+        => Effect.LinkEffects(Effect.BonusFeat(Feat.Mobility!), Effect.BonusFeat(Feat.CalledShot!));
 }
