@@ -15,6 +15,7 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
 [ServiceBinding(typeof(EconomySubsystem))]
 public class EconomySubsystem
 {
+    private readonly IWorldConfigProvider _config;
     private readonly NodeSeeder _nodeSeeder;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public EconomyDefinitions Definitions { get; }
@@ -25,13 +26,14 @@ public class EconomySubsystem
     public EconomySubsystem(EconomyDefinitions definitions, EconomyPersistence persistence, IWorldConfigProvider config,
         NodeSeeder nodeSeeder)
     {
+        _config = config;
         _nodeSeeder = nodeSeeder;
         Definitions = definitions;
         Persistence = persistence;
 
         UpdateStoredDefinitions();
 
-        bool initialized = config.GetBoolean(WorldConfigConstants.InitializedKey);
+        bool initialized = _config.GetBoolean(WorldConfigConstants.InitializedKey);
         if (!initialized)
         {
             DoFirstTimeSetUp();
@@ -45,6 +47,7 @@ public class EconomySubsystem
     private void SpawnNodesFromDb()
     {
         List<ResourceNodeInstance> instances = Persistence.AllResourceNodes();
+
     }
 
     private void DoFirstTimeSetUp()
@@ -97,6 +100,8 @@ public class EconomySubsystem
                 }
             }
         }
+
+        _config.SetBoolean(WorldConfigConstants.InitializedKey, true);
     }
 
     private ResourceType TagToType(string tag)
@@ -167,6 +172,8 @@ public class EconomySubsystem
         {
             obj.Placeable.SpeakString("*This node cannot be harvested using your bare hands*", TalkVolume.Whisper);
         }
+
+        obj.Placeable.SpeakString($"{_nodeInstances[obj.Placeable.UUID].Quantity} {obj.Placeable.Name} harvested!");
     }
 
     private void RedirectToAttack(PlaceableEvents.OnUsed obj)
