@@ -33,6 +33,47 @@ public class WorldEngineConfig(PwContextFactory factory) : IWorldConfigProvider
         return value;
     }
 
+    public void SetBoolean(string key, bool value)
+    {
+        try
+        {
+            WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
+                b.Key == key && b.ValueType == WorldConfigConstants.ConfigTypeBool);
+
+            bool exists = entry != null;
+            if (!exists)
+            {
+                AddBoolean(new WorldConfiguration
+                {
+                    Key = key,
+                    Value = value.ToString(),
+                    ValueType = WorldConfigConstants.ConfigTypeBool
+                });
+
+                return;
+            }
+
+            entry!.Value = value.ToString();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+    }
+
+    private void AddBoolean(WorldConfiguration entry)
+    {
+        try
+        {
+            _ctx.Add(entry);
+            _ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+    }
+
     public int? GetInt(string key)
     {
         return null;
