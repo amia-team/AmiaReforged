@@ -9,7 +9,7 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
 
-public class NodeSeeder(EconomySubsystem economy)
+public class NodeCreator(EconomySubsystem economy)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 

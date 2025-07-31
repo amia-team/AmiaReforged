@@ -17,7 +17,7 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
 public class EconomySubsystem
 {
     private readonly IWorldConfigProvider _config;
-    private readonly NodeSeeder _nodeSeeder;
+    private readonly NodeCreator _nodeCreator;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public EconomyDefinitions Definitions { get; }
     private EconomyPersistence Persistence { get; }
@@ -27,7 +27,7 @@ public class EconomySubsystem
     public EconomySubsystem(EconomyDefinitions definitions, EconomyPersistence persistence, IWorldConfigProvider config)
     {
         _config = config;
-        _nodeSeeder = new NodeSeeder(this);
+        _nodeCreator = new NodeCreator(this);
         Definitions = definitions;
         Persistence = persistence;
 
@@ -192,7 +192,7 @@ public class EconomySubsystem
                     if (nodesPerTag[tagIndex] < 2) // Maximum 2 nodes per tag
                     {
                         ResourceType tagType = TagToType(tags[tagIndex]);
-                        _nodeSeeder.SpawnNodeForType(tagType, areaDefinition, locations[currentIndex]);
+                        _nodeCreator.SpawnNodeForType(tagType, areaDefinition, locations[currentIndex]);
                         nodesPerTag[tagIndex]++;
                         currentIndex++;
                         tagFound = true;
