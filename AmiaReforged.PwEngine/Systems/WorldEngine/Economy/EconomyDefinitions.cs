@@ -19,35 +19,37 @@ public class EconomyDefinitions
     private readonly ResourceNodeLoader _resourceNodes;
     private readonly ClimateLoader _climates;
     private readonly RegionLoader _regions;
+    private readonly ItemLoader _items;
     private readonly Deserializer _deserializer = new();
-
-    private readonly string _resourcesPath;
 
     public List<ClimateDefinition> Climates { get; } = [];
     public List<MaterialDefinition> Materials { get; } = [];
     public List<ResourceNodeDefinition> NodeDefinitions { get; } = [];
     public List<RegionDefinition> Regions { get; } = [];
 
+    public List<ItemDefinition> Items { get; } = [];
+
 
     public EconomyDefinitions(IWorldConfigProvider config, MaterialLoader materials, ResourceNodeLoader resourceNodes,
-        ClimateLoader climates, RegionLoader regions)
+        ClimateLoader climates, RegionLoader regions, ItemLoader items)
     {
         _config = config;
         _materials = materials;
         _resourceNodes = resourceNodes;
         _climates = climates;
         _regions = regions;
-        _resourcesPath = Environment.GetEnvironmentVariable("ECONOMY_RESOURCES_PATH") ?? string.Empty;
+        _items = items;
+        string resourcesPath = Environment.GetEnvironmentVariable("ECONOMY_RESOURCES_PATH") ?? string.Empty;
 
-        if (_resourcesPath == string.Empty)
+        if (resourcesPath == string.Empty)
         {
             Log.Error("No directory defined.");
             return;
         }
 
-        if (!Directory.Exists(_resourcesPath))
+        if (!Directory.Exists(resourcesPath))
         {
-            Log.Error($"{_resourcesPath} does not exist.");
+            Log.Error($"{resourcesPath} does not exist.");
             return;
         }
 
@@ -57,6 +59,7 @@ public class EconomyDefinitions
     private void LoadAllDefinitions()
     {
         LoadMaterials();
+        LoadItems();
         LoadResourceNodes();
         LoadClimates();
         LoadRegions();
@@ -76,6 +79,22 @@ public class EconomyDefinitions
         }
 
         Materials.AddRange(_materials.LoadedResources);
+    }
+
+    private void LoadItems()
+    {
+        _items.LoadAll();
+
+        if (_items.Failures.Count > 0)
+        {
+            Log.Error("Failed to load some items");
+            foreach (ResourceLoadError failure in _items.Failures)
+            {
+                Log.Error(failure.ToString());
+            }
+        }
+
+        Items.AddRange(_items.LoadedResources);
     }
 
     private void LoadResourceNodes()
