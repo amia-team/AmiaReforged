@@ -22,11 +22,11 @@ public class NodeCreator(EconomySubsystem economy)
                 break;
             case ResourceType.Ore:
                 Log.Info("Spawning an Ore node");
-                SpawnOreNode(areaDefinition, location, ResourceType.Ore);
+                SpawnNode(areaDefinition, location, ResourceType.Ore);
                 break;
             case ResourceType.Geode:
                 Log.Info("Spawning a Geode node");
-                SpawnOreNode(areaDefinition, location, ResourceType.Geode);
+                SpawnNode(areaDefinition, location, ResourceType.Geode);
                 break;
             case ResourceType.Boulder:
                 break;
@@ -38,7 +38,7 @@ public class NodeCreator(EconomySubsystem economy)
         }
     }
 
-    private void SpawnOreNode(AreaDefinition areaDefinition, Location location, ResourceType resourceType)
+    private void SpawnNode(AreaDefinition areaDefinition, Location location, ResourceType resourceType)
     {
         List<ResourceNodeDefinition> defs = NodeDefinitionsForArea(areaDefinition, resourceType);
 
