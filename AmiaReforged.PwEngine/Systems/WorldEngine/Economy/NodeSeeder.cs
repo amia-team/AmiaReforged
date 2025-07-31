@@ -9,7 +9,6 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
 
-[ServiceBinding(typeof(NodeSeeder))]
 public class NodeSeeder(EconomySubsystem economy)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -22,9 +21,12 @@ public class NodeSeeder(EconomySubsystem economy)
                 Log.Error($"Undefined node in {areaDefinition.ResRef} rejected. Did not spawn.");
                 break;
             case ResourceType.Ore:
-                SpawnOreNode(areaDefinition, location);
+                Log.Info("Spawning an Ore node");
+                SpawnOreNode(areaDefinition, location, ResourceType.Ore);
                 break;
             case ResourceType.Geode:
+                Log.Info("Spawning a Geode node");
+                SpawnOreNode(areaDefinition, location, ResourceType.Geode);
                 break;
             case ResourceType.Boulder:
                 break;
@@ -36,16 +38,13 @@ public class NodeSeeder(EconomySubsystem economy)
         }
     }
 
-    private void SpawnOreNode(AreaDefinition areaDefinition, Location location)
+    private void SpawnOreNode(AreaDefinition areaDefinition, Location location, ResourceType resourceType)
     {
-        List<ResourceNodeDefinition> oreDefinitions =
-            economy.GetStoredDefinitions()
-                .Where(d => d.Type == ResourceType.Ore && areaDefinition.SpawnableNodes.Contains(d.Tag))
-                .ToList();
+        List<ResourceNodeDefinition> defs = NodeDefinitionsForArea(areaDefinition, resourceType);
 
         // Generate a random index
         Random rng = new();
-        int index = rng.Next(oreDefinitions.Count);
+        int index = rng.Next(defs.Count);
 
         if (!location.IsValid)
         {
@@ -54,20 +53,19 @@ public class NodeSeeder(EconomySubsystem economy)
         }
 
         NwPlaceable? plc = NwPlaceable.Create(WorldConfigConstants.GenericNodePlcRef, location);
+
         if (plc is null)
         {
             Log.Error($"PLC creation failed in {areaDefinition.ResRef}");
             return;
         }
 
-        ResourceNodeDefinition resourceNodeDefinition = oreDefinitions[index];
+        ResourceNodeDefinition resourceNodeDefinition = defs[index];
 
         ObjectPlugin.SetAppearance(plc, resourceNodeDefinition.Appearance);
-
         // Generate a random float for scale variance
-        float scale = rng.NextFloat(-resourceNodeDefinition.ScaleVariance, resourceNodeDefinition.ScaleVariance);
-        NWScript.SetObjectVisualTransform(plc, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scale);
         plc.Name = resourceNodeDefinition.Name;
+        plc.Description = resourceNodeDefinition.Description;
         plc.Tag = resourceNodeDefinition.Tag;
         ResourceNodeInstance newInstance = new ResourceNodeInstance()
         {
@@ -81,12 +79,21 @@ public class NodeSeeder(EconomySubsystem economy)
                 Orientation = rng.NextFloat(0, 360)
             },
             Quantity = resourceNodeDefinition.BaseQuantity,
-            Scale = NWScript.GetObjectVisualTransform(plc, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE)
+            Scale = plc.VisualTransform.Scale
         };
 
         if (economy.PersistNode(newInstance))
         {
             economy.RegisterNode(plc, newInstance);
         }
+    }
+
+    private List<ResourceNodeDefinition> NodeDefinitionsForArea(AreaDefinition areaDefinition, ResourceType type)
+    {
+        List<ResourceNodeDefinition> oreDefinitions =
+            economy.GetStoredDefinitions()
+                .Where(d => d.Type == type && areaDefinition.SpawnableNodes.Contains(d.Tag))
+                .ToList();
+        return oreDefinitions;
     }
 }

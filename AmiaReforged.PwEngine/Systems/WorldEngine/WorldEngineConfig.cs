@@ -54,6 +54,8 @@ public class WorldEngineConfig(PwContextFactory factory) : IWorldConfigProvider
             }
 
             entry!.Value = value.ToString();
+            _ctx.Update(entry);
+            _ctx.SaveChanges();
         }
         catch (Exception e)
         {

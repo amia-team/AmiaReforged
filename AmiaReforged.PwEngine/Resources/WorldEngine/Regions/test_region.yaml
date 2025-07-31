@@ -4,7 +4,8 @@ ClimateTag: temperate_grassland
 Areas:
   - ResRef: zwrldsettlemnt
     SettlementReference: zworld_test_settlement
-  - ResRef: zworldttemprat
+  - ResRef: zworldttemprate
     SettlementReference: zworld_test_settlement
     SpawnableNodes:
       - ore_node_copper
+      - geode_node_malachite

@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
@@ -19,11 +20,12 @@ public class EconomyPersistence(PwContextFactory factory)
         {
             _context.Add(resourceNodeInstance);
             _context.SaveChanges();
+            Log.Info($"Node successfully persisted");
             return true;
         }
         catch (Exception ex)
         {
-            Log.Error($"Failed to store a new node to the DB in {resourceNodeInstance.Location.AreaResRef}");
+            Log.Error(ex);
         }
 
         return false;
@@ -60,7 +62,6 @@ public class EconomyPersistence(PwContextFactory factory)
 
     public List<ResourceNodeInstance> AllResourceNodes()
     {
-
-        return _context.NodeInstances.ToList();
+        return _context.NodeInstances.Include(n => n.Location).ToList();
     }
 }

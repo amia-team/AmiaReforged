@@ -1,7 +1,7 @@
 Name: "Native Copper Vein"
 Tag: ore_node_copper
 Type: Ore
-Appearance: 4792 # Mine Deposit, Green
+Appearance: 4792
 Description: Copper is a widely used metal found in many alloys, including bronze, which is nearly as effective as iron for forging weapons and armor, and brass.
 HarvestAction: Attack
 BaseHarvestTime: 1 # 1 Round
