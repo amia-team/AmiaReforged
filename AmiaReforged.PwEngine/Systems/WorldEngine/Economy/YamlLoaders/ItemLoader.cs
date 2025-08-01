@@ -1,11 +1,13 @@
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
+using Anvil.Services;
 using Microsoft.IdentityModel.Tokens;
 using NLog;
 using YamlDotNet.Serialization;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy.YamlLoaders;
 
+[ServiceBinding(typeof(ItemLoader))]
 public class ItemLoader : ILoader<ItemDefinition>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -65,7 +67,8 @@ public class ItemLoader : ILoader<ItemDefinition>
 
                 if (item.MinQuality >= item.MaxQuality)
                 {
-                    errors = $"Invalid quality range: Min quality must be less than, or equal to, max quality.;{errors}";
+                    errors =
+                        $"Invalid quality range: Min quality must be less than, or equal to, max quality.;{errors}";
                 }
 
                 if (item.ItemType == ItemType.Undefined)
@@ -82,7 +85,7 @@ public class ItemLoader : ILoader<ItemDefinition>
                     Failures.Add(new ResourceLoadError(file, errors));
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Failures.Add(new ResourceLoadError(file, ex.Message, ex));
             }
