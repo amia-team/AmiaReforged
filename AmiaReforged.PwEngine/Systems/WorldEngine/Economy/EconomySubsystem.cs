@@ -326,6 +326,7 @@ public class EconomySubsystem
             resourceNodeInstance.Definition.RequiredTool)
         {
             obj.Placeable.SpeakString($"*This {resourceNodeInstance.Definition.Type} requires a {resourceNodeInstance.Definition.RequiredTool} to harvest*");
+            return;
         }
 
         // TODO: Extract to its own service.
