@@ -390,8 +390,10 @@ public class EconomySubsystem
 
             if (def.MaterialType != null)
             {
+                Log.Info("Material not null");
                 if (def.MaterialType != MaterialEnum.None)
                 {
+                    Log.Info($"{def.MaterialType}");
                     ItemProperty matProp = ItemProperty.Material((int)def.MaterialType);
                     itm.AddItemProperty(matProp, EffectDuration.Permanent);
                 }
