@@ -4,5 +4,6 @@ Description: Cassiterite is a tin-bearing ore with a dark, glassy sheen, used pr
 Tag: ore_cassiterite
 Appearance: 8
 ItemType: Ore
+BaseCost: 50
 MaxQuality: VeryGood
 MinQuality: VeryPoor

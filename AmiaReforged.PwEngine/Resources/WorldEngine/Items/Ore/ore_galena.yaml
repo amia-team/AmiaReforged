@@ -4,5 +4,6 @@ Description: Galena is a heavy, silver-gray ore with a distinct, cubic crystal s
 Tag: ore_galena
 Appearance: 9
 ItemType: Ore
+BaseCost: 70
 MaxQuality: VeryGood
 MinQuality: VeryPoor

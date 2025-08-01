@@ -9,6 +9,7 @@ public class ItemDefinition
     public required string Name { get; set; }
     public required string Description { get; set; }
     public required int Appearance { get; set; }
+    public required int BaseCost { get; set; }
     public QualityEnum MaxQuality { get; set; } = QualityEnum.Undefined;
     public QualityEnum MinQuality { get; set; } = QualityEnum.Undefined;
     public MaterialEnum? MaterialType { get; set; }

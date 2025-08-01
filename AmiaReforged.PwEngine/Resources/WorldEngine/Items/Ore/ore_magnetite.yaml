@@ -4,5 +4,6 @@ Description: Magnetite is a naturally magnetic iron ore known for producing stur
 Tag: ore_magnetite
 Appearance: 6
 ItemType: Ore
+BaseCost: 110
 MaxQuality: VeryGood
 MinQuality: Poor
