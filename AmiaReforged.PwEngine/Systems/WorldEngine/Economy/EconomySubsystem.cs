@@ -325,7 +325,8 @@ public class EconomySubsystem
         if (ToolFromMainhand((int)mainHand.BaseItem.ItemType) !=
             resourceNodeInstance.Definition.RequiredTool)
         {
-            obj.Placeable.SpeakString($"*This {resourceNodeInstance.Definition.Type} requires a {resourceNodeInstance.Definition.RequiredTool} to harvest*");
+            obj.Placeable.SpeakString(
+                $"*This {resourceNodeInstance.Definition.Type} requires a {resourceNodeInstance.Definition.RequiredTool} to harvest*");
             return;
         }
 
@@ -370,6 +371,19 @@ public class EconomySubsystem
             int maxQuality = (int)def.MaxQuality.ToItemPropertyEnum();
 
             int quality = rng.Next(minQuality, maxQuality);
+            int valueAdjustment = quality >= NWScript.IP_CONST_QUALITY_AVERAGE
+                ? def.BaseCost * quality / 10
+                : -(def.BaseCost * quality / 10);
+
+            uint totalValue = (uint)(itm.BaseGoldValue + valueAdjustment > 0 ? itm.BaseGoldValue + valueAdjustment : 1);
+
+            itm.BaseGoldValue = totalValue;
+
+            MaterialDefinition? matDef = Definitions.Materials.FirstOrDefault(m => m.MaterialType == def.MaterialType);
+            if (def.MaterialType != null && matDef != null)
+            {
+                itm.BaseGoldValue = (uint)(totalValue + totalValue * matDef.CostModifier);
+            }
 
             ItemProperty qualProp = ItemProperty.Quality((IPQuality)quality);
             itm.AddItemProperty(qualProp, EffectDuration.Permanent);
