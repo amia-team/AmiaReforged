@@ -4,6 +4,7 @@ Type: Ore
 Appearance: 4792
 Description: Copper is a widely used metal found in many alloys, including bronze, which is nearly as effective as iron for forging weapons and armor, and brass.
 HarvestAction: Attack
+RequiredTool: PickAxe
 BaseHarvestTime: 1 # 1 Round
 BaseQuantity: 50 # 50 nuggets in a given node instance as a baseline, before factoring in richness and physical size.
 YieldItems:

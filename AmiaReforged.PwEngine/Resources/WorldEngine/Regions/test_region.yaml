@@ -9,3 +9,4 @@ Areas:
     SpawnableNodes:
       - ore_node_copper
       - geode_node_malachite
+      - tree_oak

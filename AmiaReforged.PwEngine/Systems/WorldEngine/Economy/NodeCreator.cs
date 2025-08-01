@@ -31,6 +31,8 @@ public class NodeCreator(EconomySubsystem economy)
             case ResourceType.Boulder:
                 break;
             case ResourceType.Tree:
+                Log.Info("Spawning a Tree node");
+                SpawnNode(areaDefinition, location, ResourceType.Tree);
                 break;
             case ResourceType.Flora:
                 break;

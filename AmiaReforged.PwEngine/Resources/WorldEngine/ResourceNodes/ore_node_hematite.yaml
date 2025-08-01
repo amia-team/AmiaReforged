@@ -3,6 +3,7 @@ Tag: ore_node_hematite
 Type: Ore
 Appearance: 4792 # Mine Deposit, Green
 Description: Hematite is a dense, iron-rich ore with a reddish-black hue, commonly smelted to produce high-quality iron.
+RequiredTool: PickAxe
 BaseHarvestTime: 1
 BaseQuantity: 200
 HarvestAction: Attack
