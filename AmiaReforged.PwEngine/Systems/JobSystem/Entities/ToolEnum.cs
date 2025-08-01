@@ -9,5 +9,6 @@ public enum ToolEnum
     Hammer,
     Chisel,
     PickAxe,
-    Shovel
+    Shovel,
+    None
 }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using AmiaReforged.PwEngine.Systems.WorldEngine;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Economy.HarvestActions;
 
@@ -10,7 +11,8 @@ public class ResourceNodeDefinition
     /// <summary>
     /// Sets the tag so that the definition may be uniquely identified
     /// </summary>
-    [Key] public required string Tag { get; set; }
+    [Key]
+    public required string Tag { get; set; }
 
     /// <summary>
     /// Required name field. What the player sees when they mouse over instances of this resource node's placeables.
@@ -53,5 +55,5 @@ public class ResourceNodeDefinition
     }
 
     public List<YieldItem> YieldItems { get; set; } = new();
-
+    public ToolEnum RequiredTool { get; set; } = ToolEnum.None;
 }
