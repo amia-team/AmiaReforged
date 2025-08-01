@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions;
 using Anvil.API;
 using Anvil.Services;
+using Microsoft.IdentityModel.Tokens;
 using NLog;
 using NWN.Core;
 using NWN.Core.NWNX;
@@ -43,7 +44,11 @@ public class NodeCreator(EconomySubsystem economy)
     private void SpawnNode(AreaDefinition areaDefinition, Location location, ResourceType resourceType)
     {
         List<ResourceNodeDefinition> defs = NodeDefinitionsForArea(areaDefinition, resourceType);
-
+        if (defs.IsNullOrEmpty())
+        {
+            Log.Error($"No nodes of type {resourceType} were defined for {areaDefinition.ResRef}. Did not spawn.");
+            return;
+        }
         // Generate a random index
         Random rng = new();
         int index = rng.Next(defs.Count);
