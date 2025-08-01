@@ -11,5 +11,6 @@ public class ItemDefinition
     public required int Appearance { get; set; }
     public QualityEnum MaxQuality { get; set; } = QualityEnum.Undefined;
     public QualityEnum MinQuality { get; set; } = QualityEnum.Undefined;
+    public MaterialEnum? MaterialType { get; set; }
     public ItemType ItemType { get; set; }
 }

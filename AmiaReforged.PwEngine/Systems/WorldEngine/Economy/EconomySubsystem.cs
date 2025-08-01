@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database.Entities.Economy;
+using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Economy.HarvestActions;
@@ -7,7 +8,6 @@ using Anvil.API.Events;
 using Anvil.Services;
 using Microsoft.IdentityModel.Tokens;
 using NLog;
-using NLog.Fluent;
 using NWN.Core;
 using NWN.Core.NWNX;
 
@@ -24,12 +24,18 @@ public class EconomySubsystem
 
     private readonly Dictionary<Guid, ResourceNodeInstance> _nodeInstances = new();
 
+    private Location? _setupLocation;
+
     public EconomySubsystem(EconomyDefinitions definitions, EconomyPersistence persistence, IWorldConfigProvider config)
     {
         _config = config;
         _nodeCreator = new NodeCreator(this);
         Definitions = definitions;
         Persistence = persistence;
+
+        NwWaypoint? firstOrDefault = NwObject.FindObjectsWithTag<NwWaypoint>("ds_copy").FirstOrDefault();
+
+        _setupLocation = firstOrDefault?.Location;
 
         UpdateStoredDefinitions();
 
@@ -111,7 +117,7 @@ public class EconomySubsystem
 
         Log.Info("All regions processed.");
         Log.Info("Setting initialized to true in config.");
-        // _config.SetBoolean(WorldConfigConstants.InitializedKey, true);
+        _config.SetBoolean(WorldConfigConstants.InitializedKey, true);
     }
 
     private void InitializeAreaNodeSpawnZones(RegionDefinition region)
@@ -141,7 +147,8 @@ public class EconomySubsystem
         }
     }
 
-    private void ProcessWaypointsAndSpawnNodes(List<NwTrigger> nodeSpawnTriggers, NwArea area, AreaDefinition areaDefinition)
+    private void ProcessWaypointsAndSpawnNodes(List<NwTrigger> nodeSpawnTriggers, NwArea area,
+        AreaDefinition areaDefinition)
     {
         foreach (NwTrigger trigger in nodeSpawnTriggers)
         {
@@ -314,13 +321,83 @@ public class EconomySubsystem
             return;
         }
 
-        if (mainHand.BaseItem.ItemType != BaseItemType.Warhammer)
+        ResourceNodeInstance resourceNodeInstance = _nodeInstances[obj.Placeable.UUID];
+        if (ToolFromMainhand((int)mainHand.BaseItem.ItemType) !=
+            resourceNodeInstance.Definition.RequiredTool)
         {
-            obj.Placeable.SpeakString("*This ore requires a pick to mine*");
+            obj.Placeable.SpeakString($"*This {resourceNodeInstance.Definition.Type} requires a {resourceNodeInstance.Definition.RequiredTool} to harvest*");
         }
 
-        obj.Placeable.SpeakString($"{_nodeInstances[obj.Placeable.UUID].Quantity} {obj.Placeable.Name} harvested!");
-        obj.Placeable.SpeakString($"{_nodeInstances[obj.Placeable.UUID].Definition.YieldItems.First().ItemTag} ");
+        // TODO: Extract to its own service.
+        foreach (ResourceNodeDefinition.YieldItem itemTag in resourceNodeInstance.Definition.YieldItems)
+        {
+            Random rng = new();
+
+            float attempt = rng.NextFloat(0, 1.0f);
+
+            if (!(attempt <= itemTag.Chance)) continue;
+
+            ItemDefinition? def = Definitions.Items.FirstOrDefault(i => i.Tag == itemTag.ItemTag);
+
+            if (def == null)
+            {
+                Log.Error($"Invalid item tag defined in {resourceNodeInstance.Definition.Name}");
+                continue;
+            }
+
+            if (_setupLocation == null || !_setupLocation.IsValid)
+            {
+                Log.Error("Setup location for spawning items was null or not valid");
+                continue;
+            }
+
+            NwItem? itm = NwItem.Create(def.BaseItemResRef, _setupLocation);
+
+            if (itm == null)
+            {
+                Log.Error($"Failed to create base item: {def.BaseItemResRef}");
+                continue;
+            }
+
+            itm.Appearance.SetSimpleModel((ushort)def.Appearance);
+            itm.Name = def.Name;
+            itm.Tag = def.Tag;
+            itm.Description = def.Description;
+
+            // TODO: Derive quality from skill and knowledge.
+            int minQuality = (int)def.MinQuality.ToItemPropertyEnum();
+            int maxQuality = (int)def.MaxQuality.ToItemPropertyEnum();
+
+            int quality = rng.Next(minQuality, maxQuality);
+
+            ItemProperty qualProp = ItemProperty.Quality((IPQuality)quality);
+            itm.AddItemProperty(qualProp, EffectDuration.Permanent);
+
+            if (def.MaterialType != null)
+            {
+                if (def.MaterialType != MaterialEnum.None)
+                {
+                    ItemProperty matProp = ItemProperty.Material((int)def.MaterialType);
+                    itm.AddItemProperty(matProp, EffectDuration.Permanent);
+                }
+            }
+
+            NWScript.CopyItem(itm, obj.Attacker, NWScript.TRUE);
+            itm.Destroy();
+        }
+    }
+
+    private ToolEnum ToolFromMainhand(int itemType)
+    {
+        return itemType switch
+        {
+            NWScript.BASE_ITEM_WARHAMMER => ToolEnum.PickAxe, // TODO: Replace with picks when added to the haks
+            NWScript.BASE_ITEM_BATTLEAXE => ToolEnum.Axe,
+            NWScript.BASE_ITEM_HANDAXE => ToolEnum.Axe,
+            NWScript.BASE_ITEM_GREATAXE => ToolEnum.Axe,
+            NWScript.BASE_ITEM_DWARVENWARAXE => ToolEnum.Axe,
+            _ => ToolEnum.None
+        };
     }
 
     private void RedirectToAttack(PlaceableEvents.OnUsed obj)
