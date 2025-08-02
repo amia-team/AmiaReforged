@@ -353,19 +353,19 @@ public class EconomySubsystem
                 continue;
             }
 
-            NwItem? itm = NwItem.Create(def.BaseItemResRef, _setupLocation);
+            NwItem? item = NwItem.Create(def.BaseItemResRef, _setupLocation);
 
-            if (itm == null)
+            if (item == null)
             {
                 Log.Error($"Failed to create base item: {def.BaseItemResRef}");
                 continue;
             }
 
-            itm.Appearance.SetSimpleModel((ushort)def.Appearance);
-            itm.Name = def.Name;
-            itm.Tag = def.Tag;
-            itm.Description = def.Description;
-            itm.Stolen = true;
+            item.Appearance.SetSimpleModel((ushort)def.Appearance);
+            item.Name = def.Name;
+            item.Tag = def.Tag;
+            item.Description = def.Description;
+            item.Stolen = true;
 
             // TODO: Derive quality from skill and knowledge.
             int minQuality = (int)def.MinQuality.ToItemPropertyEnum();
@@ -376,7 +376,7 @@ public class EconomySubsystem
                 ? def.BaseCost * quality / 10
                 : -(def.BaseCost * quality / 10);
 
-            int totalValue = (int)(itm.BaseGoldValue + valueAdjustment > 0 ? itm.BaseGoldValue + valueAdjustment : 1);
+            int totalValue = (int)(item.BaseGoldValue + valueAdjustment > 0 ? item.BaseGoldValue + valueAdjustment : 1);
 
 
             MaterialDefinition? matDef = Definitions.Materials.FirstOrDefault(m => m.MaterialType == def.MaterialType);
@@ -385,10 +385,10 @@ public class EconomySubsystem
                 totalValue = (int)(totalValue + totalValue * matDef.CostModifier);
             }
 
-            NWScript.SetLocalInt(itm, WorldConfigConstants.MarketValueBaseLvar, totalValue);
+            NWScript.SetLocalInt(item, WorldConfigConstants.MarketValueBaseLvar, totalValue);
 
             ItemProperty qualProp = ItemProperty.Quality((IPQuality)quality);
-            itm.AddItemProperty(qualProp, EffectDuration.Permanent);
+            item.AddItemProperty(qualProp, EffectDuration.Permanent);
 
             if (def.MaterialType != null)
             {
@@ -397,12 +397,12 @@ public class EconomySubsystem
                 {
                     Log.Info($"{def.MaterialType}");
                     ItemProperty matProp = ItemProperty.Material((int)def.MaterialType);
-                    itm.AddItemProperty(matProp, EffectDuration.Permanent);
+                    item.AddItemProperty(matProp, EffectDuration.Permanent);
                 }
             }
 
-            NWScript.CopyItem(itm, obj.Attacker, NWScript.TRUE);
-            itm.Destroy();
+            NWScript.CopyItem(item, obj.Attacker, NWScript.TRUE);
+            item.Destroy();
         }
     }
 
