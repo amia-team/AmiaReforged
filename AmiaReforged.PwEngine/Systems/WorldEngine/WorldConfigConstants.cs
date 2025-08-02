@@ -8,4 +8,5 @@ internal static class WorldConfigConstants
     public const string ResourceNodeZoneTag = "worldengine_node_region";
     public static string NodeSpawnPointRef { get; set; } = "worldengine_sp";
     public static string GenericNodePlcRef { get; set; } = "worldengine_harv";
+    public static string MarketValueBaseLvar { get;  } = "market_value_base";
 }

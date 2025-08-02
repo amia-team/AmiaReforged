@@ -365,6 +365,7 @@ public class EconomySubsystem
             itm.Name = def.Name;
             itm.Tag = def.Tag;
             itm.Description = def.Description;
+            itm.Stolen = true;
 
             // TODO: Derive quality from skill and knowledge.
             int minQuality = (int)def.MinQuality.ToItemPropertyEnum();
@@ -375,18 +376,16 @@ public class EconomySubsystem
                 ? def.BaseCost * quality / 10
                 : -(def.BaseCost * quality / 10);
 
-            uint totalValue = (uint)(itm.BaseGoldValue + valueAdjustment > 0 ? itm.BaseGoldValue + valueAdjustment : 1);
-            Log.Info($"Setting item's total value to {totalValue}");
-            itm.BaseGoldValue = totalValue;
-            itm.Stolen = true;
+            int totalValue = (int)(itm.BaseGoldValue + valueAdjustment > 0 ? itm.BaseGoldValue + valueAdjustment : 1);
 
-            Log.Info($"Actual value of item after set: {totalValue}");
 
             MaterialDefinition? matDef = Definitions.Materials.FirstOrDefault(m => m.MaterialType == def.MaterialType);
             if (def.MaterialType != null && matDef != null)
             {
-                itm.BaseGoldValue = (uint)(totalValue + totalValue * matDef.CostModifier);
+                totalValue = (int)(totalValue + totalValue * matDef.CostModifier);
             }
+
+            NWScript.SetLocalInt(itm, WorldConfigConstants.MarketValueBaseLvar, totalValue);
 
             ItemProperty qualProp = ItemProperty.Quality((IPQuality)quality);
             itm.AddItemProperty(qualProp, EffectDuration.Permanent);
