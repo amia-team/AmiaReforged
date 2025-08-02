@@ -376,8 +376,11 @@ public class EconomySubsystem
                 : -(def.BaseCost * quality / 10);
 
             uint totalValue = (uint)(itm.BaseGoldValue + valueAdjustment > 0 ? itm.BaseGoldValue + valueAdjustment : 1);
-
+            Log.Info($"Setting item's total value to {totalValue}");
             itm.BaseGoldValue = totalValue;
+            itm.Stolen = true;
+
+            Log.Info($"Actual value of item after set: {totalValue}");
 
             MaterialDefinition? matDef = Definitions.Materials.FirstOrDefault(m => m.MaterialType == def.MaterialType);
             if (def.MaterialType != null && matDef != null)
