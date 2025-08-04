@@ -1,0 +1,32 @@
+Name: Smelting
+Description: "Smelting is a fundamental metallurgical process where metal is extracted from its ore by heating it beyond the melting point, often with chemical reducing agents. This process separates the desired metal from impurities and other elements, resulting in purified metal that can be further refined or worked. The process requires careful control of temperature, atmosphere, and other conditions to achieve optimal results."
+ParentIndustry: industry_metalworking
+Knowledge:
+  - Name: Elementary Lore
+    Tag: smelt_copper
+    Description: You know how to properly smelt materials like native copper, cassiterite, and tetrahedrite down into copper ingots. Unlocks creation of tin, copper, lead, gold, or silver ingots
+  - Name: Iron Lore
+    Tag: smelt_iron
+    Description: You know how to properly smelt hematite, magnetite, bog iron, and limonite into iron ingots.
+  - Name: Esoteric Lore
+    Tag: smelt_enchanted
+    Description: You know how to process complex metals such as Mithral and Star Metal.
+    Prerequisites:
+      - metallurgy_advanced
+  - Name: Roasting
+    Tag: advanced_processing
+    Description: You know how to roast metal-bearing ores by heating them in air to drive off impurities like sulfur and carbon. This process prepares the ore for smelting by improving its metal content and making it more reactive.
+    Prerequisites:
+      - metallurgy_advanced
+  - Name: Refining
+    Tag: ingot_refinement
+    Description: You know how to take inferior ingots and turn them into better quality ingots. This process causes a loss of some material, meaning that you end up with less product than you started with, but a better quality result.
+  - Name: Apprentice Alloying
+    Tag: alloying
+    Description: You now know how to take metals in either their ore or their ingot form and create rudimentary alloys such as brass, pewter, or bronze.
+  - Name: Advanced Iron Lore
+    Tag: smelt_iron_advanced
+    Description: You know how to operate a blast furnace to turn iron into pig iron using coke.
+    Prerequisites:
+      - metallurgy_advanced
+      - alloying
