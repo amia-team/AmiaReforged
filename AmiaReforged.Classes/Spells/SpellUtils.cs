@@ -120,8 +120,8 @@ public class SpellUtils
         // or default to shifter if monk and shifter are equal
         if (casterCreature.Classes.All(c => c.Class.ClassType is ClassType.Monk or ClassType.Shifter))
         {
-            int monkLevel = casterCreature.GetClassInfo(ClassType.Monk)!.Level;
-            int shifterLevel = casterCreature.GetClassInfo(ClassType.Shifter)!.Level;
+            int monkLevel = casterCreature.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+            int shifterLevel = casterCreature.GetClassInfo(ClassType.Shifter)?.Level ?? 0;
 
 
             return monkLevel > shifterLevel ? CalculateMonkWildMagicDc(casterCreature, spell.InnateSpellLevel)
@@ -144,8 +144,8 @@ public class SpellUtils
 
     private static int CalculateShifterDc(NwCreature creature)
     {
-        int shifterLevel = creature.GetClassInfo(ClassType.Shifter)!.Level;
-        int druidLevel = creature.GetClassInfo(ClassType.Druid) != null ? creature.GetClassInfo(ClassType.Druid)!.Level : 0;
+        int shifterLevel = creature.GetClassInfo(ClassType.Shifter)?.Level ?? 0;
+        int druidLevel =  creature.GetClassInfo(ClassType.Druid)?.Level ?? 0;
         return 10 + (shifterLevel + druidLevel) / 2 + creature.GetAbilityModifier(Ability.Wisdom);
     }
 
