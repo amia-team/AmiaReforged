@@ -3,7 +3,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.DMS.Services;
+namespace AmiaReforged.Classes.Associates;
 
 [ServiceBinding(typeof(AssociateCustomizerService))]
 public class AssociateCustomizerService
@@ -17,9 +17,9 @@ public class AssociateCustomizerService
     static readonly uint TOOLS = 113;
     // int TRUE for nwn reference
     static readonly int TRUE = 1;
-    
+
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    
+
     public AssociateCustomizerService()
     {
         NwModule.Instance.OnActivateItem += CopyTargetAppearance;
@@ -63,25 +63,25 @@ public class AssociateCustomizerService
         bool vfxCopied = false;
 
         // First delete dangerous danglers from former tool activations
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue) 
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
             associateCustomizer.GetObjectVariable<LocalVariableString>("creature").Delete();
 
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue) 
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue)
             associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Delete();
-            
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").HasValue) 
+
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").HasValue)
             associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").Delete();
 
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").HasValue) 
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").HasValue)
             associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").Delete();
 
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").HasValue) 
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").HasValue)
             associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
 
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue) 
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
             associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
 
-        if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").HasValue) 
+        if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").HasValue)
             associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").Delete();
         for (int i = 0; i < 50; i++)
         {
@@ -190,7 +190,7 @@ public class AssociateCustomizerService
         if (!(obj.ItemActivator.IsPlayerControlled(out NwPlayer? player) && player.IsDM)) return;
         if (obj.TargetObject is not NwCreature) return;
         NwCreature associate = (NwCreature)obj.TargetObject;
-        if (associate.AssociateType == AssociateType.None || 
+        if (associate.AssociateType == AssociateType.None ||
             associate.AssociateType == AssociateType.Dominated) return;
 
         NwItem associateCustomizer = obj.ActivatedItem;
@@ -277,28 +277,28 @@ public class AssociateCustomizerService
 
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableString>("creature");
-            
+
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associateResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("armor"+associateResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableString>("armor");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+associateResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet"+associateResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableString>("helmet");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+associateResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("cloak"+associateResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableString>("cloak");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+associateResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand"+associateResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associateResRef).Value = 
+            associateCustomizer.GetObjectVariable<LocalVariableString>("offhand"+associateResRef).Value =
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand");
 
         if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").HasValue)
@@ -431,12 +431,12 @@ public class AssociateCustomizerService
                 if (associate.ResRef.Contains("const")) companionType = "construct";
                 if (associate.ResRef.Contains("phase")) companionType = "phase spider";
                 if (associate.ResRef.Contains("skele")) companionType = "skeleton";
-                
+
                 if (!associateCustomizer.Description.Contains(companionType))
                 {
-                    if (obj.AssociateType == AssociateType.AnimalCompanion) 
+                    if (obj.AssociateType == AssociateType.AnimalCompanion)
                     storedString = StringExtensions.ColorString($"Companion {companionType} is {creatureCopy.Name}", COLOR_GREEN);
-                    if (obj.AssociateType == AssociateType.Familiar) 
+                    if (obj.AssociateType == AssociateType.Familiar)
                     storedString = StringExtensions.ColorString($"Familiar {companionType} is {creatureCopy.Name}", COLOR_GREEN);
                 }
             }
@@ -501,7 +501,7 @@ public class AssociateCustomizerService
                 helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
                 helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal1));
                 helmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
-                helmet.Appearance.SetSimpleModel(helmetCopy.Appearance.GetSimpleModel());       
+                helmet.Appearance.SetSimpleModel(helmetCopy.Appearance.GetSimpleModel());
             }
             if (associate.GetItemInSlot(InventorySlot.Head) == null)
             {
@@ -607,7 +607,7 @@ public class AssociateCustomizerService
         {
             int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+associateResRef).Value;
             for (int i = 0; i < vfxCount; i++)
-            {   
+            {
                 int vfxId = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i+associateResRef).Value;
                 Effect vfx = Effect.VisualEffect((VfxType)vfxId);
                 vfx.SubType = EffectSubType.Supernatural;
