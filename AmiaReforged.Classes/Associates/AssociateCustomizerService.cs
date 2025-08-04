@@ -8,15 +8,18 @@ namespace AmiaReforged.Classes.Associates;
 [ServiceBinding(typeof(AssociateCustomizerService))]
 public class AssociateCustomizerService
 {
-    static readonly Color COLOR_RED = Color.FromRGBA("#ff0032cc");
-    static readonly Color COLOR_GREEN = Color.FromRGBA("#43ff64d9");
-    static readonly Color COLOR_WHITE = Color.FromRGBA("#d2ffffd9");
-    static readonly string TOOL_TAG = "ass_customizer";
+    private static readonly Color ColorRed = Color.FromRGBA("#ff0032cc");
+    private static readonly Color ColorGreen = Color.FromRGBA("#43ff64d9");
+    private static readonly Color ColorWhite = Color.FromRGBA("#d2ffffd9");
+
+    private const string ToolTag = "ass_customizer";
+
     // Baseitems.2da id numbers for left-hand holdable items
-    static readonly uint TORCH = 15;
-    static readonly uint TOOLS = 113;
+    private const uint Torch = 15;
+    private const uint Tools = 113;
+
     // int TRUE for nwn reference
-    static readonly int TRUE = 1;
+    private const int True = 1;
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -35,22 +38,21 @@ public class AssociateCustomizerService
     {
         // Declare conditions for tool activation:
         // Works only if the user is a DM and the target is a non-associate creature
-        if (obj.ActivatedItem.Tag != TOOL_TAG) return;
+        if (obj.ActivatedItem.Tag != ToolTag) return;
         if (!obj.ItemActivator.IsPlayerControlled) return;
         if (!(obj.ItemActivator.IsPlayerControlled(out NwPlayer? player) && player.IsDM))
         {
-            obj.ItemActivator.LoginPlayer?.SendServerMessage("[Associate Customizer] Only a DM can use this tool.", COLOR_RED);
+            obj.ItemActivator.LoginPlayer?.SendServerMessage("[Associate Customizer] Only a DM can use this tool.", ColorRed);
             return;
         }
-        if (obj.TargetObject is not NwCreature)
+        if (obj.TargetObject is not NwCreature creature)
         {
-            obj.ItemActivator.LoginPlayer?.SendServerMessage("[Associate Customizer] Target must be a creature.", COLOR_RED);
+            obj.ItemActivator.LoginPlayer?.SendServerMessage("[Associate Customizer] Target must be a creature.", ColorRed);
             return;
         }
 
         // Declare variables
 
-        NwCreature creature = (NwCreature)obj.TargetObject;
         if (creature.AssociateType != AssociateType.None) return;
 
         NwItem associateCustomizer = obj.ActivatedItem;
@@ -162,21 +164,21 @@ public class AssociateCustomizerService
         }
 
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] Creature copied!", COLOR_GREEN);
+            ("[Associate Customizer] Creature copied!", ColorGreen);
         if (armorCopied) obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] Armor copied!", COLOR_GREEN);
+            ("[Associate Customizer] Armor copied!", ColorGreen);
         if (helmetCopied) obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] Helmet copied!", COLOR_GREEN);
+            ("[Associate Customizer] Helmet copied!", ColorGreen);
         if (cloakCopied) obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] Cloak copied!", COLOR_GREEN);
+            ("[Associate Customizer] Cloak copied!", ColorGreen);
         if (mainhandCopied) obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] Mainhand copied!", COLOR_GREEN);
+            ("[Associate Customizer] Mainhand copied!", ColorGreen);
         if (offhandCopied) obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] Offhand copied!", COLOR_GREEN);
+            ("[Associate Customizer] Offhand copied!", ColorGreen);
         if (vfxCopied) obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] Visual effects copied!", COLOR_GREEN);
+            ("[Associate Customizer] Visual effects copied!", ColorGreen);
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("To assign the copied appearance to an associate, target the associate with the tool.", COLOR_WHITE);
+            ("To assign the copied appearance to an associate, target the associate with the tool.", ColorWhite);
     }
 
     /// <summary>
@@ -185,7 +187,7 @@ public class AssociateCustomizerService
     private void StoreAssociateAppearance(ModuleEvents.OnActivateItem obj)
     {
         // Works only if the user is a DM and the target is an non-dominated associate creature
-        if (obj.ActivatedItem.Tag != TOOL_TAG) return;
+        if (obj.ActivatedItem.Tag != ToolTag) return;
         if (!obj.ItemActivator.IsPlayerControlled) return;
         if (!(obj.ItemActivator.IsPlayerControlled(out NwPlayer? player) && player.IsDM)) return;
         if (obj.TargetObject is not NwCreature) return;
@@ -198,7 +200,7 @@ public class AssociateCustomizerService
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasNothing)
         {
             obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("[Associate Customizer] You must first use the tool on a non-associate creature to copy its appearance.", COLOR_RED);
+            ("[Associate Customizer] You must first use the tool on a non-associate creature to copy its appearance.", ColorRed);
             return;
         }
 
@@ -212,13 +214,13 @@ public class AssociateCustomizerService
             if (associate.GetItemInSlot(InventorySlot.Chest) != null && associate.GetItemInSlot(InventorySlot.Chest).BaseACValue != armorCopy.BaseACValue)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Armor appearance not copied. The base armors must match for customization.", COLOR_RED);
+                ("[Associate Customizer] Armor appearance not copied. The base armors must match for customization.", ColorRed);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Delete();
             }
             if (associate.GetItemInSlot(InventorySlot.Chest) == null && armorCopy.BaseACValue > 0)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Armor appearance not copied. The base armor of the copied creature must be cloth for customization (you can still use the robe options for armored looks).", COLOR_RED);
+                ("[Associate Customizer] Armor appearance not copied. The base armor of the copied creature must be cloth for customization (you can still use the robe options for armored looks).", ColorRed);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Delete();
             }
         }
@@ -231,7 +233,7 @@ public class AssociateCustomizerService
                 || (associate.GetItemInSlot(InventorySlot.RightHand) == null))
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Mainhand appearance not copied. The base mainhand items must match for customization.", COLOR_RED);
+                ("[Associate Customizer] Mainhand appearance not copied. The base mainhand items must match for customization.", ColorRed);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
             }
         }
@@ -246,7 +248,7 @@ public class AssociateCustomizerService
             if (weaponIsTwoHanded)
             {
                 obj.ItemActivator.LoginPlayer.SendServerMessage
-                ("[Associate Customizer] Offhand appearance not copied. The associate's mainhand item is held with both hands, so it can't hold an item in offhand. The base mainhand items must match for customization.", COLOR_RED);
+                ("[Associate Customizer] Offhand appearance not copied. The associate's mainhand item is held with both hands, so it can't hold an item in offhand. The base mainhand items must match for customization.", ColorRed);
                 associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
             }
         }
@@ -256,17 +258,17 @@ public class AssociateCustomizerService
                 NwItem offhandCopy = NwItem.Deserialize(offhandData);
 
                 // If associate's offhand is empty the copied offhand item must be torch or tools
-                if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != TORCH && offhandCopy.BaseItem.Id != TOOLS)
+                if (associate.GetItemInSlot(InventorySlot.LeftHand) == null && offhandCopy.BaseItem.Id != Torch && offhandCopy.BaseItem.Id != Tools)
                 {
                     obj.ItemActivator.LoginPlayer.SendServerMessage
-                    ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be 'Torch' or 'Tools, Left' for customization.", COLOR_RED);
+                    ("[Associate Customizer] Offhand appearance not copied. The copied creature's offhand base item must be 'Torch' or 'Tools, Left' for customization.", ColorRed);
                     associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
                 }
                 // If associate's offhand isn't empty, the base items must match
                 if (associate.GetItemInSlot(InventorySlot.LeftHand) != null && associate.GetItemInSlot(InventorySlot.LeftHand).BaseItem != offhandCopy.BaseItem)
                 {
                     obj.ItemActivator.LoginPlayer.SendServerMessage
-                    ("[Associate Customizer] Offhand appearance not copied. The base offhand items must match for customization.", COLOR_RED);
+                    ("[Associate Customizer] Offhand appearance not copied. The base offhand items must match for customization.", ColorRed);
                     associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
                 }
         }
@@ -320,9 +322,9 @@ public class AssociateCustomizerService
         }
 
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ($"[Associate Customizer] Custom appearance stored for {associate.OriginalName}", COLOR_GREEN);
+            ($"[Associate Customizer] Custom appearance stored for {associate.OriginalName}", ColorGreen);
         obj.ItemActivator.LoginPlayer.SendServerMessage
-            ("Hand the tool over to the player and have them summon the associate to make sure it applies properly!", COLOR_WHITE);
+            ("Hand the tool over to the player and have them summon the associate to make sure it applies properly!", ColorWhite);
     }
 
     /// <summary>
@@ -332,10 +334,10 @@ public class AssociateCustomizerService
     {
         // Works only if the owner is player controlled, has the tool in inventory, and the associate isn't dominated
         if (!obj.Owner.IsPlayerControlled) return;
-        if (!obj.Owner.Inventory.Items.Any(item => item.Tag == TOOL_TAG)) return;
+        if (!obj.Owner.Inventory.Items.Any(item => item.Tag == ToolTag)) return;
         if (obj.AssociateType == AssociateType.Dominated) return;
 
-        NwItem associateCustomizer = obj.Owner.Inventory.Items.First(item => item.Tag == TOOL_TAG);
+        NwItem associateCustomizer = obj.Owner.Inventory.Items.First(item => item.Tag == ToolTag);
         NwCreature associate = obj.Associate;
 
         string associateResRef = associate.ResRef;;
@@ -393,18 +395,18 @@ public class AssociateCustomizerService
 
         // Hide helmet, cloak, and shield if the copied creature has none but the associate does
         if (creatureCopy.GetItemInSlot(InventorySlot.Head) == null && associate.GetItemInSlot(InventorySlot.Head) != null)
-            associate.GetItemInSlot(InventorySlot.Head).HiddenWhenEquipped = TRUE;
+            associate.GetItemInSlot(InventorySlot.Head).HiddenWhenEquipped = True;
         if (creatureCopy.GetItemInSlot(InventorySlot.Cloak) == null && associate.GetItemInSlot(InventorySlot.Cloak) != null)
-            associate.GetItemInSlot(InventorySlot.Cloak).HiddenWhenEquipped = TRUE;
+            associate.GetItemInSlot(InventorySlot.Cloak).HiddenWhenEquipped = True;
         if (creatureCopy.GetItemInSlot(InventorySlot.LeftHand) == null && associate.GetItemInSlot(InventorySlot.LeftHand) != null
             && associate.GetItemInSlot(InventorySlot.LeftHand).BaseItem.Category == BaseItemCategory.Shield)
-            associate.GetItemInSlot(InventorySlot.LeftHand).HiddenWhenEquipped = TRUE;
+            associate.GetItemInSlot(InventorySlot.LeftHand).HiddenWhenEquipped = True;
 
         // After the creature reskin has been successfully completed for the first time, store the custom appearance in the tool description
         if(!associateCustomizer.Description.Contains(associate.OriginalName))
         {
             string toolDescription = associateCustomizer.Description;
-            string storedString = StringExtensions.ColorString($"{associate.OriginalName}is {creatureCopy.Name}", COLOR_GREEN);
+            string storedString = StringExtensions.ColorString($"{associate.OriginalName}is {creatureCopy.Name}", ColorGreen);
             if (obj.AssociateType == AssociateType.AnimalCompanion || obj.AssociateType == AssociateType.Familiar)
             {
                 string companionType = "unknown";
@@ -435,9 +437,9 @@ public class AssociateCustomizerService
                 if (!associateCustomizer.Description.Contains(companionType))
                 {
                     if (obj.AssociateType == AssociateType.AnimalCompanion)
-                    storedString = StringExtensions.ColorString($"Companion {companionType} is {creatureCopy.Name}", COLOR_GREEN);
+                    storedString = StringExtensions.ColorString($"Companion {companionType} is {creatureCopy.Name}", ColorGreen);
                     if (obj.AssociateType == AssociateType.Familiar)
-                    storedString = StringExtensions.ColorString($"Familiar {companionType} is {creatureCopy.Name}", COLOR_GREEN);
+                    storedString = StringExtensions.ColorString($"Familiar {companionType} is {creatureCopy.Name}", ColorGreen);
                 }
             }
             associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
