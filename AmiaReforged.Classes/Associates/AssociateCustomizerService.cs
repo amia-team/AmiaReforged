@@ -836,7 +836,7 @@ public class AssociateCustomizerService
         associate.MovementRate = originalMovement;
         associate.Name = creatureCopy.Name;
         associate.Size = originalSize;
-        associate.PortraitId = creatureCopy.PortraitId;
+        associate.PortraitResRef = creatureCopy.PortraitResRef;
         associate.SoundSet = creatureCopy.SoundSet;
         associate.FootstepType = creatureCopy.FootstepType;
         associate.Gender = creatureCopy.Gender;
