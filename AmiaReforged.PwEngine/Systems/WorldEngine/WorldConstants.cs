@@ -1,6 +1,6 @@
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
-internal static class WorldConfigConstants
+internal static class WorldConstants
 {
     public const string InitializedKey = "economy_initialized";
     public const string ConfigTypeBool = "bool";

@@ -59,7 +59,7 @@ public class NodeCreator(EconomySubsystem economy)
             return;
         }
 
-        NwPlaceable? plc = NwPlaceable.Create(WorldConfigConstants.GenericNodePlcRef, location);
+        NwPlaceable? plc = NwPlaceable.Create(WorldConstants.GenericNodePlcRef, location);
 
         if (plc is null)
         {

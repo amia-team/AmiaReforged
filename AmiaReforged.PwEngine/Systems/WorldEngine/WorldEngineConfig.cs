@@ -21,7 +21,7 @@ public class WorldEngineConfig(PwContextFactory factory) : IWorldConfigProvider
         try
         {
             WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
-                b.Key == key && b.ValueType == WorldConfigConstants.ConfigTypeBool);
+                b.Key == key && b.ValueType == WorldConstants.ConfigTypeBool);
 
             if (entry != null) value = bool.Parse(entry.Value);
         }
@@ -38,7 +38,7 @@ public class WorldEngineConfig(PwContextFactory factory) : IWorldConfigProvider
         try
         {
             WorldConfiguration? entry = _ctx.WorldConfiguration.FirstOrDefault(b =>
-                b.Key == key && b.ValueType == WorldConfigConstants.ConfigTypeBool);
+                b.Key == key && b.ValueType == WorldConstants.ConfigTypeBool);
 
             bool exists = entry != null;
             if (!exists)
@@ -47,7 +47,7 @@ public class WorldEngineConfig(PwContextFactory factory) : IWorldConfigProvider
                 {
                     Key = key,
                     Value = value.ToString(),
-                    ValueType = WorldConfigConstants.ConfigTypeBool
+                    ValueType = WorldConstants.ConfigTypeBool
                 });
 
                 return;

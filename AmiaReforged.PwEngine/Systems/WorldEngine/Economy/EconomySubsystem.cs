@@ -39,7 +39,7 @@ public class EconomySubsystem
 
         UpdateStoredDefinitions();
 
-        bool initialized = _config.GetBoolean(WorldConfigConstants.InitializedKey);
+        bool initialized = _config.GetBoolean(WorldConstants.InitializedKey);
         if (!initialized)
         {
             Log.Info("----- DOING FIRST TIME SETUP -----");
@@ -84,7 +84,7 @@ public class EconomySubsystem
                     continue;
                 }
 
-                NwPlaceable? plc = NwPlaceable.Create(WorldConfigConstants.GenericNodePlcRef, location);
+                NwPlaceable? plc = NwPlaceable.Create(WorldConstants.GenericNodePlcRef, location);
                 if (plc == null)
                 {
                     Log.Error($"Failed to generate PLC for {instance.Definition.Name} in {area.ResRef}");
@@ -117,7 +117,7 @@ public class EconomySubsystem
 
         Log.Info("All regions processed.");
         Log.Info("Setting initialized to true in config.");
-        _config.SetBoolean(WorldConfigConstants.InitializedKey, true);
+        _config.SetBoolean(WorldConstants.InitializedKey, true);
     }
 
     private void InitializeAreaNodeSpawnZones(RegionDefinition region)
@@ -139,7 +139,7 @@ public class EconomySubsystem
             int numberOfPointsInArea = area.FindObjectsOfTypeInArea<NwWaypoint>().Count();
             Log.Info($"There are {numberOfPointsInArea} in {area.Name}");
             List<NwTrigger> nodeSpawnTriggers = area.FindObjectsOfTypeInArea<NwTrigger>()
-                .Where(t => t.Tag == WorldConfigConstants.ResourceNodeZoneTag).ToList();
+                .Where(t => t.Tag == WorldConstants.ResourceNodeZoneTag).ToList();
             Log.Info($"Found {nodeSpawnTriggers.Count} node spawn zones");
 
 
@@ -223,7 +223,7 @@ public class EconomySubsystem
         while (NWScript.GetIsObjectValid(currentWp) == NWScript.TRUE)
         {
             Log.Info($"Current WP is {currentWp}");
-            if (NWScript.GetResRef(currentWp) != WorldConfigConstants.NodeSpawnPointRef)
+            if (NWScript.GetResRef(currentWp) != WorldConstants.NodeSpawnPointRef)
             {
                 Log.Info("Waypoint not a spawn node, skipping");
                 currentWp = NWScript.GetNextInPersistentObject(trigger, NWScript.OBJECT_TYPE_WAYPOINT);
@@ -385,7 +385,7 @@ public class EconomySubsystem
                 totalValue = (int)(totalValue + totalValue * matDef.CostModifier);
             }
 
-            NWScript.SetLocalInt(item, WorldConfigConstants.MarketValueBaseLvar, totalValue);
+            NWScript.SetLocalInt(item, WorldConstants.MarketValueBaseLvar, totalValue);
 
             ItemProperty qualProp = ItemProperty.Quality((IPQuality)quality);
             item.AddItemProperty(qualProp, EffectDuration.Permanent);
