@@ -5,7 +5,7 @@ using NLog.Config;
 using NLog.Targets;
 using NUnit.Framework;
 
-namespace AmiaReforged.PwEngine.Tests;
+namespace AmiaReforged.PwEngine.Tests.Systems.Economy;
 
 [TestFixture]
 public class MaterialLoaderTests

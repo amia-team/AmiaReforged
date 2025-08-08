@@ -5,12 +5,12 @@ using NLog.Config;
 using NLog.Targets;
 using NUnit.Framework;
 
-namespace AmiaReforged.PwEngine.Tests;
+namespace AmiaReforged.PwEngine.Tests.Systems.Economy;
 
 [TestFixture]
-public class ResourceNodeLoaderTests
+public class ItemLoaderTests
 {
-    private ResourceNodeLoader _sut = null!;
+    private ItemLoader _sut = null!;
 
     [OneTimeSetUp]
     public void Setup()
@@ -35,7 +35,7 @@ public class ResourceNodeLoaderTests
     [Test]
     public void Should_Load_With_No_Errors()
     {
-        _sut = new ResourceNodeLoader();
+        _sut = new ItemLoader();
 
         _sut.LoadAll();
 
@@ -51,7 +51,7 @@ public class ResourceNodeLoaderTests
     [Test]
     public void Result_Should_Not_Be_Empty_Set()
     {
-        _sut = new ResourceNodeLoader();
+        _sut = new ItemLoader();
 
         _sut.LoadAll();
 

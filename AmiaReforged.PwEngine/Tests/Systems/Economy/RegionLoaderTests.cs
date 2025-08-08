@@ -5,12 +5,12 @@ using NLog.Config;
 using NLog.Targets;
 using NUnit.Framework;
 
-namespace AmiaReforged.PwEngine.Tests;
+namespace AmiaReforged.PwEngine.Tests.Systems.Economy;
 
 [TestFixture]
-public class ClimateLoaderTests
+public class RegionLoaderTests
 {
-    private ClimateLoader _sut = null!;
+    private RegionLoader _sut = null!;
 
     [OneTimeSetUp]
     public void Setup()
@@ -35,7 +35,7 @@ public class ClimateLoaderTests
     [Test]
     public void Should_Load_With_No_Errors()
     {
-        _sut = new ClimateLoader();
+        _sut = new RegionLoader();
 
         _sut.LoadAll();
 
@@ -45,16 +45,16 @@ public class ClimateLoaderTests
             (current, resourceLoadError) =>
                 $"{resourceLoadError.FilePath}, {resourceLoadError.ErrorMessage}, {resourceLoadError.Exception}\n{current}");
 
-        Assert.Fail($"Failed to load some or all Climates: some files had invalid parameters\n {failureString}");
+        Assert.Fail($"Failed to load some or all Region definitions: some files had invalid parameters\n {failureString}");
     }
 
     [Test]
     public void Result_Should_Not_Be_Empty_Set()
     {
-        _sut = new ClimateLoader();
+        _sut = new RegionLoader();
 
         _sut.LoadAll();
 
-        Assert.That(_sut.LoadedResources, Is.Not.Empty, "Climates should have been loaded.");
+        Assert.That(_sut.LoadedResources, Is.Not.Empty, "Definitions should have been loaded.");
     }
 }
