@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Economy.YamlLoaders;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 using YamlDotNet.Serialization;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
@@ -33,6 +34,10 @@ public class EconomyDefinitions
     public EconomyDefinitions(IWorldConfigProvider config, MaterialLoader materials, ResourceNodeLoader resourceNodes,
         ClimateLoader climates, RegionLoader regions, ItemLoader items)
     {
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+
+        if (environment == "live") return;
+
         _config = config;
         _materials = materials;
         _resourceNodes = resourceNodes;

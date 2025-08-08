@@ -4,15 +4,25 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Economy;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Economy;
 
 [ServiceBinding(typeof(EconomyPersistence))]
-public class EconomyPersistence(PwContextFactory factory)
+public class EconomyPersistence
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private EconomyContext _context = factory.CreateEconomyContext();
+    private EconomyContext _context;
+
+    public EconomyPersistence(PwContextFactory factory)
+    {
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+
+        if (environment == "live") return;
+
+        _context = factory.CreateEconomyContext();
+    }
 
     public bool StoreNewNode(ResourceNodeInstance resourceNodeInstance)
     {

@@ -4,15 +4,25 @@ using AmiaReforged.Core.Services;
 using AmiaReforged.PwEngine.Database;
 using Anvil.Services;
 using NLog;
+using NWN.Core.NWNX;
 using WorldConfiguration = AmiaReforged.PwEngine.Database.Entities.WorldConfiguration;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
 [ServiceBinding(typeof(IWorldConfigProvider))]
-public class WorldEngineConfig(PwContextFactory factory) : IWorldConfigProvider
+public class WorldEngineConfig : IWorldConfigProvider
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly PwEngineContext _ctx = factory.CreateDbContext();
+    private readonly PwEngineContext _ctx;
+
+    public WorldEngineConfig(PwContextFactory factory)
+    {
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+
+        if (environment == "live") return;
+
+        _ctx = factory.CreateDbContext();
+    }
 
     public bool GetBoolean(string key)
     {

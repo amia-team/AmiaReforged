@@ -28,6 +28,11 @@ public class EconomySubsystem
 
     public EconomySubsystem(EconomyDefinitions definitions, EconomyPersistence persistence, IWorldConfigProvider config)
     {
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+
+        if (environment == "live") return;
+
+
         _config = config;
         _nodeCreator = new NodeCreator(this);
         Definitions = definitions;
