@@ -5,7 +5,7 @@ Description: Metalworking is a fundamental craft that involves the manipulation 
 Knowledge:
   - Name: Basic Metallurgy
     Tag: metallurgy_basic
-    Description: You know the properties of various raw metals. All metallurgy products are never worse than Below Average.
+    Description: You know the properties of various raw metals. All metallurgy products are never worse than "Below Average" quality.
     Tier: Novice
     Effects:
       - EffectTag: improve_metals
@@ -13,7 +13,7 @@ Knowledge:
         EffectMagnitude: 2
   - Name: Advanced Metallurgy
     Tag: metallurgy_advanced
-    Description: You have a professional understanding of metals and their properties. All metallurgy products are never worse than Average
+    Description: You have a professional understanding of metals and their properties. All metallurgy products are never worse than "Average" quality.
     Tier: Journeyman
     Prerequisites:
       - metallurgy_basic
@@ -23,7 +23,7 @@ Knowledge:
         EffectMagnitude: 3
   - Name: Master Metallurgy
     Tag: metallurgy_master
-    Description: You have an unmatched understanding of the properties of metal. All metallurgy products are never worse than "Good" quality
+    Description: You have an unmatched understanding of the properties of metal. All metallurgy products are never worse than "Good" quality.
     Tier: Master
     Prerequisites:
       - metallurgy_basic
