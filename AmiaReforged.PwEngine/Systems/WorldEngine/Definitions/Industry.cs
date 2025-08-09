@@ -23,7 +23,9 @@ public class Industry
 
 public class Field
 {
-    public string Name { get; set; }
+    public required string Name { get; set; }
+    public required string Description { get; set; }
+    public required string ParentIndustry { get; set; }
     public List<Knowledge>? Knowledge { get; set; }
 }
 
@@ -35,7 +37,9 @@ public class Knowledge
     public FieldRank Rank { get; set; } = FieldRank.None;
 
     public IReadOnlyCollection<ActionEffect>? Effects { get; set; }
+
 }
+
 
 public enum FieldRank
 {
