@@ -520,70 +520,72 @@ public class AssociateCustomizerService
 
         ApplyVfxFromCopy(associateCustomizer, associateResRef, associate);
 
-        UpdateAssociateCustomizerDescription(associateCustomizer, associate, creatureCopy);
+        associateCustomizer.Description =
+            associate.AssociateType is AssociateType.AnimalCompanion or AssociateType.Familiar ?
+            UpdateCompanionName(associateCustomizer.Description, associate, creatureCopy.Name)
+            : UpdateAssociateName(associateCustomizer.Description, associate, creatureCopy.Name);
     }
 
     /// <summary>
-    /// Updates the description of the Associate Customizer to include which associates are customized and what they're
-    /// customized into
+    /// Updates the description to include information about the customized associate
     /// </summary>
-    private void UpdateAssociateCustomizerDescription(NwItem associateCustomizer, NwCreature associate, NwCreature creatureCopy)
+    private string UpdateAssociateName(string customizerDescription, NwCreature associate, string newName)
     {
-        if (associateCustomizer.Description.Contains(associate.OriginalName)) return;
+        if (customizerDescription.Contains(associate.OriginalName)) return customizerDescription;
 
-        string toolDescription = associateCustomizer.Description;
+        string nameUpdate = $"{associate.OriginalName}is {newName}".ColorString(ColorGreen);
 
-        string storedString = $"{associate.OriginalName}is {creatureCopy.Name}".ColorString(ColorGreen);
+        return $"{nameUpdate}\n\n{customizerDescription}";
+    }
 
-        if (associate.AssociateType is AssociateType.AnimalCompanion or AssociateType.Familiar)
+    /// <summary>
+    /// Updates the description to include information about the customized animal companion or familiar
+    /// </summary>
+    private string UpdateCompanionName(string customizerDescription, NwCreature associate, string newName)
+    {
+        string companionType = associate.AssociateType switch
         {
-            Dictionary<string, string> companionMap = new()
+            AssociateType.AnimalCompanion => associate.AnimalCompanionType switch
             {
-                ["badger"] = "badger",
-                ["bat"] = "bat",
-                ["bear"] = "bear",
-                ["boar"] = "boar",
-                ["drat"] = "dire rat",
-                ["dwlf"] = "dire wolf",
-                ["eye"] = "eyeball",
-                ["fdrg"] = "faerie dragon",
-                ["fire"] = "fire mephit",
-                ["spid"] = "spider",
-                ["hawk"] = "hawk",
-                ["hell"] = "hell hound",
-                ["ice"] = "ice mephit",
-                ["imp"] = "imp",
-                ["pant"] = "panther",
-                ["crag"] = "panther",
-                ["pixi"] = "pixie",
-                ["pdrg"] = "pseudodragon",
-                ["rave"] = "raven",
-                ["wolf"] = "wolf",
-                ["const"] = "construct",
-                ["phase"] = "phase spider",
-                ["skele"] = "skeleton"
-            };
-
-            string companionType = "unknown";
-
-            foreach (KeyValuePair<string, string> entry in companionMap.
-                         Where(entry => associate.ResRef.Contains(entry.Key)))
+                AnimalCompanionCreatureType.Badger => "badger",
+                AnimalCompanionCreatureType.Bear => "bear",
+                AnimalCompanionCreatureType.Boar => "boar",
+                AnimalCompanionCreatureType.DireRat => "dire rat",
+                AnimalCompanionCreatureType.DireWolf => "dire wolf",
+                AnimalCompanionCreatureType.Hawk => "hawk",
+                AnimalCompanionCreatureType.Panther => "panther",
+                AnimalCompanionCreatureType.Spider => "spider",
+                AnimalCompanionCreatureType.Wolf => "wolf",
+                _ => "unknown"
+            },
+            AssociateType.Familiar => associate.FamiliarType switch
             {
-                companionType = entry.Value;
-                break;
-            }
+                FamiliarCreatureType.Bat => "bat",
+                FamiliarCreatureType.Eyeball => "eyeball",
+                FamiliarCreatureType.CragCat => "panther",
+                FamiliarCreatureType.FairyDragon => "faerie dragon",
+                FamiliarCreatureType.FireMephit => "fire mephit",
+                FamiliarCreatureType.HellHound => "hell hound",
+                FamiliarCreatureType.IceMephit => "ice mephit",
+                FamiliarCreatureType.Imp => "imp",
+                FamiliarCreatureType.Pixie => "pixie",
+                FamiliarCreatureType.PseudoDragon => "pseudodragon",
+                FamiliarCreatureType.Raven => "raven",
+                _ when associate.ResRef.Contains("const") => "construct",
+                _ when associate.ResRef.Contains("phase") => "phase spider",
+                _ when associate.ResRef.Contains("skele") => "skeleton",
+                _ => "unknown"
+            },
+            _ => "unknown"
+        };
 
-            if (!associateCustomizer.Description.Contains(companionType))
-            {
-                storedString = associate.AssociateType switch
-                {
-                    AssociateType.AnimalCompanion => $"Companion {companionType} is {creatureCopy.Name}".ColorString(ColorGreen),
-                    AssociateType.Familiar => $"Familiar {companionType} is {creatureCopy.Name}".ColorString(ColorGreen),
-                    _ => storedString
-                };
-            }
-        }
-        associateCustomizer.Description = $"{storedString}\n\n{toolDescription}";
+        if (customizerDescription.Contains(companionType) &&
+            customizerDescription.Contains(newName)) return customizerDescription;
+
+        string prefix = associate.AssociateType == AssociateType.AnimalCompanion ? "Companion" : "Familiar";
+        string nameUpdate = $"{prefix} {companionType} is {newName}".ColorString(ColorGreen);
+
+        return $"{nameUpdate}\n\n{customizerDescription}";
     }
 
     /// <summary>
