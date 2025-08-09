@@ -2,7 +2,7 @@ using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Definitions;
 
-public class EconomyItem
+public record EconomyItem
 {
     public required string BaseItemResRef { set; get; }
     public required string Name { get; set; }
@@ -10,6 +10,8 @@ public class EconomyItem
     public required string Tag { get; set; }
     public int Appearance { get; set; } = 1;
 }
+
+
 
 public class EconomyItemInstance
 {
@@ -23,7 +25,7 @@ public class EconomyItemInstance
     /// '0' means no known maker.
     /// </summary>
     public long CharacterId { get; set; } = 0;
-    
+
     /// <summary>
     /// How 'rich' the resource is. Impacts how many extra items get created when processed at the appropriate workshop.
     /// Only really applies to raw goods.
