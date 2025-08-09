@@ -10,6 +10,7 @@ public enum ItemType
     Ore,
     Ingot,
     Log,
+    Fuel, // Coke, charcoal, firewood
     Plank,
     // Unprocessed food and drink ingredients
     FoodIngredient,
