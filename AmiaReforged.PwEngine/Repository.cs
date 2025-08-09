@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 namespace AmiaReforged.PwEngine;
 
 /// <summary>
-///     Implements a generic repository for database operations. For dependency injection purposes, use
-///   
+///     Implements a generic repository for database operations. For dependency injection, use
+///
 /// </summary>
 /// <typeparam name="T"></typeparam>
 /// <typeparam name="TId"></typeparam>

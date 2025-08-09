@@ -4,7 +4,7 @@ Feature: Item Price Calculation
     plus its base cost multiplied by its quality and material cost modifiers.
 
         Scenario: Item is bought in a region with standard demand (1.0)
-            Given an Item
+            Given an Sale Transaction with an Item named "Oak Log"
             And the Base Cost is 50
             And the Item is made of Oak
             And the Item quality is Average
