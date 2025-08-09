@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using AmiaReforged.PwEngine.Systems.WorldEngine;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Common;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Economy.HarvestActions;
 
 namespace AmiaReforged.PwEngine.Database.Entities.Economy;

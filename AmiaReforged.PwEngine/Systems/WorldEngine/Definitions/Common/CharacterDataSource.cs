@@ -1,9 +1,10 @@
+using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 using AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping;
 using Anvil;
 using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Common;
 
 public class CharacterDataSource(NwPlayer player) : ILedgerDataSource
 {

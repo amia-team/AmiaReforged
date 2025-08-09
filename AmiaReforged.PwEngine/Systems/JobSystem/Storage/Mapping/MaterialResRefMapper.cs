@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Common;
 using Anvil.Services;
 using static AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping.JobSystemResRefConsts;
 

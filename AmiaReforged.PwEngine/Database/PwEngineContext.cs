@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Common;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;

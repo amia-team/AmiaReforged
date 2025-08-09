@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Common;
 
 public enum ToolEnum
 {

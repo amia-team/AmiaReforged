@@ -1,4 +1,6 @@
-﻿namespace AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+﻿using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Common;
 
 public class LedgerEntry
 {

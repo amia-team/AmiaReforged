@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Common;
 
 namespace AmiaReforged.PwEngine.Systems.JobSystem.Entities;
 
