@@ -118,9 +118,7 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
             $"Universal Save +{UniversalSaveBonus().Bonus}\n" +
             $"Physical Resistance +{DamageResistanceBonus().Bonus}";
 
-        feedback.ColorString(ColorConstants.Olive);
-
-        player.SendServerMessage(feedback);
+        player.SendServerMessage(feedback.ColorString(ColorConstants.Olive));
     }
 
     private Effect EpicCompanionEffect()
@@ -290,8 +288,6 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
                 break;
         }
 
-        feedback.ColorString(ColorConstants.Olive);
-
-        player.SendServerMessage(feedback);
+        player.SendServerMessage(feedback.ColorString(ColorConstants.Olive));
     }
 }

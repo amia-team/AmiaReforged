@@ -112,7 +112,7 @@ public static class CustomAppearance
             customizerDescription.Contains(newName)) return customizerDescription;
 
         string prefix = associateType == AssociateType.AnimalCompanion ? "Companion" : "Familiar";
-        string nameUpdate = $"{prefix} {companionType} is {newName}".ColorString(ColorConstants.Green);
+        string nameUpdate = $"{prefix} {companionType} is{newName}".ColorString(ColorConstants.Green);
 
         return $"{nameUpdate}\n\n{customizerDescription}";
     }
