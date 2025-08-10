@@ -18,7 +18,7 @@ public class AssociateBonusService
 
     private void ApplyAssociateBonus(OnAssociateAdd eventData)
     {
-        switch (eventData.Associate.AssociateType)
+        switch (eventData.AssociateType)
         {
             case AssociateType.AnimalCompanion:
                 CompanionBonuses companionBonuses = new(eventData.Owner, eventData.Associate);

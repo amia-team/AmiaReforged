@@ -27,7 +27,7 @@ public class AssociateAppearanceService
         NwItem? associateCustomizer = eventData.Owner.Inventory.Items.FirstOrDefault(item => item.Tag == AssociateCustomizerTag);
 
         bool associateHasCustomAppearance =
-            CustomAppearance.ApplyCustomAppearance(eventData.Associate, associateCustomizer);
+            CustomAppearance.ApplyCustomAppearance(eventData.Associate, eventData.AssociateType, associateCustomizer);
 
         if (associateHasCustomAppearance) return;
 
