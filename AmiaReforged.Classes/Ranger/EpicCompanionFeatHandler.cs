@@ -31,19 +31,16 @@ public class EpicCompanionFeatHandler
 
         LocalVariableInt epicCompanionAppearance = pcKey.GetObjectVariable<LocalVariableInt>(EpicCompanionAppearanceVar);
 
-        switch (epicCompanionAppearance.Value)
+        if (epicCompanionAppearance.Value == 0)
         {
-            case 0:
-                epicCompanionAppearance.Value = 1;
-                player.SendServerMessage("Opted in for the Epic Companion appearance.");
-                break;
-
-            case 1:
-            {
-                epicCompanionAppearance.Delete();
-                player.SendServerMessage("Opted out of the Epic Companion appearance.");
-                break;
-            }
+            epicCompanionAppearance.Value = 1;
+            player.SendServerMessage("Opted in for the Epic Companion appearance.");
+            return;
         }
+
+        if (epicCompanionAppearance.Value == 0) return;
+
+        epicCompanionAppearance.Delete();
+        player.SendServerMessage("Opted out of the Epic Companion appearance.");
     }
 }
