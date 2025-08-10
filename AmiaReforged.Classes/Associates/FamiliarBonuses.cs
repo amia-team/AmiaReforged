@@ -111,8 +111,6 @@ public class FamiliarBonuses(NwCreature owner, NwCreature associate)
             $"Universal Save +{UniversalSaveBonus().Bonus}\n" +
             $"Physical Resistance +{DamageResistanceBonus().Bonus}";
 
-        feedback.ColorString(ColorConstants.Magenta);
-
-        player.SendServerMessage(feedback);
+        player.SendServerMessage(feedback.ColorString(ColorConstants.Magenta));
     }
 }
