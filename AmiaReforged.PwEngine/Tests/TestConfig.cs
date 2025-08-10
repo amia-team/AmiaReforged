@@ -6,7 +6,7 @@ public static class TestConfig
 {
     static TestConfig()
     {
-        DotNetEnv.Env.Load("Tests/Systems/Economy/Resources/test.env",  new LoadOptions());
+        DotNetEnv.Env.Load("Tests/Systems/Economy/Resources/test.env",  LoadOptions.TraversePath());
         ResourcesPath = Environment.GetEnvironmentVariable("TEST_FILE_LOCATION") ?? "";
     }
 

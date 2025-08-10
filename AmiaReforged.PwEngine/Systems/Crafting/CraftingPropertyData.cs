@@ -262,28 +262,6 @@ public class CraftingPropertyData
                 SkillProperties.Personal,
                 GenericItemProperties.Regeneration,
                 AbilityProperties.Abilities,
-                //Ranged have extra Massive Critical options
-                new(categoryId: "ranged_massive_criticals")
-                {
-                    Label = "Massive Criticals",
-                    Properties =
-                    [
-                        new CraftingProperty
-                        {
-                            PowerCost = 1,
-                            ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_1d12)!,
-                            GuiLabel = "1d12 Massive Criticals",
-                            CraftingTier = CraftingTier.Wondrous
-                        },
-                        new CraftingProperty
-                        {
-                            PowerCost = 2,
-                            ItemProperty = NWScript.ItemPropertyMassiveCritical(NWScript.IP_CONST_DAMAGEBONUS_2d12)!,
-                            GuiLabel = "2d12 Massive Criticals",
-                            CraftingTier = CraftingTier.Wondrous
-                        }
-                    ]
-                }
             ];
 
             Properties.TryAdd(weapon, properties);

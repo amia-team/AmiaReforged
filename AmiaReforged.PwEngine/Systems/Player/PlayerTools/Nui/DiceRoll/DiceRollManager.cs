@@ -17,7 +17,7 @@ public sealed class DiceRollManager
 
         IEnumerable<Type> enumerable = types as Type[] ?? types.ToArray();
 
-        foreach (var type in enumerable)
+        foreach (Type type in enumerable)
         {
             object[] attributes = type.GetCustomAttributes(typeof(DiceRollAttribute), false);
             if (attributes.Length <= 0) continue;

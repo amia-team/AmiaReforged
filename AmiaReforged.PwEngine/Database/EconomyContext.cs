@@ -1,0 +1,51 @@
+﻿using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Database.Entities.Economy;
+using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+
+namespace AmiaReforged.PwEngine.Database;
+
+[ServiceBinding(typeof(EconomyContext))]
+public class EconomyContext : DbContext
+{
+    private readonly string _connectionString = ConnectionString();
+
+    public DbSet<ResourceNodeDefinition> NodeDefinitions { get; set; } = null!;
+    public DbSet<ResourceNodeInstance> NodeInstances { get; set; } = null!;
+    public DbSet<SavedLocation> SavedLocations { get; set; } = null!;
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            NpgsqlDataSourceBuilder dataSourceBuilder = new NpgsqlDataSourceBuilder(_connectionString);
+            dataSourceBuilder.EnableDynamicJson();
+            NpgsqlDataSource dataSource = dataSourceBuilder.Build();
+
+            optionsBuilder.UseNpgsql(dataSource);
+            optionsBuilder.EnableSensitiveDataLogging();
+        }
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ResourceNodeDefinition>()
+            .Property(e => e.YieldItems)
+            .HasColumnType("jsonb");
+    }
+
+
+    private static string ConnectionString()
+    {
+        NpgsqlConnectionStringBuilder connectionBuilder = new()
+        {
+            Database = EngineDbConfig.Database,
+            Host = EngineDbConfig.Host,
+            Username = EngineDbConfig.Username,
+            Password = EngineDbConfig.Password,
+            Port = EngineDbConfig.Port
+        };
+        return connectionBuilder.ConnectionString;
+    }
+}

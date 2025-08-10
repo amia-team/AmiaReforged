@@ -1,6 +1,0 @@
-name: "Leatherworking"
-description: "Leatheworking encompasses cobbling, tanning, and working with raw or tanned hides to create garments and apparel"
-fields:
-  - Cobbler
-  - Leatherworker
-  - Tanner

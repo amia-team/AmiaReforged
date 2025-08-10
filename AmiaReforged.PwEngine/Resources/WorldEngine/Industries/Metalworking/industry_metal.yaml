@@ -1,0 +1,30 @@
+Name: Metalworking
+Tag: industry_metalworking
+Description: Metalworking is a fundamental craft that involves the manipulation and processing of metals into useful items. This industry encompasses various techniques including smelting, forging, casting, and shaping metals to create tools, weapons, armor, and other essential items. Skilled metalworkers must understand the properties of different metals, proper heating and cooling techniques, and the use of specialized tools and equipment.
+# Industries can have general knowledge that all practitioners in their fields can know about.
+Knowledge:
+  - Name: Basic Metallurgy
+    Tag: metallurgy_basic
+    Description: You know the properties of various raw metals. All metallurgy products are never worse than "Below Average" quality.
+    Tier: Novice
+    Effects:
+      - EffectTag: improve_metals
+        EffectType: NewQualityBaseline
+        EffectMagnitude: 2
+  - Name: Advanced Metallurgy
+    Tag: metallurgy_advanced
+    Description: You have a professional understanding of metals and their properties. All metallurgy products are never worse than "Average" quality.
+    Tier: Journeyman
+    Prerequisites:
+      - metallurgy_basic
+    Effects:
+      - EffectTag: improve_metals
+        EffectType: NewQualityBaseline
+        EffectMagnitude: 3
+  - Name: Master Metallurgy
+    Tag: metallurgy_master
+    Description: You have an unmatched understanding of the properties of metal. All metallurgy products are never worse than "Good" quality.
+    Tier: Master
+    Prerequisites:
+      - metallurgy_basic
+      - metallurgy_advanced

@@ -1,18 +1,14 @@
 Name: "Native Copper Vein"
 Tag: ore_node_copper
-Appearance: mine_deposit_copper
-Description: >
-  Copper is a reddish metal sometimes found on its own in the earth, needing little work to shape. Folk say it’s one of the first metals ever used, hammered into tools and trinkets before men knew how to smelt iron. More often, though, it’s dug up in green and blue stones, which must be heated and broken down to get the metal out.
-
-  It’s softer than iron but doesn’t rust the same way—just goes green if left out too long. Copper carries heat and strange energies well, so it’s used in charms, wiring of magical devices, and sometimes alchemical vessels. Miners know the bright green stains on rock often mark copper nearby.
-Yield:
-  - ItemType: Ore
-    Material: Copper
-    Chance: 1.0
-    QualityMin: VeryPoor
-    QualityMax: VeryGood
-  - ItemType: Geode
-    Material: Malachite
-    Chance: 0.05
-    QualityMin: VeryPoor
-    QualityMax: VeryGood
+Type: Ore
+Appearance: 4792
+Description: Copper is a widely used metal found in many alloys, including bronze, which is nearly as effective as iron for forging weapons and armor, and brass.
+HarvestAction: Attack
+RequiredTool: PickAxe
+BaseHarvestTime: 1 # 1 Round
+BaseQuantity: 50 # 50 nuggets in a given node instance as a baseline, before factoring in richness and physical size.
+YieldItems:
+  - ItemTag: ore_copper_native
+    Chance: 1.0 # 100%
+  - ItemTag: geode_malachite
+    Chance: 0.05 # 5%

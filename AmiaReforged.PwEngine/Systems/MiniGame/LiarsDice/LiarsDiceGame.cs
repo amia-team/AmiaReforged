@@ -20,7 +20,7 @@ public class LiarsDiceGame
 
     private void NotifyObservers(GameUpdate update, DicePlayer? recipient = null)
     {
-        foreach (var observer in _observers)
+        foreach (IGameObserver observer in _observers)
         {
             if (recipient == null || recipient == update.Recipient) observer.OnGameEvent(update);
         }
@@ -66,7 +66,7 @@ public class LiarsDiceGame
             return;
         }
 
-        var lastBid = _bids.Values.LastOrDefault();
+        (int quantity, int faceValue)? lastBid = _bids.Values.LastOrDefault();
         if (!lastBid.HasValue) return;
 
         int totalCount = _players.Sum(p => p.Dice.Count(d => d == lastBid.Value.faceValue));

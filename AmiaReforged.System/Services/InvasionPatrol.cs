@@ -39,7 +39,7 @@ public class InvasionPatrol
         int PatrolValue = 4;
         int rewardCount = 1;
         await NwModule.Instance.WaitForObjectContext();
-        var JobJournal = NWScript.GetItemPossessedBy(oPC, sItemTag: "js_jobjournal");
+        uint JobJournal = NWScript.GetItemPossessedBy(oPC, sItemTag: "js_jobjournal");
         if (NWScript.GetIsObjectValid(JobJournal) == 1)
         {
             string PrimaryJob = NWScript.GetLocalString(JobJournal, sVarName: "primaryjob");

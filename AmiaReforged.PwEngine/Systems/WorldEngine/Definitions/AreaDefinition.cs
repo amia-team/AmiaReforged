@@ -10,5 +10,4 @@ public class AreaDefinition
 
     public List<string> SpawnableNodes { get; set; } = [];
 
-    public List<BreakableNodeDefinition> BreakableNodes { get; set; } = [];
 }

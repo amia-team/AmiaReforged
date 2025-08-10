@@ -120,8 +120,8 @@ public class InvasionSpawner
         }
         else // Picks a random one out of the successes to run and resets it
         {
-            var tempInvasion = invasionSuccess[ran];
-            var tempWP = waypointSuccess[ran];
+            InvasionRecord tempInvasion = invasionSuccess[ran];
+            uint tempWP = waypointSuccess[ran];
             tempInvasion.InvasionPercent = 1;
             tempInvasion.RealmChaos += random.Next(10, 15);
             await _invasionService.UpdateInvasionArea(tempInvasion);

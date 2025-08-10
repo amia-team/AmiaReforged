@@ -1,0 +1,5 @@
+MaterialType: Copper
+CostModifier: 0.6
+DurabilityModifier: 0.6
+MagicModifier: 1.4
+WeightModifier: 1.0

@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Systems.JobSystem.Entities;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Definitions.Common;
 using Anvil.Services;
 using static AmiaReforged.PwEngine.Systems.JobSystem.Storage.Mapping.JobSystemResRefConsts;
 
@@ -25,13 +26,13 @@ public class MaterialResRefMapper : IMapAtoB<MaterialEnum, string>
             JsMetIroo => MaterialEnum.Iron,
             JsMetMito => MaterialEnum.Mithral,
             JsMetPlao => MaterialEnum.Platinum,
-            JsMetSilo => MaterialEnum.RegularSilver,
-            JsAlchElea => MaterialEnum.Air,
-            JsAlchElee => MaterialEnum.Earth,
-            JsAlchElef => MaterialEnum.Fire,
-            JsAlchElew => MaterialEnum.Water,
+            JsMetSilo => MaterialEnum.Silver,
+            JsAlchElea => MaterialEnum.Elemental_Air,
+            JsAlchElee => MaterialEnum.Elemental_Earth,
+            JsAlchElef => MaterialEnum.Elemental_Fire,
+            JsAlchElew => MaterialEnum.Elemental_Water,
             JsBlaAdin => MaterialEnum.Adamantine,
-            JsBlaSiin => MaterialEnum.RegularSilver,
+            JsBlaSiin => MaterialEnum.Silver,
             JsBlaStin => MaterialEnum.Steel,
             JsBlaIrin => MaterialEnum.Iron,
             JsBlaPlin => MaterialEnum.Platinum,

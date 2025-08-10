@@ -1,0 +1,10 @@
+BaseItemResRef: econ_msmall3
+Tag: log_oak
+Name: "Oak Log"
+Description: Oak logs are prized for their strength and durability. These dense hardwood logs can be split along the grain using a froe to create planks and shingles. Craftsmen use drawknives to shape and smooth the wood, while adzes help hollow and shape pieces for specialized woodworking projects. The wood's tight grain makes it excellent for furniture and structural timber.
+Appearance: 9
+BaseCost: 90
+MaterialType: Wood_Oak
+ItemType: Log
+MaxQuality: VeryGood
+MinQuality: Poor

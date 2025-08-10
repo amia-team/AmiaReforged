@@ -1,0 +1,9 @@
+BaseItemResRef: econ_msmall3
+Name: "Geode: Malachite"
+Description: "A spherical rock formation containing Malachite, a copper carbonate mineral known for its striking green color and banded patterns. When split open, these geodes reveal beautiful formations of crystalline Malachite, displaying various shades of green from pale to deep forest, often arranged in concentric rings or swirling patterns. The outer shell is typically rough and brownish, concealing the vibrant mineral deposits within."
+Tag: geode_malachite
+ItemType: Geode
+BaseCost: 145
+Appearance: 8
+MaxQuality: VeryGood
+MinQuality: VeryPoor

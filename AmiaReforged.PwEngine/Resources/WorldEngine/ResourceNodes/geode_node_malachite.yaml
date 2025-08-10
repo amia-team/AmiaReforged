@@ -1,0 +1,12 @@
+Name: "Malachite Geode Deposit"
+Tag: geode_node_malachite
+Type: Geode
+Appearance: 4793
+Description: A crystalline formation containing beautiful green malachite, a copper-based mineral known for its distinctive banded patterns and vibrant emerald hue. The surface appears rough and unremarkable, but breaking it open reveals stunning crystalline formations within.
+RequiredTool: PickAxe
+HarvestAction: Attack
+BaseHarvestTime: 1 # 1 Round
+BaseQuantity: 20 # 50 nuggets in a given node instance as a baseline, before factoring in richness and physical size.
+YieldItems:
+  - ItemTag: geode_malachite
+    Chance: 1.0 # 100%

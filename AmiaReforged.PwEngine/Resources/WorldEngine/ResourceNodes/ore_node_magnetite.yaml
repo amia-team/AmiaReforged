@@ -1,0 +1,14 @@
+Name: "Magnetite"
+Tag: ore_node_magnetite
+Type: Ore
+Appearance: 4792 # Mine Deposit, Green
+Description: Magnetite is a naturally magnetic iron ore known for producing sturdy iron when smelted, often found in massive veins.
+RequiredTool: PickAxe
+HarvestAction: Attack
+BaseQuantity: 100
+BaseHarvestTime: 1
+YieldItems:
+  - ItemTag: ore_magnetite
+    Chance: 0.9
+  - ItemTag: geode_crystal
+    Chance: 0.05

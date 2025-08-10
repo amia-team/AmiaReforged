@@ -1,0 +1,12 @@
+Name: "Limonite"
+Tag: ore_node_limonite
+Type: Ore
+Appearance: 4792 # Mine Deposit, Green
+Description: Limonite is a brownish, earthy iron ore formed through the weathering of other iron-rich minerals; it produces lower-grade iron when smelted.
+RequiredTool: PickAxe
+BaseHarvestTime: 1
+BaseQuantity: 50
+HarvestAction: Attack
+YieldItems:
+  - ItemTag: ore_limonite
+    Chance: 0.9
