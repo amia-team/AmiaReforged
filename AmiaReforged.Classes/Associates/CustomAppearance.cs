@@ -7,15 +7,16 @@ public static class CustomAppearance
     /// <summary>
     ///     When the associate is summoned, gets the copied appearance for the associate and customizes it.
     /// </summary>
-    public static bool ApplyCustomAppearance(NwCreature associate, NwItem? associateCustomizer)
+    public static bool ApplyCustomAppearance(NwCreature associate, AssociateType associateType,
+        NwItem? associateCustomizer)
     {
         if (associateCustomizer == null) return false;
-        if (associate.AssociateType == AssociateType.Dominated) return false;
+        if (associateType == AssociateType.Dominated) return false;
 
         string associateResRef = associate.ResRef;
 
         // Animal companion and familiar has a unique resref each level so just nab the first chars
-        if (associate.AssociateType is AssociateType.AnimalCompanion or AssociateType.Familiar)
+        if (associateType is AssociateType.AnimalCompanion or AssociateType.Familiar)
             associateResRef = associate.ResRef[..8];
 
         NwCreature? creatureCopy = GetCreatureCopy(associateCustomizer, associateResRef);
@@ -46,8 +47,8 @@ public static class CustomAppearance
         ApplyVfxFromCopy(associateCustomizer, associateResRef, associate);
 
         associateCustomizer.Description =
-            associate.AssociateType is AssociateType.AnimalCompanion or AssociateType.Familiar ?
-            UpdateCompanionName(associateCustomizer.Description, associate, creatureCopy.Name)
+            associateType is AssociateType.AnimalCompanion or AssociateType.Familiar ?
+            UpdateCompanionName(associateCustomizer.Description, associate, associateType, creatureCopy.Name)
             : UpdateAssociateName(associateCustomizer.Description, associate, creatureCopy.Name);
 
         return true;
@@ -68,9 +69,10 @@ public static class CustomAppearance
     /// <summary>
     /// Updates the description to include information about the customized animal companion or familiar
     /// </summary>
-    private static string UpdateCompanionName(string customizerDescription, NwCreature associate, string newName)
+    private static string UpdateCompanionName(string customizerDescription, NwCreature associate,
+        AssociateType associateType, string newName)
     {
-        string companionType = associate.AssociateType switch
+        string companionType = associateType switch
         {
             AssociateType.AnimalCompanion => associate.AnimalCompanionType switch
             {
@@ -109,7 +111,7 @@ public static class CustomAppearance
         if (customizerDescription.Contains(companionType) &&
             customizerDescription.Contains(newName)) return customizerDescription;
 
-        string prefix = associate.AssociateType == AssociateType.AnimalCompanion ? "Companion" : "Familiar";
+        string prefix = associateType == AssociateType.AnimalCompanion ? "Companion" : "Familiar";
         string nameUpdate = $"{prefix} {companionType} is {newName}".ColorString(ColorConstants.Green);
 
         return $"{nameUpdate}\n\n{customizerDescription}";
