@@ -38,8 +38,6 @@ public class EpicCompanionFeatHandler
             return;
         }
 
-        if (epicCompanionAppearance.Value == 0) return;
-
         epicCompanionAppearance.Delete();
         player.SendServerMessage("Opted out of the Epic Companion appearance.");
     }
