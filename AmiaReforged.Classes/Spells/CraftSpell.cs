@@ -339,9 +339,11 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     {
         List<int> spellPropRows = [];
 
+        int spellId = spell.MasterSpell?.Id ?? spell.Id;
+
         for (int i = 0; i < spellPropTable.RowCount; i++)
         {
-            if (spellPropTable.GetInt(i, "SpellIndex") == spell.Id)
+            if (spellPropTable.GetInt(i, "SpellIndex") == spellId)
                 spellPropRows.Add(i);
         }
 
