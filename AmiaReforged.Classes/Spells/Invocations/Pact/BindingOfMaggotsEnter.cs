@@ -24,7 +24,7 @@ public class BindingOfMaggotsEnter
         int summonCount = warlockLevels < 5 ? 1 : 1 + warlockLevels / 5;
         float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)),
+        IntPtr cooldownEffect = TagEffect(ExtraordinaryEffect(EffectVisualEffect(VFX_NONE)),
             sNewTag: "wlk_summon_cd");
         IntPtr location = GetLocation(enteringObject);
 
@@ -43,21 +43,18 @@ public class BindingOfMaggotsEnter
             // Unsummon previous warlock summons
             NwCreature? warlock = caster.ToNwObject() as NwCreature;
             if (warlock == null) return;
-        
+
             foreach (NwCreature associate in warlock.Associates)
             {
                 if (associate.ResRef.Contains("wlk"))
                     associate.Unsummon();
             }
-            
+
             _ = SummonUtility.SummonMany(warlock, VFX_IMP_DESTRUCTION, VFX_IMP_DESTRUCTION, summonDuration, summonCount,
                 "wlkfiend", location, 0.5f, 2f, 0.8f, 1.8f);
-            
-            // Apply summonCooldown
+
+            // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown,
-                () => FloatingTextStringOnCreature(
-                    WarlockConstants.String(message: "Soul Larvae can be summoned again."), caster, 0));
         }
 
         //---------------------------
