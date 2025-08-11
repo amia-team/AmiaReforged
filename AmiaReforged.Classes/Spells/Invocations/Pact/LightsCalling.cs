@@ -28,7 +28,7 @@ public class LightsCalling
         // Declaring variables for the summon part of the spell
         float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)),
+        IntPtr cooldownEffect = TagEffect(ExtraordinaryEffect(EffectVisualEffect(VFX_NONE)),
             sNewTag: "wlk_summon_cd");
 
         //---------------------------
@@ -113,9 +113,6 @@ public class LightsCalling
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown,
-                () => FloatingTextStringOnCreature(
-                    WarlockConstants.String(message: "Shattered Guardian can be summoned again."), caster, 0));
             // Summon
             float delay = NwEffects.RandomFloat(1, 2);
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY,

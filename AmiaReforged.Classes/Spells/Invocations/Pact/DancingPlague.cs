@@ -21,7 +21,7 @@ public class DancingPlague
         // Declaring variables for the summon part of the spell
         float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)),
+        IntPtr cooldownEffect = TagEffect(ExtraordinaryEffect(EffectVisualEffect(VFX_NONE)),
             sNewTag: "wlk_summon_cd");
 
         if (NwEffects.IsPolymorphed(nwnObjectId))
@@ -41,9 +41,6 @@ public class DancingPlague
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown,
-                () => FloatingTextStringOnCreature(
-                    WarlockConstants.String(message: "Dancing Partner can be summoned again."), caster, 0));
             // Summon new
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_FNF_SMOKE_PUFF), location, 2f);
             ApplyEffectAtLocation(DURATION_TYPE_TEMPORARY, EffectSummonCreature(sCreatureResref: "wlkfey", -1, 1),

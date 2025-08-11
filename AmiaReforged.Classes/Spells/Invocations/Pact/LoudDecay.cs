@@ -26,7 +26,7 @@ public class LoudDecay
         };
         float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)),
+        IntPtr cooldownEffect = TagEffect(ExtraordinaryEffect(EffectVisualEffect(VFX_NONE)),
             sNewTag: "wlk_summon_cd");
 
         if (NwEffects.IsPolymorphed(nwnObjectId))
@@ -88,22 +88,18 @@ public class LoudDecay
 
         // If summonCooldown is off and spell has hit a valid target, summon; else don't summon
         if (NwEffects.GetHasEffectByTag(effectTag: "wlk_summon_cd", caster) != FALSE) return;
-        
+
         NwCreature? warlock = caster.ToNwObject() as NwCreature;
         if (warlock == null) return;
-        
+
         // Summon new
-        _ = SummonUtility.SummonMany(warlock, VFX_FNF_GAS_EXPLOSION_NATURE, VFX_FNF_GAS_EXPLOSION_NATURE, summonDuration, summonCount, 
+        _ = SummonUtility.SummonMany(warlock, VFX_FNF_GAS_EXPLOSION_NATURE, VFX_FNF_GAS_EXPLOSION_NATURE, summonDuration, summonCount,
             "wlkaberrant", location, 1f, 9f, 3f, 4f);
-        
+
         DelayCommand(4.1f, () => SummonUtility.SetSummonsFacing(summonCount, location));
-        
+
         // Apply cooldown
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-        
-        DelayCommand(summonCooldown,
-            () => FloatingTextStringOnCreature(
-                WarlockConstants.String(message: "Violet Fungi can be summoned again."), caster, 0));
     }
 
     private void ApplyDelayedDamage(float delay, IntPtr loudDamage, uint currentTarget)

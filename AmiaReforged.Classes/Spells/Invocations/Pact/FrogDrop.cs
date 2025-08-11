@@ -40,7 +40,7 @@ public class FrogDrop
         };
         float summonDuration = RoundsToSeconds(SummonUtility.PactSummonDuration(caster));
         float summonCooldown = TurnsToSeconds(1);
-        IntPtr cooldownEffect = TagEffect(SupernaturalEffect(EffectVisualEffect(VFX_DUR_CESSATE_NEUTRAL)),
+        IntPtr cooldownEffect = TagEffect(ExtraordinaryEffect(EffectVisualEffect(VFX_NONE)),
             sNewTag: "wlk_summon_cd");
         IntPtr slaadSummon = EffectSummonCreature(slaadTier, VFX_IMP_POLYMORPH);
 
@@ -95,9 +95,6 @@ public class FrogDrop
         {
             // Apply cooldown
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, cooldownEffect, caster, summonCooldown);
-            DelayCommand(summonCooldown,
-                () => FloatingTextStringOnCreature(WarlockConstants.String(message: "Slaad can be summoned again."),
-                    caster, 0));
 
             // Summon new
             DelayCommand(2.5f,

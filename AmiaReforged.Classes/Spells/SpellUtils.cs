@@ -31,6 +31,22 @@ public class SpellUtils
         return false;
     }
 
+
+    /// <summary>
+    /// Sends a server message as feedback to the player about the remaining ability cool down
+    /// </summary>
+    /// <param name="player">the player duh</param>
+    /// <param name="spellName">Get this from the Spell.Name</param>
+    /// <param name="cdRemaining">Get this from the cooldown effect's DurationRemaining parameter</param>
+    public static void SendRemainingCoolDown(NwPlayer player, string spellName, float cdRemaining)
+    {
+        TimeSpan cdTimeSpan = TimeSpan.FromSeconds(cdRemaining);
+        string cdMessage = $"{spellName} cool down remaining: {cdTimeSpan.Minutes}m {cdTimeSpan.Seconds}s"
+                .ColorString(ColorConstants.Orange);
+
+        player.SendServerMessage(cdMessage);
+    }
+
     /// <summary>
     /// Always use if the spell's effect duration can be extended
     /// </summary>
