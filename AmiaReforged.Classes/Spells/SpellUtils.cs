@@ -41,8 +41,10 @@ public class SpellUtils
     public static void SendRemainingCoolDown(NwPlayer player, string spellName, float cdRemaining)
     {
         TimeSpan cdTimeSpan = TimeSpan.FromSeconds(cdRemaining);
-        string cdMessage = $"{spellName} cool down remaining: {cdTimeSpan.Minutes}m {cdTimeSpan.Seconds}s"
-                .ColorString(ColorConstants.Orange);
+
+        string formatTime = cdTimeSpan.TotalMinutes >= 1 ? @"mm\m\ ss\s" : @"ss\s";
+
+        string cdMessage = $"{spellName} available in {formatTime}".ColorString(ColorConstants.Orange);
 
         player.SendServerMessage(cdMessage);
     }
