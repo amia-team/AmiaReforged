@@ -32,6 +32,9 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     private const string WandTransmutation = "craftwand_tran";
     private const string WandUniversal = "x2_it_pcwand";
 
+    private readonly string _spellName = spell.MasterSpell?.Name.ToString() ?? spell.Name.ToString();
+    private readonly string _spellDescription = spell.MasterSpell?.Description.ToString() ?? spell.Description.ToString();
+
     public void DoCraftSpell()
     {
         if (SpellPropTable == null) return;
@@ -193,8 +196,13 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     private void AddClassRestrictions(NwItem item)
     {
         foreach (NwClass c in NwRuleset.Classes.Where(c => c.IsPlayerClass))
-            if (spell.GetSpellLevelForClass(c) != 255)
+        {
+            byte spellLevel = spell.MasterSpell?.GetSpellLevelForClass(c) ?? spell.GetSpellLevelForClass(c);
+
+            if (spellLevel != 255)
                 item.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
+        }
+
     }
 
     private async Task ScribeScroll(NwCreature caster, int spellPropId)
@@ -217,8 +225,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         scribedScroll.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse),
             EffectDuration.Permanent);
 
-        scribedScroll.Name = spell.Name.ToString();
-        scribedScroll.Description = spell.Description.ToString();
+        scribedScroll.Name = _spellName;
+        scribedScroll.Description = _spellDescription;
 
         AddClassRestrictions(scribedScroll);
 
@@ -250,8 +258,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 
         craftedWand.ItemCharges = casterLevel + 20;
 
-        craftedWand.Name = "Wand of "+spell.Name;
-        craftedWand.Description = spell.Description.ToString();
+        craftedWand.Name = "Wand of "+_spellName;
+        craftedWand.Description = _spellDescription;
 
         AddClassRestrictions(craftedWand);
 
@@ -296,8 +304,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         brewedPotion.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse),
             EffectDuration.Permanent);
 
-        brewedPotion.Name = "Potion of "+spell.Name;
-        brewedPotion.Description = spell.Description.ToString();
+        brewedPotion.Name = "Potion of "+_spellName;
+        brewedPotion.Description = _spellDescription;
 
         await NwTask.Delay(TimeSpan.FromMilliseconds(1));
 
