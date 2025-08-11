@@ -28,10 +28,19 @@ public class SpellCastingService
             scriptHandleFactory.RegisterScriptHandler(spell.ImpactScript, HandleSpellImpact);
         }
 
-        NwModule.Instance.OnSpellCast += PreventRestrictedCasts;
+        NwModule.Instance.OnSpellCast += PreventRestrictedCasting;
+        NwModule.Instance.OnSpellCast += DoSpellCraft;
     }
 
-    private void PreventRestrictedCasts(OnSpellCast obj)
+    private void DoSpellCraft(OnSpellCast eventData)
+    {
+        if (eventData.TargetObject is not NwItem targetItem) return;
+
+        CraftSpell craftSpell = new(eventData, targetItem);
+        craftSpell.DoCraftSpell();
+    }
+
+    private void PreventRestrictedCasting(OnSpellCast obj)
     {
         if (!obj.Caster.IsPlayerControlled(out NwPlayer? player)) return;
         if (obj.Spell is null) return;
@@ -65,7 +74,7 @@ public class SpellCastingService
         // Restrict hostile spellcasting in no PvP areas
         if (caster.Area?.PVPSetting != PVPSetting.None || !obj.Spell.IsHostileSpell || obj.TargetObject == caster ||
             !obj.TargetObject.IsPlayerControlled(out NwPlayer? _)) return;
-        
+
         player.SendServerMessage("PVP is not allowed in this area.");
         obj.PreventSpellCast = true;
     }
@@ -95,25 +104,18 @@ public class SpellCastingService
             return ScriptHandleResult.Handled;
         }
 
-        if (casterCreature is { IsLoginPlayerCharacter: true, IsDMAvatar: false } 
-            && target is NwCreature targetCreature 
+        if (casterCreature is { IsLoginPlayerCharacter: true, IsDMAvatar: false }
+            && target is NwCreature targetCreature
             && eventData.Spell.IsHostileSpell)
         {
             bool targetIsInParty = casterCreature.Faction.GetMembers().Any(member => member == targetCreature);
-            
+
             if (targetIsInParty == false)
             {
                 spell.DoSpellResist(targetCreature, casterCreature);
                 CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
             }
         }
-        
-        if (target is NwItem targetItem)
-        {
-            CraftSpell craftSpell = new(eventData, targetItem); 
-            craftSpell.DoCraftSpell();
-        }
-            
 
         DoCasterLevelOverride(casterCreature, eventData);
 
@@ -143,7 +145,7 @@ public class SpellCastingService
         int pmLevelMod = eventData.Spell.SpellSchool == SpellSchool.Necromancy
             ? paleMaster.Level
             : Math.Clamp(paleMaster.Level - 6, 0, paleMaster.Level); // Prevent negative integers
-        
+
         int levels = paleMaster.Level + baseClassLevels;
         CreaturePlugin.SetCasterLevelOverride(casterCreature, NWScript.CLASS_TYPE_PALE_MASTER, levels);
     }
