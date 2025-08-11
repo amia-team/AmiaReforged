@@ -34,9 +34,9 @@ public class CueCoolDownRemoval
         if (eventData.Object is not NwCreature creature) return;
         if (!creature.IsPlayerControlled(out NwPlayer? player)) return;
         if (eventData.Effect.Tag is not { } tag) return;
-        if (CoolDownEffectNamesByTag.ContainsKey(tag)) return;
+        if (!CoolDownEffectNamesByTag.TryGetValue(tag, out string? effectName)) return;
 
-        string effectName = CoolDownEffectNamesByTag[tag];
+        effectName = eventData.Effect.Spell?.Name.ToString() ?? effectName;
 
         string abilityAvailableMessage = $"{effectName} is available!".ColorString(ColorConstants.Green);
 
