@@ -42,7 +42,8 @@ public class SpellUtils
     {
         TimeSpan cdTimeSpan = TimeSpan.FromSeconds(cdRemaining);
 
-        string formatTime = cdTimeSpan.TotalMinutes >= 1 ? @"mm\m\ ss\s" : @"ss\s";
+        string formatTime = cdTimeSpan.TotalMinutes >= 1 ? $"{cdTimeSpan.Minutes}m {cdTimeSpan.Seconds}s"
+            : $"{cdTimeSpan.Seconds}s";
 
         string cdMessage = $"{spellName} available in {formatTime}".ColorString(ColorConstants.Orange);
 
