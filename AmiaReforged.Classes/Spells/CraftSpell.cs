@@ -202,16 +202,17 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         if (caster.Location == null) return;
 
         NwItem scribedScroll = targetItem.Clone(caster.Location);
+        scribedScroll.StackSize = 1;
 
         if (targetItem.StackSize == 1)
             targetItem.Destroy();
         else
             targetItem.StackSize -= 1;
 
-        NwBaseItem? enchantedScroll = NwBaseItem.FromItemType(BaseItemType.EnchantedScroll);
-        if (enchantedScroll == null) return;
+        NwBaseItem? spellScroll = NwBaseItem.FromItemType(BaseItemType.SpellScroll);
+        if (spellScroll == null) return;
 
-        scribedScroll.BaseItem = enchantedScroll;
+        scribedScroll.BaseItem = spellScroll;
 
         scribedScroll.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse),
             EffectDuration.Permanent);
@@ -337,9 +338,12 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     private (int SpellPropId, int SpellPropCl)? GetSpellPropIdAndCl(TwoDimArray spellPropTable)
     {
         List<int> spellPropRows = [];
+
+        int spellId = spell.MasterSpell?.Id ?? spell.Id;
+
         for (int i = 0; i < spellPropTable.RowCount; i++)
         {
-            if (spellPropTable.GetInt(i, "SpellIndex") == spell.Id)
+            if (spellPropTable.GetInt(i, "SpellIndex") == spellId)
                 spellPropRows.Add(i);
         }
 
