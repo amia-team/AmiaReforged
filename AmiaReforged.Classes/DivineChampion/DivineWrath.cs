@@ -99,8 +99,8 @@ public class DivineWrath : ISpell
             Effect.DamageReduction(divineWrathBonuses.DamageReduction, divineWrathBonuses.DamagePower),
             Effect.AttackIncrease(divineWrathBonuses.AttackBonus),
             Effect.DamageIncrease(divineWrathBonuses.DamageBonus, DamageType.Divine),
-            Effect.SavingThrowIncrease(SavingThrow.All, divineWrathBonuses.UniversalSave)
-            );
+            Effect.SavingThrowIncrease(SavingThrow.All, divineWrathBonuses.UniversalSave),
+            Effect.VisualEffect(VfxType.DurCessatePositive));
 
         divineWrath.SubType = EffectSubType.Extraordinary;
         return divineWrath;
