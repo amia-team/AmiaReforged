@@ -32,8 +32,6 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     private const string WandTransmutation = "craftwand_tran";
     private const string WandUniversal = "x2_it_pcwand";
 
-    private const string SpellScroll = "x2_it_spdvscr201";
-
     public void DoCraftSpell()
     {
         if (SpellPropTable == null) return;
@@ -46,6 +44,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         {
             player.SendServerMessage($"Spell craft failed! {targetItem.Name} must be in your inventory.");
             ApplySpellCraftFailVfx(caster);
+            eventData.PreventSpellCast = true;
             return;
         }
 
@@ -53,6 +52,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         {
             player.SendServerMessage($"Spell craft failed! {targetItem.Name} has already been spell crafted.");
             ApplySpellCraftFailVfx(caster);
+            eventData.PreventSpellCast = true;
             return;
         }
 
@@ -60,6 +60,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         {
             player.SendServerMessage("Spell craft failed! You can only craft spells when casting from a spellbook.");
             ApplySpellCraftFailVfx(caster);
+            eventData.PreventSpellCast = true;
             return;
         }
 
@@ -69,6 +70,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         {
             player.SendServerMessage("Spell craft failed! There is no item property associated with this spell.");
             ApplySpellCraftFailVfx(caster);
+            eventData.PreventSpellCast = true;
             return;
         }
 
@@ -82,6 +84,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
             {
                 player.SendServerMessage("Scribe scroll failed! You don't know the feat Scribe Scroll.");
                 ApplySpellCraftFailVfx(caster);
+                eventData.PreventSpellCast = true;
                 return;
             }
 
@@ -91,6 +94,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 player.SendServerMessage
                     ($"Scribe scroll failed! You don't have enough gold. The cost to scribe this stack is {scribeCost} GP.");
                 ApplySpellCraftFailVfx(caster);
+                eventData.PreventSpellCast = true;
                 return;
             }
 
@@ -105,6 +109,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
             {
                 player.SendServerMessage("Craft wand failed! You don't know the feat Craft Wand.");
                 ApplySpellCraftFailVfx(caster);
+                eventData.PreventSpellCast = true;
                 return;
             }
 
@@ -113,6 +118,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 player.SendServerMessage
                     ($"Craft wand failed! Innate spell level must be 4 or lower. The innate level of this spell is {spellInnateLevel}.");
                 ApplySpellCraftFailVfx(caster);
+                eventData.PreventSpellCast = true;
                 return;
             }
 
@@ -122,6 +128,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 player.SendServerMessage
                     ($"Craft wand failed! You don't have enough gold. The cost to craft this wand is {craftWandCost} GP.");
                 ApplySpellCraftFailVfx(caster);
+                eventData.PreventSpellCast = true;
                 return;
             }
 
@@ -138,6 +145,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
             {
                 player.SendServerMessage("Brew potion failed! You don't know the feat Brew Potion.");
                 ApplySpellCraftFailVfx(caster);
+                eventData.PreventSpellCast = true;
                 return;
             }
 
@@ -146,6 +154,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 player.SendServerMessage
                     ($"Brew potion failed! Innate spell level must be 3 or lower. The innate level of this spell is {spellInnateLevel}.");
                 ApplySpellCraftFailVfx(caster);
+                eventData.PreventSpellCast = true;
                 return;
             }
 
@@ -154,6 +163,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 player.SendServerMessage
                     ("Brew potion failed! You cannot brew a potion from a hostile spell.");
                 ApplySpellCraftFailVfx(caster);
+                eventData.PreventSpellCast = true;
                 return;
             }
 
@@ -163,10 +173,11 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 player.SendServerMessage
                     ($"Brew potion failed! You don't have enough gold. The cost to brew this stack is {brewPotionCost} GP.");
                 ApplySpellCraftFailVfx(caster);
+                eventData.PreventSpellCast = true;
                 return;
             }
 
-            BrewPotion(caster, spellPropId);
+            _ = BrewPotion(caster, spellPropId);
             ChargeForSpellCraft(player, caster, brewPotionCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -190,13 +201,17 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     {
         if (caster.Location == null) return;
 
-        NwItem? scribedScroll = NwItem.Create(SpellScroll, caster.Location);
-        if (scribedScroll == null) return;
+        NwItem scribedScroll = targetItem.Clone(caster.Location);
 
         if (targetItem.StackSize == 1)
             targetItem.Destroy();
         else
             targetItem.StackSize -= 1;
+
+        NwBaseItem? enchantedScroll = NwBaseItem.FromItemType(BaseItemType.EnchantedScroll);
+        if (enchantedScroll == null) return;
+
+        scribedScroll.BaseItem = enchantedScroll;
 
         scribedScroll.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse),
             EffectDuration.Permanent);
@@ -261,7 +276,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 0 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
 
-    private void BrewPotion(NwCreature caster, int spellPropId)
+    private async Task BrewPotion(NwCreature caster, int spellPropId)
     {
         int stackSize = targetItem.StackSize;
 
@@ -272,11 +287,18 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 
         targetItem.Destroy();
 
+        NwBaseItem? enchantedPotion = NwBaseItem.FromItemType(BaseItemType.EnchantedPotion);
+        if (enchantedPotion == null) return;
+
+        brewedPotion.BaseItem = enchantedPotion;
+
         brewedPotion.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse),
             EffectDuration.Permanent);
 
         brewedPotion.Name = "Potion of "+spell.Name;
         brewedPotion.Description = spell.Description.ToString();
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
 
         caster.AcquireItem(brewedPotion);
     }
