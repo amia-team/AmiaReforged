@@ -31,6 +31,7 @@ public class BlindingSpeed : ISpell
         blindingSpeed.SubType = EffectSubType.Extraordinary;
 
         creature.ApplyEffect(EffectDuration.Temporary, blindingSpeed, NwTimeSpan.FromTurns(1));
+        creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDustExplosion));
 
         blindingSpeedCd = Effect.VisualEffect(VfxType.None);
         blindingSpeedCd.Tag = BlindingSpeedCdTag;
