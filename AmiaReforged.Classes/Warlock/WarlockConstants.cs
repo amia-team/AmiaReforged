@@ -22,18 +22,19 @@ public static class WarlockConstants
         const int miss = 0;
         const int hit = 1;
         const int criticalHit = 2;
-        
+
         NwObject? caster = nwnObjectId.ToNwObject();
         NwObject? target = targetObject.ToNwObject();
-        if (target is not NwCreature targetCreature) return 1;
-        if (caster is not NwCreature casterCreature) return 1;
+
+        if (caster is not NwCreature casterCreature || target is not NwCreature targetCreature)
+            return hit;
 
         TouchAttackResult result = casterCreature.TouchAttackRanged(targetCreature, true);
 
         return result switch
         {
             TouchAttackResult.Hit => hit,
-            TouchAttackResult.CriticalHit => criticalHit,
+            TouchAttackResult.CriticalHit => targetCreature.IsImmuneTo(ImmunityType.CriticalHit) ? hit : criticalHit,
             _ => miss
         };
     }
