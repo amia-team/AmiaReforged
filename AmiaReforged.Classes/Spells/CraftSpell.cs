@@ -3,7 +3,7 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Spells;
 
-public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
+public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 {
     private static readonly TwoDimArray? SpellPropTable = NwGameTables.GetTable("iprp_spells");
     private const int SpellFailVfx = 292;
@@ -11,8 +11,6 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
     private readonly bool _isEmptyScroll = targetItem.BaseItem.ItemType == BaseItemType.BlankScroll;
     private readonly bool _isEmptyWand = targetItem.BaseItem.ItemType == BaseItemType.BlankWand;
     private readonly bool _isEmptyPotion = targetItem.BaseItem.ItemType == BaseItemType.BlankPotion;
-
-    private readonly NwSpell? _spell = eventData.Spell;
 
     private const string PotionAbjuration = "brewpot_abju";
     private const string PotionConjuration = "brewpot_conj";
@@ -38,7 +36,6 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
 
     public void DoCraftSpell()
     {
-        if (_spell == null) return;
         if (SpellPropTable == null) return;
         if (eventData.Caster is not NwCreature caster) return;
         if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
@@ -77,7 +74,7 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
 
         int spellPropId = spellPropIdAndCl.Value.SpellPropId;
         int spellPropCl = spellPropIdAndCl.Value.SpellPropCl;
-        int spellInnateLevel = _spell.InnateSpellLevel;
+        int spellInnateLevel = spell.InnateSpellLevel;
 
         if (_isEmptyScroll)
         {
@@ -128,7 +125,7 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            int casterLevel = caster.Classes[eventData.ClassIndex].Level;
+            byte casterLevel = caster.Classes[eventData.ClassIndex].Level;
 
             CraftWand(caster, spellPropId, casterLevel);
             ChargeForSpellCraft(player, caster, craftWandCost);
@@ -152,7 +149,7 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
                 return;
             }
 
-            if (_spell.IsHostileSpell)
+            if (spell.IsHostileSpell)
             {
                 player.SendServerMessage
                     ("Brew potion failed! You cannot brew a potion from a hostile spell.");
@@ -185,7 +182,7 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
     private void AddClassRestrictions(NwItem item)
     {
         foreach (NwClass c in NwRuleset.Classes.Where(c => c.IsPlayerClass))
-            if (_spell.GetSpellLevelForClass(c) != 255)
+            if (spell.GetSpellLevelForClass(c) != 255)
                 item.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
     }
 
@@ -206,8 +203,8 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
 
         AddClassRestrictions(scribedScroll);
 
-        scribedScroll.Name = _spell.Name.ToString();
-        scribedScroll.Description = _spell.Description.ToString();
+        scribedScroll.Name = spell.Name.ToString();
+        scribedScroll.Description = spell.Description.ToString();
 
         caster.AcquireItem(scribedScroll);
     }
@@ -217,7 +214,7 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
             ? spellPropCl * 1 * 25 * targetItem.StackSize
             : spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
 
-    private void CraftWand(NwCreature caster, int spellPropId, int casterLevel)
+    private void CraftWand(NwCreature caster, int spellPropId, byte casterLevel)
     {
         if (caster.Location == null) return;
 
@@ -235,8 +232,8 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
 
         craftedWand.ItemCharges = casterLevel + 20;
 
-        craftedWand.Name = "Wand of "+_spell.Name;
-        craftedWand.Description = _spell.Description.ToString();
+        craftedWand.Name = "Wand of "+spell.Name;
+        craftedWand.Description = spell.Description.ToString();
 
         AddClassRestrictions(craftedWand);
 
@@ -245,7 +242,7 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
 
     private string GetWandBySchool()
     {
-        return _spell.SpellSchool switch
+        return spell.SpellSchool switch
         {
             SpellSchool.Abjuration => WandAbjuration,
             SpellSchool.Conjuration => WandConjuration,
@@ -276,15 +273,15 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
         brewedPotion.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse),
             EffectDuration.Permanent);
 
-        brewedPotion.Name = "Potion of "+_spell.Name;
-        brewedPotion.Description = _spell.Description.ToString();
+        brewedPotion.Name = "Potion of "+spell.Name;
+        brewedPotion.Description = spell.Description.ToString();
 
         caster.AcquireItem(brewedPotion);
     }
 
     private string GetPotionBySchool()
     {
-        return _spell.SpellSchool switch
+        return spell.SpellSchool switch
         {
             SpellSchool.Abjuration => PotionAbjuration,
             SpellSchool.Conjuration => PotionConjuration,
@@ -315,12 +312,10 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
 
     private (int SpellPropId, int SpellPropCl)? GetSpellPropIdAndCl(TwoDimArray spellPropTable)
     {
-        int spellId = _spell.Id;
-
         List<int> spellPropRows = [];
         for (int i = 0; i < spellPropTable.RowCount; i++)
         {
-            if (spellPropTable.GetInt(i, "SpellIndex") == spellId)
+            if (spellPropTable.GetInt(i, "SpellIndex") == spell.Id)
                 spellPropRows.Add(i);
         }
 
@@ -328,6 +323,7 @@ public class CraftSpell(OnSpellCast eventData, NwItem targetItem)
             return null;
 
         List<(int SpellPropId, int SpellPropCl)> spellPropIdAndClList = [];
+
         foreach (int row in spellPropRows)
         {
             int? spellPropCl = spellPropTable.GetInt(row, "CasterLvl");
