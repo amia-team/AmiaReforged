@@ -94,7 +94,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 return;
             }
 
-            ScribeScroll(caster, spellPropId);
+            _ = ScribeScroll(caster, spellPropId);
             ChargeForSpellCraft(player, caster, scribeCost);
             ApplySpellCraftSuccessVfx(caster);
         }
@@ -186,7 +186,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 item.AddItemProperty(ItemProperty.LimitUseByClass(c), EffectDuration.Permanent);
     }
 
-    private void ScribeScroll(NwCreature caster, int spellPropId)
+    private async Task ScribeScroll(NwCreature caster, int spellPropId)
     {
         if (caster.Location == null) return;
 
@@ -196,15 +196,17 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         if (targetItem.StackSize == 1)
             targetItem.Destroy();
         else
-            targetItem.StackSize--;
+            targetItem.StackSize -= 1;
 
         scribedScroll.AddItemProperty(ItemProperty.CastSpell((IPCastSpell)spellPropId, IPCastSpellNumUses.SingleUse),
             EffectDuration.Permanent);
 
-        AddClassRestrictions(scribedScroll);
-
         scribedScroll.Name = spell.Name.ToString();
         scribedScroll.Description = spell.Description.ToString();
+
+        AddClassRestrictions(scribedScroll);
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
 
         caster.AcquireItem(scribedScroll);
     }
