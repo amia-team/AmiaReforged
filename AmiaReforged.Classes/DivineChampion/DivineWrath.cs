@@ -11,7 +11,7 @@ public class DivineWrath : ISpell
     private const string DivineWrathCdTag = "divine_wrath_cd";
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
-    public string ImpactScript => "X2_S2_DivWrath";
+    public string ImpactScript => "x2_s2_DivWrath";
 
     private record DivineWrathBonuses(
         DamagePower DamagePower,
