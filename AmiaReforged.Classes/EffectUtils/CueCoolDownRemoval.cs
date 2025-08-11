@@ -38,9 +38,9 @@ public class CueCoolDownRemoval
 
         effectName = eventData.Effect.Spell?.Name.ToString() ?? effectName;
 
-        string abilityAvailableMessage = $"{effectName} is available!".ColorString(ColorConstants.Green);
+        string abilityAvailableMessage = $"{effectName} is available!".ColorString(ColorConstants.Lime);
 
-        player.FloatingTextString(abilityAvailableMessage, false, false);
+        player.FloatingTextString(abilityAvailableMessage, false);
     }
 }
 
