@@ -63,19 +63,10 @@ public class SpellCastingService
         // Restrict casting in no casting areas
         bool isNoCastingArea = caster.Area?.GetObjectVariable<LocalVariableInt>(name: "NoCasting").Value == 1;
 
-        if (isNoCastingArea)
-        {
-            player.FloatingTextString("- You cannot cast magic in this area! -", false);
+        if (!isNoCastingArea) return;
 
-            obj.PreventSpellCast = true;
-            return;
-        }
+        player.FloatingTextString("- You cannot cast magic in this area! -", false);
 
-        // Restrict hostile spellcasting in no PvP areas
-        if (caster.Area?.PVPSetting != PVPSetting.None || !obj.Spell.IsHostileSpell || obj.TargetObject == caster ||
-            !obj.TargetObject.IsPlayerControlled(out NwPlayer? _)) return;
-
-        player.SendServerMessage("PVP is not allowed in this area.");
         obj.PreventSpellCast = true;
     }
 
