@@ -40,8 +40,9 @@ public class SpellCastingService
     private void CraftSpell(OnSpellCast eventData)
     {
         if (eventData.TargetObject is not NwItem targetItem) return;
+        if (eventData.Spell is not { } spell) return;
 
-        CraftSpell craftSpell = new(eventData, targetItem);
+        CraftSpell craftSpell = new(eventData, spell, targetItem);
         craftSpell.DoCraftSpell();
     }
 
