@@ -29,10 +29,10 @@ public class SpellCastingService
         }
 
         NwModule.Instance.OnSpellCast += PreventRestrictedCasting;
-        NwModule.Instance.OnSpellCast += DoSpellCraft;
+        NwModule.Instance.OnSpellCast += CraftSpell;
     }
 
-    private void DoSpellCraft(OnSpellCast eventData)
+    private void CraftSpell(OnSpellCast eventData)
     {
         if (eventData.TargetObject is not NwItem targetItem) return;
 
