@@ -15,18 +15,18 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         public void Constructor_ValidParameters_InitializesProperties()
         {
             // Arrange
-            var id = Guid.NewGuid();
-            var name = "Test Name";
-            var owner = new CharacterOwner.Player(PlayerKey);
+            Guid id = Guid.NewGuid();
+            string name = "Test Name";
+            CharacterOwner.Player owner = new CharacterOwner.Player(PlayerKey);
 
             // Act
-            var sut = new Character(id, name, owner);
+            Character sut = new Character(id, name, owner);
 
             // Assert
             Assert.That(sut.Id, Is.EqualTo(id));
             Assert.That(sut.Name, Is.EqualTo(name));
             Assert.That(sut.IsActive, Is.True);
-            Assert.That(sut.IsPlayerOwned(out var key), Is.True);
+            Assert.That(sut.IsPlayerOwned(out string? key), Is.True);
             Assert.That(key, Is.EqualTo(PlayerKey));
         }
 
@@ -57,28 +57,28 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         [Test]
         public void CreateEmpty_ReturnsDefaults()
         {
-            var sut = Character.CreateEmpty();
+            Character sut = Character.CreateEmpty();
 
             Assert.That(sut.Id, Is.EqualTo(Guid.Empty));
             Assert.That(sut.Name, Is.Null);
             Assert.That(sut.IsActive, Is.False);
-            Assert.That(sut.IsPlayerOwned(out var pk), Is.False);
+            Assert.That(sut.IsPlayerOwned(out string? pk), Is.False);
             Assert.That(pk, Is.Null);
-            Assert.That(sut.IsDmOwned(out var dk), Is.False);
+            Assert.That(sut.IsDmOwned(out string? dk), Is.False);
             Assert.That(dk, Is.Null);
-            Assert.That(sut.IsSystemOwned(out var tag), Is.False);
+            Assert.That(sut.IsSystemOwned(out string? tag), Is.False);
             Assert.That(tag, Is.Null);
         }
 
         [Test]
         public void CreateForPlayer_SetsOwner_Name_Id_And_Active()
         {
-            var sut = Character.CreateForPlayer(PlayerKey, "Hero");
+            Character sut = Character.CreateForPlayer(PlayerKey, "Hero");
 
             Assert.That(sut.Id, Is.Not.EqualTo(Guid.Empty));
             Assert.That(sut.Name, Is.EqualTo("Hero"));
             Assert.That(sut.IsActive, Is.True);
-            Assert.That(sut.IsPlayerOwned(out var key), Is.True);
+            Assert.That(sut.IsPlayerOwned(out string? key), Is.True);
             Assert.That(key, Is.EqualTo(PlayerKey));
             Assert.That(sut.IsDmOwned(out _), Is.False);
             Assert.That(sut.IsSystemOwned(out _), Is.False);
@@ -87,12 +87,12 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         [Test]
         public void CreateForDungeonMaster_SetsOwner_Name_Id_And_Active()
         {
-            var sut = Character.CreateForDungeonMaster(DmKey, "Boss");
+            Character sut = Character.CreateForDungeonMaster(DmKey, "Boss");
 
             Assert.That(sut.Id, Is.Not.EqualTo(Guid.Empty));
             Assert.That(sut.Name, Is.EqualTo("Boss"));
             Assert.That(sut.IsActive, Is.True);
-            Assert.That(sut.IsDmOwned(out var key), Is.True);
+            Assert.That(sut.IsDmOwned(out string? key), Is.True);
             Assert.That(key, Is.EqualTo(DmKey));
             Assert.That(sut.IsPlayerOwned(out _), Is.False);
             Assert.That(sut.IsSystemOwned(out _), Is.False);
@@ -101,12 +101,12 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         [Test]
         public void CreateForSystem_DefaultTag_SetsEngineTag()
         {
-            var sut = Character.CreateForSystem("SystemChar");
+            Character sut = Character.CreateForSystem("SystemChar");
 
             Assert.That(sut.Id, Is.Not.EqualTo(Guid.Empty));
             Assert.That(sut.Name, Is.EqualTo("SystemChar"));
             Assert.That(sut.IsActive, Is.True);
-            Assert.That(sut.IsSystemOwned(out var tag), Is.True);
+            Assert.That(sut.IsSystemOwned(out string? tag), Is.True);
             Assert.That(tag, Is.EqualTo(DefaultSystemTag));
             Assert.That(sut.IsPlayerOwned(out _), Is.False);
             Assert.That(sut.IsDmOwned(out _), Is.False);
@@ -115,19 +115,19 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         [Test]
         public void CreateForSystem_CustomTag_SetsProvidedTag()
         {
-            var sut = Character.CreateForSystem("SystemChar", CustomSystemTag);
+            Character sut = Character.CreateForSystem("SystemChar", CustomSystemTag);
 
-            Assert.That(sut.IsSystemOwned(out var tag), Is.True);
+            Assert.That(sut.IsSystemOwned(out string? tag), Is.True);
             Assert.That(tag, Is.EqualTo(CustomSystemTag));
         }
 
         [Test]
         public void AssignToPlayer_ChangesOwnerAndClearsOthers()
         {
-            var sut = Character.CreateForDungeonMaster(DmKey, "Test");
+            Character sut = Character.CreateForDungeonMaster(DmKey, "Test");
             sut.AssignToPlayer(PlayerKey);
 
-            Assert.That(sut.IsPlayerOwned(out var key), Is.True);
+            Assert.That(sut.IsPlayerOwned(out string? key), Is.True);
             Assert.That(key, Is.EqualTo(PlayerKey));
             Assert.That(sut.IsDmOwned(out _), Is.False);
             Assert.That(sut.IsSystemOwned(out _), Is.False);
@@ -136,10 +136,10 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         [Test]
         public void AssignToDungeonMaster_ChangesOwnerAndClearsOthers()
         {
-            var sut = Character.CreateForPlayer(PlayerKey, "Test");
+            Character sut = Character.CreateForPlayer(PlayerKey, "Test");
             sut.AssignToDungeonMaster(DmKey);
 
-            Assert.That(sut.IsDmOwned(out var key), Is.True);
+            Assert.That(sut.IsDmOwned(out string? key), Is.True);
             Assert.That(key, Is.EqualTo(DmKey));
             Assert.That(sut.IsPlayerOwned(out _), Is.False);
             Assert.That(sut.IsSystemOwned(out _), Is.False);
@@ -148,23 +148,23 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         [Test]
         public void MakeSystemOwned_DefaultAndCustomTag()
         {
-            var sut = Character.CreateForPlayer(PlayerKey, "Test");
+            Character sut = Character.CreateForPlayer(PlayerKey, "Test");
 
             sut.MakeSystemOwned();
-            Assert.That(sut.IsSystemOwned(out var defaultTag), Is.True);
+            Assert.That(sut.IsSystemOwned(out string? defaultTag), Is.True);
             Assert.That(defaultTag, Is.EqualTo(DefaultSystemTag));
             Assert.That(sut.IsPlayerOwned(out _), Is.False);
             Assert.That(sut.IsDmOwned(out _), Is.False);
 
             sut.MakeSystemOwned(CustomSystemTag);
-            Assert.That(sut.IsSystemOwned(out var customTag), Is.True);
+            Assert.That(sut.IsSystemOwned(out string? customTag), Is.True);
             Assert.That(customTag, Is.EqualTo(CustomSystemTag));
         }
 
         [Test]
         public void Rename_ValidName_UpdatesName()
         {
-            var sut = Character.CreateForPlayer(PlayerKey, "OldName");
+            Character sut = Character.CreateForPlayer(PlayerKey, "OldName");
 
             sut.Rename("NewName");
 
@@ -177,7 +177,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         [TestCase("   ")]
         public void Rename_InvalidName_Throws(string? badName)
         {
-            var sut = Character.CreateForPlayer(PlayerKey, "OldName");
+            Character sut = Character.CreateForPlayer(PlayerKey, "OldName");
 
             Assert.Throws<ArgumentException>(() => sut.Rename(badName!));
         }
@@ -185,7 +185,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         [Test]
         public void Activate_And_Deactivate_TogglesIsActive()
         {
-            var sut = Character.CreateForPlayer(PlayerKey, "Test");
+            Character sut = Character.CreateForPlayer(PlayerKey, "Test");
             Assert.That(sut.IsActive, Is.True);
 
             sut.Deactivate();
@@ -198,12 +198,12 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         [Test]
         public void OwnershipChecks_ReturnFalseAndNull_WhenNotOwnedByType()
         {
-            var sut = Character.CreateForPlayer(PlayerKey, "Test");
+            Character sut = Character.CreateForPlayer(PlayerKey, "Test");
 
-            Assert.That(sut.IsDmOwned(out var dmKey), Is.False);
+            Assert.That(sut.IsDmOwned(out string? dmKey), Is.False);
             Assert.That(dmKey, Is.Null);
 
-            Assert.That(sut.IsSystemOwned(out var tag), Is.False);
+            Assert.That(sut.IsSystemOwned(out string? tag), Is.False);
             Assert.That(tag, Is.Null);
         }
     }
