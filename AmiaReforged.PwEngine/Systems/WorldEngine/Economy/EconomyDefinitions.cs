@@ -21,7 +21,6 @@ public class EconomyDefinitions
     private readonly ClimateLoader _climates;
     private readonly RegionLoader _regions;
     private readonly ItemLoader _items;
-    private readonly Deserializer _deserializer = new();
 
     public List<ClimateDefinition> Climates { get; } = [];
     public List<MaterialDefinition> Materials { get; } = [];
