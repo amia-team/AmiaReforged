@@ -2,16 +2,16 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.Models;
 
 public sealed class Character
 {
-    public Guid Id { get; private set; }
+    public Guid Id { get; set; }
     public string Name { get; private set; }
     public bool IsActive { get; private set; }
     public CharacterOwner Owner { get; private set; }
 
-    private Character()
+    public Character()
     {
-    } // for serializers / ORMs if you share the class
+    }
 
-    private Character(Guid id, string name, CharacterOwner owner)
+    public Character(Guid id, string name, CharacterOwner owner)
     {
         if (id == Guid.Empty) throw new ArgumentException("Id cannot be empty.", nameof(id));
         if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name is required.", nameof(name));
@@ -22,6 +22,7 @@ public sealed class Character
         IsActive = true;
     }
 
+    public static Character CreateEmpty() => new();
     // Factories
     public static Character CreateForPlayer(string publicCdKey, string name)
         => new Character(Guid.NewGuid(), name, new CharacterOwner.Player(publicCdKey));
@@ -81,5 +82,10 @@ public sealed class Character
 
         tag = null;
         return false;
+    }
+
+    public void Activate()
+    {
+        IsActive = true;
     }
 }
