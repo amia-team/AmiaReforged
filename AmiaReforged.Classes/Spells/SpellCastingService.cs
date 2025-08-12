@@ -29,12 +29,7 @@ public class SpellCastingService
         }
 
         NwModule.Instance.OnSpellCast += PreventRestrictedCasting;
-
-        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
-        if (environment != "live")
-        {
-            NwModule.Instance.OnSpellCast += CraftSpell;
-        }
+        NwModule.Instance.OnSpellCast += CraftSpell;
     }
 
     private void CraftSpell(OnSpellCast eventData)
