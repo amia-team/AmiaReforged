@@ -3,17 +3,20 @@ using System;
 using AmiaReforged.PwEngine.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace AmiaReforged.PwEngine.Migrations
+namespace AmiaReforged.PwEngine.Migrations.PwEngine
 {
     [DbContext(typeof(PwEngineContext))]
-    partial class PwEngineContextModelSnapshot : ModelSnapshot
+    [Migration("20250811153931_AddCharacterModel")]
+    partial class AddCharacterModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

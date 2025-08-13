@@ -1,19 +1,17 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using NLog;
-using NWN.Core;
 
-namespace AmiaReforged.Classes.EffectUtils;
+namespace AmiaReforged.Core.Services;
 
 /// <summary>
 /// This just gives the player a floaty text when the cooldown is over
 /// </summary>
-[ServiceBinding(typeof(CueCoolDownRemoval))]
-public class CueCoolDownRemoval
+[ServiceBinding(typeof(CooldownNotifier))]
+public class CooldownNotifier
 {
-    private static readonly Dictionary<string, string> CoolDownEffectNamesByTag = new()
+    private static readonly Dictionary<string, string> CooldownEffectsByTag = new()
     {
         ["divine_wrath_cd"] = "Divine Wrath",
         ["blinding_speed_cd"] = "Blinding Speed",
@@ -22,19 +20,19 @@ public class CueCoolDownRemoval
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public CueCoolDownRemoval()
+    public CooldownNotifier()
     {
-        NwModule.Instance.OnEffectRemove += CueOnCoolDownRemove;
+        NwModule.Instance.OnEffectRemove += OnCooldownComplete;
 
-        Log.Info("Cue Cool Down Removal initialized.");
+        Log.Info("Cooldown Notifier initialized.");
     }
 
-    private void CueOnCoolDownRemove(OnEffectRemove eventData)
+    private void OnCooldownComplete(OnEffectRemove eventData)
     {
         if (eventData.Object is not NwCreature creature) return;
         if (!creature.IsPlayerControlled(out NwPlayer? player)) return;
         if (eventData.Effect.Tag is not { } tag) return;
-        if (!CoolDownEffectNamesByTag.TryGetValue(tag, out string? effectName)) return;
+        if (!CooldownEffectsByTag.TryGetValue(tag, out string? effectName)) return;
 
         effectName = eventData.Effect.Spell?.Name.ToString() ?? effectName;
 
