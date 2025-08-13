@@ -24,14 +24,14 @@ public class StalePropertiesCleaner
     private void CleanStaleProperties(ModuleEvents.OnClientEnter eventData)
     {
         NwPlayer player = eventData.Player;
-        if (player.ControlledCreature is not { } pc) return;
+        if (player.ControlledCreature is not { } playerCharacter) return;
 
-        LocalVariableInt pcCleaned = pc.GetObjectVariable<LocalVariableInt>(StalePropertiesCleaned);
+        LocalVariableInt pcCleaned = playerCharacter.GetObjectVariable<LocalVariableInt>(StalePropertiesCleaned);
 
         // Every reset player characters' local variables are wiped; if it's 0, the character hasn't logged in this reset
         if (pcCleaned.Value != 0) return;
 
-        foreach (NwItem item in pc.Inventory.Items)
+        foreach (NwItem item in playerCharacter.Inventory.Items)
         {
             foreach (ItemProperty itemProperty in item.ItemProperties.Where(ip => ip.DurationType == EffectDuration.Temporary))
             {
