@@ -22,12 +22,12 @@ public class CooldownNotifier
 
     public CooldownNotifier()
     {
-        NwModule.Instance.OnEffectRemove += CueOnCoolDownRemove;
+        NwModule.Instance.OnEffectRemove += OnCooldownComplete;
 
         Log.Info("Cooldown Notifier initialized.");
     }
 
-    private void CueOnCoolDownRemove(OnEffectRemove eventData)
+    private void OnCooldownComplete(OnEffectRemove eventData)
     {
         if (eventData.Object is not NwCreature creature) return;
         if (!creature.IsPlayerControlled(out NwPlayer? player)) return;
