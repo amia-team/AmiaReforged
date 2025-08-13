@@ -33,7 +33,10 @@ public class StalePropertiesCleaner
 
         foreach (NwItem item in playerCharacter.Inventory.Items)
         {
-            foreach (ItemProperty itemProperty in item.ItemProperties.Where(ip => ip.DurationType == EffectDuration.Temporary))
+            List<ItemProperty> propertiesToRemove =
+                item.ItemProperties.Where(ip => ip.DurationType == EffectDuration.Temporary).ToList();
+
+            foreach (ItemProperty itemProperty in propertiesToRemove)
             {
                 item.RemoveItemProperty(itemProperty);
                 player.SendServerMessage($"Removed stale property: {itemProperty.Property.Name}".ColorString(ColorConstants.Gray));
