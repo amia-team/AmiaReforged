@@ -8,7 +8,7 @@ namespace AmiaReforged.Core.Services;
 [ServiceBinding(typeof(StalePropertiesCleaner))]
 public class StalePropertiesCleaner
 {
-    private const string PcCleanedVarName = "player_character_cleaned";
+    private const string StalePropertiesCleaned = "stale_properties_cleaned";
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public StalePropertiesCleaner()
@@ -26,7 +26,7 @@ public class StalePropertiesCleaner
         NwPlayer player = eventData.Player;
         if (player.ControlledCreature is not { } pc) return;
 
-        LocalVariableInt pcCleaned = pc.GetObjectVariable<LocalVariableInt>(PcCleanedVarName);
+        LocalVariableInt pcCleaned = pc.GetObjectVariable<LocalVariableInt>(StalePropertiesCleaned);
 
         // Every reset player characters' local variables are wiped; if it's 0, the character hasn't logged in this reset
         if (pcCleaned.Value != 0) return;
