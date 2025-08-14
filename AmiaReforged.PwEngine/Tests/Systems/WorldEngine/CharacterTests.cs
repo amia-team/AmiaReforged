@@ -16,7 +16,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
         {
             // Arrange
             Guid id = Guid.NewGuid();
-            string name = "Test Name";
+            const string name = "Test Name";
             CharacterOwner.Player owner = new CharacterOwner.Player(PlayerKey);
 
             // Act
