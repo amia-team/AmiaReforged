@@ -30,7 +30,7 @@ public class StalePropertiesCleaner
 
         // Every reset player characters' local variables are wiped; if it's 0, the character hasn't logged in this reset
         if (pcCleaned.Value != 0) return;
-
+        
         foreach (NwItem item in playerCharacter.Inventory.Items)
         {
             List<ItemProperty> propertiesToRemove =
@@ -39,7 +39,22 @@ public class StalePropertiesCleaner
             foreach (ItemProperty itemProperty in propertiesToRemove)
             {
                 item.RemoveItemProperty(itemProperty);
-                player.SendServerMessage($"Removed stale property: {itemProperty.Property.Name}".ColorString(ColorConstants.Gray));
+            }
+        }
+
+        foreach (InventorySlot slot in Enum.GetValues(typeof(InventorySlot)))
+        {
+            // Now you can use the 'slot' variable to get the item
+            NwItem? item = playerCharacter.GetItemInSlot(slot);
+
+            if (item == null) continue;
+
+            List<ItemProperty> propertiesToRemove =
+                item.ItemProperties.Where(ip => ip.DurationType == EffectDuration.Temporary).ToList();
+
+            foreach (ItemProperty itemProperty in propertiesToRemove)
+            {
+                item.RemoveItemProperty(itemProperty);
             }
         }
 
