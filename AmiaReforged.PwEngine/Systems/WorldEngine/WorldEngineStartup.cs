@@ -3,7 +3,7 @@ using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
-[ServiceBinding(typeof(WorldEngineStartup))]
+// [ServiceBinding(typeof(WorldEngineStartup))]
 public class WorldEngineStartup
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
