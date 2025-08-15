@@ -51,7 +51,8 @@ public class StalePropertiesCleaner
         foreach ((NwItem? item, ItemProperty[]? propertiesToRemove) in removedPropertiesByItem)
         {
             cleanupMessage.Append($"\n{item.Name}: ");
-            string propertyNames = string.Join(", ", propertiesToRemove.Select(p => p.Property.Name.ToString()));
+            string propertyNames = string.Join(", ", propertiesToRemove
+                .Select(p => p.Spell?.Name ?? p.Property.Name));
             cleanupMessage.Append(propertyNames);
 
             foreach (ItemProperty itemProperty in propertiesToRemove)
