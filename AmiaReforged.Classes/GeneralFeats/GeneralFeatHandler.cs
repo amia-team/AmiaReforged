@@ -15,22 +15,21 @@ public class GeneralFeatHandler
 
     public GeneralFeatHandler()
     {
-        NwModule.Instance.OnClientEnter += RemoveMonkeyGrip;
+        NwModule.Instance.OnClientEnter += ReapplyMonkeyGrip;
     }
 
     /// <summary>
     /// Relogging apparently loses the changed creature size
     /// </summary>
-    private void RemoveMonkeyGrip(ModuleEvents.OnClientEnter obj)
+    private void ReapplyMonkeyGrip(ModuleEvents.OnClientEnter obj)
     {
         if (obj.Player.LoginCreature is not {} loginCreature) return;
-        
+
         MonkeyGrip mg = new(loginCreature);
 
         if (!mg.IsLoggedInMonkeyGripped()) return;
-        
-        mg.UnequipOffhand();
-        mg.RemoveMgPenalty();
+
+        mg.ApplyMonkeyGrip();
     }
 
     [ScriptHandler(scriptName: "monkey_grip")]
@@ -56,6 +55,6 @@ public class GeneralFeatHandler
         }
 
         MonkeyGrip mg = new(gameCharacter);
-        mg.ChangeSize();
+        mg.ApplyMonkeyGrip();
     }
 }

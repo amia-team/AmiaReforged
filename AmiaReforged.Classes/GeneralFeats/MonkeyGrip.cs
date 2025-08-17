@@ -11,7 +11,7 @@ public class MonkeyGrip(NwCreature creature)
     private const string LocalIntBaseSize = "base_size";
     private const string PcKeyTag = "ds_pckey";
 
-    public void ChangeSize()
+    public void ApplyMonkeyGrip()
     {
         int baseSize = GetBaseSize();
 
@@ -27,7 +27,8 @@ public class MonkeyGrip(NwCreature creature)
         }
         else
         {
-            UnequipOffhand();
+            bool wasUnequipped = UnequipOffhand();
+            if (wasUnequipped == false) return;
             RemoveMgPenalty();
             ApplyVisualEffect();
         }
@@ -43,7 +44,7 @@ public class MonkeyGrip(NwCreature creature)
 
         // Store the base size to the character's PC key if it has not yet been set
         if (baseSize != NWScript.CREATURE_SIZE_INVALID) return baseSize;
-        
+
         baseSize = (int)creature.Size;
         NWScript.SetLocalInt(pcKey, LocalIntBaseSize, baseSize);
 
@@ -55,25 +56,43 @@ public class MonkeyGrip(NwCreature creature)
         return baseSize;
     }
 
-    public void UnequipOffhand()
+    private bool UnequipOffhand()
     {
         NwItem? offhand = creature.GetItemInSlot(InventorySlot.LeftHand);
-        if (offhand is not null)
+        if (offhand is null) return true;
+
+        if (!creature.Inventory.CheckFit(offhand))
         {
-            creature.ActionUnequipItem(offhand);
+            if (creature.IsPlayerControlled(out NwPlayer? player))
+            {
+                player.SendServerMessage("Inventory full! Monkey Grip can't unequip offhand item. Make room in inventory to try again.");
+            }
+            return false;
         }
+
+        bool wasUnequipped = creature.RunUnequip(offhand);
+
+        if (wasUnequipped == false)
+        {
+            if (creature.IsPlayerControlled(out NwPlayer? player))
+            {
+                player.SendServerMessage("Monkey Grip can't unequip offhand item for an unknown reason. Try again later.");
+            }
+        }
+
+        return wasUnequipped;
     }
 
     public bool IsLoggedInMonkeyGripped()
     {
         NwItem? mainHandItem = creature.GetItemInSlot(InventorySlot.RightHand);
-        if (mainHandItem is null) 
+        if (mainHandItem is null)
             return false;
-        
+
         NwItem? offHandItem = creature.GetItemInSlot(InventorySlot.LeftHand);
         if (offHandItem is null)
             return false;
-        
+
         int weaponSize = (int)mainHandItem.BaseItem.WeaponSize;
         int creatureSize = (int)creature.Size;
 
@@ -95,7 +114,7 @@ public class MonkeyGrip(NwCreature creature)
             Effect.SkillIncrease(NwSkill.FromSkillType(Skill.MoveSilently)!, 4),
             Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Spot)!, 4),
             Effect.SkillIncrease(NwSkill.FromSkillType(Skill.Listen)!, 4));
-        
+
         mgPenalty.SubType = EffectSubType.Unyielding;
         mgPenalty.Tag = "mg_penalty";
 
@@ -105,12 +124,12 @@ public class MonkeyGrip(NwCreature creature)
         PlayerPlugin.UpdateCharacterSheet(creature);
     }
 
-    public void RemoveMgPenalty()
+    private void RemoveMgPenalty()
     {
         Effect? mgPenalty = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "mg_penalty");
 
         if (mgPenalty is null) return;
-        
+
         creature.RemoveEffect(mgPenalty);
         PlayerPlugin.UpdateCharacterSheet(creature);
     }
@@ -118,7 +137,7 @@ public class MonkeyGrip(NwCreature creature)
     private void ApplyVisualEffect()
     {
         Effect? mgEffect = NWScript.EffectVisualEffect(MonkeyGripVisualEffect);
-        
+
         if (mgEffect is null)
         {
             LogManager.GetCurrentClassLogger().Error("MonkeyGrip effect is null");
