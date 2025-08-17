@@ -65,26 +65,30 @@ public class MonkeyGrip(NwCreature creature)
         NwItem? offhand = creature.GetItemInSlot(InventorySlot.LeftHand);
         if (offhand is null) return true;
 
+        NwPlayer? player = creature.ControllingPlayer;
+
         if (!creature.Inventory.CheckFit(offhand))
         {
-            if (creature.IsPlayerControlled(out NwPlayer? player))
+            if (player != null)
             {
-                player.SendServerMessage("Inventory full! Monkey Grip can't unequip offhand item. Make room in inventory to try again.");
+                player.SendServerMessage("Couldn't deactivate Monkey Grip, because your inventory is full. " +
+                                         "Make room in inventory to try again");
             }
             return false;
         }
 
-        bool wasUnequipped = creature.RunUnequip(offhand);
+        bool didUnequip = creature.RunUnequip(offhand);
 
-        if (wasUnequipped == false)
+        if (!didUnequip)
         {
-            if (creature.IsPlayerControlled(out NwPlayer? player))
+            if (player != null)
             {
-                player.SendServerMessage("Monkey Grip can't unequip offhand item for an unknown reason. Try again later.");
+                player.SendServerMessage("Couldn't deactivate Monkey Grip, because your offhand item wouldn't unequip" +
+                                         " for an unknown error. Try again later.");
             }
         }
 
-        return wasUnequipped;
+        return didUnequip;
     }
 
     private bool IsMonkeyGripped()
