@@ -4,114 +4,66 @@ namespace AmiaReforged.Classes.GeneralFeats;
 
 public static class TwoHandedBonus
 {
+    private const string TwoHandedBonusTag = "twohandedbonus";
     private static Effect TwoHandedBonusEffect(NwCreature creature)
     {
         // First calculate the base game 50% strength modifier bonus to twohanding
         // This is important because ints are rounded down, so you'd lose bonus damage
         // eg str mod 15 would be 7 base bonus + 7 extra bonus, while x2 str mod should add up to 15
         int strengthModifier = creature.GetAbilityModifier(Ability.Strength);
-        int baseTwoHandedDamageBonus = (int)(strengthModifier * 1.5 - strengthModifier);
+        int twoHandedDamageBonus = strengthModifier / 2;
 
         // Infer Amia-specific extra damage based on the base bonus
-        int twoHandedDamageInt = strengthModifier - baseTwoHandedDamageBonus;
+        int amiaBonus = strengthModifier - twoHandedDamageBonus;
         // Apparently values 6 to 15 in bonus dmg are weird; the incremental scaling cuts off at value 5 and continues
-        // from value 16, so if our twohand damage bonus > 5, we add 10 to continue the incremental damage scaling
-        int twoHandedDamageBonus = twoHandedDamageInt > 5 ? twoHandedDamageInt + 10 : twoHandedDamageInt;
+        // from value 16, so if our twohand damage bonus >= 6, we add 10 to continue the incremental damage scaling
+        if (amiaBonus >= 6)
+            amiaBonus += 10;
 
-        Effect twoHandedDamageEffect = Effect.DamageIncrease(twoHandedDamageBonus, DamageType.BaseWeapon);
+        Effect twoHandedDamageEffect = Effect.DamageIncrease(amiaBonus, DamageType.BaseWeapon);
         Effect twoHandedAbEffect = Effect.AttackIncrease(2);
 
         Effect twoHandedBonusEffect = Effect.LinkEffects(twoHandedDamageEffect, twoHandedAbEffect);
         twoHandedBonusEffect.SubType = EffectSubType.Unyielding;
-        twoHandedBonusEffect.Tag = "twohandedbonus";
+        twoHandedBonusEffect.Tag = TwoHandedBonusTag;
 
         return twoHandedBonusEffect;
     }
 
     public static void ApplyTwoHandedBonusEffect(NwCreature creature)
     {
-        // Two-handed bonus only affects player characters
-        NwPlayer? player = creature.ControllingPlayer;
-        if (player == null) return;
+        if (creature.ControllingPlayer is not { } player) return;
 
-        Effect? twoHandedBonus = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == "twohandedbonus");
+        Effect? twoHandedBonus = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == TwoHandedBonusTag);
+
+        bool hasExistingBonus = twoHandedBonus != null;
+
+        if (twoHandedBonus != null)
+            creature.RemoveEffect(twoHandedBonus);
+
         NwItem? weapon = creature.GetItemInSlot(InventorySlot.RightHand);
 
-        // Check if the creature has a pre-existing two-handed bonus; always remove it before reapplying the new one
-        bool hasTwoHandedBonus = twoHandedBonus != null;
-
-        if (hasTwoHandedBonus)
-            creature.RemoveEffect(twoHandedBonus!);
-
-        if (weapon == null)
+        if (weapon == null ||
+            weapon.BaseItem.WeaponSize <= (BaseItemWeaponSize)creature.Size ||
+            weapon.IsRangedWeapon ||
+            weapon.BaseItem.IsMonkWeapon ||
+            weapon.BaseItem.WeaponWieldType == BaseItemWeaponWieldType.DoubleSided ||
+            creature.GetItemInSlot(InventorySlot.LeftHand) != null)
         {
-            if (hasTwoHandedBonus)
+            if (hasExistingBonus)
+            {
                 player.SendServerMessage("Two-handed weapon bonus removed.");
+            }
 
             return;
         }
 
-        // We know that in order for the weapon to be twohanded,
-        // the weapon size must always be (one size) larger than the creature
-        int weaponSize = (int)weapon!.BaseItem.WeaponSize;
-        int creatureSize = (int)creature.Size;
-
-        bool weaponIsNotTwoHanded = weaponSize <= creatureSize;
-        if (weaponIsNotTwoHanded)
-        {
-            if (hasTwoHandedBonus)
-                player.SendServerMessage("Two-handed weapon bonus removed.");
-
-            return;
-        }
-
-        if (weapon.IsRangedWeapon)
-        {
-            if (hasTwoHandedBonus)
-                player.SendServerMessage("Two-handed weapon bonus removed.");
-
-            return;
-        }
-
-        if (weapon.BaseItem.IsMonkWeapon)
-        {
-            if (hasTwoHandedBonus)
-                player.SendServerMessage("Two-handed weapon bonus removed.");
-
-            return;
-        }
-
-        bool weaponIsDoubleSided = weapon.BaseItem.WeaponWieldType == BaseItemWeaponWieldType.DoubleSided;
-        if (weaponIsDoubleSided)
-        {
-            if (hasTwoHandedBonus)
-                player.SendServerMessage("Two-handed weapon bonus removed.");
-
-            return;
-        }
-
-        NwItem? offhand = creature.GetItemInSlot(InventorySlot.LeftHand);
-        if (offhand != null)
-        {
-            if (hasTwoHandedBonus)
-                player.SendServerMessage("Two-handed weapon bonus removed.");
-
-            return;
-        }
-
-        // If the code made it this far, we have qualified for two-handed bonus!
         Effect twoHandedBonusEffect = TwoHandedBonusEffect(creature);
         creature.ApplyEffect(EffectDuration.Permanent, twoHandedBonusEffect);
 
         // If the bonus was already there, we know it was adjusted by str buffs/debuffs or buffs/debuffs wearing off
-        if (hasTwoHandedBonus)
-        {
-            player.SendServerMessage("Two-handed weapon bonus adjusted.");
-            return;
-        }
+        string feedback = hasExistingBonus ? "Two-handed weapon bonus adjusted." : "Two-handed weapon bonus applied.";
 
-        // Otherwise we know that the bonus wasn't there and has been applied for the first time
-        player.SendServerMessage("Two-handed weapon bonus applied.");
+        player.SendServerMessage(feedback);
     }
-
 }
