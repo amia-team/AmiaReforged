@@ -1,4 +1,6 @@
+using Anvil;
 using Anvil.API;
+using Anvil.API.Events;
 using NLog;
 using NWN.Core;
 using NWN.Core.NWNX;
@@ -46,6 +48,7 @@ public class MonkeyGrip(NwCreature creature)
                 player.SendServerMessage("Couldn't deactivate Monkey Grip, because your inventory is full. " +
                                          "Make room in inventory to try again");
             }
+
             return false;
         }
 
@@ -58,9 +61,14 @@ public class MonkeyGrip(NwCreature creature)
                 player.SendServerMessage("Couldn't deactivate Monkey Grip, because your offhand item wouldn't unequip" +
                                          " for an unknown error. Try again later.");
             }
+
+            return false;
         }
 
-        return didUnequip;
+        // RunUnequip doesn't fire the OnUnequip event so we need to add this manually
+        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
+
+        return true;
     }
 
     public bool IsMonkeyGripped()
