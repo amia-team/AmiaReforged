@@ -27,8 +27,6 @@ public class GeneralFeatHandler
 
         MonkeyGrip mg = new(loginCreature);
 
-        if (!mg.IsLoggedInMonkeyGripped()) return;
-
         mg.ApplyMonkeyGrip();
     }
 
