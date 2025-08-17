@@ -8,24 +8,14 @@ namespace AmiaReforged.Classes.GeneralFeats;
 public class MonkeyGrip(NwCreature creature)
 {
     private const int MonkeyGripVisualEffect = 2527;
-    private const string LocalIntBaseSize = "base_size";
-    private const string PcKeyTag = "ds_pckey";
 
     public void ApplyMonkeyGrip()
     {
-        if (IsMonkeyGripped())
-        {
-            bool didUnequip = UnequipOffhand();
-            if (didUnequip == false) return;
-        }
-
-        int baseSize = GetBaseSize();
+        int baseSize = creature.Appearance.SizeCategory ?? (int)CreatureSize.Medium; // Assume medium if size is invalid
 
         bool shouldApplyMg = creature.Size == (CreatureSize)baseSize;
 
         CreatureSize targetSize = shouldApplyMg ? (CreatureSize)Math.Clamp(baseSize + 1, 0, 5) : (CreatureSize)baseSize;
-
-        creature.Size = targetSize;
 
         if (shouldApplyMg)
         {
@@ -33,31 +23,13 @@ public class MonkeyGrip(NwCreature creature)
         }
         else
         {
+            bool didUnequip = UnequipOffhand();
+            if (!didUnequip) return;
             RemoveMgPenalty();
             ApplyVisualEffect();
         }
-    }
 
-    private int GetBaseSize()
-    {
-        NwItem? pcKey = creature.FindItemWithTag(PcKeyTag);
-
-        if (pcKey is null) return 0;
-
-        int baseSize = NWScript.GetLocalInt(pcKey, LocalIntBaseSize);
-
-        // Store the base size to the character's PC key if it has not yet been set
-        if (baseSize != NWScript.CREATURE_SIZE_INVALID) return baseSize;
-
-        baseSize = (int)creature.Size;
-        NWScript.SetLocalInt(pcKey, LocalIntBaseSize, baseSize);
-
-        if (creature.IsPlayerControlled(out NwPlayer? _))
-        {
-            NWScript.ExportSingleCharacter(creature);
-        }
-
-        return baseSize;
+        creature.Size = targetSize;
     }
 
     private bool UnequipOffhand()
@@ -91,7 +63,7 @@ public class MonkeyGrip(NwCreature creature)
         return didUnequip;
     }
 
-    private bool IsMonkeyGripped()
+    public bool IsMonkeyGripped()
     {
         NwItem? mainHandItem = creature.GetItemInSlot(InventorySlot.RightHand);
         if (mainHandItem is null)
@@ -102,11 +74,11 @@ public class MonkeyGrip(NwCreature creature)
             return false;
 
         int weaponSize = (int)mainHandItem.BaseItem.WeaponSize;
-        int creatureSize = (int)creature.Size;
+        int baseSize = creature.Appearance.SizeCategory ?? (int)CreatureSize.Medium; // Assume medium if invalid
 
-        // We know that the creature has logged in while monkey gripped if the creature is wielding an offhand item
+        // We know that the creature is monkey gripped when they're wielding an offhand item
         // while they are also wielding a weapon larger than their own size
-        return weaponSize > creatureSize;
+        return weaponSize > baseSize;
     }
 
     private void ApplyMgPenalty()
