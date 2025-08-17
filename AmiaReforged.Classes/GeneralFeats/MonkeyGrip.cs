@@ -30,6 +30,7 @@ public class MonkeyGrip(NwCreature creature)
         }
 
         creature.Size = targetSize;
+        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
     }
 
     private bool UnequipOffhand()
@@ -59,14 +60,9 @@ public class MonkeyGrip(NwCreature creature)
                 player.SendServerMessage("Couldn't deactivate Monkey Grip, because your offhand item wouldn't unequip" +
                                          " for an unknown error. Try again later.");
             }
-
-            return false;
         }
 
-        // RunUnequip doesn't fire the OnUnequip event so we need to add this manually
-        TwoHandedBonus.ApplyTwoHandedBonusEffect(creature);
-
-        return true;
+        return didUnequip;
     }
 
     public bool IsMonkeyGripped()
