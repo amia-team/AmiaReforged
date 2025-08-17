@@ -13,6 +13,12 @@ public class MonkeyGrip(NwCreature creature)
 
     public void ApplyMonkeyGrip()
     {
+        if (IsMonkeyGripped())
+        {
+            bool didUnequip = UnequipOffhand();
+            if (didUnequip == false) return;
+        }
+
         int baseSize = GetBaseSize();
 
         bool shouldApplyMg = creature.Size == (CreatureSize)baseSize;
@@ -27,8 +33,6 @@ public class MonkeyGrip(NwCreature creature)
         }
         else
         {
-            bool wasUnequipped = UnequipOffhand();
-            if (wasUnequipped == false) return;
             RemoveMgPenalty();
             ApplyVisualEffect();
         }
@@ -83,7 +87,7 @@ public class MonkeyGrip(NwCreature creature)
         return wasUnequipped;
     }
 
-    public bool IsLoggedInMonkeyGripped()
+    private bool IsMonkeyGripped()
     {
         NwItem? mainHandItem = creature.GetItemInSlot(InventorySlot.RightHand);
         if (mainHandItem is null)
