@@ -33,7 +33,6 @@
         <Folder Include="Systems\WorldEngine\Features\Characters\Commands\" />
         <Folder Include="Systems\WorldEngine\Features\IndustryAndCraft\Entities\" />
         <Folder Include="Systems\WorldEngine\Features\KnowledgeAndTraits\" />
-        <Folder Include="Tests\Integration\" />
     </ItemGroup>
 
     <ItemGroup>
