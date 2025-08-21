@@ -1,13 +1,11 @@
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Features.IndustryAndCraft.ValueObjects;
 
-public sealed class ToolModifier : IReactionModifier
+public sealed class ToolModifier(ToolTag tool) : IReactionModifier
 {
-    public ToolTag Tool { get; }
+    public ToolTag Tool { get; } = tool;
     public double? SuccessChanceDelta { get; init; }
     public double? DurationMultiplier { get; init; }
     public Dictionary<ItemTag, double>? OutputMultipliers { get; init; }
-
-    public ToolModifier(ToolTag tool) => Tool = tool;
 
     public void Apply(ReactionContext context, IReactionActor actor, Computation c)
     {
