@@ -59,12 +59,12 @@ public sealed class ReactionEngine(
                 .Where(r => !r.Satisfied)
                 .Select(r => r.Message ?? "Precondition failed.")
                 .ToArray();
-            return new ReactionResult(false, TimeSpan.Zero, Array.Empty<Quantity>(), notes);
+            return new ReactionResult(false, TimeSpan.Zero, [], notes);
         }
 
         if (!await inventory.HasItemsAsync(actor.ActorId, reaction.Inputs, ct))
-            return new ReactionResult(false, TimeSpan.Zero, Array.Empty<Quantity>(),
-                new[] { "Missing required inputs." });
+            return new ReactionResult(false, TimeSpan.Zero, [],
+                ["Missing required inputs."]);
 
         // Consume inputs
         await inventory.ConsumeAsync(actor.ActorId, reaction.Inputs, ct);
@@ -77,7 +77,7 @@ public sealed class ReactionEngine(
         Quantity[] outputs = reaction.Outputs
             .Select(o =>
             {
-                double mult = feasibility.OutputMultipliers.TryGetValue(o.Item, out double m) ? m : 1.0;
+                double mult = feasibility.OutputMultipliers.GetValueOrDefault(o.Item, 1.0);
                 int amount = (int)Math.Max(0, Math.Floor(o.Amount * mult));
                 return new Quantity(o.Item, amount);
             })
@@ -86,21 +86,15 @@ public sealed class ReactionEngine(
         if (success)
             await inventory.ProduceAsync(actor.ActorId, outputs, ct);
 
-        return new ReactionResult(success, feasibility.Duration, success ? outputs : Array.Empty<Quantity>(),
-            Array.Empty<string>());
+        return new ReactionResult(success, feasibility.Duration, success ? outputs : [],
+            []);
     }
 
-    private sealed class ActorSnapshot : IReactionActor
+    private sealed class ActorSnapshot(Guid id, IEnumerable<KnowledgeKey> knowledge, IEnumerable<ToolInstance> tools)
+        : IReactionActor
     {
-        public Guid ActorId { get; }
-        public System.Collections.Immutable.ImmutableHashSet<KnowledgeKey> Knowledge { get; }
-        public System.Collections.Immutable.ImmutableArray<ToolInstance> Tools { get; }
-
-        public ActorSnapshot(Guid id, IEnumerable<KnowledgeKey> knowledge, IEnumerable<ToolInstance> tools)
-        {
-            ActorId = id;
-            Knowledge = knowledge.ToImmutableHashSet();
-            Tools = tools.ToImmutableArray();
-        }
+        public Guid ActorId { get; } = id;
+        public ImmutableHashSet<KnowledgeKey> Knowledge { get; } = knowledge.ToImmutableHashSet();
+        public ImmutableArray<ToolInstance> Tools { get; } = [..tools];
     }
 }
