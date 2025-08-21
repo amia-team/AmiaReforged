@@ -12,7 +12,7 @@ public class ToolModifierTests
     public void Apply_WhenActorDoesNotHaveTool_DoesNothing()
     {
         // Arrange
-        ToolModifier modifier = new ToolModifier(ToolTag.From("HAMMER"))
+        ToolModifier modifier = new(ToolTag.From("HAMMER"))
         {
             SuccessChanceDelta = 0.2,
             DurationMultiplier = 0.8,
@@ -20,7 +20,7 @@ public class ToolModifierTests
         };
 
         IReactionActor actor = CreateMockActor(tools: []);
-        Computation computation = new Computation
+        Computation computation = new()
         {
             SuccessChance = 0.5,
             Duration = TimeSpan.FromMinutes(30)
@@ -39,17 +39,17 @@ public class ToolModifierTests
     public void Apply_WithMatchingTool_AppliesModifications()
     {
         // Arrange
-        ToolModifier modifier = new ToolModifier(ToolTag.From("SAW"))
+        ToolModifier modifier = new(ToolTag.From("SAW"))
         {
             SuccessChanceDelta = 0.15,
             DurationMultiplier = 0.75,
             OutputMultipliers = new Dictionary<ItemTag, double> { { ItemTag.From("BOARDS"), 1.25 } }
         };
 
-        ToolInstance tool = new ToolInstance(ToolTag.From("SAW"), quality: 50); // Quality 50 = neutral
+        ToolInstance tool = new(ToolTag.From("SAW"), quality: 50); // Quality 50 = neutral
         IReactionActor actor = CreateMockActor(tools: [tool]);
 
-        Computation computation = new Computation
+        Computation computation = new()
         {
             SuccessChance = 0.6,
             Duration = TimeSpan.FromMinutes(20)
@@ -69,16 +69,16 @@ public class ToolModifierTests
     public void Apply_WithHighQualityTool_ScalesModificationsUp()
     {
         // Arrange
-        ToolModifier modifier = new ToolModifier(ToolTag.From("MASTERWORK_CHISEL"))
+        ToolModifier modifier = new(ToolTag.From("MASTERWORK_CHISEL"))
         {
             SuccessChanceDelta = 0.1,
             DurationMultiplier = 0.8
         };
 
-        ToolInstance highQualityTool = new ToolInstance(ToolTag.From("MASTERWORK_CHISEL"), quality: 90); // High quality
+        ToolInstance highQualityTool = new(ToolTag.From("MASTERWORK_CHISEL"), quality: 90); // High quality
         IReactionActor actor = CreateMockActor(tools: [highQualityTool]);
 
-        Computation computation = new Computation
+        Computation computation = new()
         {
             SuccessChance = 0.5,
             Duration = TimeSpan.FromMinutes(60)
@@ -101,16 +101,16 @@ public class ToolModifierTests
     public void Apply_WithLowQualityTool_ScalesModificationsDown()
     {
         // Arrange
-        ToolModifier modifier = new ToolModifier(ToolTag.From("RUSTY_HAMMER"))
+        ToolModifier modifier = new(ToolTag.From("RUSTY_HAMMER"))
         {
             SuccessChanceDelta = 0.2,
             DurationMultiplier = 0.9
         };
 
-        ToolInstance lowQualityTool = new ToolInstance(ToolTag.From("RUSTY_HAMMER"), quality: 10); // Low quality
+        ToolInstance lowQualityTool = new(ToolTag.From("RUSTY_HAMMER"), quality: 10); // Low quality
         IReactionActor actor = CreateMockActor(tools: [lowQualityTool]);
 
-        Computation computation = new Computation
+        Computation computation = new()
         {
             SuccessChance = 0.7,
             Duration = TimeSpan.FromMinutes(40)
@@ -134,7 +134,7 @@ public class ToolModifierTests
     public void Apply_WithOutputMultipliers_AppliesCorrectly()
     {
         // Arrange
-        ToolModifier modifier = new ToolModifier(ToolTag.From("PRECISION_TOOL"))
+        ToolModifier modifier = new(ToolTag.From("PRECISION_TOOL"))
         {
             OutputMultipliers = new Dictionary<ItemTag, double>
             {
@@ -143,10 +143,10 @@ public class ToolModifierTests
             }
         };
 
-        ToolInstance tool = new ToolInstance(ToolTag.From("PRECISION_TOOL"), quality: 70);
+        ToolInstance tool = new(ToolTag.From("PRECISION_TOOL"), quality: 70);
         IReactionActor actor = CreateMockActor(tools: [tool]);
 
-        Computation computation = new Computation();
+        Computation computation = new();
 
         // Act
         modifier.Apply(new ReactionContext(), actor, computation);
@@ -160,15 +160,15 @@ public class ToolModifierTests
     public void Apply_WithExistingOutputMultiplier_MultipliesValues()
     {
         // Arrange
-        ToolModifier modifier = new ToolModifier(ToolTag.From("ENHANCED_DRILL"))
+        ToolModifier modifier = new(ToolTag.From("ENHANCED_DRILL"))
         {
             OutputMultipliers = new Dictionary<ItemTag, double> { { ItemTag.From("HOLES"), 1.5 } }
         };
 
-        ToolInstance tool = new ToolInstance(ToolTag.From("ENHANCED_DRILL"), quality: 60);
+        ToolInstance tool = new(ToolTag.From("ENHANCED_DRILL"), quality: 60);
         IReactionActor actor = CreateMockActor(tools: [tool]);
 
-        Computation computation = new Computation
+        Computation computation = new()
         {
             OutputMultipliers =
             {
@@ -187,15 +187,15 @@ public class ToolModifierTests
     public void Apply_WithSuccessChanceClamping_ClampsToValidRange()
     {
         // Arrange - modifier that would push success chance above 1.0
-        ToolModifier modifier = new ToolModifier(ToolTag.From("OVERPOWERED_TOOL"))
+        ToolModifier modifier = new(ToolTag.From("OVERPOWERED_TOOL"))
         {
             SuccessChanceDelta = 0.8
         };
 
-        ToolInstance excellentTool = new ToolInstance(ToolTag.From("OVERPOWERED_TOOL"), quality: 100);
+        ToolInstance excellentTool = new(ToolTag.From("OVERPOWERED_TOOL"), quality: 100);
         IReactionActor actor = CreateMockActor(tools: [excellentTool]);
 
-        Computation computation = new Computation
+        Computation computation = new()
         {
             SuccessChance = 0.7 // Starting high
         };
@@ -213,7 +213,7 @@ public class ToolModifierTests
     public void Apply_WithMultipleTools_OnlyAppliesForMatchingTool()
     {
         // Arrange
-        ToolModifier modifier = new ToolModifier(ToolTag.From("SPECIFIC_WRENCH"))
+        ToolModifier modifier = new(ToolTag.From("SPECIFIC_WRENCH"))
         {
             SuccessChanceDelta = 0.3
         };
@@ -226,7 +226,7 @@ public class ToolModifierTests
         ];
         IReactionActor actor = CreateMockActor(tools: tools);
 
-        Computation computation = new Computation
+        Computation computation = new()
         {
             SuccessChance = 0.4
         };
@@ -243,7 +243,7 @@ public class ToolModifierTests
 
     private IReactionActor CreateMockActor(List<ToolInstance> tools)
     {
-        Mock<IReactionActor> mock = new Mock<IReactionActor>();
+        Mock<IReactionActor> mock = new();
         mock.Setup(a => a.Tools).Returns([..tools]);
         mock.Setup(a => a.Knowledge).Returns(ImmutableHashSet<KnowledgeKey>.Empty);
         mock.Setup(a => a.ActorId).Returns(Guid.NewGuid());
