@@ -5,14 +5,14 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Martial;
 
-public class AxiomaticStrike : ITechnique
+public class AxiomaticStrike(AugmentationFactory augmentationFactory) : ITechnique
 {
     public TechniqueType TechniqueType => TechniqueType.Axiomatic;
     public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? AugmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
 
         if (augmentation != null)
             augmentation.ApplyAttackAugmentation(monk, TechniqueType, attackData);

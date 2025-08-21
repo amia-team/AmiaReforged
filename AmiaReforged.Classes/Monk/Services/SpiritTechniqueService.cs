@@ -13,17 +13,19 @@ namespace AmiaReforged.Classes.Monk.Services;
 [ServiceBinding(typeof(SpiritTechniqueService))]
 public class SpiritTechniqueService
 {
+    private readonly TechniqueFactory _techniqueFactory;
+
     private static readonly NwFeat? SpiritKiPointFeat = NwFeat.FromFeatId(MonkFeat.SpiritKiPoint);
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public SpiritTechniqueService()
+    public SpiritTechniqueService(TechniqueFactory techniqueFactory)
     {
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+        _techniqueFactory = techniqueFactory;
 
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
         if (environment == "live") return;
 
-        // Register method to listen for the OnSpellCast event.
         NwModule.Instance.OnSpellCast += CastSpiritTechnique;
         Log.Info(message: "Monk Spirit Technique Service initialized.");
     }
@@ -48,7 +50,7 @@ public class SpiritTechniqueService
             return;
         }
 
-        ITechnique? techniqueHandler = TechniqueFactory.GetTechnique(techniqueType.Value);
+        ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(techniqueType.Value);
 
         techniqueHandler?.HandleCastTechnique(monk, castData);
 

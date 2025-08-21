@@ -6,14 +6,14 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Body;
 
-public class EmptyBody : ITechnique
+public class EmptyBody(AugmentationFactory augmentationFactory) : ITechnique
 {
     public TechniqueType TechniqueType => TechniqueType.EmptyBody;
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? AugmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
 
         if (augmentation != null)
             augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);

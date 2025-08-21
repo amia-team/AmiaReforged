@@ -5,7 +5,7 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Body;
 
-public class WholenessOfBody : ITechnique
+public class WholenessOfBody(AugmentationFactory augmentationFactory) : ITechnique
 {
     public TechniqueType TechniqueType => TechniqueType.Wholeness;
 
@@ -13,7 +13,7 @@ public class WholenessOfBody : ITechnique
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? AugmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
 
         if (augmentation != null)
             augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);

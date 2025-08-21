@@ -12,22 +12,23 @@ namespace AmiaReforged.Classes.Monk.Services;
 [ServiceBinding(typeof(BodyTechniqueService))]
 public class BodyTechniqueService
 {
+    private readonly TechniqueFactory _techniqueFactory;
     private static readonly NwFeat? BodyKiPointFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public BodyTechniqueService()
+    public BodyTechniqueService(TechniqueFactory techniqueFactory)
     {
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+        _techniqueFactory = techniqueFactory;
 
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
         if (environment == "live") return;
 
-        // Register method to listen for the OnSpellCast event.
         NwModule.Instance.OnSpellCast += CastBodyTechnique;
         Log.Info(message: "Monk Body Technique Service initialized.");
     }
 
-    private static void CastBodyTechnique(OnSpellCast castData)
+    private void CastBodyTechnique(OnSpellCast castData)
     {
         if (castData.Caster is not NwCreature monk) return;
         if (castData.Spell?.FeatReference is null) return;
@@ -47,7 +48,7 @@ public class BodyTechniqueService
             return;
         }
 
-        ITechnique? techniqueHandler = TechniqueFactory.GetTechnique(techniqueType.Value);
+        ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(techniqueType.Value);
 
         techniqueHandler?.HandleCastTechnique(monk, castData);
 

@@ -6,14 +6,14 @@ namespace AmiaReforged.Classes.Monk.Techniques;
 [ServiceBinding(typeof(TechniqueFactory))]
 public class TechniqueFactory
 {
-    private static Dictionary<TechniqueType, ITechnique>? _techniques;
+    private readonly Dictionary<TechniqueType, ITechnique>? _techniques;
 
     public TechniqueFactory(List<ITechnique> techniques)
     {
         _techniques = techniques.ToDictionary(t => t.TechniqueType);
     }
 
-    public static ITechnique? GetTechnique(TechniqueType techniqueType)
+    public ITechnique? GetTechnique(TechniqueType techniqueType)
     {
         return _techniques?.GetValueOrDefault(techniqueType);
     }

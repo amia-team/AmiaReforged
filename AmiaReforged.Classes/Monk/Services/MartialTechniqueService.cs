@@ -12,7 +12,10 @@ namespace AmiaReforged.Classes.Monk.Services;
 [ServiceBinding(typeof(MartialTechniqueService))]
 public class MartialTechniqueService
 {
+    private readonly TechniqueFactory _techniqueFactory;
+
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     private readonly Effect _martialEffect = Effect.VisualEffect(VfxType.None);
     private readonly Effect _martialCooldownEffect = Effect.VisualEffect(VfxType.None);
 
@@ -23,17 +26,17 @@ public class MartialTechniqueService
     private const string AxiomaticTag = "martial_technique_axiomatic";
     private const string EagleStrikeCounter = "eagle_strike_counter";
 
-    public MartialTechniqueService()
+    public MartialTechniqueService(TechniqueFactory techniqueFactory)
     {
+        _techniqueFactory = techniqueFactory;
+
         _martialEffect.SubType = EffectSubType.Unyielding;
         _martialCooldownEffect.SubType = EffectSubType.Unyielding;
         _martialCooldownEffect.Tag = MartialCooldownTag;
 
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-
         if (environment == "live") return;
 
-        // Register methods to listen for the events.
         NwModule.Instance.OnUseFeat += MartialTechniqueUseFeat;
         NwModule.Instance.OnCombatRoundStart += EnterMartialTechnique;
         NwModule.Instance.OnCreatureAttack += OnHitApplyTechnique;
@@ -145,7 +148,7 @@ public class MartialTechniqueService
         TechniqueType? techniqueType = GetTechniqueByTag(techniqueTag);
         if (techniqueType is null) return;
 
-        ITechnique? techniqueHandler = TechniqueFactory.GetTechnique(techniqueType.Value);
+        ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(techniqueType.Value);
         techniqueHandler?.HandleAttackTechnique(monk, attackData);
 
         ApplyTechniqueCooldown(monk, techniqueTag);

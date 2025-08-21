@@ -6,7 +6,7 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Body;
 
-public class KiBarrier : ITechnique
+public class KiBarrier(AugmentationFactory augmentationFactory) : ITechnique
 {
     public TechniqueType TechniqueType => TechniqueType.KiBarrier;
 
@@ -14,7 +14,7 @@ public class KiBarrier : ITechnique
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
-        IAugmentation? augmentation = path.HasValue ? AugmentationFactory.GetAugmentation(path.Value) : null;
+        IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
 
         if (augmentation != null)
             augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);
