@@ -1,5 +1,6 @@
 using AmiaReforged.Classes.Monk.Constants;
-using AmiaReforged.Classes.Monk.Techniques.Spirit;
+using AmiaReforged.Classes.Monk.Techniques;
+using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -8,35 +9,35 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(SpiritTechniqueHandler))]
-public class SpiritTechniqueHandler
+[ServiceBinding(typeof(BodyTechniqueService))]
+public class BodyTechniqueService
 {
-    private static readonly NwFeat? SpiritKiPointFeat = NwFeat.FromFeatId(MonkFeat.SpiritKiPoint);
+    private static readonly NwFeat? BodyKiPointFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public SpiritTechniqueHandler()
+    public BodyTechniqueService()
     {
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
 
         if (environment == "live") return;
 
         // Register method to listen for the OnSpellCast event.
-        NwModule.Instance.OnSpellCast += CastSpiritTechnique;
-        Log.Info(message: "Monk Spirit Technique Handler initialized.");
+        NwModule.Instance.OnSpellCast += CastBodyTechnique;
+        Log.Info(message: "Monk Body Technique Service initialized.");
     }
 
-    private void CastSpiritTechnique(OnSpellCast castData)
+    private static void CastBodyTechnique(OnSpellCast castData)
     {
         if (castData.Caster is not NwCreature monk) return;
         if (castData.Spell?.FeatReference is null) return;
         if (monk.GetClassInfo(ClassType.Monk) is null) return;
-        if (SpiritKiPointFeat == null) return;
+        if (BodyKiPointFeat == null) return;
 
-        int technique = castData.Spell.FeatReference.Id;
-        bool isSpiritTechnique = technique is MonkFeat.KiShout or MonkFeat.QuiveringPalmNew;
+        int? techniqueFeatId = castData.Spell.FeatReference.Id;
 
-        if (!isSpiritTechnique) return;
+        TechniqueType? techniqueType = GetTechniqueByFeat(techniqueFeatId);
+        if (techniqueType is null) return;
 
         string abilityName = castData.Spell.FeatReference.Name.ToString();
 
@@ -46,17 +47,11 @@ public class SpiritTechniqueHandler
             return;
         }
 
-        switch (technique)
-        {
-            case MonkFeat.KiShout:
-                KiShout.CastKiShout(castData);
-                break;
-            case MonkFeat.QuiveringPalmNew:
-                QuiveringPalm.CastQuiveringPalm(castData);
-                break;
-        }
+        ITechnique? techniqueHandler = TechniqueFactory.GetTechnique(techniqueType.Value);
 
-        monk.DecrementRemainingFeatUses(SpiritKiPointFeat);
+        techniqueHandler?.HandleCastTechnique(monk, castData);
+
+        monk.DecrementRemainingFeatUses(BodyKiPointFeat);
     }
 
     private static bool AbilityRestricted(NwCreature monk, string abilityName)
@@ -66,7 +61,7 @@ public class SpiritTechniqueHandler
         bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
                                       && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is
                                           BaseItemCategory.Torches;
-        bool noSpiritKi = SpiritKiPointFeat != null && (!monk.KnowsFeat(SpiritKiPointFeat) || monk.GetFeatRemainingUses(SpiritKiPointFeat) < 1);
+        bool noBodyKi = BodyKiPointFeat != null && (!monk.KnowsFeat(BodyKiPointFeat) || monk.GetFeatRemainingUses(BodyKiPointFeat) < 1);
 
         if (monk.IsPlayerControlled(out NwPlayer? player))
         {
@@ -76,10 +71,22 @@ public class SpiritTechniqueHandler
                 player.SendServerMessage($"Cannot use {abilityName} because you are wielding a shield.");
             if (hasFocusWithoutUnarmed)
                 player.SendServerMessage($"Cannot use {abilityName} because you are wielding a focus without being unarmed.");
-            if (noSpiritKi)
-                player.SendServerMessage($"Cannot use {abilityName} because you have no Spirit Ki Points left.");
+            if (noBodyKi)
+                player.SendServerMessage($"Cannot use {abilityName} because you have no Body Ki Points left.");
         }
 
-        return hasArmor || hasShield || hasFocusWithoutUnarmed || noSpiritKi;
+        return hasArmor || hasShield || hasFocusWithoutUnarmed || noBodyKi;
     }
+
+    private static TechniqueType? GetTechniqueByFeat(int? techniqueFeatId)
+    {
+        return techniqueFeatId switch
+        {
+            MonkFeat.WholenessOfBodyNew => TechniqueType.Wholeness,
+            MonkFeat.EmptyBodyNew => TechniqueType.EmptyBody,
+            MonkFeat.KiBarrier => TechniqueType.KiBarrier,
+            _ => null
+        };
+    }
+
 }

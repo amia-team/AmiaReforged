@@ -5,57 +5,52 @@ using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
-public static class EchoingValley
+public sealed class EchoingValley : IAugmentation
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+    private const string SummonEchoResRef = "summon_echo";
+    private const string EchoingEmptyBodyTag = "echoingvalley_emptybody";
+    public PathType PathType => PathType.EchoingValley;
+    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
         switch (technique)
         {
             case TechniqueType.Stunning:
-                if (attackData != null) AugmentStunningStrike(attackData);
-                break;
-            case TechniqueType.EmptyBody:
-                if (castData != null) AugmentEmptyBody(castData);
-                break;
-            case TechniqueType.KiShout:
-                if (castData != null) AugmentKiShout(castData);
-                break;
-            case TechniqueType.Quivering:
-                if (castData != null) AugmentQuiveringPalm(castData);
-                break;
-            case TechniqueType.Eagle:
-                if (attackData != null) EagleStrike.DoEagleStrike(attackData);
+                AugmentStunningStrike(monk, attackData);
                 break;
             case TechniqueType.Axiomatic:
-                if (attackData != null) AxiomaticStrike.DoAxiomaticStrike(attackData);
+                AugmentAxiomaticStrike(monk, attackData);
                 break;
-            case TechniqueType.Wholeness:
-                if (castData != null) WholenessOfBody.DoWholenessOfBody(castData);
+        }
+    }
+
+    public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
+    {
+        switch (technique)
+        {
+            case TechniqueType.EmptyBody:
+                AugmentEmptyBody(monk);
                 break;
-            case TechniqueType.KiBarrier:
-                if (castData != null) KiBarrier.DoKiBarrier(castData);
+            case TechniqueType.KiShout:
+                AugmentKiShout(monk);
                 break;
         }
     }
 
     /// <summary>
-    /// Stunning Strike summons an Echo to empower Stunning Strike with +1d4 bonus magical damage.
-    /// Echoes last for two turns. Each Ki Focus allows an additional Echo to be summoned for an additional
-    /// 1d4 bonus magical damage to a maximum of 4d4.
+    /// Stunning Strike summons an Echo and makes summoned Echoes deal 1d6 sonic damage in a medium radius.
+    /// Echoes last for two turns. Each Ki Focus allows an additional Echo to be summoned.
     /// </summary>
-    private static void AugmentStunningStrike(OnCreatureAttack attackData)
+    private void AugmentStunningStrike(NwCreature monk, OnCreatureAttack attackData)
     {
         StunningStrike.DoStunningStrike(attackData);
 
-        NwCreature monk = attackData.Attacker;
+        if (attackData.Target is not NwCreature targetCreature || !targetCreature.IsReactionTypeHostile(monk)) return;
 
-        if (attackData.Target is not NwCreature targetCreature) return;
-        if (!targetCreature.IsReactionTypeHostile(monk)) return;
-
-        int echoCap = MonkUtils.GetKiFocus(monk) switch
+        byte echoCap = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -63,105 +58,190 @@ public static class EchoingValley
             _ => 1
         };
 
-        // Check how many echoes monk has
-        int echoCount = monk.Associates.Count(associate =>
-            associate is { AssociateType: AssociateType.Summoned, ResRef: "summon_echo" });
+        NwCreature[] echoes = monk.Associates
+            .Where(associate => associate.ResRef == SummonEchoResRef)
+            .ToArray();
 
-        // Return if capped out
-        if (echoCount == echoCap) return;
+        _ = SummonEcho(monk, echoCap, echoes);
 
-        _ = SummonEcho();
-
-        return;
-
-        async Task SummonEcho()
+        foreach (NwCreature echo in echoes)
         {
-            Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 3f);
+            echo.JumpToObject(targetCreature);
 
-            if (summonLocation is null) return;
-
-            Effect summonEcho = Effect.SummonCreature("summon_echo", VfxType.ImpMagicProtection!,
-                TimeSpan.FromSeconds(1), 0, VfxType.ImpGrease);
-            TimeSpan summonDuration = NwTimeSpan.FromTurns(2);
-
-            await monk.WaitForObjectContext();
-            summonLocation.ApplyEffect(EffectDuration.Temporary, summonEcho, summonDuration);
+            EchoAoe(monk, echo);
         }
+    }
+
+    private async Task SummonEcho(NwCreature monk, byte echoCap, NwCreature[] echoes)
+    {
+        if (monk.Location == null) return;
+
+        if (echoes.Length >= echoCap) return;
+
+        Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location, 3f);
+
+        if (summonLocation is null) return;
+
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, monk);
+
+        Effect summonEcho =
+            Effect.SummonCreature(SummonEchoResRef, VfxType.ImpMagicProtection!, unsummonVfx: VfxType.ImpGrease);
+
+        await monk.WaitForObjectContext();
+        summonLocation.ApplyEffect(EffectDuration.Temporary, summonEcho, NwTimeSpan.FromTurns(2));
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+
+        NwCreature? newEcho = monk.Associates
+            .FirstOrDefault(a => a.ResRef == SummonEchoResRef && !echoes.Contains(a));
+
+        if (newEcho != null)
+            PacifyEcho(newEcho);
+
+        FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
+    }
+
+    private void PacifyEcho(NwCreature echo)
+    {
+        Effect echoEffect = Effect.LinkEffects(
+            Effect.Pacified(),
+            Effect.Ethereal()
+        );
+        echoEffect.SubType = EffectSubType.Unyielding;
+
+        echo.ApplyEffect(EffectDuration.Permanent, echoEffect);
+        echo.IsDestroyable = false;
+    }
+
+    private void EchoAoe(NwCreature monk, NwCreature echo)
+    {
+        if (echo.Location == null) return;
+
+        Effect echoVfx = MonkUtils.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Medium);
+
+        echo.Location.ApplyEffect(EffectDuration.Instant, echoVfx);
+
+        foreach (NwGameObject nwObject in echo.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, false))
+        {
+            if (nwObject is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
+
+            int damageAmount = Random.Shared.Roll(6);
+            Effect damageEffect = Effect.Damage(damageAmount, DamageType.Sonic);
+
+            hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
+        }
+    }
+
+    /// <summary>
+    /// Axiomatic Strike deals +1 bonus sonic damage for each Echo the monk has.
+    /// </summary>
+    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
+    {
+        AxiomaticStrike.DoAxiomaticStrike(attackData);
+
+        NwCreature[] echoes = monk.Associates
+            .Where(associate => associate.ResRef == SummonEchoResRef)
+            .ToArray();
+
+        if (echoes.Length == 0) return;
+
+        DamageData<short> damageData = attackData.DamageData;
+        short sonicDamage = damageData.GetDamageByType(DamageType.Sonic);
+
+        sonicDamage += (short)echoes.Length;
+        damageData.SetDamageByType(DamageType.Sonic, sonicDamage);
     }
 
     /// <summary>
     /// Empty Body grants +1 bonus dodge AC for each Echo.
     /// </summary>
-    private static void AugmentEmptyBody(OnSpellCast castData)
+    private void AugmentEmptyBody(NwCreature monk)
     {
-        EmptyBody.DoEmptyBody(castData);
+        EmptyBody.DoEmptyBody(monk);
 
-        NwCreature monk = (NwCreature)castData.Caster;
         int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
-        // Check how many echoes monk has
-        int echoCount = monk.Associates.Count(associate =>
-            associate is { AssociateType: AssociateType.Summoned, ResRef: "summon_echo" });
 
-        Effect emptyBodyEffect = Effect.LinkEffects(Effect.ACIncrease(echoCount),
-            Effect.VisualEffect(VfxType.DurPdkFear));
-        emptyBodyEffect.Tag = "emptybody_echoingvalley";
-        TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
+        int echoCount = monk.Associates.Count(associate => associate.ResRef == SummonEchoResRef);
 
-        foreach (Effect effect in monk.ActiveEffects)
-            if (effect.Tag == "emptybody_echoingvalley")
-                monk.RemoveEffect(effect);
+        Effect? emptyBodyEffect = monk.ActiveEffects.FirstOrDefault(e => e.Tag == EchoingEmptyBodyTag);
+        if (emptyBodyEffect != null)
+            monk.RemoveEffect(emptyBodyEffect);
 
-        monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
+        emptyBodyEffect = Effect.LinkEffects(
+            Effect.ACIncrease(echoCount),
+            Effect.VisualEffect(VfxType.DurPdkFear)
+        );
+
+        emptyBodyEffect.Tag = EchoingEmptyBodyTag;
+
+        monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, NwTimeSpan.FromRounds(monkLevel));
     }
 
     /// <summary>
-    /// Ki Shout awakens the Echoes, granting them the ability to fight.
+    /// Ki Shout releases the monk's Echoes, each Echo exploding and dealing 10d6 sonic damage in a large radius.
+    /// If the target succeeds on a fortitude save, they take half damage and avoid being stunned for 1 round.
     /// </summary>
-    private static void AugmentKiShout(OnSpellCast castData)
+    private void AugmentKiShout(NwCreature monk)
     {
-        KiShout.DoKiShout(castData);
+        KiShout.DoKiShout(monk);
 
-        NwCreature monk = (NwCreature)castData.Caster;
+        IEnumerable<NwCreature> echoes = monk.Associates
+            .Where(associate => associate.ResRef == SummonEchoResRef);
 
-        Effect kiShoutEffect = Effect.VisualEffect(VfxType.FnfPwstun, false, 0.7f);
-        kiShoutEffect.Tag = "kishout_echoingvalley";
-
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        foreach (NwCreature echo in echoes)
         {
-            // Must be echo and monk's associate
-            if (!monk.Associates.Contains(nwObject) || nwObject.ResRef != "summon_echo") continue;
-
-            nwObject.Location?.ApplyEffect(EffectDuration.Instant, kiShoutEffect);
+            float delay = echo.Distance(monk);
+            _ = ReleaseEcho(monk, echo, delay);
         }
     }
 
-    /// <summary>
-    /// Quivering Palm creates an Echo of the targeted creature to fight alongside the monk for one turn.
-    /// </summary>
-    private static void AugmentQuiveringPalm(OnSpellCast castData)
+    private async Task ReleaseEcho(NwCreature monk, NwCreature echo, float delay)
     {
-        TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(castData);
+        await NwTask.Delay(TimeSpan.FromSeconds(delay));
 
-        if (castData.TargetObject is not NwCreature targetCreature) return;
-        if (touchAttackResult == TouchAttackResult.Miss) return;
+        if (echo.Location == null) return;
 
-        NwCreature monk = (NwCreature)castData.Caster;
+        ExplodeEcho(monk, echo);
+        echo.IsDestroyable = true;
+        echo.Destroy();
+    }
 
-        _ = SummonClone();
+    private void ExplodeEcho(NwCreature monk, NwCreature echo)
+    {
+        if (echo.Location == null) return;
 
-        return;
+        Effect explosionVfx = MonkUtils.ResizedVfx(VfxType.FnfMysticalExplosion, RadiusSize.Large);
 
-        async Task SummonClone()
+        echo.Location.ApplyEffect(EffectDuration.Instant, explosionVfx);
+
+        foreach (NwGameObject nwObject in echo.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, false))
         {
-            Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location!, 4f);
+            if (nwObject is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
 
-            if (summonLocation is null) return;
+            int dc = MonkUtils.CalculateMonkDc(monk);
 
-            Effect summonClone = Effect.SummonCreature(targetCreature, VfxType.FnfPwstun!);
-            TimeSpan summonDuration = NwTimeSpan.FromTurns(1);
+            SavingThrowResult savingThrowResult =
+                hostileCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Sonic, monk);
 
-            await monk.WaitForObjectContext();
-            summonLocation.ApplyEffect(EffectDuration.Temporary, summonClone, summonDuration);
+            int damageAmount = Random.Shared.Roll(6, 10);
+
+            switch (savingThrowResult)
+            {
+                case SavingThrowResult.Success:
+                    damageAmount /= 2;
+                    hostileCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+                    break;
+                case SavingThrowResult.Failure:
+                    hostileCreature.ApplyEffect(EffectDuration.Temporary, Effect.Stunned(), NwTimeSpan.FromRounds(1));
+                    break;
+            }
+
+            Effect damageEffect = Effect.LinkEffects(
+                Effect.Damage(damageAmount, DamageType.Sonic),
+                Effect.VisualEffect(VfxType.ImpSonic)
+            );
+
+            hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
         }
     }
 }

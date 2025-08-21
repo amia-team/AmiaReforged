@@ -1,5 +1,5 @@
-// Called from the spirit technique handler when the technique is cast
-
+using System;
+using System.Collections.Generic;
 using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
@@ -7,61 +7,73 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Spirit;
 
-public static class KiShout
+public class KiShout : ITechnique
 {
-    public static void CastKiShout(OnSpellCast castData)
+    public TechniqueType TechniqueType => TechniqueType.KiShout;
+    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {
-        NwCreature monk = (NwCreature)castData.Caster;
         PathType? path = MonkUtils.GetMonkPath(monk);
-        const TechniqueType technique = TechniqueType.KiShout;
 
-        if (path != null)
-        {
-            AugmentationApplier.ApplyAugmentations(path, technique, castData);
-            return;
-        }
+        IAugmentation? augmentation = path.HasValue ? AugmentationFactory.GetAugmentation(path.Value) : null;
 
-        DoKiShout(castData);
+        if (augmentation != null)
+            augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);
+        else
+            DoKiShout(monk);
     }
 
     /// <summary>
     ///     Stuns enemies within colossal range for three rounds if they fail a will save. In addition,
     ///     all enemies take 1d4 sonic damage per monk level. Each use depletes a Spirit Ki Point.
     /// </summary>
-    public static void DoKiShout(OnSpellCast castData, DamageType damageType = DamageType.Sonic, VfxType damageVfx = VfxType.ImpSonic)
+    public static void DoKiShout(NwCreature monk, DamageType damageType = DamageType.Sonic, VfxType damageVfx = VfxType.ImpSonic)
     {
-        NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
-        int dc = MonkUtils.CalculateMonkDc(monk);
-        Effect kiShoutEffect = Effect.Stunned();
-        kiShoutEffect.SubType = EffectSubType.Supernatural;
+        if (monk.Location == null) return;
         Effect kiShoutVfx = Effect.VisualEffect(VfxType.FnfHowlMind);
-        TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
-
         monk.ApplyEffect(EffectDuration.Instant, kiShoutVfx);
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+
+        foreach (NwGameObject obj in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
         {
-            NwCreature creatureInShape = (NwCreature)nwObject;
-            if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
+            if (obj is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
 
-            CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.AbilityHowlSonic)!);
+            CreatureEvents.OnSpellCastAt.Signal(monk, hostileCreature, NwSpell.FromSpellType(Spell.AbilityHowlSonic)!);
 
-            int damageAmount = Random.Shared.Roll(4, monkLevel);
-            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, damageType),
-                Effect.VisualEffect(damageVfx));
-
-            creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
-
-            SavingThrowResult savingThrowResult =
-                creatureInShape.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
-
-            if (savingThrowResult is SavingThrowResult.Failure)
-            {
-                creatureInShape.ApplyEffect(EffectDuration.Temporary, kiShoutEffect, effectDuration);
-                continue;
-            }
-
-            creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+            ApplyKiShoutEffects(monk, hostileCreature, damageType, damageVfx);
         }
     }
+
+    private static void ApplyKiShoutEffects(NwCreature monk, NwCreature target, DamageType damageType, VfxType damageVfx)
+    {
+        int dc = MonkUtils.CalculateMonkDc(monk);
+        byte damageDice = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+        int damageAmount = Random.Shared.Roll(4, damageDice);
+        Effect damageEffect = Effect.Damage(damageAmount, damageType);
+
+        target.ApplyEffect(EffectDuration.Instant, damageEffect);
+        target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(damageVfx));
+
+        SavingThrowResult savingThrowResult = target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
+
+        switch (savingThrowResult)
+        {
+            case SavingThrowResult.Immune:
+                break;
+            case SavingThrowResult.Success:
+                target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+                break;
+            case SavingThrowResult.Failure:
+                ApplyKiShoutStun(target);
+                break;
+        }
+    }
+
+    private static void ApplyKiShoutStun(NwCreature target)
+    {
+        Effect kiShoutEffect = Effect.Stunned();
+        kiShoutEffect.SubType = EffectSubType.Supernatural;
+        TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
+        target.ApplyEffect(EffectDuration.Temporary, kiShoutEffect, effectDuration);
+    }
+
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
 }

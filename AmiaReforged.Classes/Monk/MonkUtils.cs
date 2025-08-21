@@ -54,32 +54,32 @@ public static class MonkUtils
     ///     DC 10 + monk level / 3 + wisdom modifier
     /// </summary>
     /// <returns>The monk ability DC</returns>
-    public static int CalculateMonkDc(NwCreature monk) => 10 + monk.GetClassInfo(ClassType.Monk)!.Level / 3 +
+    public static int CalculateMonkDc(NwCreature monk) => 10 + monk.GetClassInfo(ClassType.Monk)?.Level ?? 0 / 3 +
                                                           monk.GetAbilityModifier(Ability.Wisdom);
 
     /// <summary>
-    ///     Returns a vfx effect resized to your desired size
+    ///     Resizes a vfx to your desired size
     /// </summary>
-    /// <param name="visualEffect">The visual effect you want to resize</param>
+    /// <param name="vfxType">The visual effect you want to resize</param>
     /// <param name="desiredSize">
     ///     The size you desire in meters (small 1.67, medium 3.33, large 5, huge 6.67, gargantuan 8.33,
     ///     colossal 10)
     /// </param>
-    /// <returns></returns>
-    public static Effect ResizedVfx(VfxType visualEffect, float desiredSize)
+    /// <returns>The resized Effect.VisualEffect</returns>
+    public static Effect ResizedVfx(VfxType vfxType, float desiredSize)
     {
-        float vfxDefaultSize = visualEffect switch
+        float vfxDefaultSize = vfxType switch
         {
             VfxType.ImpFrostL or VfxType.ImpAcidS or VfxType.ImpBlindDeafM => 1f,
             VfxType.FnfLosEvil10 or (VfxType)1046 => RadiusSize.Medium,
             VfxType.FnfFireball => RadiusSize.Huge,
-            VfxType.FnfElectricExplosion => RadiusSize.Gargantuan,
+            VfxType.FnfElectricExplosion or VfxType.FnfMysticalExplosion => RadiusSize.Gargantuan,
             VfxType.FnfHowlOdd or VfxType.FnfHowlMind or VfxType.FnfLosEvil30 or VfxType.FnfFirestorm => RadiusSize.Colossal,
             _ => RadiusSize.Large
         };
 
         float vfxScale = desiredSize / vfxDefaultSize;
-        return Effect.VisualEffect(visualEffect, false, vfxScale);
+        return Effect.VisualEffect(vfxType, false, vfxScale);
     }
 
     /// <summary>
@@ -108,5 +108,24 @@ public static class MonkUtils
             _ => DamageType.Fire
         };
         return elementalType;
+    }
+
+    public static void RegenerateBodyKi(NwCreature monk)
+    {
+        NwFeat? bodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
+        if (bodyKiFeat == null || !monk.KnowsFeat(bodyKiFeat)) return;
+
+        if (monk.GetFeatRemainingUses(bodyKiFeat) < monk.GetFeatTotalUses(bodyKiFeat))
+            return;
+
+        monk.IncrementRemainingFeatUses(bodyKiFeat);
+
+        if (monk.IsPlayerControlled(out NwPlayer? player))
+        {
+            player.FloatingTextString(
+                "Ki Body Point regained!".ColorString(ColorConstants.Lime),
+                false
+            );
+        }
     }
 }

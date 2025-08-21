@@ -1,5 +1,3 @@
-// The ability script called by the MartialTechniqueService
-
 using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
@@ -7,21 +5,19 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Martial;
 
-public static class AxiomaticStrike
+public class AxiomaticStrike : ITechnique
 {
-    public static void ApplyAxiomaticStrike(OnCreatureAttack attackData)
+    public TechniqueType TechniqueType => TechniqueType.Axiomatic;
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {
-        NwCreature monk = attackData.Attacker;
         PathType? path = MonkUtils.GetMonkPath(monk);
-        const TechniqueType technique = TechniqueType.Axiomatic;
 
-        if (path != null)
-        {
-            AugmentationApplier.ApplyAugmentations(path, technique, attackData: attackData);
-            return;
-        }
+        IAugmentation? augmentation = path.HasValue ? AugmentationFactory.GetAugmentation(path.Value) : null;
 
-        DoAxiomaticStrike(attackData);
+        if (augmentation != null)
+            augmentation.ApplyAttackAugmentation(monk, TechniqueType, attackData);
+        else
+            DoAxiomaticStrike(attackData);
     }
 
     /// <summary>
@@ -41,8 +37,8 @@ public static class AxiomaticStrike
             _ => 1
         };
 
-        // Apply Axiomatic's bonus damage
         bludgeoningDamage += bonusDamage;
         damageData.SetDamageByType(DamageType.Bludgeoning, bludgeoningDamage);
     }
+    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData) {}
 }

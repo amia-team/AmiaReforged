@@ -1,5 +1,4 @@
-// Called from the body technique handler when the technique is cast
-
+using System;
 using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
@@ -7,35 +6,38 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Body;
 
-public static class EmptyBody
+public class EmptyBody : ITechnique
 {
-    public static void CastEmptyBody(OnSpellCast castData)
+    public TechniqueType TechniqueType => TechniqueType.EmptyBody;
+    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {
-        NwCreature monk = (NwCreature)castData.Caster;
         PathType? path = MonkUtils.GetMonkPath(monk);
-        const TechniqueType technique = TechniqueType.EmptyBody;
 
-        if (path != null)
-        {
-            AugmentationApplier.ApplyAugmentations(path, technique, castData);
-            return;
-        }
+        IAugmentation? augmentation = path.HasValue ? AugmentationFactory.GetAugmentation(path.Value) : null;
 
-        DoEmptyBody(castData);
+        if (augmentation != null)
+            augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);
+        else
+            DoEmptyBody(monk);
     }
 
     /// <summary>
     ///     The monk is given 50% concealment for rounds per monk level. Each use depletes a Body Ki Point.
     /// </summary>
-    public static void DoEmptyBody(OnSpellCast castData)
+    public static void DoEmptyBody(NwCreature monk)
     {
-        NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
-        Effect emptyBodyEffect = Effect.LinkEffects(Effect.Concealment(50),
-            Effect.VisualEffect(VfxType.DurInvisibility), Effect.VisualEffect(VfxType.DurCessatePositive));
+        byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+
+        Effect emptyBodyEffect = Effect.LinkEffects(
+            Effect.Concealment(50),
+            Effect.VisualEffect(VfxType.DurInvisibility),
+            Effect.VisualEffect(VfxType.DurCessatePositive));
+
         emptyBodyEffect.SubType = EffectSubType.Supernatural;
         TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
 
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
     }
+
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
 }

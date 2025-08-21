@@ -7,37 +7,105 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
-public static class CrashingMeteor
+public sealed class CrashingMeteor : IAugmentation
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+    private const string MeteorKiShoutTag = "crashingmeteor_kishout";
+    public PathType PathType => PathType.CrashingMeteor;
+    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
+        CrashingMeteorData meteor = GetCrashingMeteorData(monk);
+
         switch (technique)
         {
             case TechniqueType.Stunning:
-                if (attackData != null) AugmentStunningStrike(attackData);
+                AugmentStunningStrike(monk, attackData, meteor);
                 break;
             case TechniqueType.Axiomatic:
-                if (attackData != null) AugmentAxiomaticStrike(attackData);
-                break;
-            case TechniqueType.KiShout:
-                if (castData != null) AugmentKiShout(castData);
-                break;
-            case TechniqueType.Wholeness:
-                if (castData != null) AugmentWholenessOfBody(castData);
-                break;
-            case TechniqueType.KiBarrier:
-                if (castData != null) KiBarrier.DoKiBarrier(castData);
-                break;
-            case TechniqueType.Eagle:
-                if (attackData != null) EagleStrike.DoEagleStrike(attackData);
-                break;
-            case TechniqueType.EmptyBody:
-                if (castData != null) EmptyBody.DoEmptyBody(castData);
-                break;
-            case TechniqueType.Quivering:
-                if (castData != null) QuiveringPalm.DoQuiveringPalm(castData);
+                AugmentAxiomaticStrike(attackData, meteor);
                 break;
         }
+    }
+    public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
+    {
+        CrashingMeteorData meteor = GetCrashingMeteorData(monk);
+
+        switch (technique)
+        {
+            case TechniqueType.Wholeness:
+                AugmentWholenessOfBody(monk, meteor);
+                break;
+            case TechniqueType.KiShout:
+                AugmentKiShout(monk, meteor);
+                break;
+        }
+    }
+
+    private struct CrashingMeteorData
+    {
+        public int Dc;
+        public int DiceAmount;
+        public short BonusDamage;
+        public Effect AoeVfx;
+        public VfxType DamageVfx;
+        public DamageType DamageType;
+        public SavingThrowType SaveType;
+        public int DamageVulnerability;
+    }
+
+    private static CrashingMeteorData GetCrashingMeteorData(NwCreature monk)
+    {
+        DamageType elementalType = MonkUtils.GetElementalType(monk);
+
+        return new CrashingMeteorData
+        {
+            Dc = MonkUtils.CalculateMonkDc(monk),
+            DiceAmount = MonkUtils.GetKiFocus(monk) switch
+            {
+                KiFocus.KiFocus1 => 4,
+                KiFocus.KiFocus2 => 6,
+                KiFocus.KiFocus3 => 8,
+                _ => 2
+            },
+            BonusDamage = MonkUtils.GetKiFocus(monk) switch
+            {
+                KiFocus.KiFocus1 => 2,
+                KiFocus.KiFocus2 => 3,
+                KiFocus.KiFocus3 => 4,
+                _ => 1
+            },
+            AoeVfx = MonkUtils.ResizedVfx(elementalType switch
+            {
+                DamageType.Fire => VfxType.FnfFirestorm,
+                DamageType.Cold => VfxType.ImpFrostL,
+                DamageType.Electrical => VfxType.FnfElectricExplosion,
+                DamageType.Acid => VfxType.ImpAcidS,
+                _ => VfxType.FnfFireball
+            }, RadiusSize.Large),
+            DamageVfx = elementalType switch
+            {
+                DamageType.Fire => VfxType.ImpFlameS,
+                DamageType.Cold => VfxType.ImpFrostS,
+                DamageType.Electrical => VfxType.ComHitElectrical,
+                DamageType.Acid => VfxType.ImpAcidS,
+                _ => VfxType.ImpFlameS
+            },
+            DamageType = elementalType,
+            SaveType = elementalType switch
+            {
+                DamageType.Fire => SavingThrowType.Fire,
+                DamageType.Cold => SavingThrowType.Cold,
+                DamageType.Electrical => SavingThrowType.Electricity,
+                DamageType.Acid => SavingThrowType.Acid,
+                _ => SavingThrowType.Fire
+            },
+            DamageVulnerability = MonkUtils.GetKiFocus(monk) switch
+            {
+                KiFocus.KiFocus1 => 20,
+                KiFocus.KiFocus2 => 30,
+                KiFocus.KiFocus3 => 40,
+                _ => 10
+            }
+        };
     }
 
     /// <summary>
@@ -45,46 +113,13 @@ public static class CrashingMeteor
     ///     critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental
     ///     damage.
     /// </summary>
-    private static void AugmentStunningStrike(OnCreatureAttack attackData)
+    private void AugmentStunningStrike(NwCreature monk, OnCreatureAttack attackData,
+        CrashingMeteorData meteor)
     {
         StunningStrike.DoStunningStrike(attackData);
 
-        NwCreature monk = attackData.Attacker;
-        DamageType elementalType = MonkUtils.GetElementalType(monk);
-        int dc = MonkUtils.CalculateMonkDc(monk);
-        int diceAmount = MonkUtils.GetKiFocus(monk) switch
-        {
-            KiFocus.KiFocus1 => 4,
-            KiFocus.KiFocus2 => 6,
-            KiFocus.KiFocus3 => 8,
-            _ => 2
-        };
-        Effect elementalAoeVfx = elementalType switch
-        {
-            DamageType.Fire => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large),
-            DamageType.Cold => MonkUtils.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
-            DamageType.Electrical => MonkUtils.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
-            DamageType.Acid => MonkUtils.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
-            _ => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large)
-        };
-        Effect elementalDamageVfx = elementalType switch
-        {
-            DamageType.Fire => Effect.VisualEffect(VfxType.ImpFlameS),
-            DamageType.Cold => Effect.VisualEffect(VfxType.ImpFrostS),
-            DamageType.Electrical => Effect.VisualEffect(VfxType.ComHitElectrical),
-            DamageType.Acid => Effect.VisualEffect(VfxType.ImpAcidS),
-            _ => Effect.VisualEffect(VfxType.ImpFlameS)
-        };
-        SavingThrowType elementalSaveType = elementalType switch
-        {
-            DamageType.Fire => SavingThrowType.Fire,
-            DamageType.Cold => SavingThrowType.Cold,
-            DamageType.Electrical => SavingThrowType.Electricity,
-            DamageType.Acid => SavingThrowType.Acid,
-            _ => SavingThrowType.Fire
-        };
+        attackData.Target.ApplyEffect(EffectDuration.Instant, meteor.AoeVfx);
 
-        attackData.Target.ApplyEffect(EffectDuration.Instant, elementalAoeVfx);
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
@@ -97,14 +132,16 @@ public static class CrashingMeteor
             bool hasImprovedEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
 
             SavingThrowResult savingThrowResult =
-                creatureInShape.RollSavingThrow(SavingThrow.Reflex, dc, elementalSaveType, monk);
+                creatureInShape.RollSavingThrow(SavingThrow.Reflex, meteor.Dc, meteor.SaveType, monk);
 
-            int damageAmount = Random.Shared.Roll(6, diceAmount);
+            int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
 
             if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
                 damageAmount /= 2;
 
-            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, elementalType), elementalDamageVfx);
+            Effect damageEffect = Effect.LinkEffects(
+                Effect.Damage(damageAmount, meteor.DamageType),
+                Effect.VisualEffect(meteor.DamageVfx));
 
             if (savingThrowResult == SavingThrowResult.Failure)
             {
@@ -124,74 +161,32 @@ public static class CrashingMeteor
     }
 
     /// <summary>
-    ///     Axiomatic Strike deals +1 bonus elemental damage to the target, with an additional +1 for every Ki Focus,
+    ///     Axiomatic Strike deals +1 bonus elemental damage, with an additional +1 for every Ki Focus,
     ///     to a maximum of +4 elemental damage.
     /// </summary>
-    private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
+    private void AugmentAxiomaticStrike(OnCreatureAttack attackData, CrashingMeteorData meteor)
     {
         AxiomaticStrike.DoAxiomaticStrike(attackData);
 
-        NwCreature monk = attackData.Attacker;
-        DamageType elementalType = MonkUtils.GetElementalType(monk);
         DamageData<short> damageData = attackData.DamageData;
-        short elementalDamage = damageData.GetDamageByType(elementalType);
-        short bonusDamageElemental = MonkUtils.GetKiFocus(monk) switch
-        {
-            KiFocus.KiFocus1 => 2,
-            KiFocus.KiFocus2 => 3,
-            KiFocus.KiFocus3 => 4,
-            _ => 1
-        };
+        short elementalDamage = damageData.GetDamageByType(meteor.DamageType);
 
-        elementalDamage += bonusDamageElemental;
-        damageData.SetDamageByType(elementalType, elementalDamage);
+        elementalDamage += meteor.BonusDamage;
+        damageData.SetDamageByType(meteor.DamageType, elementalDamage);
     }
 
     /// <summary>
     ///     Wholeness of Body deals 2d6 elemental damage in a large area round the monk, with a successful reflex save
     ///     halving the damage. Each Ki Focus adds 2d6 damage to a maximum of 8d6 elemental damage.
     /// </summary>
-    private static void AugmentWholenessOfBody(OnSpellCast castData)
+    private static void AugmentWholenessOfBody(NwCreature monk, CrashingMeteorData meteor)
     {
-        WholenessOfBody.DoWholenessOfBody(castData);
+        WholenessOfBody.DoWholenessOfBody(monk);
 
-        NwCreature monk = (NwCreature)castData.Caster;
-        DamageType elementalType = MonkUtils.GetElementalType(monk);
-        int dc = MonkUtils.CalculateMonkDc(monk);
-        int diceAmount = MonkUtils.GetKiFocus(monk) switch
-        {
-            KiFocus.KiFocus1 => 4,
-            KiFocus.KiFocus2 => 6,
-            KiFocus.KiFocus3 => 8,
-            _ => 2
-        };
-        Effect elementalAoeVfx = elementalType switch
-        {
-            DamageType.Fire => MonkUtils.ResizedVfx(VfxType.FnfFirestorm, RadiusSize.Large),
-            DamageType.Cold => MonkUtils.ResizedVfx(VfxType.ImpFrostL, RadiusSize.Large),
-            DamageType.Electrical => MonkUtils.ResizedVfx(VfxType.FnfElectricExplosion, RadiusSize.Large),
-            DamageType.Acid => MonkUtils.ResizedVfx(VfxType.ImpAcidS, RadiusSize.Large),
-            _ => MonkUtils.ResizedVfx(VfxType.FnfFireball, RadiusSize.Large)
-        };
-        Effect elementalDamageVfx = elementalType switch
-        {
-            DamageType.Fire => Effect.VisualEffect(VfxType.ImpFlameS),
-            DamageType.Cold => Effect.VisualEffect(VfxType.ImpFrostS),
-            DamageType.Electrical => Effect.VisualEffect(VfxType.ComHitElectrical),
-            DamageType.Acid => Effect.VisualEffect(VfxType.ImpAcidS),
-            _ => Effect.VisualEffect(VfxType.ImpFlameS)
-        };
-        SavingThrowType elementalSaveType = elementalType switch
-        {
-            DamageType.Fire => SavingThrowType.Fire,
-            DamageType.Cold => SavingThrowType.Cold,
-            DamageType.Electrical => SavingThrowType.Electricity,
-            DamageType.Acid => SavingThrowType.Acid,
-            _ => SavingThrowType.Fire
-        };
+        if (monk.Location == null) return;
 
-        monk.ApplyEffect(EffectDuration.Instant, elementalAoeVfx);
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
+        monk.ApplyEffect(EffectDuration.Instant, meteor.AoeVfx);
+        foreach (NwGameObject nwObject in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
             NwCreature creatureInShape = (NwCreature)nwObject;
@@ -203,14 +198,16 @@ public static class CrashingMeteor
             bool hasImprovedEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
 
             SavingThrowResult savingThrowResult =
-                creatureInShape.RollSavingThrow(SavingThrow.Reflex, dc, elementalSaveType, monk);
+                creatureInShape.RollSavingThrow(SavingThrow.Reflex, meteor.Dc, meteor.SaveType, monk);
 
-            int damageAmount = Random.Shared.Roll(6, diceAmount);
+            int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
 
             if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
                 damageAmount /= 2;
 
-            Effect damageEffect = Effect.LinkEffects(Effect.Damage(damageAmount, elementalType), elementalDamageVfx);
+            Effect damageEffect = Effect.LinkEffects(
+                Effect.Damage(damageAmount, meteor.DamageType),
+                Effect.VisualEffect(meteor.DamageVfx));
 
             if (savingThrowResult == SavingThrowResult.Failure)
             {
@@ -234,48 +231,26 @@ public static class CrashingMeteor
     ///     to the element for three rounds, with every Ki Focus increasing it by 10%, to a maximum of 40% elemental damage
     ///     vulnerability.
     /// </summary>
-    private static void AugmentKiShout(OnSpellCast castData)
+    private static void AugmentKiShout(NwCreature monk, CrashingMeteorData meteor)
     {
-        NwCreature monk = (NwCreature)castData.Caster;
-        DamageType elementalType = MonkUtils.GetElementalType(monk);
-        VfxType elementalDamageVfx = elementalType switch
+        KiShout.DoKiShout(monk, meteor.DamageType, meteor.DamageVfx);
+
+        if (monk.Location == null) return;
+
+        foreach (NwGameObject obj in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
         {
-            DamageType.Fire => VfxType.ImpFlameS,
-            DamageType.Cold => VfxType.ImpFrostS,
-            DamageType.Electrical => VfxType.ComHitElectrical,
-            DamageType.Acid => VfxType.ImpAcidS,
-            _ => VfxType.ImpFlameS
-        };
+            if (obj is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
 
-        KiShout.DoKiShout(castData, elementalType, elementalDamageVfx);
+            Effect? elementalEffect = hostileCreature.ActiveEffects.FirstOrDefault(e => e.Tag == MeteorKiShoutTag);
+            if (elementalEffect != null)
+                hostileCreature.RemoveEffect(elementalEffect);
 
-        int vulnerabilityPct = MonkUtils.GetKiFocus(monk) switch
-        {
-            KiFocus.KiFocus1 => 20,
-            KiFocus.KiFocus2 => 30,
-            KiFocus.KiFocus3 => 40,
-            _ => 10
-        };
-        VfxType elementalVfx = elementalType switch
-        {
-            DamageType.Fire => VfxType.DurAuraPulseOrangeBlack,
-            DamageType.Cold => VfxType.DurAuraPulseCyanBlack,
-            DamageType.Electrical => VfxType.DurAuraPulseBlueBlack,
-            DamageType.Acid => VfxType.DurAuraPulseGreenBlack,
-            _ => VfxType.DurAuraPulseOrangeBlack
-        };
+            elementalEffect = Effect.LinkEffects(
+                Effect.DamageImmunityDecrease(meteor.DamageType, meteor.DamageVulnerability),
+                Effect.VisualEffect(VfxType.DurCessateNegative)
+            );
 
-
-        // Elemental effect
-        Effect elementalEffect = Effect.LinkEffects(Effect.DamageImmunityDecrease(elementalType, vulnerabilityPct),
-            Effect.VisualEffect(elementalVfx));
-
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
-        {
-            NwCreature creatureInShape = (NwCreature)nwObject;
-            if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
-
-            creatureInShape.ApplyEffect(EffectDuration.Temporary, elementalEffect, NwTimeSpan.FromRounds(3));
+            hostileCreature.ApplyEffect(EffectDuration.Temporary, elementalEffect, NwTimeSpan.FromRounds(3));
         }
     }
 }

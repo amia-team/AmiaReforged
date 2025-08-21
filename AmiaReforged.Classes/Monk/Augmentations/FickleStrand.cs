@@ -3,40 +3,37 @@ using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
+using AmiaReforged.Classes.Spells;
 using Anvil.API;
 using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
-public static class FickleStrand
+public class FickleStrand : IAugmentation
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+    public PathType PathType => PathType.FickleStrand;
+    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
         switch (technique)
         {
-            case TechniqueType.Axiomatic:
-                if (attackData != null) AugmentAxiomaticStrike(attackData);
-                break;
             case TechniqueType.Eagle:
-                if (attackData != null) AugmentEagleStrike(attackData);
+                AugmentEagleStrike(monk, attackData);
+                break;
+            case TechniqueType.Axiomatic:
+                AugmentAxiomaticStrike(monk, attackData);
+                break;
+        }
+    }
+
+    public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
+    {
+        switch (technique)
+        {
+            case TechniqueType.EmptyBody:
+                AugmentEmptyBody(monk);
                 break;
             case TechniqueType.KiShout:
-                if (castData != null) AugmentKiShout(castData);
-                break;
-            case TechniqueType.EmptyBody:
-                if (castData != null) AugmentEmptyBody(castData);
-                break;
-            case TechniqueType.Stunning:
-                if (attackData != null) StunningStrike.DoStunningStrike(attackData);
-                break;
-            case TechniqueType.Wholeness:
-                if (castData != null) WholenessOfBody.DoWholenessOfBody(castData);
-                break;
-            case TechniqueType.KiBarrier:
-                if (castData != null) KiBarrier.DoKiBarrier(castData);
-                break;
-            case TechniqueType.Quivering:
-                if (castData != null) QuiveringPalm.DoQuiveringPalm(castData);
+                AugmentKiShout(monk);
                 break;
         }
     }
@@ -45,15 +42,11 @@ public static class FickleStrand
     /// Eagle Strike has a 30% chance to impart a wild magic effect.
     /// Each Ki Focus makes potent effects more likely to occur.
     /// </summary>
-    private static void AugmentEagleStrike(OnCreatureAttack attackData)
+    private void AugmentEagleStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        EagleStrike.DoEagleStrike(attackData);
+        EagleStrike.DoEagleStrike(monk, attackData);
 
-        if (attackData.Target is not NwCreature targetCreature) return;
-
-        NwCreature monk = attackData.Attacker;
-
-        if (!targetCreature.IsReactionTypeHostile(monk)) return;
+        if (attackData.Target is not NwCreature targetCreature || !targetCreature.IsReactionTypeHostile(monk)) return;
 
         int d100Roll = Random.Shared.Roll(100);
 
@@ -65,13 +58,10 @@ public static class FickleStrand
     /// Axiomatic Strike deals +1 bonus magical damage. Each Ki Focus increases the damage by 1,
     /// to a maximum of +4 bonus magical damage.
     /// </summary>
-    private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
+    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
     {
         AxiomaticStrike.DoAxiomaticStrike(attackData);
 
-        NwCreature monk = attackData.Attacker;
-        DamageData<short> damageData = attackData.DamageData;
-        short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
         short bonusDamage = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
@@ -79,6 +69,9 @@ public static class FickleStrand
             KiFocus.KiFocus3 => 4,
             _ => 1
         };
+
+        DamageData<short> damageData = attackData.DamageData;
+        short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
 
         magicalDamage += bonusDamage;
         damageData.SetDamageByType(DamageType.Magical, magicalDamage);
@@ -88,12 +81,11 @@ public static class FickleStrand
     /// Empty Body grants a spell mantle that absorbs up to 2 spells and spell-like abilities.
     /// Each Ki Focus increases the effects it can absorb by 2, to a maximum of 8 spells or spell-like abilities.
     /// </summary>
-    private static void AugmentEmptyBody(OnSpellCast castData)
+    private  void AugmentEmptyBody(NwCreature monk)
     {
-        NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+        byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
-        int spellsAbsorbed = MonkUtils.GetKiFocus(monk) switch
+        byte diceAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 4,
             KiFocus.KiFocus2 => 6,
@@ -101,23 +93,26 @@ public static class FickleStrand
             _ => 2
         };
 
-        Effect spellAbsorb = Effect.SpellLevelAbsorption(spellsAbsorbed);
-        Effect spellAbsorbVfx = Effect.VisualEffect(VfxType.DurSpellturning);
-        Effect emptyBodyEffect = Effect.LinkEffects(spellAbsorb, spellAbsorbVfx);
-        TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
+        int totalSpellsAbsorbed = Random.Shared.Roll(3, diceAmount);
 
-        monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
+        Effect spellAbsorb = Effect.LinkEffects(
+            Effect.SpellLevelAbsorption(9,totalSpellsAbsorbed),
+            Effect.VisualEffect(VfxType.DurSpellturning)
+        );
+        spellAbsorb.SubType = EffectSubType.Extraordinary;
+
+        monk.ApplyEffect(EffectDuration.Temporary, spellAbsorb, NwTimeSpan.FromRounds(monkLevel));
     }
 
     /// <summary>
     /// Ki Shout deals magical damage instead of sonic. In addition, it breaches enemy creatures of 1 magical defense
     /// according to the breach list. Each Ki Focus adds an additional breached magical defense, to a maximum of 4 magical effects.
     /// </summary>
-    private static void AugmentKiShout(OnSpellCast castData)
+    private  void AugmentKiShout(NwCreature monk)
     {
-        KiShout.DoKiShout(castData, DamageType.Magical, VfxType.ImpMagblue);
+        KiShout.DoKiShout(monk, DamageType.Magical, VfxType.ImpMagblue);
 
-        NwCreature monk = (NwCreature)castData.Caster;
+        if (monk.Location == null) return;
 
         int spellsBreached = MonkUtils.GetKiFocus(monk) switch
         {
@@ -127,13 +122,29 @@ public static class FickleStrand
             _ => 1
         };
 
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        foreach (NwGameObject nwObject in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
         {
-            NwCreature creatureInShape = (NwCreature)nwObject;
+            if (nwObject is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
 
-            if (!monk.IsReactionTypeHostile(creatureInShape)) continue;
+            DoBreach(hostileCreature, spellsBreached);
+        }
+    }
 
-            NwEffects.DoBreach(creatureInShape, spellsBreached);
+    private static void DoBreach(NwCreature targetCreature, int breachAmount)
+    {
+        int breachedCount = 0;
+
+        foreach (Spell spell in BreachList.BreachSpells)
+        {
+            Effect? effectToBreach = targetCreature.ActiveEffects.FirstOrDefault(effect => effect.Spell?.SpellType == spell);
+
+            if (effectToBreach == null) continue;
+
+            targetCreature.RemoveEffect(effectToBreach);
+            targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpBreach));
+            breachedCount++;
+
+            if (breachedCount >= breachAmount) break;
         }
     }
 }

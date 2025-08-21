@@ -5,71 +5,42 @@ namespace AmiaReforged.Classes.Monk;
 
 public static class WildMagicEffects
 {
+    private static readonly (int weak, int moderate, int strong) DefaultChances = (66, 33, 0);
+
+    // chances for weak, moderate, strong spells; this should always add up to 99, leaving a 1% chance for epic spells
+    private static readonly Dictionary<KiFocus, (int weak, int moderate, int strong)> KiFocusChances = new()
+    {
+        { KiFocus.KiFocus1, (57, 33, 9) },
+        { KiFocus.KiFocus2, (44, 40, 15) },
+        { KiFocus.KiFocus3, (33, 33, 33) },
+    };
+
     public static void DoWildMagic(NwCreature monk, NwCreature targetCreature)
     {
-        int spellWeakChance, spellModerateChance, spellStrongChance;
+        KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
 
-        const int spellEpicChance = 1;
-        
-        switch (MonkUtils.GetKiFocus(monk))
-        {
-            default:
-                spellWeakChance = 66;
-                spellModerateChance = 33;
-                spellStrongChance = 0;
-                break;
-            case KiFocus.KiFocus1 :
-                spellWeakChance = 57;
-                spellModerateChance = 33;
-                spellStrongChance = 9;
-                break;
-            case KiFocus.KiFocus2:
-                spellWeakChance = 44;
-                spellModerateChance = 40;
-                spellStrongChance = 15;
-                break;
-            case KiFocus.KiFocus3:
-                spellWeakChance = 33;
-                spellModerateChance = 33;
-                spellStrongChance = 33;
-                break;
-        }
-        
-        // sanity check that all adds up to 100
-        if (spellWeakChance + spellModerateChance + spellStrongChance + spellEpicChance != 100)
-        {
-            if (monk.IsPlayerControlled(out NwPlayer? player))
-                player.SendServerMessage("DEBUG: All wild magic chances don't add up to 100!");
-        }
+        (int weak, int moderate, int strong) chances = kiFocus == null ? DefaultChances : KiFocusChances[kiFocus.Value];
 
         int d100Roll = Random.Shared.Roll(100);
 
-        Random random = new();
-        
-        Spell randomSpell = (Spell)random.Next(GetRandomSpellList().Count);
+        Spell[] randomSpellList = GetRandomSpellArray(d100Roll, chances);
 
-        monk.ActionCastSpellAt(randomSpell!, targetCreature.Location!, MetaMagic.None, true, 
-            ProjectilePathType.Default, true, ClassType.Monk);
-        
-        return;
+        Spell randomSpell = randomSpellList[Random.Shared.Next(randomSpellList.Length)];
 
-        List<Spell> GetRandomSpellList()
-        {
-            if (d100Roll >= spellWeakChance && d100Roll < spellModerateChance)
-                return WeakSpellList;
-            if (d100Roll >= spellModerateChance && d100Roll < spellStrongChance)
-                return ModerateSpellList;
-            if (d100Roll >= spellStrongChance && d100Roll < spellEpicChance)
-                return StrongSpellList;
-            if (d100Roll == spellEpicChance)
-                return EpicSpellList;
-
-            return null!;
-        }
+        monk.ActionCastSpellAt(randomSpell!, targetCreature, MetaMagic.None, true, instant: true, spellClass: ClassType.Monk);
     }
-    
-    private static readonly List<Spell> WeakSpellList = new()
+
+    private static Spell[] GetRandomSpellArray(int d100Roll, (int weak, int moderate, int strong) chances)
     {
+        return
+            d100Roll <= chances.weak ? WeakSpells :
+            d100Roll <= chances.weak + chances.moderate ? ModerateSpells :
+            d100Roll <= chances.weak + chances.moderate + chances.strong ? StrongSpells :
+            EpicSpellArray;
+    }
+
+    private static readonly Spell[] WeakSpells =
+    [
         Spell.Flare,
         Spell.Bane,
         Spell.GhoulTouch,
@@ -78,10 +49,10 @@ public static class WildMagicEffects
         Spell.InfestationOfMaggots,
         Spell.Poison,
         Spell.Enervation
-    };
-    
-    private static readonly List<Spell> ModerateSpellList = new()
-    {
+    ];
+
+    private static readonly Spell[] ModerateSpells =
+    [
         Spell.Doom,
         Spell.ColorSpray,
         Spell.RayOfEnfeeblement,
@@ -91,10 +62,10 @@ public static class WildMagicEffects
         Spell.MindFog,
         Spell.EnergyDrain,
         Spell.HealingSting
-    };
-    
-    private static readonly List<Spell> StrongSpellList = new()
-    {
+    ];
+
+    private static readonly Spell[] StrongSpells =
+    [
         Spell.Web,
         Spell.Grease,
         Spell.Balagarnsironhorn,
@@ -106,12 +77,12 @@ public static class WildMagicEffects
         Spell.PowerWordStun,
         Spell.HammerOfTheGods,
         Spell.VampiricTouch
-    };
-    
-    private static readonly List<Spell> EpicSpellList = new()
-    {
+    ];
+
+    private static readonly Spell[] EpicSpellArray =
+    [
         Spell.TimeStop,
         Spell.MeteorSwarm,
         Spell.GreatThunderclap
-    };
+    ];
 }

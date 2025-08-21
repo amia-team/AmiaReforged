@@ -1,5 +1,4 @@
-// Called from the spirit technique handler when the technique is cast
-
+using System;
 using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
@@ -7,66 +6,83 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Spirit;
 
-public static class QuiveringPalm
+public class QuiveringPalm : ITechnique
 {
-    public static void CastQuiveringPalm(OnSpellCast castData)
+    public TechniqueType TechniqueType => TechniqueType.Quivering;
+
+
+    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {
-        NwCreature monk = (NwCreature)castData.Caster;
         PathType? path = MonkUtils.GetMonkPath(monk);
-        const TechniqueType technique = TechniqueType.Quivering;
 
-        if (path != null)
-        {
-            AugmentationApplier.ApplyAugmentations(path, technique, castData);
-            return;
-        }
+        IAugmentation? augmentation = path.HasValue ? AugmentationFactory.GetAugmentation(path.Value) : null;
 
-        DoQuiveringPalm(castData);
+        if (augmentation != null)
+            augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);
+        else
+            DoQuiveringPalm(monk, castData);
     }
 
     /// <summary>
     /// On a successful melee touch attack against an enemy creature, the target must make a fortitude save or die.
     /// If the target survives, it takes 1d6 bludgeoning damage per monk level.
     /// </summary>
-    public static TouchAttackResult DoQuiveringPalm(OnSpellCast castData)
+    public static TouchAttackResult DoQuiveringPalm(NwCreature monk,OnSpellCast castData)
     {
-        if (castData.TargetObject is not NwCreature targetCreature) return TouchAttackResult.Miss;
+        if (castData.TargetObject is not NwCreature targetCreature)
+            return TouchAttackResult.Miss;
 
-        NwCreature monk = (NwCreature)castData.Caster;
-
-        int dc = MonkUtils.CalculateMonkDc(monk);
-
-        Effect quiveringEffect = Effect.Death(true);
-        Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpDeath, false, 0.7f);
-
-
-
-        CreatureEvents.OnSpellCastAt.Signal(monk, targetCreature, castData.Spell!);
+        CreatureEvents.OnSpellCastAt.Signal(monk, targetCreature, Spell.VampiricTouch!);
 
         TouchAttackResult touchAttackResult = monk.TouchAttackMelee(targetCreature);
 
-        if (touchAttackResult is TouchAttackResult.Miss) return TouchAttackResult.Miss;
+        if (touchAttackResult is TouchAttackResult.Miss) return touchAttackResult;
 
-        SavingThrowResult savingThrowResult =
-            targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Death, monk);
+        ApplyQuiveringDamage(monk, targetCreature);
+        RollQuiveringDeath(monk, targetCreature);
 
-        if (savingThrowResult is SavingThrowResult.Failure)
-        {
-            targetCreature.ApplyEffect(EffectDuration.Instant, quiveringEffect);
-            targetCreature.ApplyEffect(EffectDuration.Instant, quiveringVfx);
-        }
+        return touchAttackResult;
+    }
 
-        if (savingThrowResult is SavingThrowResult.Success)
-            targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
-
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
-        int damageAmount = Random.Shared.Roll(6, monkLevel);
+    private static void ApplyQuiveringDamage(NwCreature monk, NwCreature targetCreature)
+    {
+        int damageDice = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+        int damageAmount = Random.Shared.Roll(6, damageDice);
 
         Effect quiveringDamage = Effect.LinkEffects(Effect.Damage(damageAmount, DamageType.Bludgeoning),
             Effect.VisualEffect(VfxType.ImpDivineStrikeHoly, false, 0.2f));
 
         targetCreature.ApplyEffect(EffectDuration.Instant, quiveringDamage);
-
-        return TouchAttackResult.Hit;
     }
+
+    private static void RollQuiveringDeath(NwCreature monk, NwCreature targetCreature)
+    {
+        int dc = MonkUtils.CalculateMonkDc(monk);
+
+        SavingThrowResult savingThrowResult =
+            targetCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Death, monk);
+
+        switch (savingThrowResult)
+        {
+            case SavingThrowResult.Immune:
+                break;
+            case SavingThrowResult.Success:
+                targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+                break;
+            case SavingThrowResult.Failure:
+                ApplyQuiveringDeath(targetCreature);
+                break;
+        }
+    }
+
+    private static void ApplyQuiveringDeath(NwCreature targetCreature)
+    {
+        Effect quiveringEffect = Effect.Death(true);
+        Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpDeath, false, 0.7f);
+
+        targetCreature.ApplyEffect(EffectDuration.Instant, quiveringEffect);
+        targetCreature.ApplyEffect(EffectDuration.Instant, quiveringVfx);
+    }
+
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
 }

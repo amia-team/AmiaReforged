@@ -11,5 +11,5 @@ public enum TechniqueType
     EmptyBody = 4,
     KiBarrier = 5,
     Quivering = 6,
-    KiShout = 7
+    KiShout = 7,
 }

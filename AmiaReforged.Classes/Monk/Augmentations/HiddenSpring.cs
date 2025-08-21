@@ -7,37 +7,30 @@ using Anvil.API.Events;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
-public static class HiddenSpring
+public class HiddenSpring : IAugmentation
 {
-    public static void ApplyAugmentations(TechniqueType technique, OnSpellCast? castData = null, OnCreatureAttack? attackData = null)
+    private const string HiddenEagleStrikeTag = "hiddenspring_eaglestrike";
+    public PathType PathType => PathType.HiddenSpring;
+    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
         switch (technique)
         {
             case TechniqueType.Stunning:
-                if (attackData != null) AugmentStunningStrike(attackData);
+                AugmentStunningStrike(attackData);
                 break;
             case TechniqueType.Eagle:
-                if (attackData != null) AugmentEagleStrike(attackData);
+                AugmentEagleStrike(monk, attackData);
                 break;
             case TechniqueType.Axiomatic:
-                if (attackData != null) AugmentAxiomaticStrike(attackData);
-                break;
-            case TechniqueType.EmptyBody:
-                if (castData != null) AugmentEmptyBody(castData);
-                break;
-            case TechniqueType.Wholeness:
-                if (castData != null) WholenessOfBody.DoWholenessOfBody(castData);
-                break;
-            case TechniqueType.KiBarrier:
-                if (castData != null) KiBarrier.DoKiBarrier(castData);
-                break;
-            case TechniqueType.Quivering:
-                if (castData != null) QuiveringPalm.DoQuiveringPalm(castData);
-                break;
-            case TechniqueType.KiShout:
-                if (castData != null) KiShout.DoKiShout(castData);
+                AugmentAxiomaticStrike(attackData);
                 break;
         }
+    }
+
+    public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
+    {
+        if (technique == TechniqueType.EmptyBody)
+            AugmentEmptyBody(monk);
     }
 
     /// <summary>
@@ -48,9 +41,8 @@ public static class HiddenSpring
     {
         SavingThrowResult stunningStrikeResult = StunningStrike.DoStunningStrike(attackData);
 
-        if (attackData.Target is not NwCreature targetCreature) return;
-
-        if (stunningStrikeResult != SavingThrowResult.Immune) return;
+        if (attackData.Target is not NwCreature targetCreature || stunningStrikeResult != SavingThrowResult.Immune)
+            return;
 
         NwCreature monk = attackData.Attacker;
 
@@ -61,29 +53,25 @@ public static class HiddenSpring
             KiFocus.KiFocus3 => Effect.Paralyze(),
             _ => null
         };
+
         if (stunningEffect is null) return;
 
         Effect stunningVfx = Effect.VisualEffect(VfxType.FnfHowlOdd, false, 0.06f);
-        TimeSpan stunningDuration = NwTimeSpan.FromRounds(1);
-
         stunningEffect.IgnoreImmunity = true;
 
-        targetCreature.ApplyEffect(EffectDuration.Temporary, stunningEffect, stunningDuration);
+        targetCreature.ApplyEffect(EffectDuration.Temporary, stunningEffect, NwTimeSpan.FromRounds(1));
         targetCreature.ApplyEffect(EffectDuration.Instant, stunningVfx);
     }
 
     /// <summary>
     /// Eagle Strike with Ki Focus I incurs a -1 penalty to attack rolls, increased to -2 with Ki Focus II and -3 with Ki Focus III.
     /// </summary>
-    private static void AugmentEagleStrike(OnCreatureAttack attackData)
+    private static void AugmentEagleStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        SavingThrowResult stunningStrikeResult = EagleStrike.DoEagleStrike(attackData);
+        SavingThrowResult stunningStrikeResult = EagleStrike.DoEagleStrike(monk, attackData);
 
-        if (attackData.Target is not NwCreature targetCreature) return;
-
-        if (stunningStrikeResult != SavingThrowResult.Failure) return;
-
-        NwCreature monk = attackData.Attacker;
+        if (attackData.Target is not NwCreature targetCreature || stunningStrikeResult != SavingThrowResult.Failure)
+            return;
 
         int abDecrease = MonkUtils.GetKiFocus(monk) switch
         {
@@ -93,18 +81,16 @@ public static class HiddenSpring
             _ => 0
         };
 
-        Effect eagleEffect = Effect.AttackDecrease(abDecrease);
-        TimeSpan eagleDuration = NwTimeSpan.FromRounds(2);
-        eagleEffect.Tag = "eaglestrike_hiddenspring";
-        eagleEffect.IgnoreImmunity = true;
+        if (abDecrease == 0) return;
 
-        foreach (Effect effect in targetCreature.ActiveEffects)
-        {
-            if (effect.Tag == "eaglestrike_hiddenspring")
-                targetCreature.RemoveEffect(effect);
-        }
+        Effect? eagleEffect = targetCreature.ActiveEffects.FirstOrDefault(e => e.Tag == HiddenEagleStrikeTag);
+        if (eagleEffect != null)
+            targetCreature.RemoveEffect(eagleEffect);
 
-        targetCreature.ApplyEffect(EffectDuration.Temporary, eagleEffect, eagleDuration);
+        eagleEffect = Effect.AttackDecrease(abDecrease);
+        eagleEffect.Tag = HiddenEagleStrikeTag;
+
+        targetCreature.ApplyEffect(EffectDuration.Temporary, eagleEffect, NwTimeSpan.FromRounds(2));
     }
 
     /// <summary>
@@ -135,23 +121,25 @@ public static class HiddenSpring
     /// Empty Body gives +2 to fortitude and reflex saving throws. Each Ki Focus gives an additional +2 to
     /// a maximum of +8 to fortitude and reflex saving throws.
     /// </summary>
-    private static void AugmentEmptyBody(OnSpellCast castData)
+    private static void AugmentEmptyBody(NwCreature monk)
     {
-        EmptyBody.DoEmptyBody(castData);
+        EmptyBody.DoEmptyBody(monk);
 
-        NwCreature monk = (NwCreature)castData.Caster;
-        int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
-        int bonusAmount = MonkUtils.GetKiFocus(monk) switch
+        byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+
+        byte bonusAmount = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 4,
             KiFocus.KiFocus2 => 6,
             KiFocus.KiFocus3 => 8,
             _ => 2
         };
-        Effect emptyBodyEffect = Effect.LinkEffects(Effect.SavingThrowIncrease(SavingThrow.Fortitude, bonusAmount),
-            Effect.SavingThrowIncrease(SavingThrow.Reflex, bonusAmount));
-        TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
 
-        monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
+        Effect emptyBodyEffect = Effect.LinkEffects(
+            Effect.SavingThrowIncrease(SavingThrow.Fortitude, bonusAmount),
+            Effect.SavingThrowIncrease(SavingThrow.Reflex, bonusAmount)
+        );
+
+        monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, NwTimeSpan.FromRounds(monkLevel));
     }
 }
