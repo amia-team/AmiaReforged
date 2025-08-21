@@ -1,5 +1,3 @@
-
-using System.Collections.Immutable;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Features.IndustryAndCraft;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Features.IndustryAndCraft.ValueObjects;
 using Moq;
@@ -45,12 +43,12 @@ public class ReactionEngineEdgeCaseTests
     public Task Execute_WithZeroOutputAfterMultiplier_ThrowsArgumentOutOfRangeException()
     {
         // Arrange - modifier that reduces output to zero
-        KnowledgeModifier reductionModifier = new KnowledgeModifier(KnowledgeKey.From("WASTEFUL"))
+        KnowledgeModifier reductionModifier = new(KnowledgeKey.From("WASTEFUL"))
         {
             OutputMultipliers = new Dictionary<ItemTag, double> { { ItemTag.From("PRODUCT"), 0.0 } }
         };
 
-        ReactionDefinition reaction = new ReactionDefinition(
+        ReactionDefinition reaction = new(
             _reactionId,
             "Wasteful Craft",
             [new Quantity(ItemTag.From("INPUT"), 1)],
@@ -97,12 +95,12 @@ public class ReactionEngineEdgeCaseTests
     public async Task Execute_WithFractionalOutputMultiplier_FlooredToInteger()
     {
         // Arrange - modifier that creates fractional output
-        KnowledgeModifier fractionalModifier = new KnowledgeModifier(KnowledgeKey.From("PARTIAL_EFFICIENCY"))
+        KnowledgeModifier fractionalModifier = new(KnowledgeKey.From("PARTIAL_EFFICIENCY"))
         {
             OutputMultipliers = new Dictionary<ItemTag, double> { { ItemTag.From("BOARD"), 0.7 } }
         };
 
-        ReactionDefinition reaction = new ReactionDefinition(
+        ReactionDefinition reaction = new(
             _reactionId,
             "Partial Craft",
             [new Quantity(ItemTag.From("LOG"), 1)],
@@ -151,12 +149,12 @@ public class ReactionEngineEdgeCaseTests
     public async Task Execute_WithOutputMultipliers_AppliesCorrectAmounts()
     {
         // Arrange
-        KnowledgeModifier knowledgeModifier = new KnowledgeModifier(KnowledgeKey.From("EFFICIENCY"))
+        KnowledgeModifier knowledgeModifier = new(KnowledgeKey.From("EFFICIENCY"))
         {
             OutputMultipliers = new Dictionary<ItemTag, double> { { ItemTag.From("BOARD"), 1.5 } }
         };
 
-        ReactionDefinition reaction = new ReactionDefinition(
+        ReactionDefinition reaction = new(
             _reactionId,
             "Efficient Craft",
             [new Quantity(ItemTag.From("LOG"), 1)],
@@ -204,17 +202,17 @@ public class ReactionEngineEdgeCaseTests
     public async Task Execute_WithMultipleModifiersOnSameOutput_AppliesAllMultipliers()
     {
         // Arrange - multiple modifiers that affect the same output
-        KnowledgeModifier knowledgeModifier = new KnowledgeModifier(KnowledgeKey.From("EFFICIENCY"))
+        KnowledgeModifier knowledgeModifier = new(KnowledgeKey.From("EFFICIENCY"))
         {
             OutputMultipliers = new Dictionary<ItemTag, double> { { ItemTag.From("WIDGET"), 1.5 } }
         };
 
-        ToolModifier toolModifier = new ToolModifier(ToolTag.From("PRECISION_TOOL"))
+        ToolModifier toolModifier = new(ToolTag.From("PRECISION_TOOL"))
         {
             OutputMultipliers = new Dictionary<ItemTag, double> { { ItemTag.From("WIDGET"), 1.2 } }
         };
 
-        ReactionDefinition reaction = new ReactionDefinition(
+        ReactionDefinition reaction = new(
             _reactionId,
             "Precision Craft",
             [new Quantity(ItemTag.From("MATERIAL"), 1)],
@@ -233,7 +231,7 @@ public class ReactionEngineEdgeCaseTests
 
         _tooling
             .Setup(t => t.GetToolsAsync(_actorId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ToolInstance> { new(ToolTag.From("PRECISION_TOOL"), 50) });
+            .ReturnsAsync(new List<ToolInstance> { new(ToolTag.From("PRECISION_TOOL")) });
 
         _inventory
             .Setup(i => i.HasItemsAsync(_actorId, It.IsAny<IReadOnlyList<Quantity>>(), It.IsAny<CancellationToken>()))
@@ -262,13 +260,13 @@ public class ReactionEngineEdgeCaseTests
     [Test]
     public Task Execute_WithVerySmallMultiplier_ResultsInZeroAndThrows()
     {
-        // Arrange - very small multiplier that results in fractional amount < 1
-        KnowledgeModifier tinyModifier = new KnowledgeModifier(KnowledgeKey.From("TINY_EFFECT"))
+        // Arrange - a very small multiplier that results in a fractional amount < 1
+        KnowledgeModifier tinyModifier = new(KnowledgeKey.From("TINY_EFFECT"))
         {
             OutputMultipliers = new Dictionary<ItemTag, double> { { ItemTag.From("ITEM"), 0.1 } }
         };
 
-        ReactionDefinition reaction = new ReactionDefinition(
+        ReactionDefinition reaction = new(
             _reactionId,
             "Tiny Output Craft",
             [new Quantity(ItemTag.From("INPUT"), 1)],
@@ -303,7 +301,7 @@ public class ReactionEngineEdgeCaseTests
         ArgumentOutOfRangeException? ex = Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
             sut.ExecuteAsync(_reactionId, _actorId, new ReactionContext()));
 
-        Assert.That(ex.ParamName, Is.EqualTo("amount"));
+        Assert.That(ex?.ParamName, Is.EqualTo("amount"));
         return Task.CompletedTask;
     }
 
