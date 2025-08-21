@@ -53,11 +53,11 @@ public class ReactionEngineEdgeCaseTests
         ReactionDefinition reaction = new ReactionDefinition(
             _reactionId,
             "Wasteful Craft",
-            ImmutableArray.Create(new Quantity(ItemTag.From("INPUT"), 1)),
-            ImmutableArray.Create(new Quantity(ItemTag.From("PRODUCT"), 5)),
+            [new Quantity(ItemTag.From("INPUT"), 1)],
+            [new Quantity(ItemTag.From("PRODUCT"), 5)],
             TimeSpan.FromMinutes(10),
             1.0,
-            modifiers: new[] { reductionModifier });
+            modifiers: [reductionModifier]);
 
         _reactions
             .Setup(r => r.FindByIdAsync(_reactionId, It.IsAny<CancellationToken>()))
@@ -105,11 +105,11 @@ public class ReactionEngineEdgeCaseTests
         ReactionDefinition reaction = new ReactionDefinition(
             _reactionId,
             "Partial Craft",
-            ImmutableArray.Create(new Quantity(ItemTag.From("LOG"), 1)),
-            ImmutableArray.Create(new Quantity(ItemTag.From("BOARD"), 3)), // 3 * 0.7 = 2.1, floored to 2
+            [new Quantity(ItemTag.From("LOG"), 1)],
+            [new Quantity(ItemTag.From("BOARD"), 3)], // 3 * 0.7 = 2.1, floored to 2
             TimeSpan.FromMinutes(10),
             1.0,
-            modifiers: new[] { fractionalModifier });
+            modifiers: [fractionalModifier]);
 
         _reactions
             .Setup(r => r.FindByIdAsync(_reactionId, It.IsAny<CancellationToken>()))
@@ -159,11 +159,11 @@ public class ReactionEngineEdgeCaseTests
         ReactionDefinition reaction = new ReactionDefinition(
             _reactionId,
             "Efficient Craft",
-            ImmutableArray.Create(new Quantity(ItemTag.From("LOG"), 1)),
-            ImmutableArray.Create(new Quantity(ItemTag.From("BOARD"), 4)), // Base output of 4
+            [new Quantity(ItemTag.From("LOG"), 1)],
+            [new Quantity(ItemTag.From("BOARD"), 4)], // Base output of 4
             TimeSpan.FromMinutes(10),
             1.0,
-            modifiers: new[] { knowledgeModifier });
+            modifiers: [knowledgeModifier]);
 
         _reactions
             .Setup(r => r.FindByIdAsync(_reactionId, It.IsAny<CancellationToken>()))
@@ -217,8 +217,8 @@ public class ReactionEngineEdgeCaseTests
         ReactionDefinition reaction = new ReactionDefinition(
             _reactionId,
             "Precision Craft",
-            ImmutableArray.Create(new Quantity(ItemTag.From("MATERIAL"), 1)),
-            ImmutableArray.Create(new Quantity(ItemTag.From("WIDGET"), 10)), // Base: 10
+            [new Quantity(ItemTag.From("MATERIAL"), 1)],
+            [new Quantity(ItemTag.From("WIDGET"), 10)], // Base: 10
             TimeSpan.FromMinutes(15),
             1.0,
             modifiers: [knowledgeModifier, toolModifier]);
@@ -271,11 +271,11 @@ public class ReactionEngineEdgeCaseTests
         ReactionDefinition reaction = new ReactionDefinition(
             _reactionId,
             "Tiny Output Craft",
-            ImmutableArray.Create(new Quantity(ItemTag.From("INPUT"), 1)),
-            ImmutableArray.Create(new Quantity(ItemTag.From("ITEM"), 2)), // 2 * 0.1 = 0.2, floored to 0
+            [new Quantity(ItemTag.From("INPUT"), 1)],
+            [new Quantity(ItemTag.From("ITEM"), 2)], // 2 * 0.1 = 0.2, floored to 0
             TimeSpan.FromMinutes(5),
             1.0,
-            modifiers: new[] { tinyModifier });
+            modifiers: [tinyModifier]);
 
         _reactions
             .Setup(r => r.FindByIdAsync(_reactionId, It.IsAny<CancellationToken>()))
