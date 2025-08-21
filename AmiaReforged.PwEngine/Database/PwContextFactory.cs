@@ -8,5 +8,4 @@ public class PwContextFactory : IDbContextFactory<PwEngineContext>
 {
     public PwEngineContext CreateDbContext() => new();
 
-    public EconomyContext CreateEconomyContext() => new();
 }
