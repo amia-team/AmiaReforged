@@ -11,7 +11,7 @@ public sealed class Quantity
     public int Amount { get; }
     public Quantity(ItemTag item, int amount)
     {
-        if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
         Item = item;
         Amount = amount;
     }
