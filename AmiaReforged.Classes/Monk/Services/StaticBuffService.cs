@@ -1,5 +1,3 @@
-// An event service that applies and removes permanent static bonuses that monk, like Ki Strike, Monk Speed, Wisdom AC.
-
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

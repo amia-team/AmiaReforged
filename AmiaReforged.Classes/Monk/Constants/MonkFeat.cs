@@ -1,5 +1,3 @@
-// Constants for monk feats
-
 namespace AmiaReforged.Classes.Monk.Constants;
 
 public static class MonkFeat

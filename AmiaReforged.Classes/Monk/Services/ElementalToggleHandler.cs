@@ -1,5 +1,3 @@
-// Handles monk's elemental toggle ability on feat use
-
 using AmiaReforged.Classes.Monk.Constants;
 using Anvil.API;
 using Anvil.API.Events;

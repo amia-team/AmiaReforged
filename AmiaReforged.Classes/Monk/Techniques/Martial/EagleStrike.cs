@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
