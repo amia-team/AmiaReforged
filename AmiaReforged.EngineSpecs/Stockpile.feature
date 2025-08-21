@@ -1,1 +1,0 @@
-Feature: Stockpiles are places where resources of one or more types may be stored for a faction’s use. If a faction is also a site government, then the stockpile is at the disposal of the site for various activities.
