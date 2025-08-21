@@ -9,7 +9,7 @@ using WorldConfiguration = AmiaReforged.PwEngine.Database.Entities.WorldConfigur
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
-[ServiceBinding(typeof(IWorldConfigProvider))]
+// [ServiceBinding(typeof(IWorldConfigProvider))]
 public class WorldEngineConfig : IWorldConfigProvider
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
