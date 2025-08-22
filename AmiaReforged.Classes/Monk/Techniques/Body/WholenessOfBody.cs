@@ -2,9 +2,11 @@ using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Body;
 
+[ServiceBinding(typeof(ITechnique))]
 public class WholenessOfBody(AugmentationFactory augmentationFactory) : ITechnique
 {
     public TechniqueType TechniqueType => TechniqueType.Wholeness;

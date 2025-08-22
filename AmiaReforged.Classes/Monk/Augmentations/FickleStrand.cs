@@ -4,9 +4,11 @@ using AmiaReforged.Classes.Monk.Types;
 using AmiaReforged.Classes.Spells;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
+[ServiceBinding(typeof(IAugmentation))]
 public class FickleStrand : IAugmentation
 {
     public PathType PathType => PathType.FickleStrand;

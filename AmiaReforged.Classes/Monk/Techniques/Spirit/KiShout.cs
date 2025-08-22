@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
 using AmiaReforged.Classes.Monk.Augmentations;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Monk.Techniques.Spirit;
 
+[ServiceBinding(typeof(ITechnique))]
 public class KiShout(AugmentationFactory augmentationFactory) : ITechnique
 {
     public TechniqueType TechniqueType => TechniqueType.KiShout;

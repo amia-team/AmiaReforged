@@ -4,9 +4,11 @@ using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
+[ServiceBinding(typeof(IAugmentation))]
 public sealed class SwingingCenser : IAugmentation
 {
     private static readonly NwFeat? BodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);

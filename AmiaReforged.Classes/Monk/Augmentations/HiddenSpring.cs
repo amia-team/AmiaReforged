@@ -3,9 +3,11 @@ using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
+[ServiceBinding(typeof(IAugmentation))]
 public class HiddenSpring : IAugmentation
 {
     private const string HiddenEagleStrikeTag = "hiddenspring_eaglestrike";

@@ -5,10 +5,12 @@ using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
+[ServiceBinding(typeof(IAugmentation))]
 public sealed class EchoingValley : IAugmentation
 {
     private const string SummonEchoResRef = "summon_echo";
