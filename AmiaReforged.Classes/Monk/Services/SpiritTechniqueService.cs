@@ -59,25 +59,41 @@ public class SpiritTechniqueService
     private static bool AbilityRestricted(NwCreature monk, string abilityName)
     {
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
-        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
-        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
-                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is
-                                          BaseItemCategory.Torches;
-        bool noSpiritKi = SpiritKiPointFeat != null && (!monk.KnowsFeat(SpiritKiPointFeat) || monk.GetFeatRemainingUses(SpiritKiPointFeat) < 1);
+        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
+        bool hasFocusWithoutUnarmed
+            = monk.GetItemInSlot(InventorySlot.RightHand) != null
+              && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Torches;
+        bool noBodyKi = SpiritKiPointFeat != null &&
+                        (!monk.KnowsFeat(SpiritKiPointFeat) || monk.GetFeatRemainingUses(SpiritKiPointFeat) < 1);
 
-        if (monk.IsPlayerControlled(out NwPlayer? player))
+        if (!monk.IsPlayerControlled(out NwPlayer? player))
+            return hasArmor || hasShield || hasFocusWithoutUnarmed || noBodyKi;
+
+        if (hasArmor)
         {
-            if (hasArmor)
-                player.SendServerMessage($"Cannot use {abilityName} because you are wearing armor.");
-            if (hasShield)
-                player.SendServerMessage($"Cannot use {abilityName} because you are wielding a shield.");
-            if (hasFocusWithoutUnarmed)
-                player.SendServerMessage($"Cannot use {abilityName} because you are wielding a focus without being unarmed.");
-            if (noSpiritKi)
-                player.SendServerMessage($"Cannot use {abilityName} because you have no Spirit Ki Points left.");
+            player.SendServerMessage($"Cannot use {abilityName} because you are wearing armor.");
+            return hasArmor;
         }
 
-        return hasArmor || hasShield || hasFocusWithoutUnarmed || noSpiritKi;
+        if (hasShield)
+        {
+            player.SendServerMessage($"Cannot use {abilityName} because you are wielding a shield.");
+            return hasShield;
+        }
+
+        if (hasFocusWithoutUnarmed)
+        {
+            player.SendServerMessage($"Cannot use {abilityName} because you are wielding a focus without being unarmed.");
+            return hasFocusWithoutUnarmed;
+        }
+
+        if (noBodyKi)
+        {
+            player.SendServerMessage($"Cannot use {abilityName} because you have no Spirit Ki Points left.");
+            return noBodyKi;
+        }
+
+        return false;
     }
 
     private static TechniqueType? GetTechniqueByFeat(int? techniqueFeatId)

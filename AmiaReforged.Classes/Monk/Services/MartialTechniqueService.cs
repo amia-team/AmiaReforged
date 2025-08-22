@@ -202,29 +202,43 @@ public class MartialTechniqueService
     {
         bool hasRangedWeapon = false;
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
-        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
-        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
-                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is
-                                          BaseItemCategory.Torches;
+        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
+        bool hasFocusWithoutUnarmed =
+            monk.GetItemInSlot(InventorySlot.RightHand) != null
+            && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Torches;
 
 
         if (MonkUtils.GetMonkPath(monk) != PathType.HiddenSpring && monk.IsRangedWeaponEquipped)
             hasRangedWeapon = true;
 
-        bool techniquePrevented = hasArmor || hasShield || hasFocusWithoutUnarmed || hasRangedWeapon;
-
-        if (!monk.IsPlayerControlled(out NwPlayer? player)) return techniquePrevented;
+        if (!monk.IsPlayerControlled(out NwPlayer? player))
+            return hasArmor || hasShield || hasFocusWithoutUnarmed || hasRangedWeapon;
 
         if (hasArmor)
+        {
             player.SendServerMessage($"Wearing an armor has prevented your {techniqueName}.");
-        if (hasShield)
-            player.SendServerMessage($"Wielding a shield has prevented your {techniqueName}.");
-        if (hasFocusWithoutUnarmed)
-            player.SendServerMessage($"Wielding a focus without being unarmed has prevented your {techniqueName}.");
-        if (hasRangedWeapon)
-            player.SendServerMessage($"Wielding a ranged weapon has prevented your {techniqueName}.");
+            return true;
+        }
 
-        return techniquePrevented;
+        if (hasShield)
+        {
+            player.SendServerMessage($"Wielding a shield has prevented your {techniqueName}.");
+            return true;
+        }
+
+        if (hasFocusWithoutUnarmed)
+        {
+            player.SendServerMessage($"Wielding a focus without being unarmed has prevented your {techniqueName}.");
+            return true;
+        }
+
+        if (hasRangedWeapon)
+        {
+            player.SendServerMessage($"Wielding a ranged weapon has prevented your {techniqueName}.");
+            return true;
+        }
+        
+        return false;
     }
 
     private static TechniqueType? GetTechniqueByTag(string? techniqueTag)
