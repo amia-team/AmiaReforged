@@ -27,10 +27,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Migrations\" />
+        <Folder Include="Resources\WorldEngine\Nodes\" />
+        <Folder Include="Resources\WorldEngine\Workshops\" />
         <Folder Include="Systems\MiniGame\LiarsDice\Nui\"/>
         <Folder Include="Systems\MiniGame\LiarsDice\Tests\"/>
-        <Folder Include="Systems\WorldEngine\Features\KnowledgeAndTraits\" />
     </ItemGroup>
 
     <ItemGroup>
