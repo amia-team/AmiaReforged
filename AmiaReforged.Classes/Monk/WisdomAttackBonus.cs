@@ -6,13 +6,7 @@ public static class WisdomAttackBonus
 {
     public static void AdjustWisdomAttackBonus(NwCreature monk, bool abilitiesRestricted)
     {
-        if (monk.IsRangedWeaponEquipped)
-        {
-            UnsetWisdomAttackBonus(monk);
-            return;
-        }
-
-        if (abilitiesRestricted)
+        if (monk.IsRangedWeaponEquipped || abilitiesRestricted)
         {
             UnsetWisdomAttackBonus(monk);
             return;
@@ -22,42 +16,41 @@ public static class WisdomAttackBonus
         int strModifier =  monk.GetAbilityModifier(Ability.Strength);
         int dexModifier =  monk.GetAbilityModifier(Ability.Dexterity);
 
-        if (wisModifier <= strModifier)
+        if (wisModifier <= strModifier || FinesseApplies(monk, wisModifier, dexModifier))
         {
             UnsetWisdomAttackBonus(monk);
             return;
         }
 
-        NwItem? weapon = monk.GetItemInSlot(InventorySlot.RightHand);
-
-        bool isFinesseWeapon = weapon is null || weapon.BaseItem.WeaponFinesseMinimumCreatureSize <= monk.Size;
-
-        if (monk.HasFeatEffect(Feat.WeaponFinesse!) && isFinesseWeapon && wisModifier <= dexModifier)
-        {
-            UnsetWisdomAttackBonus(monk);
-            return;
-        }
-
-        int meleeAttackBonus = monk.GetAttackBonus(true);
+        int meleeAttackBonus = monk.GetAttackBonus(isMelee: true);
 
         if (monk.GetItemInSlot(InventorySlot.RightHand) is null
             && monk.GetItemInSlot(InventorySlot.Arms) is { } gloves
             && gloves.ItemProperties.Any(ip => ip.Property.PropertyType == ItemPropertyType.AttackBonus))
         {
-            ItemProperty glovesAbProperty =
-                gloves.ItemProperties.First(ip => ip.Property.PropertyType == ItemPropertyType.AttackBonus);
-            int glovesAb = glovesAbProperty.IntParams[0];
+            int glovesAb = gloves.ItemProperties.
+                First(ip => ip.Property.PropertyType == ItemPropertyType.AttackBonus).
+                IntParams[0];
+
             meleeAttackBonus += glovesAb;
         }
 
-        int wisModifiedAttackBonus =
-            dexModifier > strModifier ?
+        int wisAttackBonus =
+            FinesseApplies(monk, strModifier, dexModifier) ?
                 meleeAttackBonus - dexModifier + wisModifier
                 : meleeAttackBonus - strModifier + wisModifier;
 
-        int newBaseAttackBonus = monk.BaseAttackBonus + wisModifiedAttackBonus - meleeAttackBonus;
+        int newBaseAttackBonus = monk.BaseAttackBonus + wisAttackBonus - meleeAttackBonus;
 
         monk.BaseAttackBonus = newBaseAttackBonus;
+    }
+
+    private static bool FinesseApplies(NwCreature monk, int abilityModifier, int dexModifier)
+    {
+        NwItem? weapon = monk.GetItemInSlot(InventorySlot.RightHand);
+        bool hasFinesseWeapon = weapon is null || monk.Size <= weapon.BaseItem.WeaponFinesseMinimumCreatureSize;
+
+        return monk.KnowsFeat(Feat.WeaponFinesse!) && hasFinesseWeapon && abilityModifier <= dexModifier;
     }
 
     /// <summary>
@@ -65,6 +58,8 @@ public static class WisdomAttackBonus
     /// </summary>
     private static void UnsetWisdomAttackBonus(NwCreature monk) =>
         monk.BaseAttackBonus = 0;
+
+
 }
 
 
