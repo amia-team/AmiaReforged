@@ -1,5 +1,3 @@
-// Utility/helper functions for monk stuff
-
 using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
@@ -10,6 +8,17 @@ public static class MonkUtils
 {
     private static readonly NwClass? ObsoletePoeClass = NwClass.FromClassId(50);
 
+    private static readonly Dictionary<int, PathType> MonkPathsByFeatId = new()
+    {
+        { MonkFeat.PoeCrashingMeteor, PathType.CrashingMeteor },
+        { MonkFeat.PoeSwingingCenser, PathType.SwingingCenser },
+        { MonkFeat.PoeHiddenSpring, PathType.HiddenSpring },
+        { MonkFeat.PoeFickleStrand, PathType.FickleStrand },
+        { MonkFeat.PoeIroncladBull, PathType.IroncladBull },
+        { MonkFeat.PoeCrackedVessel, PathType.CrackedVessel },
+        { MonkFeat.PoeEchoingValley, PathType.EchoingValley }
+    };
+
     /// <summary>
     ///     Returns the monk's path type
     /// </summary>
@@ -18,21 +27,12 @@ public static class MonkUtils
         // Check for Path of Enlightenment PrC as a failsafe
         if (monk.GetClassInfo(ObsoletePoeClass) is not null) return null;
 
-        NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => feat.Id is MonkFeat.PoeCrashingMeteor
-            or MonkFeat.PoeSwingingCenser or MonkFeat.PoeHiddenSpring or MonkFeat.PoeFickleStrand
-            or MonkFeat.PoeIroncladBull or MonkFeat.PoeCrackedVessel or MonkFeat.PoeEchoingValley);
+        NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => MonkPathsByFeatId.ContainsKey(feat.Id));
 
-        return pathFeat?.Id switch
-        {
-            MonkFeat.PoeCrashingMeteor => PathType.CrashingMeteor,
-            MonkFeat.PoeSwingingCenser => PathType.SwingingCenser,
-            MonkFeat.PoeHiddenSpring => PathType.HiddenSpring,
-            MonkFeat.PoeFickleStrand => PathType.FickleStrand,
-            MonkFeat.PoeIroncladBull => PathType.IroncladBull,
-            MonkFeat.PoeCrackedVessel => PathType.CrackedVessel,
-            MonkFeat.PoeEchoingValley => PathType.EchoingValley,
-            _ => null
-        };
+        if (pathFeat == null)
+            return null;
+
+        return MonkPathsByFeatId[pathFeat.Id];
     }
 
     /// <summary>
@@ -123,7 +123,7 @@ public static class MonkUtils
         if (monk.IsPlayerControlled(out NwPlayer? player))
         {
             player.FloatingTextString(
-                "Ki Body Point regained!".ColorString(ColorConstants.Lime),
+                "Ki Body Point regained!".ColorString(ColorConstants.Teal),
                 false
             );
         }
