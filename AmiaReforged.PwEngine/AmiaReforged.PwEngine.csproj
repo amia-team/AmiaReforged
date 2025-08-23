@@ -30,7 +30,6 @@
         <Folder Include="Migrations\" />
         <Folder Include="Systems\MiniGame\LiarsDice\Nui\"/>
         <Folder Include="Systems\MiniGame\LiarsDice\Tests\"/>
-        <Folder Include="Systems\WorldEngine\Features\Characters\Commands\" />
         <Folder Include="Systems\WorldEngine\Features\KnowledgeAndTraits\" />
     </ItemGroup>
 
