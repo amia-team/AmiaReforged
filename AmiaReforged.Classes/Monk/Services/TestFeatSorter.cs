@@ -7,12 +7,12 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(TestFeatSorterService))]
-public class TestFeatSorterService
+[ServiceBinding(typeof(TestFeatSorter))]
+public class TestFeatSorter
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private static readonly Dictionary<int, List<NwFeat?>> MonkFeatProgression = new()
+    private static readonly Dictionary<int, List<NwFeat?>> MonkFeatsByLevel = new()
     {
         [1] = [NwFeat.FromFeatId(MonkFeat.StunningStrike), NwFeat.FromFeatType(Feat.WeaponProficiencySimple)],
         [3] = [NwFeat.FromFeatId(MonkFeat.MonkDefense)],
@@ -33,7 +33,7 @@ public class TestFeatSorterService
         [30] = [NwFeat.FromFeatId(MonkFeat.KiStrike3)]
     };
 
-    public TestFeatSorterService(EventService eventService)
+    public TestFeatSorter(EventService eventService)
     {
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
 
@@ -65,39 +65,43 @@ public class TestFeatSorterService
 
     private void AdjustFeats(NwCreature monk, NwPlayer player)
     {
-        foreach (NwFeat feat in monk.Feats)
-        {
-            if (feat.FeatType is not (Feat.StunningFist or Feat.MonkEndurance or Feat.MonkAcBonus
-                    or Feat.WholenessOfBody or Feat.EmptyBody or Feat.QuiveringPalm or Feat.KiStrike)
-                && feat.Id is not (MonkFeat.KiStrike or MonkFeat.KiStrike2 or MonkFeat.KiStrike3))
-                continue;
-
-            monk.RemoveFeat(feat);
-            player.SendServerMessage($"Old feat {feat.Name} removed.");
-        }
+        HashSet<NwFeat?> oldFeats =
+        [
+            NwFeat.FromFeatType(Feat.StunningFist),
+            NwFeat.FromFeatType(Feat.MonkEndurance),
+            NwFeat.FromFeatType(Feat.MonkAcBonus),
+            NwFeat.FromFeatType(Feat.WholenessOfBody),
+            NwFeat.FromFeatType(Feat.EmptyBody),
+            NwFeat.FromFeatType(Feat.QuiveringPalm),
+            NwFeat.FromFeatId(MonkFeat.KiStrike),
+            NwFeat.FromFeatId(MonkFeat.KiStrike2),
+            NwFeat.FromFeatId(MonkFeat.KiStrike3)
+        ];
 
         int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
-        foreach (int featLevel in MonkFeatProgression.Keys.Where(featLevel => featLevel > monkLevel))
-        {
-            List<NwFeat?> monkFeatsByLevel = MonkFeatProgression[featLevel];
+        HashSet<NwFeat> correctFeats = MonkFeatsByLevel.Where(kvp => kvp.Key <= monkLevel)
+            .SelectMany(kvp => kvp.Value)
+            .OfType<NwFeat>()
+            .ToHashSet();
 
-            foreach (NwFeat? feat in monkFeatsByLevel.OfType<NwFeat>().Where(monk.KnowsFeat))
-            {
+        HashSet<NwFeat> incorrectFeats = MonkFeatsByLevel.Where(kvp => kvp.Key > monkLevel)
+            .SelectMany(kvp => kvp.Value)
+            .OfType<NwFeat>()
+            .ToHashSet();
+
+        // Remove old feats or new feats that monk doesn't qualify for
+        foreach (NwFeat feat in monk.Feats.Where(feat => oldFeats.Contains(feat) || incorrectFeats.Contains(feat)))
+        {
                 monk.RemoveFeat(feat);
-                player.SendServerMessage($"New feat {feat.Name} removed; you are below the required monk level {featLevel}.");
-            }
+                player.SendServerMessage($"Feat {feat.Name} was removed.");
         }
 
-        foreach (int featLevel in MonkFeatProgression.Keys.Where(featLevel => featLevel <= monkLevel))
+        // Add new feats that monk qualifies for but doesn't yet have
+        foreach (NwFeat feat in correctFeats.Where(feat => !monk.KnowsFeat(feat)))
         {
-            List<NwFeat?> monkFeatsByLevel = MonkFeatProgression[featLevel];
-
-            foreach (NwFeat? feat in monkFeatsByLevel.OfType<NwFeat>().Where(feat => !monk.KnowsFeat(feat)))
-            {
-                monk.AddFeat(feat);
-                player.SendServerMessage($"New feat {feat.Name} added on monk level {featLevel}.");
-            }
+            monk.AddFeat(feat);
+            player.SendServerMessage($"Feat {feat.Name} was added.");
         }
     }
 }
