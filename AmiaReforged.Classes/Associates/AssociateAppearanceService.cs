@@ -33,7 +33,7 @@ public class AssociateAppearanceService
         NwItem? legacyReskinWidget =  eventData.Owner.Inventory.Items.FirstOrDefault(item => item.Tag == ReskinWidgetTag);
 
         bool associateHasLegacyReskin =
-            LegacySummonReskin.ApplySummonReskin(eventData.Associate, legacyReskinWidget);
+            LegacySummonReskin.ApplySummonReskin(eventData.Associate, eventData.AssociateType, legacyReskinWidget);
 
         if (associateHasLegacyReskin) return;
 

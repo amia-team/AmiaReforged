@@ -4,22 +4,17 @@ namespace AmiaReforged.Classes.Associates;
 
 public static class LegacySummonReskin
 {
-    public static bool ApplySummonReskin(NwCreature associate, NwItem? reskinWidget)
+    public static bool ApplySummonReskin(NwCreature associate, AssociateType associateType, NwItem? reskinWidget)
     {
         if (reskinWidget == null)
             return false;
 
-        string summonResRef = associate.AssociateType switch
+        string summonResRef = associateType switch
         {
             AssociateType.AnimalCompanion => "companion",
             AssociateType.Familiar => "familiar",
             _ => associate.ResRef
         };
-
-        LocalVariableString ownershipVar = reskinWidget.GetObjectVariable<LocalVariableString>(summonResRef + "_d");
-
-        if (ownershipVar.HasNothing)
-            return false;
 
         LocalVariableInt widgetVersion = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_adv");
 
@@ -29,14 +24,14 @@ public static class LegacySummonReskin
             _ => true
         };
 
-        if (widgetVersion.HasNothing)
+        switch (widgetVersion.Value)
         {
-            SetBasicAppearance(associate, summonResRef, reskinWidget, ignoreName);
-        }
-
-        if (widgetVersion.Value == 1)
-        {
-            SetAdvancedAppearance(associate, summonResRef, reskinWidget, ignoreName);
+            case 0:
+                SetBasicAppearance(associate, summonResRef, reskinWidget, ignoreName);
+                break;
+            case 1:
+                SetAdvancedAppearance(associate, summonResRef, reskinWidget, ignoreName);
+                break;
         }
 
         return true;
@@ -44,11 +39,6 @@ public static class LegacySummonReskin
 
     private static void SetBasicAppearance(NwCreature associate, string summonResRef, NwItem reskinWidget, bool ignoreName)
     {
-        NwPlayer? player = associate.Master?.ControllingPlayer;
-        if (player == null) return;
-
-        player.SendServerMessage($"Custom appearance loaded for {associate.Name} from {reskinWidget.Name}.");
-
         int newAppearance = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_a").Value;
         int newPortrait = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_p").Value;
         int newTail = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_t").Value;
