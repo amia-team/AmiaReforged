@@ -16,13 +16,10 @@ public static class LegacySummonReskin
             _ => associate.ResRef
         };
 
-        summonResRef += "_d";
-
         LocalVariableString ownershipVar = reskinWidget.GetObjectVariable<LocalVariableString>(summonResRef + "_d");
 
         if (ownershipVar.HasNothing)
             return false;
-
 
         LocalVariableInt widgetVersion = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_adv");
 
