@@ -1,3 +1,5 @@
-namespace AmiaReforged.PwEngine.Systems.WorldEngine;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 
-public record HarvestOutput(GenericItemType GenericItemType, int Appearance, string Name, string Description);
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+
+public record HarvestOutput(string ItemDefinitionTag, int Quantity);

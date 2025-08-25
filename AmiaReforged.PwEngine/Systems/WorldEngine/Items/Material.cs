@@ -1,7 +1,8 @@
-namespace AmiaReforged.PwEngine.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 
 public enum Material
 {
+    None = -1,
     Unknown = 0,
     Adamantine = 1,
     Brass = 2,
@@ -83,5 +84,5 @@ public enum Material
     WoodPhandar = 78,
     WoodShadowtop = 79,
     WoodZhurkwood = 80,
-    Adamant = 81
+    Adamant = 81,
 }

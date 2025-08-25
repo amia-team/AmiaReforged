@@ -1,4 +1,6 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine;
@@ -6,12 +8,38 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine;
 [TestFixture]
 public class ResourceNodeLoadingTests
 {
-    private ResourceNodeLoadingService _sut = null!;
+    private ResourceNodeDefinitionLoadingService _sut = null!;
 
     [OneTimeSetUp]
     public void SetUp()
     {
-        _sut = new ResourceNodeLoadingService(CreateTestRepository());
+        _sut = new ResourceNodeDefinitionLoadingService(CreateTestRepository());
+    }
+
+    [Test]
+    public void Should_Load_Valid_ResourceNode()
+    {
+        string reactionJson = """
+                              {
+                                "tag": "test",
+                                "requirements" :
+                                [
+                                    {
+                                        "requiredItemType": 0
+                                    }
+                                ],
+                                "yield_modifiers":
+                                [
+                                    {
+                                        "modifierType": "has_knowledge",
+                                        "modifierOperation": "addition",
+                                        "modifierValue": 1
+                                    }
+                                ]
+                              }
+                              """;
+
+        Assert.Fail("Pending implementation");
     }
 
     private IResourceNodeDefinitionRepository CreateTestRepository()
@@ -22,28 +50,32 @@ public class ResourceNodeLoadingTests
 
 internal class TestResourceNodeDefinitionRepository : IResourceNodeDefinitionRepository
 {
+    private readonly Dictionary<string, ResourceNodeDefinition> _resourceNodeDefinitions = new();
+
     public void Create(ResourceNodeDefinition definition)
     {
-        throw new NotImplementedException();
+        _resourceNodeDefinitions.TryAdd(definition.Tag, definition);
     }
 
-    public ResourceNodeDefinition Get(string tag)
+    public ResourceNodeDefinition? Get(string tag)
     {
-        throw new NotImplementedException();
+        return _resourceNodeDefinitions.GetValueOrDefault(tag);
     }
 
-    public ResourceNodeDefinition Update(ResourceNodeDefinition definition)
+    public void Update(ResourceNodeDefinition definition)
     {
-        throw new NotImplementedException();
+        if (!Exists(definition.Tag)) Create(definition);
+
+        _resourceNodeDefinitions[definition.Tag] = definition;
     }
 
     public bool Delete(string tag)
     {
-        throw new NotImplementedException();
+        return _resourceNodeDefinitions.Remove(tag);
     }
 
     public bool Exists(string tag)
     {
-        throw new NotImplementedException();
+        return _resourceNodeDefinitions.ContainsKey(tag);
     }
 }
