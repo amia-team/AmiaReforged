@@ -20,8 +20,8 @@ public static class LegacySummonReskin
 
         bool ignoreName = associate.AssociateType switch
         {
-            AssociateType.AnimalCompanion or AssociateType.Familiar => false,
-            _ => true
+            AssociateType.AnimalCompanion or AssociateType.Familiar => true,
+            _ => false
         };
 
         bool reskinApplied = widgetVersion.Value switch
