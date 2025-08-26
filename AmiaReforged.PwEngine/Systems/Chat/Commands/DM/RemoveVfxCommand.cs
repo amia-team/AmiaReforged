@@ -14,11 +14,11 @@ public class RemoveVfx : IChatCommand
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
 
-        string thisCommand = Command.ColorString(ColorConstants.White);
-        string listVfxCommand = "./listvfx".ColorString(ColorConstants.White);
+        string thisCommand = Command.ColorString(ColorConstants.Lime);
+        string listVfxCommand = "./listvfx".ColorString(ColorConstants.Lime);
         string usageMessage = $"Available inputs for {thisCommand} are:" +
-                              "\n<vfx id> if you want to remove a specific visual effect" +
-                              "\n<all> if you want to remove all visual effects" +
+                              "\nVFX ID to remove a specific visual effect" +
+                              "\n'all' to remove all visual effects" +
                               $"\nTo produce a list of visual effects and their IDs, use {listVfxCommand}";
 
         if (!caller.IsDM && environment == "live")
