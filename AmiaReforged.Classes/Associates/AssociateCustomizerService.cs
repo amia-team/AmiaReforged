@@ -12,6 +12,9 @@ public class AssociateCustomizerService
     private static readonly Color ColorGreen = Color.FromRGBA("#43ff64d9");
     private static readonly Color ColorWhite = Color.FromRGBA("#d2ffffd9");
 
+    private const string CreatureKey = "creature";
+    private const string VfxCountKey = "vfxcount";
+    private const string VfxKeyPrefix = "vfx";
     private const string ToolTag = "ass_customizer";
 
     // Baseitems.2da id numbers for left-hand holdable items
@@ -100,11 +103,11 @@ public class AssociateCustomizerService
         // Loop for the visual effects row index and store each with a unique var name
         for (int i = 0; i < vfxList.Count; i++)
         {
-            associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i).Value = vfxList[i];
+            associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxKeyPrefix+i).Value = vfxList[i];
         }
 
         // Store the count of vfxs for later use
-        associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").Value = vfxList.Count;
+        associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxCountKey).Value = vfxList.Count;
 
         return true;
     }
@@ -118,7 +121,7 @@ public class AssociateCustomizerService
 
         if (creatureData == null) return;
 
-        associateCustomizer.GetObjectVariable<LocalVariableString>("creature").Value
+        associateCustomizer.GetObjectVariable<LocalVariableString>(CreatureKey).Value
             = Convert.ToBase64String(creatureData);
     }
 
@@ -127,16 +130,16 @@ public class AssociateCustomizerService
     /// </summary>
     private void DeleteDanglers(NwItem associateCustomizer)
     {
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("creature").Delete();
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>(CreatureKey).HasValue)
+            associateCustomizer.GetObjectVariable<LocalVariableString>(CreatureKey).Delete();
 
-        if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").Delete();
+        if (associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxCountKey).HasValue)
+            associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxCountKey).Delete();
 
         for (int i = 0; i < 50; i++)
         {
-            if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i).HasValue)
-                associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i).Delete();
+            if (associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxKeyPrefix+i).HasValue)
+                associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxKeyPrefix+i).Delete();
         }
     }
 
@@ -154,7 +157,7 @@ public class AssociateCustomizerService
 
         NwItem associateCustomizer = obj.ActivatedItem;
 
-        LocalVariableString creatureData = associateCustomizer.GetObjectVariable<LocalVariableString>("creature");
+        LocalVariableString creatureData = associateCustomizer.GetObjectVariable<LocalVariableString>(CreatureKey);
 
         if (creatureData.Value == null)
         {
@@ -287,19 +290,19 @@ public class AssociateCustomizerService
             associateResRef = associate.ResRef[..8];
 
         // Cycle through every appearance and vfx variable and store each variable to the appearance tool by the associate
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("creature"+associateResRef).Value =
-                associateCustomizer.GetObjectVariable<LocalVariableString>("creature");
+        if (associateCustomizer.GetObjectVariable<LocalVariableString>(CreatureKey).HasValue)
+            associateCustomizer.GetObjectVariable<LocalVariableString>(CreatureKey+associateResRef).Value =
+                associateCustomizer.GetObjectVariable<LocalVariableString>(CreatureKey);
 
-        if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").HasValue)
+        if (associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxCountKey).HasValue)
         {
-            int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount"+associateResRef).Value =
-                associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount");
+            int vfxCount = associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxCountKey+associateResRef).Value =
+                associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxCountKey);
 
             for (int i = 0; i < vfxCount; i++)
             {
-                associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i+associateResRef).Value =
-                associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i);
+                associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxKeyPrefix+i+associateResRef).Value =
+                associateCustomizer.GetObjectVariable<LocalVariableInt>(VfxKeyPrefix+i);
             }
         }
     }
