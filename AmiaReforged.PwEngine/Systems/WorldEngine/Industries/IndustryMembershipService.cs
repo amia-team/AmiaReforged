@@ -79,21 +79,10 @@ public class IndustryMembershipService(
             return LearningResult.DoesNotExist;
         }
 
-        if (characterKnowledgeRepository.AlreadyKnows(membership.CharacterId, k))
+        LearningResult learningCheck = CanLearnKnowledge(character, membership, k);
+        if (learningCheck != LearningResult.CanLearn)
         {
-            return LearningResult.AlreadyLearned;
-            ;
-        }
-
-        if (k.Level > membership.Level)
-        {
-            Log.Error($"Character {membership.CharacterId} does not have the required level to learn {tag}");
-            return LearningResult.InsufficientRank;
-        }
-
-        if (character.GetKnowledgePoints() - k.PointCost < 0)
-        {
-            return LearningResult.NotEnoughPoints;
+            return learningCheck;
         }
 
         character.DeductPoints(k.PointCost);
@@ -110,6 +99,28 @@ public class IndustryMembershipService(
 
         return LearningResult.Success;
     }
+
+    public LearningResult CanLearnKnowledge(ICharacter character, IndustryMembership membership, Knowledge knowledge)
+    {
+
+        if (characterKnowledgeRepository.AlreadyKnows(membership.CharacterId, knowledge))
+        {
+            return LearningResult.AlreadyLearned;
+        }
+
+        if (knowledge.Level > membership.Level)
+        {
+            Log.Error($"Character {membership.CharacterId} does not have the required level to learn {knowledge.Tag}");
+            return LearningResult.InsufficientRank;
+        }
+
+        if (character.GetKnowledgePoints() - knowledge.PointCost < 0)
+        {
+            return LearningResult.NotEnoughPoints;
+        }
+
+        return LearningResult.CanLearn;
+    }
 }
 
 public enum LearningResult
@@ -119,7 +130,8 @@ public enum LearningResult
     AlreadyLearned,
     Success,
     NotEnoughPoints,
-    CharacterNotFound
+    CharacterNotFound,
+    CanLearn
 }
 
 public interface ICharacterKnowledgeRepository
