@@ -80,43 +80,43 @@ public static class CustomAppearance
         {
             AssociateType.AnimalCompanion => associate.AnimalCompanionType switch
             {
-                AnimalCompanionCreatureType.Badger => "badger",
-                AnimalCompanionCreatureType.Bear => "bear",
-                AnimalCompanionCreatureType.Boar => "boar",
-                AnimalCompanionCreatureType.DireRat => "dire rat",
-                AnimalCompanionCreatureType.DireWolf => "dire wolf",
-                AnimalCompanionCreatureType.Hawk => "hawk",
-                AnimalCompanionCreatureType.Panther => "panther",
-                AnimalCompanionCreatureType.Spider => "spider",
-                AnimalCompanionCreatureType.Wolf => "wolf",
-                _ => "unknown"
+                AnimalCompanionCreatureType.Badger => "Badger",
+                AnimalCompanionCreatureType.Bear => "Bear",
+                AnimalCompanionCreatureType.Boar => "Boar",
+                AnimalCompanionCreatureType.DireRat => "Dire Rat",
+                AnimalCompanionCreatureType.DireWolf => "Dire Wolf",
+                AnimalCompanionCreatureType.Hawk => "Hawk",
+                AnimalCompanionCreatureType.Panther => "Panther",
+                AnimalCompanionCreatureType.Spider => "Spider",
+                AnimalCompanionCreatureType.Wolf => "Wolf",
+                _ => "Unknown"
             },
             AssociateType.Familiar => associate.FamiliarType switch
             {
-                FamiliarCreatureType.Bat => "bat",
-                FamiliarCreatureType.Eyeball => "eyeball",
-                FamiliarCreatureType.CragCat => "panther",
-                FamiliarCreatureType.FairyDragon => "faerie dragon",
-                FamiliarCreatureType.FireMephit => "fire mephit",
-                FamiliarCreatureType.HellHound => "hell hound",
-                FamiliarCreatureType.IceMephit => "ice mephit",
-                FamiliarCreatureType.Imp => "imp",
-                FamiliarCreatureType.Pixie => "pixie",
-                FamiliarCreatureType.PseudoDragon => "pseudodragon",
-                FamiliarCreatureType.Raven => "raven",
-                _ when associate.ResRef.Contains("const") => "construct",
-                _ when associate.ResRef.Contains("phase") => "phase spider",
-                _ when associate.ResRef.Contains("skele") => "skeleton",
-                _ => "unknown"
+                FamiliarCreatureType.Bat => "Bat",
+                FamiliarCreatureType.Eyeball => "Eyeball",
+                FamiliarCreatureType.CragCat => "Panther",
+                FamiliarCreatureType.FairyDragon => "Faerie Dragon",
+                FamiliarCreatureType.FireMephit => "Fire Mephit",
+                FamiliarCreatureType.HellHound => "Hell Hound",
+                FamiliarCreatureType.IceMephit => "Ice Mephit",
+                FamiliarCreatureType.Imp => "Imp",
+                FamiliarCreatureType.Pixie => "Pixie",
+                FamiliarCreatureType.PseudoDragon => "Pseudodragon",
+                FamiliarCreatureType.Raven => "Raven",
+                _ when associate.ResRef.Contains("const") => "Construct",
+                _ when associate.ResRef.Contains("phase") => "Phase Spider",
+                _ when associate.ResRef.Contains("skele") => "Skeleton",
+                _ => "Unknown"
             },
-            _ => "unknown"
+            _ => "Unknown"
         };
 
         if (customizerDescription.Contains(companionType) &&
             customizerDescription.Contains(newName)) return customizerDescription;
 
         string prefix = associateType == AssociateType.AnimalCompanion ? "Companion" : "Familiar";
-        string nameUpdate = $"{prefix} {companionType} is{newName}".ColorString(ColorConstants.Green);
+        string nameUpdate = $"{prefix} {companionType} is {newName}".ColorString(ColorConstants.Green);
 
         return $"{nameUpdate}\n\n{customizerDescription}";
     }

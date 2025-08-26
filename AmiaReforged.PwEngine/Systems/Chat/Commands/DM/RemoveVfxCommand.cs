@@ -1,6 +1,7 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.Chat.Commands.DM;
 
@@ -11,70 +12,106 @@ public class RemoveVfx : IChatCommand
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
-        if (!caller.IsDM) return Task.CompletedTask;
-        try
-        {
-            int vfxId = int.Parse(args[0]);
-            string? vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
-            string? vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
-            NwCreature? controlledCreature = caller.ControlledCreature;
-            if(controlledCreature is null) return Task.CompletedTask;
-            controlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value = vfxId;
-            if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "D")
-            {
-                caller.EnterTargetMode(RemoveDurVfx,
-                    new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
-                caller.FloatingTextString($"Removing {vfxLabel}!", false);
-                return Task.CompletedTask;
-            }
+        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
 
-            if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "F")
-            {
-                caller.SendServerMessage(
-                    $"Selected vfx {vfxLabel} which is an instant-type vfx. Use \"./listvfx dur\" to list valid vfxs. Use \"./getvfx\" to get vfxs on the target.");
-                return Task.CompletedTask;
-            }
-        }
-        catch
+        string thisCommand = Command.ColorString(ColorConstants.White);
+        string listVfxCommand = "./listvfx".ColorString(ColorConstants.White);
+        string usageMessage = $"Available inputs for {thisCommand} are:" +
+                              "\n<vfx id> if you want to remove a specific visual effect" +
+                              "\n<all> if you want to remove all visual effects" +
+                              $"\nTo produce a list of visual effects and their IDs, use {listVfxCommand}";
+
+        if (!caller.IsDM && environment == "live")
         {
-            caller.SendServerMessage(
-                message:
-                "Usage: \"./removevfx <vfx id>\". Use \"./listvfx dur\" to list valid vfxs. Use \"./getvfx\" to get vfxs on the target.");
+            caller.SendServerMessage
+                ($"Only DMs can use {thisCommand} on the live server. You can use this on the test server.");
+
+            return Task.CompletedTask;
+        }
+
+        if (args.Length == 0)
+        {
+            caller.SendServerMessage(usageMessage);
+            return Task.CompletedTask;
+        }
+
+        if (args[0] == "all")
+        {
+            caller.EnterTargetMode(
+                targetingData => RemoveVfxFromTarget(targetingData, null),
+                new TargetModeSettings
+                    { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door }
+            );
+
+            caller.FloatingTextString("Removing all visual effects!", false);
+
+            return Task.CompletedTask;
+        }
+
+        if (!int.TryParse(args[0], out int vfxId))
+        {
+            caller.SendServerMessage("Input not recognised, use a number or 'all'.\n"+usageMessage);
+
+            return Task.CompletedTask;
+        }
+
+        string vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label ?? "UNKNOWN";
+
+        switch (NwGameTables.VisualEffectTable[vfxId].TypeFd)
+        {
+            case "D":
+                caller.EnterTargetMode(
+                    targetingData => RemoveVfxFromTarget(targetingData, vfxId),
+                    new TargetModeSettings
+                        { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door }
+                );
+
+                caller.FloatingTextString($"Removing {vfxLabel}!", false);
+
+                break;
+
+            case "F":
+                caller.SendServerMessage(
+                    $"Selected vfx {vfxLabel}, which is an instant-type vfx." +
+                    $"\nTo produce a list of visual effects with their IDs and duration types, use {listVfxCommand}");
+
+                break;
+
+            default:
+                caller.SendServerMessage(
+                    $"Selected vfx {vfxLabel} type is unrecognised." +
+                    $"\nTo produce a list of visual effects with their IDs and duration types, use {listVfxCommand}");
+
+                break;
         }
 
         return Task.CompletedTask;
     }
 
-    private void RemoveDurVfx(ModuleEvents.OnPlayerTarget obj)
+    private void RemoveVfxFromTarget(ModuleEvents.OnPlayerTarget targetingData, int? vfxId)
     {
-        NwCreature? playerControlledCreature = obj.Player.ControlledCreature;
-        
-        if (playerControlledCreature is null) return;
-        
-        int vfxId = playerControlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value;
+        if (targetingData.TargetObject is not (NwCreature or NwDoor or NwPlaceable)) return;
 
-        if (obj.TargetObject is NwCreature targetCreature)
-            foreach (Effect effect in targetCreature.ActiveEffects)
+        NwGameObject targetObject = (NwGameObject)targetingData.TargetObject;
+
+        if (vfxId != null)
+        {
+            foreach (Effect effect in targetObject.ActiveEffects)
             {
-                if (effect.EffectType == EffectType.VisualEffect)
-                    if (effect.IntParams[0] == vfxId)
-                        targetCreature.RemoveEffect(effect);
+                if (effect.EffectType != EffectType.VisualEffect) continue;
+                if (effect.IntParams[0] != vfxId) continue;
+
+                targetObject.RemoveEffect(effect);
             }
 
-        if (obj.TargetObject is NwDoor targetDoor)
-            foreach (Effect effect in targetDoor.ActiveEffects)
-            {
-                if (effect.EffectType == EffectType.VisualEffect)
-                    if (effect.IntParams[0] == vfxId)
-                        targetDoor.RemoveEffect(effect);
-            }
+            return;
+        }
 
-        if (obj.TargetObject is NwPlaceable targetPlaceable)
-            foreach (Effect effect in targetPlaceable.ActiveEffects)
-            {
-                if (effect.EffectType == EffectType.VisualEffect)
-                    if (effect.IntParams[0] == vfxId)
-                        targetPlaceable.RemoveEffect(effect);
-            }
+        foreach (Effect effect in targetObject.ActiveEffects)
+        {
+            if (effect.EffectType != EffectType.VisualEffect) continue;
+
+            targetObject.RemoveEffect(effect);
+        }
     }
 }
