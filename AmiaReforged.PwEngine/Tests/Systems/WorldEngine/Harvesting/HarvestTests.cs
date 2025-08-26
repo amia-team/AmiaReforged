@@ -5,7 +5,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
 using NUnit.Framework;
 
-namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Harvesting;
 
 [TestFixture]
 public class HarvestTests
