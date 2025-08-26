@@ -24,22 +24,21 @@ public static class LegacySummonReskin
             _ => true
         };
 
-        switch (widgetVersion.Value)
+        bool reskinApplied = widgetVersion.Value switch
         {
-            case 0:
-                SetBasicAppearance(associate, summonResRef, reskinWidget, ignoreName);
-                break;
-            case 1:
-                SetAdvancedAppearance(associate, summonResRef, reskinWidget, ignoreName);
-                break;
-        }
+            0 => SetBasicAppearance(associate, summonResRef, reskinWidget, ignoreName),
+            1 => SetAdvancedAppearance(associate, summonResRef, reskinWidget, ignoreName),
+            _ => false
+        };
 
-        return true;
+        return reskinApplied;
     }
 
-    private static void SetBasicAppearance(NwCreature associate, string summonResRef, NwItem reskinWidget, bool ignoreName)
+    private static bool SetBasicAppearance(NwCreature associate, string summonResRef, NwItem reskinWidget, bool ignoreName)
     {
         int newAppearance = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_a").Value;
+        if (newAppearance == 0) return false;
+
         int newPortrait = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_p").Value;
         int newTail = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_t").Value;
         string? newName = reskinWidget.GetObjectVariable<LocalVariableString>(summonResRef + "_n").Value;
@@ -50,11 +49,15 @@ public static class LegacySummonReskin
         if (newName != null && ignoreName == false) associate.Name = newName;
 
         SetVfx(associate, reskinWidget);
+
+        return true;
     }
 
-    private static void SetAdvancedAppearance(NwCreature associate, string summonResRef, NwItem reskinWidget, bool ignoreName)
+    private static bool SetAdvancedAppearance(NwCreature associate, string summonResRef, NwItem reskinWidget, bool ignoreName)
     {
         int newAppearance = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_app").Value;
+        if (newAppearance == 0) return false;
+
         int newTail = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_tail").Value;
         int newWing = reskinWidget.GetObjectVariable<LocalVariableInt>(summonResRef + "_wing").Value;
         float newScale = reskinWidget.GetObjectVariable<LocalVariableFloat>(summonResRef + "_scale").Value;
@@ -75,6 +78,8 @@ public static class LegacySummonReskin
         SetColorBits(associate, reskinWidget, summonResRef);
 
         SetVfx(associate, reskinWidget);
+
+        return true;
     }
 
     private static void SetVfx(NwCreature associate, NwItem reskinWidget)
