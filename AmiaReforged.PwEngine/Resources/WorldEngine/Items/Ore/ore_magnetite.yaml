@@ -1,9 +1,0 @@
-BaseItemResRef: econ_msmall3
-Name: "Magnetite Ore"
-Description: Magnetite is a naturally magnetic iron ore known for producing sturdy iron when smelted, often found in massive veins.
-Tag: ore_magnetite
-Appearance: 6
-ItemType: Ore
-BaseCost: 110
-MaxQuality: VeryGood
-MinQuality: Poor

@@ -1,9 +1,0 @@
-BaseItemResRef: econ_msmall3
-Name: "Geode: Hematite"
-Description: "A rough-looking spherical rock that, when split open, reveals beautiful metallic gray to black crystalline hematite formations within. These iron-rich crystals often display a distinctive silvery luster."
-Tag: geode_hematite
-ItemType: Geode
-BaseCost: 180
-Appearance: 8
-MaxQuality: VeryGood
-MinQuality: VeryPoor
