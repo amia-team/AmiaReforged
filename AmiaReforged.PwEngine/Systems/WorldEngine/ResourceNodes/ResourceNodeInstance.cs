@@ -8,16 +8,20 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
 public class ResourceNodeInstance
 {
+    public delegate void OnHarvestHandler(HarvestEventData data);
+    public event OnHarvestHandler? OnHarvest;
+
     public long Id { get; set; }
     public required string Area { get; set; }
 
     public required ResourceNodeDefinition Definition { get; set; }
-    public int Quantity { get; set; }
+    public int Uses { get; set; }
     public QualityLevel Quality { get; set; }
     public float X { get; set; }
     public float Y { get; set; }
     public float Z { get; set; }
     public float Rotation { get; set; }
+
 
     public Location? ToLocation()
     {
@@ -26,16 +30,29 @@ public class ResourceNodeInstance
         return area != null ? Location.Create(area, new Vector3(X, Y, Z), Rotation) : null;
     }
 
-    public void Harvest(ICharacter pc)
+    public HarvestResult Harvest(ICharacter character)
     {
-        ItemSnapshot tool = pc.GetEquipment()[EquipmentSlots.RightHand];
-        if (Definition.Requirements.Any(context => tool.Type != context.RequiredItemType))
+        ItemSnapshot tool = character.GetEquipment()[EquipmentSlots.RightHand];
+        if (Definition.Requirement.RequiredItemType != JobSystemItemType.None && tool.Type != Definition.Requirement.RequiredItemType)
         {
-            return;
+            return HarvestResult.NoTool;
         }
 
+        HarvestEventData data = new(character, this);
+        OnHarvest?.Invoke(data);
+
+        return HarvestResult.Finished;
     }
 }
+
+public enum HarvestResult
+{
+    Finished,
+    NoTool,
+    Error
+}
+
+public record HarvestEventData(ICharacter Character, ResourceNodeInstance NodeInstance);
 
 public enum QualityLevel
 {
