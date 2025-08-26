@@ -24,11 +24,24 @@ public static class CustomAppearance
 
         ApplyCreatureAppearanceFromCopy(associate, creatureCopy);
 
-        CreatureEquipment equipmentCopies = GetItemCopies(associateCustomizer, associateResRef);
+        CreatureEquipment equipmentCopies = GetItemCopies(creatureCopy, associateResRef);
 
-        // Hide helmet, cloak, and shield if the copied creature has none but the associate does
+        ApplyEquipmentAppearance(associate, equipmentCopies);
+
         HideEquipment(associate, equipmentCopies);
 
+        ApplyVfxFromCopy(associateCustomizer, associateResRef, associate);
+
+        associateCustomizer.Description =
+            associateType is AssociateType.AnimalCompanion or AssociateType.Familiar ?
+            UpdateCompanionName(associateCustomizer.Description, associate, associateType, creatureCopy.Name)
+            : UpdateAssociateName(associateCustomizer.Description, associate, creatureCopy.Name);
+
+        return true;
+    }
+
+    private static void ApplyEquipmentAppearance(NwCreature associate, CreatureEquipment equipmentCopies)
+    {
         if (equipmentCopies.Armor != null)
             ApplyArmorAppearanceFromCopy(associate, equipmentCopies.Armor);
 
@@ -43,15 +56,6 @@ public static class CustomAppearance
 
         if (equipmentCopies.OffHand != null)
             ApplyOffHandAppearanceFromCopy(associate, equipmentCopies.OffHand);
-
-        ApplyVfxFromCopy(associateCustomizer, associateResRef, associate);
-
-        associateCustomizer.Description =
-            associateType is AssociateType.AnimalCompanion or AssociateType.Familiar ?
-            UpdateCompanionName(associateCustomizer.Description, associate, associateType, creatureCopy.Name)
-            : UpdateAssociateName(associateCustomizer.Description, associate, creatureCopy.Name);
-
-        return true;
     }
 
     /// <summary>
@@ -144,16 +148,12 @@ public static class CustomAppearance
 
         if (associateOffHand == null)
         {
-            offHandCopy.Clone(associate, "dummy_offhand");
-            NwItem dummyOffhand = associate.Inventory.Items.First(item => item.Tag == "dummy_offhand");
+            NwItem dummyOffhand = offHandCopy.Clone(associate, "dummy_offhand");
             dummyOffhand.RemoveItemProperties();
             dummyOffhand.Droppable = false;
             associate.RunEquip(dummyOffhand, InventorySlot.LeftHand);
         }
-
-        if (associateOffHand == null) return;
-
-        if (associateOffHand.BaseItem.Category == BaseItemCategory.Shield)
+        else if (associateOffHand.BaseItem.Category == BaseItemCategory.Shield)
         {
             associateOffHand.Appearance.SetSimpleModel(offHandCopy.Appearance.GetSimpleModel());
         }
@@ -211,7 +211,6 @@ public static class CustomAppearance
 
         if (associateCloak != null)
         {
-
             associateCloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
             associateCloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
             associateCloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
@@ -220,13 +219,13 @@ public static class CustomAppearance
             associateCloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
             associateCloak.Appearance.SetSimpleModel(cloakCopy.Appearance.GetSimpleModel());
         }
-
-        if (associateCloak != null) return;
-
-        NwItem dummyCloak = cloakCopy.Clone(associate, "dummy_cloak");
-        dummyCloak.RemoveItemProperties();
-        dummyCloak.Droppable = false;
-        associate.RunEquip(dummyCloak, InventorySlot.Cloak);
+        else
+        {
+            NwItem dummyCloak = cloakCopy.Clone(associate, "dummy_cloak");
+            dummyCloak.RemoveItemProperties();
+            dummyCloak.Droppable = false;
+            associate.RunEquip(dummyCloak, InventorySlot.Cloak);
+        }
     }
 
     /// <summary>
@@ -238,7 +237,6 @@ public static class CustomAppearance
 
         if (associateHelmet != null)
         {
-
             associateHelmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
             associateHelmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
             associateHelmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
@@ -247,13 +245,13 @@ public static class CustomAppearance
             associateHelmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
             associateHelmet.Appearance.SetSimpleModel(helmetCopy.Appearance.GetSimpleModel());
         }
-
-        if (associate.GetItemInSlot(InventorySlot.Head) != null) return;
-
-        NwItem dummyHelmet = helmetCopy.Clone(associate, "dummy_helmet");
-        dummyHelmet.RemoveItemProperties();
-        dummyHelmet.Droppable = false;
-        associate.RunEquip(dummyHelmet, InventorySlot.Head);
+        else
+        {
+            NwItem dummyHelmet = helmetCopy.Clone(associate, "dummy_helmet");
+            dummyHelmet.RemoveItemProperties();
+            dummyHelmet.Droppable = false;
+            associate.RunEquip(dummyHelmet, InventorySlot.Head);
+        }
     }
 
     /// <summary>
@@ -291,13 +289,13 @@ public static class CustomAppearance
             associateArmor.Appearance.SetArmorModel(CreaturePart.Robe, armorCopy.Appearance.GetArmorModel(CreaturePart.Robe));
             associateArmor.Appearance.SetArmorModel(CreaturePart.Torso, armorCopy.Appearance.GetArmorModel(CreaturePart.Torso));
         }
-
-        if (associate.GetItemInSlot(InventorySlot.Chest) != null) return;
-
-        NwItem dummyArmor = armorCopy.Clone(associate, "dummy_armor");
-        dummyArmor.RemoveItemProperties();
-        dummyArmor.Droppable = false;
-        associate.RunEquip(dummyArmor, InventorySlot.Chest);
+        else
+        {
+            NwItem dummyArmor = armorCopy.Clone(associate, "dummy_armor");
+            dummyArmor.RemoveItemProperties();
+            dummyArmor.Droppable = false;
+            associate.RunEquip(dummyArmor, InventorySlot.Chest);
+        }
     }
 
     /// <summary>
@@ -328,30 +326,19 @@ public static class CustomAppearance
         public NwItem? OffHand { get; init; }
     }
 
-    private static NwItem? GetItemFromVariable(NwItem associateCustomizer, string variableName)
-    {
-        string? itemData = associateCustomizer.GetObjectVariable<LocalVariableString>(variableName).Value;
-
-        if (itemData == null) return null;
-
-        byte[] convertedData = Convert.FromBase64String(itemData);
-
-        return NwItem.Deserialize(convertedData);
-    }
-
     /// <summary>
     /// Gets the item copies stored in the Associate Customizer and assigned to the associate
     /// </summary>
     /// <returns>Copies of the items; null if no item data stored by that var name is found</returns>
-    private static CreatureEquipment GetItemCopies(NwItem associateCustomizer, string associateResRef)
+    private static CreatureEquipment GetItemCopies(NwCreature creatureCopy, string associateResRef)
     {
         return new CreatureEquipment
         {
-            Armor = GetItemFromVariable(associateCustomizer, "armor" + associateResRef),
-            Helmet = GetItemFromVariable(associateCustomizer, "helmet" + associateResRef),
-            Cloak = GetItemFromVariable(associateCustomizer, "cloak" + associateResRef),
-            MainHand = GetItemFromVariable(associateCustomizer, "mainhand" + associateResRef),
-            OffHand = GetItemFromVariable(associateCustomizer, "offhand" + associateResRef)
+            Armor = creatureCopy.GetItemInSlot(InventorySlot.Chest),
+            Helmet = creatureCopy.GetItemInSlot(InventorySlot.Head),
+            Cloak = creatureCopy.GetItemInSlot(InventorySlot.Cloak),
+            MainHand = creatureCopy.GetItemInSlot(InventorySlot.RightHand),
+            OffHand = creatureCopy.GetItemInSlot(InventorySlot.LeftHand)
         };
     }
 
