@@ -3,7 +3,7 @@ using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 
-[ServiceBinding(typeof(IKnowledgeService))]
+// [ServiceBinding(typeof(IKnowledgeService))]
 public class KnowledgeService(IIndustryRepository industryRepository, ICharacterRepository characterRepository, IIndustryMembershipService membershipService) : IKnowledgeService
 {
     public bool AddKnowledge(Guid characterGuid, string tag)

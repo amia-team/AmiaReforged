@@ -4,7 +4,7 @@ using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 
-[ServiceBinding(typeof(IndustryMembershipService))]
+// [ServiceBinding(typeof(IndustryMembershipService))]
 public class IndustryMembershipService(
     IIndustryMembershipRepository membershipRepository,
     IIndustryRepository industryRepository,
