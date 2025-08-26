@@ -56,34 +56,27 @@ public class AssociateCustomizerService
 
         CopyCreatureData(associateCustomizer, creature);
 
-        bool armorCopied = CopyArmorData(associateCustomizer, creature);
-
-        bool helmetCopied = CopyHelmetData(associateCustomizer, creature);
-
-        bool cloakCopied = CopyCloakData(associateCustomizer, creature);
-
-        bool mainHandCopied = CopyMainHandData(associateCustomizer, creature);
-
-        bool offHandCopied = CopyOffHandData(associateCustomizer, creature);
-
+        bool hasArmor = creature.GetItemInSlot(InventorySlot.Chest) != null;
+        bool hasHelmet = creature.GetItemInSlot(InventorySlot.Head) != null;
+        bool hasCloak = creature.GetItemInSlot(InventorySlot.Cloak) != null;
+        bool hasMainHand = creature.GetItemInSlot(InventorySlot.RightHand) != null;
+        bool hasOffHand = creature.GetItemInSlot(InventorySlot.LeftHand) != null;
         bool vfxCopied = CopyVfxData(associateCustomizer, creature);
 
-        player.SendServerMessage
-            ("[Associate Customizer] Creature copied!", ColorGreen);
-        if (armorCopied) player.SendServerMessage
-            ("[Associate Customizer] Armor copied!", ColorGreen);
-        if (helmetCopied) player.SendServerMessage
-            ("[Associate Customizer] Helmet copied!", ColorGreen);
-        if (cloakCopied) player.SendServerMessage
-            ("[Associate Customizer] Cloak copied!", ColorGreen);
-        if (mainHandCopied) player.SendServerMessage
-            ("[Associate Customizer] Mainhand copied!", ColorGreen);
-        if (offHandCopied) player.SendServerMessage
-            ("[Associate Customizer] Offhand copied!", ColorGreen);
-        if (vfxCopied) player.SendServerMessage
-            ("[Associate Customizer] Visual effects copied!", ColorGreen);
-        player.SendServerMessage
-            ("To assign the copied appearance to an associate, target the associate with the tool.", ColorWhite);
+        string feedbackMessage = "[Associate Customizer] Appearance data copied: Creature";
+
+        if (hasArmor) feedbackMessage += " Armor,";
+        if (hasHelmet) feedbackMessage += " Helmet,";
+        if (hasCloak) feedbackMessage += " Cloak,";
+        if (hasMainHand) feedbackMessage += " Main Hand,";
+        if (hasOffHand) feedbackMessage += " Off Hand,";
+        if (vfxCopied) feedbackMessage += " Visual Effects,";
+
+        feedbackMessage = feedbackMessage.TrimEnd(',', ' ');
+        feedbackMessage += ".";
+
+        player.SendServerMessage(feedbackMessage, ColorGreen);
+        player.SendServerMessage("To assign the copied appearance to an associate, target the associate with the tool.", ColorWhite);
     }
 
     /// <summary>
@@ -119,96 +112,6 @@ public class AssociateCustomizerService
     }
 
     /// <summary>
-    /// Copies the creature's off hand data and stores it in the Associate Customizer item
-    /// </summary>
-    /// <returns>false if the creature has no off hand item</returns>
-    private bool CopyOffHandData(NwItem associateCustomizer, NwCreature creature)
-    {
-        NwItem? offHand = creature.GetItemInSlot(InventorySlot.LeftHand);
-        if (offHand == null) return false;
-
-        byte[]? offHandData = offHand.Serialize();
-        if (offHandData == null) return false;
-
-        associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Value
-            = Convert.ToBase64String(offHandData);
-
-        return true;
-    }
-
-    /// <summary>
-    /// Copies the creature's main hand data and stores it in the Associate Customizer item
-    /// </summary>
-    /// <returns>false if the creature has no main hand item</returns>
-    private bool CopyMainHandData(NwItem associateCustomizer, NwCreature creature)
-    {
-        NwItem? mainHand = creature.GetItemInSlot(InventorySlot.RightHand);
-        if (mainHand == null) return false;
-
-        byte[]? mainHandData = mainHand.Serialize();
-        if (mainHandData == null) return false;
-
-        associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Value
-            = Convert.ToBase64String(mainHandData);
-
-        return true;
-    }
-
-    /// <summary>
-    /// Copies the creature's cloak data and stores it in the Associate Customizer item
-    /// </summary>
-    /// <returns>false if the creature has no cloak</returns>
-    private bool CopyCloakData(NwItem associateCustomizer, NwCreature creature)
-    {
-        NwItem? cloak = creature.GetItemInSlot(InventorySlot.Cloak);
-        if (cloak == null) return false;
-
-        byte[]? cloakData = cloak.Serialize();
-        if (cloakData == null) return false;
-
-        associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").Value
-            = Convert.ToBase64String(cloakData);
-
-        return true;
-    }
-
-    /// <summary>
-    /// Copies the creature's helmet data and stores it in the Associate Customizer item
-    /// </summary>
-    /// <returns>false if the creature has no helmet</returns>
-    private bool CopyHelmetData(NwItem associateCustomizer, NwCreature creature)
-    {
-            NwItem? helmet = creature.GetItemInSlot(InventorySlot.Head);
-            if (helmet == null) return false;
-
-            byte[]? helmetData = helmet.Serialize();
-            if (helmetData == null) return false;
-
-            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").Value
-                = Convert.ToBase64String(helmetData);
-
-            return true;
-    }
-
-    /// <summary>
-    /// Copies the creature's armor data and stores it in the Associate Customizer item
-    /// </summary>
-    /// <returns>false if the creature has no armor</returns>
-    private bool CopyArmorData(NwItem associateCustomizer, NwCreature creature)
-    {
-        NwItem? armor = creature.GetItemInSlot(InventorySlot.Chest);
-        if (armor == null) return false;
-
-        byte[]? armorData = armor.Serialize();
-        if (armorData == null) return false;
-
-        associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Value
-            = Convert.ToBase64String(armorData);
-
-        return true;
-    }
-
-    /// <summary>
     /// Copies the creature data and stores it in the Associate Customizer item
     /// </summary>
     private void CopyCreatureData(NwItem associateCustomizer, NwCreature creature)
@@ -229,23 +132,9 @@ public class AssociateCustomizerService
         if (associateCustomizer.GetObjectVariable<LocalVariableString>("creature").HasValue)
             associateCustomizer.GetObjectVariable<LocalVariableString>("creature").Delete();
 
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("armor").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("armor").Delete();
-
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("helmet").Delete();
-
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("cloak").Delete();
-
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("mainhand").Delete();
-
-        if (associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").HasValue)
-            associateCustomizer.GetObjectVariable<LocalVariableString>("offhand").Delete();
-
         if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").HasValue)
             associateCustomizer.GetObjectVariable<LocalVariableInt>("vfxcount").Delete();
+
         for (int i = 0; i < 50; i++)
         {
             if (associateCustomizer.GetObjectVariable<LocalVariableInt>("vfx"+i).HasValue)
