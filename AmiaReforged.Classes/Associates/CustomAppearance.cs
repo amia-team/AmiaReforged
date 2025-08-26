@@ -162,33 +162,8 @@ public static class CustomAppearance
         }
         else
         {
-            associateOffHand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom,
-                offHandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Bottom));
-            associateOffHand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle,
-                offHandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Middle));
-            associateOffHand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top,
-                offHandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Top));
-            associateOffHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom,
-                offHandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom));
-            associateOffHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle,
-                offHandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle));
-            associateOffHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top,
-                offHandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top));
-
-            ItemProperty? offHandCopyVfx = offHandCopy.ItemProperties.FirstOrDefault(itemVisual =>
-                itemVisual.Property.PropertyType == ItemPropertyType.VisualEffect);
-
-            if (offHandCopyVfx != null)
-                associateOffHand.AddItemProperty(offHandCopyVfx, EffectDuration.Permanent);
-
-            if (offHandCopyVfx == null)
-                associateOffHand.RemoveItemProperties(ItemPropertyType.VisualEffect);
+            SetWeaponAppearance(associateOffHand, offHandCopy);
         }
-
-        associateOffHand.VisualTransform.Scale = offHandCopy.VisualTransform.Scale;
-        associateOffHand.VisualTransform.Rotation = offHandCopy.VisualTransform.Rotation;
-        associateOffHand.VisualTransform.AnimSpeed = offHandCopy.VisualTransform.AnimSpeed;
-        associateOffHand.VisualTransform.Translation = offHandCopy.VisualTransform.Translation;
     }
 
     /// <summary>
@@ -199,25 +174,34 @@ public static class CustomAppearance
         NwItem? associateMainHand = associate.GetItemInSlot(InventorySlot.RightHand);
         if (associateMainHand == null) return;
 
-        associateMainHand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Bottom, mainHandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Bottom));
-        associateMainHand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Middle, mainHandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Middle));
-        associateMainHand.Appearance.SetWeaponColor(ItemAppearanceWeaponColor.Top, mainHandCopy.Appearance.GetWeaponColor(ItemAppearanceWeaponColor.Top));
-        associateMainHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, mainHandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom));
-        associateMainHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, mainHandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle));
-        associateMainHand.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, mainHandCopy.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top));
-        associateMainHand.VisualTransform.Scale = mainHandCopy.VisualTransform.Scale;
-        associateMainHand.VisualTransform.Rotation = mainHandCopy.VisualTransform.Rotation;
-        associateMainHand.VisualTransform.AnimSpeed = mainHandCopy.VisualTransform.AnimSpeed;
-        associateMainHand.VisualTransform.Translation = mainHandCopy.VisualTransform.Translation;
+        SetWeaponAppearance(associateMainHand, mainHandCopy);
+    }
 
-        ItemProperty? mainHandCopyVfx = mainHandCopy.ItemProperties.FirstOrDefault(ip =>
-            ip.Property.PropertyType == ItemPropertyType.VisualEffect);
+    private static void SetWeaponAppearance(NwItem associateWeapon, NwItem weaponCopy)
+    {
+        foreach (ItemAppearanceWeaponColor colorChannel in Enum.GetValues<ItemAppearanceWeaponColor>())
+        {
+            associateWeapon.Appearance.SetWeaponColor(colorChannel, weaponCopy.Appearance.GetWeaponColor(colorChannel));
+        }
 
-        if (mainHandCopyVfx != null)
-            associateMainHand.AddItemProperty(mainHandCopyVfx, EffectDuration.Permanent);
+        foreach (ItemAppearanceWeaponModel modelPart in Enum.GetValues<ItemAppearanceWeaponModel>())
+        {
+            associateWeapon.Appearance.SetWeaponModel(modelPart, weaponCopy.Appearance.GetWeaponModel(modelPart));
+        }
 
-        if (mainHandCopyVfx == null)
-            associateMainHand.RemoveItemProperties(ItemPropertyType.VisualEffect);
+        ItemProperty? offHandCopyVfx = weaponCopy.ItemProperties.FirstOrDefault(itemVisual =>
+            itemVisual.Property.PropertyType == ItemPropertyType.VisualEffect);
+
+        if (offHandCopyVfx != null)
+            associateWeapon.AddItemProperty(offHandCopyVfx, EffectDuration.Permanent);
+
+        if (offHandCopyVfx == null)
+            associateWeapon.RemoveItemProperties(ItemPropertyType.VisualEffect);
+
+        associateWeapon.VisualTransform.Scale = weaponCopy.VisualTransform.Scale;
+        associateWeapon.VisualTransform.Rotation = weaponCopy.VisualTransform.Rotation;
+        associateWeapon.VisualTransform.AnimSpeed = weaponCopy.VisualTransform.AnimSpeed;
+        associateWeapon.VisualTransform.Translation = weaponCopy.VisualTransform.Translation;
     }
 
     /// <summary>
@@ -229,12 +213,11 @@ public static class CustomAppearance
 
         if (associateCloak != null)
         {
-            associateCloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
-            associateCloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
-            associateCloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
-            associateCloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
-            associateCloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal1, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal1));
-            associateCloak.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, cloakCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
+            foreach (ItemAppearanceArmorColor colorChannel in Enum.GetValues<ItemAppearanceArmorColor>())
+            {
+                associateCloak.Appearance.SetArmorColor(colorChannel, cloakCopy.Appearance.GetArmorColor(colorChannel));
+            }
+
             associateCloak.Appearance.SetSimpleModel(cloakCopy.Appearance.GetSimpleModel());
 
             associateCloak.VisualTransform.Scale = cloakCopy.VisualTransform.Scale;
@@ -260,12 +243,11 @@ public static class CustomAppearance
 
         if (associateHelmet != null)
         {
-            associateHelmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
-            associateHelmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
-            associateHelmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
-            associateHelmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
-            associateHelmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal1, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal1));
-            associateHelmet.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, helmetCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
+            foreach (ItemAppearanceArmorColor colorChannel in Enum.GetValues<ItemAppearanceArmorColor>())
+            {
+                associateHelmet.Appearance.SetArmorColor(colorChannel, helmetCopy.Appearance.GetArmorColor(colorChannel));
+            }
+
             associateHelmet.Appearance.SetSimpleModel(helmetCopy.Appearance.GetSimpleModel());
 
             associateHelmet.VisualTransform.Scale = helmetCopy.VisualTransform.Scale;
@@ -291,31 +273,17 @@ public static class CustomAppearance
 
         if (associateArmor != null)
         {
-            associateArmor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth1));
-            associateArmor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Cloth2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Cloth2));
-            associateArmor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather1));
-            associateArmor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Leather2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Leather2));
-            associateArmor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal1, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal1));
-            associateArmor.Appearance.SetArmorColor(ItemAppearanceArmorColor.Metal2, armorCopy.Appearance.GetArmorColor(ItemAppearanceArmorColor.Metal2));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.Belt, armorCopy.Appearance.GetArmorModel(CreaturePart.Belt));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.LeftBicep, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftBicep));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.LeftFoot, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftFoot));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.LeftForearm, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftForearm));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.LeftHand, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftHand));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.LeftShin, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftShin));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.LeftShoulder, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftShoulder));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.LeftThigh, armorCopy.Appearance.GetArmorModel(CreaturePart.LeftThigh));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.Neck, armorCopy.Appearance.GetArmorModel(CreaturePart.Neck));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.Pelvis, armorCopy.Appearance.GetArmorModel(CreaturePart.Pelvis));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.RightBicep, armorCopy.Appearance.GetArmorModel(CreaturePart.RightBicep));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.RightFoot, armorCopy.Appearance.GetArmorModel(CreaturePart.RightFoot));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.RightForearm, armorCopy.Appearance.GetArmorModel(CreaturePart.RightForearm));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.RightHand, armorCopy.Appearance.GetArmorModel(CreaturePart.RightHand));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.RightShin, armorCopy.Appearance.GetArmorModel(CreaturePart.RightShin));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.RightShoulder, armorCopy.Appearance.GetArmorModel(CreaturePart.RightShoulder));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.RightThigh, armorCopy.Appearance.GetArmorModel(CreaturePart.RightThigh));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.Robe, armorCopy.Appearance.GetArmorModel(CreaturePart.Robe));
-            associateArmor.Appearance.SetArmorModel(CreaturePart.Torso, armorCopy.Appearance.GetArmorModel(CreaturePart.Torso));
+            // Apply colors
+            foreach (ItemAppearanceArmorColor colorChannel in Enum.GetValues<ItemAppearanceArmorColor>())
+            {
+                associateArmor.Appearance.SetArmorColor(colorChannel, armorCopy.Appearance.GetArmorColor(colorChannel));
+            }
+
+            // Apply models
+            foreach (CreaturePart modelPart in Enum.GetValues<CreaturePart>())
+            {
+                associateArmor.Appearance.SetArmorModel(modelPart, armorCopy.Appearance.GetArmorModel(modelPart));
+            }
 
             associateArmor.VisualTransform.Scale = armorCopy.VisualTransform.Scale;
             associateArmor.VisualTransform.Rotation = armorCopy.VisualTransform.Rotation;
@@ -399,26 +367,13 @@ public static class CustomAppearance
         associate.VisualTransform.AnimSpeed = creatureCopy.VisualTransform.AnimSpeed;
         associate.TailType = creatureCopy.TailType;
         associate.WingType = creatureCopy.WingType;
-        associate.SetCreatureBodyPart(CreaturePart.Belt, creatureCopy.GetCreatureBodyPart(CreaturePart.Belt));
-        associate.SetCreatureBodyPart(CreaturePart.Head, creatureCopy.GetCreatureBodyPart(CreaturePart.Head));
-        associate.SetCreatureBodyPart(CreaturePart.LeftBicep, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftBicep));
-        associate.SetCreatureBodyPart(CreaturePart.LeftFoot, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftFoot));
-        associate.SetCreatureBodyPart(CreaturePart.LeftForearm, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftForearm));
-        associate.SetCreatureBodyPart(CreaturePart.LeftHand, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftHand));
-        associate.SetCreatureBodyPart(CreaturePart.LeftShin, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftShin));
-        associate.SetCreatureBodyPart(CreaturePart.LeftShoulder, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftShoulder));
-        associate.SetCreatureBodyPart(CreaturePart.LeftThigh, creatureCopy.GetCreatureBodyPart(CreaturePart.LeftThigh));
-        associate.SetCreatureBodyPart(CreaturePart.Neck, creatureCopy.GetCreatureBodyPart(CreaturePart.Neck));
-        associate.SetCreatureBodyPart(CreaturePart.Pelvis, creatureCopy.GetCreatureBodyPart(CreaturePart.Pelvis));
-        associate.SetCreatureBodyPart(CreaturePart.RightBicep, creatureCopy.GetCreatureBodyPart(CreaturePart.RightBicep));
-        associate.SetCreatureBodyPart(CreaturePart.RightFoot, creatureCopy.GetCreatureBodyPart(CreaturePart.RightFoot));
-        associate.SetCreatureBodyPart(CreaturePart.RightForearm, creatureCopy.GetCreatureBodyPart(CreaturePart.RightForearm));
-        associate.SetCreatureBodyPart(CreaturePart.RightHand, creatureCopy.GetCreatureBodyPart(CreaturePart.RightHand));
-        associate.SetCreatureBodyPart(CreaturePart.RightShin, creatureCopy.GetCreatureBodyPart(CreaturePart.RightShin));
-        associate.SetCreatureBodyPart(CreaturePart.RightShoulder, creatureCopy.GetCreatureBodyPart(CreaturePart.RightShoulder));
-        associate.SetCreatureBodyPart(CreaturePart.RightThigh, creatureCopy.GetCreatureBodyPart(CreaturePart.RightThigh));
-        associate.SetCreatureBodyPart(CreaturePart.Robe, creatureCopy.GetCreatureBodyPart(CreaturePart.Robe));
-        associate.SetCreatureBodyPart(CreaturePart.Torso, creatureCopy.GetCreatureBodyPart(CreaturePart.Torso));
+
+        // Apply body parts
+        foreach (CreaturePart creaturePart in Enum.GetValues<CreaturePart>())
+        {
+            associate.SetCreatureBodyPart(creaturePart, creatureCopy.GetCreatureBodyPart(creaturePart));
+        }
+
         associate.SetColor(ColorChannel.Hair, creatureCopy.GetColor(ColorChannel.Hair));
         associate.SetColor(ColorChannel.Skin, creatureCopy.GetColor(ColorChannel.Skin));
         associate.SetColor(ColorChannel.Tattoo1, creatureCopy.GetColor(ColorChannel.Tattoo1));
