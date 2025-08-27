@@ -93,7 +93,7 @@ public class ListVfx : IChatCommand
         NwCreature? controlledCreature = caller.ControlledCreature;
         if (controlledCreature?.Location == null) return;
 
-        NwPlaceable? helperObject = NwPlaceable.Create(template: "amia_plc_167", controlledCreature.Location);
+        NwPlaceable? helperObject = NwPlaceable.Create(template: "x2_plc_psheet", controlledCreature.Location);
         if (helperObject == null)
         {
             caller.SendServerMessage("Helper object failed to materialize.");
@@ -104,7 +104,9 @@ public class ListVfx : IChatCommand
 
         await NwTask.Delay(TimeSpan.FromMilliseconds(50));
 
-        await caller.ActionExamine(helperObject);
+        caller.ForceExamine(helperObject);
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(50));
 
         await helperObject.WaitForObjectContext();
         helperObject.Destroy();
