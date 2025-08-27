@@ -91,15 +91,22 @@ public class ListVfx : IChatCommand
     private async Task PrintVfxList(string vfxList, NwPlayer caller)
     {
         NwCreature? controlledCreature = caller.ControlledCreature;
-        if (controlledCreature?.Location is null) return;
+        if (controlledCreature?.Location == null) return;
 
         NwPlaceable? helperObject = NwPlaceable.Create(template: "amia_plc_167", controlledCreature.Location);
-        if (helperObject is null) return;
+        if (helperObject == null)
+        {
+            caller.SendServerMessage("Helper object failed to materialize.");
+            return;
+        }
 
         helperObject.Description = vfxList;
-        caller.ForceExamine(helperObject);
 
-        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+        await NwTask.Delay(TimeSpan.FromMilliseconds(50));
+
+        await caller.ActionExamine(helperObject);
+
+        await helperObject.WaitForObjectContext();
         helperObject.Destroy();
     }
 }
