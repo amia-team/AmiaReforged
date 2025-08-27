@@ -93,11 +93,11 @@ public class ListVfx : IChatCommand
         NwCreature? controlledCreature = caller.ControlledCreature;
         if (controlledCreature?.Location is null) return;
 
-        NwPlaceable? helperObject = NwPlaceable.Create(template: "ds_invis_obje001", controlledCreature.Location);
+        NwPlaceable? helperObject = NwPlaceable.Create(template: "amia_plc_167", controlledCreature.Location);
         if (helperObject is null) return;
 
         helperObject.Description = vfxList;
-        await caller.ActionExamine(helperObject);
+        caller.ForceExamine(helperObject);
 
         await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         helperObject.Destroy();
