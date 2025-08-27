@@ -24,16 +24,16 @@ public class ListVfx : IChatCommand
 
         switch (args[0])
         {
-            case "instant" when args[0].Contains("inst"):
+            case "instant" or "inst" or "fnf":
                 ListVfxByType("F", caller);
                 break;
-            case "duration" when args[0].Contains("dur"):
+            case "duration" or "dur" or "d":
                 ListVfxByType("D", caller);
                 break;
-            case "projectile" when args[0].Contains("proj"):
+            case "projectile" or "proj" or "p":
                 ListVfxByType("P", caller);
                 break;
-            case "beam":
+            case "beam" or "b":
                 ListVfxByType("B", caller);
                 break;
             case "all":
@@ -85,13 +85,23 @@ public class ListVfx : IChatCommand
                 return;
         }
 
-        _ = PrintVfxList(vfxList, caller);
+        _ = PrintVfxList(vfxList, vfxType, caller);
     }
 
-    private async Task PrintVfxList(string vfxList, NwPlayer caller)
+    private async Task PrintVfxList(string vfxList, string vfxType, NwPlayer caller)
     {
         NwCreature? controlledCreature = caller.ControlledCreature;
         if (controlledCreature?.Location == null) return;
+
+        vfxType = vfxType switch
+        {
+            "F" => "Instant",
+            "D" => "Duration",
+            "P" => "Projectile",
+            "B" => "Beam",
+            "all" => "All",
+            _ => "All"
+        };
 
         NwPlaceable? helperObject = NwPlaceable.Create(template: "x2_plc_psheet", controlledCreature.Location);
         if (helperObject == null)
@@ -101,6 +111,8 @@ public class ListVfx : IChatCommand
         }
 
         helperObject.Description = vfxList;
+        helperObject.Name = $"List of {vfxType} Visual Effects";
+        helperObject.PortraitResRef = "po_plc_x0_tme_";
 
         await NwTask.Delay(TimeSpan.FromMilliseconds(50));
 
