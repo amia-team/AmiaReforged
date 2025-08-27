@@ -106,6 +106,8 @@ public class ListVfx : IChatCommand
 
         caller.ForceExamine(helperObject);
 
+        await NwTask.Delay(TimeSpan.FromMilliseconds(50));
+
         await helperObject.WaitForObjectContext();
         helperObject.Destroy();
     }
