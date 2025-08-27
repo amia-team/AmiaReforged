@@ -1,7 +1,6 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NLog;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.Chat.Commands.DM;
