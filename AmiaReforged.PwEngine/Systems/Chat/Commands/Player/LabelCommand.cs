@@ -59,16 +59,19 @@ public class LabelCommand : IChatCommand
         string rawLabel = string.Join(" ", labelStrings);
         string label = rawLabel.TrimStart('"').TrimEnd('"');
 
+        if (color != null)
+            label.ColorString(color.Value);
+
         caller.EnterTargetMode(
-            targetingData => LabelItem(targetingData, label, color),
+            targetingData => LabelItem(targetingData, label),
             new TargetModeSettings { ValidTargets = ObjectTypes.Item });
 
-        caller.FloatingTextString($"Labelling item: {label.ColorString(foundColor)}", false);
+        caller.FloatingTextString($"Labelling item: {label}", false);
 
         return Task.CompletedTask;
     }
 
-    private void LabelItem(ModuleEvents.OnPlayerTarget targetingData, string label, Color? color)
+    private void LabelItem(ModuleEvents.OnPlayerTarget targetingData, string label)
     {
         if (targetingData.TargetObject is not NwItem targetItem) return;
         if (targetItem.RootPossessor != targetingData.Player.ControlledCreature)
@@ -83,8 +86,6 @@ public class LabelCommand : IChatCommand
         }
 
         targetItem.Name = label;
-        if (color != null)
-            targetItem.Name = targetItem.Name.ColorString(color.Value);
     }
 
     private const string UsageMessage = "Usage: ./labelitem \"My Snazzy Label\" color:[color]" +
