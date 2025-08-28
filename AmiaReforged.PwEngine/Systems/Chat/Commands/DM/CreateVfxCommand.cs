@@ -1,128 +1,141 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.Chat.Commands.DM;
 
 [ServiceBinding(typeof(IChatCommand))]
-public class CreateVfx : IChatCommand
+public class CreateVfxCommand : IChatCommand
 {
     public string Command => "./createvfx";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
-        if (!caller.IsDM) return Task.CompletedTask;
-        try
+        string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
+
+        if (!caller.IsDM && environment == "live")
         {
-            int vfxId = int.Parse(args[0]);
-            string? vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
-            string? vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
+            caller.SendServerMessage
+                ($"Only DMs can use {Command} on the live server. You can use this on the test server.");
 
-            NwCreature? callerControlledCreature = caller.ControlledCreature;
+            return Task.CompletedTask;
+        }
 
-            if (callerControlledCreature is null) return Task.CompletedTask;
+        string usageMessage = $"Available inputs for {Command} are:" +
+                              "\nFirst parameter: VFX ID to create a specific vfx." +
+                              "\nSecond parameter (optional): a float value for the size of the vfx." +
+                              "\nTo produce a list of visual effects and their IDs, use ./listvfx" +
+                              "\nTo see what visuals a creature or object has, use ./getvfx";
 
-            callerControlledCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value = vfxId;
-            if (args[1] != string.Empty)
+        if (args.Length < 1 || !int.TryParse(args[0], out int vfxId))
+        {
+            caller.SendServerMessage($"Invalid or missing VFX ID, it must be an integer." +
+                                     $"\n{usageMessage}");
+
+            return Task.CompletedTask;
+        }
+
+        float vfxSize = 1;
+
+        if (args.Length >= 2)
+        {
+            if (!float.TryParse(args[1], out float size))
             {
-                _ = float.TryParse(args[1], out float vfxScale);
-                callerControlledCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value =
-                    vfxScale;
-            }
+                caller.SendServerMessage($"Invalid value for {args[1]}, must be a float or empty." +
+                                         $"\n{usageMessage}");
 
-            if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "D")
-            {
-                caller.EnterTargetMode(CreateDurVfx,
-                    new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
-                caller.FloatingTextString(
-                    $"Creating duration-type visual effect {vfxLabel}. The effect is permanent! You can remove it with \"./removevfx\".",
-                    false);
                 return Task.CompletedTask;
             }
 
-            if (NwGameTables.VisualEffectTable[vfxId].TypeFd == "F")
-            {
-                caller.EnterTargetMode(CreateFnfVfx);
-                caller.FloatingTextString($"Creating instant-type visual effect {vfxLabel}.", false);
-                return Task.CompletedTask;
-            }
+            vfxSize = size;
         }
-        catch
-        {
-            caller.SendServerMessage(
-                message:
-                "Usage: \"./createvfx <vfx id>\". Optionally, set the vfx scale with \"./createvfx <vfx id> <scale float>\". Use \"./listvfx\" to list vfxs.");
-        }
+
+        CreateVfx(vfxId, vfxSize, caller);
 
         return Task.CompletedTask;
     }
 
-    private void CreateDurVfx(ModuleEvents.OnPlayerTarget obj)
+    private void CreateVfx(int vfxId, float vfxSize, NwPlayer caller)
     {
-        NwCreature? playerCreature = obj.Player.ControlledCreature;
-        if (playerCreature is null) return;
-
-        int vfxId = playerCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value;
-        float vfxScale;
-        VisualEffectTableEntry vfx = NwGameTables.VisualEffectTable[vfxId];
-        if (obj.TargetObject is NwCreature targetCreature)
+        string? vfxType = NwGameTables.VisualEffectTable[vfxId].TypeFd;
+        if (vfxType == null)
         {
-            if (playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").HasValue)
-                vfxScale = playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value;
-            else vfxScale = targetCreature.VisualTransform.Scale;
-            Effect durVfx = Effect.VisualEffect(vfx, false, vfxScale);
-            durVfx.SubType = EffectSubType.Unyielding;
-            durVfx.Tag = "dm_persistentvfx";
-            targetCreature.ApplyEffect(EffectDuration.Permanent, durVfx);
+            caller.SendServerMessage("Invalid VFX ID.");
+            return;
         }
 
-        if (obj.TargetObject is NwDoor targetDoor)
+        string? vfxLabel = NwGameTables.VisualEffectTable[vfxId].Label;
+        if (vfxLabel == null)
         {
-            if (playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").HasValue)
-                vfxScale = playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value;
-            else vfxScale = targetDoor.VisualTransform.Scale;
-            Effect durVfx = Effect.VisualEffect(vfx, false, vfxScale);
-            durVfx.SubType = EffectSubType.Unyielding;
-            durVfx.Tag = "dm_persistentvfx";
-            targetDoor.ApplyEffect(EffectDuration.Permanent, durVfx);
+            caller.SendServerMessage("Label not found for this VFX ID.");
+            vfxLabel = "UNKNOWN VFX";
         }
 
-        if (obj.TargetObject is NwPlaceable targetPlaceable)
+        switch (vfxType)
         {
-            vfxScale = playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").HasValue
-                ? playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value
-                : targetPlaceable.VisualTransform.Scale;
-            Effect durVfx = Effect.VisualEffect(vfx, false, vfxScale);
-            durVfx.SubType = EffectSubType.Unyielding;
-            durVfx.Tag = "dm_persistentvfx";
-            targetPlaceable.ApplyEffect(EffectDuration.Permanent, durVfx);
-        }
+            case "D":
+                caller.EnterTargetMode(targetingData => CreateDurVfx(targetingData, vfxId, vfxSize),
+                    new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
+                caller.FloatingTextString($"Applying duration VFX: {vfxLabel}. The effect is permanent! " +
+                                          "You can remove it with ./removevfx", false);
+                break;
 
-        playerCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Delete();
-        if (playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").HasValue)
-            playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Delete();
+            case "F":
+                caller.EnterTargetMode(targetingData => CreateFnfVfx(targetingData, vfxId, vfxSize));
+                caller.FloatingTextString($"Applying instant VFX: {vfxLabel}", false);
+                break;
+
+            case "B" or "P":
+                caller.EnterTargetMode(targetingData => CreateBeamVfx(targetingData, vfxId),
+                    new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
+                caller.FloatingTextString($"Applying beam VFX: {vfxLabel}", false);
+                break;
+        }
     }
 
-    private void CreateFnfVfx(ModuleEvents.OnPlayerTarget obj)
+    private void CreateDurVfx(ModuleEvents.OnPlayerTarget targetingData, int vfxId, float vfxSize)
     {
-        NwCreature? playerCreature = obj.Player.ControlledCreature;
-        if (playerCreature is null) return;
+        if (targetingData.TargetObject is not (NwCreature or NwDoor or NwPlaceable)) return;
 
-        int vfxId = playerCreature.GetObjectVariable<LocalVariableInt>(name: "createvfxid").Value;
+        NwGameObject targetObject = (NwGameObject)targetingData.TargetObject;
 
-        float vfxScale = playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").HasValue
-            ? playerCreature.GetObjectVariable<LocalVariableFloat>(name: "createvfxscale").Value
-            : 1f;
+        Effect durationVfx = Effect.VisualEffect((VfxType)vfxId, fScale: vfxSize);
 
-        VisualEffectTableEntry vfx = NwGameTables.VisualEffectTable[vfxId];
+        if (targetingData.Player.IsDM)
+            durationVfx.SubType = EffectSubType.Unyielding;
 
-        NwArea? currentArea = playerCreature.Area;
-        if (currentArea is null) return;
+        targetObject.ApplyEffect(EffectDuration.Permanent, durationVfx);
+    }
 
-        Location targetLocation = Location.Create(currentArea, obj.TargetPosition, 0);
+    private void CreateFnfVfx(ModuleEvents.OnPlayerTarget targetingData, int vfxId, float vfxSize)
+    {
+        Effect instantVfx = Effect.VisualEffect((VfxType)vfxId, fScale: vfxSize);
 
-        if (obj.TargetObject is NwCreature creature)
-            creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(vfx, false, vfxScale));
-        else targetLocation.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(vfx, false, vfxScale));
+        if (targetingData.TargetObject is NwCreature or NwDoor or NwPlaceable)
+        {
+            NwGameObject targetObject = (NwGameObject)targetingData.TargetObject;
+
+            targetObject.ApplyEffect(EffectDuration.Instant, instantVfx);
+        }
+
+        NwArea? area = targetingData.Player.ControlledCreature?.Area;
+        if (area == null) return;
+
+        Location targetLocation = Location.Create(area, targetingData.TargetPosition, 1f);
+
+        targetLocation.ApplyEffect(EffectDuration.Instant, instantVfx);
+    }
+
+    private void CreateBeamVfx(ModuleEvents.OnPlayerTarget targetingData, int vfxId)
+    {
+        if (targetingData.TargetObject is not (NwCreature or NwDoor or NwPlaceable)) return;
+        if (targetingData.Player.ControlledCreature is not { } playerCreature) return;
+
+        NwGameObject targetObject = (NwGameObject)targetingData.TargetObject;
+
+        Effect beamVfx = Effect.Beam((VfxType)vfxId, playerCreature, BodyNode.Hand);
+
+        targetObject.ApplyEffect(EffectDuration.Temporary, beamVfx, NwTimeSpan.FromRounds(1));
     }
 }
