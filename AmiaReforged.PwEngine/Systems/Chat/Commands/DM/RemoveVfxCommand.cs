@@ -6,7 +6,7 @@ using NWN.Core.NWNX;
 namespace AmiaReforged.PwEngine.Systems.Chat.Commands.DM;
 
 [ServiceBinding(typeof(IChatCommand))]
-public class RemoveVfx : IChatCommand
+public class RemoveVfxCommand : IChatCommand
 {
     public string Command => "./removevfx";
 
@@ -14,17 +14,16 @@ public class RemoveVfx : IChatCommand
     {
         string environment = UtilPlugin.GetEnvironmentVariable("SERVER_MODE");
 
-        string thisCommand = Command.ColorString(ColorConstants.Lime);
-        string listVfxCommand = "./listvfx".ColorString(ColorConstants.Lime);
-        string usageMessage = $"Available inputs for {thisCommand} are:" +
+        string usageMessage = $"Available inputs for {Command} are:" +
                               "\nVFX ID to remove a specific visual effect" +
                               "\n'all' to remove all visual effects" +
-                              $"\nTo produce a list of visual effects and their IDs, use {listVfxCommand}";
+                              "\nTo produce a list of visual effects and their IDs, use ./listvfx" +
+                              "\nTo see what visuals a creature or object has, use ./getvfx";
 
         if (!caller.IsDM && environment == "live")
         {
             caller.SendServerMessage
-                ($"Only DMs can use {thisCommand} on the live server. You can use this on the test server.");
+                ($"Only DMs can use {Command} on the live server. You can use this on the test server.");
 
             return Task.CompletedTask;
         }
@@ -38,7 +37,7 @@ public class RemoveVfx : IChatCommand
         if (args[0] == "all")
         {
             caller.EnterTargetMode(
-                targetingData => RemoveVfxFromTarget(targetingData, null),
+                targetingData => RemoveVfx(targetingData, null),
                 new TargetModeSettings
                     { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door }
             );
@@ -61,34 +60,26 @@ public class RemoveVfx : IChatCommand
         {
             case "D":
                 caller.EnterTargetMode(
-                    targetingData => RemoveVfxFromTarget(targetingData, vfxId),
+                    targetingData => RemoveVfx(targetingData, vfxId),
                     new TargetModeSettings
                         { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door }
                 );
-
                 caller.FloatingTextString($"Removing {vfxLabel}!", false);
-
                 break;
 
             case "F":
-                caller.SendServerMessage(
-                    $"Selected vfx {vfxLabel}, which is an instant-type vfx." +
-                    $"\nTo produce a list of visual effects with their IDs and duration types, use {listVfxCommand}");
-
+                caller.SendServerMessage($"Selected vfx {vfxLabel}, which is an instant-type vfx. {usageMessage}");
                 break;
 
             default:
-                caller.SendServerMessage(
-                    $"Selected vfx {vfxLabel} type is unrecognised." +
-                    $"\nTo produce a list of visual effects with their IDs and duration types, use {listVfxCommand}");
-
+                caller.SendServerMessage($"Selected vfx {vfxLabel} type is unrecognised. {usageMessage}");
                 break;
         }
 
         return Task.CompletedTask;
     }
 
-    private void RemoveVfxFromTarget(ModuleEvents.OnPlayerTarget targetingData, int? vfxId)
+    private void RemoveVfx(ModuleEvents.OnPlayerTarget targetingData, int? vfxId)
     {
         if (targetingData.TargetObject is not (NwCreature or NwDoor or NwPlaceable)) return;
 
