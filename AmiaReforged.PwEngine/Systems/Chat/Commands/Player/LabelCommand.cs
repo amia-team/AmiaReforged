@@ -33,13 +33,14 @@ public class LabelCommand : IChatCommand
         string lastArg = args[^1];
         string[] labelStrings;
 
-        if (ColorDictionary.TryGetValue(lastArg, out Color foundColor))
+        if (ColorDictionary.TryGetValue(lastArg.ToLower(), out Color foundColor))
         {
             color = foundColor;
 
             if (args.Length < 2 || !args[^2].EndsWith('"'))
             {
-                caller.SendServerMessage("Your label must end with a quotation mark followed by a color.");
+                caller.SendServerMessage(
+                    $"Your label must end with a quotation mark followed by a valid color.\n{UsageMessage}");
                 return Task.CompletedTask;
             }
 
@@ -49,7 +50,8 @@ public class LabelCommand : IChatCommand
         {
             if (!lastArg.EndsWith('"'))
             {
-                caller.SendServerMessage("Your label must end with a quotation mark.");
+                caller.SendServerMessage(
+                    $"Your label must end with a quotation mark followed by a valid color.\n{UsageMessage}");
                 return Task.CompletedTask;
             }
 
@@ -76,7 +78,7 @@ public class LabelCommand : IChatCommand
         if (targetingData.TargetObject is not NwItem targetItem) return;
         if (targetItem.RootPossessor != targetingData.Player.ControlledCreature)
         {
-            targetingData.Player.SendServerMessage("The item must be in your own inventory!");
+            targetingData.Player.SendServerMessage("Can't label an item that's not in your own inventory!");
             return;
         }
         if (targetItem.ResRef.Contains("mythal"))
@@ -90,52 +92,52 @@ public class LabelCommand : IChatCommand
             targetItem.Name = targetItem.Name.ColorString(color.Value);
     }
 
-    private const string UsageMessage = "Usage: ./labelitem \"My Snazzy Label\" color:[color]" +
+    private const string UsageMessage = "Usage example: ./labelitem \"My Snazzy Label\" green" +
                                         "\nTo view available colors, enter ./labelitem color";
 
     private const string ColorMessage = "Available colors:" +
-                                        "\ncolor:black" +
-                                        "\ncolor:blue" +
-                                        "\ncolor:brown" +
-                                        "\ncolor:cyan" +
-                                        "\ncolor:gray" +
-                                        "\ncolor:green" +
-                                        "\ncolor:lime" +
-                                        "\ncolor:magenta" +
-                                        "\ncolor:maroon" +
-                                        "\ncolor:navy" +
-                                        "\ncolor:olive" +
-                                        "\ncolor:orange" +
-                                        "\ncolor:pink" +
-                                        "\ncolor:purple" +
-                                        "\ncolor:red" +
-                                        "\ncolor:rose" +
-                                        "\ncolor:silver" +
-                                        "\ncolor:teal" +
-                                        "\ncolor:white" +
-                                        "\ncolor:yellow";
+                                        "\nblack" +
+                                        "\nblue" +
+                                        "\nbrown" +
+                                        "\ncyan" +
+                                        "\ngray" +
+                                        "\ngreen" +
+                                        "\nlime" +
+                                        "\nmagenta" +
+                                        "\nmaroon" +
+                                        "\nnavy" +
+                                        "\nolive" +
+                                        "\norange" +
+                                        "\npink" +
+                                        "\npurple" +
+                                        "\nred" +
+                                        "\nrose" +
+                                        "\nsilver" +
+                                        "\nteal" +
+                                        "\nwhite" +
+                                        "\nyellow";
 
     private static readonly Dictionary<string, Color> ColorDictionary = new()
     {
-        { "color:black", ColorConstants.Black },
-        { "color:blue", ColorConstants.Blue },
-        { "color:brown", ColorConstants.Brown },
-        { "color:cyan", ColorConstants.Cyan },
-        { "color:gray", ColorConstants.Gray },
-        { "color:green", ColorConstants.Green },
-        { "color:lime", ColorConstants.Lime },
-        { "color:magenta", ColorConstants.Magenta },
-        { "color:maroon", ColorConstants.Maroon },
-        { "color:navy", ColorConstants.Navy },
-        { "color:olive", ColorConstants.Olive },
-        { "color:orange", ColorConstants.Orange },
-        { "color:pink", ColorConstants.Pink },
-        { "color:purple", ColorConstants.Purple },
-        { "color:red", ColorConstants.Red },
-        { "color:rose", ColorConstants.Rose },
-        { "color:silver", ColorConstants.Silver },
-        { "color:teal", ColorConstants.Teal },
-        { "color:white", ColorConstants.White },
-        { "color:yellow", ColorConstants.Yellow }
+        { "black", ColorConstants.Black },
+        { "blue", ColorConstants.Blue },
+        { "brown", ColorConstants.Brown },
+        { "cyan", ColorConstants.Cyan },
+        { "gray", ColorConstants.Gray },
+        { "green", ColorConstants.Green },
+        { "lime", ColorConstants.Lime },
+        { "magenta", ColorConstants.Magenta },
+        { "maroon", ColorConstants.Maroon },
+        { "navy", ColorConstants.Navy },
+        { "olive", ColorConstants.Olive },
+        { "orange", ColorConstants.Orange },
+        { "pink", ColorConstants.Pink },
+        { "purple", ColorConstants.Purple },
+        { "red", ColorConstants.Red },
+        { "rose", ColorConstants.Rose },
+        { "silver", ColorConstants.Silver },
+        { "teal", ColorConstants.Teal },
+        { "white", ColorConstants.White },
+        { "yellow", ColorConstants.Yellow }
     };
 }
