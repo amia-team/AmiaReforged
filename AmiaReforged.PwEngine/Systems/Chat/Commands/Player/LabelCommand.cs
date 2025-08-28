@@ -63,6 +63,8 @@ public class LabelCommand : IChatCommand
             targetingData => LabelItem(targetingData, label, color),
             new TargetModeSettings { ValidTargets = ObjectTypes.Item });
 
+        caller.FloatingTextString($"Labelling item: {label.ColorString(foundColor)}", false);
+
         return Task.CompletedTask;
     }
 
