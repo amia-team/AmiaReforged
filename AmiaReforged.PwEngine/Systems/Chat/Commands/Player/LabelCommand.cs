@@ -10,8 +10,6 @@ public class LabelCommand : IChatCommand
     public string Command => "./labelitem";
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
-
-
         if (args.Length < 1)
         {
             caller.SendServerMessage(UsageMessage);
@@ -26,7 +24,7 @@ public class LabelCommand : IChatCommand
 
         if (!args[0].StartsWith('"'))
         {
-            caller.SendServerMessage("Your label must start with a quotation mark");
+            caller.SendServerMessage("Your label must start with a quotation mark.");
             return Task.CompletedTask;
         }
 
@@ -45,7 +43,7 @@ public class LabelCommand : IChatCommand
                 return Task.CompletedTask;
             }
 
-            labelStrings = args[..^2];
+            labelStrings = args[..^1];
         }
         else
         {
@@ -55,7 +53,7 @@ public class LabelCommand : IChatCommand
                 return Task.CompletedTask;
             }
 
-            labelStrings = args[..^1];
+            labelStrings = args[..];
         }
 
         string rawLabel = string.Join(" ", labelStrings);
@@ -64,6 +62,8 @@ public class LabelCommand : IChatCommand
         caller.EnterTargetMode(
             targetingData => LabelItem(targetingData, label, color),
             new TargetModeSettings { ValidTargets = ObjectTypes.Item });
+
+        caller.FloatingTextString($"Labelling item: {label.ColorString(foundColor)}", false);
 
         return Task.CompletedTask;
     }
