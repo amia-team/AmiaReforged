@@ -6,7 +6,7 @@ using NWN.Core.NWNX;
 namespace AmiaReforged.PwEngine.Systems.Chat.Commands.DM;
 
 [ServiceBinding(typeof(IChatCommand))]
-public class RemoveVfx : IChatCommand
+public class RemoveVfxCommand : IChatCommand
 {
     public string Command => "./removevfx";
 
@@ -37,7 +37,7 @@ public class RemoveVfx : IChatCommand
         if (args[0] == "all")
         {
             caller.EnterTargetMode(
-                targetingData => RemoveVfxFromTarget(targetingData, null),
+                targetingData => RemoveVfx(targetingData, null),
                 new TargetModeSettings
                     { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door }
             );
@@ -60,7 +60,7 @@ public class RemoveVfx : IChatCommand
         {
             case "D":
                 caller.EnterTargetMode(
-                    targetingData => RemoveVfxFromTarget(targetingData, vfxId),
+                    targetingData => RemoveVfx(targetingData, vfxId),
                     new TargetModeSettings
                         { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door }
                 );
@@ -79,7 +79,7 @@ public class RemoveVfx : IChatCommand
         return Task.CompletedTask;
     }
 
-    private void RemoveVfxFromTarget(ModuleEvents.OnPlayerTarget targetingData, int? vfxId)
+    private void RemoveVfx(ModuleEvents.OnPlayerTarget targetingData, int? vfxId)
     {
         if (targetingData.TargetObject is not (NwCreature or NwDoor or NwPlaceable)) return;
 

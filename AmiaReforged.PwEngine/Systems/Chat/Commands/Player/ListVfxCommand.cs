@@ -4,7 +4,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Systems.Chat.Commands.Player;
 
 [ServiceBinding(typeof(IChatCommand))]
-public class ListVfx : IChatCommand
+public class ListVfxCommand : IChatCommand
 {
     public string Command => "./listvfx";
     private const string UsageMessage
@@ -25,19 +25,19 @@ public class ListVfx : IChatCommand
         switch (args[0])
         {
             case "instant" or "inst" or "fnf":
-                ListVfxByType("F", caller);
+                ListVfx("F", caller);
                 break;
             case "duration" or "dur" or "d":
-                ListVfxByType("D", caller);
+                ListVfx("D", caller);
                 break;
             case "projectile" or "proj" or "p":
-                ListVfxByType("P", caller);
+                ListVfx("P", caller);
                 break;
             case "beam" or "b":
-                ListVfxByType("B", caller);
+                ListVfx("B", caller);
                 break;
             case "all":
-                ListVfxByType("all", caller);
+                ListVfx("all", caller);
                 break;
             default:
                 caller.SendServerMessage(UsageMessage);
@@ -47,7 +47,7 @@ public class ListVfx : IChatCommand
         return Task.CompletedTask;
     }
 
-    private void ListVfxByType(string? vfxType, NwPlayer caller)
+    private void ListVfx(string? vfxType, NwPlayer caller)
     {
         string? vfxLabel;
         int vfxId;

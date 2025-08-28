@@ -6,7 +6,7 @@ using NWN.Core.NWNX;
 namespace AmiaReforged.PwEngine.Systems.Chat.Commands.DM;
 
 [ServiceBinding(typeof(IChatCommand))]
-public class GetVfx : IChatCommand
+public class GetVfxCommand : IChatCommand
 {
     public string Command => "./getvfx";
 
