@@ -72,7 +72,7 @@ public class LabelCommand : IChatCommand
     private void LabelItem(ModuleEvents.OnPlayerTarget targetingData, string label, Color? color)
     {
         if (targetingData.TargetObject is not NwItem targetItem) return;
-        if (targetItem.Inventory != targetingData.Player.ControlledCreature?.Inventory)
+        if (targetItem.RootPossessor != targetingData.Player.ControlledCreature)
         {
             targetingData.Player.SendServerMessage("The item must be in your own inventory!");
             return;
