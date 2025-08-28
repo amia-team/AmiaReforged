@@ -39,7 +39,8 @@ public class LabelCommand : IChatCommand
 
             if (args.Length < 2 || !args[^2].EndsWith('"'))
             {
-                caller.SendServerMessage("Your label must end with a quotation mark followed by a color.");
+                caller.SendServerMessage(
+                    $"Your label must end with a quotation mark followed by a valid color.\n{UsageMessage}");
                 return Task.CompletedTask;
             }
 
@@ -49,7 +50,8 @@ public class LabelCommand : IChatCommand
         {
             if (!lastArg.EndsWith('"'))
             {
-                caller.SendServerMessage("Your label must end with a quotation mark.");
+                caller.SendServerMessage(
+                    $"Your label must end with a quotation mark followed by a valid color.\n{UsageMessage}");
                 return Task.CompletedTask;
             }
 
@@ -76,7 +78,7 @@ public class LabelCommand : IChatCommand
         if (targetingData.TargetObject is not NwItem targetItem) return;
         if (targetItem.RootPossessor != targetingData.Player.ControlledCreature)
         {
-            targetingData.Player.SendServerMessage("The item must be in your own inventory!");
+            targetingData.Player.SendServerMessage("Can't label an item that's not in your own inventory!");
             return;
         }
         if (targetItem.ResRef.Contains("mythal"))
@@ -90,7 +92,7 @@ public class LabelCommand : IChatCommand
             targetItem.Name = targetItem.Name.ColorString(color.Value);
     }
 
-    private const string UsageMessage = "Usage: ./labelitem \"My Snazzy Label\" [color]" +
+    private const string UsageMessage = "Usage example: ./labelitem \"My Snazzy Label\" green" +
                                         "\nTo view available colors, enter ./labelitem color";
 
     private const string ColorMessage = "Available colors:" +
