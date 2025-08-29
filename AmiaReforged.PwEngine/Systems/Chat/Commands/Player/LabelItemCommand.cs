@@ -5,7 +5,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Systems.Chat.Commands.Player;
 
 [ServiceBinding(typeof(IChatCommand))]
-public class LabelCommand : IChatCommand
+public class LabelItemCommand : IChatCommand
 {
     public string Command => "./labelitem";
     public Task ExecuteCommand(NwPlayer caller, string[] args)
@@ -92,8 +92,10 @@ public class LabelCommand : IChatCommand
             targetItem.Name = targetItem.Name.ColorString(color.Value);
     }
 
-    private const string UsageMessage = "Usage example: ./labelitem \"My Snazzy Label\" green" +
-                                        "\nTo view available colors, enter ./labelitem color";
+    private const string UsageMessage = "Usage example: " +
+                                        "\n./labelitem \"My Snazzy Label\" green" +
+                                        "\nTo view available colors, enter:" +
+                                        "\n./labelitem color";
 
     private const string ColorMessage = "Available colors:" +
                                         "\nblack" +
