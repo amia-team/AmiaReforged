@@ -5,7 +5,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Systems.Chat.Commands.Player;
 
 [ServiceBinding(typeof(IChatCommand))]
-public class LabelCommand : IChatCommand
+public class LabelItemCommand : IChatCommand
 {
     public string Command => "./labelitem";
     public Task ExecuteCommand(NwPlayer caller, string[] args)
