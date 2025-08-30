@@ -60,8 +60,7 @@ public enum HarvestResult
 {
     Finished,
     InProgress,
-    NoTool,
-    Error
+    NoTool
 }
 
 public record HarvestEventData(ICharacter Character, ResourceNodeInstance NodeInstance);
