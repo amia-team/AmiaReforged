@@ -32,35 +32,40 @@ public class IndustryMembershipTests
                     Tag = NoviceKnowledge,
                     Name = "Novice Knowledge",
                     Level = ProficiencyLevel.Novice,
-                    PointCost = 1
+                    PointCost = 1,
+                    Description = string.Empty
                 },
                 new Knowledge
                 {
                     Tag = NoviceKnowledge2,
                     Name = "Novice Knowledge 2",
                     Level = ProficiencyLevel.Novice,
-                    PointCost = 1
+                    PointCost = 1,
+                    Description = string.Empty
                 },
                 new Knowledge
                 {
                     Tag = NoviceKnowledge3,
                     Name = "Novice Knowledge 3",
                     Level = ProficiencyLevel.Novice,
-                    PointCost = 1
+                    PointCost = 1,
+                    Description = string.Empty
                 },
                 new Knowledge
                 {
                     Tag = NoviceKnowledge4,
                     Name = "Novice Knowledge 4",
                     Level = ProficiencyLevel.Novice,
-                    PointCost = 1
+                    PointCost = 1,
+                    Description = string.Empty
                 },
                 new Knowledge
                 {
                     Tag = ApprenticeKnowledge,
                     Name = ApprenticeKnowledge,
                     Level = ProficiencyLevel.Apprentice,
-                    PointCost = 2
+                    PointCost = 2,
+                    Description = string.Empty
                 }
             ]
         };
@@ -154,7 +159,7 @@ public class IndustryMembershipTests
     [Test]
     public void Should_Not_Learn_Knowledge_Without_Enough_Points()
     {
-        TestCharacter character = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], Guid.NewGuid(), [], 0);
+        TestCharacter character = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], Guid.NewGuid(), []);
 
         _characterRepository.Add(character);
 
@@ -208,13 +213,11 @@ public class IndustryMembershipTests
             CharacterId = _characterGuid
         };
 
-
         _sut.AddMembership(membership);
 
         LearningResult noviceResult1 = _sut.LearnKnowledge(membership, NoviceKnowledge);
 
         LearningResult noviceResult2 = _sut.LearnKnowledge(membership, NoviceKnowledge2);
-
 
         _sut.RankUp(membership);
 

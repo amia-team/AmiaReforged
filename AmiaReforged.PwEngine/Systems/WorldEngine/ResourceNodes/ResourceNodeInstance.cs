@@ -9,6 +9,7 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 public class ResourceNodeInstance
 {
     public delegate void OnHarvestHandler(HarvestEventData data);
+
     public event OnHarvestHandler? OnHarvest;
 
     public long Id { get; set; }
@@ -21,6 +22,7 @@ public class ResourceNodeInstance
     public float Y { get; set; }
     public float Z { get; set; }
     public float Rotation { get; set; }
+    private int HarvestProgress { get; set; }
 
 
     public Location? ToLocation()
@@ -33,14 +35,23 @@ public class ResourceNodeInstance
     public HarvestResult Harvest(ICharacter character)
     {
         ItemSnapshot tool = character.GetEquipment()[EquipmentSlots.RightHand];
-        if (Definition.Requirement.RequiredItemType != JobSystemItemType.None && tool.Type != Definition.Requirement.RequiredItemType)
+        if (Definition.Requirement.RequiredItemType != JobSystemItemType.None &&
+            tool.Type != Definition.Requirement.RequiredItemType)
         {
             return HarvestResult.NoTool;
+        }
+
+        HarvestProgress++;
+
+        if (HarvestProgress < Definition.BaseHarvestRounds)
+        {
+            return HarvestResult.InProgress;
         }
 
         HarvestEventData data = new(character, this);
         OnHarvest?.Invoke(data);
 
+        HarvestProgress = 0;
         return HarvestResult.Finished;
     }
 }
@@ -48,6 +59,7 @@ public class ResourceNodeInstance
 public enum HarvestResult
 {
     Finished,
+    InProgress,
     NoTool,
     Error
 }

@@ -89,6 +89,40 @@ public class HarvestTests
         Assert.That(pc.GetInventory().Any(i => i.Tag == TestItemTag), Is.False);
     }
 
+    [Test]
+    public void Some_Nodes_Should_Take_Multiple_Attempts()
+    {
+        ICharacter pc = CreateTestCharacter();
+        pc.GetEquipment().Add(EquipmentSlots.RightHand,
+            new ItemSnapshot("fake_tool", IPQuality.Average, [Material.Iron], JobSystemItemType.ToolPick, 0, null));
+
+        ResourceNodeDefinition definition = new("test",
+            new HarvestContext(JobSystemItemType.ToolPick, Material.None),
+            [new HarvestOutput(TestItemTag, 1)], 2);
+
+        ResourceNodeInstance instance = new()
+        {
+            Area = "test_area",
+            Definition = definition,
+            Id = 1,
+            X = 1.0f,
+            Y = 1.0f,
+            Z = 1.0f,
+            Rotation = 1.0f,
+            Quality = QualityLevel.BelowAverage,
+            Uses = 10
+        };
+
+        _sut.RegisterNode(instance);
+        HarvestResult result = instance.Harvest(pc);
+
+        Assert.That(result, Is.EqualTo(HarvestResult.InProgress));
+
+        result = instance.Harvest(pc);
+
+        Assert.That(result, Is.EqualTo(HarvestResult.Finished));
+    }
+
 
     private ICharacter CreateTestCharacter(Dictionary<EquipmentSlots, ItemSnapshot>? injectedEquipment = null,
         List<SkillData>? skills = null, List<ItemSnapshot>? inventory = null)
