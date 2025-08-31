@@ -29,7 +29,10 @@ public class ChainLightning : ISpell
 
         MetaMagic metaMagic = eventData.MetaMagicFeat;
 
-        foreach (NwCreature hostileCreature in caster.Location
+        Location? spellLocation = eventData.TargetObject?.Location;
+        if (spellLocation == null) return;
+
+        foreach (NwCreature hostileCreature in spellLocation
                      .GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal,true)
                      .Where(caster.IsReactionTypeHostile))
         {
