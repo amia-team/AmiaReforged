@@ -38,6 +38,7 @@ public class ChainLightning : ISpell
         {
             if (arcs == 0) break;
             if (hostileCreature.IsDead) continue;
+
             _ = ShootArc(caster, hostileCreature, damageDice, spellDc, metaMagic);
             arcs--;
         }
@@ -49,7 +50,7 @@ public class ChainLightning : ISpell
         hostileCreature.ApplyEffect(EffectDuration.Temporary,
             Effect.Beam(VfxType.BeamLightning, caster, BodyNode.Hand),
             TimeSpan.FromSeconds(0.5));
-        
+
         await NwTask.Delay(TimeSpan.FromSeconds(0.25f));
 
         await caster.WaitForObjectContext();
@@ -59,15 +60,17 @@ public class ChainLightning : ISpell
 
         await NwTask.Delay(TimeSpan.FromSeconds(0.25f));
 
+        damageDice /= 2;
+
         foreach (NwCreature secondaryCreature in hostileCreature.Location
                      .GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large,true)
                      .Where(caster.IsReactionTypeHostile))
         {
-            secondaryCreature.ApplyEffect(EffectDuration.Temporary,
-                Effect.Beam(VfxType.BeamLightning, hostileCreature, BodyNode.Hand),
-                TimeSpan.FromSeconds(0.5));
+            if (secondaryCreature.IsDead) continue;
 
-            damageDice /= 2;
+            secondaryCreature.ApplyEffect(EffectDuration.Temporary,
+                Effect.Beam(VfxType.BeamLightning, hostileCreature, BodyNode.Chest),
+                TimeSpan.FromSeconds(0.5));
 
             await caster.WaitForObjectContext();
             RollDamage(secondaryCreature, caster, damageDice, spellDc, metaMagic);
