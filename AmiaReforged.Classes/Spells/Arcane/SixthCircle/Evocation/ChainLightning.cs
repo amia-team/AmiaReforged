@@ -12,15 +12,7 @@ public class ChainLightning : ISpell
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_ChLightn";
 
-    private int _arcsRemaining;
-    private void SetArcsRemaining(int arcsRemaining)
-    {
-        _arcsRemaining = arcsRemaining;
-    }
-    private int GetArcsRemaining()
-    {
-        return _arcsRemaining;
-    }
+    private readonly Dictionary<uint, int> _spellHitsRemaining = new();
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         if (eventData.Caster is not NwCreature caster) return;
@@ -32,14 +24,12 @@ public class ChainLightning : ISpell
             caster.KnowsFeat(Feat.SpellFocusEvocation!) ? 4 :
             3;
 
+        uint spellKey = caster.ObjectId;
         byte casterLevel = caster.GetClassInfo(eventData.SpellCastClass)?.Level ?? 0;
-
-        SetArcsRemaining(casterLevel);
+        _spellHitsRemaining[spellKey] = casterLevel;
 
         int damageDice = casterLevel > 20 ? 20 : casterLevel;
-
         int spellDc = SpellUtils.GetSpellDc(eventData);
-
         MetaMagic metaMagic = eventData.MetaMagicFeat;
 
         Location? spellLocation = eventData.TargetObject?.Location;
@@ -50,15 +40,19 @@ public class ChainLightning : ISpell
                      .Where(caster.IsReactionTypeHostile))
         {
             if (arcs == 0) break;
+            if (_spellHitsRemaining[spellKey] <= 0) break;
+
             if (hostileCreature.IsDead) continue;
 
-            _ = ShootArc(caster, hostileCreature, damageDice, spellDc, metaMagic);
+            _ = ShootArc(caster, hostileCreature, damageDice, spellDc, metaMagic, spellKey);
+
             arcs--;
+            _spellHitsRemaining[spellKey]--;
         }
     }
 
     private async Task ShootArc(NwCreature caster, NwCreature hostileCreature, int damageDice, int spellDc,
-        MetaMagic metaMagic)
+        MetaMagic metaMagic, uint spellKey)
     {
         hostileCreature.ApplyEffect(EffectDuration.Temporary,
             Effect.Beam(VfxType.BeamLightning, caster, BodyNode.Hand),
@@ -68,10 +62,6 @@ public class ChainLightning : ISpell
 
         await caster.WaitForObjectContext();
         RollDamage(hostileCreature, caster, damageDice, spellDc, metaMagic);
-
-        _arcsRemaining = GetArcsRemaining();
-        SetArcsRemaining(_arcsRemaining--);
-        if (_arcsRemaining <= 0) return;
 
         if (hostileCreature.Location == null) return;
 
@@ -85,19 +75,21 @@ public class ChainLightning : ISpell
         {
             if (secondaryCreature.IsDead) continue;
 
-            secondaryCreature.ApplyEffect(EffectDuration.Temporary,
-                Effect.Beam(VfxType.BeamLightning, hostileCreature, BodyNode.Chest),
-                TimeSpan.FromSeconds(0.5));
+            if (!_spellHitsRemaining.TryGetValue(spellKey, out int value) || value <= 0) break;
+
+            if (!hostileCreature.IsDead)
+            {
+                secondaryCreature.ApplyEffect(EffectDuration.Temporary,
+                    Effect.Beam(VfxType.BeamLightning, hostileCreature, BodyNode.Chest),
+                    TimeSpan.FromSeconds(0.5));
+            }
 
             await caster.WaitForObjectContext();
             RollDamage(secondaryCreature, caster, damageDice, spellDc, metaMagic);
 
-            _arcsRemaining = GetArcsRemaining();
-            SetArcsRemaining(_arcsRemaining--);
-            if (_arcsRemaining <= 0) return;
+            _spellHitsRemaining[spellKey]--;
         }
     }
-
 
     private void RollDamage(NwCreature targetCreature, NwCreature caster, int damageDice, int spellDc,
         MetaMagic metaMagic)
