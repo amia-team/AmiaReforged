@@ -3,4 +3,4 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
-public record ResourceNodeDefinition(string Tag, HarvestContext[] Requirements, HarvestOutput[] Outputs);
+public record ResourceNodeDefinition(string Tag, HarvestContext Requirement, HarvestOutput[] Outputs, int BaseHarvestRounds = 0);

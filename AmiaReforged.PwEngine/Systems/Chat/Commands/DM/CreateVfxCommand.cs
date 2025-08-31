@@ -77,19 +77,19 @@ public class CreateVfxCommand : IChatCommand
             case "D":
                 caller.EnterTargetMode(targetingData => CreateDurVfx(targetingData, vfxId, vfxSize),
                     new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
-                caller.FloatingTextString($"Applying duration VFX: {vfxLabel}. The effect is permanent! " +
+                caller.FloatingTextString($"Applying duration VFX ID {vfxId} {vfxLabel}. The effect is permanent! " +
                                           "You can remove it with ./removevfx", false);
                 break;
 
             case "F":
                 caller.EnterTargetMode(targetingData => CreateFnfVfx(targetingData, vfxId, vfxSize));
-                caller.FloatingTextString($"Applying instant VFX: {vfxLabel}", false);
+                caller.FloatingTextString($"Applying instant VFX ID {vfxId} {vfxLabel}", false);
                 break;
 
             case "B" or "P":
                 caller.EnterTargetMode(targetingData => CreateBeamVfx(targetingData, vfxId),
                     new TargetModeSettings { ValidTargets = ObjectTypes.Creature | ObjectTypes.Placeable | ObjectTypes.Door });
-                caller.FloatingTextString($"Applying beam VFX: {vfxLabel}", false);
+                caller.FloatingTextString($"Applying beam VFX ID {vfxId} {vfxLabel}", false);
                 break;
         }
     }
