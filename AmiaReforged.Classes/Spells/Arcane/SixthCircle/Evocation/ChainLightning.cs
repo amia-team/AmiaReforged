@@ -27,17 +27,20 @@ public class ChainLightning : ISpell
 
         int spellDc = SpellUtils.GetSpellDc(eventData);
 
+        MetaMagic metaMagic = eventData.MetaMagicFeat;
+
         foreach (NwCreature hostileCreature in caster.Location
                      .GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal,true)
                      .Where(caster.IsReactionTypeHostile))
         {
             if (arcs == 0) break;
-            _ = ShootArc(caster, hostileCreature, damageDice, spellDc);
+            _ = ShootArc(caster, hostileCreature, damageDice, spellDc, metaMagic);
             arcs--;
         }
     }
 
-    private async Task ShootArc(NwCreature caster, NwCreature hostileCreature, int damageDice, int spellDc)
+    private async Task ShootArc(NwCreature caster, NwCreature hostileCreature, int damageDice, int spellDc,
+        MetaMagic metaMagic)
     {
         float delay = caster.Distance(hostileCreature) / 10;
         await NwTask.Delay(TimeSpan.FromSeconds(delay));
@@ -46,7 +49,7 @@ public class ChainLightning : ISpell
             Effect.Beam(VfxType.BeamLightning, caster, BodyNode.Hand),
             TimeSpan.FromSeconds(0.5));
 
-        RollDamage(hostileCreature, damageDice, spellDc);
+        RollDamage(hostileCreature, caster, damageDice, spellDc, metaMagic);
 
         if (hostileCreature.Location == null) return;
 
@@ -62,16 +65,19 @@ public class ChainLightning : ISpell
 
             damageDice /= 2;
 
-            RollDamage(secondaryCreature, damageDice, spellDc);
+            RollDamage(secondaryCreature, caster, damageDice, spellDc, metaMagic);
         }
     }
 
-    private void RollDamage(NwCreature targetCreature, int damageDice, int spellDc)
+
+    private void RollDamage(NwCreature targetCreature, NwCreature caster, int damageDice, int spellDc,
+        MetaMagic metaMagic)
     {
-        int damage = Random.Shared.Roll(6, damageDice);
+        int damage = SpellUtils.MaximizeSpell(metaMagic, 6, damageDice);
+        SpellUtils.EmpowerSpell(metaMagic, damage);
 
         SavingThrowResult savingThrow =
-            targetCreature.RollSavingThrow(SavingThrow.Reflex, spellDc, SavingThrowType.Electricity);
+            targetCreature.RollSavingThrow(SavingThrow.Reflex, spellDc, SavingThrowType.Electricity, caster);
 
         if (savingThrow == SavingThrowResult.Success || targetCreature.KnowsFeat(Feat.ImprovedEvasion!))
         {
