@@ -29,11 +29,15 @@ public class ChainLightning : ISpell
 
         MetaMagic metaMagic = eventData.MetaMagicFeat;
 
-        foreach (NwCreature hostileCreature in caster.Location
+        Location? spellLocation = eventData.TargetObject?.Location;
+        if (spellLocation == null) return;
+
+        foreach (NwCreature hostileCreature in spellLocation
                      .GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal,true)
                      .Where(caster.IsReactionTypeHostile))
         {
             if (arcs == 0) break;
+            if (hostileCreature.IsDead) continue;
             _ = ShootArc(caster, hostileCreature, damageDice, spellDc, metaMagic);
             arcs--;
         }
@@ -49,6 +53,7 @@ public class ChainLightning : ISpell
             Effect.Beam(VfxType.BeamLightning, caster, BodyNode.Hand),
             TimeSpan.FromSeconds(0.5));
 
+        await caster.WaitForObjectContext();
         RollDamage(hostileCreature, caster, damageDice, spellDc, metaMagic);
 
         if (hostileCreature.Location == null) return;
