@@ -75,6 +75,8 @@ public class ChainLightning : ISpell
         {
             if (secondaryCreature.IsDead) continue;
 
+            if (secondaryCreature == hostileCreature) continue;
+
             if (!_spellHitsRemaining.TryGetValue(spellKey, out int value) || value <= 0) break;
 
             if (!hostileCreature.IsDead)
