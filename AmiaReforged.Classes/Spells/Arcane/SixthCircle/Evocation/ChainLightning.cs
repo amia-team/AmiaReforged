@@ -46,12 +46,11 @@ public class ChainLightning : ISpell
     private async Task ShootArc(NwCreature caster, NwCreature hostileCreature, int damageDice, int spellDc,
         MetaMagic metaMagic)
     {
-        float delay = caster.Distance(hostileCreature) / 10;
-        await NwTask.Delay(TimeSpan.FromSeconds(delay));
-
         hostileCreature.ApplyEffect(EffectDuration.Temporary,
             Effect.Beam(VfxType.BeamLightning, caster, BodyNode.Hand),
             TimeSpan.FromSeconds(0.5));
+        
+        await NwTask.Delay(TimeSpan.FromSeconds(0.25f));
 
         await caster.WaitForObjectContext();
         RollDamage(hostileCreature, caster, damageDice, spellDc, metaMagic);
@@ -70,6 +69,7 @@ public class ChainLightning : ISpell
 
             damageDice /= 2;
 
+            await caster.WaitForObjectContext();
             RollDamage(secondaryCreature, caster, damageDice, spellDc, metaMagic);
         }
     }
