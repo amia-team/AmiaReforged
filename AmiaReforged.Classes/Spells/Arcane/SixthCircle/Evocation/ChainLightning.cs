@@ -11,6 +11,16 @@ public class ChainLightning : ISpell
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_ChLightn";
+
+    private int _arcsRemaining;
+    private void SetArcsRemaining(int arcsRemaining)
+    {
+        _arcsRemaining = arcsRemaining;
+    }
+    private int GetArcsRemaining()
+    {
+        return _arcsRemaining;
+    }
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         if (eventData.Caster is not NwCreature caster) return;
@@ -22,8 +32,11 @@ public class ChainLightning : ISpell
             caster.KnowsFeat(Feat.SpellFocusEvocation!) ? 4 :
             3;
 
-        int damageDice = caster.GetClassInfo(eventData.SpellCastClass)?.Level > 20 ? 20 :
-            caster.GetClassInfo(eventData.SpellCastClass)?.Level ?? 0;
+        byte casterLevel = caster.GetClassInfo(eventData.SpellCastClass)?.Level ?? 0;
+
+        SetArcsRemaining(casterLevel);
+
+        int damageDice = casterLevel > 20 ? 20 : casterLevel;
 
         int spellDc = SpellUtils.GetSpellDc(eventData);
 
@@ -56,6 +69,10 @@ public class ChainLightning : ISpell
         await caster.WaitForObjectContext();
         RollDamage(hostileCreature, caster, damageDice, spellDc, metaMagic);
 
+        _arcsRemaining = GetArcsRemaining();
+        SetArcsRemaining(_arcsRemaining--);
+        if (_arcsRemaining <= 0) return;
+
         if (hostileCreature.Location == null) return;
 
         await NwTask.Delay(TimeSpan.FromSeconds(0.25f));
@@ -74,6 +91,10 @@ public class ChainLightning : ISpell
 
             await caster.WaitForObjectContext();
             RollDamage(secondaryCreature, caster, damageDice, spellDc, metaMagic);
+
+            _arcsRemaining = GetArcsRemaining();
+            SetArcsRemaining(_arcsRemaining--);
+            if (_arcsRemaining <= 0) return;
         }
     }
 
