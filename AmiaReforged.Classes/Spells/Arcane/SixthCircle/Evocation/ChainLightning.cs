@@ -37,6 +37,7 @@ public class ChainLightning : ISpell
                      .Where(caster.IsReactionTypeHostile))
         {
             if (arcs == 0) break;
+            if (hostileCreature.IsDead) continue;
             _ = ShootArc(caster, hostileCreature, damageDice, spellDc, metaMagic);
             arcs--;
         }
@@ -52,6 +53,7 @@ public class ChainLightning : ISpell
             Effect.Beam(VfxType.BeamLightning, caster, BodyNode.Hand),
             TimeSpan.FromSeconds(0.5));
 
+        await caster.WaitForObjectContext();
         RollDamage(hostileCreature, caster, damageDice, spellDc, metaMagic);
 
         if (hostileCreature.Location == null) return;
