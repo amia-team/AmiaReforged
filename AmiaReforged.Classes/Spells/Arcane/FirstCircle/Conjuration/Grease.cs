@@ -18,7 +18,9 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
 
 
     private const float TwoRounds = 12;
+    private const float OneRound = 6;
     private const string FireVulnTag = "GreaseFireVuln";
+
     private const string GreaseMoveTag = "GreaseMovement";
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
@@ -30,9 +32,12 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
 
         if (eventData.Caster == null) return;
         if (eventData.Caster is not NwCreature casterCreature) return;
-        if (eventData.TargetObject == null) return;
+        if (eventData.TargetObject != null)
+        {
+            SpellUtils.SignalSpell(casterCreature, eventData.TargetObject, eventData.Spell);
+            return;
+        }
 
-        SpellUtils.SignalSpell(casterCreature, eventData.TargetObject, eventData.Spell);
 
         PersistentVfxTableEntry? greaseTableEntry = PersistentVfxType.PerGrease;
         if (greaseTableEntry == null)
@@ -46,7 +51,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
             handleFactory.CreateUniqueHandler(OnHeartbeatGrease),
             handleFactory.CreateUniqueHandler(OnExitGrease));
 
-        Location? location = eventData.TargetObject.Location ?? eventData.TargetLocation;
+        Location? location = eventData.TargetLocation;
         if (location == null)
         {
             Log.Error("Location not found.");
@@ -84,7 +89,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
 
         Effect moveSpeedPenalty = Effect.MovementSpeedDecrease(50);
         moveSpeedPenalty.Tag = GreaseMoveTag;
-        creature.ApplyEffect(EffectDuration.Temporary, moveSpeedPenalty, TimeSpan.FromSeconds(TwoRounds));
+        creature.ApplyEffect(EffectDuration.Temporary, moveSpeedPenalty, TimeSpan.FromSeconds(OneRound));
         return ScriptHandleResult.Handled;
     }
 
@@ -92,7 +97,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
     {
         AreaOfEffectEvents.OnHeartbeat evtData = new();
         NwGameObject obj = evtData.Effect;
-
+        int dc = evtData.SpellSaveDC;
         if (obj is not NwAreaOfEffect e) return ScriptHandleResult.Handled;
 
         List<NwCreature> creatures = e.GetObjectsInEffectArea<NwCreature>().ToList();
@@ -114,11 +119,16 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
                 creature.RemoveEffect(moveSpeed);
             }
 
+            if (creature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Spell) == SavingThrowResult.Failure)
+            {
+                Effect prone = Effect.Knockdown();
+                creature.ApplyEffect(EffectDuration.Temporary, prone, TimeSpan.FromSeconds(OneRound));
+            }
             if (creature.IsImmuneTo(ImmunityType.MovementSpeedDecrease)) continue;
 
             Effect moveSpeedPenalty = Effect.MovementSpeedDecrease(50);
             moveSpeedPenalty.Tag = GreaseMoveTag;
-            creature.ApplyEffect(EffectDuration.Temporary, moveSpeedPenalty, TimeSpan.FromSeconds(TwoRounds));
+            creature.ApplyEffect(EffectDuration.Temporary, moveSpeedPenalty, TimeSpan.FromSeconds(OneRound));
         }
 
         return ScriptHandleResult.Handled;
@@ -144,7 +154,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
         Effect fireVuln = Effect.DamageImmunityDecrease(DamageType.Fire, 10);
         if (obj.ActiveEffects.All(e => e.Tag != FireVulnTag))
         {
-            Effect greaseVfx = Effect.VisualEffect(VfxType.DurAuraDisease);
+            Effect greaseVfx = Effect.VisualEffect(VfxType.DurAuraBrown);
             fireVuln = Effect.LinkEffects(fireVuln, greaseVfx);
             fireVuln.Tag = FireVulnTag;
 
