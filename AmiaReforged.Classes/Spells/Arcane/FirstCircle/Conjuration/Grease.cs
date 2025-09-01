@@ -71,18 +71,20 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
         _greaseAreas.Add(greaseAoE);
     }
 
-    private static ScriptHandleResult OnExitGrease(CallInfo arg)
+    private static ScriptHandleResult OnEnterGrease(CallInfo arg)
     {
-        AreaOfEffectEvents.OnExit evtData = new();
-        NwGameObject obj = evtData.Exiting;
+        AreaOfEffectEvents.OnEnter evtData = new();
+        NwGameObject obj = evtData.Entering;
 
-        Effect? moveSpeed = obj.ActiveEffects.SingleOrDefault(e => e.Tag == GreaseMoveTag);
+        if (obj is not NwCreature creature) return ScriptHandleResult.Handled;
 
-        if (moveSpeed != null)
-        {
-            obj.RemoveEffect(moveSpeed);
-        }
+        ApplyFireVuln(obj);
 
+        if (creature.IsImmuneTo(ImmunityType.MovementSpeedDecrease)) return ScriptHandleResult.Handled;
+
+        Effect moveSpeedPenalty = Effect.MovementSpeedDecrease(50);
+        moveSpeedPenalty.Tag = GreaseMoveTag;
+        creature.ApplyEffect(EffectDuration.Temporary, moveSpeedPenalty, TimeSpan.FromSeconds(OneRound));
         return ScriptHandleResult.Handled;
     }
 
@@ -122,20 +124,18 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
         return ScriptHandleResult.Handled;
     }
 
-    private static ScriptHandleResult OnEnterGrease(CallInfo arg)
+    private static ScriptHandleResult OnExitGrease(CallInfo arg)
     {
-        AreaOfEffectEvents.OnEnter evtData = new();
-        NwGameObject obj = evtData.Entering;
+        AreaOfEffectEvents.OnExit evtData = new();
+        NwGameObject obj = evtData.Exiting;
 
-        if (obj is not NwCreature creature) return ScriptHandleResult.Handled;
+        Effect? moveSpeed = obj.ActiveEffects.SingleOrDefault(e => e.Tag == GreaseMoveTag);
 
-        ApplyFireVuln(obj);
+        if (moveSpeed != null)
+        {
+            obj.RemoveEffect(moveSpeed);
+        }
 
-        if (creature.IsImmuneTo(ImmunityType.MovementSpeedDecrease)) return ScriptHandleResult.Handled;
-
-        Effect moveSpeedPenalty = Effect.MovementSpeedDecrease(50);
-        moveSpeedPenalty.Tag = GreaseMoveTag;
-        creature.ApplyEffect(EffectDuration.Temporary, moveSpeedPenalty, TimeSpan.FromSeconds(OneRound));
         return ScriptHandleResult.Handled;
     }
 
