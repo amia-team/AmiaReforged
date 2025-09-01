@@ -97,7 +97,7 @@ public class ChainLightning : ISpell
         }
     }
 
-    private void RollDamage(NwCreature targetCreature, NwCreature caster, int damageDice, int spellDc,
+    private static void RollDamage(NwCreature targetCreature, NwCreature caster, int damageDice, int spellDc,
         MetaMagic metaMagic)
     {
         int damage = SpellUtils.MaximizeSpell(metaMagic, 6, damageDice);
