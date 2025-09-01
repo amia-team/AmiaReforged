@@ -26,7 +26,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         { SpellSchool.Transmutation, "tran" }
     };
 
-    private enum CraftingResult
+    private enum SpellCraftResult
     {
         Success,
         NoFeat,
@@ -89,10 +89,10 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         switch (targetItem.BaseItem.ItemType)
         {
             case BaseItemType.BlankScroll:
-                CraftingResult scrollResult = ValidateScribeScroll(caster, spellInnateLevel, spellPropCl, out int scribeCost);
+                SpellCraftResult scrollResult = ValidateScribeScroll(caster, spellInnateLevel, spellPropCl, out int scribeCost);
                 HandleCraftingResult(scrollResult, player, caster, spellInnateLevel, scribeCost);
 
-                if (scrollResult == CraftingResult.Success)
+                if (scrollResult == SpellCraftResult.Success)
                 {
                     _ = ScribeScroll(caster, spellPropId);
                     ChargeForSpellCraft(player, caster, scribeCost);
@@ -100,10 +100,10 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 break;
 
             case BaseItemType.BlankWand:
-                CraftingResult wandResult = ValidateCraftWand(caster, spellInnateLevel, out int wandCost);
+                SpellCraftResult wandResult = ValidateCraftWand(caster, spellInnateLevel, out int wandCost);
                 HandleCraftingResult(wandResult, player, caster, spellInnateLevel, wandCost, 4);
 
-                if (wandResult == CraftingResult.Success)
+                if (wandResult == SpellCraftResult.Success)
                 {
                     byte casterLevel = caster.Classes[eventData.ClassIndex].Level;
                     CraftWand(caster, spellPropId, casterLevel);
@@ -112,10 +112,10 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 break;
 
             case BaseItemType.BlankPotion:
-                CraftingResult potionResult = ValidateBrewPotion(caster, spellInnateLevel, spell.IsHostileSpell, out int potionCost);
+                SpellCraftResult potionResult = ValidateBrewPotion(caster, spellInnateLevel, spell.IsHostileSpell, out int potionCost);
                 HandleCraftingResult(potionResult, player, caster, spellInnateLevel, potionCost, 3);
 
-                if (potionResult == CraftingResult.Success)
+                if (potionResult == SpellCraftResult.Success)
                 {
                     _ = BrewPotion(caster, spellPropId);
                     ChargeForSpellCraft(player, caster, potionCost);
@@ -286,52 +286,52 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         return spellPropIdAndCl;
     }
 
-    private CraftingResult ValidateScribeScroll(NwCreature caster, int spellLevel, int spellPropCl, out int cost)
+    private SpellCraftResult ValidateScribeScroll(NwCreature caster, int spellLevel, int spellPropCl, out int cost)
     {
         cost = CalculateScribeCost(spellPropCl, spellLevel);
-        if (!caster.KnowsFeat(Feat.ScribeScroll!)) return CraftingResult.NoFeat;
-        if (caster.Gold < cost) return CraftingResult.NotEnoughGold;
-        return CraftingResult.Success;
+        if (!caster.KnowsFeat(Feat.ScribeScroll!)) return SpellCraftResult.NoFeat;
+        if (caster.Gold < cost) return SpellCraftResult.NotEnoughGold;
+        return SpellCraftResult.Success;
     }
 
-    private CraftingResult ValidateCraftWand(NwCreature caster, int spellLevel, out int cost)
+    private SpellCraftResult ValidateCraftWand(NwCreature caster, int spellLevel, out int cost)
     {
         cost = CalculateCraftWandCost(spellLevel, caster.Classes[eventData.ClassIndex].Level);
-        if (!caster.KnowsFeat(Feat.CraftWand!)) return CraftingResult.NoFeat;
-        if (spellLevel > 4) return CraftingResult.WrongSpellLevel;
-        if (caster.Gold < cost) return CraftingResult.NotEnoughGold;
-        return CraftingResult.Success;
+        if (!caster.KnowsFeat(Feat.CraftWand!)) return SpellCraftResult.NoFeat;
+        if (spellLevel > 4) return SpellCraftResult.WrongSpellLevel;
+        if (caster.Gold < cost) return SpellCraftResult.NotEnoughGold;
+        return SpellCraftResult.Success;
     }
 
-    private CraftingResult ValidateBrewPotion(NwCreature caster, int spellLevel, bool isHostile, out int cost)
+    private SpellCraftResult ValidateBrewPotion(NwCreature caster, int spellLevel, bool isHostile, out int cost)
     {
         cost = CalculateBrewPotionCost(spellLevel);
-        if (!caster.KnowsFeat(Feat.BrewPotion!)) return CraftingResult.NoFeat;
-        if (spellLevel > 3) return CraftingResult.WrongSpellLevel;
-        if (isHostile) return CraftingResult.HostileSpell;
-        if (caster.Gold < cost) return CraftingResult.NotEnoughGold;
-        return CraftingResult.Success;
+        if (!caster.KnowsFeat(Feat.BrewPotion!)) return SpellCraftResult.NoFeat;
+        if (spellLevel > 3) return SpellCraftResult.WrongSpellLevel;
+        if (isHostile) return SpellCraftResult.HostileSpell;
+        if (caster.Gold < cost) return SpellCraftResult.NotEnoughGold;
+        return SpellCraftResult.Success;
     }
 
-    private void HandleCraftingResult(CraftingResult result, NwPlayer player, NwCreature caster, int innateSpellLevel,
+    private void HandleCraftingResult(SpellCraftResult result, NwPlayer player, NwCreature caster, int innateSpellLevel,
         int cost, int? maxSpellLevel = null)
     {
         switch (result)
         {
-            case CraftingResult.NoFeat:
+            case SpellCraftResult.NoFeat:
                 player.SendServerMessage("Crafting failed! You don't know the required feat.");
                 break;
-            case CraftingResult.NotEnoughGold:
+            case SpellCraftResult.NotEnoughGold:
                 player.SendServerMessage($"Crafting failed! You don't have enough gold. The cost is {cost} GP.");
                 break;
-            case CraftingResult.WrongSpellLevel:
+            case SpellCraftResult.WrongSpellLevel:
                 player.SendServerMessage($"Crafting failed! Innate spell level must be {maxSpellLevel} or lower. " +
                                          $"The innate level is {innateSpellLevel}.");
                 break;
-            case CraftingResult.HostileSpell:
+            case SpellCraftResult.HostileSpell:
                 player.SendServerMessage("Crafting failed! You cannot craft an item from a hostile spell.");
                 break;
-            case CraftingResult.Success:
+            case SpellCraftResult.Success:
                 ApplySpellCraftSuccessVfx(caster);
                 return;
         }
