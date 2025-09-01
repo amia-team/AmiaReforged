@@ -17,7 +17,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
     private readonly List<NwAreaOfEffect> _greaseAreas = new();
 
 
-    private const float OneRound = 6;
+    private const float TwoRounds = 12;
     private const string FireVulnTag = "GreaseFireVuln";
     private const string GreaseMoveTag = "GreaseMovement";
 
@@ -84,7 +84,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
 
         Effect moveSpeedPenalty = Effect.MovementSpeedDecrease(50);
         moveSpeedPenalty.Tag = GreaseMoveTag;
-        creature.ApplyEffect(EffectDuration.Temporary, moveSpeedPenalty, TimeSpan.FromSeconds(OneRound));
+        creature.ApplyEffect(EffectDuration.Temporary, moveSpeedPenalty, TimeSpan.FromSeconds(TwoRounds));
         return ScriptHandleResult.Handled;
     }
 
@@ -118,7 +118,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
 
             Effect moveSpeedPenalty = Effect.MovementSpeedDecrease(50);
             moveSpeedPenalty.Tag = GreaseMoveTag;
-            creature.ApplyEffect(EffectDuration.Temporary, moveSpeedPenalty, TimeSpan.FromSeconds(OneRound));
+            creature.ApplyEffect(EffectDuration.Temporary, moveSpeedPenalty, TimeSpan.FromSeconds(TwoRounds));
         }
 
         return ScriptHandleResult.Handled;
@@ -148,7 +148,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
             fireVuln = Effect.LinkEffects(fireVuln, greaseVfx);
             fireVuln.Tag = FireVulnTag;
 
-            obj.ApplyEffect(EffectDuration.Temporary, fireVuln, TimeSpan.FromSeconds(OneRound));
+            obj.ApplyEffect(EffectDuration.Temporary, fireVuln, TimeSpan.FromSeconds(TwoRounds));
         }
     }
 
