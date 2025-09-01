@@ -7,10 +7,13 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Harvesting;
 [TestFixture]
 public class HarvestModifierServiceTests
 {
+    private IIndustryRepository _industryRepository = null!;
+    private IHarvestModifierService _sut = null!;
+
     [OneTimeSetUp]
     public void Setup()
     {
-        IIndustryRepository repo = InMemoryIndustryRepository.Create();
+        _industryRepository = InMemoryIndustryRepository.Create();
 
         Knowledge k1 = new()
         {
@@ -59,6 +62,19 @@ public class HarvestModifierServiceTests
             ]
         };
 
-        repo.Add(i);
+        _industryRepository.Add(i);
+    }
+
+    [SetUp]
+    public void SetUp()
+    {
+        _sut = new HarvestModifierService(_industryRepository);
+    }
+
+
+    [Test]
+    public void Should_Fetch_Modifiers_For_Nodes()
+    {
+
     }
 }
