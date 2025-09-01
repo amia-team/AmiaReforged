@@ -7,9 +7,8 @@ using NWN.Core;
 namespace AmiaReforged.Classes.Spells.Arcane.FirstCircle.Conjuration;
 
 [ServiceBinding(typeof(ISpell))]
-public class Grease : ISpell
+public class Grease(ScriptHandleFactory handleFactory) : ISpell
 {
-    private readonly ScriptHandleFactory _handleFactory;
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S0_Grease";
@@ -21,11 +20,6 @@ public class Grease : ISpell
     private const float OneRound = 6;
     private const string FireVulnTag = "GreaseFireVuln";
     private const string GreaseMoveTag = "GreaseMovement";
-
-    public Grease(ScriptHandleFactory handleFactory, SchedulerService scheduler)
-    {
-        _handleFactory = handleFactory;
-    }
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -48,9 +42,9 @@ public class Grease : ISpell
         }
 
         Effect grease = Effect.AreaOfEffect(greaseTableEntry,
-            _handleFactory.CreateUniqueHandler(OnEnterGrease),
-            _handleFactory.CreateUniqueHandler(OnHeartbeatGrease),
-            _handleFactory.CreateUniqueHandler(OnExitGrease));
+            handleFactory.CreateUniqueHandler(OnEnterGrease),
+            handleFactory.CreateUniqueHandler(OnHeartbeatGrease),
+            handleFactory.CreateUniqueHandler(OnExitGrease));
 
         Location? location = eventData.TargetObject.Location ?? eventData.TargetLocation;
         if (location == null)
@@ -77,7 +71,7 @@ public class Grease : ISpell
         _greaseAreas.Add(greaseAoE);
     }
 
-    private ScriptHandleResult OnExitGrease(CallInfo arg)
+    private static ScriptHandleResult OnExitGrease(CallInfo arg)
     {
         AreaOfEffectEvents.OnExit evtData = new();
         NwGameObject obj = evtData.Exiting;
@@ -92,7 +86,7 @@ public class Grease : ISpell
         return ScriptHandleResult.Handled;
     }
 
-    private ScriptHandleResult OnHeartbeatGrease(CallInfo arg)
+    private static ScriptHandleResult OnHeartbeatGrease(CallInfo arg)
     {
         AreaOfEffectEvents.OnHeartbeat evtData = new();
         NwGameObject obj = evtData.Effect;
@@ -103,8 +97,8 @@ public class Grease : ISpell
 
         foreach (NwCreature creature in creatures)
         {
-            Effect? fireVuln = creature.ActiveEffects.SingleOrDefault(e => e.Tag == FireVulnTag);
-            Effect? moveSpeed = creature.ActiveEffects.SingleOrDefault(e => e.Tag == GreaseMoveTag);
+            Effect? fireVuln = creature.ActiveEffects.SingleOrDefault(effect => effect.Tag == FireVulnTag);
+            Effect? moveSpeed = creature.ActiveEffects.SingleOrDefault(effect => effect.Tag == GreaseMoveTag);
 
             if (fireVuln != null)
             {
@@ -128,7 +122,7 @@ public class Grease : ISpell
         return ScriptHandleResult.Handled;
     }
 
-    private ScriptHandleResult OnEnterGrease(CallInfo arg)
+    private static ScriptHandleResult OnEnterGrease(CallInfo arg)
     {
         AreaOfEffectEvents.OnEnter evtData = new();
         NwGameObject obj = evtData.Entering;
