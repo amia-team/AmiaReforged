@@ -66,6 +66,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
 
         NwAreaOfEffect? greaseAoE = location.GetNearestObjectsByType<NwAreaOfEffect>()
             .FirstOrDefault(aoe => aoe.Spell == NwSpell.FromSpellId(NWScript.SPELL_GREASE));
+        NWScript.SetLocalInt(greaseAoE, "save", eventData.SaveDC);
 
         if (greaseAoE == null)
         {
@@ -97,15 +98,17 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
     {
         AreaOfEffectEvents.OnHeartbeat evtData = new();
         NwGameObject obj = evtData.Effect;
-        int dc = evtData.SpellSaveDC;
+        int storedSave = NWScript.GetLocalInt(obj, "save");
+        int saveDc = storedSave > 0 ? storedSave : 14;
+
         if (obj is not NwAreaOfEffect e) return ScriptHandleResult.Handled;
 
         List<NwCreature> creatures = e.GetObjectsInEffectArea<NwCreature>().ToList();
 
         foreach (NwCreature creature in creatures)
         {
-            Effect? fireVuln = creature.ActiveEffects.SingleOrDefault(effect => effect.Tag == FireVulnTag);
-            Effect? moveSpeed = creature.ActiveEffects.SingleOrDefault(effect => effect.Tag == GreaseMoveTag);
+            Effect? fireVuln = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == FireVulnTag);
+            Effect? moveSpeed = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == GreaseMoveTag);
 
             if (fireVuln != null)
             {
@@ -119,7 +122,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
                 creature.RemoveEffect(moveSpeed);
             }
 
-            if (creature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Spell) == SavingThrowResult.Failure)
+            if (creature.RollSavingThrow(SavingThrow.Reflex, saveDc, SavingThrowType.None) == SavingThrowResult.Failure)
             {
                 Effect prone = Effect.Knockdown();
                 creature.ApplyEffect(EffectDuration.Temporary, prone, TimeSpan.FromSeconds(OneRound));
