@@ -8,29 +8,32 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     private static readonly TwoDimArray? SpellPropTable = NwGameTables.GetTable("iprp_spells");
     private const int SpellFailVfx = 292;
 
-    private readonly bool _isEmptyScroll = targetItem.BaseItem.ItemType == BaseItemType.BlankScroll;
-    private readonly bool _isEmptyWand = targetItem.BaseItem.ItemType == BaseItemType.BlankWand;
-    private readonly bool _isEmptyPotion = targetItem.BaseItem.ItemType == BaseItemType.BlankPotion;
+    private const string PotionPrefix = "brewpot_";
+    private const string WandPrefix = "craftwand_";
 
-    private const string PotionAbjuration = "brewpot_abju";
-    private const string PotionConjuration = "brewpot_conj";
-    private const string PotionDivination = "brewpot_divi";
-    private const string PotionEnchantment = "brewpot_ench";
-    private const string PotionEvocation = "brewpot_evoc";
-    private const string PotionIllusion = "brewpot_illu";
-    private const string PotionNecromancy = "brewpot_necr";
-    private const string PotionTransmutation = "brewpot_tran";
     private const string PotionUniversal = "x2_it_pcpotion";
-
-    private const string WandAbjuration = "craftwand_abju";
-    private const string WandConjuration = "craftwand_conj";
-    private const string WandDivination = "craftwand_divi";
-    private const string WandEnchantment = "craftwand_ench";
-    private const string WandEvocation = "craftwand_evoc";
-    private const string WandIllusion = "craftwand_illu";
-    private const string WandNecromancy = "craftwand_nec";
-    private const string WandTransmutation = "craftwand_tran";
     private const string WandUniversal = "x2_it_pcwand";
+
+    private readonly Dictionary<SpellSchool, string> _schoolSuffixes = new()
+    {
+        { SpellSchool.Abjuration, "abju" },
+        { SpellSchool.Conjuration, "conj" },
+        { SpellSchool.Divination, "divi" },
+        { SpellSchool.Enchantment, "ench" },
+        { SpellSchool.Evocation, "evoc" },
+        { SpellSchool.Illusion, "illu" },
+        { SpellSchool.Necromancy, "necr" },
+        { SpellSchool.Transmutation, "tran" }
+    };
+
+    private enum SpellCraftResult
+    {
+        Success,
+        NoFeat,
+        NotEnoughGold,
+        WrongSpellLevel,
+        HostileSpell
+    }
 
     private readonly string _spellName = spell.MasterSpell?.Name.ToString() ?? spell.Name.ToString();
     private readonly string _spellDescription = spell.MasterSpell?.Description.ToString() ?? spell.Description.ToString();
@@ -41,7 +44,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         if (eventData.Caster is not NwCreature caster) return;
         if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
 
-        if (!(_isEmptyScroll || _isEmptyWand || _isEmptyPotion)) return;
+        if (targetItem.BaseItem.ItemType is not
+            (BaseItemType.BlankScroll or BaseItemType.BlankWand or BaseItemType.BlankPotion)) return;
 
         if (caster.Inventory.Items.All(item => item != targetItem))
         {
@@ -81,110 +85,43 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         int spellPropCl = spellPropIdAndCl.Value.SpellPropCl;
         int spellInnateLevel = spell.InnateSpellLevel;
 
-        if (_isEmptyScroll)
+
+        switch (targetItem.BaseItem.ItemType)
         {
-            if (!caster.KnowsFeat(Feat.ScribeScroll!))
-            {
-                player.SendServerMessage("Scribe scroll failed! You don't know the feat Scribe Scroll.");
-                ApplySpellCraftFailVfx(caster);
-                eventData.PreventSpellCast = true;
-                return;
-            }
+            case BaseItemType.BlankScroll:
+                SpellCraftResult scrollResult = ValidateScribeScroll(caster, spellInnateLevel, spellPropCl, out int scribeCost);
+                HandleCraftingResult(scrollResult, player, caster, spellInnateLevel, scribeCost);
 
-            int scribeCost = CalculateScribeCost(spellPropCl, spellInnateLevel);
-            if (caster.Gold < scribeCost)
-            {
-                player.SendServerMessage
-                    ($"Scribe scroll failed! You don't have enough gold. The cost to scribe this stack is {scribeCost} GP.");
-                ApplySpellCraftFailVfx(caster);
-                eventData.PreventSpellCast = true;
-                return;
-            }
+                if (scrollResult == SpellCraftResult.Success)
+                {
+                    _ = ScribeScroll(caster, spellPropId);
+                    ChargeForSpellCraft(player, caster, scribeCost);
+                }
+                break;
 
-            _ = ScribeScroll(caster, spellPropId);
-            ChargeForSpellCraft(player, caster, scribeCost);
-            ApplySpellCraftSuccessVfx(caster);
+            case BaseItemType.BlankWand:
+                SpellCraftResult wandResult = ValidateCraftWand(caster, spellInnateLevel, out int wandCost);
+                HandleCraftingResult(wandResult, player, caster, spellInnateLevel, wandCost, 4);
+
+                if (wandResult == SpellCraftResult.Success)
+                {
+                    byte casterLevel = caster.Classes[eventData.ClassIndex].Level;
+                    CraftWand(caster, spellPropId, casterLevel);
+                    ChargeForSpellCraft(player, caster, wandCost);
+                }
+                break;
+
+            case BaseItemType.BlankPotion:
+                SpellCraftResult potionResult = ValidateBrewPotion(caster, spellInnateLevel, spell.IsHostileSpell, out int potionCost);
+                HandleCraftingResult(potionResult, player, caster, spellInnateLevel, potionCost, 3);
+
+                if (potionResult == SpellCraftResult.Success)
+                {
+                    _ = BrewPotion(caster, spellPropId);
+                    ChargeForSpellCraft(player, caster, potionCost);
+                }
+                break;
         }
-
-        if (_isEmptyWand)
-        {
-            if (!caster.KnowsFeat(Feat.CraftWand!))
-            {
-                player.SendServerMessage("Craft wand failed! You don't know the feat Craft Wand.");
-                ApplySpellCraftFailVfx(caster);
-                eventData.PreventSpellCast = true;
-                return;
-            }
-
-            if (spellInnateLevel > 4)
-            {
-                player.SendServerMessage
-                    ($"Craft wand failed! Innate spell level must be 4 or lower. The innate level of this spell is {spellInnateLevel}.");
-                ApplySpellCraftFailVfx(caster);
-                eventData.PreventSpellCast = true;
-                return;
-            }
-
-            int craftWandCost = CalculateCraftWandCost(spellPropCl, spellInnateLevel);
-            if (caster.Gold < craftWandCost)
-            {
-                player.SendServerMessage
-                    ($"Craft wand failed! You don't have enough gold. The cost to craft this wand is {craftWandCost} GP.");
-                ApplySpellCraftFailVfx(caster);
-                eventData.PreventSpellCast = true;
-                return;
-            }
-
-            byte casterLevel = caster.Classes[eventData.ClassIndex].Level;
-
-            CraftWand(caster, spellPropId, casterLevel);
-            ChargeForSpellCraft(player, caster, craftWandCost);
-            ApplySpellCraftSuccessVfx(caster);
-        }
-
-        if (_isEmptyPotion)
-        {
-            if (!caster.KnowsFeat(Feat.BrewPotion!))
-            {
-                player.SendServerMessage("Brew potion failed! You don't know the feat Brew Potion.");
-                ApplySpellCraftFailVfx(caster);
-                eventData.PreventSpellCast = true;
-                return;
-            }
-
-            if (spellInnateLevel > 3)
-            {
-                player.SendServerMessage
-                    ($"Brew potion failed! Innate spell level must be 3 or lower. The innate level of this spell is {spellInnateLevel}.");
-                ApplySpellCraftFailVfx(caster);
-                eventData.PreventSpellCast = true;
-                return;
-            }
-
-            if (spell.IsHostileSpell)
-            {
-                player.SendServerMessage
-                    ("Brew potion failed! You cannot brew a potion from a hostile spell.");
-                ApplySpellCraftFailVfx(caster);
-                eventData.PreventSpellCast = true;
-                return;
-            }
-
-            int brewPotionCost = CalculateBrewPotionCost(spellPropCl, spellInnateLevel);
-            if (caster.Gold < brewPotionCost)
-            {
-                player.SendServerMessage
-                    ($"Brew potion failed! You don't have enough gold. The cost to brew this stack is {brewPotionCost} GP.");
-                ApplySpellCraftFailVfx(caster);
-                eventData.PreventSpellCast = true;
-                return;
-            }
-
-            _ = BrewPotion(caster, spellPropId);
-            ChargeForSpellCraft(player, caster, brewPotionCost);
-            ApplySpellCraftSuccessVfx(caster);
-        }
-
     }
 
     private void ChargeForSpellCraft(NwPlayer player, NwCreature caster, int spellCraftCost)
@@ -244,7 +181,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     {
         if (caster.Location == null) return;
 
-        NwItem? craftedWand = NwItem.Create(GetWandBySchool(), caster.Location);
+        NwItem? craftedWand = NwItem.Create(GetColoredItem(), caster.Location);
         if (craftedWand == null) return;
 
         if (targetItem.StackSize == 1)
@@ -266,24 +203,16 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         caster.AcquireItem(craftedWand);
     }
 
-    private string GetWandBySchool()
+    private string GetColoredItem()
     {
-        return spell.SpellSchool switch
-        {
-            SpellSchool.Abjuration => WandAbjuration,
-            SpellSchool.Conjuration => WandConjuration,
-            SpellSchool.Divination => WandDivination,
-            SpellSchool.Enchantment => WandEnchantment,
-            SpellSchool.Evocation => WandEvocation,
-            SpellSchool.Illusion => WandIllusion,
-            SpellSchool.Necromancy => WandNecromancy,
-            SpellSchool.Transmutation => WandTransmutation,
-            _ => WandUniversal
-        };
+        string prefix = targetItem.BaseItem.ItemType == BaseItemType.BlankPotion ? PotionPrefix : WandPrefix;
+        string universalItem = targetItem.BaseItem.ItemType == BaseItemType.BlankPotion ? PotionUniversal : WandUniversal;
+
+        return _schoolSuffixes.TryGetValue(spell.SpellSchool, out string? suffix) ? $"{prefix}{suffix}" : universalItem;
     }
 
-    private static int CalculateCraftWandCost(int spellPropCl, int spellInnateLevel) =>
-        spellInnateLevel == 0 ? spellPropCl * 1 * 750 : spellPropCl * spellInnateLevel * 750;
+    private static int CalculateCraftWandCost(int spellInnateLevel, int casterLevel) =>
+        (int) (25 * Math.Pow(2, spellInnateLevel) * (20 + casterLevel));
 
     private async Task BrewPotion(NwCreature caster, int spellPropId)
     {
@@ -291,7 +220,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 
         if (caster.Location == null) return;
 
-        NwItem? brewedPotion = NwItem.Create(GetPotionBySchool(), caster.Location, stackSize: stackSize);
+        NwItem? brewedPotion = NwItem.Create(GetColoredItem(), caster.Location, stackSize: stackSize);
         if (brewedPotion == null) return;
 
         targetItem.Destroy();
@@ -312,26 +241,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         caster.AcquireItem(brewedPotion);
     }
 
-    private string GetPotionBySchool()
-    {
-        return spell.SpellSchool switch
-        {
-            SpellSchool.Abjuration => PotionAbjuration,
-            SpellSchool.Conjuration => PotionConjuration,
-            SpellSchool.Divination => PotionDivination,
-            SpellSchool.Enchantment => PotionEnchantment,
-            SpellSchool.Evocation => PotionEvocation,
-            SpellSchool.Illusion => PotionIllusion,
-            SpellSchool.Necromancy => PotionNecromancy,
-            SpellSchool.Transmutation => PotionTransmutation,
-            _ => PotionUniversal
-        };
-    }
-
-    private int CalculateBrewPotionCost(int spellPropCl, int spellInnateLevel) =>
-        (int)(spellInnateLevel == 0
-            ? spellPropCl * 1 * 12.5 * targetItem.StackSize
-            : spellPropCl * spellInnateLevel * 12.5 * targetItem.StackSize);
+    private int CalculateBrewPotionCost(int spellInnateLevel) =>
+        (int)(25 * Math.Pow(2, spellInnateLevel) * targetItem.StackSize);
 
     private static void ApplySpellCraftFailVfx(NwCreature caster)
     {
@@ -373,5 +284,59 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
             spellPropIdAndClList.MaxBy(entry => entry.SpellPropCl);
 
         return spellPropIdAndCl;
+    }
+
+    private SpellCraftResult ValidateScribeScroll(NwCreature caster, int spellLevel, int spellPropCl, out int cost)
+    {
+        cost = CalculateScribeCost(spellPropCl, spellLevel);
+        if (!caster.KnowsFeat(Feat.ScribeScroll!)) return SpellCraftResult.NoFeat;
+        if (caster.Gold < cost) return SpellCraftResult.NotEnoughGold;
+        return SpellCraftResult.Success;
+    }
+
+    private SpellCraftResult ValidateCraftWand(NwCreature caster, int spellLevel, out int cost)
+    {
+        cost = CalculateCraftWandCost(spellLevel, caster.Classes[eventData.ClassIndex].Level);
+        if (!caster.KnowsFeat(Feat.CraftWand!)) return SpellCraftResult.NoFeat;
+        if (spellLevel > 4) return SpellCraftResult.WrongSpellLevel;
+        if (caster.Gold < cost) return SpellCraftResult.NotEnoughGold;
+        return SpellCraftResult.Success;
+    }
+
+    private SpellCraftResult ValidateBrewPotion(NwCreature caster, int spellLevel, bool isHostile, out int cost)
+    {
+        cost = CalculateBrewPotionCost(spellLevel);
+        if (!caster.KnowsFeat(Feat.BrewPotion!)) return SpellCraftResult.NoFeat;
+        if (spellLevel > 3) return SpellCraftResult.WrongSpellLevel;
+        if (isHostile) return SpellCraftResult.HostileSpell;
+        if (caster.Gold < cost) return SpellCraftResult.NotEnoughGold;
+        return SpellCraftResult.Success;
+    }
+
+    private void HandleCraftingResult(SpellCraftResult result, NwPlayer player, NwCreature caster, int innateSpellLevel,
+        int cost, int? maxSpellLevel = null)
+    {
+        switch (result)
+        {
+            case SpellCraftResult.NoFeat:
+                player.SendServerMessage("Crafting failed! You don't know the required feat.");
+                break;
+            case SpellCraftResult.NotEnoughGold:
+                player.SendServerMessage($"Crafting failed! You don't have enough gold. The cost is {cost} GP.");
+                break;
+            case SpellCraftResult.WrongSpellLevel:
+                player.SendServerMessage($"Crafting failed! Innate spell level must be {maxSpellLevel} or lower. " +
+                                         $"The innate level is {innateSpellLevel}.");
+                break;
+            case SpellCraftResult.HostileSpell:
+                player.SendServerMessage("Crafting failed! You cannot craft an item from a hostile spell.");
+                break;
+            case SpellCraftResult.Success:
+                ApplySpellCraftSuccessVfx(caster);
+                return;
+        }
+
+        ApplySpellCraftFailVfx(caster);
+        eventData.PreventSpellCast = true;
     }
 }

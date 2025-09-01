@@ -5,7 +5,7 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 public class HarvestModifierService : IHarvestModifierService
 {
     private readonly IIndustryRepository _industryRepository;
-    private Dictionary<string, List<KnowledgeHarvestEffect>> _knowledgeModifiers = new();
+    private readonly Dictionary<string, List<KnowledgeHarvestEffect>> _knowledgeModifiers = new();
 
     public HarvestModifierService(IIndustryRepository industryRepository)
     {

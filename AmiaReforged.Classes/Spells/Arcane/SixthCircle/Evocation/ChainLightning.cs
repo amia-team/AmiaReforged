@@ -44,7 +44,7 @@ public class ChainLightning : ISpell
 
             if (hostileCreature.IsDead) continue;
 
-            _ = ShootArc(caster, hostileCreature, damageDice, spellDc, metaMagic, spellKey);
+            _ = ShootArc(caster, hostileCreature, damageDice, spellDc, metaMagic, spellKey, eventData.Spell);
 
             arcs--;
             _spellHitsRemaining[spellKey]--;
@@ -52,8 +52,10 @@ public class ChainLightning : ISpell
     }
 
     private async Task ShootArc(NwCreature caster, NwCreature hostileCreature, int damageDice, int spellDc,
-        MetaMagic metaMagic, uint spellKey)
+        MetaMagic metaMagic, uint spellKey, NwSpell spell)
     {
+        CreatureEvents.OnSpellCastAt.Signal(caster, hostileCreature, spell);
+
         hostileCreature.ApplyEffect(EffectDuration.Temporary,
             Effect.Beam(VfxType.BeamLightning, caster, BodyNode.Hand),
             TimeSpan.FromSeconds(0.5));
@@ -79,6 +81,8 @@ public class ChainLightning : ISpell
 
             if (!_spellHitsRemaining.TryGetValue(spellKey, out int value) || value <= 0) break;
 
+            CreatureEvents.OnSpellCastAt.Signal(caster, secondaryCreature, spell);
+
             if (!hostileCreature.IsDead)
             {
                 secondaryCreature.ApplyEffect(EffectDuration.Temporary,
@@ -93,11 +97,11 @@ public class ChainLightning : ISpell
         }
     }
 
-    private void RollDamage(NwCreature targetCreature, NwCreature caster, int damageDice, int spellDc,
+    private static void RollDamage(NwCreature targetCreature, NwCreature caster, int damageDice, int spellDc,
         MetaMagic metaMagic)
     {
         int damage = SpellUtils.MaximizeSpell(metaMagic, 6, damageDice);
-        SpellUtils.EmpowerSpell(metaMagic, damage);
+        damage = SpellUtils.EmpowerSpell(metaMagic, damage);
 
         SavingThrowResult savingThrow =
             targetCreature.RollSavingThrow(SavingThrow.Reflex, spellDc, SavingThrowType.Electricity, caster);
