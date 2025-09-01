@@ -77,7 +77,9 @@ public class DarknessSpell : ISpell
         }
 
         float dur = NWScript.RoundsToSeconds(caster.CasterLevel);
-        location.ApplyEffect(EffectDuration.Temporary, darkness, TimeSpan.FromSeconds(dur));
+        float extended = eventData.MetaMagicFeat == MetaMagic.Extend ? dur * 2 : dur;
+
+        location.ApplyEffect(EffectDuration.Temporary, darkness, TimeSpan.FromSeconds(extended));
 
         NwAreaOfEffect? darknessAoE = location.GetNearestObjectsByType<NwAreaOfEffect>().FirstOrDefault();
 
