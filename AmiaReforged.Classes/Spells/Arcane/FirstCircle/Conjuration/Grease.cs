@@ -87,6 +87,8 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
         ApplyFireVuln(obj);
 
         if (creature.IsImmuneTo(ImmunityType.MovementSpeedDecrease)) return ScriptHandleResult.Handled;
+        Effect enterVfx = Effect.VisualEffect(VfxType.ImpSlow);
+        creature.ApplyEffect(EffectDuration.Instant, enterVfx);
 
         Effect moveSpeedPenalty = Effect.MovementSpeedDecrease(50);
         moveSpeedPenalty.Tag = GreaseMoveTag;
