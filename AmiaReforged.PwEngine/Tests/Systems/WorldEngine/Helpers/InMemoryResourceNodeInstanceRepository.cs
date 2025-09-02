@@ -1,7 +1,7 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
-namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Harvesting;
+namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 
 public class InMemoryResourceNodeInstanceRepository : IResourceNodeInstanceRepository
 {
