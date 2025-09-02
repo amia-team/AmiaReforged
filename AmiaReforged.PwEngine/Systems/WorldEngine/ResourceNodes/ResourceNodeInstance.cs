@@ -2,6 +2,7 @@ using System.Numerics;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
+using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
@@ -41,7 +42,20 @@ public class ResourceNodeInstance
             return HarvestResult.NoTool;
         }
 
-        HarvestProgress++;
+        int harvestProgressMod = 0;
+
+        foreach (KnowledgeHarvestEffect effect in character.KnowledgeEffectsForResource(this.Definition.Tag)
+                     .Where(r => r.StepModified == HarvestStep.HarvestStepRate))
+        {
+            switch (effect.Operation)
+            {
+                case EffectOperation.Additive:
+                    harvestProgressMod += (int)effect.Value;
+                    break;
+            }
+        }
+
+        HarvestProgress = 1 + HarvestProgress + harvestProgressMod;
 
         if (HarvestProgress < Definition.BaseHarvestRounds)
         {

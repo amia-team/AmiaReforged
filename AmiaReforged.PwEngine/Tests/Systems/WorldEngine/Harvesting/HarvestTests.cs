@@ -13,6 +13,9 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Harvesting;
 public class HarvestTests
 {
     private const string TestItemTag = "test_item";
+    private const string HarvestTime = "mod_time";
+    private const string HarvestQuality = "mod_quality";
+    private const string HarvestYield = "mod_yield";
     private HarvestingService _sut = null!;
     private IIndustryMembershipService _membershipService = null!;
     private ICharacterKnowledgeRepository _characterKnowledgeRepository = null!;
@@ -49,7 +52,7 @@ public class HarvestTests
             [
                 new Knowledge
                 {
-                    Tag = "mod_yield",
+                    Tag = HarvestYield,
                     Name = "yield",
                     Description = "more items",
                     Level = ProficiencyLevel.Novice,
@@ -61,7 +64,7 @@ public class HarvestTests
                 },
                 new Knowledge()
                 {
-                    Tag = "mod_quality",
+                    Tag = HarvestQuality,
                     Name = "quality",
                     Description = "improves quality",
                     Level = ProficiencyLevel.Novice,
@@ -70,7 +73,19 @@ public class HarvestTests
                         new KnowledgeHarvestEffect("test", HarvestStep.Quality, 1.0f, EffectOperation.Additive)
                     ],
                     PointCost = 0
-                }
+                },
+                new Knowledge()
+                {
+                    Tag = HarvestTime,
+                    Name = "time",
+                    Description = "reduces time to collection",
+                    Level = ProficiencyLevel.Novice,
+                    HarvestEffects =
+                    [
+                        new KnowledgeHarvestEffect("test", HarvestStep.HarvestStepRate, 1.0f, EffectOperation.Additive)
+                    ],
+                    PointCost = 0
+                },
             ],
         };
 
@@ -192,7 +207,7 @@ public class HarvestTests
 
         pc.JoinIndustry("new");
 
-        pc.Learn("mod_yield");
+        pc.Learn(HarvestYield);
 
         ResourceNodeDefinition definition = new("test",
             new HarvestContext(JobSystemItemType.ToolPick, Material.None),
@@ -234,7 +249,48 @@ public class HarvestTests
 
         pc.JoinIndustry("new");
 
-        pc.Learn("mod_quality");
+        pc.Learn(HarvestQuality);
+
+        ResourceNodeDefinition definition = new("test",
+            new HarvestContext(JobSystemItemType.ToolPick, Material.None),
+            [new HarvestOutput(TestItemTag, 1)], 1);
+
+        ResourceNodeInstance instance = new()
+        {
+            Area = "test_area",
+            Definition = definition,
+            Id = 1,
+            X = 1.0f,
+            Y = 1.0f,
+            Z = 1.0f,
+            Rotation = 1.0f,
+            Quality = IPQuality.Average,
+            Uses = 10
+        };
+
+        _sut.RegisterNode(instance);
+
+        HarvestResult result = instance.Harvest(pc);
+
+        Assert.That(result, Is.EqualTo(HarvestResult.Finished));
+
+        ItemSnapshot? snapshot = pc.GetInventory().FirstOrDefault(i => i.Tag == TestItemTag);
+        Assert.That(snapshot, Is.Not.Null);
+        Assert.That(snapshot!.Quality, Is.EqualTo(IPQuality.AboveAverage));
+    }
+
+    [Test]
+    public void Knowledge_Can_Modify_Time_To_Harvest()
+    {
+        ICharacter pc = CreateTestCharacter();
+        _characters.Add(pc);
+
+        pc.GetEquipment().Add(EquipmentSlots.RightHand,
+            new ItemSnapshot("fake_tool", IPQuality.Average, [Material.Iron], JobSystemItemType.ToolPick, 0, null));
+
+        pc.JoinIndustry("new");
+
+        pc.Learn(HarvestTime);
 
         ResourceNodeDefinition definition = new("test",
             new HarvestContext(JobSystemItemType.ToolPick, Material.None),
@@ -257,15 +313,7 @@ public class HarvestTests
 
         HarvestResult result = instance.Harvest(pc);
 
-        Assert.That(result, Is.EqualTo(HarvestResult.InProgress));
-
-        result = instance.Harvest(pc);
-
         Assert.That(result, Is.EqualTo(HarvestResult.Finished));
-
-        ItemSnapshot? snapshot = pc.GetInventory().FirstOrDefault(i => i.Tag == TestItemTag);
-        Assert.That(snapshot, Is.Not.Null);
-        Assert.That(snapshot!.Quality, Is.EqualTo(IPQuality.AboveAverage));
     }
 
 
