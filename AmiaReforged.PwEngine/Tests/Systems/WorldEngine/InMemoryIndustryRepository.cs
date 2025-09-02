@@ -14,7 +14,7 @@ public class InMemoryIndustryRepository : IIndustryRepository
     public List<Industry> All()
     {
         return _industries;
-    }
+        }
 
     public void Add(Industry industry)
     {

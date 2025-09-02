@@ -17,6 +17,7 @@ public class IndustryMembershipTests
     private IndustryMembershipService _sut = null!;
     private readonly Guid _characterGuid = Guid.NewGuid();
     private readonly ICharacterRepository _characterRepository = InMemoryCharacterRepository.Create();
+    private ICharacterKnowledgeRepository _characterKnowledgeRepository = null!;
 
     [SetUp]
     public void SetUp()
@@ -73,12 +74,11 @@ public class IndustryMembershipTests
         IIndustryRepository testIndustryRepo = InMemoryIndustryRepository.Create();
         testIndustryRepo.Add(testIndustry);
 
-        TestCharacter c = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], _characterGuid, inventory: [], 999);
-        _characterRepository.Add(c);
-
-        ICharacterKnowledgeRepository characterKnowledgeRepository = InMemoryCharacterKnowledgeRepository.Create();
+        _characterKnowledgeRepository = InMemoryCharacterKnowledgeRepository.Create();
         _sut = new IndustryMembershipService(new InMemoryIndustryMembershipRepository(), testIndustryRepo, _characterRepository,
-            characterKnowledgeRepository);
+            _characterKnowledgeRepository);
+        TestCharacter c = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], _characterGuid, _characterKnowledgeRepository, _sut, inventory: [], 999);
+        _characterRepository.Add(c);
     }
 
     [Test]
@@ -159,7 +159,7 @@ public class IndustryMembershipTests
     [Test]
     public void Should_Not_Learn_Knowledge_Without_Enough_Points()
     {
-        TestCharacter character = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], Guid.NewGuid(), []);
+        TestCharacter character = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], Guid.NewGuid(), _characterKnowledgeRepository, _sut, []);
 
         _characterRepository.Add(character);
 
@@ -172,10 +172,9 @@ public class IndustryMembershipTests
             CharacterId = character.GetId()
         };
 
-
         _sut.AddMembership(membership);
 
-        LearningResult result = _sut.LearnKnowledge(membership, NoviceKnowledge);
+        LearningResult result = _sut.LearnKnowledge(character.GetId(), NoviceKnowledge);
 
         _characterRepository.Delete(character);
 
@@ -196,7 +195,7 @@ public class IndustryMembershipTests
 
         _sut.AddMembership(membership);
 
-        LearningResult result = _sut.LearnKnowledge(membership, ApprenticeKnowledge);
+        LearningResult result = _sut.LearnKnowledge(_characterGuid, ApprenticeKnowledge);
 
         Assert.That(result, Is.EqualTo(LearningResult.InsufficientRank));
     }

@@ -37,10 +37,11 @@ public class Knowledge
 
 
 public record KnowledgeHarvestEffect(
-    string[] NodeTags,
-    HarvestStep[] OutputModified,
+    string NodeTag,
+    HarvestStep StepModified,
     float Value,
     EffectOperation Operation);
+
 
 public enum HarvestStep
 {
@@ -52,5 +53,5 @@ public enum HarvestStep
 public enum EffectOperation
 {
     Additive,
-    Multiplicative
+    PercentMult
 }

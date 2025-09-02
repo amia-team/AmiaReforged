@@ -2,7 +2,7 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 
 public enum ProficiencyLevel
 {
-    None = -1,
+    Layman = -1,
     Novice = 0,
     Apprentice = 1,
     Journeyman = 2,

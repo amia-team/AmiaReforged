@@ -30,9 +30,56 @@ public class IndustryMembershipService(
         membershipRepository.Add(membership);
     }
 
+    public LearningResult LearnKnowledge(Guid characterId, string knowledgeTag)
+    {
+        Industry? industry = null;
+        Knowledge? knowledge = null;
+
+        foreach (Industry i in industryRepository.All())
+        {
+            knowledge = i.Knowledge.FirstOrDefault(k => k.Tag == knowledgeTag);
+            if (knowledge != null)
+            {
+                industry = i;
+                break;
+            }
+        }
+
+        if (industry == null || knowledge == null)
+        {
+            Log.Error($"Knowledge {knowledgeTag} does not exist in any industry");
+            return LearningResult.DoesNotExist;
+        }
+
+        IEnumerable<IndustryMembership> memberships = membershipRepository.All(characterId).Where(m => m.IndustryTag == industry.Tag);
+
+        foreach (IndustryMembership membership in memberships)
+        {
+            ICharacter? character = characterRepository.GetById(membership.CharacterId);
+            if (character == null) continue;
+
+            LearningResult result = CanLearnKnowledge(character, membership, knowledge);
+            if (result != LearningResult.CanLearn) return result;
+            character.SubtractKnowledgePoints(knowledge.PointCost);
+
+            CharacterKnowledge ck = new()
+            {
+                Id = Guid.NewGuid(),
+                IndustryTag = membership.IndustryTag,
+                Definition = knowledge,
+                CharacterId = membership.CharacterId,
+            };
+
+            characterKnowledgeRepository.Add(ck);
+
+            return LearningResult.Success;
+        }
+
+        return LearningResult.InsufficientRank;
+    }
     public List<IndustryMembership> GetMemberships(Guid characterGuid)
     {
-        return membershipRepository.Get(characterGuid);
+        return membershipRepository.All(characterGuid);
     }
 
     public RankUpResult RankUp(IndustryMembership membership)
@@ -85,7 +132,7 @@ public class IndustryMembershipService(
             return learningCheck;
         }
 
-        character.DeductPoints(k.PointCost);
+        character.SubtractKnowledgePoints(k.PointCost);
 
         CharacterKnowledge ck = new()
         {
@@ -139,4 +186,5 @@ public interface ICharacterKnowledgeRepository
     List<CharacterKnowledge> GetKnowledgeForIndustry(string industryTag, Guid characterId);
     void Add(CharacterKnowledge ck);
     bool AlreadyKnows(Guid membershipCharacterId, Knowledge tag);
+    List<Knowledge> GetAllKnowledge(Guid getId);
 }
