@@ -17,7 +17,7 @@ public class ResourceNodeInstance
 
     public required ResourceNodeDefinition Definition { get; set; }
     public int Uses { get; set; }
-    public QualityLevel Quality { get; set; }
+    public IPQuality Quality { get; set; }
     public float X { get; set; }
     public float Y { get; set; }
     public float Z { get; set; }

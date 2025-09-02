@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
+using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
 using NUnit.Framework;
@@ -12,6 +13,11 @@ public class HarvestTests
 {
     private const string TestItemTag = "test_item";
     private HarvestingService _sut = null!;
+    private IIndustryMembershipService _membershipService = null!;
+    private ICharacterKnowledgeRepository _characterKnowledgeRepository = null!;
+    private IIndustryRepository _industries = null!;
+    private IIndustryMembershipRepository _memberships = null!;
+    private readonly InMemoryCharacterRepository _characters = new();
 
     [SetUp]
     public void OneTimeSetUp()
@@ -21,13 +27,61 @@ public class HarvestTests
             JobSystemItemType.None, 0);
         itemDefinitionRepository.AddItemDefinition(item);
         _sut = new HarvestingService(CreateTestRepository(), itemDefinitionRepository);
+
+        // IMPORTANT: Initialize the knowledge repository BEFORE creating the membership service
+        _characterKnowledgeRepository = InMemoryCharacterKnowledgeRepository.Create();
+
+        _industries = InMemoryIndustryRepository.Create();
+        _memberships = InMemoryIndustryMembershipRepository.Create();
+
+        _membershipService = new IndustryMembershipService(
+            _memberships,
+            _industries,
+            _characters,
+            _characterKnowledgeRepository);
+
+        Industry i = new Industry
+        {
+            Tag = "new",
+            Name = "industry",
+            Knowledge =
+            [
+                new Knowledge
+                {
+                    Tag = "mod_yield",
+                    Name = "yield",
+                    Description = "more items",
+                    Level = ProficiencyLevel.Novice,
+                    HarvestEffects =
+                    [
+                        new KnowledgeHarvestEffect("test", HarvestStep.ItemYield, 1.0f, EffectOperation.Additive)
+                    ],
+                    PointCost = 0
+                },
+                new Knowledge()
+                {
+                    Tag = "mod_quality",
+                    Name = "quality",
+                    Description = "improves quality",
+                    Level = ProficiencyLevel.Novice,
+                    HarvestEffects =
+                    [
+                        new KnowledgeHarvestEffect("test", HarvestStep.Quality, 1.0f, EffectOperation.Additive)
+                    ],
+                    PointCost = 0
+                }
+            ],
+        };
+
+        _industries.Add(i);
     }
+
 
     [Test]
     public void Should_Harvest_Resource_Node()
     {
         ICharacter pc = CreateTestCharacter();
-
+        _characters.Add(pc);
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
             new ItemSnapshot("fake_tool", IPQuality.Average, [Material.Iron], JobSystemItemType.ToolPick, 0, null));
 
@@ -44,7 +98,7 @@ public class HarvestTests
             Y = 1.0f,
             Z = 1.0f,
             Rotation = 1.0f,
-            Quality = QualityLevel.BelowAverage,
+            Quality = IPQuality.BelowAverage,
             Uses = 10
         };
 
@@ -59,6 +113,7 @@ public class HarvestTests
     public void Fails_Harvest_Without_Correct_Tool()
     {
         ICharacter pc = CreateTestCharacter();
+        _characters.Add(pc);
 
         // Equip a tool that does not match the node's required tool type
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
@@ -78,7 +133,7 @@ public class HarvestTests
             Y = 1.0f,
             Z = 1.0f,
             Rotation = 1.0f,
-            Quality = QualityLevel.BelowAverage,
+            Quality = IPQuality.BelowAverage,
             Uses = 10
         };
 
@@ -93,6 +148,8 @@ public class HarvestTests
     public void Some_Nodes_Should_Take_Multiple_Attempts()
     {
         ICharacter pc = CreateTestCharacter();
+        _characters.Add(pc);
+
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
             new ItemSnapshot("fake_tool", IPQuality.Average, [Material.Iron], JobSystemItemType.ToolPick, 0, null));
 
@@ -109,7 +166,7 @@ public class HarvestTests
             Y = 1.0f,
             Z = 1.0f,
             Rotation = 1.0f,
-            Quality = QualityLevel.BelowAverage,
+            Quality = IPQuality.BelowAverage,
             Uses = 10
         };
 
@@ -123,69 +180,109 @@ public class HarvestTests
         Assert.That(result, Is.EqualTo(HarvestResult.Finished));
     }
 
+    [Test]
+    public void Knowledge_Can_Modify_Yield()
+    {
+        ICharacter pc = CreateTestCharacter();
+        _characters.Add(pc);
+
+        pc.GetEquipment().Add(EquipmentSlots.RightHand,
+            new ItemSnapshot("fake_tool", IPQuality.Average, [Material.Iron], JobSystemItemType.ToolPick, 0, null));
+
+        pc.JoinIndustry("new");
+
+        pc.Learn("mod_yield");
+
+        ResourceNodeDefinition definition = new("test",
+            new HarvestContext(JobSystemItemType.ToolPick, Material.None),
+            [new HarvestOutput(TestItemTag, 1)], 2);
+
+        ResourceNodeInstance instance = new()
+        {
+            Area = "test_area",
+            Definition = definition,
+            Id = 1,
+            X = 1.0f,
+            Y = 1.0f,
+            Z = 1.0f,
+            Rotation = 1.0f,
+            Quality = IPQuality.BelowAverage,
+            Uses = 10
+        };
+
+        _sut.RegisterNode(instance);
+
+        HarvestResult result = instance.Harvest(pc);
+
+        Assert.That(result, Is.EqualTo(HarvestResult.InProgress));
+
+        result = instance.Harvest(pc);
+
+        Assert.That(result, Is.EqualTo(HarvestResult.Finished));
+        Assert.That(pc.GetInventory().Count(i => i.Tag == TestItemTag), Is.EqualTo(2));
+    }
+
+    [Test]
+    public void Knowledge_Can_Modify_Quality()
+    {
+        ICharacter pc = CreateTestCharacter();
+        _characters.Add(pc);
+
+        pc.GetEquipment().Add(EquipmentSlots.RightHand,
+            new ItemSnapshot("fake_tool", IPQuality.Average, [Material.Iron], JobSystemItemType.ToolPick, 0, null));
+
+        pc.JoinIndustry("new");
+
+        pc.Learn("mod_quality");
+
+        ResourceNodeDefinition definition = new("test",
+            new HarvestContext(JobSystemItemType.ToolPick, Material.None),
+            [new HarvestOutput(TestItemTag, 1)], 2);
+
+        ResourceNodeInstance instance = new()
+        {
+            Area = "test_area",
+            Definition = definition,
+            Id = 1,
+            X = 1.0f,
+            Y = 1.0f,
+            Z = 1.0f,
+            Rotation = 1.0f,
+            Quality = IPQuality.Average,
+            Uses = 10
+        };
+
+        _sut.RegisterNode(instance);
+
+        HarvestResult result = instance.Harvest(pc);
+
+        Assert.That(result, Is.EqualTo(HarvestResult.InProgress));
+
+        result = instance.Harvest(pc);
+
+        Assert.That(result, Is.EqualTo(HarvestResult.Finished));
+
+        ItemSnapshot? snapshot = pc.GetInventory().FirstOrDefault(i => i.Tag == TestItemTag);
+        Assert.That(snapshot, Is.Not.Null);
+        Assert.That(snapshot!.Quality, Is.EqualTo(IPQuality.AboveAverage));
+    }
+
 
     private ICharacter CreateTestCharacter(Dictionary<EquipmentSlots, ItemSnapshot>? injectedEquipment = null,
         List<SkillData>? skills = null, List<ItemSnapshot>? inventory = null)
     {
         return new TestCharacter(injectedEquipment ?? new Dictionary<EquipmentSlots, ItemSnapshot>(), skills ?? [],
-            Guid.NewGuid(),
+            Guid.NewGuid(), _characterKnowledgeRepository, _membershipService,
             inventory: inventory);
     }
 
     private IResourceNodeInstanceRepository CreateTestRepository()
     {
-        return new TestResourceNodeInstanceRepository();
+        return new InMemoryResourceNodeInstanceRepository();
     }
 
     private IItemDefinitionRepository CreateItemDefinitionRepository()
     {
         return new InMemoryItemDefinitionRepository();
-    }
-}
-
-internal class InMemoryItemDefinitionRepository : IItemDefinitionRepository
-{
-    private readonly Dictionary<string, ItemDefinition> _itemDefinitions = new();
-
-    public void AddItemDefinition(ItemDefinition definition)
-    {
-        _itemDefinitions.TryAdd(definition.ItemTag, definition);
-    }
-
-    public ItemDefinition? GetByTag(string harvestOutputItemDefinitionTag)
-    {
-        return _itemDefinitions.GetValueOrDefault(harvestOutputItemDefinitionTag);
-    }
-}
-
-internal class TestResourceNodeInstanceRepository : IResourceNodeInstanceRepository
-{
-    private readonly List<ResourceNodeInstance> _resourceNodeInstances = [];
-
-
-    public void AddNodeInstance(ResourceNodeInstance instance)
-    {
-        _resourceNodeInstances.Add(instance);
-    }
-
-    public void RemoveNodeInstance(ResourceNodeInstance instance)
-    {
-        _resourceNodeInstances.Remove(instance);
-    }
-
-    public void Update(ResourceNodeInstance dataNodeInstance)
-    {
-        _resourceNodeInstances.Remove(dataNodeInstance);
-        _resourceNodeInstances.Add(dataNodeInstance);
-    }
-
-    public List<ResourceNodeInstance> GetInstances()
-    {
-        return _resourceNodeInstances;
-    }
-
-    public List<ResourceNodeInstance> GetInstancesByArea(string resRef)
-    {
-        return _resourceNodeInstances.Where(r => r.Area == resRef).ToList();
     }
 }

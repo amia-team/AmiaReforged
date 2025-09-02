@@ -10,6 +10,7 @@ public interface IIndustryMembershipService
 
     LearningResult LearnKnowledge(IndustryMembership membership, string tag);
 
+    LearningResult LearnKnowledge(Guid characterId, string knowledgeTag);
     LearningResult CanLearnKnowledge(ICharacter character, IndustryMembership membership, Knowledge knowledge);
 }
 

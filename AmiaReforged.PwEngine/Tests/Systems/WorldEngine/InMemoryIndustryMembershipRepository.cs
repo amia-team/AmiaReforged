@@ -17,7 +17,7 @@ public class InMemoryIndustryMembershipRepository : IIndustryMembershipRepositor
         _memberships.Add(membership);
     }
 
-    public List<IndustryMembership> Get(Guid characterGuid)
+    public List<IndustryMembership> All(Guid characterGuid)
     {
         return _memberships.Where(m => m.CharacterId == characterGuid).ToList();
     }

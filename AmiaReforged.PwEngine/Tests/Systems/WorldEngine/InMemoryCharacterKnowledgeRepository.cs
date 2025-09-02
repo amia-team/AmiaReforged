@@ -12,6 +12,11 @@ public class InMemoryCharacterKnowledgeRepository : ICharacterKnowledgeRepositor
         return _characterKnowledge.Where(ck => ck.CharacterId == characterId && ck.IndustryTag == industryTag).ToList();
     }
 
+    public List<Knowledge> GetAllKnowledge(Guid getId)
+    {
+        return _characterKnowledge.Where(ck => ck.CharacterId == getId).Select(ck => ck.Definition).ToList();
+    }
+
     public void Add(CharacterKnowledge ck)
     {
         if (_characterKnowledge.Any(c =>

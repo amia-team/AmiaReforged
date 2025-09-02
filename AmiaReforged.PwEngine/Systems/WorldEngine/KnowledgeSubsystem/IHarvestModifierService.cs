@@ -4,6 +4,6 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 
 public interface IHarvestModifierService
 {
-    List<KnowledgeHarvestEffect>? GetKnowledgeModifiersForNode(string nodeTag);
+    List<KnowledgeHarvestEffect> GetKnowledgeModifiersForNode(string nodeTag);
     void UpdateKnowledgeRegistry();
 }
