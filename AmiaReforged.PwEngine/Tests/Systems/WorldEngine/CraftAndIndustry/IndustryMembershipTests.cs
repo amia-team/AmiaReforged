@@ -5,7 +5,7 @@ using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using Anvil.API;
 using NUnit.Framework;
 
-namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.CraftAndIndustry;
 
 [TestFixture]
 public class IndustryMembershipTests
