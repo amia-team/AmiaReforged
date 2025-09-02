@@ -1,7 +1,7 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 
-namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Harvesting;
+namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 
 public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
 {

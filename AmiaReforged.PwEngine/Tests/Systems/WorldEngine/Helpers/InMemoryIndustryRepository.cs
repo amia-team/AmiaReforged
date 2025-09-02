@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 
-namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 
 public class InMemoryIndustryRepository : IIndustryRepository
 {

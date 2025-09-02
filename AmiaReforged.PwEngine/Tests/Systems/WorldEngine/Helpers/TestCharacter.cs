@@ -4,7 +4,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 
 /// <summary>
 /// For use in testing only.

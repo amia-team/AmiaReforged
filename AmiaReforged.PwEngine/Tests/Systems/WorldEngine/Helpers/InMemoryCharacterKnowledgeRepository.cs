@@ -1,7 +1,7 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 
-namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 
 public class InMemoryCharacterKnowledgeRepository : ICharacterKnowledgeRepository
 {
