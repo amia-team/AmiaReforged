@@ -243,11 +243,11 @@ public class IndustryMembershipTests
         _sut.AddMembership(membership);
 
         LearningResult result = _sut.LearnKnowledge(membership, NoviceKnowledge2);
-        Assert.That(result, Is.EqualTo(LearningResult.Success), "The character should have learned the knowledge");
+        Assert.That(result, Is.EqualTo(LearningResult.Success), "Since the character has the required rank, the character should have learned the knowledge");
 
 
         LearningResult result2 = _sut.LearnKnowledge(membership, NoviceKnowledge);
-        Assert.That(result2, Is.EqualTo(LearningResult.Success), "The character should have learned the knowledge");
+        Assert.That(result2, Is.EqualTo(LearningResult.Success), "Since the character has the required rank, the character should have learned the knowledge");
 
 
         RankUpResult success = _sut.RankUp(membership);
