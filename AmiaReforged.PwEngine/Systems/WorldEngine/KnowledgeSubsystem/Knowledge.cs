@@ -47,11 +47,12 @@ public enum HarvestStep
 {
     ItemYield,
     Quality,
-    HarvestTime
+    HarvestStepRate
 }
 
 public enum EffectOperation
 {
     Additive,
-    PercentMult
+    PercentMult,
+    Subtractive
 }
