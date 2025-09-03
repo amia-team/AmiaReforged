@@ -2,7 +2,6 @@
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using System.Linq;
 
 namespace AmiaReforged.System.Services;
 
@@ -16,7 +15,8 @@ public class FeatFixer
     private static readonly Feat[] FeatsToFix =
     {
         Feat.EpicBlindingSpeed,
-        Feat.DivineWrath
+        Feat.DivineWrath,
+        Feat.BarbarianRage
         // Add other feats as needed
     };
 
@@ -46,12 +46,13 @@ public class FeatFixer
     private static string? TryFixFeat(NwCreature playerCharacter, Feat featType)
     {
         NwFeat? feat = playerCharacter.Feats.FirstOrDefault(f => f.FeatType == featType);
-        
-        if (feat is not { UsesPerDay: 0 }) return null;
+
+        if (feat == null || playerCharacter.GetFeatRemainingUses(feat) != 0) return null;
 
         playerCharacter.RemoveFeat(feat);
         playerCharacter.AddFeat(feat);
 
         return feat.Name.ToString();
+
     }
 }
