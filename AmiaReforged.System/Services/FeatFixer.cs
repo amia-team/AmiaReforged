@@ -15,8 +15,7 @@ public class FeatFixer
     private static readonly Feat[] FeatsToFix =
     {
         Feat.EpicBlindingSpeed,
-        Feat.DivineWrath,
-        Feat.BarbarianRage
+        Feat.DivineWrath
         // Add other feats as needed
     };
 
