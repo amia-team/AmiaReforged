@@ -82,7 +82,9 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
         AreaOfEffectEvents.OnEnter evtData = new();
         NwGameObject obj = evtData.Entering;
 
+
         if (obj is not NwCreature creature) return ScriptHandleResult.Handled;
+        if (creature.IsDMAvatar) return ScriptHandleResult.Handled;
 
         ApplyFireVuln(obj);
 
@@ -109,6 +111,8 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
 
         foreach (NwCreature creature in creatures)
         {
+            if(creature.IsDMAvatar) continue;
+
             Effect? fireVuln = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == FireVulnTag);
             Effect? moveSpeed = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == GreaseMoveTag);
 
