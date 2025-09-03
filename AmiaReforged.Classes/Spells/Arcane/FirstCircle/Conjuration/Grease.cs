@@ -81,11 +81,16 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
     {
         AreaOfEffectEvents.OnEnter evtData = new();
         NwGameObject obj = evtData.Entering;
-
+        if (evtData.Effect.Creator is not NwCreature caster)
+        {
+            Log.Info("Unable to find caster for grease AoE.");
+            return ScriptHandleResult.Handled;
+        }
 
         if (obj is not NwCreature creature) return ScriptHandleResult.Handled;
         if (creature.IsDMAvatar) return ScriptHandleResult.Handled;
-
+        if (creature.IsReactionTypeFriendly(caster)) return ScriptHandleResult.Handled;
+        
         ApplyFireVuln(obj);
 
         if (creature.IsImmuneTo(ImmunityType.MovementSpeedDecrease)) return ScriptHandleResult.Handled;
@@ -106,12 +111,18 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
         int saveDc = storedSave > 0 ? storedSave : 14;
 
         if (obj is not NwAreaOfEffect e) return ScriptHandleResult.Handled;
+        if (e.Creator is not NwCreature caster)
+        {
+            Log.Info("Unable to find caster for grease AoE.");
+            return ScriptHandleResult.Handled;
+        }
 
         List<NwCreature> creatures = e.GetObjectsInEffectArea<NwCreature>().ToList();
 
         foreach (NwCreature creature in creatures)
         {
             if(creature.IsDMAvatar) continue;
+            if(creature.IsReactionTypeFriendly(caster)) continue;
 
             Effect? fireVuln = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == FireVulnTag);
             Effect? moveSpeed = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == GreaseMoveTag);
