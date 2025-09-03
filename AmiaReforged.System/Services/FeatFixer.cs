@@ -15,8 +15,7 @@ public class FeatFixer
     private static readonly Feat[] FeatsToFix =
     {
         Feat.EpicBlindingSpeed,
-        Feat.DivineWrath,
-        Feat.BarbarianRage
+        Feat.DivineWrath
         // Add other feats as needed
     };
 
@@ -33,26 +32,27 @@ public class FeatFixer
     {
         if (eventData.Player.LoginCreature is not { } playerCharacter) return;
 
-        List<string?> fixedFeatNames = FeatsToFix.Select(featType => TryFixFeat(playerCharacter, featType))
-                                       .Where(name => name != null)
-                                       .ToList();
+        bool featFixed = false;
 
-        if (fixedFeatNames.Count <= 0) return;
+        foreach (Feat feat in FeatsToFix)
+        {
+            if (TryFixFeat(playerCharacter, feat))
+                featFixed = true;
+        }
 
-        string featList = string.Join(", ", fixedFeatNames);
-        eventData.Player.BootPlayer($"The following feats need to be re-added: {featList}. Brace for reboot!");
+        if (featFixed)
+            eventData.Player.BootPlayer();
     }
 
-    private static string? TryFixFeat(NwCreature playerCharacter, Feat featType)
+    private static bool TryFixFeat(NwCreature playerCharacter, Feat featType)
     {
         NwFeat? feat = playerCharacter.Feats.FirstOrDefault(f => f.FeatType == featType);
 
-        if (feat == null || playerCharacter.GetFeatRemainingUses(feat) != 0) return null;
+        if (feat == null || playerCharacter.GetFeatRemainingUses(feat) != 0) return false;
 
         playerCharacter.RemoveFeat(feat);
         playerCharacter.AddFeat(feat);
 
-        return feat.Name.ToString();
-
+        return true;
     }
 }
