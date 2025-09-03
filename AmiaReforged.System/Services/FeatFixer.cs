@@ -50,8 +50,10 @@ public class FeatFixer
 
         if (feat == null || playerCharacter.GetFeatRemainingUses(feat) != 0) return false;
 
+        int level = playerCharacter.GetFeatGainLevel(feat);
+
         playerCharacter.RemoveFeat(feat);
-        playerCharacter.AddFeat(feat);
+        playerCharacter.AddFeat(feat, level);
 
         return true;
     }
