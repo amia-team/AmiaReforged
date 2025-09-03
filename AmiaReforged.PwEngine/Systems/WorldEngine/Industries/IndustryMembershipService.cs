@@ -51,7 +51,8 @@ public class IndustryMembershipService(
             return LearningResult.DoesNotExist;
         }
 
-        IEnumerable<IndustryMembership> memberships = membershipRepository.All(characterId).Where(m => m.IndustryTag == industry.Tag);
+        IEnumerable<IndustryMembership> memberships =
+            membershipRepository.All(characterId).Where(m => m.IndustryTag == industry.Tag);
 
         foreach (IndustryMembership membership in memberships)
         {
@@ -77,6 +78,9 @@ public class IndustryMembershipService(
 
         return LearningResult.InsufficientRank;
     }
+
+    public List<Knowledge> AllKnowledge(Guid characterId) => characterKnowledgeRepository.GetAllKnowledge(characterId);
+
     public List<IndustryMembership> GetMemberships(Guid characterGuid)
     {
         return membershipRepository.All(characterGuid);
@@ -149,7 +153,6 @@ public class IndustryMembershipService(
 
     public LearningResult CanLearnKnowledge(ICharacter character, IndustryMembership membership, Knowledge knowledge)
     {
-
         if (characterKnowledgeRepository.AlreadyKnows(membership.CharacterId, knowledge))
         {
             return LearningResult.AlreadyLearned;
