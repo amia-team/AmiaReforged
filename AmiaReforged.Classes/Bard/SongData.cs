@@ -13,47 +13,47 @@ public static class SongData
             {
                 (Perform: 100, BardLevel: 30),
                 new SongEffectValues
-                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 48, Ac = 7, Skill = 18 }
+                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 48, Ac = 7, Skill = 19 }
             },
             {
                 (Perform: 95, BardLevel: 29),
                 new SongEffectValues
-                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 46, Ac = 6, Skill = 17 }
+                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 46, Ac = 6, Skill = 18 }
             },
             {
                 (Perform: 90, BardLevel: 28),
                 new SongEffectValues
-                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 44, Ac = 6, Skill = 16 }
+                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 44, Ac = 6, Skill = 17 }
             },
             {
                 (Perform: 85, BardLevel: 27),
                 new SongEffectValues
-                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 42, Ac = 6, Skill = 15 }
+                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 42, Ac = 6, Skill = 16 }
             },
             {
                 (Perform: 80, BardLevel: 26),
                 new SongEffectValues
-                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 40, Ac = 6, Skill = 14 }
+                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 40, Ac = 6, Skill = 15 }
             },
             {
                 (Perform: 75, BardLevel: 25),
                 new SongEffectValues
-                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 38, Ac = 6, Skill = 13 }
+                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 38, Ac = 6, Skill = 14 }
             },
             {
                 (Perform: 70, BardLevel: 24),
                 new SongEffectValues
-                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 36, Ac = 5, Skill = 12 }
+                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 36, Ac = 5, Skill = 13 }
             },
             {
                 (Perform: 65, BardLevel: 23),
                 new SongEffectValues
-                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 34, Ac = 5, Skill = 11 }
+                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 34, Ac = 5, Skill = 12 }
             },
             {
                 (Perform: 60, BardLevel: 22),
                 new SongEffectValues
-                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 32, Ac = 5, Skill = 10 }
+                    { Attack = 2, Damage = 3, Will = 3, Fortitude = 2, Reflex = 2, Hp = 32, Ac = 5, Skill = 11 }
             },
             {
                 (Perform: 55, BardLevel: 21),
