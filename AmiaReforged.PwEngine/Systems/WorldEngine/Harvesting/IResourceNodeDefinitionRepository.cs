@@ -12,4 +12,5 @@ public interface IResourceNodeDefinitionRepository
     void Update(ResourceNodeDefinition definition);
     bool Delete(string tag);
     bool Exists(string tag);
+    List<ResourceNodeDefinition> All();
 }
