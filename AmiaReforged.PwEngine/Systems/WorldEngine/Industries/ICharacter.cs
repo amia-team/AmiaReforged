@@ -21,6 +21,7 @@ public interface ICharacterInventoryContext
 public interface ICharacterKnowledgeContext
 {
     int GetKnowledgePoints();
+    void AddKnowledgePoints(int points);
     void SubtractKnowledgePoints(int points);
     List<Knowledge> AllKnowledge();
     LearningResult Learn(string knowledgeTag);

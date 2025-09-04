@@ -13,24 +13,44 @@ public interface ICharacterStatService
 
 public class CharacterStatService(ICharacterStatRepository statRepository) : ICharacterStatService
 {
-    public int GetKnowledgePoints(Guid characterId) =>
-        statRepository.GetCharacterStatistics(characterId).KnowledgePoints;
+    public int GetKnowledgePoints(Guid characterId)
+    {
+        CharacterStatistics? characterStatistics = statRepository.GetCharacterStatistics(characterId);
+        return characterStatistics?.KnowledgePoints ?? 0;
+    }
 
     public void UpdateKnowledgePoints(Guid characterId, int points)
     {
-        statRepository.GetCharacterStatistics(characterId).KnowledgePoints += points;
+        CharacterStatistics? characterStatistics = statRepository.GetCharacterStatistics(characterId);
+
+        if (characterStatistics == null) return;
+
+        characterStatistics.KnowledgePoints = points;
         statRepository.SaveChanges();
     }
 
     public void UpdatePlayTime(Guid characterId, int time)
     {
-        statRepository.GetCharacterStatistics(characterId).PlayTime += time;
+        CharacterStatistics? characterStatistics = statRepository.GetCharacterStatistics(characterId);
+
+        if (characterStatistics == null) return;
+
+        characterStatistics.PlayTime += time;
         statRepository.SaveChanges();
     }
 
-    public int GetTimesDied(Guid characterId) => statRepository.GetCharacterStatistics(characterId).TimesDied;
+    public int GetTimesDied(Guid characterId)
+    {
+        CharacterStatistics? characterStatistics = statRepository.GetCharacterStatistics(characterId);
+        return characterStatistics?.TimesDied ?? 0;
+    }
 
-    public int GetPlayTime(Guid characterId) => statRepository.GetCharacterStatistics(characterId).PlayTime;
+    public int GetPlayTime(Guid characterId)
+    {
+        CharacterStatistics? characterStatistics = statRepository.GetCharacterStatistics(characterId);
+
+        return characterStatistics?.PlayTime ?? 0;
+    }
 }
 
 public interface IReputationRepository
@@ -40,7 +60,7 @@ public interface IReputationRepository
 
 public interface ICharacterStatRepository
 {
-    CharacterStatistics GetCharacterStatistics(Guid characterId);
+    CharacterStatistics? GetCharacterStatistics(Guid characterId);
     void UpdateCharacterStatistics(CharacterStatistics statistics);
     void SaveChanges();
 }

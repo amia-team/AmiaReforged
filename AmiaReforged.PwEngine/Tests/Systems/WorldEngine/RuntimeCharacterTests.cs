@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using Anvil.API;
@@ -18,9 +19,12 @@ public class RuntimeCharacterTests
     private const string Masterknowledge = "MasterKnowledge";
     private const string Expertknowledge = "ExpertKnowledge";
     private const string Journeymanknowledge = "JourneymanKnowledge";
+    private const string Journeymanknowledge2 = "JourneymanKnowledge2";
     private const string Apprenticeknowledge = "ApprenticeKnowledge";
+    private const string TestIndustry = "test";
     private ICharacterRepository _characters = null!;
     private IndustryMembershipService _membershipService = null!;
+    private ICharacterStatService _characterStatService = null!;
 
     private readonly Guid _characterId = Guid.NewGuid();
 
@@ -60,6 +64,14 @@ public class RuntimeCharacterTests
                 },
                 new Knowledge
                 {
+                    Tag = Journeymanknowledge2,
+                    Name = "Journeyman",
+                    Description = string.Empty,
+                    Level = ProficiencyLevel.Journeyman,
+                    PointCost = 2
+                },
+                new Knowledge
+                {
                     Tag = Expertknowledge,
                     Name = "Expert",
                     Description = string.Empty,
@@ -84,15 +96,26 @@ public class RuntimeCharacterTests
 
         industryRepository.Add(i);
 
+        Industry noKnowledge = new Industry
+        {
+            Tag = TestIndustry,
+            Name = "Test",
+            Knowledge = []
+        };
+
+        industryRepository.Add(noKnowledge);
+
         _membershipService = new IndustryMembershipService(InMemoryIndustryMembershipRepository.Create(),
             industryRepository, _characters, InMemoryCharacterKnowledgeRepository.Create());
+
+        _characterStatService = new CharacterStatService(InMemoryCharacterStatRepository.Create());
     }
 
     [Test]
     public void Should_Return_Id()
     {
         RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
-            _membershipService);
+            _membershipService, _characterStatService);
 
         Assert.That(character.GetId(), Is.EqualTo(_characterId), "ID should have been injected.");
     }
@@ -113,7 +136,7 @@ public class RuntimeCharacterTests
         mockCharacterSheet.Setup(x => x.GetSkills()).Returns(expectedSkills);
 
         RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), mockCharacterSheet.Object,
-            _membershipService);
+            _membershipService, _characterStatService);
 
         List<SkillData> actualSkills = character.GetSkills();
 
@@ -125,10 +148,174 @@ public class RuntimeCharacterTests
     public void Should_Return_Knowledge()
     {
         RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
-            _membershipService);
+            _membershipService, _characterStatService);
 
         _characters.Add(character);
 
+        character.JoinIndustry(IndustryWithKnowledge);
 
+        LearningResult result = character.Learn(Noviceknowledge);
+
+        Assert.That(result, Is.EqualTo(LearningResult.Success));
+
+        List<Knowledge> knowledge = character.AllKnowledge();
+
+        Assert.That(knowledge, Is.Not.Empty);
+        Assert.That(knowledge.Any(k => k.Tag == Noviceknowledge), Is.True);
+    }
+
+    [Test]
+    public void Should_Rank_Up_In_Industry()
+    {
+        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+            _membershipService, _characterStatService);
+
+        _characters.Add(character);
+
+        character.JoinIndustry(IndustryWithKnowledge);
+
+        LearningResult result = character.Learn(Noviceknowledge);
+
+        Assert.That(result, Is.EqualTo(LearningResult.Success));
+
+        RankUpResult rankUpResult = character.RankUp(IndustryWithKnowledge);
+
+        Assert.That(rankUpResult, Is.EqualTo(RankUpResult.Success));
+    }
+
+    [Test]
+    public void Should_Get_All_Memberships()
+    {
+        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+            _membershipService, _characterStatService);
+
+        _characters.Add(character);
+
+        character.JoinIndustry(IndustryWithKnowledge);
+        character.JoinIndustry(TestIndustry);
+
+        List<IndustryMembership> memberships = character.AllIndustryMemberships();
+
+        Assert.That(memberships, Is.Not.Empty);
+        Assert.That(memberships.Count, Is.EqualTo(2));
+        Assert.That(memberships.Any(m => m.IndustryTag == IndustryWithKnowledge), Is.True);
+        Assert.That(memberships.Any(m => m.IndustryTag == TestIndustry), Is.True);
+    }
+
+    /// <summary>
+    /// Another case where we want to make sure that all that is provided is a contract to get the character's inventory contents in a NWN agnostic context
+    /// </summary>
+    [Test]
+    public void Should_Get_Inventory()
+    {
+        Mock<IInventoryPort> mockInventory = new Mock<IInventoryPort>();
+        List<ItemSnapshot> expectedInventory =
+        [
+            new ItemSnapshot("test_item", IPQuality.Average, [], JobSystemItemType.None, 1, null)
+        ];
+        mockInventory.Setup(x => x.GetInventory()).Returns(expectedInventory);
+
+        RuntimeCharacter character = new(_characterId, mockInventory.Object, Mock.Of<ICharacterSheetPort>(),
+            _membershipService, _characterStatService);
+
+        _characters.Add(character);
+
+        List<ItemSnapshot> inventory = character.GetInventory();
+
+        Assert.That(inventory, Is.EqualTo(expectedInventory));
+    }
+
+    /// <summary>
+    ///  Another case where we want to make sure that all that is provided is a contract to get the character's equipped items in a NWN agnostic context
+    /// </summary>
+    [Test]
+    public void Should_Get_Equipment()
+    {
+        Mock<IInventoryPort> mockInventory = new Mock<IInventoryPort>();
+        Dictionary<EquipmentSlots, ItemSnapshot> expectedEquipment = new()
+        {
+            { EquipmentSlots.Boots, new ItemSnapshot("test_boots", IPQuality.Average, [], JobSystemItemType.None, 1, null) }
+        };
+        mockInventory.Setup(x => x.GetEquipment()).Returns(expectedEquipment);
+
+        RuntimeCharacter character = new(_characterId, mockInventory.Object, Mock.Of<ICharacterSheetPort>(),
+            _membershipService, _characterStatService);
+
+        _characters.Add(character);
+
+        Dictionary<EquipmentSlots, ItemSnapshot> equipment = character.GetEquipment();
+
+        Assert.That(equipment, Is.EqualTo(expectedEquipment));
+    }
+
+    [Test]
+    public void Should_Get_Knowledge_Points()
+    {
+        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+            _membershipService, _characterStatService);
+
+        _characters.Add(character);
+
+        character.AddKnowledgePoints(2);
+
+        int knowledge = character.GetKnowledgePoints();
+
+        Assert.That(knowledge, Is.EqualTo(2));
+
+        character.AddKnowledgePoints(2);
+
+        knowledge = character.GetKnowledgePoints();
+        Assert.That(knowledge, Is.EqualTo(4));
+    }
+
+    [Test]
+    public void Should_Deduct_Knowledge_Points_After_Learning()
+    {
+        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+            _membershipService, _characterStatService);
+
+        _characters.Add(character);
+
+        character.JoinIndustry(IndustryWithKnowledge);
+
+        character.Learn(Noviceknowledge);
+        character.RankUp(IndustryWithKnowledge);
+
+        character.Learn(Apprenticeknowledge);
+        character.RankUp(IndustryWithKnowledge);
+
+        character.AddKnowledgePoints(2);
+
+        character.Learn(Journeymanknowledge2);
+
+        int knowledgePoints = character.GetKnowledgePoints();
+
+        Assert.That(knowledgePoints, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void Should_See_If_Character_Can_Not_Learn_Knowledge()
+    {
+        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+            _membershipService, _characterStatService);
+
+        _characters.Add(character);
+
+        bool result = character.CanLearn(Noviceknowledge);
+
+        Assert.That(result, Is.False, "Should be false because the Character is NOT part of the proper Industry");
+    }
+
+    [Test]
+    public void Should_See_If_Character_Can_Learn_Knowledge()
+    {
+        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+            _membershipService, _characterStatService);
+
+        _characters.Add(character);
+        character.JoinIndustry(IndustryWithKnowledge);
+        bool result = character.CanLearn(Noviceknowledge);
+
+        Assert.That(result, Is.True, "Should be true because the Character is part of the proper Industry");
     }
 }

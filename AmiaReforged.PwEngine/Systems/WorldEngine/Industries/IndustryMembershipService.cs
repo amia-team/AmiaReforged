@@ -115,6 +115,13 @@ public class IndustryMembershipService(
         return RankUpResult.Success;
     }
 
+    public RankUpResult RankUp(Guid characterId, string industryTag)
+    {
+        IndustryMembership? membership = GetMemberships(characterId).FirstOrDefault(m => m.IndustryTag == industryTag);
+
+        return membership == null ? RankUpResult.IndustryNotFound : RankUp(membership);
+    }
+
     public LearningResult LearnKnowledge(IndustryMembership membership, string tag)
     {
         ICharacter? character = characterRepository.GetById(membership.CharacterId);
@@ -149,6 +156,42 @@ public class IndustryMembershipService(
         characterKnowledgeRepository.Add(ck);
 
         return LearningResult.Success;
+    }
+
+    public bool CanLearnKnowledge(Guid characterId, string knowledgeTag)
+    {
+        Industry? industry = null;
+        Knowledge? knowledge = null;
+
+        foreach (Industry i in industryRepository.All())
+        {
+            knowledge = i.Knowledge.FirstOrDefault(k => k.Tag == knowledgeTag);
+            if (knowledge != null)
+            {
+                industry = i;
+                break;
+            }
+        }
+
+        if (industry == null || knowledge == null)
+        {
+            Log.Error($"Knowledge {knowledgeTag} does not exist in any industry");
+            return false;
+        }
+
+        IEnumerable<IndustryMembership> memberships =
+            membershipRepository.All(characterId).Where(m => m.IndustryTag == industry.Tag);
+
+        foreach (IndustryMembership membership in memberships)
+        {
+            ICharacter? character = characterRepository.GetById(membership.CharacterId);
+            if (character == null) continue;
+
+            LearningResult result = CanLearnKnowledge(character, membership, knowledge);
+            if (result == LearningResult.CanLearn) return true;
+        }
+
+        return false;
     }
 
     public LearningResult CanLearnKnowledge(ICharacter character, IndustryMembership membership, Knowledge knowledge)
