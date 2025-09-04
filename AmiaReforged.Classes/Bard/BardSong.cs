@@ -22,7 +22,6 @@ public class BardSong : ISpell
 
         Effect bardSong = Effect.LinkEffects
         (
-            Effect.VisualEffect(VfxType.DurBardSong),
             Effect.VisualEffect(VfxType.DurCessatePositive),
             Effect.AttackIncrease(songValues.Attack),
             Effect.DamageIncrease(songValues.Damage, DamageType.Bludgeoning),
