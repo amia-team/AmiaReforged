@@ -12,6 +12,7 @@ public interface IIndustryMembershipService
 
     LearningResult LearnKnowledge(Guid characterId, string knowledgeTag);
     LearningResult CanLearnKnowledge(ICharacter character, IndustryMembership membership, Knowledge knowledge);
+    List<Knowledge> AllKnowledge(Guid characterId);
 }
 
 public enum RankUpResult
