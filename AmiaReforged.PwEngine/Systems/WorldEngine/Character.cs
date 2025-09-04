@@ -19,22 +19,22 @@ public class RuntimeCharacter(
 
     public int GetKnowledgePoints()
     {
-        throw new NotImplementedException();
+        return 0;
     }
 
     public void SubtractKnowledgePoints(int points)
     {
-        throw new NotImplementedException();
+        // TODO: Subtract knowledge...
     }
 
     public List<Knowledge> AllKnowledge()
     {
-        throw new NotImplementedException();
+        return membershipService.AllKnowledge(characterId);
     }
 
     public LearningResult Learn(string knowledgeTag)
     {
-        throw new NotImplementedException();
+        return membershipService.LearnKnowledge(characterId, knowledgeTag);
     }
 
     public bool CanLearn(string knowledgeTag)
@@ -64,7 +64,15 @@ public class RuntimeCharacter(
 
     public void JoinIndustry(string industryTag)
     {
-        throw new NotImplementedException();
+        IndustryMembership m = new IndustryMembership
+        {
+            IndustryTag = industryTag,
+            Level = ProficiencyLevel.Novice,
+            CharacterKnowledge = [],
+            CharacterId = characterId
+        };
+
+        membershipService.AddMembership(m);
     }
 
     public List<IndustryMembership> AllIndustryMemberships()

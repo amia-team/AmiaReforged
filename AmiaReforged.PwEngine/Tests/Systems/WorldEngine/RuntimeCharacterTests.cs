@@ -129,6 +129,15 @@ public class RuntimeCharacterTests
 
         _characters.Add(character);
 
+        character.JoinIndustry(IndustryWithKnowledge);
 
+        LearningResult result = character.Learn(Noviceknowledge);
+
+        Assert.That(result, Is.EqualTo(LearningResult.Success));
+
+        List<Knowledge> knowledge = character.AllKnowledge();
+
+        Assert.That(knowledge, Is.Not.Empty);
+        Assert.That(knowledge.Any(k=> k.Tag == Noviceknowledge), Is.True);
     }
 }
