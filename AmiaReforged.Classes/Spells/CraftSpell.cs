@@ -174,8 +174,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 
     private int CalculateScribeCost(int spellPropCl, int spellInnateLevel) =>
         spellInnateLevel == 0
-            ? spellPropCl * 1 * 25 * targetItem.StackSize
-            : spellPropCl * spellInnateLevel * 25 * targetItem.StackSize;
+            ? spellPropCl * 1 * 25
+            : spellPropCl * spellInnateLevel * 25;
 
     private void CraftWand(NwCreature caster, int spellPropId, byte casterLevel)
     {
