@@ -12,15 +12,13 @@ public class CurseSong : ISpell
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "X2_S2_CurseSong";
     private static VfxType DurCurseSong => (VfxType)507;
-    private static string CurseSongTag => "curse_song";
+    private static string CurseSongTag => "curse_song_";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         if (eventData.Caster is not NwCreature bard) return;
         if (bard.Location == null) return;
 
         SongValues songValues = SongData.CalculateSongEffectValues(bard);
-
-        int songPower = SongData.CalculateSongPower(songValues);
 
         Effect curseSong = Effect.LinkEffects
         (
@@ -32,13 +30,15 @@ public class CurseSong : ISpell
             Effect.SavingThrowDecrease(SavingThrow.Fortitude, songValues.Fortitude),
             Effect.SavingThrowDecrease(SavingThrow.Reflex, songValues.Reflex),
             Effect.ACDecrease(songValues.Ac),
-            Effect.SkillDecreaseAll(songValues.Skill),
-            Effect.RunAction(data: $"{songPower}")
+            Effect.SkillDecreaseAll(songValues.Skill)
         );
 
         TimeSpan songDuration = NwTimeSpan.FromRounds(SongData.GetSongRounds(bard));
 
-        curseSong.Tag = CurseSongTag;
+        int songPower = SongData.CalculateSongPower(songValues);
+        string uniqueTag = CurseSongTag + songPower;
+
+        curseSong.Tag = uniqueTag;
         curseSong.SubType = EffectSubType.Magical;
 
         bard.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosEvil30));
@@ -51,22 +51,24 @@ public class CurseSong : ISpell
         {
             if (foe.ActiveEffects.Any(e => e.EffectType is EffectType.Silence or EffectType.Deaf)) continue;
 
-            Effect? existingCurseSong = foe.ActiveEffects.FirstOrDefault(e => e.Tag == CurseSongTag);
+            Effect? existingCurseSong = foe.ActiveEffects.FirstOrDefault(e => e.Tag != null && e.Tag.StartsWith(CurseSongTag));
 
             if (existingCurseSong != null)
             {
-                if (int.TryParse(existingCurseSong.StringParams[0], out int existingSongPower) &&
+                string songPowerString = existingCurseSong.Tag![CurseSongTag.Length..];
+
+                if (int.TryParse(songPowerString, out int existingSongPower) &&
                     existingSongPower > songPower) continue;
 
                 foe.RemoveEffect(existingCurseSong);
                 foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
-                foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadSonic));
+                foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
                 CreatureEvents.OnSpellCastAt.Signal(bard, foe, eventData.Spell);
                 continue;
             }
 
             foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
-            foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadSonic));
+            foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
             CreatureEvents.OnSpellCastAt.Signal(bard, foe, eventData.Spell);
 
             if (songValues.Hp > 0)
