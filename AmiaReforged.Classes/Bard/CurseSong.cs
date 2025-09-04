@@ -60,13 +60,13 @@ public class CurseSong : ISpell
 
                 foe.RemoveEffect(existingCurseSong);
                 foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
-                foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadSonic));
+                foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
                 CreatureEvents.OnSpellCastAt.Signal(bard, foe, eventData.Spell);
                 continue;
             }
 
             foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
-            foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadSonic));
+            foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
             CreatureEvents.OnSpellCastAt.Signal(bard, foe, eventData.Spell);
 
             if (songValues.Hp > 0)

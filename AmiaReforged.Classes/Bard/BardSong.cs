@@ -59,12 +59,12 @@ public class BardSong : ISpell
 
                 ally.RemoveEffect(existingBardSong);
                 ally.ApplyEffect(EffectDuration.Temporary, bardSong, songDuration);
-                ally.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
+                ally.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadSonic));
                 continue;
             }
 
             ally.ApplyEffect(EffectDuration.Temporary, bardSong, songDuration);
-            ally.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
+            ally.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadSonic));
 
             if (songValues.Hp > 0)
                 ally.ApplyEffect(EffectDuration.Temporary, Effect.TemporaryHitpoints(songValues.Hp), songDuration);
