@@ -7,24 +7,32 @@ using Anvil.API;
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
 /// <summary>
-/// Runtime specific implementation for a character
+/// Runtime specific implementation for a character. Acts as a facade for various character services...
 /// </summary>
 public class RuntimeCharacter(
     Guid characterId,
     IInventoryPort inventoryPort,
     ICharacterSheetPort characterSheetPort,
-    IIndustryMembershipService membershipService) : ICharacter
+    IIndustryMembershipService membershipService,
+    ICharacterStatService statService) : ICharacter
 {
     private readonly Dictionary<string, List<KnowledgeHarvestEffect>> _nodeEffectCache = new();
 
     public int GetKnowledgePoints()
     {
-        return 0;
+        return statService.GetKnowledgePoints(characterId);
     }
 
     public void SubtractKnowledgePoints(int points)
     {
-        // TODO: Subtract knowledge...
+        int newPoints = GetKnowledgePoints() - points;
+        statService.UpdateKnowledgePoints(characterId, newPoints);
+    }
+
+    public void AddKnowledgePoints(int points)
+    {
+        int newPoints = GetKnowledgePoints() + points;
+        statService.UpdateKnowledgePoints(characterId, newPoints);
     }
 
     public List<Knowledge> AllKnowledge()
@@ -39,27 +47,39 @@ public class RuntimeCharacter(
 
     public bool CanLearn(string knowledgeTag)
     {
-        throw new NotImplementedException();
+        return membershipService.CanLearnKnowledge(characterId, knowledgeTag);
     }
 
     public List<KnowledgeHarvestEffect> KnowledgeEffectsForResource(string definitionTag)
     {
-        throw new NotImplementedException();
+        if (_nodeEffectCache.TryGetValue(definitionTag, out List<KnowledgeHarvestEffect>? effects))
+        {
+            return effects;
+        }
+
+        List<KnowledgeHarvestEffect> knowledgeEffectsForResource = AllKnowledge()
+            .SelectMany(knowledge => knowledge.HarvestEffects
+                .Where(he => he.NodeTag == definitionTag))
+            .ToList();
+
+        _nodeEffectCache.TryAdd(definitionTag, knowledgeEffectsForResource);
+
+        return knowledgeEffectsForResource;
     }
 
     public void AddItem(ItemDto item)
     {
-        throw new NotImplementedException();
+        inventoryPort.AddItem(item);
     }
 
     public List<ItemSnapshot> GetInventory()
     {
-        throw new NotImplementedException();
+        return inventoryPort.GetInventory();
     }
 
     public Dictionary<EquipmentSlots, ItemSnapshot> GetEquipment()
     {
-        throw new NotImplementedException();
+        return inventoryPort.GetEquipment();
     }
 
     public void JoinIndustry(string industryTag)
@@ -77,7 +97,7 @@ public class RuntimeCharacter(
 
     public List<IndustryMembership> AllIndustryMemberships()
     {
-        throw new NotImplementedException();
+        return membershipService.GetMemberships(characterId);
     }
 
     public RankUpResult RankUp(string industryTag)

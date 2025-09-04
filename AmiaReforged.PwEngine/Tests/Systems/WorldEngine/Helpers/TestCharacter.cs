@@ -91,6 +91,11 @@ public class TestCharacter(
         membershipService.AddMembership(m);
     }
 
+    public void AddKnowledgePoints(int points)
+    {
+        _knowledgePoints += points;
+    }
+
     public List<IndustryMembership> AllIndustryMemberships()
     {
         return membershipService.GetMemberships(GetId());

@@ -14,6 +14,7 @@ public interface IIndustryMembershipService
     LearningResult CanLearnKnowledge(ICharacter character, IndustryMembership membership, Knowledge knowledge);
     List<Knowledge> AllKnowledge(Guid characterId);
     RankUpResult RankUp(Guid characterId, string industryTag);
+    bool CanLearnKnowledge(Guid characterId, string knowledgeTag);
 }
 
 public enum RankUpResult
