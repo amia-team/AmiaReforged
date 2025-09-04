@@ -138,6 +138,6 @@ public class RuntimeCharacterTests
         List<Knowledge> knowledge = character.AllKnowledge();
 
         Assert.That(knowledge, Is.Not.Empty);
-        Assert.That(knowledge.Any(k=> k.Tag == Noviceknowledge), Is.True);
+        Assert.That(knowledge.Any(k => k.Tag == Noviceknowledge), Is.True);
     }
 }
