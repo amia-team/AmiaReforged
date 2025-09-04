@@ -214,7 +214,7 @@ public static class SongData
                 hasUnmetTier = true;
 
                 if (bard.IsPlayerControlled(out NwPlayer? player))
-                    player.SendServerMessage($"Perform skill {requiredPerform} required for the best song level");
+                    player.SendServerMessage($"Perform skill {requiredPerform} required for the best song level.");
             }
 
             if (bardLevel >= requiredBardLevel && perform >= requiredPerform)
