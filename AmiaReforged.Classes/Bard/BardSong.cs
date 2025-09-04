@@ -47,6 +47,8 @@ public class BardSong : ISpell
             bard.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
             .Where(bard.IsReactionTypeFriendly);
 
+        int targetsAffected = 0;
+
         foreach (NwCreature ally in friendlyCreatures)
         {
             if (ally.ActiveEffects.Any(e => e.EffectType is EffectType.Silence or EffectType.Deaf)) continue;
@@ -63,15 +65,20 @@ public class BardSong : ISpell
                 ally.RemoveEffect(existingBardSong);
                 ally.ApplyEffect(EffectDuration.Temporary, bardSong, songDuration);
                 ally.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadSonic));
+                targetsAffected++;
                 continue;
             }
 
             ally.ApplyEffect(EffectDuration.Temporary, bardSong, songDuration);
             ally.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadSonic));
+            targetsAffected++;
 
             if (songValues.Hp > 0)
                 ally.ApplyEffect(EffectDuration.Temporary, Effect.TemporaryHitpoints(songValues.Hp), songDuration);
         }
+
+        if (targetsAffected > 0)
+            bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurBardSong), songDuration);
     }
 
     public void SetSpellResisted(bool result) { }

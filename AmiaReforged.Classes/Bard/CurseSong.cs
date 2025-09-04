@@ -22,7 +22,6 @@ public class CurseSong : ISpell
 
         Effect curseSong = Effect.LinkEffects
         (
-            Effect.VisualEffect(DurCurseSong),
             Effect.VisualEffect(VfxType.DurCessateNegative),
             Effect.AttackDecrease(songValues.Attack),
             Effect.DamageDecrease(songValues.Damage, DamageType.Slashing),
@@ -47,6 +46,10 @@ public class CurseSong : ISpell
             bard.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
             .Where(bard.IsReactionTypeHostile);
 
+        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
+
+        int targetsAffected = 0;
+
         foreach (NwCreature foe in hostileCreatures)
         {
             if (foe.ActiveEffects.Any(e => e.EffectType is EffectType.Silence or EffectType.Deaf)) continue;
@@ -64,16 +67,21 @@ public class CurseSong : ISpell
                 foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
                 foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
                 CreatureEvents.OnSpellCastAt.Signal(bard, foe, eventData.Spell);
+                targetsAffected++;
                 continue;
             }
 
             foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
             foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
             CreatureEvents.OnSpellCastAt.Signal(bard, foe, eventData.Spell);
+            targetsAffected++;
 
             if (songValues.Hp > 0)
                 foe.ApplyEffect(EffectDuration.Instant, Effect.Damage(songValues.Hp, DamageType.Sonic));
         }
+
+        if (targetsAffected > 0)
+            bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
     }
 
     public void SetSpellResisted(bool result) { }
