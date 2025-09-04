@@ -82,7 +82,7 @@ public class RuntimeCharacter(
 
     public RankUpResult RankUp(string industryTag)
     {
-        throw new NotImplementedException();
+        return membershipService.RankUp(characterId, industryTag);
     }
 
     public Guid GetId()

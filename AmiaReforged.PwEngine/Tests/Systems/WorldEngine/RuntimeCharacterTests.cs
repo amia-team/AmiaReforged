@@ -140,4 +140,23 @@ public class RuntimeCharacterTests
         Assert.That(knowledge, Is.Not.Empty);
         Assert.That(knowledge.Any(k => k.Tag == Noviceknowledge), Is.True);
     }
+
+    [Test]
+    public void Should_Rank_Up_In_Industry()
+    {
+        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+            _membershipService);
+
+        _characters.Add(character);
+
+        character.JoinIndustry(IndustryWithKnowledge);
+
+        LearningResult result = character.Learn(Noviceknowledge);
+
+        Assert.That(result, Is.EqualTo(LearningResult.Success));
+
+        RankUpResult rankUpResult = character.RankUp(IndustryWithKnowledge);
+
+        Assert.That(rankUpResult, Is.EqualTo(RankUpResult.Success));
+    }
 }

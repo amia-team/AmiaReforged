@@ -115,6 +115,13 @@ public class IndustryMembershipService(
         return RankUpResult.Success;
     }
 
+    public RankUpResult RankUp(Guid characterId, string industryTag)
+    {
+        IndustryMembership? membership = GetMemberships(characterId).FirstOrDefault(m => m.IndustryTag == industryTag);
+
+        return membership == null ? RankUpResult.IndustryNotFound : RankUp(membership);
+    }
+
     public LearningResult LearnKnowledge(IndustryMembership membership, string tag)
     {
         ICharacter? character = characterRepository.GetById(membership.CharacterId);
