@@ -11,15 +11,14 @@ public class BardSong : ISpell
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S2_BardSong";
-    private static string BardSongTag => "bard_song";
+    private static string BardSongTag => "bard_song_";
+
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         if (eventData.Caster is not NwCreature bard) return;
         if (bard.Location == null) return;
 
         SongValues songValues = SongData.CalculateSongEffectValues(bard);
-
-        int songPower = SongData.CalculateSongPower(songValues);
 
         Effect bardSong = Effect.LinkEffects
         (
@@ -31,13 +30,15 @@ public class BardSong : ISpell
             Effect.SavingThrowIncrease(SavingThrow.Fortitude, songValues.Fortitude),
             Effect.SavingThrowIncrease(SavingThrow.Reflex, songValues.Reflex),
             Effect.ACIncrease(songValues.Ac),
-            Effect.SkillIncreaseAll(songValues.Skill),
-            Effect.RunAction(data: $"{songPower}")
+            Effect.SkillIncreaseAll(songValues.Skill)
         );
 
         TimeSpan songDuration = NwTimeSpan.FromRounds(SongData.GetSongRounds(bard));
 
-        bardSong.Tag = BardSongTag;
+        int songPower = SongData.CalculateSongPower(songValues);
+        string uniqueTag = BardSongTag + songPower;
+
+        bardSong.Tag = uniqueTag;
         bardSong.SubType = EffectSubType.Magical;
 
         bard.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosNormal30));
@@ -50,11 +51,13 @@ public class BardSong : ISpell
         {
             if (ally.ActiveEffects.Any(e => e.EffectType is EffectType.Silence or EffectType.Deaf)) continue;
 
-            Effect? existingBardSong = ally.ActiveEffects.FirstOrDefault(e => e.Tag == BardSongTag);
+            Effect? existingBardSong = ally.ActiveEffects.FirstOrDefault(e => e.Tag != null && e.Tag.StartsWith(BardSongTag));
 
             if (existingBardSong != null)
             {
-                if (int.TryParse(existingBardSong.StringParams[0], out int existingSongPower) &&
+                string songPowerString = existingBardSong.Tag![BardSongTag.Length..];
+
+                if (int.TryParse(songPowerString, out int existingSongPower) &&
                     existingSongPower > songPower) continue;
 
                 ally.RemoveEffect(existingBardSong);
