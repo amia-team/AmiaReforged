@@ -83,12 +83,6 @@ public class HarvestingService(
     }
 }
 
-public interface IItemDefinitionRepository
-{
-    void AddItemDefinition(ItemDefinition definition);
-    ItemDefinition? GetByTag(string harvestOutputItemDefinitionTag);
-}
-
 public interface IResourceNodeInstanceRepository
 {
     void AddNodeInstance(ResourceNodeInstance instance);
