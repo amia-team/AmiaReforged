@@ -46,8 +46,8 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
 
                 Environment.SetEnvironmentVariable("RESOURCE_PATH", tempRoot.FullName);
 
-                Mock<IResourceNodeDefinitionRepository> repoMock = new(Moq.MockBehavior.Strict);
-                repoMock.Setup(r => r.Create(Moq.It.IsAny<ResourceNodeDefinition>()));
+                Mock<IResourceNodeDefinitionRepository> repoMock = new(MockBehavior.Strict);
+                repoMock.Setup(r => r.Create(It.IsAny<ResourceNodeDefinition>()));
 
                 ResourceNodeDefinitionLoadingService loader = new(repoMock.Object);
 
@@ -55,7 +55,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
                 loader.Load();
 
                 // Assert
-                repoMock.Verify(r => r.Create(Moq.It.IsAny<ResourceNodeDefinition>()), Moq.Times.Once);
+                repoMock.Verify(r => r.Create(It.IsAny<ResourceNodeDefinition>()), Times.Once);
                 Assert.That(loader.Failures(), Is.Empty);
             }
             finally
