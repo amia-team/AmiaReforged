@@ -1,5 +1,8 @@
+using Anvil.Services;
+
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 
+[ServiceBinding(typeof(IItemDefinitionRepository))]
 public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
 {
     private readonly Dictionary<string, ItemDefinition> _itemDefinitions = new();

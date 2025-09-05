@@ -1,5 +1,9 @@
+using Anvil.Services;
+
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 
+
+[ServiceBinding(typeof(IIndustryRepository))]
 public class InMemoryIndustryRepository : IIndustryRepository
 {
     private readonly List<Industry> _industries = [];
