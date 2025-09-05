@@ -84,7 +84,7 @@ public class RuntimeCharacter(
 
     public void JoinIndustry(string industryTag)
     {
-        IndustryMembership m = new IndustryMembership
+        IndustryMembership m = new()
         {
             IndustryTag = industryTag,
             Level = ProficiencyLevel.Novice,

@@ -1,6 +1,6 @@
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
-public interface INodeDefinitionLoader
+public interface IDefinitionLoader
 {
     void Load();
     List<FileLoadResult> Failures();

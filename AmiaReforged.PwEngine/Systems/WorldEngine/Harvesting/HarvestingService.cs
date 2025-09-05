@@ -69,7 +69,7 @@ public class HarvestingService(
                 }
             }
 
-            ItemDto dto = new ItemDto(definition, (IPQuality)totalQuality, (IPQuality)totalQuality);
+            ItemDto dto = new(definition, (IPQuality)totalQuality, (IPQuality)totalQuality);
 
             for (int i = 0; i < totalQuantity; i++)
             {

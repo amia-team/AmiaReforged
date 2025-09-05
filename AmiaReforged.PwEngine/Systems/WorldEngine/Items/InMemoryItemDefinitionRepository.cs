@@ -16,4 +16,9 @@ public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
     {
         return _itemDefinitions.GetValueOrDefault(harvestOutputItemDefinitionTag);
     }
+
+    public List<ItemDefinition> AllItems()
+    {
+        return _itemDefinitions.Values.ToList();
+    }
 }

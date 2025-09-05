@@ -3,10 +3,10 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Moq;
 using NUnit.Framework;
 
-namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
+namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
 {
     [TestFixture]
-    public class ResourceNodeDefinitionLoadingServiceTests
+    public class ResourceDefinitionLoadingServiceTests
     {
         private string? _originalResourcePath;
 
@@ -49,7 +49,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
                 Mock<IResourceNodeDefinitionRepository> repoMock = new(MockBehavior.Strict);
                 repoMock.Setup(r => r.Create(It.IsAny<ResourceNodeDefinition>()));
 
-                ResourceNodeDefinitionLoadingService loader = new(repoMock.Object);
+                ResourceDefinitionLoadingService loader = new(repoMock.Object);
 
                 // Act
                 loader.Load();
@@ -114,7 +114,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine
                 Environment.SetEnvironmentVariable("RESOURCE_PATH", tempRoot.FullName);
 
                 Mock<IResourceNodeDefinitionRepository> repoMock = new(MockBehavior.Strict);
-                ResourceNodeDefinitionLoadingService loader = new(repoMock.Object);
+                ResourceDefinitionLoadingService loader = new(repoMock.Object);
 
                 // Act
                 loader.Load();

@@ -35,7 +35,7 @@ public class RuntimeCharacterTests
 
         IIndustryRepository industryRepository = InMemoryIndustryRepository.Create();
 
-        Industry i = new Industry
+        Industry i = new()
         {
             Tag = IndustryWithKnowledge,
             Name = "industry with knowledge",
@@ -96,7 +96,7 @@ public class RuntimeCharacterTests
 
         industryRepository.Add(i);
 
-        Industry noKnowledge = new Industry
+        Industry noKnowledge = new()
         {
             Tag = TestIndustry,
             Name = "Test",
@@ -126,7 +126,7 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_Return_Skills()
     {
-        Mock<ICharacterSheetPort> mockCharacterSheet = new Mock<ICharacterSheetPort>();
+        Mock<ICharacterSheetPort> mockCharacterSheet = new();
         List<SkillData> expectedSkills =
         [
             new(Skill.Taunt, 1),
@@ -208,10 +208,10 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_Get_Inventory()
     {
-        Mock<IInventoryPort> mockInventory = new Mock<IInventoryPort>();
+        Mock<IInventoryPort> mockInventory = new();
         List<ItemSnapshot> expectedInventory =
         [
-            new ItemSnapshot("test_item", IPQuality.Average, [], JobSystemItemType.None, 1, null)
+            new("test_item", IPQuality.Average, [], JobSystemItemType.None, 1, null)
         ];
         mockInventory.Setup(x => x.GetInventory()).Returns(expectedInventory);
 
@@ -231,7 +231,7 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_Get_Equipment()
     {
-        Mock<IInventoryPort> mockInventory = new Mock<IInventoryPort>();
+        Mock<IInventoryPort> mockInventory = new();
         Dictionary<EquipmentSlots, ItemSnapshot> expectedEquipment = new()
         {
             { EquipmentSlots.Boots, new ItemSnapshot("test_boots", IPQuality.Average, [], JobSystemItemType.None, 1, null) }

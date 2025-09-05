@@ -4,4 +4,5 @@ public interface IItemDefinitionRepository
 {
     void AddItemDefinition(ItemDefinition definition);
     ItemDefinition? GetByTag(string harvestOutputItemDefinitionTag);
+    List<ItemDefinition> AllItems();
 }

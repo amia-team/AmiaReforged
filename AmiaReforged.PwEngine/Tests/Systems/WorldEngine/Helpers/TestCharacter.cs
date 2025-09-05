@@ -80,7 +80,7 @@ public class TestCharacter(
     {
         if (AllIndustryMemberships().Any(m => m.IndustryTag == industryTag)) return;
 
-        IndustryMembership m = new IndustryMembership
+        IndustryMembership m = new()
         {
             CharacterId = GetId(),
             IndustryTag = industryTag,

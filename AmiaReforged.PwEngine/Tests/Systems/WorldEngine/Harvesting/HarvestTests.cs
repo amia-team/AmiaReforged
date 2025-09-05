@@ -27,7 +27,7 @@ public class HarvestTests
     public void OneTimeSetUp()
     {
         IItemDefinitionRepository itemDefinitionRepository = CreateItemDefinitionRepository();
-        ItemDefinition item = new ItemDefinition("test_itm", TestItemTag, "Test Item", "Testy McTest", [],
+        ItemDefinition item = new("test_itm", TestItemTag, "Test Item", "Testy McTest", [],
             JobSystemItemType.None, 0);
         itemDefinitionRepository.AddItemDefinition(item);
         _sut = new HarvestingService(CreateTestRepository(), itemDefinitionRepository);
@@ -44,7 +44,7 @@ public class HarvestTests
             _characters,
             _characterKnowledgeRepository);
 
-        Industry i = new Industry
+        Industry i = new()
         {
             Tag = "new",
             Name = "industry",

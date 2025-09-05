@@ -3,8 +3,8 @@ using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
-// [ServiceBinding(typeof(ResourceNodeDefinitionLoadingService))]
-public class ResourceNodeDefinitionLoadingService(IResourceNodeDefinitionRepository repository) : INodeDefinitionLoader
+[ServiceBinding(typeof(ResourceDefinitionLoadingService))]
+public class ResourceDefinitionLoadingService(IResourceNodeDefinitionRepository repository) : IDefinitionLoader
 {
     private readonly List<FileLoadResult> _failures = [];
 
