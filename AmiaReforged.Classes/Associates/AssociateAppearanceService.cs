@@ -40,7 +40,7 @@ public class AssociateAppearanceService
         NwItem? pcKey = eventData.Owner.Inventory.Items.FirstOrDefault(item => item.Tag == PcKeyTag);
 
         bool associateHasEpicCompanionAppearance =
-            EpicCompanionAppearance.ApplyEpicCompanionAppearance(eventData.Associate, eventData.Owner, pcKey);
+            EpicCompanionAppearance.ApplyEpicCompanionAppearance(eventData.Associate, eventData.AssociateType, eventData.Owner, pcKey);
 
         if (associateHasEpicCompanionAppearance) return;
     }
