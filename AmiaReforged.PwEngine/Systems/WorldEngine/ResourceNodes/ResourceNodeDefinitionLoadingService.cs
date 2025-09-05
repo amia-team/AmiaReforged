@@ -94,17 +94,3 @@ public class ResourceNodeDefinitionLoadingService(IResourceNodeDefinitionReposit
         return true;
     }
 }
-
-public interface INodeDefinitionLoader
-{
-    void Load();
-    List<FileLoadResult> Failures();
-}
-
-public record FileLoadResult(ResultType Type, string? Message = null, string? FileName = null);
-
-public enum ResultType
-{
-    Success,
-    Fail
-}
