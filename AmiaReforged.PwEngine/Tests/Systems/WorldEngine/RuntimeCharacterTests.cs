@@ -211,7 +211,7 @@ public class RuntimeCharacterTests
         Mock<IInventoryPort> mockInventory = new();
         List<ItemSnapshot> expectedInventory =
         [
-            new("test_item", IPQuality.Average, [], JobSystemItemType.None, 1, null)
+            new("test_item", "Test Item", "Test Item", IPQuality.Average, [], JobSystemItemType.None, 1, null)
         ];
         mockInventory.Setup(x => x.GetInventory()).Returns(expectedInventory);
 
@@ -234,7 +234,7 @@ public class RuntimeCharacterTests
         Mock<IInventoryPort> mockInventory = new();
         Dictionary<EquipmentSlots, ItemSnapshot> expectedEquipment = new()
         {
-            { EquipmentSlots.Boots, new ItemSnapshot("test_boots", IPQuality.Average, [], JobSystemItemType.None, 1, null) }
+            { EquipmentSlots.Boots, new ItemSnapshot("test_boots", "Test Item", "Test Item", IPQuality.Average, [], JobSystemItemType.None, 1, null) }
         };
         mockInventory.Setup(x => x.GetEquipment()).Returns(expectedEquipment);
 
