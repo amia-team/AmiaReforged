@@ -7,13 +7,13 @@ public record ResourceNodeDefinition(int PlcAppearance, NodeType Type, string Ta
 
 public enum NodeType
 {
-    Ore,
-    Tree,
-    Boulder,
-    Geode,
-    Corpse,
-    Excavation,
-    Flora,
-    Misc,
-    Unknown
+    Ore = 0,
+    Tree = 1,
+    Boulder = 2,
+    Geode = 3,
+    Corpse = 4,
+    Excavation = 5,
+    Flora = 6,
+    Misc = 7,
+    Unknown = -1
 }

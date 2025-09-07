@@ -56,7 +56,7 @@ public static class EpicCompanionAppearance
 
         if (epicCompanionAppearanceVar.Value == 0) return false;
 
-        CompanionAppearanceData appearanceData = associate.AnimalCompanionType switch
+        CompanionAppearanceData appearanceData = owner.AnimalCompanionType switch
         {
             AnimalCompanionCreatureType.Badger => new CompanionAppearanceData(WyvernDescription, WyvernAppearance),
             AnimalCompanionCreatureType.Wolf => new CompanionAppearanceData(DisplacerBeastDescription, DisplacerBeastAppearance),
