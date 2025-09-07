@@ -64,7 +64,7 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
 
     private (Effect Effect, int Bonus) RegenerateBonus()
     {
-        int regenBonus = BonusLevel / 5;
+        int regenBonus = BonusLevel / 5 == 0 ? 1 : BonusLevel / 5;
 
         return (Effect.Regenerate(regenBonus, NwTimeSpan.FromRounds(1)), regenBonus);
     }
