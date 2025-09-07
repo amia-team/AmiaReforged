@@ -81,9 +81,10 @@ public static class EpicCompanionAppearance
                 break;
         }
 
+        AppearanceTableEntry appearanceEntry = NwGameTables.AppearanceTable.GetRow(appearanceData.Appearance);
+        associate.Appearance = appearanceEntry;
         associate.Description = appearanceData.Description;
-        associate.Appearance = NwGameTables.AppearanceTable.GetRow(appearanceData.Appearance);
-        associate.PortraitResRef = NwGameTables.AppearanceTable.GetRow(appearanceData.Appearance).Portrait ?? "po_clsranger_";
+        associate.PortraitResRef = !string.IsNullOrEmpty(appearanceEntry.Portrait) ? appearanceEntry.Portrait : "po_clsranger_";
 
         return true;
     }
