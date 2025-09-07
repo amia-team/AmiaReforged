@@ -7,6 +7,9 @@
     6
   ],
   "JobSystemItemType": 8,
-
-
+  "BaseItemType": 120,
+  "AppearanceData": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
 }
