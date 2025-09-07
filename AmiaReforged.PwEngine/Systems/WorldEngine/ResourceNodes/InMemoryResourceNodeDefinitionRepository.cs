@@ -6,7 +6,7 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 [ServiceBinding(typeof(IResourceNodeDefinitionRepository))]
 public class InMemoryResourceNodeDefinitionRepository : IResourceNodeDefinitionRepository
 {
-    private Dictionary<string, ResourceNodeDefinition> _definitions = new();
+    private readonly Dictionary<string, ResourceNodeDefinition> _definitions = new();
 
     public void Create(ResourceNodeDefinition definition)
     {
