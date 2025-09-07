@@ -101,8 +101,8 @@ public class HarvestTests
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
             new ItemSnapshot("fake_tool", IPQuality.Average, [Material.Iron], JobSystemItemType.ToolPick, 0, null));
 
-        ResourceNodeDefinition definition = new("test",
-            new HarvestContext(JobSystemItemType.None, Material.None),
+        ResourceNodeDefinition definition = new(0, NodeType.Misc, "test",
+            new HarvestContext(JobSystemItemType.None),
             [new HarvestOutput(TestItemTag, 1)]);
 
         ResourceNodeInstance instance = new()
@@ -136,8 +136,8 @@ public class HarvestTests
             new ItemSnapshot("fake_tool", IPQuality.Average, [Material.Iron], JobSystemItemType.ToolHammer, 0, null));
 
         // Node requires a pick, but the character holds a hammer
-        ResourceNodeDefinition definition = new("test",
-            new HarvestContext(JobSystemItemType.ToolPick, Material.None),
+        ResourceNodeDefinition definition = new(0, NodeType.Ore, "test",
+            new HarvestContext(JobSystemItemType.ToolPick),
             [new HarvestOutput(TestItemTag, 1)]);
 
         ResourceNodeInstance instance = new()
@@ -169,8 +169,8 @@ public class HarvestTests
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
             new ItemSnapshot("fake_tool", IPQuality.Average, [Material.Iron], JobSystemItemType.ToolPick, 0, null));
 
-        ResourceNodeDefinition definition = new("test",
-            new HarvestContext(JobSystemItemType.ToolPick, Material.None),
+        ResourceNodeDefinition definition = new(0, NodeType.Ore, "test",
+            new HarvestContext(JobSystemItemType.ToolPick),
             [new HarvestOutput(TestItemTag, 1)], 2);
 
         ResourceNodeInstance instance = new()
@@ -209,8 +209,8 @@ public class HarvestTests
 
         pc.Learn(HarvestYield);
 
-        ResourceNodeDefinition definition = new("test",
-            new HarvestContext(JobSystemItemType.ToolPick, Material.None),
+        ResourceNodeDefinition definition = new(0, NodeType.Ore, "test",
+            new HarvestContext(JobSystemItemType.ToolPick),
             [new HarvestOutput(TestItemTag, 1)], 2);
 
         ResourceNodeInstance instance = new()
@@ -251,8 +251,8 @@ public class HarvestTests
 
         pc.Learn(HarvestQuality);
 
-        ResourceNodeDefinition definition = new("test",
-            new HarvestContext(JobSystemItemType.ToolPick, Material.None),
+        ResourceNodeDefinition definition = new(0, NodeType.Ore, "test",
+            new HarvestContext(JobSystemItemType.ToolPick),
             [new HarvestOutput(TestItemTag, 1)], 1);
 
         ResourceNodeInstance instance = new()
@@ -292,8 +292,8 @@ public class HarvestTests
 
         pc.Learn(HarvestTime);
 
-        ResourceNodeDefinition definition = new("test",
-            new HarvestContext(JobSystemItemType.ToolPick, Material.None),
+        ResourceNodeDefinition definition = new(0, NodeType.Ore, "test",
+            new HarvestContext(JobSystemItemType.ToolPick),
             [new HarvestOutput(TestItemTag, 1)], 2);
 
         ResourceNodeInstance instance = new()
