@@ -1,4 +1,5 @@
 ﻿using Anvil.API;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Associates;
 
@@ -38,6 +39,8 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
 
         if (player != null)
             SendEpicCompanionBonusFeedback(player);
+
+        PlayerPlugin.UpdateCharacterSheet(associate);
     }
 
     private Effect CompanionEffect()
