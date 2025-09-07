@@ -12,6 +12,7 @@ public class BardSong : ISpell
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S2_BardSong";
     private static string BardSongTag => "bard_song_";
+    private static VfxType FnfBardSong => (VfxType)2528;
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -22,7 +23,6 @@ public class BardSong : ISpell
 
         Effect bardSong = Effect.LinkEffects
         (
-            Effect.VisualEffect(VfxType.DurBardSong),
             Effect.VisualEffect(VfxType.DurCessatePositive),
             Effect.AttackIncrease(songValues.Attack),
             Effect.DamageIncrease(songValues.Damage, DamageType.Bludgeoning),
@@ -41,11 +41,12 @@ public class BardSong : ISpell
         bardSong.Tag = uniqueTag;
         bardSong.SubType = EffectSubType.Magical;
 
-        bard.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosNormal30));
+        bard.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(FnfBardSong));
 
         IEnumerable<NwCreature> friendlyCreatures =
             bard.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
             .Where(bard.IsReactionTypeFriendly);
+
 
         foreach (NwCreature ally in friendlyCreatures)
         {
@@ -72,6 +73,8 @@ public class BardSong : ISpell
             if (songValues.Hp > 0)
                 ally.ApplyEffect(EffectDuration.Temporary, Effect.TemporaryHitpoints(songValues.Hp), songDuration);
         }
+
+        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurBardSong), songDuration);
     }
 
     public void SetSpellResisted(bool result) { }

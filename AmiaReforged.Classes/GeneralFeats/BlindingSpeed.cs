@@ -30,14 +30,14 @@ public class BlindingSpeed : ISpell
         Effect blindingSpeed = Effect.LinkEffects(Effect.Haste(), Effect.VisualEffect(VfxType.DurCessatePositive));
         blindingSpeed.SubType = EffectSubType.Extraordinary;
 
-        creature.ApplyEffect(EffectDuration.Temporary, blindingSpeed, NwTimeSpan.FromTurns(1));
+        creature.ApplyEffect(EffectDuration.Temporary, blindingSpeed, TimeSpan.FromSeconds(180));
         creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDustExplosion));
 
         blindingSpeedCd = Effect.VisualEffect(VfxType.None);
         blindingSpeedCd.Tag = BlindingSpeedCdTag;
         blindingSpeedCd.SubType = EffectSubType.Extraordinary;
 
-        creature.ApplyEffect(EffectDuration.Temporary, blindingSpeedCd, NwTimeSpan.FromRounds(15));
+        creature.ApplyEffect(EffectDuration.Temporary, blindingSpeedCd, TimeSpan.FromSeconds(210));
     }
 
     public void SetSpellResisted(bool result)

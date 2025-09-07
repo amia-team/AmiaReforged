@@ -69,7 +69,7 @@ public class HarvestingService(
                 }
             }
 
-            ItemDto dto = new ItemDto(definition, (IPQuality)totalQuality, (IPQuality)totalQuality);
+            ItemDto dto = new(definition, (IPQuality)totalQuality, (IPQuality)totalQuality);
 
             for (int i = 0; i < totalQuantity; i++)
             {
@@ -81,12 +81,6 @@ public class HarvestingService(
 
         repository.Update(data.NodeInstance);
     }
-}
-
-public interface IItemDefinitionRepository
-{
-    void AddItemDefinition(ItemDefinition definition);
-    ItemDefinition? GetByTag(string harvestOutputItemDefinitionTag);
 }
 
 public interface IResourceNodeInstanceRepository

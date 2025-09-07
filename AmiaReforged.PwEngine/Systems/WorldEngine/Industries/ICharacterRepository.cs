@@ -7,6 +7,6 @@ public interface ICharacterRepository
 {
     void Add(ICharacter character);
     bool Exists(Guid membershipCharacterId);
-    void Delete(TestCharacter character);
+    void Delete(ICharacter character);
     ICharacter? GetById(Guid characterId);
 }

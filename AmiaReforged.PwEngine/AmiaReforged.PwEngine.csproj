@@ -27,8 +27,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Folder Include="Resources\WorldEngine\Industries\" />
         <Folder Include="Resources\WorldEngine\Nodes\" />
-        <Folder Include="Resources\WorldEngine\Workshops\" />
         <Folder Include="Systems\MiniGame\LiarsDice\Nui\"/>
         <Folder Include="Systems\MiniGame\LiarsDice\Tests\"/>
     </ItemGroup>

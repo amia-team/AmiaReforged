@@ -6,7 +6,10 @@ namespace AmiaReforged.Classes.Spells;
 public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 {
     private static readonly TwoDimArray? SpellPropTable = NwGameTables.GetTable("iprp_spells");
+
     private const int SpellFailVfx = 292;
+
+    private const string UniquePowerScriptName = "NW_S3_ActItem01";
 
     private const string PotionPrefix = "brewpot_";
     private const string WandPrefix = "craftwand_";
@@ -63,7 +66,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
             return;
         }
 
-        if (eventData.Item != null)
+        if (eventData.Item != null && eventData.Spell?.ImpactScript != UniquePowerScriptName)
         {
             player.SendServerMessage("Spell craft failed! You can only craft spells when casting from a spellbook.");
             ApplySpellCraftFailVfx(caster);

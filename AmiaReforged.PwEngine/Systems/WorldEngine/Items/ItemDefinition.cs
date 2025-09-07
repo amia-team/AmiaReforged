@@ -10,7 +10,15 @@ public record ItemDefinition(
     string Description,
     Material[] Materials,
     JobSystemItemType JobSystemType,
-    int BaseItemType);
+    int BaseItemType,
+    AppearanceData Appearance);
 
+public record AppearanceData(int ModelType, int? SimpleModelNumber, PartData? Data);
 
-public record Output(ItemDefinition Item, int Quantity);
+public record PartData(
+    int TopPartModel,
+    int MiddlePartModel,
+    int BottomPartModel,
+    int TopPartColor,
+    int MiddlePartColor,
+    int BottomPartColor);

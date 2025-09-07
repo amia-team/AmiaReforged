@@ -44,7 +44,7 @@ public class ResourceNodeInstance
 
         int harvestProgressMod = 0;
 
-        foreach (KnowledgeHarvestEffect effect in character.KnowledgeEffectsForResource(this.Definition.Tag)
+        foreach (KnowledgeHarvestEffect effect in character.KnowledgeEffectsForResource(Definition.Tag)
                      .Where(r => r.StepModified == HarvestStep.HarvestStepRate))
         {
             switch (effect.Operation)

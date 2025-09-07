@@ -1,8 +1,8 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
+using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 
+[ServiceBinding(typeof(IItemDefinitionRepository))]
 public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
 {
     private readonly Dictionary<string, ItemDefinition> _itemDefinitions = new();
@@ -15,5 +15,10 @@ public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
     public ItemDefinition? GetByTag(string harvestOutputItemDefinitionTag)
     {
         return _itemDefinitions.GetValueOrDefault(harvestOutputItemDefinitionTag);
+    }
+
+    public List<ItemDefinition> AllItems()
+    {
+        return _itemDefinitions.Values.ToList();
     }
 }

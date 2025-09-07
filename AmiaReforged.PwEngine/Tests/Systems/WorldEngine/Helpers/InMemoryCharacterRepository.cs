@@ -16,7 +16,7 @@ public class InMemoryCharacterRepository : ICharacterRepository
         return _characters.FirstOrDefault(c => c.GetId() == characterId);
     }
 
-    public void Delete(TestCharacter character)
+    public void Delete(ICharacter character)
     {
         try
         {

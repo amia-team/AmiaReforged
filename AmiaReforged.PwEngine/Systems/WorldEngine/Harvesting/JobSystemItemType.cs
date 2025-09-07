@@ -9,5 +9,11 @@ public enum JobSystemItemType
     ToolFroe = 4,
     ToolAdze = 5,
     ToolWoodChisel = 6,
-    ToolMasonChisle = 7
+    ToolMasonChisle = 7,
+    ResourceOre = 8,
+    ResourceStone = 9,
+    ResourceLog = 10,
+    ResourcePlank = 11,
+    ResourceBrick = 12,
+    ResourceIngot = 13
 }

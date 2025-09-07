@@ -9,7 +9,7 @@ public sealed class BlueprintManager
 
     public BlueprintManager(IEnumerable<IBlueprintSource> blueprintSources)
     {
-        this._blueprintSources = blueprintSources.ToList();
+        _blueprintSources = blueprintSources.ToList();
     }
 
     public List<IBlueprint> GetMatchingBlueprints(BlueprintObjectType objectType, string search, int max)

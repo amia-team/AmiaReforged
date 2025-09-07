@@ -46,9 +46,9 @@ public static class EpicCompanionAppearance
 
     private record CompanionAppearanceData(string Description, int Appearance);
 
-    public static bool ApplyEpicCompanionAppearance(NwCreature associate, NwCreature owner, NwItem? pcKey)
+    public static bool ApplyEpicCompanionAppearance(NwCreature associate, AssociateType associateType, NwCreature owner, NwItem? pcKey)
     {
-        if (associate.AssociateType != AssociateType.AnimalCompanion) return false;
+        if (associateType != AssociateType.AnimalCompanion) return false;
         if (pcKey is null) return false;
         if (EpicCompanionFeat == null || !owner.KnowsFeat(EpicCompanionFeat)) return false;
 
