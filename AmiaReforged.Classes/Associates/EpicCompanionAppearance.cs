@@ -70,6 +70,17 @@ public static class EpicCompanionAppearance
             _ => new CompanionAppearanceData(associate.Description, 0)
         };
 
+        switch (owner.AnimalCompanionType)
+        {
+            case AnimalCompanionCreatureType.Wolf: // Displacer Beast
+                associate.ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurProtShadowArmor));
+                break;
+
+            case AnimalCompanionCreatureType.Boar: // Raptor
+                associate.VisualTransform.Scale = 0.6f;
+                break;
+        }
+
         associate.Description = appearanceData.Description;
         associate.Appearance = NwGameTables.AppearanceTable.GetRow(appearanceData.Appearance);
         associate.PortraitResRef = NwGameTables.AppearanceTable.GetRow(appearanceData.Appearance).Portrait ?? "po_clsranger_";
