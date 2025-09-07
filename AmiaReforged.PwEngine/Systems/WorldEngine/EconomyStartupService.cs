@@ -33,10 +33,21 @@ public class EconomyStartupService
         _industryLoader = industryLoader;
         _configProvider = configProvider;
 
-        Init();
+        LoadDefinitions();
+
+        if (!_configProvider.GetBoolean(WorldConstants.InitializedKey))
+        {
+            DoFirstTimeSetup();
+        }
     }
 
-    private void Init()
+    private void DoFirstTimeSetup()
+    {
+        Log.Info("Performing first-time setup.");
+        // _configProvider.SetBoolean(WorldConstants.InitializedKey, true);
+    }
+
+    private void LoadDefinitions()
     {
         _industryLoader.Load();
         _itemLoader.Load();
