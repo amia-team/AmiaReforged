@@ -84,8 +84,9 @@ public static class EpicCompanionAppearance
         AppearanceTableEntry appearanceEntry = NwGameTables.AppearanceTable.GetRow(appearanceData.Appearance);
         associate.Appearance = appearanceEntry;
         associate.Description = appearanceData.Description;
-        associate.PortraitResRef = !string.IsNullOrEmpty(appearanceEntry.Portrait) ? appearanceEntry.Portrait : "po_clsranger_";
-
+        string portrait = appearanceEntry.Portrait ?? "po_clsranger_";
+        NWN.Core.NWScript.SetPortraitResRef(associate, portrait);
+        
         return true;
     }
 }
