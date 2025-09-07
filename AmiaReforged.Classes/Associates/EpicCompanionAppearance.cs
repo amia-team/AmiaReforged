@@ -10,48 +10,48 @@ public static class EpicCompanionAppearance
     // Wyvern (Badger)
     private const string WyvernDescription = "Wyverns are vicious and deadly predators. Only an exceptional druid or ranger would be able to befriend one.";
     private const int WyvernAppearance = 458;
-    private const string WyvernPortrait = "po_wyvern";
+    private const string WyvernPortrait = "po_wyvern_";
 
     // Displacer Beast (Wolf)
     private const string DisplacerBeastDescription =
     "Displacer Beasts are evil creatures that most don't live long enough to tell about. It would take a terrifyingly skilled individual to claim one as their companion.";
     private const int DisplacerBeastAppearance = 925;
-    private const string DisplacerBeastPortrait = "po_blkpanther";
+    private const string DisplacerBeastPortrait = "po_blkpanther_";
 
     // Dire Bear (Bear)
     private const string DireBearDescription = "Dire Bears are larger, more vicious versions of their common cousins. They are often found in the company of powerful rangers or druids.";
     private const int DireBearAppearance = 1174;
-    private const string DireBearPortrait = "po_beardire";
+    private const string DireBearPortrait = "po_beardire_";
 
     // Raptor (Boar)
     private const string RaptorDescription = "Quick, vicious and smart, Raptors make excellent companions as they do enjoy to hunt in company.";
     private const int RaptorAppearance = 1439;
-    private const string RaptorPortrait = "po_allosaurus";
+    private const string RaptorPortrait = "po_allosaurus_";
 
     // Giant Eagle (Hawk)
     private const string GiantEagleDescription = "Giant Eagles are terrifying raptors that can lift a full grown deer off the ground with ease. They are smart, fast, and have talons the size of human forearms.";
     private const int GiantEagleAppearance = 914;
-    private const string GiantEaglePortrait = "po_a_bird_rap";
+    private const string GiantEaglePortrait = "po_a_bird_rap_";
 
     // Male Lion (Panther)
     private const string MaleLionDescription = "Lions are one of the few social cats. Once their trust is earned they make excellent partners in hunts, and other coordinated activities.";
     private const int MaleLionAppearance = 967;
-    private const string MaleLionPortrait = "po_mlion";
+    private const string MaleLionPortrait = "po_mlion_";
 
     // Giant Spider (Spider)
     private const string GiantSpiderDescription = "Large, hungry, and venomous, beware the Gargantuan Spider and the one skilled enough to tame it.";
     private const int GiantSpiderAppearance = 905;
-    private const string GiantSpiderPortrait = "po_spidgiant";
+    private const string GiantSpiderPortrait = "po_spidgiant_";
 
     // Guardian Wolf (DireWolf)
     private const string GuardianWolfDescription = "Guardian Wolves are rare, massive, and intelligent super predators. They make indispensable lifelong companions.";
     private const int GuardianWolfAppearance = 1140;
-    private const string GuardianWolfPortrait = "po_phod_fenris";
+    private const string GuardianWolfPortrait = "po_phod_fenris_";
 
     // Giant Scorpion (DireRat)
     private const string GiantScorpionDescription = "Giant Scorpions are armored beasts that kill, eat and do whatever they please. Stay away unless you are prepared to fight an almost unstoppable mass of armor, pincers, and stinger.";
     private const int GiantScorpionAppearance = 338;
-    private const string GiantScorpionPortrait = "po_giascorp";
+    private const string GiantScorpionPortrait = "po_giascorp_";
 
     private record CompanionAppearanceData(string Description, int Appearance, string Portrait);
 
