@@ -12,6 +12,7 @@ public class CurseSong : ISpell
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "X2_S2_CurseSong";
     private static VfxType DurCurseSong => (VfxType)507;
+    private static VfxType FnfCurseSong => (VfxType)2529;
     private static string CurseSongTag => "curse_song_";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -40,7 +41,7 @@ public class CurseSong : ISpell
         curseSong.Tag = uniqueTag;
         curseSong.SubType = EffectSubType.Magical;
 
-        bard.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosEvil30));
+        bard.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(FnfCurseSong));
 
         IEnumerable<NwCreature> hostileCreatures =
             bard.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
@@ -48,7 +49,6 @@ public class CurseSong : ISpell
 
         bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
 
-        int targetsAffected = 0;
 
         foreach (NwCreature foe in hostileCreatures)
         {
@@ -67,21 +67,18 @@ public class CurseSong : ISpell
                 foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
                 foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
                 CreatureEvents.OnSpellCastAt.Signal(bard, foe, eventData.Spell);
-                targetsAffected++;
                 continue;
             }
 
             foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
             foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
             CreatureEvents.OnSpellCastAt.Signal(bard, foe, eventData.Spell);
-            targetsAffected++;
 
             if (songValues.Hp > 0)
                 foe.ApplyEffect(EffectDuration.Instant, Effect.Damage(songValues.Hp, DamageType.Sonic));
         }
 
-        if (targetsAffected > 0)
-            bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
+        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
     }
 
     public void SetSpellResisted(bool result) { }

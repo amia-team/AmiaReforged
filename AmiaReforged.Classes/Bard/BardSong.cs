@@ -12,6 +12,7 @@ public class BardSong : ISpell
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S2_BardSong";
     private static string BardSongTag => "bard_song_";
+    private static VfxType FnfBardSong => (VfxType)2528;
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -40,13 +41,12 @@ public class BardSong : ISpell
         bardSong.Tag = uniqueTag;
         bardSong.SubType = EffectSubType.Magical;
 
-        bard.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosNormal30));
+        bard.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(FnfBardSong));
 
         IEnumerable<NwCreature> friendlyCreatures =
             bard.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
             .Where(bard.IsReactionTypeFriendly);
 
-        int targetsAffected = 0;
 
         foreach (NwCreature ally in friendlyCreatures)
         {
@@ -64,20 +64,17 @@ public class BardSong : ISpell
                 ally.RemoveEffect(existingBardSong);
                 ally.ApplyEffect(EffectDuration.Temporary, bardSong, songDuration);
                 ally.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadSonic));
-                targetsAffected++;
                 continue;
             }
 
             ally.ApplyEffect(EffectDuration.Temporary, bardSong, songDuration);
             ally.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadSonic));
-            targetsAffected++;
 
             if (songValues.Hp > 0)
                 ally.ApplyEffect(EffectDuration.Temporary, Effect.TemporaryHitpoints(songValues.Hp), songDuration);
         }
 
-        if (targetsAffected > 0)
-            bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurBardSong), songDuration);
+        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurBardSong), songDuration);
     }
 
     public void SetSpellResisted(bool result) { }
