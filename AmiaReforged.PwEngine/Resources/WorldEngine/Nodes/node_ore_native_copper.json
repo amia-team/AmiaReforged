@@ -2,7 +2,7 @@
   "PlcAppearance": 4792,
   "NodeType": 0,
   "Tag": "ore_vein_copper_native",
-  "HarvestContext": {
+  "Requirement": {
     "RequiredItemType": 1
   },
   "Outputs": [
