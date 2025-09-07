@@ -1,2 +1,16 @@
 {
+  "PlcAppearance": 4792,
+  "NodeType": 0,
+  "Tag": "ore_vein_copper_native",
+  "HarvestContext": {
+    "RequiredItemType": 1
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "copper_ore_native",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 4
 }
