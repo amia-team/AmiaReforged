@@ -45,7 +45,8 @@ public class ItemDefinitionLoadingTests
                         "Description": "A basic shortsword.",
                         "Materials": [],
                         "JobSystemType": 0,
-                        "BaseItemType": 1
+                        "BaseItemType": 1,
+                        "PartData": { "ModelType":0 }
                       }
                       """;
         File.WriteAllText(jsonPath, json);

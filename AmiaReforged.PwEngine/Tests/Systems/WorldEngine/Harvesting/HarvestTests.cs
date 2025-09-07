@@ -28,7 +28,7 @@ public class HarvestTests
     {
         IItemDefinitionRepository itemDefinitionRepository = CreateItemDefinitionRepository();
         ItemDefinition item = new("test_itm", TestItemTag, "Test Item", "Testy McTest", [],
-            JobSystemItemType.None, 0);
+            JobSystemItemType.None, 0, new AppearanceData(0, null, null));
         itemDefinitionRepository.AddItemDefinition(item);
         _sut = new HarvestingService(CreateTestRepository(), itemDefinitionRepository);
 
