@@ -245,13 +245,13 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
     private void SendEpicCompanionBonusFeedback(NwPlayer player)
     {
         string feedback =
-            $"Epic Companion Bonuses Added:\n" +
+            $"\nEpic Companion Bonuses Added:\n" +
             $"Strength +{_bonuses.StrengthBonus}\n" +
             $"Dexterity +{_bonuses.DexterityBonus}\n" +
             $"Constitution +{_bonuses.ConstitutionBonus}\n" +
             $"Temporary HP +{_bonuses.HpBonus}\n";
 
-        switch (associate.AnimalCompanionType)
+        switch (owner.AnimalCompanionType)
         {
             case AnimalCompanionCreatureType.Badger:
                 feedback += "Discipline +50";
