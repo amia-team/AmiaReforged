@@ -73,7 +73,7 @@ public class CurseSong : ISpell
                 ApplyDamage(foe, songValues.Hp);
         }
 
-        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), TimeSpan.FromSeconds(10));
+        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), NwTimeSpan.FromTurns(1));
     }
 
     private void ApplyCurseSong(NwCreature foe, NwCreature bard, NwSpell spell, Effect curseSong, TimeSpan songDuration)
