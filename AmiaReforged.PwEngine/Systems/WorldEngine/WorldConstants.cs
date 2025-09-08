@@ -13,4 +13,5 @@ internal static class WorldConstants
     public static string ItemVariableQuality { get; } = "item_quality";
     public static string ItemVariableMaterial { get; } = "item_material";
     public static string ItemVariableType { get; } = "item_type";
+    public static string LvarNodeTags { get; } = "node_tags";
 }
