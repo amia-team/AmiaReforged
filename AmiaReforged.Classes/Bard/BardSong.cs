@@ -51,6 +51,9 @@ public class BardSong : ISpell
         {
             if (ally.ActiveEffects.Any(e => e.EffectType is EffectType.Silence or EffectType.Deaf)) continue;
 
+            if (ally == bard)
+                bardSong = Effect.LinkEffects(bardSong, Effect.VisualEffect(VfxType.DurBardSong));
+
             Effect? existingBardSong = ally.ActiveEffects.FirstOrDefault(e => e.Tag != null && e.Tag.StartsWith(BardSongTag));
 
             if (existingBardSong != null)
@@ -72,8 +75,6 @@ public class BardSong : ISpell
             if (songValues.Hp > 0)
                 ally.ApplyEffect(EffectDuration.Temporary, Effect.TemporaryHitpoints(songValues.Hp), songDuration);
         }
-
-        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurBardSong), songDuration);
     }
 
     public void SetSpellResisted(bool result) { }

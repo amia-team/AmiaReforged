@@ -73,6 +73,7 @@ public class CurseSong : ISpell
                 ApplyDamage(foe, songValues.Hp);
         }
 
+        bard.RemoveEffect(bard.ActiveEffects.First(e => e.EffectType == EffectType.VisualEffect && e.IntParams[0] == (int)DurCurseSong));
         bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
     }
 
