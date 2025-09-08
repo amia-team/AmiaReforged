@@ -34,7 +34,7 @@ public class IndustryDefinitionLoadingService(IIndustryRepository repository) : 
             .Where(f => string.Equals(Path.GetExtension(f), ".json", StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
-        var jsonOptions = new JsonSerializerOptions
+        JsonSerializerOptions jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
