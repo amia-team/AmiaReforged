@@ -99,6 +99,6 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
 
     public List<FileLoadResult> Failures()
     {
-        throw new NotImplementedException();
+        return _failures;
     }
 }
