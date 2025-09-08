@@ -73,12 +73,6 @@ public class BardSong : ISpell
                 ally.ApplyEffect(EffectDuration.Temporary, Effect.TemporaryHitpoints(songValues.Hp), songDuration);
         }
 
-        foreach (Effect effect in bard.ActiveEffects)
-        {
-            if (effect.EffectType is EffectType.VisualEffect && effect.IntParams[0] == (int)VfxType.DurBardSong)
-                bard.RemoveEffect(effect);
-        }
-
         bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurBardSong), songDuration);
     }
 
