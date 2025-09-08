@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
@@ -102,7 +103,7 @@ public class HarvestTests
             new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [Material.Iron],
                 JobSystemItemType.ToolPick, 0, null));
 
-        ResourceNodeDefinition definition = new(0, NodeType.Misc, "test",
+        ResourceNodeDefinition definition = new(0, ResourceType.Undefined, "test",
             new HarvestContext(JobSystemItemType.None),
             [new HarvestOutput(TestItemTag, 1)]);
 
@@ -138,7 +139,7 @@ public class HarvestTests
                 JobSystemItemType.ToolHammer, 0, null));
 
         // Node requires a pick, but the character holds a hammer
-        ResourceNodeDefinition definition = new(0, NodeType.Ore, "test",
+        ResourceNodeDefinition definition = new(0, ResourceType.Ore, "test",
             new HarvestContext(JobSystemItemType.ToolPick),
             [new HarvestOutput(TestItemTag, 1)]);
 
@@ -172,7 +173,7 @@ public class HarvestTests
             new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [Material.Iron],
                 JobSystemItemType.ToolPick, 0, null));
 
-        ResourceNodeDefinition definition = new(0, NodeType.Ore, "test",
+        ResourceNodeDefinition definition = new(0, ResourceType.Ore, "test",
             new HarvestContext(JobSystemItemType.ToolPick),
             [new HarvestOutput(TestItemTag, 1)], 2);
 
@@ -213,7 +214,7 @@ public class HarvestTests
 
         pc.Learn(HarvestYield);
 
-        ResourceNodeDefinition definition = new(0, NodeType.Ore, "test",
+        ResourceNodeDefinition definition = new(0, ResourceType.Ore, "test",
             new HarvestContext(JobSystemItemType.ToolPick),
             [new HarvestOutput(TestItemTag, 1)], 2);
 
@@ -256,7 +257,7 @@ public class HarvestTests
 
         pc.Learn(HarvestQuality);
 
-        ResourceNodeDefinition definition = new(0, NodeType.Ore, "test",
+        ResourceNodeDefinition definition = new(0, ResourceType.Ore, "test",
             new HarvestContext(JobSystemItemType.ToolPick),
             [new HarvestOutput(TestItemTag, 1)], 1);
 
@@ -298,7 +299,7 @@ public class HarvestTests
 
         pc.Learn(HarvestTime);
 
-        ResourceNodeDefinition definition = new(0, NodeType.Ore, "test",
+        ResourceNodeDefinition definition = new(0, ResourceType.Ore, "test",
             new HarvestContext(JobSystemItemType.ToolPick),
             [new HarvestOutput(TestItemTag, 1)], 2);
 
