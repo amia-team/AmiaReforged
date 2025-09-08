@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
@@ -15,10 +16,12 @@ public class EconomyLoaderService
     private readonly ResourceDefinitionLoadingService _resourceLoader;
     private readonly ItemDefinitionLoadingService _itemLoader;
     private readonly IndustryDefinitionLoadingService _industryLoader;
+    private readonly RegionDefinitionLoadingService _regionLoader;
 
     public EconomyLoaderService(ResourceDefinitionLoadingService resourceLoader,
         ItemDefinitionLoadingService itemLoader,
-        IndustryDefinitionLoadingService industryLoader)
+        IndustryDefinitionLoadingService industryLoader,
+        RegionDefinitionLoadingService regionLoader)
     {
         string resourcePath = UtilPlugin.GetEnvironmentVariable("RESOURCE_PATH");
 
@@ -27,6 +30,7 @@ public class EconomyLoaderService
         _resourceLoader = resourceLoader;
         _itemLoader = itemLoader;
         _industryLoader = industryLoader;
+        _regionLoader = regionLoader;
     }
 
     public void Startup()
@@ -39,10 +43,12 @@ public class EconomyLoaderService
         _industryLoader.Load();
         _itemLoader.Load();
         _resourceLoader.Load();
+        _regionLoader.Load();
 
         LogErrors(_industryLoader.Failures());
         LogErrors(_itemLoader.Failures());
         LogErrors(_resourceLoader.Failures());
+        LogErrors(_regionLoader.Failures());
     }
 
     private static void LogErrors(List<FileLoadResult> failures)
