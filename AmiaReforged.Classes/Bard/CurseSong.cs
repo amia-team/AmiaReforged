@@ -47,9 +47,6 @@ public class CurseSong : ISpell
             bard.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
             .Where(bard.IsReactionTypeHostile);
 
-        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
-
-
         foreach (NwCreature foe in hostileCreatures)
         {
             if (foe.ActiveEffects.Any(e => e.EffectType is EffectType.Silence or EffectType.Deaf)) continue;
@@ -64,21 +61,32 @@ public class CurseSong : ISpell
                     existingSongPower > songPower) continue;
 
                 foe.RemoveEffect(existingCurseSong);
-                foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
-                foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
-                CreatureEvents.OnSpellCastAt.Signal(bard, foe, eventData.Spell);
+
+                ApplyCurseSong(foe, bard, eventData.Spell, curseSong, songDuration);
+
                 continue;
             }
 
-            foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
-            foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
-            CreatureEvents.OnSpellCastAt.Signal(bard, foe, eventData.Spell);
+            ApplyCurseSong(foe, bard, eventData.Spell, curseSong, songDuration);
 
             if (songValues.Hp > 0)
-                foe.ApplyEffect(EffectDuration.Instant, Effect.Damage(songValues.Hp, DamageType.Sonic));
+                ApplyDamage(foe, songValues.Hp);
         }
 
         bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
+    }
+
+    private void ApplyCurseSong(NwCreature foe, NwCreature bard, NwSpell spell, Effect curseSong, TimeSpan songDuration)
+    {
+        foe.ApplyEffect(EffectDuration.Temporary, curseSong, songDuration);
+        foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpDoom));
+        CreatureEvents.OnSpellCastAt.Signal(bard, foe, spell);
+    }
+
+    private void ApplyDamage(NwCreature foe, int damage)
+    {
+        foe.ApplyEffect(EffectDuration.Instant, Effect.Damage(damage, DamageType.Sonic));
+        foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpSonic));
     }
 
     public void SetSpellResisted(bool result) { }

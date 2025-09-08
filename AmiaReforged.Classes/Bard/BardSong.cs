@@ -47,7 +47,6 @@ public class BardSong : ISpell
             bard.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false)
             .Where(bard.IsReactionTypeFriendly);
 
-
         foreach (NwCreature ally in friendlyCreatures)
         {
             if (ally.ActiveEffects.Any(e => e.EffectType is EffectType.Silence or EffectType.Deaf)) continue;
