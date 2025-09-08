@@ -2,27 +2,23 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.Services;
-using DotNetEnv;
-using Microsoft.IdentityModel.Tokens;
 using NLog;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
-[ServiceBinding(typeof(EconomyStartupService))]
-public class EconomyStartupService
+[ServiceBinding(typeof(EconomyLoaderService))]
+public class EconomyLoaderService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private readonly ResourceDefinitionLoadingService _resourceLoader;
     private readonly ItemDefinitionLoadingService _itemLoader;
     private readonly IndustryDefinitionLoadingService _industryLoader;
-    private readonly IWorldConfigProvider _configProvider;
 
-    public EconomyStartupService(ResourceDefinitionLoadingService resourceLoader,
+    public EconomyLoaderService(ResourceDefinitionLoadingService resourceLoader,
         ItemDefinitionLoadingService itemLoader,
-        IndustryDefinitionLoadingService industryLoader,
-        IWorldConfigProvider configProvider)
+        IndustryDefinitionLoadingService industryLoader)
     {
         string resourcePath = UtilPlugin.GetEnvironmentVariable("RESOURCE_PATH");
 
@@ -31,20 +27,11 @@ public class EconomyStartupService
         _resourceLoader = resourceLoader;
         _itemLoader = itemLoader;
         _industryLoader = industryLoader;
-        _configProvider = configProvider;
-
-        LoadDefinitions();
-
-        if (!_configProvider.GetBoolean(WorldConstants.InitializedKey))
-        {
-            DoFirstTimeSetup();
-        }
     }
 
-    private void DoFirstTimeSetup()
+    public void Startup()
     {
-        Log.Info("Performing first-time setup.");
-        // _configProvider.SetBoolean(WorldConstants.InitializedKey, true);
+        LoadDefinitions();
     }
 
     private void LoadDefinitions()
@@ -58,7 +45,7 @@ public class EconomyStartupService
         LogErrors(_resourceLoader.Failures());
     }
 
-    private void LogErrors(List<FileLoadResult> failures)
+    private static void LogErrors(List<FileLoadResult> failures)
     {
         foreach (FileLoadResult fileLoadResult in failures)
         {
