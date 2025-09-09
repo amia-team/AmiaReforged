@@ -73,6 +73,18 @@ public class BardSong : ISpell
                 ally.ApplyEffect(EffectDuration.Temporary, Effect.TemporaryHitpoints(songValues.Hp), songDuration);
         }
 
+        _ = DelayedApplySongVfx(bard, songDuration);
+    }
+
+    private async Task DelayedApplySongVfx(NwCreature bard, TimeSpan songDuration)
+    {
+        foreach (Effect effect in bard.ActiveEffects)
+        {
+            if (effect.EffectType is EffectType.VisualEffect && effect.IntParams[0] == (int)VfxType.DurBardSong)
+                bard.RemoveEffect(effect);
+        }
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
         bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurBardSong), songDuration);
     }
 
