@@ -12,18 +12,45 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 public class ResourceNodeInstanceSetupService(
     IWorldConfigProvider configProvider,
     IResourceNodeDefinitionRepository resourceRepository,
+    IResourceNodeInstanceRepository nodeRepository,
     IRegionRepository regionRepository)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public void DoSetup()
     {
+        ClearOldNodes();
         foreach (RegionDefinition region in regionRepository.All())
         {
             foreach (AreaDefinition area in region.Areas)
             {
                 GenerateNodes(area);
             }
+        }
+    }
+
+    private void ClearOldNodes()
+    {
+        foreach (NwArea area in NwModule.Instance.Areas)
+        {
+            List<ResourceNodeInstance> instancesInArea = nodeRepository.GetInstancesByArea(area.ResRef);
+
+            if (instancesInArea.Count == 0) continue;
+
+            foreach (ResourceNodeInstance ri in instancesInArea)
+            {
+                nodeRepository.RemoveNodeInstance(ri);
+            }
+
+            List<NwPlaceable> nodePlcs = area.FindObjectsOfTypeInArea<NwPlaceable>()
+                .Where(p => p.ResRef == WorldConstants.GenericNodePlcRef).ToList();
+
+            foreach (NwPlaceable plc in nodePlcs)
+            {
+                plc.Destroy();
+            }
+
+            nodeRepository.SaveChanges();
         }
     }
 
@@ -50,44 +77,39 @@ public class ResourceNodeInstanceSetupService(
     {
         foreach (NwTrigger trigger in nodeSpawnRegions)
         {
-            GenerateNodesInTrigger(trigger, definitionTags);
+            ProcessNodesInTrigger(trigger, definitionTags);
         }
     }
 
-    private void GenerateNodesInTrigger(NwTrigger trigger, List<string> definitionTags)
+    private void ProcessNodesInTrigger(NwTrigger trigger, List<string> definitionTags)
     {
         if (definitionTags.Count == 0) return;
 
         Random rng = Random.Shared;
 
-        ResourceType[] tags = NWScript.GetLocalString(trigger, WorldConstants.LvarNodeTags)
-            .ToLower()
-            .Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(TagToEnum)
-            .Where(t => t != ResourceType.Undefined)
-            .ToArray();
+        ResourceType[] tags = GetTags(trigger);
 
-        List<NwWaypoint> waypoints = trigger.GetObjectsInTrigger<NwWaypoint>()
-            .Where(w => w.Tag == WorldConstants.NodeSpawnPointRef)
-            .ToList();
+        List<NwWaypoint> waypoints = GetWaypoints(trigger);
 
         if (waypoints.Count == 0) return;
 
-        List<ResourceNodeDefinition> definitions =
-            resourceRepository.All().Where(d => definitionTags.Contains(d.Tag)).ToList();
+        List<ResourceNodeDefinition> definitions = GetDefinitions(definitionTags);
 
         // Only keep resource types that have at least one matching definition
-        List<ResourceType> typeOrder = tags
-            .Distinct()
-            .Where(t => definitions.Any(d => d.Type == t))
-            .ToList();
+        List<ResourceType> typeOrder = GetTypeOrder(tags, definitions);
 
         if (typeOrder.Count == 0) return;
 
+        Distribute(typeOrder, rng, waypoints, definitions);
+    }
+
+    private void Distribute(List<ResourceType> typeOrder, Random rng, List<NwWaypoint> waypoints,
+        List<ResourceNodeDefinition> definitions)
+    {
         // Shuffle types and waypoints to spread things out fairly
         Shuffle(typeOrder, rng);
 
-        List<NwWaypoint> available = new List<NwWaypoint>(waypoints);
+        List<NwWaypoint> available = new(waypoints);
         Shuffle(available, rng);
 
         // Cap at most 2 per resource type
@@ -143,9 +165,43 @@ public class ResourceNodeInstanceSetupService(
         }
     }
 
+    private static List<ResourceType> GetTypeOrder(ResourceType[] tags, List<ResourceNodeDefinition> definitions)
+    {
+        List<ResourceType> typeOrder = tags
+            .Distinct()
+            .Where(t => definitions.Any(d => d.Type == t))
+            .ToList();
+        return typeOrder;
+    }
+
+    private List<ResourceNodeDefinition> GetDefinitions(List<string> definitionTags)
+    {
+        List<ResourceNodeDefinition> definitions =
+            resourceRepository.All().Where(d => definitionTags.Contains(d.Tag)).ToList();
+        return definitions;
+    }
+
+    private static List<NwWaypoint> GetWaypoints(NwTrigger trigger)
+    {
+        List<NwWaypoint> waypoints = trigger.GetObjectsInTrigger<NwWaypoint>()
+            .Where(w => w.Tag == WorldConstants.NodeSpawnPointRef)
+            .ToList();
+        return waypoints;
+    }
+
+    private ResourceType[] GetTags(NwTrigger trigger)
+    {
+        ResourceType[] tags = NWScript.GetLocalString(trigger, WorldConstants.LvarNodeTags)
+            .ToLower()
+            .Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(TagToEnum)
+            .Where(t => t != ResourceType.Undefined)
+            .ToArray();
+        return tags;
+    }
+
     private void SpawnResourceNode(ResourceNodeDefinition definition, NwWaypoint wp)
     {
-
     }
 
 
