@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -13,6 +14,7 @@ public class PwEngineContext : DbContext
     public DbSet<PersistedWorldCharacter> WorldCharacters { get; set; } = null!;
 
     public DbSet<WorldConfiguration> WorldConfiguration { get; set; } = null!;
+    public DbSet<PersistentResourceNodeInstance> PersistedNodes { get; set; } = null!;
 
 
     public PwEngineContext()
@@ -48,6 +50,5 @@ public class PwEngineContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-
     }
 }

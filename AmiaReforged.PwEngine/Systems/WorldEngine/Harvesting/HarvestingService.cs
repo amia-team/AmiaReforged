@@ -82,17 +82,3 @@ public class HarvestingService(
         repository.Update(data.NodeInstance);
     }
 }
-
-public interface IResourceNodeInstanceRepository
-{
-    void AddNodeInstance(ResourceNodeInstance instance);
-    void RemoveNodeInstance(ResourceNodeInstance instance);
-    List<ResourceNodeInstance> GetInstances();
-    List<ResourceNodeInstance> GetInstancesByArea(string resRef);
-    void Update(ResourceNodeInstance dataNodeInstance);
-}
-
-public interface IHarvestProcessor
-{
-    void RegisterNode(ResourceNodeInstance instance);
-}
