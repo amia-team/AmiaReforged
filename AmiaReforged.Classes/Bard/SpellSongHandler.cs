@@ -31,24 +31,34 @@ public class SpellSongHandler
         byte bardLevel = bard.GetClassInfo(ClassType.Bard)?.Level ?? 0;
         NwPlayer? player = bard.ControllingPlayer;
 
+        NwFeat? bardSongFeat = bard.Feats.FirstOrDefault(f => f.Spell == NwFeat.FromFeatType(Feat.BardSongs)?.Spell);
+
         if (bardLevel == 0)
         {
             player?.SendServerMessage("You must be a bard to cast spell songs.");
             eventData.PreventSpellCast = true;
+            return;
         }
 
-        NwFeat bardSongFeat = NwFeat.FromFeatType(Feat.BardSongs)!;
+        if (bardSongFeat == null)
+        {
+            player?.SendServerMessage("You need Bard Song to be able to cast spell songs.");
+            eventData.PreventSpellCast = true;
+            return;
+        }
 
         if (bard.GetFeatRemainingUses(bardSongFeat) == 0)
         {
             player?.SendServerMessage("You're out of Bard Songs to cast spell songs.");
             eventData.PreventSpellCast = true;
+            return;
         }
 
         if (bardLevel < requiredBardLevel)
         {
             player?.SendServerMessage($"Casting {spell.Name} requires bard level {requiredBardLevel}.");
             eventData.PreventSpellCast = true;
+            return;
         }
 
         bard.DecrementRemainingFeatUses(bardSongFeat);
