@@ -102,7 +102,7 @@ public class CurseSong : ISpell
                 bard.RemoveEffect(effect);
         }
 
-        await NwTask.Delay(TimeSpan.FromSeconds(0.5));
+        await NwTask.Delay(TimeSpan.FromSeconds(0.2));
         bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
     }
 
