@@ -84,7 +84,7 @@ public class BardSong : ISpell
                 bard.RemoveEffect(effect);
         }
 
-        await NwTask.Delay(TimeSpan.FromSeconds(2));
+        await NwTask.Delay(TimeSpan.FromSeconds(0.5));
         bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurBardSong), songDuration);
     }
 
