@@ -3,6 +3,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
+using static AmiaReforged.Classes.Bard.SpellSongData;
 
 namespace AmiaReforged.Classes.Bard;
 
@@ -18,21 +19,14 @@ public class SpellSongHandler
         Log.Info("Spell Song Handler initialized.");
     }
 
-    private static readonly Dictionary<NwSpell, byte> SongSpellByLevel = new()
-    {
-        { NwSpell.FromSpellType(Spell.AbilityEpicCurseSong)!, 1 }
-    };
-
     private void HandleSpellSong(OnSpellCast eventData)
     {
         if (eventData.Spell is not { } spell) return;
         if (eventData.Caster is not NwCreature bard) return;
-        if (!SongSpellByLevel.TryGetValue(spell, out byte requiredBardLevel)) return;
+        if (SongSpells.TryGetValue(spell, out SpellSongData songData)) return;
 
         byte bardLevel = bard.GetClassInfo(ClassType.Bard)?.Level ?? 0;
         NwPlayer? player = bard.ControllingPlayer;
-
-        NwFeat? bardSongFeat = NwFeat.FromFeatType(Feat.BardSongs);
 
         if (bardLevel == 0)
         {
@@ -40,6 +34,15 @@ public class SpellSongHandler
             eventData.PreventSpellCast = true;
             return;
         }
+
+        if (bardLevel < songData.RequiredLevel)
+        {
+            player?.SendServerMessage($"Casting {spell.Name} requires bard level {songData.RequiredLevel}.");
+            eventData.PreventSpellCast = true;
+            return;
+        }
+
+        NwFeat? bardSongFeat = NwFeat.FromFeatType(Feat.BardSongs);
 
         if (bardSongFeat == null || !bard.KnowsFeat(bardSongFeat))
         {
@@ -55,12 +58,7 @@ public class SpellSongHandler
             return;
         }
 
-        if (bardLevel < requiredBardLevel)
-        {
-            player?.SendServerMessage($"Casting {spell.Name} requires bard level {requiredBardLevel}.");
-            eventData.PreventSpellCast = true;
-            return;
-        }
+        bard.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(songData.SoundType));
 
         bard.DecrementRemainingFeatUses(bardSongFeat);
     }
