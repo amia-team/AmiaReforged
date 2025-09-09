@@ -122,7 +122,6 @@ public class ResourceNodeInstanceSetupService(
 
                 ResourceNodeDefinition definition = matching[rng.Next(matching.Count)];
 
-                // TODO: spawn your node here using 'definition' at waypoint 'wp'
                 SpawnResourceNode(definition, wp);
 
                 visited.Add(wp);
