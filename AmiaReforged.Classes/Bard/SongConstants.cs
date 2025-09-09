@@ -13,4 +13,5 @@ public static class SongConstants
     public const VfxType SfxBardSong = (VfxType)2531;
     public const VfxType SfxCurseSong = (VfxType)2532;
 
+    public const Spell BardSong = (Spell)411;
 }
