@@ -18,7 +18,6 @@ public class CurseSong : ISpell
     {
         if (eventData.Caster is not NwCreature bard) return;
         if (bard.Location == null) return;
-        if (bard.GetFeatRemainingUses(Feat.BardSongs!) == 0) return;
 
         SongValues songValues = SongData.CalculateSongEffectValues(bard);
 
@@ -74,11 +73,7 @@ public class CurseSong : ISpell
                 ApplyDamage(foe, songValues.Hp);
         }
 
-
-
         _ = DelayedApplySongVfx(bard, songDuration);
-
-        bard.DecrementRemainingFeatUses(Feat.BardSongs!);
     }
 
     private void ApplyCurseSong(NwCreature foe, NwCreature bard, NwSpell spell, Effect curseSong, TimeSpan songDuration)
