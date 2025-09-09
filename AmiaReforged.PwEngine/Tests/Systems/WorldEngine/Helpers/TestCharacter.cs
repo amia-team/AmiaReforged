@@ -54,7 +54,8 @@ public class TestCharacter(
     }
 
     public void AddItem(ItemDto item) =>
-        _inventory.Add(new ItemSnapshot(item.BaseDefinition.ItemTag, item.BaseDefinition.Name, item.BaseDefinition.Description, item.Quality, item.BaseDefinition.Materials,
+        _inventory.Add(new ItemSnapshot(item.BaseDefinition.ItemTag, item.BaseDefinition.Name,
+            item.BaseDefinition.Description, item.Quality, item.BaseDefinition.Materials,
             item.BaseDefinition.JobSystemType, item.BaseDefinition.BaseItemType, null));
 
     public List<ItemSnapshot> GetInventory() => _inventory;
@@ -104,6 +105,6 @@ public class TestCharacter(
     public RankUpResult RankUp(string industryTag)
     {
         IndustryMembership? membership = AllIndustryMemberships().FirstOrDefault(i => i.IndustryTag == industryTag);
-            return membership == null ? RankUpResult.IndustryNotFound : membershipService.RankUp(membership);
+        return membership == null ? RankUpResult.IndustryNotFound : membershipService.RankUp(membership);
     }
 }
