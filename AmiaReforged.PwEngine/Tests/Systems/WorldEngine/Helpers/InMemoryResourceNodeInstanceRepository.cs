@@ -33,4 +33,10 @@ public class InMemoryResourceNodeInstanceRepository : IResourceNodeInstanceRepos
     {
         return _resourceNodeInstances.Where(r => r.Area == resRef).ToList();
     }
+
+    public bool SaveChanges()
+    {
+        // Does nothing here
+        return true;
+    }
 }

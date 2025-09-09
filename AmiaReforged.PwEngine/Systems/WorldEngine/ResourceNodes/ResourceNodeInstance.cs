@@ -26,7 +26,7 @@ public class ResourceNodeInstance
     private int HarvestProgress { get; set; }
 
 
-    public Location? ToLocation()
+    public Location? GameLocation()
     {
         NwArea? area = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == Area);
 

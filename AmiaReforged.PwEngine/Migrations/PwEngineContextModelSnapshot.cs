@@ -44,6 +44,45 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.ToTable("WorldCharacters");
                 });
 
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.PersistentResourceNodeInstance", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Area")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DefinitionTag")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Quality")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("Rotation")
+                        .HasColumnType("real");
+
+                    b.Property<int>("Uses")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("X")
+                        .HasColumnType("real");
+
+                    b.Property<float>("Y")
+                        .HasColumnType("real");
+
+                    b.Property<float>("Z")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PersistedNodes");
+                });
+
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.WorldConfiguration", b =>
                 {
                     b.Property<string>("Key")
