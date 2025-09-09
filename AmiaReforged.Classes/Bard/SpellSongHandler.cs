@@ -2,6 +2,7 @@
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.Classes.Bard;
 
@@ -31,7 +32,7 @@ public class SpellSongHandler
         byte bardLevel = bard.GetClassInfo(ClassType.Bard)?.Level ?? 0;
         NwPlayer? player = bard.ControllingPlayer;
 
-        NwFeat? bardSongFeat = bard.Feats.FirstOrDefault(f => f.Spell == NwFeat.FromFeatType(Feat.BardSongs)?.Spell);
+        NwFeat? bardSongFeat = NwFeat.FromFeatType(Feat.BardSongs);
 
         if (bardLevel == 0)
         {
@@ -40,14 +41,14 @@ public class SpellSongHandler
             return;
         }
 
-        if (bardSongFeat == null)
+        if (bardSongFeat == null || !bard.KnowsFeat(bardSongFeat))
         {
             player?.SendServerMessage("You need Bard Song to be able to cast spell songs.");
             eventData.PreventSpellCast = true;
             return;
         }
 
-        if (bard.GetFeatRemainingUses(bardSongFeat) == 0)
+        if (NWScript.GetFeatRemainingUses(bardSongFeat.Id, bard) == 0)
         {
             player?.SendServerMessage("You're out of Bard Songs to cast spell songs.");
             eventData.PreventSpellCast = true;
