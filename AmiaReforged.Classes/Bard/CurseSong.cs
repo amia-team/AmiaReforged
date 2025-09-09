@@ -18,6 +18,7 @@ public class CurseSong : ISpell
     {
         if (eventData.Caster is not NwCreature bard) return;
         if (bard.Location == null) return;
+        if (bard.GetFeatRemainingUses(Feat.BardSongs!) == 0) return;
 
         SongValues songValues = SongData.CalculateSongEffectValues(bard);
 
@@ -73,7 +74,11 @@ public class CurseSong : ISpell
                 ApplyDamage(foe, songValues.Hp);
         }
 
-        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), NwTimeSpan.FromTurns(1));
+
+
+        _ = DelayedApplySongVfx(bard, songDuration);
+
+        bard.DecrementRemainingFeatUses(Feat.BardSongs!);
     }
 
     private void ApplyCurseSong(NwCreature foe, NwCreature bard, NwSpell spell, Effect curseSong, TimeSpan songDuration)
@@ -87,6 +92,18 @@ public class CurseSong : ISpell
     {
         foe.ApplyEffect(EffectDuration.Instant, Effect.Damage(damage, DamageType.Sonic));
         foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpSonic));
+    }
+
+    private async Task DelayedApplySongVfx(NwCreature bard, TimeSpan songDuration)
+    {
+        foreach (Effect effect in bard.ActiveEffects)
+        {
+            if (effect.EffectType is EffectType.VisualEffect && effect.IntParams[0] == (int)DurCurseSong)
+                bard.RemoveEffect(effect);
+        }
+
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
     }
 
     public void SetSpellResisted(bool result) { }
