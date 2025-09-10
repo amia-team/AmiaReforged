@@ -1,6 +1,5 @@
 ﻿using Anvil.API;
 using AmiaReforged.Classes.Spells;
-using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using Anvil.API.Events;
 using Anvil.Services;
 
