@@ -1,5 +1,6 @@
 ﻿using Anvil.API;
 using AmiaReforged.Classes.Spells;
+using AmiaReforged.PwEngine.Systems.Crafting.Models;
 using Anvil.API.Events;
 using Anvil.Services;
 
@@ -13,12 +14,14 @@ public class DivineWrath : ISpell
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "x2_s2_DivWrath";
 
-    private record DivineWrathBonuses(
+    private record DivineWrathBonuses
+    (
         DamagePower DamagePower,
         int DamageReduction,
         int AttackBonus,
-        int DamageBonus,
-        int UniversalSave);
+        DamageBonus DamageBonus,
+        int UniversalSave
+    );
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -61,31 +64,31 @@ public class DivineWrath : ISpell
                 DamagePower: DamagePower.Plus2,
                 DamageReduction: 5,
                 AttackBonus: 3,
-                DamageBonus: 3,
+                DamageBonus: DamageBonus.Plus3,
                 UniversalSave: 3),
             >= 10 and < 15 => new DivineWrathBonuses(
                 DamagePower: DamagePower.Plus3,
                 DamageReduction: 10,
                 AttackBonus: 5,
-                DamageBonus: 5,
+                DamageBonus: DamageBonus.Plus5,
                 UniversalSave: 5),
             >= 15 and < 19 => new DivineWrathBonuses(
                 DamagePower: DamagePower.Plus4,
                 DamageReduction: 10,
                 AttackBonus: 7,
-                DamageBonus: 7,
+                DamageBonus: DamageBonus.Plus7,
                 UniversalSave: 7),
             19 => new DivineWrathBonuses(
                 DamagePower: DamagePower.Plus5,
                 DamageReduction: 15,
                 AttackBonus: 7,
-                DamageBonus: 7,
+                DamageBonus: DamageBonus.Plus7,
                 UniversalSave: 7),
             >= 20 => new DivineWrathBonuses(
                 DamagePower: DamagePower.Energy,
                 DamageReduction: 20,
                 AttackBonus: 9,
-                DamageBonus: 9,
+                DamageBonus: DamageBonus.Plus10,
                 UniversalSave: 9),
             _ => new DivineWrathBonuses(
                 DamagePower: DamagePower.Normal,
