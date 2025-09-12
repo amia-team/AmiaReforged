@@ -204,7 +204,9 @@ public class ResourceNodeInstanceSetupService(
     {
         IPQuality baselineQuality = (IPQuality)Random.Shared.Next((int)IPQuality.Poor, (int)IPQuality.AboveAverage);
 
-        int usesModifier = (int) baselineQuality < (int) IPQuality.Average ? (int) baselineQuality * -1 : (int) baselineQuality;
+        int usesModifier = (int)baselineQuality < (int)IPQuality.Average
+            ? (int)baselineQuality * -1
+            : (int)baselineQuality;
 
         ResourceNodeInstance node = new()
         {
@@ -217,7 +219,6 @@ public class ResourceNodeInstanceSetupService(
             Z = wp.Position.Z,
             Rotation = wp.Rotation
         };
-
     }
 
 
