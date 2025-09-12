@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
 
@@ -13,10 +14,36 @@ public class HarvestingService(
     IResourceNodeInstanceRepository repository,
     IItemDefinitionRepository itemDefinitionRepository) : IHarvestProcessor
 {
+    private readonly Dictionary<ResourceNodeInstance, NwPlaceable> _spawnedNodes = new();
+
+    public void RegisterPlaceable(NwPlaceable placeable, ResourceNodeInstance instance)
+    {
+        _spawnedNodes.Add(instance, placeable);
+
+        instance.OnHarvest += HandleHarvest;
+        repository.AddNodeInstance(instance);
+    }
+
     public void RegisterNode(ResourceNodeInstance instance)
     {
         instance.OnHarvest += HandleHarvest;
+        instance.OnDestroyed += Delete;
         repository.AddNodeInstance(instance);
+        repository.SaveChanges();
+    }
+
+    private void Delete(ResourceNodeInstance instance)
+    {
+        NwPlaceable? placeable = _spawnedNodes.GetValueOrDefault(instance);
+
+        repository.Delete(instance);
+        repository.SaveChanges();
+
+        if(placeable != null)
+        {
+            placeable.Destroy();
+            _spawnedNodes.Remove(instance);
+        }
     }
 
     private void HandleHarvest(HarvestEventData data)
