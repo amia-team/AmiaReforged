@@ -39,18 +39,8 @@ public class ResourceNodeInstanceSetupService(
 
             foreach (ResourceNodeInstance ri in instancesInArea)
             {
-                nodeRepository.RemoveNodeInstance(ri);
+                ri.Destroy();
             }
-
-            List<NwPlaceable> nodePlcs = area.FindObjectsOfTypeInArea<NwPlaceable>()
-                .Where(p => p.ResRef == WorldConstants.GenericNodePlcRef).ToList();
-
-            foreach (NwPlaceable plc in nodePlcs)
-            {
-                plc.Destroy();
-            }
-
-            nodeRepository.SaveChanges();
         }
     }
 

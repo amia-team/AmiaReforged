@@ -36,6 +36,11 @@ public class ResourceNodeInstance
         return area != null ? Location.Create(area, new Vector3(X, Y, Z), Rotation) : null;
     }
 
+    public void Destroy()
+    {
+        OnDestroyed?.Invoke(this);
+    }
+
     public HarvestResult Harvest(ICharacter character)
     {
         ItemSnapshot tool = character.GetEquipment()[EquipmentSlots.RightHand];
