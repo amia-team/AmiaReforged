@@ -44,7 +44,6 @@ public class HarvestingService(
 
     private void HandleAttackedHarvest(PlaceableEvents.OnPhysicalAttacked obj)
     {
-        throw new NotImplementedException();
     }
 
     public void RegisterNode(ResourceNodeInstance instance)
