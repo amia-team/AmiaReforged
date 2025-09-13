@@ -5,6 +5,7 @@ using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
@@ -12,7 +13,7 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 public class ResourceNodeInstanceSetupService(
     IWorldConfigProvider configProvider,
     IResourceNodeDefinitionRepository resourceRepository,
-    IResourceNodeInstanceRepository nodeRepository,
+    IHarvestProcessor harvestProcessor,
     IRegionRepository regionRepository)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -33,7 +34,7 @@ public class ResourceNodeInstanceSetupService(
     {
         foreach (NwArea area in NwModule.Instance.Areas)
         {
-            List<ResourceNodeInstance> instancesInArea = nodeRepository.GetInstancesByArea(area.ResRef);
+            List<ResourceNodeInstance> instancesInArea = harvestProcessor.GetInstancesForArea(area.ResRef);
 
             if (instancesInArea.Count == 0) continue;
 
@@ -209,6 +210,26 @@ public class ResourceNodeInstanceSetupService(
             Z = wp.Position.Z,
             Rotation = wp.Rotation
         };
+
+        Location? l = node.GameLocation();
+
+        if (l is null)
+        {
+            Log.Error($"Failed to get game location for node {node.Id}");
+            return;
+        }
+
+
+        NwPlaceable? plc = NwPlaceable.Create(WorldConstants.GenericNodePlcRef, l, false, node.Definition.Tag);
+        if (plc is null)
+        {
+            Log.Error($"Failed to create node {node.Id}");
+            return;
+        }
+
+        ObjectPlugin.SetAppearance(plc, node.Definition.PlcAppearance);
+
+        harvestProcessor.RegisterPlaceable(plc, node);
     }
 
 

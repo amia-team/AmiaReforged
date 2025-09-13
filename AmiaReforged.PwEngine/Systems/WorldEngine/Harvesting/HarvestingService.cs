@@ -9,7 +9,7 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 
-// [ServiceBinding(typeof(HarvestingService))]
+[ServiceBinding(typeof(HarvestingService))]
 public class HarvestingService(
     IResourceNodeInstanceRepository repository,
     IItemDefinitionRepository itemDefinitionRepository) : IHarvestProcessor
@@ -20,8 +20,31 @@ public class HarvestingService(
     {
         _spawnedNodes.Add(instance, placeable);
 
+
+        switch (instance.Definition.Type)
+        {
+            case ResourceType.Undefined:
+                break;
+            case ResourceType.Ore:
+                placeable.OnPhysicalAttacked += HandleAttackedHarvest;
+                break;
+            case ResourceType.Geode:
+                break;
+            case ResourceType.Boulder:
+                break;
+            case ResourceType.Tree:
+                break;
+            case ResourceType.Flora:
+                break;
+        }
+
         instance.OnHarvest += HandleHarvest;
         repository.AddNodeInstance(instance);
+    }
+
+    private void HandleAttackedHarvest(PlaceableEvents.OnPhysicalAttacked obj)
+    {
+        throw new NotImplementedException();
     }
 
     public void RegisterNode(ResourceNodeInstance instance)
@@ -32,6 +55,11 @@ public class HarvestingService(
         repository.SaveChanges();
     }
 
+    public List<ResourceNodeInstance> GetInstancesForArea(string areaRef)
+    {
+        return repository.GetInstancesByArea(areaRef);
+    }
+
     private void Delete(ResourceNodeInstance instance)
     {
         NwPlaceable? placeable = _spawnedNodes.GetValueOrDefault(instance);
@@ -39,7 +67,7 @@ public class HarvestingService(
         repository.Delete(instance);
         repository.SaveChanges();
 
-        if(placeable != null)
+        if (placeable != null)
         {
             placeable.Destroy();
             _spawnedNodes.Remove(instance);

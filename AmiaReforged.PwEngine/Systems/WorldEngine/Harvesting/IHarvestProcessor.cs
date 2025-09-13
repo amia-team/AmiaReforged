@@ -7,4 +7,6 @@ public interface IHarvestProcessor
 {
     void RegisterNode(ResourceNodeInstance instance);
     void RegisterPlaceable(NwPlaceable plc, ResourceNodeInstance instance);
+
+    List<ResourceNodeInstance> GetInstancesForArea(string areaRef);
 }

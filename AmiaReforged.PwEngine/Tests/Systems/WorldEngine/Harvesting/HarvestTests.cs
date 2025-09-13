@@ -111,7 +111,6 @@ public class HarvestTests
         {
             Area = "test_area",
             Definition = definition,
-            Id = 0,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
@@ -147,7 +146,6 @@ public class HarvestTests
         {
             Area = "test_area",
             Definition = definition,
-            Id = 1,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
@@ -181,7 +179,6 @@ public class HarvestTests
         {
             Area = "test_area",
             Definition = definition,
-            Id = 1,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
@@ -222,7 +219,6 @@ public class HarvestTests
         {
             Area = "test_area",
             Definition = definition,
-            Id = 1,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
@@ -265,7 +261,6 @@ public class HarvestTests
         {
             Area = "test_area",
             Definition = definition,
-            Id = 1,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
@@ -307,7 +302,6 @@ public class HarvestTests
         {
             Area = "test_area",
             Definition = definition,
-            Id = 1,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
