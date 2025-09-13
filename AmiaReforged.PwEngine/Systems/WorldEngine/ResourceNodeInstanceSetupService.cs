@@ -228,6 +228,7 @@ public class ResourceNodeInstanceSetupService(
         }
 
         ObjectPlugin.SetAppearance(plc, node.Definition.PlcAppearance);
+        ObjectPlugin.ForceAssignUUID(plc, node.Id.ToString());
 
         harvestProcessor.RegisterPlaceable(plc, node);
     }
