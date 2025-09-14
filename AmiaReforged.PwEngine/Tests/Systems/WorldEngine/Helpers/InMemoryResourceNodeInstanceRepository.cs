@@ -39,9 +39,4 @@ public class InMemoryResourceNodeInstanceRepository : IResourceNodeInstanceRepos
         // Does nothing here
         return true;
     }
-
-    public void Delete(ResourceNodeInstance instance)
-    {
-        _resourceNodeInstances.Remove(instance);
-    }
 }

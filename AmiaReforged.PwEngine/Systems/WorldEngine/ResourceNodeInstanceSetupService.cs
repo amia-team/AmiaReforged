@@ -39,10 +39,6 @@ public class ResourceNodeInstanceSetupService(
 
             foreach (ResourceNodeInstance ri in instancesInArea)
             {
-
-                ri.Destroy();
-            }
-
                 nodeRepository.RemoveNodeInstance(ri);
             }
 
@@ -206,24 +202,6 @@ public class ResourceNodeInstanceSetupService(
 
     private void SpawnResourceNode(ResourceNodeDefinition definition, NwWaypoint wp)
     {
-
-        IPQuality baselineQuality = (IPQuality)Random.Shared.Next((int)IPQuality.Poor, (int)IPQuality.AboveAverage);
-
-        int usesModifier = (int)baselineQuality < (int)IPQuality.Average
-            ? (int)baselineQuality * -1
-            : (int)baselineQuality;
-
-        ResourceNodeInstance node = new()
-        {
-            Area = wp.Area!.ResRef,
-            Definition = definition,
-            Quality = baselineQuality,
-            Uses = definition.Uses + usesModifier,
-            X = wp.Position.X,
-            Y = wp.Position.Y,
-            Z = wp.Position.Z,
-            Rotation = wp.Rotation
-        };
     }
 
 

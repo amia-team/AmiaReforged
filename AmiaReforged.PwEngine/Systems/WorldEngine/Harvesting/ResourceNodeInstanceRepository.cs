@@ -92,21 +92,6 @@ public class ResourceNodeInstanceRepository(PwContextFactory factory, ResourceNo
             return false;
         }
     }
-
-
-    public void Delete(ResourceNodeInstance instance)
-    {
-        PersistentResourceNodeInstance persistentInstance = helper.MapFrom(instance);
-
-        try
-        {
-            _ctx.Remove(persistentInstance);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e);
-        }
-    }
 }
 
 [ServiceBinding(typeof(ResourceNodeMappingHelper))]

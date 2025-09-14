@@ -2,7 +2,6 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using static AmiaReforged.Classes.Bard.SongConstants;
 
 namespace AmiaReforged.Classes.Bard;
 
@@ -13,6 +12,7 @@ public class BardSong : ISpell
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "NW_S2_BardSong";
     private static string BardSongTag => "bard_song_";
+    private static VfxType FnfBardSong => (VfxType)2528;
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -73,7 +73,19 @@ public class BardSong : ISpell
                 ally.ApplyEffect(EffectDuration.Temporary, Effect.TemporaryHitpoints(songValues.Hp), songDuration);
         }
 
-        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurBardSong), songDuration);
+        _ = DelayedApplySongVfx(bard, songDuration);
+    }
+
+    private async Task DelayedApplySongVfx(NwCreature bard, TimeSpan songDuration)
+    {
+        foreach (Effect effect in bard.ActiveEffects)
+        {
+            if (effect.EffectType is EffectType.VisualEffect && effect.IntParams[0] == (int)VfxType.DurBardSong)
+                bard.RemoveEffect(effect);
+        }
+
+        await NwTask.Delay(TimeSpan.FromSeconds(0.2));
+        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurBardSong), songDuration);
     }
 
     public void SetSpellResisted(bool result) { }
