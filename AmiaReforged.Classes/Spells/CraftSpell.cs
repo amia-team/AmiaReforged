@@ -9,8 +9,6 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 
     private const int SpellFailVfx = 292;
 
-    private const string UniquePowerScriptName = "NW_S3_ActItem01";
-
     private const string PotionPrefix = "brewpot_";
     private const string WandPrefix = "craftwand_";
 
@@ -46,6 +44,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         if (SpellPropTable == null) return;
         if (eventData.Caster is not NwCreature caster) return;
         if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
+        if (eventData.Item != null) return;
 
         if (targetItem.BaseItem.ItemType is not
             (BaseItemType.BlankScroll or BaseItemType.BlankWand or BaseItemType.BlankPotion)) return;
@@ -61,14 +60,6 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         if (targetItem.HasItemProperty(ItemPropertyType.CastSpell))
         {
             player.SendServerMessage($"Spell craft failed! {targetItem.Name} has already been spell crafted.");
-            ApplySpellCraftFailVfx(caster);
-            eventData.PreventSpellCast = true;
-            return;
-        }
-
-        if (eventData.Item != null && eventData.Spell?.ImpactScript != UniquePowerScriptName)
-        {
-            player.SendServerMessage("Spell craft failed! You can only craft spells when casting from a spellbook.");
             ApplySpellCraftFailVfx(caster);
             eventData.PreventSpellCast = true;
             return;

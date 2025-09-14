@@ -10,4 +10,6 @@ public interface IResourceNodeInstanceRepository
     List<ResourceNodeInstance> GetInstancesByArea(string resRef);
     void Update(ResourceNodeInstance dataNodeInstance);
     bool SaveChanges();
+
+    void Delete(ResourceNodeInstance instance);
 }
