@@ -93,6 +93,7 @@ public class ResourceNodeInstanceRepository(PwContextFactory factory, ResourceNo
         }
     }
 
+
     public void Delete(ResourceNodeInstance instance)
     {
         PersistentResourceNodeInstance persistentInstance = helper.MapFrom(instance);
