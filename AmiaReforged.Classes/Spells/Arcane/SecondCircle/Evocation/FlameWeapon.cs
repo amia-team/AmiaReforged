@@ -76,7 +76,8 @@ public class FlameWeapon : ISpell
             damageProperty,
             EffectDuration.Temporary,
             duration,
-            AddPropPolicy.ReplaceExisting
+            AddPropPolicy.ReplaceExisting,
+            ignoreSubType: true
         );
 
         weapon.AddItemProperty
@@ -84,8 +85,11 @@ public class FlameWeapon : ISpell
             weaponVisual,
             EffectDuration.Temporary,
             duration,
-            AddPropPolicy.ReplaceExisting
+            AddPropPolicy.ReplaceExisting,
+            ignoreSubType: true
         );
+
+
     }
 
     private (NwItem? Weapon, string? FeedbackMessage)
