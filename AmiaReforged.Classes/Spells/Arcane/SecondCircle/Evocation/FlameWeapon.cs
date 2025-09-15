@@ -167,8 +167,7 @@ public class FlameWeapon : ISpell
 
     private (FlameWeaponType, int) GetFlameWeaponData(SpellEvents.OnSpellCast eventData, NwGameObject caster)
     {
-        LocalVariableInt flameWeaponTypeKey =
-            caster.GetObjectVariable<LocalVariableInt>("ds_spell_" + eventData.Spell.Id);
+        int casterLevel = eventData.Caster?.CasterLevel ?? 0;
 
         if (eventData.Item is { } item)
         {
@@ -176,17 +175,18 @@ public class FlameWeapon : ISpell
                 BaseItemType.Scroll or BaseItemType.EnchantedScroll or BaseItemType.SpellScroll
                 or BaseItemType.Potions or BaseItemType.EnchantedPotion
                 or BaseItemType.EnchantedWand or BaseItemType.MagicWand)
-                flameWeaponTypeKey.Value = 1;
+                return (FlameWeaponType.Fire, casterLevel);
 
-            else if (ItemResRefMap.TryGetValue(item.ResRef, out (FlameWeaponType FlameWeaponType, int CasterLevel) itemData))
+            if (ItemResRefMap.TryGetValue(item.ResRef, out (FlameWeaponType FlameWeaponType, int CasterLevel) itemData))
                 return (itemData.FlameWeaponType, itemData.CasterLevel);
         }
 
-        int casterLevel = eventData.Caster?.CasterLevel ?? 0;
+        LocalVariableInt flameWeaponTypeKey =
+            caster.GetObjectVariable<LocalVariableInt>("ds_spell_" + eventData.Spell.Id);
 
-        // default value to 1 for unexpected values
+        // default value fire for unexpected values
         if (flameWeaponTypeKey.Value is < 1 or > 6)
-            flameWeaponTypeKey.Value = 1;
+            flameWeaponTypeKey.Value = (int)FlameWeaponType.Fire;
 
         return ((FlameWeaponType)flameWeaponTypeKey.Value, casterLevel);
     }
