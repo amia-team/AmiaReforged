@@ -58,16 +58,12 @@ public class FlameWeapon : ISpell
         IPDamageBonus damageBonus = GetDamageBonus(casterLevel);
         IPDamageType damageType = FlameWeaponMap[flameWeaponType].ipDamageType;
 
-        NwItem? weapon = FindTargetWeapon(eventData.TargetObject, damageBonus, damageType);
+        (NwItem? weapon, string? feedbackMessage) = FindTargetWeapon(eventData.TargetObject, damageBonus, damageType);
 
         if (weapon == null)
         {
-            if (!eventData.Caster.IsPlayerControlled(out NwPlayer? player)) return;
-
-            player.FloatingTextString
-                ($"No weapon or gloves found on {eventData.TargetObject?.Name} to cast Flame Weapon.");
-            player.SendServerMessage
-                ("Either no weapon or gloves are equipped or they already have a more powerful Flame Weapon.");
+            if (feedbackMessage != null && eventData.Caster.IsPlayerControlled(out NwPlayer? player))
+                player.FloatingTextString(feedbackMessage, false);
 
             return;
         }
@@ -80,8 +76,7 @@ public class FlameWeapon : ISpell
             damageProperty,
             EffectDuration.Temporary,
             duration,
-            AddPropPolicy.ReplaceExisting,
-            ignoreSubType: false
+            AddPropPolicy.ReplaceExisting
         );
 
         weapon.AddItemProperty
@@ -89,17 +84,18 @@ public class FlameWeapon : ISpell
             weaponVisual,
             EffectDuration.Temporary,
             duration,
-            AddPropPolicy.ReplaceExisting,
-            ignoreSubType: false
+            AddPropPolicy.ReplaceExisting
         );
     }
 
-    private NwItem? FindTargetWeapon(NwGameObject? targetObject, IPDamageBonus damageBonus, IPDamageType damageType)
+    private (NwItem? Weapon, string? FeedbackMessage)
+        FindTargetWeapon(NwGameObject? targetObject, IPDamageBonus damageBonus, IPDamageType damageType)
     {
         if (targetObject is NwItem targetItem)
-            return targetItem;
+            return (targetItem, null);
 
-        if (targetObject is not NwCreature targetCreature) return null;
+        if (targetObject is not NwCreature targetCreature)
+            return (null, null);
 
         NwItem?[] itemsToCheck =
         [
@@ -108,17 +104,23 @@ public class FlameWeapon : ISpell
             targetCreature.GetItemInSlot(InventorySlot.Arms)
         ];
 
-        NwItem? itemToEnhance = itemsToCheck
-            .FirstOrDefault(item => item != null &&
-                                    (item.BaseItem.Category == BaseItemCategory.Melee
-                                     || item.BaseItem.ItemType == BaseItemType.Gloves) &&
-                                    !item.ItemProperties.Any(ip =>
-                                        ip.DurationType == EffectDuration.Temporary &&
-                                        ip.Property.PropertyType == ItemPropertyType.DamageBonus &&
-                                        ip.IntParams[0] > (int)damageBonus &&
-                                        ip.IntParams[1] == (int)damageType));
+        itemsToCheck = itemsToCheck
+            .Where(item => item != null && (item.BaseItem.Category == BaseItemCategory.Melee || item.BaseItem.ItemType == BaseItemType.Gloves))
+            .ToArray();
 
-        return itemToEnhance == null ? null : itemToEnhance;
+        if (itemsToCheck.Length == 0)
+            return (null, $"No weapon or gloves found on {targetCreature.Name} to cast Flame Weapon.");
+
+        NwItem? weapon = itemsToCheck
+            .FirstOrDefault(item => item != null && item.ItemProperties.All(ip =>
+                ip is not { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus } &&
+                ip.IntParams[0] <= (int)damageBonus &&
+                ip.IntParams[1] != (int)damageType));
+
+        if (weapon == null)
+            return (null, $"{targetCreature.Name} already has a more powerful weapon effect.");
+
+        return (weapon, null);
     }
 
 

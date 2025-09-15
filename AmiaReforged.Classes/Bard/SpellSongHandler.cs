@@ -23,7 +23,7 @@ public class SpellSongHandler
     {
         if (eventData.Spell is not { } spell) return;
         if (eventData.Caster is not NwCreature bard) return;
-        if (SongSpells.TryGetValue(spell, out SpellSongData songData)) return;
+        if (!SongSpells.TryGetValue(spell, out SpellSongData songData)) return;
 
         byte bardLevel = bard.GetClassInfo(ClassType.Bard)?.Level ?? 0;
         NwPlayer? player = bard.ControllingPlayer;
