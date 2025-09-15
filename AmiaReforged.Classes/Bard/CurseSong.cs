@@ -2,6 +2,7 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using static AmiaReforged.Classes.Bard.SongConstants;
 
 namespace AmiaReforged.Classes.Bard;
 
@@ -11,8 +12,6 @@ public class CurseSong : ISpell
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public string ImpactScript => "X2_S2_CurseSong";
-    private static VfxType DurCurseSong => (VfxType)507;
-    private static VfxType FnfCurseSong => (VfxType)2529;
     private static string CurseSongTag => "curse_song_";
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -73,7 +72,7 @@ public class CurseSong : ISpell
                 ApplyDamage(foe, songValues.Hp);
         }
 
-        _ = DelayedApplySongVfx(bard, songDuration);
+        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
     }
 
     private void ApplyCurseSong(NwCreature foe, NwCreature bard, NwSpell spell, Effect curseSong, TimeSpan songDuration)
@@ -87,18 +86,6 @@ public class CurseSong : ISpell
     {
         foe.ApplyEffect(EffectDuration.Instant, Effect.Damage(damage, DamageType.Sonic));
         foe.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpSonic));
-    }
-
-    private async Task DelayedApplySongVfx(NwCreature bard, TimeSpan songDuration)
-    {
-        foreach (Effect effect in bard.ActiveEffects)
-        {
-            if (effect.EffectType is EffectType.VisualEffect && effect.IntParams[0] == (int)DurCurseSong)
-                bard.RemoveEffect(effect);
-        }
-
-        await NwTask.Delay(TimeSpan.FromSeconds(0.2));
-        bard.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(DurCurseSong), songDuration);
     }
 
     public void SetSpellResisted(bool result) { }
