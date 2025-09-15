@@ -89,7 +89,8 @@ public class FlameWeapon : ISpell
             ignoreSubType: true
         );
 
-
+        VfxType pulseVfx = FlameWeaponMap[flameWeaponType].vfxType;
+        eventData.TargetObject?.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(pulseVfx));
     }
 
     private (NwItem? Weapon, string? FeedbackMessage)
