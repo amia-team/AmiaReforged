@@ -121,14 +121,10 @@ public class FlameWeapon : ISpell
             .Where(item => item != null && !item.ItemProperties.Any(ip =>
                     ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
                     && ip.IntParams[1] == (int)damageType
-                    && ip.IntParams[2] > (int)damageBonus))
+                    && ip.IntParams[3] > (int)damageBonus))
             // order valid items, prioritizing items that don't yet have a damage bonus
             .OrderBy(item => !item!.ItemProperties.Any(ip =>
                     ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }))
-            // then by items that don't have the damage type you're adding
-            .ThenBy(item => !item!.ItemProperties.Any(ip =>
-                    ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
-                    && ip.IntParams[1] == (int)damageType))
             // pick the first item in the sorted list
             .FirstOrDefault();
 
