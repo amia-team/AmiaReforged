@@ -118,15 +118,18 @@ public class FlameWeapon : ISpell
 
         NwItem? weapon = itemsToCheck
             // filter out items that have a more powerful effect
-            .Where(item =>
-                item != null && !item.ItemProperties.Any(ip =>
+            .Where(item => item != null && !item.ItemProperties.Any(ip =>
                     ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
-                    && ip.IntParams[2] > (int)damageBonus
-                    && ip.IntParams[1] == (int)damageType))
+                    && ip.IntParams[1] == (int)damageType
+                    && ip.IntParams[2] > (int)damageBonus))
             // order valid items, prioritizing items that don't yet have a damage bonus
-            .OrderBy(item =>
-                item != null && item.ItemProperties.Any(ip =>
+            .OrderBy(item => !item!.ItemProperties.Any(ip =>
                     ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }))
+            // then by items that have a lesser damage bonus on them
+            .ThenBy(item => !item!.ItemProperties.Any(ip =>
+                    ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
+                    && ip.IntParams[1] == (int)damageType
+                    && ip.IntParams[2] < (int)damageBonus))
             // pick the first item in the sorted list
             .FirstOrDefault();
 
