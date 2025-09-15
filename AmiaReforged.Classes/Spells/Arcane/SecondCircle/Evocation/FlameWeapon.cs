@@ -118,17 +118,32 @@ public class FlameWeapon : ISpell
 
         NwItem? weapon = itemsToCheck
             // filter out items that have a more powerful effect
-            .Where(item =>
-                item != null && !item.ItemProperties.Any(ip =>
+            .Where(item => item != null && !item.ItemProperties.Any(ip =>
                     ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
-                    && ip.IntParams[2] > (int)damageBonus
-                    && ip.IntParams[1] == (int)damageType))
+                    && ip.IntParams[1] == (int)damageType
+                    && ip.IntParams[2] > (int)damageBonus))
             // order valid items, prioritizing items that don't yet have a damage bonus
-            .OrderBy(item =>
-                item != null && item.ItemProperties.Any(ip =>
+            .OrderBy(item => !item!.ItemProperties.Any(ip =>
                     ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }))
+            // then by items that don't have the damage type you're adding
+            .ThenBy(item => !item!.ItemProperties.Any(ip =>
+                    ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
+                    && ip.IntParams[1] == (int)damageType))
             // pick the first item in the sorted list
             .FirstOrDefault();
+
+        if (weapon != null)
+        {
+            int? weaponExistingDamageType = weapon.ItemProperties.FirstOrDefault(ip => ip is
+                { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus })?.IntParams[1];
+
+            int? weaponExistingDamageBonus = weapon.ItemProperties.FirstOrDefault(ip => ip is
+                { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus })?.IntParams[2];
+
+            player?.SendServerMessage($"Existing weapon damage type: {weaponExistingDamageType}. Existing weapon damage bonus: {weaponExistingDamageBonus}.");
+        }
+
+
 
         if (weapon != null) return weapon;
 
