@@ -116,11 +116,12 @@ public class FlameWeapon : ISpell
             return null;
         }
 
-        NwItem? weapon = itemsToCheck
-            .FirstOrDefault(item => item != null && !item.ItemProperties.Any(ip =>
-                ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus } &&
-                ip.IntParams[0] > (int)damageBonus &&
-                ip.IntParams[1] == (int)damageType));
+        NwItem? weapon = itemsToCheck.FirstOrDefault(item =>
+            item != null &&
+            !item.ItemProperties.Any(ip =>
+                ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
+                && ip.IntParams[0] > (int)damageBonus
+                && ip.IntParams[1] == (int)damageType));
 
         if (weapon != null) return weapon;
 
