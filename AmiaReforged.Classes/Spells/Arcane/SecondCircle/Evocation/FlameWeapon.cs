@@ -134,7 +134,7 @@ public class FlameWeapon : ISpell
                 { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus })?.IntParams[1];
 
             int? weaponExistingDamageBonus = weapon.ItemProperties.FirstOrDefault(ip => ip is
-                { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus })?.IntParams[2];
+                { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus })?.IntParams[3];
 
             player?.SendServerMessage($"Existing weapon damage type: {weaponExistingDamageType}. Existing weapon damage bonus: {weaponExistingDamageBonus}.");
         }
