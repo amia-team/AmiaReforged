@@ -10,8 +10,11 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 public class ResourceNodeInstance
 {
     public delegate void OnHarvestHandler(HarvestEventData data);
+    public delegate void OnDestroyedHandler(ResourceNodeInstance instance);
 
     public event OnHarvestHandler? OnHarvest;
+    public event OnDestroyedHandler? OnDestroyed;
+
 
     public long Id { get; set; }
     public required string Area { get; set; }
@@ -31,6 +34,11 @@ public class ResourceNodeInstance
         NwArea? area = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == Area);
 
         return area != null ? Location.Create(area, new Vector3(X, Y, Z), Rotation) : null;
+    }
+
+    public void Destroy()
+    {
+        OnDestroyed?.Invoke(this);
     }
 
     public HarvestResult Harvest(ICharacter character)
@@ -64,8 +72,14 @@ public class ResourceNodeInstance
 
         HarvestEventData data = new(character, this);
         OnHarvest?.Invoke(data);
+        Uses--;
 
         HarvestProgress = 0;
+
+        if (Uses <= 0)
+        {
+            OnDestroyed?.Invoke(this);
+        }
         return HarvestResult.Finished;
     }
 }
