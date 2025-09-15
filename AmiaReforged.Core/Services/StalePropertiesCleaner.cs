@@ -27,6 +27,8 @@ public class StalePropertiesCleaner
         NwPlayer player = eventData.Player;
         if (player.ControlledCreature is not { } playerCharacter) return;
 
+        CleanPropertiesWithLostContext(playerCharacter);
+
         LocalVariableInt pcCleaned = playerCharacter.GetObjectVariable<LocalVariableInt>(StalePropertiesCleaned);
 
         // Every reset player characters' local variables are wiped; if it's 0, the character hasn't logged in this reset
@@ -44,24 +46,21 @@ public class StalePropertiesCleaner
         pcCleaned.Value = 1;
     }
 
-    private string CleanAndLogItems(Dictionary<NwItem, ItemProperty[]> removedPropertiesByItem)
+    /// <summary>
+    /// Sometimes temp properties get stuck on the character when the context of whoever created the property is lost
+    /// </summary>
+    private void CleanPropertiesWithLostContext(NwCreature playerCharacter)
     {
-        StringBuilder cleanupMessage = new("Stale properties cleaned:");
-
-        foreach ((NwItem? item, ItemProperty[]? propertiesToRemove) in removedPropertiesByItem)
+        foreach (InventorySlot slot in Enum.GetValues(typeof(InventorySlot)))
         {
-            cleanupMessage.Append($"\n{item.Name}: ");
-            string propertyNames = string.Join(", ", propertiesToRemove
-                .Select(p => p.Spell?.Name ?? p.Property.Name));
-            cleanupMessage.Append(propertyNames);
+            NwItem? item = playerCharacter.GetItemInSlot(slot);
 
-            foreach (ItemProperty itemProperty in propertiesToRemove)
-            {
-                item.RemoveItemProperty(itemProperty);
-            }
+            if (item == null) continue;
+
+            foreach (ItemProperty property in
+                     item.ItemProperties.Where(ip => ip.DurationType == EffectDuration.Temporary && ip.Creator == null))
+                item.RemoveItemProperty(property);
         }
-
-        return cleanupMessage.ToString().ColorString(ColorConstants.Gray);
     }
 
     private Dictionary<NwItem, ItemProperty[]> GetStaleProperties(NwCreature playerCharacter)
@@ -93,5 +92,25 @@ public class StalePropertiesCleaner
         }
 
         return removedPropertiesByItem;
+    }
+
+    private string CleanAndLogItems(Dictionary<NwItem, ItemProperty[]> removedPropertiesByItem)
+    {
+        StringBuilder cleanupMessage = new("Stale properties cleaned:");
+
+        foreach ((NwItem? item, ItemProperty[]? propertiesToRemove) in removedPropertiesByItem)
+        {
+            cleanupMessage.Append($"\n{item.Name}: ");
+            string propertyNames = string.Join(", ", propertiesToRemove
+                .Select(p => p.Spell?.Name ?? p.Property.Name));
+            cleanupMessage.Append(propertyNames);
+
+            foreach (ItemProperty itemProperty in propertiesToRemove)
+            {
+                item.RemoveItemProperty(itemProperty);
+            }
+        }
+
+        return cleanupMessage.ToString().ColorString(ColorConstants.Gray);
     }
 }
