@@ -112,10 +112,10 @@ public class FlameWeapon : ISpell
             return (null, $"No weapon or gloves found on {targetCreature.Name} to cast Flame Weapon.");
 
         NwItem? weapon = itemsToCheck
-            .FirstOrDefault(item => item != null && item.ItemProperties.All(ip =>
-                ip is not { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus } &&
-                ip.IntParams[0] <= (int)damageBonus &&
-                ip.IntParams[1] != (int)damageType));
+            .FirstOrDefault(item => item != null && !item.ItemProperties.Any(ip =>
+                ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus } &&
+                ip.IntParams[0] > (int)damageBonus &&
+                ip.IntParams[1] == (int)damageType));
 
         if (weapon == null)
             return (null, $"{targetCreature.Name} already has a more powerful weapon effect.");
@@ -123,6 +123,15 @@ public class FlameWeapon : ISpell
         return (weapon, null);
     }
 
+    private IPDamageBonus GetDamageBonus(int casterLevel)
+        => casterLevel switch
+        {
+            >= 25 => IPDamageBonus.Plus1d12,
+            >= 20 => IPDamageBonus.Plus1d10,
+            >= 15 => IPDamageBonus.Plus1d8,
+            >= 10 => IPDamageBonus.Plus1d6,
+            _ => IPDamageBonus.Plus1d4,
+        };
 
     private (FlameWeaponType, int) GetFlameWeaponData(SpellEvents.OnSpellCast eventData, NwGameObject caster)
     {
@@ -149,16 +158,6 @@ public class FlameWeapon : ISpell
 
         return ((FlameWeaponType)flameWeaponTypeKey.Value, casterLevel);
     }
-
-    private IPDamageBonus GetDamageBonus(int casterLevel)
-        => casterLevel switch
-        {
-            >= 25 => IPDamageBonus.Plus1d12,
-            >= 20 => IPDamageBonus.Plus1d10,
-            >= 15 => IPDamageBonus.Plus1d8,
-            >= 10 => IPDamageBonus.Plus1d6,
-            _ => IPDamageBonus.Plus1d4,
-        };
 
     public void SetSpellResisted(bool result) { }
 }
