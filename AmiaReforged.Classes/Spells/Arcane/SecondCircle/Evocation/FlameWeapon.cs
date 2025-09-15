@@ -116,12 +116,28 @@ public class FlameWeapon : ISpell
             return null;
         }
 
-        NwItem? weapon = itemsToCheck.FirstOrDefault(item =>
+        NwItem? weapon = itemsToCheck
+            // filter out items that have a more powerful effect
+            .Where(item =>
+                item != null && !item.ItemProperties.Any(ip =>
+                    ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
+                    && ip.IntParams[2] > (int)damageBonus
+                    && ip.IntParams[1] == (int)damageType))
+            // order valid items, prioritizing items that don't yet have a damage bonus
+            .OrderBy(item =>
+                item != null && item.ItemProperties.Any(ip =>
+                    ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }))
+            // pick the first item in the sorted list
+            .FirstOrDefault();
+
+        if (weapon != null) return weapon;
+
+        weapon = itemsToCheck.FirstOrDefault(item =>
             item != null &&
             !item.ItemProperties.Any(ip =>
                 ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
-                && ip.IntParams[1] > (int)damageBonus
-                && ip.IntParams[2] == (int)damageType));
+                && ip.IntParams[2] > (int)damageBonus
+                && ip.IntParams[1] == (int)damageType));
 
         if (weapon != null) return weapon;
 
@@ -129,7 +145,6 @@ public class FlameWeapon : ISpell
             ($"{targetCreature.Name} already has a more powerful weapon effect.", false);
 
         return null;
-
     }
 
     private IPDamageBonus GetDamageBonus(int casterLevel)
