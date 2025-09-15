@@ -158,8 +158,5 @@ public class FlameWeapon : ISpell
             _ => IPDamageBonus.Plus1d4,
         };
 
-    public void SetSpellResisted(bool result)
-    {
-        throw new NotImplementedException();
-    }
+    public void SetSpellResisted(bool result) { }
 }
