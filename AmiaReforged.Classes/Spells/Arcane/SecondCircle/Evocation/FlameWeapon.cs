@@ -58,15 +58,9 @@ public class FlameWeapon : ISpell
         IPDamageBonus damageBonus = GetDamageBonus(casterLevel);
         IPDamageType damageType = FlameWeaponMap[flameWeaponType].ipDamageType;
 
-        (NwItem? weapon, string? feedbackMessage) = FindTargetWeapon(eventData.TargetObject, damageBonus, damageType);
+        NwItem? weapon = FindTargetWeapon(eventData.TargetObject, eventData.Caster, damageBonus, damageType);
 
-        if (weapon == null)
-        {
-            if (feedbackMessage != null && eventData.Caster.IsPlayerControlled(out NwPlayer? player))
-                player.FloatingTextString(feedbackMessage, false);
-
-            return;
-        }
+        if (weapon == null) return;
 
         ItemProperty damageProperty = ItemProperty.DamageBonus(damageType, damageBonus);
         ItemProperty weaponVisual = ItemProperty.VisualEffect(FlameWeaponMap[flameWeaponType].itemVisual);
@@ -93,14 +87,15 @@ public class FlameWeapon : ISpell
         eventData.TargetObject?.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(pulseVfx));
     }
 
-    private (NwItem? Weapon, string? FeedbackMessage)
-        FindTargetWeapon(NwGameObject? targetObject, IPDamageBonus damageBonus, IPDamageType damageType)
+    private NwItem? FindTargetWeapon(NwGameObject? targetObject, NwGameObject caster, IPDamageBonus damageBonus, IPDamageType damageType)
     {
         if (targetObject is NwItem targetItem)
-            return (targetItem, null);
+            return targetItem;
 
         if (targetObject is not NwCreature targetCreature)
-            return (null, null);
+            return null;
+
+        caster.IsPlayerControlled(out NwPlayer? player);
 
         NwItem?[] itemsToCheck =
         [
@@ -114,7 +109,12 @@ public class FlameWeapon : ISpell
             .ToArray();
 
         if (itemsToCheck.Length == 0)
-            return (null, $"No weapon or gloves found on {targetCreature.Name} to cast Flame Weapon.");
+        {
+            player?.FloatingTextString
+                ($"No weapon or gloves found on {targetCreature.Name} to cast Flame Weapon.", false);
+
+            return null;
+        }
 
         NwItem? weapon = itemsToCheck
             .FirstOrDefault(item => item != null && !item.ItemProperties.Any(ip =>
@@ -122,10 +122,13 @@ public class FlameWeapon : ISpell
                 ip.IntParams[0] > (int)damageBonus &&
                 ip.IntParams[1] == (int)damageType));
 
-        if (weapon == null)
-            return (null, $"{targetCreature.Name} already has a more powerful weapon effect.");
+        if (weapon != null) return weapon;
 
-        return (weapon, null);
+        player?.FloatingTextString
+            ($"{targetCreature.Name} already has a more powerful weapon effect.", false);
+
+        return null;
+
     }
 
     private IPDamageBonus GetDamageBonus(int casterLevel)
