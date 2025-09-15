@@ -33,16 +33,27 @@ public class FlameWeapon : ISpell
         { FlameWeaponType.Negative, (IPDamageType.Negative, VfxType.ImpPulseNegative, ItemVisual.Evil) }
     };
 
+    private const string UnknownItemResRef = "itm_coldweapon_dmg";
+    private const string WyvernBileResRef = "itm_sc_wyvernbil";
+    private const string AuricularEssenceResRef = "itm_sc_auricular";
+    private const string SourtoothVenomResRef = "itm_sc_sourtooth";
+    private const string VenomGlandResRef = "js_venomgland";
+    private const string HighQualityVenomGlandResRef = "js_hqvenomgland";
+    private const string LegendaryVenomGlandResRef = "js_lvenomgland";
+    private const string WyvernVenomGlandResRef = "js_wyverngland";
+    private const string FrostspearsTreasureResRef = "wdragonbossrewar";
+
     private static readonly Dictionary<string, (FlameWeaponType, int CasterLevel)> ItemResRefMap = new()
     {
-        { "itm_coldweapon_dmg", (FlameWeaponType.Cold, 15) }, // Unknown item?
-        { "itm_sc_wyvernbil", (FlameWeaponType.Acid, 15) }, // Wyvern Bile
-        { "itm_sc_auricular", (FlameWeaponType.Sonic, 15)}, // Auricular Essence
-        { "itm_sc_sourtoothvenom", (FlameWeaponType.Negative, 15) }, // Sourtooth Venom
-        { "js_venomgland", (FlameWeaponType.Acid, 9) }, // Venom Gland
-        { "js_hqvenomgland", (FlameWeaponType.Acid, 10) }, // HQ Venom Gland
-        { "js_lvenomgland", (FlameWeaponType.Acid, 15) }, // Legendary Venom Gland
-        { "js_wyverngland", (FlameWeaponType.Acid, 20) } // Wyvern Venom Gland
+        { UnknownItemResRef, (FlameWeaponType.Cold, 15) },
+        { WyvernBileResRef, (FlameWeaponType.Acid, 15) },
+        { AuricularEssenceResRef, (FlameWeaponType.Sonic, 15)},
+        { SourtoothVenomResRef, (FlameWeaponType.Negative, 15) },
+        { VenomGlandResRef, (FlameWeaponType.Acid, 9) },
+        { HighQualityVenomGlandResRef, (FlameWeaponType.Acid, 10) },
+        { LegendaryVenomGlandResRef, (FlameWeaponType.Acid, 15) },
+        { WyvernVenomGlandResRef, (FlameWeaponType.Acid, 20) },
+        { FrostspearsTreasureResRef, (FlameWeaponType.Sonic, 17) }
     };
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
