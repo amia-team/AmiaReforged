@@ -4,9 +4,10 @@ using NWN.Core;
 
 namespace AmiaReforged.Classes.Poisons;
 
-public class PoisonEffect(ScriptHandleFactory scriptHandleFactory)
+[ServiceBinding(typeof(PoisonService))]
+public class PoisonService(ScriptHandleFactory scriptHandleFactory)
 {
-    public void ApplyPoison(PoisonType poisonType, NwCreature targetCreature, NwCreature poisoner, int dc)
+    public void ApplyPoisonEffect(PoisonType poisonType, NwCreature targetCreature, NwCreature poisoner, int dc)
     {
         PoisonData.PoisonValues? poisonValues = PoisonData.GetPoisonValues(poisonType);
 
@@ -33,8 +34,8 @@ public class PoisonEffect(ScriptHandleFactory scriptHandleFactory)
 
                 ApplyPrimaryPoisonEffect(targetCreature, poisonValues);
 
-                Effect poisonRunActionEffect = CreateSecondaryPoisonEffect(poisonValues, dc, poisoner);
-                targetCreature.ApplyEffect(EffectDuration.Temporary, poisonRunActionEffect, NwTimeSpan.FromTurns(1));
+                Effect secondaryPoisonEffect = CreateSecondaryPoisonEffect(poisonValues, dc, poisoner);
+                targetCreature.ApplyEffect(EffectDuration.Temporary, secondaryPoisonEffect, NwTimeSpan.FromTurns(1));
 
                 break;
         }
