@@ -18,7 +18,7 @@ public static class PoisonData
         string? SecondaryScript
     );
 
-    private static readonly IReadOnlyDictionary<string, Ability> AbilityAbbreviationMap = new Dictionary<string, Ability>(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, Ability> AbilityAbbreviationMap = new()
     {
         { "STR", Ability.Strength },
         { "DEX", Ability.Dexterity },
