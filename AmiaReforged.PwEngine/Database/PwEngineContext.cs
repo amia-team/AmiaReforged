@@ -16,6 +16,9 @@ public class PwEngineContext : DbContext
     public DbSet<WorldConfiguration> WorldConfiguration { get; set; } = null!;
     public DbSet<PersistentResourceNodeInstance> PersistedNodes { get; set; } = null!;
 
+    public DbSet<PersistedCharacter> Characters { get; set; } = null!;
+    public DbSet<CharacterStatistics> CharacterStatistics { get; set; } = null!;
+
 
     public PwEngineContext()
     {
