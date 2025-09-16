@@ -87,7 +87,7 @@ public class DivineWrath : ISpell
                 DamagePower: DamagePower.Energy,
                 DamageReduction: 20,
                 AttackBonus: 9,
-                DamageBonus: DamageBonus.Plus10,
+                DamageBonus: DamageBonus.Plus9,
                 UniversalSave: 9),
             _ => new DivineWrathBonuses(
                 DamagePower: DamagePower.Normal,
