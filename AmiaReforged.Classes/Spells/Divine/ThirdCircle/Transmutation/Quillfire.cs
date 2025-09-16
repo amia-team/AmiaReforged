@@ -6,6 +6,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Spells.Divine.ThirdCircle.Transmutation;
 
 [ServiceBinding(typeof(ISpell))]
+[ServiceBinding(typeof(PoisonService))]
 public class Quillfire(PoisonService poisonService) : ISpell
 {
     public string ImpactScript => "x0_s0_quillfire";
@@ -17,7 +18,7 @@ public class Quillfire(PoisonService poisonService) : ISpell
 
         if (caster.IsReactionTypeFriendly(targetCreature)) return;
 
-        SpellUtils.SignalSpell(caster, targetCreature, eventData.Spell);
+        CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
 
         int numberOfQuills = 1 + caster.CasterLevel / 5;
         int dc = SpellUtils.GetSpellDc(eventData);
