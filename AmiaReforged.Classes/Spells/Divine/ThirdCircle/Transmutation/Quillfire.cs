@@ -6,6 +6,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Spells.Divine.ThirdCircle.Transmutation;
 
 [ServiceBinding(typeof(ISpell))]
+[ServiceBinding(typeof(PoisonService))]
 public class Quillfire(PoisonService poisonService) : ISpell
 {
     public string ImpactScript => "x0_s0_quillfire";
