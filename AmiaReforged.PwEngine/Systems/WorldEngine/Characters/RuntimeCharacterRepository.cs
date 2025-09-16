@@ -9,7 +9,7 @@ public class RuntimeCharacterRepository : ICharacterRepository
 
     public void Add(ICharacter character)
     {
-        _characters.Add(character.GetId(), character);
+        _characters.TryAdd(character.GetId(), character);
     }
 
     public ICharacter? GetById(Guid characterId)

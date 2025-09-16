@@ -174,7 +174,7 @@ public class HarvestTests
 
         ResourceNodeDefinition definition = new(0, ResourceType.Ore, "test",
             new HarvestContext(JobSystemItemType.ToolPick),
-            [new HarvestOutput(TestItemTag, 1)], 2);
+            [new HarvestOutput(TestItemTag, 1)], 10, 2);
 
         ResourceNodeInstance instance = new()
         {
@@ -214,7 +214,7 @@ public class HarvestTests
 
         ResourceNodeDefinition definition = new(0, ResourceType.Ore, "test",
             new HarvestContext(JobSystemItemType.ToolPick),
-            [new HarvestOutput(TestItemTag, 1)], 2);
+            [new HarvestOutput(TestItemTag, 1)], 10, 2);
 
         ResourceNodeInstance instance = new()
         {

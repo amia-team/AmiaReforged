@@ -45,9 +45,9 @@ public class ResourceNodeInstance
 
     public HarvestResult Harvest(ICharacter character)
     {
-        ItemSnapshot tool = character.GetEquipment()[EquipmentSlots.RightHand];
+        ItemSnapshot? tool = character.GetEquipment()[EquipmentSlots.RightHand];
         if (Definition.Requirement.RequiredItemType != JobSystemItemType.None &&
-            tool.Type != Definition.Requirement.RequiredItemType)
+            tool?.Type != Definition.Requirement.RequiredItemType)
         {
             return HarvestResult.NoTool;
         }
