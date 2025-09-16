@@ -1,13 +1,16 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.Classes.Poisons;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
 namespace AmiaReforged.Classes.Spells.Divine.ThirdCircle.Transmutation;
 
 [ServiceBinding(typeof(ISpell))]
-public class Quillfire : ISpell
+public class Quillfire(PoisonService poisonService) : ISpell
 {
     public string ImpactScript => "x0_s0_quillfire";
+
+    // Use a constructor to receive the injected service.
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
@@ -19,7 +22,7 @@ public class Quillfire : ISpell
 
         SpellUtils.SignalSpell(caster, targetCreature, eventData.Spell);
 
-        int numberOfQuills = caster.CasterLevel / 5;
+        int numberOfQuills = 1 + caster.CasterLevel / 5;
         int dc = SpellUtils.GetSpellDc(eventData);
 
         float distanceToTarget = caster.Distance(targetCreature);
@@ -46,8 +49,7 @@ public class Quillfire : ISpell
                     targetCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Spell, caster);
 
                 if (savingThrowDamage == SavingThrowResult.Success)
-                    targetCreature.ApplyEffect(EffectDuration.Instant,
-                        Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
+                    targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
 
                 if ((hasEvasion || hasImpEvasion) && savingThrowDamage == SavingThrowResult.Success)
                     continue;
@@ -60,7 +62,7 @@ public class Quillfire : ISpell
                     Effect.Damage(quillDamage, DamageType.Piercing));
 
                 targetCreature.ApplyEffect(EffectDuration.Instant, quillDamageEffect);
-                targetCreature.ApplyEffect(EffectDuration.Permanent, Effect.Poison(PoisonType.LargeScorpionVenom));
+                poisonService.ApplyPoisonEffect(PoisonType.LargeScorpionVenom, targetCreature, caster, dc);
             }
         }
     }
