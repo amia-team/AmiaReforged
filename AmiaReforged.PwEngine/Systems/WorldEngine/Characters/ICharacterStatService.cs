@@ -1,6 +1,4 @@
-using AmiaReforged.PwEngine.Database.Entities;
-
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 
 public interface ICharacterStatService
 {

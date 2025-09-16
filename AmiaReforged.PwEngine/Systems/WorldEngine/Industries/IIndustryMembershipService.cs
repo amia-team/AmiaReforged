@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;

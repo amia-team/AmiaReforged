@@ -1,12 +1,10 @@
-using AmiaReforged.Core.UserInterface;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using Anvil;
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 
 /// <summary>
 /// Runtime specific implementation for a character. Acts as a facade for various character services...

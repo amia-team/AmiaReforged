@@ -1,9 +1,9 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 
 public interface ICharacter : ICharacterKnowledgeContext, ICharacterInventoryContext, ICharacterIndustryContext
 {

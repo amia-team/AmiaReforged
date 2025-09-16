@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
@@ -22,7 +23,7 @@ public class HarvestTests
     private ICharacterKnowledgeRepository _characterKnowledgeRepository = null!;
     private IIndustryRepository _industries = null!;
     private IIndustryMembershipRepository _memberships = null!;
-    private readonly InMemoryCharacterRepository _characters = new();
+    private readonly RuntimeCharacterRepository _characters = new();
 
     [SetUp]
     public void OneTimeSetUp()

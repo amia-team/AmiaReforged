@@ -1,9 +1,9 @@
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 
-[ServiceBinding(typeof(InMemoryCharacterRepository))]
-public class InMemoryCharacterRepository : ICharacterRepository
+[ServiceBinding(typeof(RuntimeCharacterRepository))]
+public class RuntimeCharacterRepository : ICharacterRepository
 {
     private readonly Dictionary<Guid, ICharacter> _characters = [];
 
@@ -36,6 +36,6 @@ public class InMemoryCharacterRepository : ICharacterRepository
 
     public static ICharacterRepository Create()
     {
-        return new InMemoryCharacterRepository();
+        return new RuntimeCharacterRepository();
     }
 }

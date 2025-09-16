@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 
 public class CharacterStatistics
 {

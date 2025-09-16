@@ -1,10 +1,10 @@
-using System.Collections.Immutable;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using Anvil.API;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 
 public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
 {

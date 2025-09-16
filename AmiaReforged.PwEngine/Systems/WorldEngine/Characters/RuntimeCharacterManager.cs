@@ -1,20 +1,19 @@
 using AmiaReforged.Core.UserInterface;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using Anvil.API;
 using Anvil.API.Events;
-using Anvil.Services;
 using NLog;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 
 // [ServiceBinding(typeof(RuntimeCharacterManager))]
 public class RuntimeCharacterManager : ICharacterManager
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly InMemoryCharacterRepository _repository;
+    private readonly RuntimeCharacterRepository _repository;
 
-    public RuntimeCharacterManager(InMemoryCharacterRepository repository)
+    public RuntimeCharacterManager(RuntimeCharacterRepository repository)
     {
         _repository = repository;
 

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using AmiaReforged.PwEngine.Systems.WorldEngine;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 
 namespace AmiaReforged.PwEngine.Database.Entities;
