@@ -15,7 +15,7 @@ public interface ICharacterInventoryContext
 {
     void AddItem(ItemDto item);
     List<ItemSnapshot> GetInventory();
-    Dictionary<EquipmentSlots, ItemSnapshot> GetEquipment();
+    Dictionary<EquipmentSlots, ItemSnapshot?> GetEquipment();
 }
 
 public interface ICharacterKnowledgeContext

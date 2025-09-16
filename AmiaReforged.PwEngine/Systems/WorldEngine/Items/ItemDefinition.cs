@@ -13,9 +13,9 @@ public record ItemDefinition(
     int BaseItemType,
     AppearanceData Appearance);
 
-public record AppearanceData(int ModelType, int? SimpleModelNumber, PartData? Data);
+public record AppearanceData(int ModelType, int? SimpleModelNumber, WeaponPartData? Data);
 
-public record PartData(
+public record WeaponPartData(
     int TopPartModel,
     int MiddlePartModel,
     int BottomPartModel,

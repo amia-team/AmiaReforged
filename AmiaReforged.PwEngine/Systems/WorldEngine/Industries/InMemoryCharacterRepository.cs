@@ -1,26 +1,27 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
+using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 
+[ServiceBinding(typeof(InMemoryCharacterRepository))]
 public class InMemoryCharacterRepository : ICharacterRepository
 {
-    private readonly List<ICharacter> _characters = [];
+    private readonly Dictionary<Guid, ICharacter> _characters = [];
 
     public void Add(ICharacter character)
     {
-        _characters.Add(character);
+        _characters.Add(character.GetId(), character);
     }
 
     public ICharacter? GetById(Guid characterId)
     {
-        return _characters.FirstOrDefault(c => c.GetId() == characterId);
+        return _characters.GetValueOrDefault(characterId);
     }
 
     public void Delete(ICharacter character)
     {
         try
         {
-            _characters.Remove(character);
+            _characters.Remove(character.GetId());
         }
         catch (Exception e)
         {
@@ -30,7 +31,7 @@ public class InMemoryCharacterRepository : ICharacterRepository
 
     public bool Exists(Guid membershipCharacterId)
     {
-        return _characters.Any(c => c.GetId() == membershipCharacterId);
+        return _characters.ContainsKey(membershipCharacterId);
     }
 
     public static ICharacterRepository Create()

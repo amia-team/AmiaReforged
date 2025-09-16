@@ -70,7 +70,7 @@ public class TestCharacter(
         return membershipService.LearnKnowledge(GetId(), knowledgeTag);
     }
 
-    public Dictionary<EquipmentSlots, ItemSnapshot> GetEquipment() => injectedEquipment;
+    public Dictionary<EquipmentSlots, ItemSnapshot?> GetEquipment() => injectedEquipment;
 
     public List<SkillData> GetSkills()
     {

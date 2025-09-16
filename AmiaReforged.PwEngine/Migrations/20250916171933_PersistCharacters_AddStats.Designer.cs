@@ -3,6 +3,7 @@ using System;
 using AmiaReforged.PwEngine.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AmiaReforged.PwEngine.Migrations
 {
     [DbContext(typeof(PwEngineContext))]
-    partial class PwEngineContextModelSnapshot : ModelSnapshot
+    [Migration("20250916171933_PersistCharacters_AddStats")]
+    partial class PersistCharacters_AddStats
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

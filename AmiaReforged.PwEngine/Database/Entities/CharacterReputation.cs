@@ -7,10 +7,10 @@ public class CharacterReputation
 {
     [Key] public long Id { get; set; }
 
-    public long CharacterId { get; set; }
-    [ForeignKey(nameof(CharacterId))] public required PersistedWorldCharacter Character { get; set; }
+    public Guid CharacterId { get; set; }
+    [ForeignKey(nameof(CharacterId))] public required PersistedCharacter Character { get; set; }
 
-    public long OrganizationId { get; set; }
+    public Guid OrganizationId { get; set; }
     [ForeignKey(nameof(OrganizationId))] public required Organization Organization { get; set; }
 
     /// <summary>

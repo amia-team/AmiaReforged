@@ -14,12 +14,11 @@ public class HarvestingService(
     IResourceNodeInstanceRepository repository,
     IItemDefinitionRepository itemDefinitionRepository) : IHarvestProcessor
 {
-    private readonly Dictionary<ResourceNodeInstance, NwPlaceable> _spawnedNodes = new();
+    private readonly Dictionary<Guid, SpawnedNode> _spawnedNodes = new();
 
     public void RegisterPlaceable(NwPlaceable placeable, ResourceNodeInstance instance)
     {
-        _spawnedNodes.Add(instance, placeable);
-
+        _spawnedNodes.Add(placeable.UUID, new SpawnedNode(placeable, instance));
 
         switch (instance.Definition.Type)
         {
@@ -44,6 +43,15 @@ public class HarvestingService(
 
     private void HandleAttackedHarvest(PlaceableEvents.OnPhysicalAttacked obj)
     {
+        SpawnedNode? node = _spawnedNodes.GetValueOrDefault(obj.Placeable.UUID);
+
+        if (node is null) return;
+
+        NwPlaceable? plc = node.Placeable;
+
+        if (plc is null || !plc.IsValid) return;
+
+        // node.Instance.Harvest();
     }
 
     public void RegisterNode(ResourceNodeInstance instance)
@@ -61,16 +69,21 @@ public class HarvestingService(
 
     private void Delete(ResourceNodeInstance instance)
     {
-        NwPlaceable? placeable = _spawnedNodes.GetValueOrDefault(instance);
+        SpawnedNode? node = _spawnedNodes.GetValueOrDefault(instance.Id);
+
+        if (node is null) return;
+
+        NwPlaceable? plc = node.Placeable;
 
         repository.Delete(instance);
         repository.SaveChanges();
 
-        if (placeable != null)
+        if (plc is null || !plc.IsValid)
         {
-            placeable.Destroy();
-            _spawnedNodes.Remove(instance);
+            plc?.Destroy();
         }
+
+        _spawnedNodes.Remove(instance.Id);
     }
 
     private void HandleHarvest(HarvestEventData data)
@@ -135,4 +148,11 @@ public class HarvestingService(
 
         repository.Update(data.NodeInstance);
     }
+}
+
+public record SpawnedNode(NwPlaceable? Placeable, ResourceNodeInstance Instance);
+
+public interface ICharacterManager
+{
+    ICharacter? GetCharacter(Guid id);
 }
