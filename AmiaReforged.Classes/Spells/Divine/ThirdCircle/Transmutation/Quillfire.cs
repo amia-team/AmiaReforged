@@ -9,9 +9,6 @@ namespace AmiaReforged.Classes.Spells.Divine.ThirdCircle.Transmutation;
 public class Quillfire(PoisonService poisonService) : ISpell
 {
     public string ImpactScript => "x0_s0_quillfire";
-
-    // Use a constructor to receive the injected service.
-
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
         if (eventData.Caster is not NwCreature caster) return;
@@ -58,6 +55,7 @@ public class Quillfire(PoisonService poisonService) : ISpell
 
                 if (hasImpEvasion || savingThrowDamage == SavingThrowResult.Success) quillDamage /= 2;
 
+                await caster.WaitForObjectContext();
                 Effect quillDamageEffect = Effect.LinkEffects(Effect.VisualEffect(VfxType.ComBloodSparkSmall),
                     Effect.Damage(quillDamage, DamageType.Piercing));
 
@@ -78,7 +76,6 @@ public class Quillfire(PoisonService poisonService) : ISpell
     // This spell doesn't use Spell Resistance
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
-
     public void SetSpellResisted(bool result) { }
 
 }
