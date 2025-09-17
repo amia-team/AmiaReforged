@@ -7,7 +7,7 @@ using Anvil.API;
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 
 /// <summary>
-/// Runtime specific implementation for a character. Acts as a facade for various character services...
+/// Runtime specific implementation for a character. Acts as a facade for various character services
 /// </summary>
 public class RuntimeCharacter(
     Guid characterId,
