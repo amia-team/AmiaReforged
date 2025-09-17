@@ -24,14 +24,7 @@ public class RuntimeCharacterRepository : ICharacterRepository
 
     public void Delete(ICharacter character)
     {
-        try
-        {
-            _characters.Remove(character.GetId());
-        }
-        catch (Exception e)
-        {
-            // Nothin'
-        }
+        _characters.Remove(character.GetId());
     }
 
     public bool Exists(Guid membershipCharacterId)
