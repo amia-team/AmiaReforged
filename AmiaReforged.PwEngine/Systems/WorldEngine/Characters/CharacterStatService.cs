@@ -1,5 +1,8 @@
+using Anvil.Services;
+
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 
+[ServiceBinding(typeof(ICharacterStatService))]
 public class CharacterStatService(ICharacterStatRepository statRepository) : ICharacterStatService
 {
     public int GetKnowledgePoints(Guid characterId)
