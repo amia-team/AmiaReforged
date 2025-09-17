@@ -60,6 +60,8 @@ public class SpellSongHandler
 
         bard.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(songData.SoundType));
 
+        if (spell == NwSpell.FromSpellType(SongConstants.BardSong)) return;
+
         bard.DecrementRemainingFeatUses(bardSongFeat);
     }
 }
