@@ -91,4 +91,9 @@ public class RuntimeCharacterService
     {
         return _playerKeys[player];
     }
+
+    public RuntimeCharacter? GetRuntimeCharacter(NwCreature creature)
+    {
+        return _repository.GetById(creature.UUID) as RuntimeCharacter ?? RuntimeCharacter.For(creature);
+    }
 }
