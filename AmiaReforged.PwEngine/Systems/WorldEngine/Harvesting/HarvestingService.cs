@@ -3,7 +3,6 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
-using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
 
@@ -67,7 +66,7 @@ public class HarvestingService(
             totalQuality = Math.Max(NWScript.IP_CONST_QUALITY_VERY_POOR,
                 Math.Min(NWScript.IP_CONST_QUALITY_MASTERWORK, totalQuality));
 
-            int totalQuantity = (int)harvestOutput.Quantity;
+            int totalQuantity = harvestOutput.Quantity;
             List<KnowledgeHarvestEffect> yieldImprovements =
                 applicable.Where(he => he.StepModified == HarvestStep.ItemYield).ToList();
             foreach (KnowledgeHarvestEffect yieldImprovement in yieldImprovements)
