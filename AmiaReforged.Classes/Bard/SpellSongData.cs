@@ -3,10 +3,10 @@ using static AmiaReforged.Classes.Bard.SongConstants;
 
 namespace AmiaReforged.Classes.Bard;
 
-public readonly struct SpellSongData(byte requiredLevel, VfxType soundType)
+public readonly struct SpellSongData(byte requiredLevel, VfxType songSound)
 {
     public byte RequiredLevel { get; } = requiredLevel;
-    public VfxType SoundType { get; } = soundType;
+    public VfxType SongSound { get; } = songSound;
 
     public static readonly Dictionary<NwSpell, SpellSongData> SongSpells = new()
     {
