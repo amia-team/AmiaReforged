@@ -27,6 +27,7 @@ public class RuntimeCharacterService
         _playerKeys.Remove(obj.Player);
         if (obj.Player.LoginCreature == null) return;
 
+        DeleteRuntimeCharacter(obj.Player.LoginCreature);
         NWScript.SetLocalInt(obj.Player.LoginCreature, WorldConstants.PcCachedLvar, NWScript.FALSE);
     }
 
@@ -45,6 +46,7 @@ public class RuntimeCharacterService
         if (player.LoginCreature == null) return;
 
         ObjectPlugin.ForceAssignUUID(player.LoginCreature, key.ToUUIDString());
+        CreateRuntimeCharacter(player.LoginCreature);
         SetIsCached(player.LoginCreature);
     }
 
@@ -60,12 +62,7 @@ public class RuntimeCharacterService
 
         if (obj.Player.LoginCreature == null) return;
 
-        RuntimeCharacter? character = RuntimeCharacter.For(obj.Player.LoginCreature);
-        if (character != null)
-        {
-            _repository.Add(character);
-        }
-
+        CreateRuntimeCharacter(obj.Player.LoginCreature);
         ObjectPlugin.ForceAssignUUID(obj.Player.LoginCreature, key.ToUUIDString());
         SetIsCached(obj.Player.LoginCreature);
     }
@@ -82,7 +79,6 @@ public class RuntimeCharacterService
     private void DeleteRuntimeCharacter(NwCreature creature)
     {
         Guid id = creature.UUID;
-
         _repository.DeleteById(id);
     }
 
