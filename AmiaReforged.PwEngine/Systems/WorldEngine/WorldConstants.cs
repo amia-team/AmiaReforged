@@ -15,4 +15,5 @@ internal static class WorldConstants
     public static string ItemVariableType => "item_type";
     public static string LvarNodeTags => "node_tags";
     public static string ToolTypeVariable => "tool_type";
+    public static string PcCachedLvar => "pckey_cached";
 }

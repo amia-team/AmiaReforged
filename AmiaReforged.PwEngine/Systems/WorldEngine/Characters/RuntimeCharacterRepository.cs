@@ -12,6 +12,11 @@ public class RuntimeCharacterRepository : ICharacterRepository
         _characters.TryAdd(character.GetId(), character);
     }
 
+    public void DeleteById(Guid characterId)
+    {
+        _characters.Remove(characterId);
+    }
+
     public ICharacter? GetById(Guid characterId)
     {
         return _characters.GetValueOrDefault(characterId);

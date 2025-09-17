@@ -1,6 +1,6 @@
 using AmiaReforged.Core.Services;
-using AmiaReforged.PwEngine.Systems.Player.PlayerId;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -21,7 +21,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
     }
 
     [Inject] private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
-    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; init; } = null!;
+    [Inject] private Lazy<RuntimeCharacterService> PlayerIdService { get; init; } = null!;
     [Inject] private Lazy<CharacterService> CharacterService { get; init; } = null!;
 
     private PlayerToolsModel Model { get; }

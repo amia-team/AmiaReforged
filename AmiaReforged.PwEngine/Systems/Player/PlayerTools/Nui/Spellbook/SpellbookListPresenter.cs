@@ -1,9 +1,9 @@
 using AmiaReforged.Core.Services;
 using AmiaReforged.Core.UserInterface;
-using AmiaReforged.PwEngine.Systems.Player.PlayerId;
 using AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.CreateSpellbook;
 using AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.OpenSpellbook;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
@@ -33,7 +33,7 @@ public class SpellbookListPresenter : ScryPresenter<SpellbookListView>
 
     [Inject] private Lazy<WindowDirector> WindowDirector { get; set; } = null!;
     [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; } = null!;
-    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; set; } = null!;
+    [Inject] private Lazy<RuntimeCharacterService> PlayerIdService { get; set; } = null!;
 
     public override SpellbookListView View { get; }
 

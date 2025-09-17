@@ -2,8 +2,8 @@ using System.Text.Json;
 using AmiaReforged.Core.Models;
 using AmiaReforged.Core.Services;
 using AmiaReforged.Core.UserInterface;
-using AmiaReforged.PwEngine.Systems.Player.PlayerId;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -21,7 +21,7 @@ public class CreateSpellbookPresenter(CreateSpellbookView toolView, NwPlayer pla
 
     [Inject] private Lazy<SpellbookLoaderService> SpellbookLoader { get; set; } = null!;
     [Inject] private Lazy<CharacterService> CharacterService { get; set; } = null!;
-    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; set; } = null!;
+    [Inject] private Lazy<RuntimeCharacterService> PlayerIdService { get; set; } = null!;
 
     public override CreateSpellbookView View { get; } = toolView;
 

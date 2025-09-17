@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.Core.Helpers;
 using AmiaReforged.Core.Models;
+using Anvil.API;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -13,7 +14,6 @@ namespace AmiaReforged.Core.Services;
 public class PlayerDataService
 {
     private readonly DatabaseContextFactory _factory;
-    private readonly NwTaskHelper _taskHelper;
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -23,10 +23,9 @@ public class PlayerDataService
     /// </summary>
     /// <param name="dbContext"> The database context. </param>
     /// <param name="taskHelper"> Awaitable TaskHelper that can be mocked for testing. </param>
-    public PlayerDataService(DatabaseContextFactory dbContext, NwTaskHelper taskHelper)
+    public PlayerDataService(DatabaseContextFactory dbContext)
     {
         _factory = dbContext;
-        _taskHelper = taskHelper;
         Log.Info("PlayerDataService initialized.");
     }
 
@@ -46,7 +45,7 @@ public class PlayerDataService
             Log.Error($"Error getting player characters from database for player {cdkey}: {e.Message}");
         }
 
-        await _taskHelper.TrySwitchToMainThread();
+        await NwTask.SwitchToMainThread();
 
         return characters;
     }
