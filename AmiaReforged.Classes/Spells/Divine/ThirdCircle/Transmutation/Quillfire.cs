@@ -19,7 +19,7 @@ public class Quillfire(PoisonService poisonService) : ISpell
 
         CreatureEvents.OnSpellCastAt.Signal(caster, targetCreature, eventData.Spell);
 
-        int numberOfQuills = 1 + caster.CasterLevel / 5;
+        int numberOfQuills = 1 + caster.CasterLevel / 6;
         int dc = SpellUtils.GetSpellDc(eventData);
 
         float distanceToTarget = caster.Distance(targetCreature);
