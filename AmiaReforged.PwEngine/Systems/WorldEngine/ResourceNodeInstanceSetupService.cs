@@ -11,10 +11,10 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
 [ServiceBinding(typeof(ResourceNodeInstanceSetupService))]
 public class ResourceNodeInstanceSetupService(
-    IWorldConfigProvider configProvider,
     IResourceNodeDefinitionRepository resourceRepository,
     IHarvestProcessor harvestProcessor,
-    IRegionRepository regionRepository)
+    IRegionRepository regionRepository,
+    RuntimeNodeService runtimeNodes)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -68,11 +68,11 @@ public class ResourceNodeInstanceSetupService(
     {
         foreach (NwTrigger trigger in nodeSpawnRegions)
         {
-            ProcessNodesInTrigger(trigger, definitionTags);
+            ProcessNodesToSpawn(trigger, definitionTags);
         }
     }
 
-    private void ProcessNodesInTrigger(NwTrigger trigger, List<string> definitionTags)
+    private void ProcessNodesToSpawn(NwTrigger trigger, List<string> definitionTags)
     {
         if (definitionTags.Count == 0) return;
 
@@ -91,10 +91,10 @@ public class ResourceNodeInstanceSetupService(
 
         if (typeOrder.Count == 0) return;
 
-        Distribute(typeOrder, rng, waypoints, definitions);
+        DistributeNodes(typeOrder, rng, waypoints, definitions);
     }
 
-    private void Distribute(List<ResourceType> typeOrder, Random rng, List<NwWaypoint> waypoints,
+    private void DistributeNodes(List<ResourceType> typeOrder, Random rng, List<NwWaypoint> waypoints,
         List<ResourceNodeDefinition> definitions)
     {
         // Shuffle types and waypoints to spread things out fairly
@@ -228,9 +228,9 @@ public class ResourceNodeInstanceSetupService(
         }
 
         ObjectPlugin.SetAppearance(plc, node.Definition.PlcAppearance);
-        ObjectPlugin.ForceAssignUUID(plc, node.Id.ToString());
+        ObjectPlugin.ForceAssignUUID(plc, node.Id.ToUUIDString());
 
-        harvestProcessor.RegisterPlaceable(plc, node);
+        runtimeNodes.RegisterPlaceable(plc, node);
     }
 
 

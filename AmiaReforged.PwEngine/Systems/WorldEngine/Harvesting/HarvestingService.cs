@@ -10,51 +10,11 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 
-[ServiceBinding(typeof(HarvestingService))]
+[ServiceBinding(typeof(IHarvestProcessor))]
 public class HarvestingService(
     IResourceNodeInstanceRepository repository,
     IItemDefinitionRepository itemDefinitionRepository) : IHarvestProcessor
 {
-    private readonly Dictionary<Guid, SpawnedNode> _spawnedNodes = new();
-
-    public void RegisterPlaceable(NwPlaceable placeable, ResourceNodeInstance instance)
-    {
-        _spawnedNodes.Add(placeable.UUID, new SpawnedNode(placeable, instance));
-
-        switch (instance.Definition.Type)
-        {
-            case ResourceType.Undefined:
-                break;
-            case ResourceType.Ore:
-                placeable.OnPhysicalAttacked += HandleAttackedHarvest;
-                break;
-            case ResourceType.Geode:
-                break;
-            case ResourceType.Boulder:
-                break;
-            case ResourceType.Tree:
-                break;
-            case ResourceType.Flora:
-                break;
-        }
-
-        instance.OnHarvest += HandleHarvest;
-        repository.AddNodeInstance(instance);
-    }
-
-    private void HandleAttackedHarvest(PlaceableEvents.OnPhysicalAttacked obj)
-    {
-        SpawnedNode? node = _spawnedNodes.GetValueOrDefault(obj.Placeable.UUID);
-
-        if (node is null) return;
-
-        NwPlaceable? plc = node.Placeable;
-
-        if (plc is null || !plc.IsValid) return;
-
-        // node.Instance.Harvest();
-    }
-
     public void RegisterNode(ResourceNodeInstance instance)
     {
         instance.OnHarvest += HandleHarvest;
@@ -68,23 +28,10 @@ public class HarvestingService(
         return repository.GetInstancesByArea(areaRef);
     }
 
-    private void Delete(ResourceNodeInstance instance)
+    public void Delete(ResourceNodeInstance instance)
     {
-        SpawnedNode? node = _spawnedNodes.GetValueOrDefault(instance.Id);
-
-        if (node is null) return;
-
-        NwPlaceable? plc = node.Placeable;
-
         repository.Delete(instance);
         repository.SaveChanges();
-
-        if (plc is null || !plc.IsValid)
-        {
-            plc?.Destroy();
-        }
-
-        _spawnedNodes.Remove(instance.Id);
     }
 
     private void HandleHarvest(HarvestEventData data)
