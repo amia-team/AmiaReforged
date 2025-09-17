@@ -17,11 +17,3 @@ public interface IIndustryMembershipService
     RankUpResult RankUp(Guid characterId, string industryTag);
     bool CanLearnKnowledge(Guid characterId, string knowledgeTag);
 }
-
-public enum RankUpResult
-{
-    Success,
-    InsufficientKnowledge,
-    AlreadyMaxedOut,
-    IndustryNotFound
-}

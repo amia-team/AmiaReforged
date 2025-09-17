@@ -12,13 +12,3 @@ public record ItemDefinition(
     JobSystemItemType JobSystemType,
     int BaseItemType,
     AppearanceData Appearance);
-
-public record AppearanceData(int ModelType, int? SimpleModelNumber, WeaponPartData? Data);
-
-public record WeaponPartData(
-    int TopPartModel,
-    int MiddlePartModel,
-    int BottomPartModel,
-    int TopPartColor,
-    int MiddlePartColor,
-    int BottomPartColor);

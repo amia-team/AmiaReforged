@@ -34,25 +34,3 @@ public class Knowledge
     /// </summary>
     public int PointCost { get; init; }
 }
-
-
-public record KnowledgeHarvestEffect(
-    string NodeTag,
-    HarvestStep StepModified,
-    float Value,
-    EffectOperation Operation);
-
-
-public enum HarvestStep
-{
-    ItemYield,
-    Quality,
-    HarvestStepRate
-}
-
-public enum EffectOperation
-{
-    Additive,
-    PercentMult,
-    Subtractive
-}

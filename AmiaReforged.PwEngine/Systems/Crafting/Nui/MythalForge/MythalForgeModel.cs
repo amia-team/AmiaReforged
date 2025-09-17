@@ -278,13 +278,3 @@ public class MythalForgeModel
         }
     }
 }
-
-public class MythalMap
-{
-    public MythalMap(NwPlayer player)
-    {
-        Map = ItemPropertyHelper.GetMythals(player);
-    }
-
-    public Dictionary<CraftingTier, int> Map { get; }
-}

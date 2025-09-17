@@ -86,12 +86,3 @@ public class ResourceNodeInstance
         return HarvestResult.Finished;
     }
 }
-
-public enum HarvestResult
-{
-    Finished,
-    InProgress,
-    NoTool
-}
-
-public record HarvestEventData(ICharacter Character, ResourceNodeInstance NodeInstance);
