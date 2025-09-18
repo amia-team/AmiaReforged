@@ -45,6 +45,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         if (eventData.Caster is not NwCreature caster) return;
         if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
         if (eventData.Item != null) return;
+        if (spell.FeatReference != null) return;
 
         if (targetItem.BaseItem.ItemType is not
             (BaseItemType.BlankScroll or BaseItemType.BlankWand or BaseItemType.BlankPotion)) return;
