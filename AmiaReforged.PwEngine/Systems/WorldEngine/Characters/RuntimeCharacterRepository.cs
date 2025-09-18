@@ -2,7 +2,7 @@ using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 
-[ServiceBinding(typeof(RuntimeCharacterRepository))]
+[ServiceBinding(typeof(ICharacterRepository))]
 public class RuntimeCharacterRepository : ICharacterRepository
 {
     private readonly Dictionary<Guid, ICharacter> _characters = [];

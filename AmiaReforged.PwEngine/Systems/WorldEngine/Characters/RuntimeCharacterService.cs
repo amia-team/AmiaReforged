@@ -10,10 +10,10 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 [ServiceBinding(typeof(RuntimeCharacterService))]
 public class RuntimeCharacterService
 {
-    private readonly RuntimeCharacterRepository _repository;
+    private readonly ICharacterRepository _repository;
     private readonly Dictionary<NwPlayer, Guid> _playerKeys = new();
 
-    public RuntimeCharacterService(RuntimeCharacterRepository repository)
+    public RuntimeCharacterService(ICharacterRepository repository)
     {
         _repository = repository;
         NwModule.Instance.OnAcquireItem += ReCache;

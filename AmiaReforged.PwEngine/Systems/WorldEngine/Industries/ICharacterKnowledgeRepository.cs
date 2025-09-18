@@ -9,4 +9,6 @@ public interface ICharacterKnowledgeRepository
     void Add(CharacterKnowledge ck);
     bool AlreadyKnows(Guid membershipCharacterId, Knowledge tag);
     List<Knowledge> GetAllKnowledge(Guid getId);
+
+    void SaveChanges();
 }

@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using Anvil.Services;
@@ -18,6 +19,10 @@ public class PwEngineContext : DbContext
 
     public DbSet<PersistedCharacter> Characters { get; set; } = null!;
     public DbSet<CharacterStatistics> CharacterStatistics { get; set; } = null!;
+
+    public DbSet<PersistentCharacterKnowledge> CharacterKnowledge { get; set; } = null!;
+
+    public DbSet<PersistentIndustryMembership> IndustryMemberships { get; set; } = null!;
 
 
     public PwEngineContext()

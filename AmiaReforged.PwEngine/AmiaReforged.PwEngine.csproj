@@ -30,7 +30,6 @@
         <Folder Include="Resources\WorldEngine\Industries\" />
         <Folder Include="Systems\MiniGame\LiarsDice\Nui\"/>
         <Folder Include="Systems\MiniGame\LiarsDice\Tests\"/>
-        <Folder Include="Systems\Player\PlayerId\" />
     </ItemGroup>
 
     <ItemGroup>

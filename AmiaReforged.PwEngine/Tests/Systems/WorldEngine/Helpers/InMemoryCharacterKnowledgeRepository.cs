@@ -26,6 +26,11 @@ public class InMemoryCharacterKnowledgeRepository : ICharacterKnowledgeRepositor
         _characterKnowledge.Add(ck);
     }
 
+    public void SaveChanges()
+    {
+        // nothing
+    }
+
     public bool AlreadyKnows(Guid characterId, Knowledge knowledge)
     {
         return _characterKnowledge.Any(ck => ck.CharacterId == characterId && ck.Definition.Tag == knowledge.Tag);

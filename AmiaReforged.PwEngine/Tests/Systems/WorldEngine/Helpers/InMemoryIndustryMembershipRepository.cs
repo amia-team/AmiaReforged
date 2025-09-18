@@ -26,4 +26,9 @@ public class InMemoryIndustryMembershipRepository : IIndustryMembershipRepositor
     {
         return new InMemoryIndustryMembershipRepository();
     }
+
+    public void SaveChanges()
+    {
+        //nothing
+    }
 }

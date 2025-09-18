@@ -3,6 +3,7 @@ using System;
 using AmiaReforged.PwEngine.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AmiaReforged.PwEngine.Migrations
 {
     [DbContext(typeof(PwEngineContext))]
-    partial class PwEngineContextModelSnapshot : ModelSnapshot
+    [Migration("20250918181835_AddMemberships")]
+    partial class AddMemberships
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -39,14 +42,14 @@ namespace AmiaReforged.PwEngine.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("PersistentIndustryMembershipId")
+                    b.Property<Guid>("MembershipId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CharacterId");
 
-                    b.HasIndex("PersistentIndustryMembershipId");
+                    b.HasIndex("MembershipId");
 
                     b.ToTable("CharacterKnowledge");
                 });
@@ -187,11 +190,15 @@ namespace AmiaReforged.PwEngine.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.PersistentIndustryMembership", null)
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.PersistentIndustryMembership", "Membership")
                         .WithMany("Knowledge")
-                        .HasForeignKey("PersistentIndustryMembershipId");
+                        .HasForeignKey("MembershipId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Character");
+
+                    b.Navigation("Membership");
                 });
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.PersistentIndustryMembership", b =>
