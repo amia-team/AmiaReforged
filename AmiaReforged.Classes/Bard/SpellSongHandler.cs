@@ -58,7 +58,9 @@ public class SpellSongHandler
             return;
         }
 
-        bard.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(songData.SoundType));
+        bard.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(songData.SongSound));
+
+        if (spell == NwSpell.FromSpellType(SongConstants.BardSong)) return;
 
         bard.DecrementRemainingFeatUses(bardSongFeat);
     }

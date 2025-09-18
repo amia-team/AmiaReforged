@@ -34,6 +34,8 @@ public class PoisonService(ScriptHandleFactory scriptHandleFactory)
 
                 ApplyPrimaryPoisonEffect(targetCreature, poisonValues);
 
+                if (targetCreature.ActiveEffects.Any(e => e.Tag == poisonValues.Name)) return;
+                
                 Effect secondaryPoisonEffect = CreateSecondaryPoisonEffect(poisonValues, dc, poisoner);
                 targetCreature.ApplyEffect(EffectDuration.Temporary, secondaryPoisonEffect, NwTimeSpan.FromTurns(1));
 
@@ -69,11 +71,13 @@ public class PoisonService(ScriptHandleFactory scriptHandleFactory)
         ScriptCallbackHandle removeHandle
             = scriptHandleFactory.CreateUniqueHandler(info => OnSecondaryPoisonTrigger(info, poisonValues, dc, poisoner));
 
-        Effect runAction = Effect.RunAction(onRemovedHandle: removeHandle);
-        runAction.SubType = EffectSubType.Extraordinary;
+        Effect secondaryPoisonEffect = Effect.LinkEffects(Effect.RunAction(onRemovedHandle: removeHandle),
+            Effect.Icon(EffectIcon.Poison!));
 
-        Effect poisonIcon = Effect.Icon(EffectIcon.Poison!);
-        return Effect.LinkEffects(runAction, poisonIcon);
+        secondaryPoisonEffect.SubType = EffectSubType.Extraordinary;
+        secondaryPoisonEffect.Tag = poisonValues.Name;
+
+        return secondaryPoisonEffect;
     }
 
     private ScriptHandleResult OnSecondaryPoisonTrigger(CallInfo info, PoisonData.PoisonValues poisonValues, int dc,

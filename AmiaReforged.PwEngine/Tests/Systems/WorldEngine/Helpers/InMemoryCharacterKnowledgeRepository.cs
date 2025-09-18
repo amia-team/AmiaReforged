@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 
@@ -23,6 +24,11 @@ public class InMemoryCharacterKnowledgeRepository : ICharacterKnowledgeRepositor
                 c.CharacterId == ck.CharacterId && c.Definition.Tag == ck.Definition.Tag)) return;
 
         _characterKnowledge.Add(ck);
+    }
+
+    public void SaveChanges()
+    {
+        // nothing
     }
 
     public bool AlreadyKnows(Guid characterId, Knowledge knowledge)

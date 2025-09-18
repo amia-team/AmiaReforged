@@ -84,7 +84,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         {
             case BaseItemType.BlankScroll:
                 SpellCraftResult scrollResult = ValidateScribeScroll(caster, spellInnateLevel, spellPropCl, out int scribeCost);
-                HandleCraftingResult(scrollResult, player, caster, spellInnateLevel, scribeCost);
+                HandleCraftingResult(scrollResult, player, caster, spellInnateLevel, scribeCost,9);
 
                 if (scrollResult == SpellCraftResult.Success)
                 {

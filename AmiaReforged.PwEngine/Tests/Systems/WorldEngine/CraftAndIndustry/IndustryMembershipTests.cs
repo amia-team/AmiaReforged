@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
@@ -17,7 +18,7 @@ public class IndustryMembershipTests
     private const string ApprenticeKnowledge = "Apprentice1";
     private IndustryMembershipService _sut = null!;
     private readonly Guid _characterGuid = Guid.NewGuid();
-    private readonly ICharacterRepository _characterRepository = InMemoryCharacterRepository.Create();
+    private readonly ICharacterRepository _characterRepository = RuntimeCharacterRepository.Create();
     private ICharacterKnowledgeRepository _characterKnowledgeRepository = null!;
 
     [SetUp]

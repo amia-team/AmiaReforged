@@ -27,6 +27,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Folder Include="Migrations\" />
         <Folder Include="Resources\WorldEngine\Industries\" />
         <Folder Include="Systems\MiniGame\LiarsDice\Nui\"/>
         <Folder Include="Systems\MiniGame\LiarsDice\Tests\"/>

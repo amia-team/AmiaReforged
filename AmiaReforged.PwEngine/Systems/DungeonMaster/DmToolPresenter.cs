@@ -1,6 +1,6 @@
 using AmiaReforged.Core.Services;
-using AmiaReforged.PwEngine.Systems.Player.PlayerId;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -16,7 +16,7 @@ public sealed class DmToolPresenter(DmToolView view, NwPlayer player) : ScryPres
 
 
     [Inject] private Lazy<WindowDirector> WindowDirector { get; init; } = null!;
-    [Inject] private Lazy<PlayerIdService> PlayerIdService { get; init; } = null!;
+    [Inject] private Lazy<RuntimeCharacterService> PlayerIdService { get; init; } = null!;
     [Inject] private Lazy<CharacterService> CharacterService { get; init; } = null!;
 
     private DmToolsModel Model { get; } = new(player);

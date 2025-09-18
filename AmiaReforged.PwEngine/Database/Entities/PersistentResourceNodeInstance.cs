@@ -4,7 +4,7 @@ namespace AmiaReforged.PwEngine.Database.Entities;
 
 public class PersistentResourceNodeInstance
 {
-    [Key] public long Id { get; set; }
+    [Key] public Guid Id { get; set; }
     public string Area { get; set; } = null!;
     public string DefinitionTag { get; set; } = null!;
     public int Uses { get; set; }

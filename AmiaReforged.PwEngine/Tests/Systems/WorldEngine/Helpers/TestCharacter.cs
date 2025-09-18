@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
@@ -70,7 +71,7 @@ public class TestCharacter(
         return membershipService.LearnKnowledge(GetId(), knowledgeTag);
     }
 
-    public Dictionary<EquipmentSlots, ItemSnapshot> GetEquipment() => injectedEquipment;
+    public Dictionary<EquipmentSlots, ItemSnapshot?> GetEquipment() => injectedEquipment;
 
     public List<SkillData> GetSkills()
     {

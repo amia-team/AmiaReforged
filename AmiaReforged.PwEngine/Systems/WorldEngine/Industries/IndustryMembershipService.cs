@@ -1,10 +1,11 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using Anvil.Services;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 
-// [ServiceBinding(typeof(IndustryMembershipService))]
+[ServiceBinding(typeof(IIndustryMembershipService))]
 public class IndustryMembershipService(
     IIndustryMembershipRepository membershipRepository,
     IIndustryRepository industryRepository,
@@ -214,23 +215,4 @@ public class IndustryMembershipService(
 
         return LearningResult.CanLearn;
     }
-}
-
-public enum LearningResult
-{
-    DoesNotExist,
-    InsufficientRank,
-    AlreadyLearned,
-    Success,
-    NotEnoughPoints,
-    CharacterNotFound,
-    CanLearn
-}
-
-public interface ICharacterKnowledgeRepository
-{
-    List<CharacterKnowledge> GetKnowledgeForIndustry(string industryTag, Guid characterId);
-    void Add(CharacterKnowledge ck);
-    bool AlreadyKnows(Guid membershipCharacterId, Knowledge tag);
-    List<Knowledge> GetAllKnowledge(Guid getId);
 }

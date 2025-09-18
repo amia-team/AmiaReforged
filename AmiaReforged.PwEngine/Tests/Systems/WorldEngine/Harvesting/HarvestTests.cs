@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
@@ -22,7 +23,7 @@ public class HarvestTests
     private ICharacterKnowledgeRepository _characterKnowledgeRepository = null!;
     private IIndustryRepository _industries = null!;
     private IIndustryMembershipRepository _memberships = null!;
-    private readonly InMemoryCharacterRepository _characters = new();
+    private readonly RuntimeCharacterRepository _characters = new();
 
     [SetUp]
     public void OneTimeSetUp()
@@ -111,7 +112,6 @@ public class HarvestTests
         {
             Area = "test_area",
             Definition = definition,
-            Id = 0,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
@@ -147,7 +147,6 @@ public class HarvestTests
         {
             Area = "test_area",
             Definition = definition,
-            Id = 1,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
@@ -175,13 +174,12 @@ public class HarvestTests
 
         ResourceNodeDefinition definition = new(0, ResourceType.Ore, "test",
             new HarvestContext(JobSystemItemType.ToolPick),
-            [new HarvestOutput(TestItemTag, 1)], 2);
+            [new HarvestOutput(TestItemTag, 1)], 10, 2);
 
         ResourceNodeInstance instance = new()
         {
             Area = "test_area",
             Definition = definition,
-            Id = 1,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
@@ -216,13 +214,12 @@ public class HarvestTests
 
         ResourceNodeDefinition definition = new(0, ResourceType.Ore, "test",
             new HarvestContext(JobSystemItemType.ToolPick),
-            [new HarvestOutput(TestItemTag, 1)], 2);
+            [new HarvestOutput(TestItemTag, 1)], 10, 2);
 
         ResourceNodeInstance instance = new()
         {
             Area = "test_area",
             Definition = definition,
-            Id = 1,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
@@ -265,7 +262,6 @@ public class HarvestTests
         {
             Area = "test_area",
             Definition = definition,
-            Id = 1,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,
@@ -307,7 +303,6 @@ public class HarvestTests
         {
             Area = "test_area",
             Definition = definition,
-            Id = 1,
             X = 1.0f,
             Y = 1.0f,
             Z = 1.0f,

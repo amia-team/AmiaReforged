@@ -108,18 +108,9 @@ public class FlameWeapon : ISpell
 
         caster.IsPlayerControlled(out NwPlayer? player);
 
-        NwItem?[] itemsToCheck =
-        [
-            targetCreature.GetItemInSlot(InventorySlot.RightHand),
-            targetCreature.GetItemInSlot(InventorySlot.LeftHand),
-            targetCreature.GetItemInSlot(InventorySlot.Arms)
-        ];
+        NwItem?[] itemsToEnhance = GetItemsToEnhance(targetCreature);
 
-        itemsToCheck = itemsToCheck
-            .Where(item => item != null && (item.BaseItem.Category == BaseItemCategory.Melee || item.BaseItem.ItemType == BaseItemType.Gloves))
-            .ToArray();
-
-        if (itemsToCheck.Length == 0)
+        if (itemsToEnhance.Length == 0)
         {
             player?.FloatingTextString
                 ($"No weapon or gloves found on {targetCreature.Name} to cast Flame Weapon.", false);
@@ -127,7 +118,7 @@ public class FlameWeapon : ISpell
             return null;
         }
 
-        NwItem? weapon = itemsToCheck
+        NwItem? weapon = itemsToEnhance
             // Filter out items that have a more powerful effect
             .Where(item => item != null && !item.ItemProperties.Any(ip =>
                 ip is { DurationType: EffectDuration.Temporary, Property.PropertyType: ItemPropertyType.DamageBonus }
@@ -153,6 +144,34 @@ public class FlameWeapon : ISpell
             ($"{targetCreature.Name} already has a more powerful weapon effect.", false);
 
         return null;
+    }
+
+    private static NwItem?[] GetItemsToEnhance(NwCreature targetCreature)
+    {
+        // Prio 1: weapons
+        NwItem?[] weapons = new[]
+        {
+            targetCreature.GetItemInSlot(InventorySlot.RightHand),
+            targetCreature.GetItemInSlot(InventorySlot.LeftHand)
+        }
+        .Where(item => item is { BaseItem.Category: BaseItemCategory.Melee }).ToArray();
+
+        if (weapons.Length > 0)
+            return weapons;
+
+        // Prio 2: gloves
+        NwItem? armItem = targetCreature.GetItemInSlot(InventorySlot.Arms);
+        if (armItem is { BaseItem.ItemType: BaseItemType.Gloves })
+            return [armItem];
+
+        // Prio 3: creature weapons
+        return new[]
+        {
+            targetCreature.GetItemInSlot(InventorySlot.CreatureRightWeapon),
+            targetCreature.GetItemInSlot(InventorySlot.CreatureLeftWeapon),
+            targetCreature.GetItemInSlot(InventorySlot.CreatureBiteWeapon)
+        }
+        .Where(item => item != null).ToArray();
     }
 
     private IPDamageBonus GetDamageBonus(int casterLevel)

@@ -5,15 +5,16 @@ using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
 [ServiceBinding(typeof(ResourceNodeInstanceSetupService))]
 public class ResourceNodeInstanceSetupService(
-    IWorldConfigProvider configProvider,
     IResourceNodeDefinitionRepository resourceRepository,
-    IResourceNodeInstanceRepository nodeRepository,
-    IRegionRepository regionRepository)
+    IHarvestProcessor harvestProcessor,
+    IRegionRepository regionRepository,
+    RuntimeNodeService runtimeNodes)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -33,7 +34,7 @@ public class ResourceNodeInstanceSetupService(
     {
         foreach (NwArea area in NwModule.Instance.Areas)
         {
-            List<ResourceNodeInstance> instancesInArea = nodeRepository.GetInstancesByArea(area.ResRef);
+            List<ResourceNodeInstance> instancesInArea = harvestProcessor.GetInstancesForArea(area.ResRef);
 
             if (instancesInArea.Count == 0) continue;
 
@@ -67,11 +68,11 @@ public class ResourceNodeInstanceSetupService(
     {
         foreach (NwTrigger trigger in nodeSpawnRegions)
         {
-            ProcessNodesInTrigger(trigger, definitionTags);
+            ProcessNodesToSpawn(trigger, definitionTags);
         }
     }
 
-    private void ProcessNodesInTrigger(NwTrigger trigger, List<string> definitionTags)
+    private void ProcessNodesToSpawn(NwTrigger trigger, List<string> definitionTags)
     {
         if (definitionTags.Count == 0) return;
 
@@ -90,10 +91,10 @@ public class ResourceNodeInstanceSetupService(
 
         if (typeOrder.Count == 0) return;
 
-        Distribute(typeOrder, rng, waypoints, definitions);
+        DistributeNodes(typeOrder, rng, waypoints, definitions);
     }
 
-    private void Distribute(List<ResourceType> typeOrder, Random rng, List<NwWaypoint> waypoints,
+    private void DistributeNodes(List<ResourceType> typeOrder, Random rng, List<NwWaypoint> waypoints,
         List<ResourceNodeDefinition> definitions)
     {
         // Shuffle types and waypoints to spread things out fairly
@@ -209,6 +210,27 @@ public class ResourceNodeInstanceSetupService(
             Z = wp.Position.Z,
             Rotation = wp.Rotation
         };
+
+        Location? l = node.GameLocation();
+
+        if (l is null)
+        {
+            Log.Error($"Failed to get game location for node {node.Id}");
+            return;
+        }
+
+
+        NwPlaceable? plc = NwPlaceable.Create(WorldConstants.GenericNodePlcRef, l, false, node.Definition.Tag);
+        if (plc is null)
+        {
+            Log.Error($"Failed to create node {node.Id}");
+            return;
+        }
+
+        ObjectPlugin.SetAppearance(plc, node.Definition.PlcAppearance);
+        ObjectPlugin.ForceAssignUUID(plc, node.Id.ToUUIDString());
+
+        runtimeNodes.RegisterPlaceable(plc, node);
     }
 
 

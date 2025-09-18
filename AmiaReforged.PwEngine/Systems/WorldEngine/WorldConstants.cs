@@ -6,12 +6,14 @@ internal static class WorldConstants
     public const string ConfigTypeBool = "bool";
 
     public const string ResourceNodeZoneTag = "worldengine_node_region";
-    public static string NodeSpawnPointRef { get; set; } = "worldengine_sp";
-    public static string GenericNodePlcRef { get; set; } = "worldengine_harv";
-    public static string MarketValueBaseLvar { get; } = "market_value_base";
-    public static string ItemVariableMaker { get; } = "item_maker";
-    public static string ItemVariableQuality { get; } = "item_quality";
-    public static string ItemVariableMaterial { get; } = "item_material";
-    public static string ItemVariableType { get; } = "item_type";
-    public static string LvarNodeTags { get; } = "node_tags";
+    public static string NodeSpawnPointRef => "worldengine_sp";
+    public static string GenericNodePlcRef => "worldengine_harv";
+    public static string MarketValueBaseLvar => "market_value_base";
+    public static string ItemVariableMaker => "item_maker";
+    public static string ItemVariableQuality => "item_quality";
+    public static string ItemVariableMaterial => "item_material";
+    public static string ItemVariableType => "item_type";
+    public static string LvarNodeTags => "node_tags";
+    public static string ToolTypeVariable => "tool_type";
+    public static string PcCachedLvar => "pckey_cached";
 }

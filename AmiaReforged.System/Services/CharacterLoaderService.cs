@@ -51,7 +51,6 @@ public class CharacterLoaderService
         NwItem? pcKey = player.LoginCreature?.FindItemWithTag(itemTag: "ds_pckey");
         if (pcKey is null) return;
 
-        Log.Info(message: "PCKey not null");
 
         string dbToken = pcKey.Name.Split(separator: "_")[1];
         if (!Guid.TryParse(dbToken, out Guid pcKeyGuid)) return;

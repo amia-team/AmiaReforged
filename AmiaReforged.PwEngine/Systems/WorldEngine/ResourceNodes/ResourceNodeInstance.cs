@@ -1,4 +1,5 @@
 using System.Numerics;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
@@ -10,16 +11,17 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 public class ResourceNodeInstance
 {
     public delegate void OnHarvestHandler(HarvestEventData data);
+
     public delegate void OnDestroyedHandler(ResourceNodeInstance instance);
 
     public event OnHarvestHandler? OnHarvest;
     public event OnDestroyedHandler? OnDestroyed;
 
 
-    public long Id { get; set; }
+    public Guid Id { get; init; } = Guid.NewGuid();
     public required string Area { get; set; }
 
-    public required ResourceNodeDefinition Definition { get; set; }
+    public required ResourceNodeDefinition Definition { get; init; }
     public int Uses { get; set; }
     public IPQuality Quality { get; set; }
     public float X { get; set; }
@@ -43,9 +45,9 @@ public class ResourceNodeInstance
 
     public HarvestResult Harvest(ICharacter character)
     {
-        ItemSnapshot tool = character.GetEquipment()[EquipmentSlots.RightHand];
+        ItemSnapshot? tool = character.GetEquipment()[EquipmentSlots.RightHand];
         if (Definition.Requirement.RequiredItemType != JobSystemItemType.None &&
-            tool.Type != Definition.Requirement.RequiredItemType)
+            tool?.Type != Definition.Requirement.RequiredItemType)
         {
             return HarvestResult.NoTool;
         }
@@ -80,28 +82,7 @@ public class ResourceNodeInstance
         {
             OnDestroyed?.Invoke(this);
         }
+
         return HarvestResult.Finished;
     }
-}
-
-public enum HarvestResult
-{
-    Finished,
-    InProgress,
-    NoTool
-}
-
-public record HarvestEventData(ICharacter Character, ResourceNodeInstance NodeInstance);
-
-public enum QualityLevel
-{
-    VeryPoor = -2,
-    Poor = -1,
-    BelowAverage = 0,
-    Average = 1,
-    AboveAverage = 2,
-    Good = 3,
-    VeryGood = 4,
-    Excellent = 5,
-    Masterwork = 6
 }

@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
@@ -31,7 +32,7 @@ public class RuntimeCharacterTests
     [SetUp]
     public void SetUp()
     {
-        _characters = InMemoryCharacterRepository.Create();
+        _characters = RuntimeCharacterRepository.Create();
 
         IIndustryRepository industryRepository = InMemoryIndustryRepository.Create();
 

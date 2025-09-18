@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
@@ -15,12 +16,4 @@ public interface IIndustryMembershipService
     List<Knowledge> AllKnowledge(Guid characterId);
     RankUpResult RankUp(Guid characterId, string industryTag);
     bool CanLearnKnowledge(Guid characterId, string knowledgeTag);
-}
-
-public enum RankUpResult
-{
-    Success,
-    InsufficientKnowledge,
-    AlreadyMaxedOut,
-    IndustryNotFound
 }

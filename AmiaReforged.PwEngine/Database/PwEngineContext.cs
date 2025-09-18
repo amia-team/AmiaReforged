@@ -1,8 +1,9 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+using AmiaReforged.PwEngine.Database.Entities.Economy;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Npgsql;
 
 namespace AmiaReforged.PwEngine.Database;
@@ -11,10 +12,17 @@ namespace AmiaReforged.PwEngine.Database;
 public class PwEngineContext : DbContext
 {
     private readonly string _connectionString;
-    public DbSet<PersistedWorldCharacter> WorldCharacters { get; set; } = null!;
+    public DbSet<PersistedCharacter> WorldCharacters { get; set; } = null!;
 
     public DbSet<WorldConfiguration> WorldConfiguration { get; set; } = null!;
     public DbSet<PersistentResourceNodeInstance> PersistedNodes { get; set; } = null!;
+
+    public DbSet<PersistedCharacter> Characters { get; set; } = null!;
+    public DbSet<CharacterStatistics> CharacterStatistics { get; set; } = null!;
+
+    public DbSet<PersistentCharacterKnowledge> CharacterKnowledge { get; set; } = null!;
+
+    public DbSet<PersistentIndustryMembership> IndustryMemberships { get; set; } = null!;
 
 
     public PwEngineContext()
@@ -26,6 +34,7 @@ public class PwEngineContext : DbContext
     {
         _connectionString = connectionString;
     }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -50,5 +59,6 @@ public class PwEngineContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.ApplyConfiguration(new CharacterStatisticsConfiguration());
     }
 }

@@ -3,27 +3,16 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
-using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 
-// [ServiceBinding(typeof(HarvestingService))]
+[ServiceBinding(typeof(IHarvestProcessor))]
 public class HarvestingService(
     IResourceNodeInstanceRepository repository,
     IItemDefinitionRepository itemDefinitionRepository) : IHarvestProcessor
 {
-    private readonly Dictionary<ResourceNodeInstance, NwPlaceable> _spawnedNodes = new();
-
-    public void RegisterPlaceable(NwPlaceable placeable, ResourceNodeInstance instance)
-    {
-        _spawnedNodes.Add(instance, placeable);
-
-        instance.OnHarvest += HandleHarvest;
-        repository.AddNodeInstance(instance);
-    }
-
     public void RegisterNode(ResourceNodeInstance instance)
     {
         instance.OnHarvest += HandleHarvest;
@@ -32,18 +21,15 @@ public class HarvestingService(
         repository.SaveChanges();
     }
 
-    private void Delete(ResourceNodeInstance instance)
+    public List<ResourceNodeInstance> GetInstancesForArea(string areaRef)
     {
-        NwPlaceable? placeable = _spawnedNodes.GetValueOrDefault(instance);
+        return repository.GetInstancesByArea(areaRef);
+    }
 
+    public void Delete(ResourceNodeInstance instance)
+    {
         repository.Delete(instance);
         repository.SaveChanges();
-
-        if(placeable != null)
-        {
-            placeable.Destroy();
-            _spawnedNodes.Remove(instance);
-        }
     }
 
     private void HandleHarvest(HarvestEventData data)
@@ -80,7 +66,7 @@ public class HarvestingService(
             totalQuality = Math.Max(NWScript.IP_CONST_QUALITY_VERY_POOR,
                 Math.Min(NWScript.IP_CONST_QUALITY_MASTERWORK, totalQuality));
 
-            int totalQuantity = (int)harvestOutput.Quantity;
+            int totalQuantity = harvestOutput.Quantity;
             List<KnowledgeHarvestEffect> yieldImprovements =
                 applicable.Where(he => he.StepModified == HarvestStep.ItemYield).ToList();
             foreach (KnowledgeHarvestEffect yieldImprovement in yieldImprovements)
