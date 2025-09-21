@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using Anvil.API;
+using Microsoft.IdentityModel.Tokens;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
@@ -20,7 +21,9 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
         if (gameItem is null) return;
 
         string qualityLabel = QualityLabel.ToQualityLabel((int)item.Quality);
-        gameItem.Name = $"{item.BaseDefinition.Name} ({qualityLabel})";
+        gameItem.Name = qualityLabel.IsNullOrEmpty()
+            ? $"{item.BaseDefinition.Name}"
+            : $"{item.BaseDefinition.Name} ({qualityLabel})";
 
         ItemProperty quality = ItemProperty.Quality(item.Quality);
         gameItem.AddItemProperty(quality, EffectDuration.Permanent);
