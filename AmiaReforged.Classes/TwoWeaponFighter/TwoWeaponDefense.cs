@@ -19,7 +19,7 @@ public static class TwoWeaponDefense
         {
             > 1 and < 3 => 1,
             > 3 and < 5 => 2,
-            >= 5 => 3,
+            >= 5 => 4,
             _ => 1
         };
 
