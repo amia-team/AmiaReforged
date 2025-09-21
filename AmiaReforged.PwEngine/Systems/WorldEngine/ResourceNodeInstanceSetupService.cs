@@ -20,6 +20,7 @@ public class ResourceNodeInstanceSetupService(
 
     public void DoSetup()
     {
+        NwModule.Instance.SendMessageToAllDMs("INITIALIZING ECONOMY . . .");
         ClearOldNodes();
         foreach (RegionDefinition region in regionRepository.All())
         {
@@ -30,13 +31,15 @@ public class ResourceNodeInstanceSetupService(
         }
     }
 
-    private void ClearOldNodes()
+    public void ClearOldNodes()
     {
         foreach (NwArea area in NwModule.Instance.Areas)
         {
             List<ResourceNodeInstance> instancesInArea = harvestProcessor.GetInstancesForArea(area.ResRef);
 
             if (instancesInArea.Count == 0) continue;
+
+            NwModule.Instance.SendMessageToAllDMs($"PURGING NODES IN {area.Name} . . .");
 
             foreach (ResourceNodeInstance ri in instancesInArea)
             {
@@ -54,6 +57,9 @@ public class ResourceNodeInstanceSetupService(
             Log.Error($"Area {area.ResRef} not found in module");
             return;
         }
+
+        NwModule.Instance.SendMessageToAllDMs($"Processing {nwArea.Name} . . .");
+
 
         List<NwTrigger> nodeSpawnRegions =
             nwArea
@@ -79,17 +85,33 @@ public class ResourceNodeInstanceSetupService(
         Random rng = Random.Shared;
 
         ResourceType[] tags = GetTags(trigger);
+        NwModule.Instance.SendMessageToAllDMs($"Number of tags for trigger: {tags.Length} . . .");
+
+        foreach (ResourceType tag in tags)
+        {
+            NwModule.Instance.SendMessageToAllDMs($"trigger has tag: {tag} . . .");
+        }
+
 
         List<NwWaypoint> waypoints = GetWaypoints(trigger);
 
         if (waypoints.Count == 0) return;
 
         List<ResourceNodeDefinition> definitions = GetDefinitions(definitionTags);
+        NwModule.Instance.SendMessageToAllDMs($"Found {definitions.Count} definitions for {trigger.Area?.Name} . . .");
+
+        foreach (ResourceNodeDefinition df in definitions)
+        {
+            NwModule.Instance.SendMessageToAllDMs($"Definition tag: {df.Type} . . .");
+        }
 
         // Only keep resource types that have at least one matching definition
         List<ResourceType> typeOrder = GetTypeOrder(tags, definitions);
+        NwModule.Instance.SendMessageToAllDMs($"Number of node types: {typeOrder.Count} . . .");
 
         if (typeOrder.Count == 0) return;
+
+        NwModule.Instance.SendMessageToAllDMs($"Distributing nodes for trigger in {trigger.Area?.Name} . . .");
 
         DistributeNodes(typeOrder, rng, waypoints, definitions);
     }
@@ -134,6 +156,9 @@ public class ResourceNodeInstanceSetupService(
                 }
 
                 ResourceNodeDefinition definition = matching[rng.Next(matching.Count)];
+
+                NwModule.Instance.SendMessageToAllDMs($"Attempting to spawn a {definition.Tag} . . .");
+
 
                 SpawnResourceNode(definition, wp);
 
@@ -229,6 +254,8 @@ public class ResourceNodeInstanceSetupService(
 
         ObjectPlugin.SetAppearance(plc, node.Definition.PlcAppearance);
         ObjectPlugin.ForceAssignUUID(plc, node.Id.ToUUIDString());
+        plc.Name = $"{baselineQuality} {definition.Name}";
+        plc.Description = definition.Description;
 
         runtimeNodes.RegisterPlaceable(plc, node);
     }

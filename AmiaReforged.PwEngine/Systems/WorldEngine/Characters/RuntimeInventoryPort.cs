@@ -46,7 +46,9 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
     {
         return new Dictionary<EquipmentSlots, ItemSnapshot?>()
         {
-            { EquipmentSlots.Head, ToItemSnapshot(creature.GetItemInSlot(InventorySlot.Head)) }
+            { EquipmentSlots.Head, ToItemSnapshot(creature.GetItemInSlot(InventorySlot.Head)) },
+            { EquipmentSlots.RightHand, ToItemSnapshot(creature.GetItemInSlot(InventorySlot.RightHand)) },
+            { EquipmentSlots.LeftHand, ToItemSnapshot(creature.GetItemInSlot(InventorySlot.LeftHand)) },
         };
     }
 

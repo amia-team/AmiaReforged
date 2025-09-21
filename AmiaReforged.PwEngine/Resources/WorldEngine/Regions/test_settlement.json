@@ -1,0 +1,12 @@
+{
+  "Tag": "test_settlement",
+  "Name": "Test Settlement Region",
+  "Areas": [
+    {
+      "ResRef": "zworldttemprate",
+      "DefinitionTags": [
+        "ore_vein_copper_native"
+      ]
+    }
+  ]
+}

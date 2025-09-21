@@ -34,6 +34,8 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
         }
 
         harvestService.RegisterNode(instance);
+        NwModule.Instance.SendMessageToAllDMs($"New resource nod eregistered in {placeable.Area?.Name}");
+
 
         // We only delete the record of the placeable, not the node itself.
         placeable.OnDeath += Delete;
@@ -50,6 +52,8 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
 
     private void DestroyPlc(ResourceNodeInstance instance)
     {
+        NwModule.Instance.SendMessageToAllDMs($"Attempting to destroy a node instance in {instance.Area} . . .");
+
         SpawnedNode? node = _spawnedNodes.GetValueOrDefault(instance.Id);
 
         if (node is null) return;
@@ -77,6 +81,19 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
 
         if (character is null) return;
 
-        node.Instance.Harvest(character);
+        HarvestResult result = node.Instance.Harvest(character);
+
+        switch (result)
+        {
+            case HarvestResult.Finished:
+                player.SendServerMessage($"Harvested {node.Instance.GetType()}");
+                break;
+            case HarvestResult.InProgress:
+                player.SendServerMessage("Keep going, your efforts seem to be working...");
+                break;
+            case HarvestResult.NoTool:
+                player.SendServerMessage("You don't have the correct tool for this job.");
+                break;
+        }
     }
 }

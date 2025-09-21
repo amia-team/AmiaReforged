@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.Services;
 
@@ -7,6 +9,7 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 public class ItemDefinitionLoadingService(IItemDefinitionRepository repository) : IDefinitionLoader
 {
     private readonly List<FileLoadResult> _failures = [];
+
     public void Load()
     {
         string? resourcePath = Environment.GetEnvironmentVariable("RESOURCE_PATH");
@@ -33,7 +36,7 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository repository) 
             {
                 string json = File.ReadAllText(file);
                 ItemDefinition? definition =
-                    System.Text.Json.JsonSerializer.Deserialize<ItemDefinition>(json);
+                    JsonSerializer.Deserialize<ItemDefinition>(json);
 
                 if (definition == null)
                 {
@@ -56,6 +59,7 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository repository) 
         }
     }
 
+    [SuppressMessage("ReSharper", "ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract")]
     private static bool TryValidate(ItemDefinition definition, out string? error)
     {
         if (definition.ResRef.Length > 16)
@@ -76,9 +80,16 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository repository) 
             return false;
         }
 
+        if (definition.Appearance is null)
+        {
+            error = "Appearance must not be null.";
+            return false;
+        }
+
         error = null;
         return true;
     }
+
     public List<FileLoadResult> Failures()
     {
         return _failures;
@@ -89,4 +100,3 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository repository) 
         return repository.AllItems();
     }
 }
-

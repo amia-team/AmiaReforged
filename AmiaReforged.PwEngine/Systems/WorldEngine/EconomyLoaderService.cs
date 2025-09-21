@@ -31,6 +31,8 @@ public class EconomyLoaderService
         _itemLoader = itemLoader;
         _industryLoader = industryLoader;
         _regionLoader = regionLoader;
+
+        Startup();
     }
 
     public void Startup()
