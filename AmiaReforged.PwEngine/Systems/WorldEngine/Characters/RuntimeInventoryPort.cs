@@ -35,6 +35,7 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
             or MiscSmall3)
         {
             gameItem.Appearance.SetSimpleModel((ushort)(item.BaseDefinition.Appearance.SimpleModelNumber ?? 1));
+            NWScript.SetLocalInt(gameItem, WorldConstants.ItemVariableQuality, (int)item.Quality);
         }
 
         creature.AcquireItem(gameItem);
