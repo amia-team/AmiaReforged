@@ -1,6 +1,4 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
-
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
 public interface IResourceNodeInstanceRepository
 {

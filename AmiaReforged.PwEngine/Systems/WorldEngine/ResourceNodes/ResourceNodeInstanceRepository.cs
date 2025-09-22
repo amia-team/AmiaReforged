@@ -1,11 +1,10 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.Services;
-using NLog;
 using Microsoft.EntityFrameworkCore;
+using NLog;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
 /// <summary>
 /// Database repository for <see cref="IResourceNodeInstanceRepository"/>

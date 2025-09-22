@@ -46,7 +46,8 @@ public class ItemDefinitionLoadingTests
                         "Materials": [],
                         "JobSystemType": 0,
                         "BaseItemType": 1,
-                        "PartData": { "ModelType":0 }
+                        "PartData": { "ModelType":0 },
+                        "Appearance": { "ModelType":0 }
                       }
                       """;
         File.WriteAllText(jsonPath, json);
