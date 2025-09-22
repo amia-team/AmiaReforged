@@ -26,7 +26,7 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
             return;
         }
 
-        string[] jsonFiles = Directory.GetFiles(regionDir, "*.json");
+        string[] jsonFiles = Directory.GetFiles(regionDir, "*.json", SearchOption.AllDirectories);
 
 
         foreach (string file in jsonFiles)

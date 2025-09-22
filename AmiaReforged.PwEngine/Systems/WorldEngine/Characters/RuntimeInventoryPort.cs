@@ -29,12 +29,24 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
         gameItem.AddItemProperty(quality, EffectDuration.Permanent);
         gameItem.Description = item.BaseDefinition.Description;
 
+        string materialNumbers = "";
+        foreach (Material m in item.BaseDefinition.Materials)
+        {
+            ItemProperty matProp = ItemProperty.Material((int)m);
+            gameItem.AddItemProperty(matProp, EffectDuration.Permanent);
+
+            materialNumbers += materialNumbers.IsNullOrEmpty() ? $"{m}" : $", {m}";
+        }
+
+        NWScript.SetLocalString(gameItem, WorldConstants.MaterialLvar, materialNumbers);
+
         if (item.BaseDefinition.BaseItemType
             is NWScript.BASE_ITEM_MISCSMALL
             or MiscSmall2
             or MiscSmall3)
         {
-            NwModule.Instance.SendMessageToAllDMs($"Setting simple model appearance for {gameItem.Name} to {item.BaseDefinition.Appearance.SimpleModelNumber}");
+            NwModule.Instance.SendMessageToAllDMs(
+                $"Setting simple model appearance for {gameItem.Name} to {item.BaseDefinition.Appearance.SimpleModelNumber}");
             gameItem.Appearance.SetSimpleModel((ushort)(item.BaseDefinition.Appearance.SimpleModelNumber ?? 1));
 
             NWScript.SetLocalInt(gameItem, WorldConstants.ItemVariableQuality, (int)item.Quality);

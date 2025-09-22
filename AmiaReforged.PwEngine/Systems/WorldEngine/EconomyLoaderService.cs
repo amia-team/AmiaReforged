@@ -43,7 +43,7 @@ public class EconomyLoaderService
         if(e.Name is null) return;
 
         if(!e.Name.EndsWith(".json")) return;
-
+        Log.Info($"Reloading {e.Name}");
         LoadDefinitions();
     }
 

@@ -39,7 +39,6 @@ public class ResourceWatcherService
 
     private void OnFsEvent(object sender, FileSystemEventArgs e)
     {
-        Log.Info($"File system event: {e.ChangeType} {e.FullPath}");
         FileSystemChanged?.Invoke(this, e);
     }
 

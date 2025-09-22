@@ -26,7 +26,7 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository repository) 
             return;
         }
 
-        string[] jsonFiles = Directory.GetFiles(nodeDirectory, "*.json");
+        string[] jsonFiles = Directory.GetFiles(nodeDirectory, "*.json", SearchOption.AllDirectories);
 
         foreach (string file in jsonFiles)
         {
