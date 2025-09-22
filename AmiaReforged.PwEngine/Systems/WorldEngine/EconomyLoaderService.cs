@@ -21,7 +21,8 @@ public class EconomyLoaderService
     public EconomyLoaderService(ResourceDefinitionLoadingService resourceLoader,
         ItemDefinitionLoadingService itemLoader,
         IndustryDefinitionLoadingService industryLoader,
-        RegionDefinitionLoadingService regionLoader)
+        RegionDefinitionLoadingService regionLoader,
+        ResourceWatcherService resourceWatcherService)
     {
         string resourcePath = UtilPlugin.GetEnvironmentVariable("RESOURCE_PATH");
 
@@ -33,6 +34,17 @@ public class EconomyLoaderService
         _regionLoader = regionLoader;
 
         Startup();
+
+        resourceWatcherService.FileSystemChanged += ReloadChanges;
+    }
+
+    private void ReloadChanges(object? sender, FileSystemEventArgs e)
+    {
+        if(e.Name is null) return;
+
+        if(!e.Name.EndsWith(".json")) return;
+
+        LoadDefinitions();
     }
 
     public void Startup()
