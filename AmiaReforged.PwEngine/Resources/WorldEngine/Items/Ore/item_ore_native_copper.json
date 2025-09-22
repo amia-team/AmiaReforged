@@ -1,5 +1,5 @@
 {
-  "ResRef": "econ_msmall1",
+  "ResRef": "econ_msmall3",
   "ItemTag": "copper_ore_native",
   "Name": "Copper Nuggets",
   "Description": "Native copper is not strictly an ore, but chunks of copper in its naturally formed (native) metallic state.",
@@ -8,7 +8,7 @@
   ],
   "JobSystemItemType": 8,
   "BaseItemType": 120,
-  "AppearanceData": {
+  "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 132
   }

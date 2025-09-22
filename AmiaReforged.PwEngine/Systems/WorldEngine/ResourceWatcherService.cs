@@ -12,9 +12,9 @@ public class ResourceWatcherService
     public event EventHandler<FileSystemEventArgs>? FileSystemChanged;
 
 
-    public ResourceWatcherService(SchedulerService scheduler)
+    public ResourceWatcherService()
     {
-        string resourcesPath = Environment.GetEnvironmentVariable("ECONOMY_RESOURCES_PATH") ?? string.Empty;
+        string resourcesPath = Environment.GetEnvironmentVariable("RESOURCE_PATH") ?? string.Empty;
 
         if (resourcesPath == string.Empty)
         {

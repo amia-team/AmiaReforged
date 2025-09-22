@@ -28,6 +28,10 @@ public class AssociateBonusService
                 FamiliarBonuses familiarBonuses = new(eventData.Owner, eventData.Associate);
                 familiarBonuses.ApplyFamiliarBonus();
                 break;
+            case AssociateType.Summoned:
+                if (eventData.Associate.ResRef.StartsWith("sd_shadow_"))
+                    ShadowBonuses.ApplyShadowBonuses(eventData.Owner, eventData.Associate);
+                break;
         }
     }
 }

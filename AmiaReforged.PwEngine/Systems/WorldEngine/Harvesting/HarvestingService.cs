@@ -90,8 +90,7 @@ public class HarvestingService(
             }
         }
 
-        data.NodeInstance.Uses -= 1;
-
         repository.Update(data.NodeInstance);
+        repository.SaveChanges();
     }
 }

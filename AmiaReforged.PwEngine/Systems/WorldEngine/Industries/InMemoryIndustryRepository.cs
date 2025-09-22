@@ -2,7 +2,6 @@ using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 
-
 [ServiceBinding(typeof(IIndustryRepository))]
 public class InMemoryIndustryRepository : IIndustryRepository
 {
@@ -16,10 +15,16 @@ public class InMemoryIndustryRepository : IIndustryRepository
     public List<Industry> All()
     {
         return _industries;
-        }
+    }
 
     public void Add(Industry industry)
     {
+        Industry? existingIndustry = _industries.FirstOrDefault(i => i.Tag == industry.Tag);
+        if (existingIndustry != null)
+        {
+            _industries.Remove(existingIndustry);
+        }
+
         _industries.Add(industry);
     }
 

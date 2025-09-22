@@ -7,3 +7,4 @@ public interface IRegionRepository
     bool Exists(string tag);
     List<RegionDefinition> All();
 }
+

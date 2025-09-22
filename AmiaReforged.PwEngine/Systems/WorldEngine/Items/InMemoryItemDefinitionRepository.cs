@@ -9,7 +9,12 @@ public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
 
     public void AddItemDefinition(ItemDefinition definition)
     {
-        _itemDefinitions.TryAdd(definition.ItemTag, definition);
+        bool added = _itemDefinitions.TryAdd(definition.ItemTag, definition);
+
+        if (!added)
+        {
+            _itemDefinitions[definition.ItemTag] = definition;
+        }
     }
 
     public ItemDefinition? GetByTag(string harvestOutputItemDefinitionTag)

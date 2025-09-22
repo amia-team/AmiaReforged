@@ -1,6 +1,4 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
-
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
 /// <summary>
 /// Single-threaded repository since Resource Nodes are only loaded on startup or when a reload is forced.

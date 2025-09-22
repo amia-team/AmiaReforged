@@ -1,9 +1,8 @@
 using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
 [ServiceBinding(typeof(ResourceNodeMappingHelper))]
 public class ResourceNodeMappingHelper(IResourceNodeDefinitionRepository definitionRepository)

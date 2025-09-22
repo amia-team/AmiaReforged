@@ -43,5 +43,10 @@ public class AssociateAppearanceService
             EpicCompanionAppearance.ApplyEpicCompanionAppearance(eventData.Associate, eventData.AssociateType, eventData.Owner, pcKey);
 
         if (associateHasEpicCompanionAppearance) return;
+
+        bool associateHasShadowAppearance =
+            ShadowAppearance.ApplyShadowAppearance(eventData.Associate, eventData.Owner);
+
+        if (associateHasShadowAppearance) return;
     }
 }

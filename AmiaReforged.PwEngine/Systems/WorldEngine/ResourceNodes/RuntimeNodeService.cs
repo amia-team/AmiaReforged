@@ -1,11 +1,11 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
 [ServiceBinding(typeof(RuntimeNodeService))]
 public class RuntimeNodeService(RuntimeCharacterService characterService, IHarvestProcessor harvestService)
@@ -34,6 +34,7 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
         }
 
         harvestService.RegisterNode(instance);
+        NwModule.Instance.SendMessageToAllDMs($"New resource node registered in {placeable.Area?.Name}");
 
         // We only delete the record of the placeable, not the node itself.
         placeable.OnDeath += Delete;
@@ -50,6 +51,8 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
 
     private void DestroyPlc(ResourceNodeInstance instance)
     {
+        NwModule.Instance.SendMessageToAllDMs($"Attempting to destroy a node instance in {instance.Area} . . .");
+
         SpawnedNode? node = _spawnedNodes.GetValueOrDefault(instance.Id);
 
         if (node is null) return;
@@ -77,6 +80,19 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
 
         if (character is null) return;
 
-        node.Instance.Harvest(character);
+        HarvestResult result = node.Instance.Harvest(character);
+
+        switch (result)
+        {
+            case HarvestResult.Finished:
+                player.FloatingTextString($"This node has {node.Instance.Uses} uses left.");
+                break;
+            case HarvestResult.InProgress:
+                plc.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ComChunkStoneMedium));
+                break;
+            case HarvestResult.NoTool:
+                player.FloatingTextString("You don't have the correct tool for this job.");
+                break;
+        }
     }
 }

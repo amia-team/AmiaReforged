@@ -10,7 +10,12 @@ public class InMemoryResourceNodeDefinitionRepository : IResourceNodeDefinitionR
 
     public void Create(ResourceNodeDefinition definition)
     {
-        _definitions.TryAdd(definition.Tag, definition);
+        bool added = _definitions.TryAdd(definition.Tag, definition);
+
+        if (!added)
+        {
+            Update(definition);
+        }
     }
 
     public ResourceNodeDefinition? Get(string tag)

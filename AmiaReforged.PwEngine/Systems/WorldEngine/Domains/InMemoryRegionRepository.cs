@@ -9,7 +9,12 @@ public class InMemoryRegionRepository : IRegionRepository
 
     public void Add(RegionDefinition definition)
     {
-        _regions.TryAdd(definition.Tag, definition);
+        bool added = _regions.TryAdd(definition.Tag, definition);
+
+        if (!added)
+        {
+            _regions[definition.Tag] = definition;
+        }
     }
 
     public void Update(RegionDefinition definition)
