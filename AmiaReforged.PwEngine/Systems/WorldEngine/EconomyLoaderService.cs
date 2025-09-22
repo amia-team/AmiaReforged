@@ -47,7 +47,7 @@ public class EconomyLoaderService
         LoadDefinitions();
     }
 
-    public void Startup()
+    private void Startup()
     {
         LoadDefinitions();
     }
