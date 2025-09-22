@@ -8,7 +8,7 @@ namespace AmiaReforged.Classes.Shadowdancer;
 [ServiceBinding(typeof(SummonShadow))]
 public class SummonShadow : ISpell
 {
-    public string ImpactScript => "x0_s2_shadsum";
+    public string ImpactScript => "X0_S2_ShadSum";
 
     private enum ShadowRank
     {
@@ -40,9 +40,11 @@ public class SummonShadow : ISpell
         Effect summonShadow = Effect.SummonCreature(shadowResRef, VfxType.FnfSmokePuff!,
             unsummonVfx: VfxType.FnfSummonMonster1, delay: TimeSpan.FromSeconds(1));
 
+        creature.SpeakString("Yay I'm summoning shadow");
+
         creature.Location?.ApplyEffect(EffectDuration.Temporary, summonShadow, duration);
     }
-
+    
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public void SetSpellResisted(bool result) { }
