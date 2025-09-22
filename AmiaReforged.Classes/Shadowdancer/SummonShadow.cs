@@ -40,9 +40,11 @@ public class SummonShadow : ISpell
         Effect summonShadow = Effect.SummonCreature(shadowResRef, VfxType.FnfSmokePuff!,
             unsummonVfx: VfxType.FnfSummonMonster1, delay: TimeSpan.FromSeconds(1));
 
-        eventData.TargetLocation?.ApplyEffect(EffectDuration.Temporary, summonShadow, duration);
-    }
+        creature.SpeakString("Yay I'm summoning shadow");
 
+        creature.Location?.ApplyEffect(EffectDuration.Temporary, summonShadow, duration);
+    }
+    
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public void SetSpellResisted(bool result) { }
