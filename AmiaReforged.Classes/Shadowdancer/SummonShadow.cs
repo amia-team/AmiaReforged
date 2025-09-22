@@ -20,12 +20,12 @@ public class SummonShadow : ISpell
 
     public void OnSpellImpact(SpellEvents.OnSpellCast eventData)
     {
-        if (eventData.Caster is not NwCreature creature) return;
+        if (eventData.Caster is not NwCreature caster) return;
 
-        byte sdLevel = creature.GetClassInfo(ClassType.Shadowdancer)?.Level ?? 0;
+        byte sdLevel = caster.GetClassInfo(ClassType.Shadowdancer)?.Level ?? 0;
         if (sdLevel == 0) return;
 
-        bool hasEpicShadow = creature.KnowsFeat(Feat.EpicEpicShadowlord!);
+        bool hasEpicShadow = caster.KnowsFeat(Feat.EpicEpicShadowlord!);
 
         ShadowRank shadowRank =
             sdLevel < 7 ? ShadowRank.Hd13 :
@@ -37,14 +37,18 @@ public class SummonShadow : ISpell
 
         TimeSpan duration = hasEpicShadow ? NwTimeSpan.FromHours(sdLevel) : NwTimeSpan.FromTurns(sdLevel);
 
+        _ = Summon(caster, shadowResRef, duration);
+    }
+
+    private async Task Summon(NwCreature caster, string shadowResRef, TimeSpan duration)
+    {
+        await caster.WaitForObjectContext();
         Effect summonShadow = Effect.SummonCreature(shadowResRef, VfxType.FnfSmokePuff!,
             unsummonVfx: VfxType.FnfSummonMonster1, delay: TimeSpan.FromSeconds(1));
 
-        creature.SpeakString("Yay I'm summoning shadow");
-
-        creature.Location?.ApplyEffect(EffectDuration.Temporary, summonShadow, duration);
+        caster.Location?.ApplyEffect(EffectDuration.Temporary, summonShadow, duration);
     }
-    
+
     public bool CheckedSpellResistance { get; set; }
     public bool ResistedSpell { get; set; }
     public void SetSpellResisted(bool result) { }
