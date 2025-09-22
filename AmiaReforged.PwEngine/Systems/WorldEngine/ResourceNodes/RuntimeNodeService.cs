@@ -87,6 +87,7 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
                 player.FloatingTextString($"This node has {node.Instance.Uses} uses left.");
                 break;
             case HarvestResult.InProgress:
+                plc.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ComSparksParry));
                 break;
             case HarvestResult.NoTool:
                 player.FloatingTextString("You don't have the correct tool for this job.");
