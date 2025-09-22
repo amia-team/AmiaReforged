@@ -1,11 +1,10 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
 [ServiceBinding(typeof(RuntimeNodeService))]
 public class RuntimeNodeService(RuntimeCharacterService characterService, IHarvestProcessor harvestService)
@@ -35,7 +34,6 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
 
         harvestService.RegisterNode(instance);
         NwModule.Instance.SendMessageToAllDMs($"New resource node registered in {placeable.Area?.Name}");
-
 
         // We only delete the record of the placeable, not the node itself.
         placeable.OnDeath += Delete;
@@ -86,7 +84,7 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
         switch (result)
         {
             case HarvestResult.Finished:
-                player.SendServerMessage($"Harvested {node.Instance.GetType()}");
+                player.FloatingTextString($"This node has {node.Instance.Uses} uses left.");
                 break;
             case HarvestResult.InProgress:
                 player.SendServerMessage("Keep going, your efforts seem to be working...");
