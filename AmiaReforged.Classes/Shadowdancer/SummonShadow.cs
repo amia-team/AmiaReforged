@@ -5,7 +5,7 @@ using Anvil.Services;
 
 namespace AmiaReforged.Classes.Shadowdancer;
 
-[ServiceBinding(typeof(SummonShadow))]
+[ServiceBinding(typeof(ISpell))]
 public class SummonShadow : ISpell
 {
     public string ImpactScript => "X0_S2_ShadSum";
