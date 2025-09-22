@@ -87,10 +87,10 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
                 player.FloatingTextString($"This node has {node.Instance.Uses} uses left.");
                 break;
             case HarvestResult.InProgress:
-                player.SendServerMessage("Keep going, your efforts seem to be working...");
+                player.FloatingTextString("Keep going, your efforts seem to be working...");
                 break;
             case HarvestResult.NoTool:
-                player.SendServerMessage("You don't have the correct tool for this job.");
+                player.FloatingTextString("You don't have the correct tool for this job.");
                 break;
         }
     }
