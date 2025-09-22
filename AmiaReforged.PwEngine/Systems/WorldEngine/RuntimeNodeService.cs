@@ -34,7 +34,7 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
         }
 
         harvestService.RegisterNode(instance);
-        NwModule.Instance.SendMessageToAllDMs($"New resource nod eregistered in {placeable.Area?.Name}");
+        NwModule.Instance.SendMessageToAllDMs($"New resource node registered in {placeable.Area?.Name}");
 
 
         // We only delete the record of the placeable, not the node itself.

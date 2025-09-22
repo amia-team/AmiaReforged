@@ -29,12 +29,14 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
         gameItem.AddItemProperty(quality, EffectDuration.Permanent);
         gameItem.Description = item.BaseDefinition.Description;
 
-        if (item.BaseDefinition.Appearance.ModelType
+        if (item.BaseDefinition.BaseItemType
             is NWScript.BASE_ITEM_MISCSMALL
             or MiscSmall2
             or MiscSmall3)
         {
+            NwModule.Instance.SendMessageToAllDMs($"Setting simple model appearance for {gameItem.Name} to {item.BaseDefinition.Appearance.SimpleModelNumber}");
             gameItem.Appearance.SetSimpleModel((ushort)(item.BaseDefinition.Appearance.SimpleModelNumber ?? 1));
+
             NWScript.SetLocalInt(gameItem, WorldConstants.ItemVariableQuality, (int)item.Quality);
         }
 
