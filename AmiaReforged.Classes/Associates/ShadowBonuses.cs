@@ -15,7 +15,7 @@ public static class ShadowBonuses
         { 20, (6, 6, 50, 50) }
     };
 
-    public static void ApplyShadowBonuses(NwCreature shadow, NwCreature shadowDancer)
+    public static void ApplyShadowBonuses(NwCreature shadowDancer, NwCreature shadow)
     {
         byte sdLevel = shadowDancer.GetClassInfo(ClassType.Shadowdancer)?.Level ?? 0;
 

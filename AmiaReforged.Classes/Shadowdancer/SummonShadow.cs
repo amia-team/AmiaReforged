@@ -43,8 +43,7 @@ public class SummonShadow : ISpell
     private async Task Summon(NwCreature caster, string shadowResRef, TimeSpan duration)
     {
         await caster.WaitForObjectContext();
-        Effect summonShadow = Effect.SummonCreature(shadowResRef, VfxType.FnfSmokePuff!,
-            unsummonVfx: VfxType.FnfSummonMonster1, delay: TimeSpan.FromSeconds(1));
+        Effect summonShadow = Effect.SummonCreature(shadowResRef, VfxType.FnfSmokePuff!, TimeSpan.FromSeconds(1));
 
         caster.Location?.ApplyEffect(EffectDuration.Temporary, summonShadow, duration);
     }
