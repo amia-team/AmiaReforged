@@ -1,10 +1,11 @@
 ﻿using AmiaReforged.Classes.Spells;
 using Anvil.API;
 using Anvil.API.Events;
-using Org.BouncyCastle.Crypto.Operators;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Shadowdancer;
 
+[ServiceBinding(typeof(SummonShadow))]
 public class SummonShadow : ISpell
 {
     public string ImpactScript => "X0_S2_ShadSum";
