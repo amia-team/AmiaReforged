@@ -42,6 +42,8 @@ public static class ShadowAppearance
             shadow.RunEquip(clonedItem, slot);
         }
 
+        shadow.ApplyEffect(EffectDuration.Permanent, Effect.VisualEffect(VfxType.DurProtShadowArmor));
+
         return true;
     }
 }
