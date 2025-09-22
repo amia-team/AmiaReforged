@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
@@ -131,7 +132,6 @@ public class ResourceNodeInstanceSetupService(
         HashSet<NwWaypoint> visited = new HashSet<NwWaypoint>();
         int wpIndex = 0;
 
-        // Two rounds → at most 2 per type
         for (int round = 0; round < 2 && wpIndex < available.Count; round++)
         {
             foreach (ResourceType type in typeOrder)
@@ -160,7 +160,26 @@ public class ResourceNodeInstanceSetupService(
                 NwModule.Instance.SendMessageToAllDMs($"Attempting to spawn a {definition.Tag} . . .");
 
 
-                SpawnResourceNode(definition, wp);
+                IPQuality baselineQuality =
+                    (IPQuality)Random.Shared.Next((int)IPQuality.Poor, (int)IPQuality.AboveAverage);
+
+                int usesModifier = (int)baselineQuality < (int)IPQuality.Average
+                    ? (int)baselineQuality * -1
+                    : (int)baselineQuality;
+
+                ResourceNodeInstance node = new()
+                {
+                    Area = wp.Area!.ResRef,
+                    Definition = definition,
+                    Quality = baselineQuality,
+                    Uses = definition.Uses + usesModifier,
+                    X = wp.Position.X,
+                    Y = wp.Position.Y,
+                    Z = wp.Position.Z,
+                    Rotation = wp.Rotation
+                };
+
+                SpawnInstance(node);
 
                 visited.Add(wp);
                 wpIndex++;
@@ -177,6 +196,34 @@ public class ResourceNodeInstanceSetupService(
             {
                 int j = random.Next(i + 1);
                 (list[i], list[j]) = (list[j], list[i]);
+            }
+        }
+    }
+
+    public void SpawnInstance(ResourceNodeInstance node)
+    {
+        Location? l = node.GameLocation();
+
+        if (l is null)
+        {
+            Log.Error($"Failed to get game location for node {node.Id}");
+        }
+        else
+        {
+            NwPlaceable? plc =
+                NwPlaceable.Create(WorldConstants.GenericNodePlcRef, l, false, node.Definition.Tag);
+            if (plc is null)
+            {
+                Log.Error($"Failed to create node {node.Id}");
+            }
+            else
+            {
+                ObjectPlugin.SetAppearance(plc, node.Definition.PlcAppearance);
+                ObjectPlugin.ForceAssignUUID(plc, node.Id.ToUUIDString());
+                plc.Name = $"{QualityLabel.ToQualityLabel((int)node.Quality)} {node.Definition.Name}";
+                plc.Description = node.Definition.Description;
+
+                runtimeNodes.RegisterPlaceable(plc, node);
             }
         }
     }
@@ -214,50 +261,6 @@ public class ResourceNodeInstanceSetupService(
             .Where(t => t != ResourceType.Undefined)
             .ToArray();
         return tags;
-    }
-
-    private void SpawnResourceNode(ResourceNodeDefinition definition, NwWaypoint wp)
-    {
-        IPQuality baselineQuality = (IPQuality)Random.Shared.Next((int)IPQuality.Poor, (int)IPQuality.AboveAverage);
-
-        int usesModifier = (int)baselineQuality < (int)IPQuality.Average
-            ? (int)baselineQuality * -1
-            : (int)baselineQuality;
-
-        ResourceNodeInstance node = new()
-        {
-            Area = wp.Area!.ResRef,
-            Definition = definition,
-            Quality = baselineQuality,
-            Uses = definition.Uses + usesModifier,
-            X = wp.Position.X,
-            Y = wp.Position.Y,
-            Z = wp.Position.Z,
-            Rotation = wp.Rotation
-        };
-
-        Location? l = node.GameLocation();
-
-        if (l is null)
-        {
-            Log.Error($"Failed to get game location for node {node.Id}");
-            return;
-        }
-
-
-        NwPlaceable? plc = NwPlaceable.Create(WorldConstants.GenericNodePlcRef, l, false, node.Definition.Tag);
-        if (plc is null)
-        {
-            Log.Error($"Failed to create node {node.Id}");
-            return;
-        }
-
-        ObjectPlugin.SetAppearance(plc, node.Definition.PlcAppearance);
-        ObjectPlugin.ForceAssignUUID(plc, node.Id.ToUUIDString());
-        plc.Name = $"{baselineQuality} {definition.Name}";
-        plc.Description = definition.Description;
-
-        runtimeNodes.RegisterPlaceable(plc, node);
     }
 
 
