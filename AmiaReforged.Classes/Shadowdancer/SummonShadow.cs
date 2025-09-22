@@ -28,9 +28,9 @@ public class SummonShadow : ISpell
         bool hasEpicShadow = caster.KnowsFeat(Feat.EpicEpicShadowlord!);
 
         ShadowRank shadowRank =
+            hasEpicShadow ? ShadowRank.EpicShadowLord :
             sdLevel < 7 ? ShadowRank.Hd13 :
             sdLevel < 10 ? ShadowRank.Hd19 :
-            hasEpicShadow ? ShadowRank.EpicShadowLord :
             ShadowRank.Hd25;
 
         string shadowResRef = "sd_shadow_" + (int)shadowRank;
