@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
@@ -87,7 +88,7 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
                 player.FloatingTextString($"This node has {node.Instance.Uses} uses left.");
                 break;
             case HarvestResult.InProgress:
-                plc.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ComSparksParry));
+                plc.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ComChunkStoneMedium));
                 break;
             case HarvestResult.NoTool:
                 player.FloatingTextString("You don't have the correct tool for this job.");
