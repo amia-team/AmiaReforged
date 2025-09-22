@@ -31,6 +31,6 @@ public static class ShadowBonuses
         );
         shadowBonusEffect.SubType = EffectSubType.Unyielding;
 
-
+        shadow.ApplyEffect(EffectDuration.Permanent, shadowBonusEffect);
     }
 }
