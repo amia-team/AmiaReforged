@@ -45,7 +45,6 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         if (eventData.Caster is not NwCreature caster) return;
         if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
         if (eventData.Item != null) return;
-        // if (spell.FeatReference != null) return;
 
         if (targetItem.BaseItem.ItemType is not
             (BaseItemType.BlankScroll or BaseItemType.BlankWand or BaseItemType.BlankPotion)) return;
@@ -78,14 +77,12 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 
         int spellPropId = spellPropIdAndCl.Value.SpellPropId;
         int spellPropCl = spellPropIdAndCl.Value.SpellPropCl;
-        int spellInnateLevel = spell.InnateSpellLevel;
-
 
         switch (targetItem.BaseItem.ItemType)
         {
             case BaseItemType.BlankScroll:
-                SpellCraftResult scrollResult = ValidateScribeScroll(caster, spellInnateLevel, spellPropCl, out int scribeCost);
-                HandleCraftingResult(scrollResult, player, caster, spellInnateLevel, scribeCost,9);
+                SpellCraftResult scrollResult = ValidateScribeScroll(caster, spell.InnateSpellLevel, spellPropCl, out int scribeCost);
+                HandleCraftingResult(scrollResult, player, caster, spell.InnateSpellLevel, scribeCost,9);
 
                 if (scrollResult == SpellCraftResult.Success)
                 {
@@ -95,8 +92,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 break;
 
             case BaseItemType.BlankWand:
-                SpellCraftResult wandResult = ValidateCraftWand(caster, spellInnateLevel, out int wandCost);
-                HandleCraftingResult(wandResult, player, caster, spellInnateLevel, wandCost, 4);
+                SpellCraftResult wandResult = ValidateCraftWand(caster, spell.InnateSpellLevel, out int wandCost);
+                HandleCraftingResult(wandResult, player, caster, spell.InnateSpellLevel, wandCost, 4);
 
                 if (wandResult == SpellCraftResult.Success)
                 {
@@ -107,8 +104,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 break;
 
             case BaseItemType.BlankPotion:
-                SpellCraftResult potionResult = ValidateBrewPotion(caster, spellInnateLevel, spell.IsHostileSpell, out int potionCost);
-                HandleCraftingResult(potionResult, player, caster, spellInnateLevel, potionCost, 3);
+                SpellCraftResult potionResult = ValidateBrewPotion(caster, spell.InnateSpellLevel, spell.IsHostileSpell, out int potionCost);
+                HandleCraftingResult(potionResult, player, caster, spell.InnateSpellLevel, potionCost, 3);
 
                 if (potionResult == SpellCraftResult.Success)
                 {
@@ -251,6 +248,16 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 
     private (int SpellPropId, int SpellPropCl)? GetSpellPropIdAndCl(TwoDimArray spellPropTable)
     {
+        Dictionary<int, (int SpellPropId, int SpellPropCl)> exceptions = new()
+        {
+            { (int)Spell.GreaterMagicWeapon, ((int)Spell.GreaterMagicWeapon, 511) },
+            // Add more exceptions here as needed
+            // { (int)Spell.AnotherSpell, ((int)Spell.AnotherSpell, 123) }
+        };
+
+        if (exceptions.TryGetValue(spell.Id, out (int SpellPropId, int SpellPropCl) exceptionValue))
+            return exceptionValue;
+
         List<int> spellPropRows = [];
 
         int spellId = spell.MasterSpell?.Id ?? spell.Id;
@@ -285,6 +292,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     {
         cost = CalculateScribeCost(spellPropCl, spellLevel);
         if (!caster.KnowsFeat(Feat.ScribeScroll!)) return SpellCraftResult.NoFeat;
+        if (spellLevel > 9) return SpellCraftResult.WrongSpellLevel;
         if (caster.Gold < cost) return SpellCraftResult.NotEnoughGold;
         return SpellCraftResult.Success;
     }
