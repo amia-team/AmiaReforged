@@ -250,9 +250,9 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
     {
         Dictionary<int, (int SpellPropId, int SpellPropCl)> exceptions = new()
         {
-            { (int)Spell.GreaterMagicWeapon, ((int)Spell.GreaterMagicWeapon, 511) },
-            // Add more exceptions here as needed
-            // { (int)Spell.AnotherSpell, ((int)Spell.AnotherSpell, 123) }
+            { (int)Spell.GreaterMagicWeapon, (511, 10) },
+            // Add more exceptions here as needed, you need to check the iprp_spells.2da
+            // { (int)Spell.AnotherSpell, (SpellPropId, SpellPropCl) }
         };
 
         if (exceptions.TryGetValue(spell.Id, out (int SpellPropId, int SpellPropCl) exceptionValue))
