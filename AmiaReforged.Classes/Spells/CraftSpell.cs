@@ -248,6 +248,16 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 
     private (int SpellPropId, int SpellPropCl)? GetSpellPropIdAndCl(TwoDimArray spellPropTable)
     {
+        Dictionary<int, (int SpellPropId, int SpellPropCl)> exceptions = new()
+        {
+            { (int)Spell.GreaterMagicWeapon, ((int)Spell.GreaterMagicWeapon, 511) },
+            // Add more exceptions here as needed
+            // { (int)Spell.AnotherSpell, ((int)Spell.AnotherSpell, 123) }
+        };
+
+        if (exceptions.TryGetValue(spell.Id, out (int SpellPropId, int SpellPropCl) exceptionValue))
+            return exceptionValue;
+
         List<int> spellPropRows = [];
 
         int spellId = spell.MasterSpell?.Id ?? spell.Id;
