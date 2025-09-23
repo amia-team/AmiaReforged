@@ -44,7 +44,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         if (SpellPropTable == null) return;
         if (eventData.Caster is not NwCreature caster) return;
         if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
-        if (eventData.Item != null) return;
+        // if (eventData.Item != null) return;
         if (spell.FeatReference != null) return;
 
         if (targetItem.BaseItem.ItemType is not
