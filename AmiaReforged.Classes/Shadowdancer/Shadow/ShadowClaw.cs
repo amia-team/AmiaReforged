@@ -1,8 +1,10 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.Classes.Shadowdancer.Shadow;
 
+[ServiceBinding(typeof(ShadowClaw))]
 public class ShadowClaw
 {
     private static readonly Dictionary<int, (int ConDrainDie, int StrDrainDie, int Dc)> ShadowClawMap = new()
