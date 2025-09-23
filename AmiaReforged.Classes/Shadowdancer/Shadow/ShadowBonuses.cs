@@ -1,6 +1,6 @@
 ﻿using Anvil.API;
 
-namespace AmiaReforged.Classes.Associates;
+namespace AmiaReforged.Classes.Shadowdancer.Shadow;
 
 public static class ShadowBonuses
 {

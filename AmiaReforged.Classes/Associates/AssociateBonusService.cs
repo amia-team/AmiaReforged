@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using AmiaReforged.Classes.Shadowdancer.Shadow;
+using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
