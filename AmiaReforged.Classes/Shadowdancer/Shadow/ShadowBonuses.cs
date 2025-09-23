@@ -17,6 +17,8 @@ public static class ShadowBonuses
 
     public static void ApplyShadowBonuses(NwCreature shadowDancer, NwCreature shadow)
     {
+        if (!shadowDancer.KnowsFeat(Feat.EpicEpicShadowlord!)) return;
+
         byte sdLevel = shadowDancer.GetClassInfo(ClassType.Shadowdancer)?.Level ?? 0;
 
         if (!BonusMap.TryGetValue(sdLevel, out (int Dodge, int Save, int Slashing, int Bludgeoning) shadowBonuses))
