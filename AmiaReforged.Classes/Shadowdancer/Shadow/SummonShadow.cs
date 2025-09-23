@@ -3,7 +3,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.Classes.Shadowdancer;
+namespace AmiaReforged.Classes.Shadowdancer.Shadow;
 
 [ServiceBinding(typeof(ISpell))]
 public class SummonShadow : ISpell
