@@ -45,8 +45,6 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
             or MiscSmall2
             or MiscSmall3)
         {
-            NwModule.Instance.SendMessageToAllDMs(
-                $"Setting simple model appearance for {gameItem.Name} to {item.BaseDefinition.Appearance.SimpleModelNumber}");
             gameItem.Appearance.SetSimpleModel((ushort)(item.BaseDefinition.Appearance.SimpleModelNumber ?? 1));
 
             NWScript.SetLocalInt(gameItem, WorldConstants.ItemVariableQuality, (int)item.Quality);
