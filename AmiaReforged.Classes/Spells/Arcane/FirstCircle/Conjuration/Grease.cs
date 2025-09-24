@@ -51,7 +51,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
             handleFactory.CreateUniqueHandler(OnHeartbeatGrease),
             handleFactory.CreateUniqueHandler(OnExitGrease));
 
-        Location? location = eventData.TargetLocation;
+        Location? location = eventData.TargetLocation ?? eventData.TargetObject?.Location;
         if (location == null)
         {
             Log.Error("Location not found.");
@@ -90,7 +90,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
         if (obj is not NwCreature creature) return ScriptHandleResult.Handled;
         if (creature.IsDMAvatar) return ScriptHandleResult.Handled;
         if (creature.IsReactionTypeFriendly(caster)) return ScriptHandleResult.Handled;
-        
+
         ApplyFireVuln(obj);
 
         if (creature.IsImmuneTo(ImmunityType.MovementSpeedDecrease)) return ScriptHandleResult.Handled;
