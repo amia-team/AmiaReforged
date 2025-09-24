@@ -10,4 +10,5 @@ public interface IHarvestProcessor
     List<ResourceNodeInstance> GetInstancesForArea(string areaRef);
 
     void Delete(ResourceNodeInstance instance);
+    void ClearNodes(string areaResRef);
 }

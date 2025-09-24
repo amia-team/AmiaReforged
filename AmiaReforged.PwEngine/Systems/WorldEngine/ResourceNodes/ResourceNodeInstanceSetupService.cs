@@ -1,14 +1,13 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
 [ServiceBinding(typeof(ResourceNodeInstanceSetupService))]
 public class ResourceNodeInstanceSetupService(
@@ -18,6 +17,7 @@ public class ResourceNodeInstanceSetupService(
     RuntimeNodeService runtimeNodes)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
 
     public void DoSetup()
     {
@@ -42,10 +42,7 @@ public class ResourceNodeInstanceSetupService(
 
             NwModule.Instance.SendMessageToAllDMs($"PURGING NODES IN {area.Name} . . .");
 
-            foreach (ResourceNodeInstance ri in instancesInArea)
-            {
-                ri.Destroy();
-            }
+            harvestProcessor.ClearNodes(area.ResRef);
         }
     }
 
@@ -220,6 +217,7 @@ public class ResourceNodeInstanceSetupService(
             {
                 ObjectPlugin.SetAppearance(plc, node.Definition.PlcAppearance);
                 ObjectPlugin.ForceAssignUUID(plc, node.Id.ToUUIDString());
+                Log.Info($"Registering new node with UUID {node.Id}");
                 plc.Name = $"{QualityLabel.ToQualityLabel((int)node.Quality)} {node.Definition.Name}";
                 plc.Description = node.Definition.Description;
 
