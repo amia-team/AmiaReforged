@@ -35,7 +35,6 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
         if (eventData.TargetObject != null)
         {
             SpellUtils.SignalSpell(casterCreature, eventData.TargetObject, eventData.Spell);
-            return;
         }
 
 
@@ -51,7 +50,8 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
             handleFactory.CreateUniqueHandler(OnHeartbeatGrease),
             handleFactory.CreateUniqueHandler(OnExitGrease));
 
-        Location? location = eventData.TargetLocation;
+        Location? location = eventData.TargetLocation ?? eventData.TargetObject?.Location;
+
         if (location == null)
         {
             Log.Error("Location not found.");
@@ -90,7 +90,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
         if (obj is not NwCreature creature) return ScriptHandleResult.Handled;
         if (creature.IsDMAvatar) return ScriptHandleResult.Handled;
         if (creature.IsReactionTypeFriendly(caster)) return ScriptHandleResult.Handled;
-        
+
         ApplyFireVuln(obj);
 
         if (creature.IsImmuneTo(ImmunityType.MovementSpeedDecrease)) return ScriptHandleResult.Handled;
@@ -121,8 +121,8 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
 
         foreach (NwCreature creature in creatures)
         {
-            if(creature.IsDMAvatar) continue;
-            if(creature.IsReactionTypeFriendly(caster)) continue;
+            if (creature.IsDMAvatar) continue;
+            if (creature.IsReactionTypeFriendly(caster)) continue;
 
             Effect? fireVuln = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == FireVulnTag);
             Effect? moveSpeed = creature.ActiveEffects.FirstOrDefault(effect => effect.Tag == GreaseMoveTag);
@@ -144,6 +144,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
                 Effect prone = Effect.Knockdown();
                 creature.ApplyEffect(EffectDuration.Temporary, prone, TimeSpan.FromSeconds(OneRound));
             }
+
             if (creature.IsImmuneTo(ImmunityType.MovementSpeedDecrease)) continue;
 
             Effect moveSpeedPenalty = Effect.MovementSpeedDecrease(50);

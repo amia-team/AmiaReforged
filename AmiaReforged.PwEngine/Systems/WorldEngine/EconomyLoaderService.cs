@@ -33,8 +33,6 @@ public class EconomyLoaderService
         _industryLoader = industryLoader;
         _regionLoader = regionLoader;
 
-        Startup();
-
         resourceWatcherService.FileSystemChanged += ReloadChanges;
     }
 
@@ -47,7 +45,7 @@ public class EconomyLoaderService
         LoadDefinitions();
     }
 
-    private void Startup()
+    public void Startup()
     {
         LoadDefinitions();
     }

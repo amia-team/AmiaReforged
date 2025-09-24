@@ -23,6 +23,7 @@ public class ResourceNodeInstanceRepository(PwContextFactory factory, ResourceNo
     public void AddNodeInstance(ResourceNodeInstance instance)
     {
         PersistentResourceNodeInstance persistentInstance = helper.MapFrom(instance);
+
         try
         {
             // If an entity with the same key is already tracked, update its values.
@@ -30,9 +31,24 @@ public class ResourceNodeInstanceRepository(PwContextFactory factory, ResourceNo
             if (tracked is not null)
             {
                 _ctx.Entry(tracked).CurrentValues.SetValues(persistentInstance);
+                return;
+            }
+
+            // Not tracked: check if it already exists in the database.
+            bool existsInDb = _ctx.Set<PersistentResourceNodeInstance>()
+                .AsNoTracking()
+                .Any(e => e.Id == persistentInstance.Id);
+
+            if (existsInDb)
+            {
+                // Attach a stub and set values so EF will issue an UPDATE instead of INSERT.
+                PersistentResourceNodeInstance stub = new PersistentResourceNodeInstance { Id = persistentInstance.Id };
+                _ctx.Attach(stub);
+                _ctx.Entry(stub).CurrentValues.SetValues(persistentInstance);
             }
             else
             {
+                // 3) New row: add so EF will issue an INSERT.
                 _ctx.Add(persistentInstance);
             }
         }
@@ -41,6 +57,7 @@ public class ResourceNodeInstanceRepository(PwContextFactory factory, ResourceNo
             Log.Error(e);
         }
     }
+
 
     public void RemoveNodeInstance(ResourceNodeInstance instance)
     {

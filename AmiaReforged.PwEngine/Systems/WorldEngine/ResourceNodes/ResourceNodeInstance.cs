@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using Anvil.API;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
@@ -13,6 +14,7 @@ public class ResourceNodeInstance
     public delegate void OnHarvestHandler(HarvestEventData data);
 
     public delegate void OnDestroyedHandler(ResourceNodeInstance instance);
+
 
     public event OnHarvestHandler? OnHarvest;
     public event OnDestroyedHandler? OnDestroyed;
@@ -40,6 +42,7 @@ public class ResourceNodeInstance
 
     public void Destroy()
     {
+        LogManager.GetCurrentClassLogger().Info("Destroy called");
         OnDestroyed?.Invoke(this);
     }
 

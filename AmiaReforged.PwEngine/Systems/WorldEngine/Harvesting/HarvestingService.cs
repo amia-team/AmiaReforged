@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
 using Anvil.Services;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
@@ -13,22 +14,55 @@ public class HarvestingService(
     IResourceNodeInstanceRepository repository,
     IItemDefinitionRepository itemDefinitionRepository) : IHarvestProcessor
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly Dictionary<string, List<ResourceNodeInstance>> _nodeCache = new();
+
     public void RegisterNode(ResourceNodeInstance instance)
     {
         instance.OnHarvest += HandleHarvest;
         instance.OnDestroyed += Delete;
+
+        if (!_nodeCache.ContainsKey(instance.Area))
+        {
+            _nodeCache.TryAdd(instance.Area, []);
+        }
+
+        _nodeCache[instance.Area].Add(instance);
+
         repository.AddNodeInstance(instance);
         repository.SaveChanges();
     }
 
+    public void ClearNodes(string areaResRef)
+    {
+        List<ResourceNodeInstance> snapshot = new List<ResourceNodeInstance>(GetInstancesForArea(areaResRef));
+
+        foreach (ResourceNodeInstance instance in snapshot)
+        {
+            instance.Destroy();
+        }
+
+        _nodeCache.Remove(areaResRef);
+    }
+
     public List<ResourceNodeInstance> GetInstancesForArea(string areaRef)
     {
-        return repository.GetInstancesByArea(areaRef);
+        List<ResourceNodeInstance>? resourceNodeInstances = _nodeCache.GetValueOrDefault(areaRef);
+        return resourceNodeInstances ?? [];
     }
 
     public void Delete(ResourceNodeInstance instance)
     {
+        instance.OnHarvest -= HandleHarvest;
+        instance.OnDestroyed -= Delete;
+
         repository.Delete(instance);
+        bool success = _nodeCache[instance.Area].Remove(instance);
+        if (!success)
+        {
+            Log.Error($"Failed to delete instance from {instance.Area}");
+        }
+
         repository.SaveChanges();
     }
 

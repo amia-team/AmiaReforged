@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
@@ -10,6 +11,7 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 [ServiceBinding(typeof(RuntimeNodeService))]
 public class RuntimeNodeService(RuntimeCharacterService characterService, IHarvestProcessor harvestService)
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly Dictionary<Guid, SpawnedNode> _spawnedNodes = new();
 
     public void RegisterPlaceable(NwPlaceable placeable, ResourceNodeInstance instance)
@@ -35,11 +37,9 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
 
         harvestService.RegisterNode(instance);
         NwModule.Instance.SendMessageToAllDMs($"New resource node registered in {placeable.Area?.Name}");
-
-        // We only delete the record of the placeable, not the node itself.
+        Log.Info("Node registered.");
         placeable.OnDeath += Delete;
-
-        instance.OnDestroyed += DestroyPlc;
+        _spawnedNodes[placeable.UUID].Instance.OnDestroyed += DestroyPlc;
     }
 
     private void Delete(PlaceableEvents.OnDeath obj)
@@ -52,10 +52,12 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
     private void DestroyPlc(ResourceNodeInstance instance)
     {
         NwModule.Instance.SendMessageToAllDMs($"Attempting to destroy a node instance in {instance.Area} . . .");
+        SpawnedNode node = _spawnedNodes[instance.Id];
 
-        SpawnedNode? node = _spawnedNodes.GetValueOrDefault(instance.Id);
-
-        if (node is null) return;
+        if (node.Placeable is null)
+        {
+            NwModule.Instance.SendMessageToAllDMs($"plc is null");
+        }
 
         node.Placeable?.Destroy();
 
