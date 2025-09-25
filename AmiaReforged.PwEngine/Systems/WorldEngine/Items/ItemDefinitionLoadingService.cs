@@ -19,14 +19,14 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository items) : IDe
             return;
         }
 
-        string nodeDirectory = Path.Combine(resourcePath, "Items");
-        if (!Directory.Exists(nodeDirectory))
+        string itemsDirectory = Path.Combine(resourcePath, "Items");
+        if (!Directory.Exists(itemsDirectory))
         {
-            _failures.Add(new FileLoadResult(ResultType.Fail, $"Directory does not exist: {nodeDirectory}"));
+            _failures.Add(new FileLoadResult(ResultType.Fail, $"Directory does not exist: {itemsDirectory}"));
             return;
         }
 
-        string[] jsonFiles = Directory.GetFiles(nodeDirectory, "*.json", SearchOption.AllDirectories);
+        string[] jsonFiles = Directory.GetFiles(itemsDirectory, "*.json", SearchOption.AllDirectories);
 
         foreach (string file in jsonFiles)
         {
