@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum JobSystemItemType
 {
     None = 0,

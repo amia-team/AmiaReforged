@@ -30,7 +30,7 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
         gameItem.Description = item.BaseDefinition.Description;
 
         string materialNumbers = "";
-        foreach (Material m in item.BaseDefinition.Materials)
+        foreach (MaterialEnum m in item.BaseDefinition.Materials)
         {
             ItemProperty matProp = ItemProperty.Material((int)m);
             gameItem.AddItemProperty(matProp, EffectDuration.Permanent);

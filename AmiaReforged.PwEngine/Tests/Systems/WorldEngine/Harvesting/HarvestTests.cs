@@ -101,7 +101,7 @@ public class HarvestTests
         ICharacter pc = CreateTestCharacter();
         _characters.Add(pc);
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
-            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [Material.Iron],
+            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [MaterialEnum.Iron],
                 JobSystemItemType.ToolPick, 0, null));
 
         ResourceNodeDefinition definition = new(0, ResourceType.Undefined, "test",
@@ -135,7 +135,7 @@ public class HarvestTests
 
         // Equip a tool that does not match the node's required tool type
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
-            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [Material.Iron],
+            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [MaterialEnum.Iron],
                 JobSystemItemType.ToolHammer, 0, null));
 
         // Node requires a pick, but the character holds a hammer
@@ -169,7 +169,7 @@ public class HarvestTests
         _characters.Add(pc);
 
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
-            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [Material.Iron],
+            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [MaterialEnum.Iron],
                 JobSystemItemType.ToolPick, 0, null));
 
         ResourceNodeDefinition definition = new(0, ResourceType.Ore, "test",
@@ -205,7 +205,7 @@ public class HarvestTests
         _characters.Add(pc);
 
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
-            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [Material.Iron],
+            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [MaterialEnum.Iron],
                 JobSystemItemType.ToolPick, 0, null));
 
         pc.JoinIndustry("new");
@@ -247,7 +247,7 @@ public class HarvestTests
         _characters.Add(pc);
 
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
-            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [Material.Iron],
+            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [MaterialEnum.Iron],
                 JobSystemItemType.ToolPick, 0, null));
 
         pc.JoinIndustry("new");
@@ -288,7 +288,7 @@ public class HarvestTests
         _characters.Add(pc);
 
         pc.GetEquipment().Add(EquipmentSlots.RightHand,
-            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [Material.Iron],
+            new ItemSnapshot("fake_tool", "Test Item", "Test", IPQuality.Average, [MaterialEnum.Iron],
                 JobSystemItemType.ToolPick, 0, null));
 
         pc.JoinIndustry("new");

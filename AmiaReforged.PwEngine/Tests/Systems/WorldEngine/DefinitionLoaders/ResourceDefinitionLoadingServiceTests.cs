@@ -38,6 +38,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
                 File.WriteAllText(Path.Combine(nodesDir, "valid_node.json"), """
                                                                              {
                                                                                "Tag": "test-node-tag",
+                                                                               "Type":"Ore",
                                                                                "Requirement": {},
                                                                                "Outputs": [ {} ],
                                                                                "BaseHarvestRounds": 1

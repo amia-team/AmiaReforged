@@ -1,11 +1,11 @@
 {
   "PlcAppearance": 4792,
-  "Type": 1,
+  "Type": "Ore",
   "Name": "Native Copper Ore Vein",
   "Description": "A vein of pure, unrefined copper in its natural metallic state. Native copper appears as reddish-brown masses or sheets within rock formations, and is one of the few metals found in nature in a relatively pure form.",
   "Tag": "ore_vein_copper_native",
   "Requirement": {
-    "RequiredItemType": 1
+    "RequiredItemType": "ToolPick"
   },
   "Outputs": [
     {

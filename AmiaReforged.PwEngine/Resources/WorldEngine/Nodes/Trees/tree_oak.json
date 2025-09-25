@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4792,
+  "Type": "Tree",
+  "Name": "Oak Tree",
+  "Description": "A mighty oak tree, standing tall and strong. Its sturdy wood is prized for construction and furniture making, while its acorns provide food for wildlife. The dense canopy offers welcome shade in summer months.",
+  "Tag": "tree_oak",
+  "Requirement": {
+    "RequiredItemType": "ToolAxe"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "log_oak",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 4
+}
