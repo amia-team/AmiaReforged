@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 
 public enum HarvestStep
 {

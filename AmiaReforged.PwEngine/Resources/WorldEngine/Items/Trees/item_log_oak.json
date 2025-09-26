@@ -6,11 +6,12 @@
   "Materials": [
     "WoodOak"
   ],
-  "BaseValue": 50,
+  "BaseValue": 100,
+  "WeightIncreaseConstant": 3,
   "JobSystemType": "ResourceLog",
   "BaseItemType": 120,
   "Appearance": {
     "ModelType": 0,
-    "SimpleModelNumber": 132
+    "SimpleModelNumber": 144
   }
 }

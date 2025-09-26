@@ -9,6 +9,7 @@
   "BaseValue": 60,
   "JobSystemType": "ResourceOre",
   "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
   "Appearance": {
     "ModelType": 0,
     "SimpleModelNumber": 132

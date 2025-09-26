@@ -12,4 +12,5 @@ public record ItemDefinition(
     JobSystemItemType JobSystemType,
     int BaseItemType,
     AppearanceData Appearance,
-    int BaseValue = 1);
+    int BaseValue = 1,
+    int WeightIncreaseConstant = -1);

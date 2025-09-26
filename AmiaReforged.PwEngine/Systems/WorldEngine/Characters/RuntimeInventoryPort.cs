@@ -28,6 +28,17 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
         ItemProperty quality = ItemProperty.Quality(item.Quality);
         gameItem.AddItemProperty(quality, EffectDuration.Permanent);
         gameItem.Description = item.BaseDefinition.Description;
+        gameItem.Weight = (decimal)item.BaseDefinition.WeightIncreaseConstant;
+
+        gameItem.AddGoldValue = item.BaseDefinition.BaseValue;
+        IPWeightIncrease weight = (IPWeightIncrease)item.BaseDefinition.WeightIncreaseConstant;
+
+        if (item.BaseDefinition.WeightIncreaseConstant >= 0)
+        {
+            gameItem.AddItemProperty(
+                ItemProperty.WeightIncrease(weight),
+                EffectDuration.Permanent);
+        }
 
         string materialNumbers = "";
         foreach (MaterialEnum m in item.BaseDefinition.Materials)

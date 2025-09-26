@@ -1,5 +1,5 @@
 {
-  "PlcAppearance": 4792,
+  "PlcAppearance": 553,
   "Type": "Tree",
   "Name": "Oak Tree",
   "Description": "A mighty oak tree, standing tall and strong. Its sturdy wood is prized for construction and furniture making, while its acorns provide food for wildlife. The dense canopy offers welcome shade in summer months.",
@@ -14,5 +14,5 @@
       "Chance": 100
     }
   ],
-  "BaseHarvestRounds": 4
+  "BaseHarvestRounds": 8
 }
