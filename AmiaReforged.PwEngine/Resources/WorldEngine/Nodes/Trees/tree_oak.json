@@ -14,5 +14,9 @@
       "Chance": 100
     }
   ],
-  "BaseHarvestRounds": 8
+  "BaseHarvestRounds": 8,
+  "FloraProperties": {
+    "PreferredClimate": "Temperate",
+    "RequiredSoilQuality": "Average"
+  }
 }
