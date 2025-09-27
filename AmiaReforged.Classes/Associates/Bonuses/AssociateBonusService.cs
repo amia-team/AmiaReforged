@@ -4,7 +4,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.Classes.Associates;
+namespace AmiaReforged.Classes.Associates.Bonuses;
 
 [ServiceBinding(typeof(AssociateBonusService))]
 public class AssociateBonusService

@@ -4,7 +4,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.Classes.Associates;
+namespace AmiaReforged.Classes.Associates.Appearances;
 
 [ServiceBinding(typeof(AssociateAppearanceService))]
 public class AssociateAppearanceService
