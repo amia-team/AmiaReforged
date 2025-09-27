@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using AmiaReforged.Classes.EffectUtils;
+﻿using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Spells;
 using AmiaReforged.Classes.Warlock.Types;
 using Anvil.API;
@@ -15,12 +14,12 @@ public class WarlockAbilityHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private static readonly ConcurrentDictionary<ushort, EssenceType> RemoveEssence = new()
+    private static readonly Dictionary<ushort, EssenceType> RemoveEssence = new()
     {
         [1299] = EssenceType.RemoveEssence
     };
 
-    private static readonly ConcurrentDictionary<int, EssenceType> Essences = new()
+    private static readonly Dictionary<int, EssenceType> Essences = new()
     {
         [1015] = EssenceType.Beshadowed,
         [1016] = EssenceType.Bewitching,
@@ -39,7 +38,6 @@ public class WarlockAbilityHandler
         NwModule.Instance.OnUseFeat += OnRemoveEldritchEssence;
         NwModule.Instance.OnSpellAction += OnEldritchEssence;
         NwModule.Instance.OnSpellAction += OnFriendlyCast;
-        NwModule.Instance.OnSpellCast += OnIllegalCast;
         NwModule.Instance.OnSpellCast += OnInvocationCast;
         NwModule.Instance.OnSpellAction += OnInvocationCastAction;
         NwModule.Instance.OnSpellInterrupt += OnInvocationInterrupt;
@@ -89,26 +87,13 @@ public class WarlockAbilityHandler
         {
             if (!(obj.Spell.Id == 981 || obj.Spell.Id == 982 || obj.Spell.Id == 1005)) return;
 
-            if (!obj.Caster.IsReactionTypeFriendly(creature)) return;  
+            if (!obj.Caster.IsReactionTypeFriendly(creature)) return;
             obj.PreventSpellCast = true;
             if (obj.Caster.IsPlayerControlled(out NwPlayer? player))
                 player.SendServerMessage(
                     message: "You cannot perform that action on a friendly target due to PvP settings");
             return;
         }
-    }
-
-    private void OnIllegalCast(OnSpellCast obj)
-    {
-        if (NWScript.GetLevelByClass(57, obj.Caster) <= 0) return;
-        if (NWScript.GetLocalInt(NWScript.GetArea(obj.Caster), sVarName: "NoCasting") == 0) return;
-        if (!(obj.Spell.UserType == SpellUserType.Spells ||
-              obj.Spell.UserType == SpellUserType.CreaturePower)) return;
-
-        obj.PreventSpellCast = true;
-
-        if (obj.Caster.IsPlayerControlled(out NwPlayer? player))
-            player.SendServerMessage(message: "- You cannot cast magic in this area! -");
     }
 
     private void OnInvocationInterrupt(OnSpellInterrupt obj)
