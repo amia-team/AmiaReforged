@@ -31,7 +31,7 @@ public class CurseOfDespair
                     continue;
                 }
 
-                bool passedWillSave = WillSave(currentTarget, WarlockConstants.CalculateDc(caster), 0, caster) == TRUE;
+                bool passedWillSave = WillSave(currentTarget, WarlockUtils.CalculateDc(caster), 0, caster) == TRUE;
 
                 if (passedWillSave || NwEffects.GetHasEffectType(EFFECT_TYPE_CURSE, currentTarget) == TRUE ||
                     GetIsImmune(currentTarget, IMMUNITY_TYPE_ABILITY_DECREASE | IMMUNITY_TYPE_CURSED) == TRUE)

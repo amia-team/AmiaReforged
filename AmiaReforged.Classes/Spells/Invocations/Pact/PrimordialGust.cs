@@ -77,7 +77,7 @@ public class PrimordialGust
 
             if (NwEffects.IsValidSpellTarget(currentTarget, 2, caster))
             {
-                bool passedReflexSave = ReflexSave(currentTarget, WarlockConstants.CalculateDc(caster),
+                bool passedReflexSave = ReflexSave(currentTarget, WarlockUtils.CalculateDc(caster),
                     SAVING_THROW_TYPE_FIRE | SAVING_THROW_TYPE_COLD | SAVING_THROW_TYPE_ELECTRICITY, caster) == TRUE;
                 bool hasEvasion = GetHasFeat(FEAT_EVASION, currentTarget) == TRUE;
                 bool hasImpEvasion = GetHasFeat(FEAT_IMPROVED_EVASION, currentTarget) == TRUE;

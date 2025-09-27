@@ -14,7 +14,7 @@ public static class EldritchPulse
         if (NwEffects.IsValidSpellTarget(targetObject, 3, caster))
         {
             // Single target effect
-            int touchAttackRanged = WarlockConstants.RangedTouch(caster, targetObject);
+            int touchAttackRanged = WarlockUtils.RangedTouch(caster, targetObject);
             if (touchAttackRanged == FALSE) return;
             effectApplier.ApplyEffects(damage * touchAttackRanged);
             SignalEvent(targetObject, EventSpellCastAt(caster, 1004));
@@ -44,7 +44,7 @@ public static class EldritchPulse
                 EssenceEffectApplier aoeApplier =
                     EssenceEffectFactory.CreateEssenceEffect(essence, currentTarget, caster);
 
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDc(caster), 0, caster) ==
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockUtils.CalculateDc(caster), 0, caster) ==
                                       TRUE;
                 if (passedFortSave)
                     ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_FORTITUDE_SAVING_THROW_USE),

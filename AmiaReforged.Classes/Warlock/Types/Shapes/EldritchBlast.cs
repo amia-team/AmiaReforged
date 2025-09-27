@@ -18,7 +18,7 @@ public static class EldritchBlast
         int damage = EldritchDamage.CalculateDamageAmount(nwnObjectId);
         LogManager.GetCurrentClassLogger().Info($"Damage calculated: {damage}.");
 
-        int touchAttackRanged = WarlockConstants.RangedTouch(nwnObjectId, targetObject);
+        int touchAttackRanged = WarlockUtils.RangedTouch(nwnObjectId, targetObject);
 
         if (touchAttackRanged == FALSE) return;
 

@@ -55,7 +55,7 @@ public class WarlockAbilityHandler
         NWScript.SetLocalInt(item, sVarName: "warlock_essence", (ushort)RemoveEssence[featId]);
 
         if (obj.Creature.IsPlayerControlled(out NwPlayer? player))
-            player.SendServerMessage(WarlockConstants.String(message: "Eldritch Essence removed."));
+            player.SendServerMessage(WarlockUtils.String(message: "Eldritch Essence removed."));
     }
 
     private void OnEldritchEssence(OnSpellAction obj)
@@ -69,7 +69,7 @@ public class WarlockAbilityHandler
         NWScript.SetLocalInt(item, sVarName: "warlock_essence", (int)Essences[spellId]);
 
         if (obj.Caster.IsPlayerControlled(out NwPlayer? player))
-            player.SendServerMessage(WarlockConstants.String($"Essence type set to {Essences[spellId].ToString()}."));
+            player.SendServerMessage(WarlockUtils.String($"Essence type set to {Essences[spellId].ToString()}."));
     }
 
     private void OnInvocationCast(OnSpellCast obj)

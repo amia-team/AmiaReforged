@@ -64,7 +64,7 @@ public class LoudDecay
                     continue;
                 }
 
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDc(caster),
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockUtils.CalculateDc(caster),
                     SAVING_THROW_TYPE_SONIC, caster) == TRUE;
 
                 if (passedFortSave) ApplyDelayedVfx(3f, currentTarget);

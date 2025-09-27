@@ -13,7 +13,7 @@ public static class EldritchChain
     public static void CastEldritchChain(uint caster, uint targetObject, EssenceType essence,
         EssenceEffectApplier effectApplier)
     {
-        int touchAttackRanged = WarlockConstants.RangedTouch(caster, targetObject);
+        int touchAttackRanged = WarlockUtils.RangedTouch(caster, targetObject);
         if (touchAttackRanged == FALSE) return;
 
         _applier = effectApplier;

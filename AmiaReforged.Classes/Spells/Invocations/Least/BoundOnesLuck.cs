@@ -10,7 +10,7 @@ public class BoundOnesLuck
     {
         if (GetHasFeat(FEAT_PRESTIGE_DARK_BLESSING, nwnObjectId) == TRUE)
         {
-            SendMessageToPC(nwnObjectId, WarlockConstants.String(message: "You already have Dark Blessing."));
+            SendMessageToPC(nwnObjectId, WarlockUtils.String(message: "You already have Dark Blessing."));
             return;
         }
 

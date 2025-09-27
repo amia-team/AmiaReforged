@@ -6,7 +6,7 @@ namespace AmiaReforged.Classes.Warlock;
 
 // Constants are defined here for ease of use when calling in service handlers.
 
-public static class WarlockConstants
+public static class WarlockUtils
 {
     /// <summary>
     ///     Warlock DC: Base 10 + Warlock levels / 3 + Charisma modidifer

@@ -36,7 +36,7 @@ public static class EldritchTentacle
             ApplyEffectToObject(DURATION_TYPE_INSTANT,
                 EffectDamage(d6() + 4, DAMAGE_TYPE_BLUDGEONING), target);
 
-            if (FortitudeSave(target, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_SPELL, caster) ==
+            if (FortitudeSave(target, WarlockUtils.CalculateDc(caster), SAVING_THROW_TYPE_SPELL, caster) ==
                 TRUE) return;
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectParalyze(), target, RoundsToSeconds(1));
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectVisualEffect(VFX_DUR_PARALYZED), target,

@@ -61,7 +61,7 @@ public class DancingPlague
             GetLocalInt(target, sVarName: "has_danced") == TRUE) return;
 
         bool passedFortSave =
-            FortitudeSave(target, WarlockConstants.CalculateDc(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
+            FortitudeSave(target, WarlockUtils.CalculateDc(caster), SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
 
         if (passedFortSave)
         {
@@ -95,7 +95,7 @@ public class DancingPlague
                     continue;
                 }
 
-                bool passedFortSave = FortitudeSave(currentTarget, WarlockConstants.CalculateDc(caster),
+                bool passedFortSave = FortitudeSave(currentTarget, WarlockUtils.CalculateDc(caster),
                     SAVING_THROW_TYPE_DISEASE, caster) == TRUE;
 
                 if (passedFortSave)

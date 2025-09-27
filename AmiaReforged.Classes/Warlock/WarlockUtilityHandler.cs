@@ -35,19 +35,19 @@ public class WarlockUtilityHandler
         if (NWScript.GetLevelByClass(57, warlock) >= 1 && NWScript.GetHasFeat(1307, warlock) == 0)
         {
             warlock.AddFeat(NwFeat.FromFeatId(1307));
-            obj.Player.SendServerMessage(WarlockConstants.String(message: "Armored Caster feat added."));
+            obj.Player.SendServerMessage(WarlockUtils.String(message: "Armored Caster feat added."));
         }
 
         if (NWScript.GetLevelByClass(57, warlock) >= 3 && NWScript.GetHasFeat(1308, warlock) == 0)
         {
             warlock.AddFeat(NwFeat.FromFeatId(1308));
-            obj.Player.SendServerMessage(WarlockConstants.String(message: "Damage Reduction feat added."));
+            obj.Player.SendServerMessage(WarlockUtils.String(message: "Damage Reduction feat added."));
         }
 
         if (NWScript.GetLevelByClass(57, warlock) >= 8 && NWScript.GetHasFeat(1297, warlock) == 0)
         {
             warlock.AddFeat(NwFeat.FromFeatId(1297));
-            obj.Player.SendServerMessage(WarlockConstants.String(message: "Otherworldly Resilience feat added."));
+            obj.Player.SendServerMessage(WarlockUtils.String(message: "Otherworldly Resilience feat added."));
         }
     }
 
@@ -61,21 +61,21 @@ public class WarlockUtilityHandler
         {
             obj.Creature.RemoveFeat(NwFeat.FromFeatId(1307));
             obj.Creature.LoginPlayer.SendServerMessage(
-                WarlockConstants.String(message: "Armored Caster feat removed."));
+                WarlockUtils.String(message: "Armored Caster feat removed."));
         }
 
         if (NWScript.GetLevelByClass(57, obj.Creature) < 3 && NWScript.GetHasFeat(1308) == 1)
         {
             obj.Creature.RemoveFeat(NwFeat.FromFeatId(1308));
             obj.Creature.LoginPlayer.SendServerMessage(
-                WarlockConstants.String(message: "Damage Reduction feat removed."));
+                WarlockUtils.String(message: "Damage Reduction feat removed."));
         }
 
         if (NWScript.GetLevelByClass(57, obj.Creature) < 8 && NWScript.GetHasFeat(1297) == 0)
         {
             obj.Creature.AddFeat(NwFeat.FromFeatId(1297));
             obj.Creature.LoginPlayer.SendServerMessage(
-                WarlockConstants.String(message: "Otherworldly Resilience feat removed."));
+                WarlockUtils.String(message: "Otherworldly Resilience feat removed."));
         }
 
         if (NWScript.GetLevelByClass(57, obj.Creature) < 10)
@@ -99,7 +99,7 @@ public class WarlockUtilityHandler
             obj.Creature.RemoveFeat(NwFeat.FromFeatId(1317));
             obj.Creature.RemoveFeat(NwFeat.FromFeatId(1318));
             obj.Creature.RemoveFeat(NwFeat.FromFeatId(1319));
-            obj.Creature.LoginPlayer.SendServerMessage(WarlockConstants.String(message: "Pact feat removed."));
+            obj.Creature.LoginPlayer.SendServerMessage(WarlockUtils.String(message: "Pact feat removed."));
         }
     }
 
@@ -144,7 +144,7 @@ public class WarlockUtilityHandler
         utilityToken.Description = "Warlock: Use this token to get your pact sorted!";
         utilityToken.Name = "Warlock Pact Feat Token";
         obj.Player.SendServerMessage(
-            WarlockConstants.String(message: "Warlock Pact Feat Token added to inventory, examine it!"));
+            WarlockUtils.String(message: "Warlock Pact Feat Token added to inventory, examine it!"));
     }
 
     private void GiveEnergyToken(ModuleEvents.OnClientEnter obj)
@@ -166,7 +166,7 @@ public class WarlockUtilityHandler
         utilityToken.Description = "Warlock: Use this token to get your energy feats sorted.";
         utilityToken.Name = "Warlock Energy Feat Token";
         obj.Player.SendServerMessage(
-            WarlockConstants.String(message: "Warlock Energy Feat Token added to inventory, examine it!"));
+            WarlockUtils.String(message: "Warlock Energy Feat Token added to inventory, examine it!"));
     }
 
     private void GiveRelevelToken(ModuleEvents.OnClientEnter obj)
@@ -205,7 +205,7 @@ public class WarlockUtilityHandler
             "Warlock: Use this token to get your invocations sorted. Using the token relevels you to the level you were when you gained this token.";
         utilityToken.Name = "Warlock Relevel Token";
         obj.Player.SendServerMessage(
-            WarlockConstants.String(message: "Warlock Relevel Token added to inventory, examine it!"));
+            WarlockUtils.String(message: "Warlock Relevel Token added to inventory, examine it!"));
     }
 
     private void TokenGivePactFeat(OnItemUse obj)
@@ -218,7 +218,7 @@ public class WarlockUtilityHandler
         if (knowsPactFeat)
         {
             obj.Item.Destroy();
-            obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(
+            obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockUtils.String(
                 message: "You already have a pact feat! Relog to see if you qualify for other utility tokens."));
             obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant,
                 Effect.VisualEffect(VfxType.ImpElementalProtection));
@@ -259,7 +259,7 @@ public class WarlockUtilityHandler
                 break;
         }
 
-        obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(pactFeatName +
+        obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockUtils.String(pactFeatName +
                                                                                " Pact feat added. Relog to see if you qualify for other utility tokens."));
         obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpElementalProtection));
         NWScript.DeleteLocalInt(obj.UsedBy, sVarName: "pactfeat_int");
@@ -275,7 +275,7 @@ public class WarlockUtilityHandler
         if (knowsEnergyFeats)
         {
             obj.Item.Destroy();
-            obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(
+            obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockUtils.String(
                 message: "You already have energy feats! Relog to see if you qualify for other utility tokens."));
             obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant,
                 Effect.VisualEffect(VfxType.ImpElementalProtection));
@@ -335,7 +335,7 @@ public class WarlockUtilityHandler
                 break;
         }
 
-        obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(energyFeat1Name + " and " +
+        obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockUtils.String(energyFeat1Name + " and " +
                                                                                energyFeat2Name +
                                                                                " Energy feats added. Relog to see if you qualify for other utility tokens."));
         obj.UsedBy.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpElementalProtection));
@@ -361,7 +361,7 @@ public class WarlockUtilityHandler
                 obj.UsedBy.Xp = xpDelevel;
                 await NwTask.Delay(TimeSpan.FromSeconds(1));
                 obj.UsedBy.Xp = xpRelevel;
-                obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockConstants.String(
+                obj.UsedBy.ControllingPlayer.SendServerMessage(WarlockUtils.String(
                     message:
                     "Releveled to the last warlock level. Relog to see if you qualify for other utility tokens."));
                 return;
