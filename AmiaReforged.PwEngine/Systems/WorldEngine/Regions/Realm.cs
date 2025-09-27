@@ -1,6 +1,6 @@
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 
-public class Domain
+public class Realm
 {
     public required string Tag { get; set; }
     public required string Name { get; set; }
