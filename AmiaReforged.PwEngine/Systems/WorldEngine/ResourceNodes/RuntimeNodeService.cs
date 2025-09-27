@@ -88,7 +88,7 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
                 break;
             case HarvestResult.InProgress:
                 Effect visualEffect = node.Instance.Definition.Type == ResourceType.Tree
-                    ? Effect.VisualEffect(VfxType.ImpDustExplosion)
+                    ? Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f)
                     : Effect.VisualEffect(VfxType.ComChunkStoneMedium);
 
                 plc.Location.ApplyEffect(EffectDuration.Instant, visualEffect);

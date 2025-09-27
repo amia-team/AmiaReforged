@@ -24,9 +24,8 @@ public class ChatCommandService
     {
         string message = eventInfo.Message;
         if (!message.StartsWith(value: "./")) return;
-        Log.Info($"{message}");
 
-        eventInfo.Volume = TalkVolume.SilentShout;
+        eventInfo.Volume = TalkVolume.SilentTalk;
 
         ResolveCommandFromChatMessage(eventInfo, message);
     }
@@ -42,11 +41,12 @@ public class ChatCommandService
                 await NwTask.SwitchToMainThread();
                 return;
             }
-        
+
             (string command, string[] args) = parsedCommand.Value;
-            
+
             Log.Info($"{command}");
-            foreach (IChatCommand c in _commands.Where(registered => registered.Command.Replace("./", "").Equals(command)))
+            foreach (IChatCommand c in _commands.Where(registered =>
+                         registered.Command.Replace("./", "").Equals(command)))
             {
                 await c.ExecuteCommand(eventInfo.Sender, args);
                 return;
