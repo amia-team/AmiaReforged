@@ -1,6 +1,6 @@
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 
 [ServiceBinding(typeof(IRegionRepository))]
 public class InMemoryRegionRepository : IRegionRepository

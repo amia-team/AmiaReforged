@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 
 public record AreaDefinition(string ResRef, List<string> DefinitionTags, EnvironmentData Environment);
 

@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
 using Anvil.API.Events;

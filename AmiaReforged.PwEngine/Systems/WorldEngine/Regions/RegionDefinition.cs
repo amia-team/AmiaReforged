@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 
 public class RegionDefinition
 {

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;

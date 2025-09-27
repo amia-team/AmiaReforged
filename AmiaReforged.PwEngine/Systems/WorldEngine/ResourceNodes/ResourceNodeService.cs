@@ -1,6 +1,6 @@
 using System.Numerics;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 using Anvil.API;
 using Anvil.Services;
 using NLog;

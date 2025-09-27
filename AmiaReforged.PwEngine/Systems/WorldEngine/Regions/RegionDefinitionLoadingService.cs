@@ -2,7 +2,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.Services;
 using Microsoft.IdentityModel.Tokens;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 
 [ServiceBinding(typeof(RegionDefinitionLoadingService))]
 public class RegionDefinitionLoadingService(IRegionRepository repository) : IDefinitionLoader
