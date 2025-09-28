@@ -79,6 +79,15 @@ public class HarvestingService(
 
             if (definition == null) continue;
 
+            if (harvestOutput.Chance < 100)
+            {
+                int randomPercentage = NWScript.Random(100);
+                if (randomPercentage >= harvestOutput.Chance)
+                {
+                    continue;
+                }
+            }
+
             IPQuality quality = data.NodeInstance.Quality;
             int totalQuality = (int)quality;
 
