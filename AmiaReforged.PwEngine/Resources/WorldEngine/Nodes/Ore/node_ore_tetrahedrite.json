@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4792,
+  "Type": "Ore",
+  "Name": "Tetrahedrite Ore Vein",
+  "Description": "A vein of pure, unrefined copper in its natural metallic state. Native copper appears as reddish-brown masses or sheets within rock formations, and is one of the few metals found in nature in a relatively pure form.",
+  "Tag": "ore_vein_tetrahedrite",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "tetrahedrite_ore",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 4
+}

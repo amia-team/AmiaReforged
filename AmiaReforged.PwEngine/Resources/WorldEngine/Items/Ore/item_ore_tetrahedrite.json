@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "tetrahedrite_ore",
+  "Name": "Tetrahedrite Ore",
+  "Description": "An intriguing steel-gray ore that any decent prospector would recognize as copper-bearing tetrahedrite. The distinctive metallic sheen makes it a rather handsome specimen.",
+  "Materials": [
+    "Copper"
+  ],
+  "BaseValue": 60,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}
