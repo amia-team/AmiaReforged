@@ -12,6 +12,11 @@
       "ItemDefinitionTag": "copper_ore_native",
       "Quantity": 1,
       "Chance": 100
+    },
+    {
+      "ItemDefinitionTag": "gem_malachite_uncut",
+      "Quantity": 1,
+      "Chance": 5
     }
   ],
   "BaseHarvestRounds": 4

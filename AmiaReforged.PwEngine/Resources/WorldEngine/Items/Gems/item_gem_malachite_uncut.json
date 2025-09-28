@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_malachite_uncut",
+  "Name": "Uncut Malachite",
+  "Description": "A rough stone of verdant hue, said by the wise to hold protective virtues against fell magicks and evil spirits when properly cut and blessed.",
+  "Materials": [
+    "GemMalachite"
+  ],
+  "BaseValue": 120,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}
