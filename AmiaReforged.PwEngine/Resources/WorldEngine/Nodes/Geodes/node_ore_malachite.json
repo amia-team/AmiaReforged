@@ -1,0 +1,23 @@
+{
+  "PlcAppearance": 4814,
+  "Type": "Geode",
+  "Name": "Malachite Ore Vein",
+  "Description": "A vein of malachite, a copper carbonate mineral with a vivid green coloration.",
+  "Tag": "ore_vein_malachite",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_malachite_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    },
+    {
+      "ItemDefinitionTag": "copper_ore_native",
+      "Quantity": 1,
+      "Chance": 25
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

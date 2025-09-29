@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4813,
+  "Type": "Ore",
+  "Name": "Cassiterite Ore Vein",
+  "Description": "A vein of cassiterite, the primary ore of tin, showing as dark, glassy crystals.",
+  "Tag": "ore_vein_cassiterite",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "cassiterite_ore",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 7
+}

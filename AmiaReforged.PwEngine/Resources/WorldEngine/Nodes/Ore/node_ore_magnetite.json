@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4804,
+  "Type": "Ore",
+  "Name": "Magnetite Ore Vein",
+  "Description": "A vein of magnetite, a naturally magnetic iron ore with a deep black coloration.",
+  "Tag": "ore_vein_magnetite",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "magnetite_ore",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 7
+}
