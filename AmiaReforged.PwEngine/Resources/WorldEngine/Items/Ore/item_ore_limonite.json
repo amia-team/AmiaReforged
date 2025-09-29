@@ -1,0 +1,15 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "limonite_ore",
+  "Name": "Limonite Ore",
+  "Description": "Yellow-brown earthy iron ore, often found in bogs.",
+  "Materials": ["Iron"],
+  "BaseValue": 50,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}
