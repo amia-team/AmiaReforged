@@ -1,0 +1,15 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "sphalerite_ore",
+  "Name": "Sphalerite Ore",
+  "Description": "Dark brown to black ore, the chief source of zinc.",
+  "Materials": ["Zinc"],
+  "BaseValue": 60,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}
