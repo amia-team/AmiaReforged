@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "adamant_ore",
+  "Name": "Adamant Ore",
+  "Description": "Dark, gleaming chunks of raw adamant, an incredibly durable and rare metal.",
+  "Materials": [
+    "Adamant"
+  ],
+  "BaseValue": 500,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}

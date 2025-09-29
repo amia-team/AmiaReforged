@@ -14,16 +14,20 @@ public class SpellSongHandler
 
     public SpellSongHandler()
     {
-        NwModule.Instance.OnSpellCast += HandleSpellSong;
+        NwModule.Instance.OnUseFeat += HandleSpellSong;
+        NwModule.Instance.OnSpellCast += PlaySoundOnCast;
 
         Log.Info("Spell Song Handler initialized.");
     }
 
-    private void HandleSpellSong(OnSpellCast eventData)
+    private void HandleSpellSong(OnUseFeat eventData)
     {
-        if (eventData.Spell is not { } spell) return;
-        if (eventData.Caster is not NwCreature bard) return;
-        if (!SongSpells.TryGetValue(spell, out SpellSongData songData)) return;
+        if (eventData.Feat.Spell is not { } spell || !SongSpells.TryGetValue(spell, out SpellSongData songData)) return;
+
+        // Return early for normal Bard Song, since that feat handles itself
+        if (spell == NwSpell.FromSpellType(SongConstants.BardSong)) return;
+
+        NwCreature bard = eventData.Creature;
 
         byte bardLevel = bard.GetClassInfo(ClassType.Bard)?.Level ?? 0;
         NwPlayer? player = bard.ControllingPlayer;
@@ -31,14 +35,14 @@ public class SpellSongHandler
         if (bardLevel == 0)
         {
             player?.SendServerMessage("You must be a bard to cast spell songs.");
-            eventData.PreventSpellCast = true;
+            eventData.PreventFeatUse = true;
             return;
         }
 
         if (bardLevel < songData.RequiredLevel)
         {
             player?.SendServerMessage($"Casting {spell.Name} requires bard level {songData.RequiredLevel}.");
-            eventData.PreventSpellCast = true;
+            eventData.PreventFeatUse = true;
             return;
         }
 
@@ -47,21 +51,25 @@ public class SpellSongHandler
         if (bardSongFeat == null || !bard.KnowsFeat(bardSongFeat))
         {
             player?.SendServerMessage("You need Bard Song to be able to cast spell songs.");
-            eventData.PreventSpellCast = true;
+            eventData.PreventFeatUse = true;
             return;
         }
 
         if (NWScript.GetFeatRemainingUses(bardSongFeat.Id, bard) == 0)
         {
             player?.SendServerMessage("You're out of Bard Songs to cast spell songs.");
-            eventData.PreventSpellCast = true;
+            eventData.PreventFeatUse = true;
             return;
         }
 
-        bard.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(songData.SongSound));
-
-        if (spell == NwSpell.FromSpellType(SongConstants.BardSong)) return;
-
         bard.DecrementRemainingFeatUses(bardSongFeat);
+    }
+
+    private void PlaySoundOnCast(OnSpellCast eventData)
+    {
+        if (eventData.Spell == null || !SongSpells.TryGetValue(eventData.Spell, out SpellSongData songData)) return;
+
+        NwCreature bard = (NwCreature)eventData.Caster;
+        bard.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(songData.SongSound));
     }
 }

@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_kingstear_uncut",
+  "Name": "Uncut King's Tear",
+  "Description": "A rough stone of king's tear hue, said by the wise to hold protective virtues when properly cut and blessed.",
+  "Materials": [
+    "GemKing'sTear"
+  ],
+  "BaseValue": 300,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}

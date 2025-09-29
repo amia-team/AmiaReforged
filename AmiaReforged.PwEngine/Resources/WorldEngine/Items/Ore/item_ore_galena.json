@@ -1,0 +1,15 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "galena_ore",
+  "Name": "Galena Ore",
+  "Description": "Lead sulfide ore with a shiny metallic luster, primary source of lead.",
+  "Materials": ["Lead"],
+  "BaseValue": 60,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}

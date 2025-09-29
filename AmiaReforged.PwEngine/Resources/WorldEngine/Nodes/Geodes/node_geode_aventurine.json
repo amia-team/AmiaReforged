@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4903,
+  "Type": "Geode",
+  "Name": "Aventurine Deposit",
+  "Description": "A green quartz variant containing shimmering inclusions, known as aventurine.",
+  "Tag": "geode_aventurine",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_aventurine_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

@@ -1,3 +1,5 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 
 public record KnowledgeHarvestEffect(

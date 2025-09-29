@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_canarydiamond_uncut",
+  "Name": "Uncut Canary Diamond",
+  "Description": "A rough stone of canary diamond hue, said by the wise to hold protective virtues when properly cut and blessed.",
+  "Materials": [
+    "GemCanaryDiamond"
+  ],
+  "BaseValue": 450,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}

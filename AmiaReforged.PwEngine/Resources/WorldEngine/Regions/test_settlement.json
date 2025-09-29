@@ -5,8 +5,17 @@
     {
       "ResRef": "zworldttemprate",
       "DefinitionTags": [
-        "ore_vein_copper_native"
-      ]
+        "ore_vein_copper_native",
+        "tree_oak"
+      ],
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "Good",
+        "MineralQualityRange": {
+          "Min": "BelowAverage",
+          "Max": "Excellent"
+        }
+      }
     }
   ]
 }

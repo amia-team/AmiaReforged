@@ -20,7 +20,6 @@ public class Singed : SpellDecorator
         NwGameObject? target = eventData.TargetObject;
         if (target == null) return;
 
-        if (target is not NwCreature creature) return;
         if (caster is not NwCreature casterCreature) return;
 
         bool hasEvocationSpecialization = casterCreature.GetSpecialization(NwClass.FromClassType(ClassType.Wizard)) ==
@@ -31,18 +30,19 @@ public class Singed : SpellDecorator
             Effect attackBonus = Effect.AttackDecrease(1);
             attackBonus.Tag = "FireBoltSpecializationDecorator";
 
-            ApplyPenalty(creature, attackBonus);
+            ApplyPenalty(target, attackBonus);
         }
 
         Spell.OnSpellImpact(eventData);
     }
 
-    private void ApplyPenalty(NwCreature creature, Effect attackBonus)
+    private void ApplyPenalty(NwGameObject target, Effect attackBonus)
     {
-        Effect? existing = creature.ActiveEffects.FirstOrDefault(e => e.Tag == "FireBoltSpecializationDecorator");
+        if (target is not NwCreature targetCreature) return;
+        Effect? existing = targetCreature.ActiveEffects.FirstOrDefault(e => e.Tag == "FireBoltSpecializationDecorator");
 
-        if (existing != null) creature.RemoveEffect(existing);
+        if (existing != null) targetCreature.RemoveEffect(existing);
 
-        creature.ApplyEffect(EffectDuration.Temporary, attackBonus, TimeSpan.FromSeconds(TwoRounds));
+        targetCreature.ApplyEffect(EffectDuration.Temporary, attackBonus, TimeSpan.FromSeconds(TwoRounds));
     }
 }

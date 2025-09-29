@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_fluorspar_uncut",
+  "Name": "Uncut Fluorspar",
+  "Description": "A rough stone of fluorspar hue, said by the wise to hold protective virtues when properly cut and blessed.",
+  "Materials": [
+    "GemFluorspar"
+  ],
+  "BaseValue": 50,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}

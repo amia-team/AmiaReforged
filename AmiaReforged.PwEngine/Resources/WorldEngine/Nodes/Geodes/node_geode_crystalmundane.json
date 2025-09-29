@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4926,
+  "Type": "Geode",
+  "Name": "Mundane Crystal Deposit",
+  "Description": "A simple crystalline deposit of mundane quartz.",
+  "Tag": "geode_crystalmundane",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_crystalmundane_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

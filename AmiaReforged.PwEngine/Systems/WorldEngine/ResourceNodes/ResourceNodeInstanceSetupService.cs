@@ -1,11 +1,9 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
-using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
@@ -14,7 +12,7 @@ public class ResourceNodeInstanceSetupService(
     IResourceNodeDefinitionRepository resourceRepository,
     IHarvestProcessor harvestProcessor,
     IRegionRepository regionRepository,
-    RuntimeNodeService runtimeNodes)
+    ResourceNodeService nodeService)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -65,18 +63,19 @@ public class ResourceNodeInstanceSetupService(
                 .Where(t => t.Tag == WorldConstants.ResourceNodeZoneTag)
                 .ToList();
 
-        GenerateNodesInTriggers(nodeSpawnRegions, area.DefinitionTags);
+        GenerateNodesInTriggers(nodeSpawnRegions, area.DefinitionTags, area);
     }
 
-    private void GenerateNodesInTriggers(List<NwTrigger> nodeSpawnRegions, List<string> definitionTags)
+    private void GenerateNodesInTriggers(List<NwTrigger> nodeSpawnRegions, List<string> definitionTags,
+        AreaDefinition area)
     {
         foreach (NwTrigger trigger in nodeSpawnRegions)
         {
-            ProcessNodesToSpawn(trigger, definitionTags);
+            ProcessNodesToSpawn(trigger, definitionTags, area);
         }
     }
 
-    private void ProcessNodesToSpawn(NwTrigger trigger, List<string> definitionTags)
+    private void ProcessNodesToSpawn(NwTrigger trigger, List<string> definitionTags, AreaDefinition area)
     {
         if (definitionTags.Count == 0) return;
 
@@ -111,11 +110,11 @@ public class ResourceNodeInstanceSetupService(
 
         NwModule.Instance.SendMessageToAllDMs($"Distributing nodes for trigger in {trigger.Area?.Name} . . .");
 
-        DistributeNodes(typeOrder, rng, waypoints, definitions);
+        DistributeNodes(typeOrder, rng, waypoints, definitions, area);
     }
 
     private void DistributeNodes(List<ResourceType> typeOrder, Random rng, List<NwWaypoint> waypoints,
-        List<ResourceNodeDefinition> definitions)
+        List<ResourceNodeDefinition> definitions, AreaDefinition area)
     {
         // Shuffle types and waypoints to spread things out fairly
         Shuffle(typeOrder, rng);
@@ -156,27 +155,9 @@ public class ResourceNodeInstanceSetupService(
 
                 NwModule.Instance.SendMessageToAllDMs($"Attempting to spawn a {definition.Tag} . . .");
 
+                ResourceNodeInstance node = nodeService.CreateNewNode(area, definition, wp.Position, wp.Rotation);
 
-                IPQuality baselineQuality =
-                    (IPQuality)Random.Shared.Next((int)IPQuality.Poor, (int)IPQuality.AboveAverage);
-
-                int usesModifier = (int)baselineQuality < (int)IPQuality.Average
-                    ? (int)baselineQuality * -1
-                    : (int)baselineQuality;
-
-                ResourceNodeInstance node = new()
-                {
-                    Area = wp.Area!.ResRef,
-                    Definition = definition,
-                    Quality = baselineQuality,
-                    Uses = definition.Uses + usesModifier,
-                    X = wp.Position.X,
-                    Y = wp.Position.Y,
-                    Z = wp.Position.Z,
-                    Rotation = wp.Rotation
-                };
-
-                SpawnInstance(node);
+                nodeService.SpawnInstance(node);
 
                 visited.Add(wp);
                 wpIndex++;
@@ -193,35 +174,6 @@ public class ResourceNodeInstanceSetupService(
             {
                 int j = random.Next(i + 1);
                 (list[i], list[j]) = (list[j], list[i]);
-            }
-        }
-    }
-
-    public void SpawnInstance(ResourceNodeInstance node)
-    {
-        Location? l = node.GameLocation();
-
-        if (l is null)
-        {
-            Log.Error($"Failed to get game location for node {node.Id}");
-        }
-        else
-        {
-            NwPlaceable? plc =
-                NwPlaceable.Create(WorldConstants.GenericNodePlcRef, l, false, node.Definition.Tag);
-            if (plc is null)
-            {
-                Log.Error($"Failed to create node {node.Id}");
-            }
-            else
-            {
-                ObjectPlugin.SetAppearance(plc, node.Definition.PlcAppearance);
-                ObjectPlugin.ForceAssignUUID(plc, node.Id.ToUUIDString());
-                Log.Info($"Registering new node with UUID {node.Id}");
-                plc.Name = $"{QualityLabel.ToQualityLabel((int)node.Quality)} {node.Definition.Name}";
-                plc.Description = node.Definition.Description;
-
-                runtimeNodes.RegisterPlaceable(plc, node);
             }
         }
     }

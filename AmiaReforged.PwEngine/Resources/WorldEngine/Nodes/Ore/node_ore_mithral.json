@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4808,
+  "Type": "Ore",
+  "Name": "Mithral Ore Vein",
+  "Description": "A vein of mithral, a rare silvery metal famed for being both lighter and stronger than steel.",
+  "Tag": "ore_vein_mithral",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "mithral_ore",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 10
+}

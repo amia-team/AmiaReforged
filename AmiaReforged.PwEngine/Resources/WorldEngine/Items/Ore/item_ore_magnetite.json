@@ -1,0 +1,15 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "magnetite_ore",
+  "Name": "Magnetite Ore",
+  "Description": "Heavy, black iron ore with natural magnetic properties.",
+  "Materials": ["Iron"],
+  "BaseValue": 170,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}

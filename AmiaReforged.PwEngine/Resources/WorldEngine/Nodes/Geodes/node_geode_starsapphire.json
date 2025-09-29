@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4923,
+  "Type": "Geode",
+  "Name": "Star Sapphire Deposit",
+  "Description": "A sapphire deposit containing rare sapphires that exhibit a star-like phenomenon known as asterism.",
+  "Tag": "geode_starsapphire",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_starsapphire_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

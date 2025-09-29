@@ -6,7 +6,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 
 [ServiceBinding(typeof(ItemDefinitionLoadingService))]
-public class ItemDefinitionLoadingService(IItemDefinitionRepository repository) : IDefinitionLoader
+public class ItemDefinitionLoadingService(IItemDefinitionRepository items) : IDefinitionLoader
 {
     private readonly List<FileLoadResult> _failures = [];
 
@@ -19,14 +19,14 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository repository) 
             return;
         }
 
-        string nodeDirectory = Path.Combine(resourcePath, "Items");
-        if (!Directory.Exists(nodeDirectory))
+        string itemsDirectory = Path.Combine(resourcePath, "Items");
+        if (!Directory.Exists(itemsDirectory))
         {
-            _failures.Add(new FileLoadResult(ResultType.Fail, $"Directory does not exist: {nodeDirectory}"));
+            _failures.Add(new FileLoadResult(ResultType.Fail, $"Directory does not exist: {itemsDirectory}"));
             return;
         }
 
-        string[] jsonFiles = Directory.GetFiles(nodeDirectory, "*.json", SearchOption.AllDirectories);
+        string[] jsonFiles = Directory.GetFiles(itemsDirectory, "*.json", SearchOption.AllDirectories);
 
         foreach (string file in jsonFiles)
         {
@@ -50,7 +50,7 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository repository) 
                     continue;
                 }
 
-                repository.AddItemDefinition(definition);
+                items.AddItemDefinition(definition);
             }
             catch (Exception ex)
             {
@@ -97,6 +97,6 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository repository) 
 
     public List<ItemDefinition> Definitions()
     {
-        return repository.AllItems();
+        return items.AllItems();
     }
 }

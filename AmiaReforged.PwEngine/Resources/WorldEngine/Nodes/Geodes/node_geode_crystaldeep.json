@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4925,
+  "Type": "Geode",
+  "Name": "Deep Crystal Deposit",
+  "Description": "A crystalline deposit suffused with psionic resonance, known as deep crystal.",
+  "Tag": "geode_crystaldeep",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_crystaldeep_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

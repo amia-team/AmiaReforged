@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_greenstone_uncut",
+  "Name": "Uncut Greenstone",
+  "Description": "A rough stone of greenstone hue, said by the wise to hold protective virtues when properly cut and blessed.",
+  "Materials": [
+    "GemGreenstone"
+  ],
+  "BaseValue": 40,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}

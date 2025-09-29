@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4910,
+  "Type": "Geode",
+  "Name": "Fire Agate Deposit",
+  "Description": "A fiery agate with iridescent colors shimmering across its surface.",
+  "Tag": "geode_fireagate",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_fireagate_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

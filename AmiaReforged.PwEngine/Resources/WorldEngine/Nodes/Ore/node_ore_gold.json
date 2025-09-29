@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4802,
+  "Type": "Ore",
+  "Name": "Cold Iron Ore Vein",
+  "Description": "A seam of cold iron, an unyielding, pale-gray iron prized for its supernatural potency against fey and demons.",
+  "Tag": "ore_vein_coldiron",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "coldiron_ore",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 9
+}

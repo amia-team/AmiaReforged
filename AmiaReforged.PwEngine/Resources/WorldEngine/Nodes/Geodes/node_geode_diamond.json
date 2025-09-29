@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4908,
+  "Type": "Geode",
+  "Name": "Diamond Deposit",
+  "Description": "A deposit of natural diamonds, clear and sparkling within the rock.",
+  "Tag": "geode_diamond",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_diamond_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

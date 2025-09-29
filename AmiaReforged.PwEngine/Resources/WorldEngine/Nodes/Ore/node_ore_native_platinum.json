@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4809,
+  "Type": "Ore",
+  "Name": "Native Platinum Vein",
+  "Description": "A vein of native platinum, appearing as silvery-white flecks and masses within host rock.",
+  "Tag": "ore_vein_platinum",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "platinum_ore",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

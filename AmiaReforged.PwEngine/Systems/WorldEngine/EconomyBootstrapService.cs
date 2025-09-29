@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Domains;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Anvil.API;
 using Anvil.API.Events;
@@ -16,17 +16,17 @@ public class EconomyBootstrapService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private readonly ResourceNodeInstanceSetupService _setup;
+    private readonly ResourceNodeService _nodeService;
     private readonly IResourceNodeInstanceRepository _nodes;
     private readonly IRegionRepository _regions;
 
     /// <summary>
     /// Responsible for loading previous economic states, such as the location of resource nodes.
     /// </summary>
-    public EconomyBootstrapService(EconomyLoaderService loader, ResourceNodeInstanceSetupService setup,
+    public EconomyBootstrapService(EconomyLoaderService loader, ResourceNodeService nodeService,
         IResourceNodeInstanceRepository nodes, IRegionRepository regions)
     {
-        _setup = setup;
+        _nodeService = nodeService;
         _nodes = nodes;
         _regions = regions;
 
@@ -44,7 +44,7 @@ public class EconomyBootstrapService
                 Log.Info($"Spawning nodes in {areaDefinition.ResRef}");
                 List<ResourceNodeInstance> persistentNodes = _nodes.GetInstancesByArea(areaDefinition.ResRef);
 
-                persistentNodes.ForEach(n => _setup.SpawnInstance(n));
+                persistentNodes.ForEach(n => _nodeService.SpawnInstance(n));
             }
         }
     }

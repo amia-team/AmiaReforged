@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4918,
+  "Type": "Geode",
+  "Name": "Obsidian Deposit",
+  "Description": "A volcanic glass deposit of sharp, jet-black obsidian.",
+  "Tag": "geode_obsidian",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_obsidian_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

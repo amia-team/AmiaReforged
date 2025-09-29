@@ -29,7 +29,7 @@ public class WrithingDarkHeartbeat
 
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectDamage(damage), current);
 
-                bool passedWillSave = WillSave(current, WarlockConstants.CalculateDc(caster), 0, caster) == TRUE;
+                bool passedWillSave = WillSave(current, WarlockUtils.CalculateDc(caster), 0, caster) == TRUE;
 
                 if (passedWillSave)
                 {

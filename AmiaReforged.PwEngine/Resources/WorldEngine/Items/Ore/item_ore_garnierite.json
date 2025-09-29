@@ -1,0 +1,15 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "garnierite_ore",
+  "Name": "Garnierite Ore",
+  "Description": "Green nickel-bearing ore, commonly found in lateritic deposits.",
+  "Materials": ["Nickel"],
+  "BaseValue": 90,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}

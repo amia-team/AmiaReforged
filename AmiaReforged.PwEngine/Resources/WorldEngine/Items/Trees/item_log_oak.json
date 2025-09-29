@@ -4,12 +4,14 @@
   "Name": "Oak Log",
   "Description": "A sturdy piece of oak timber, freshly hewn from a mighty tree. The dense wood's distinctive grain pattern speaks of its strength and durability, making it prized by craftsmen.",
   "Materials": [
-    43
+    "WoodOak"
   ],
-  "JobSystemItemType": 10,
+  "BaseValue": 100,
+  "WeightIncreaseConstant": 3,
+  "JobSystemType": "ResourceLog",
   "BaseItemType": 120,
   "Appearance": {
     "ModelType": 0,
-    "SimpleModelNumber": 132
+    "SimpleModelNumber": 144
   }
 }

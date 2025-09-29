@@ -8,7 +8,9 @@ public record ItemDefinition(
     string ItemTag,
     string Name,
     string Description,
-    Material[] Materials,
+    MaterialEnum[] Materials,
     JobSystemItemType JobSystemType,
     int BaseItemType,
-    AppearanceData Appearance);
+    AppearanceData Appearance,
+    int BaseValue = 1,
+    int WeightIncreaseConstant = -1);

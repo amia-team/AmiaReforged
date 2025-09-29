@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4917,
+  "Type": "Geode",
+  "Name": "Malachite Deposit",
+  "Description": "A geode of green malachite, banded and rich in copper traces.",
+  "Tag": "geode_malachite",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_malachite_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

@@ -159,6 +159,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 
         AddClassRestrictions(scribedScroll);
 
+        scribedScroll.Stolen = true;
+
         await NwTask.Delay(TimeSpan.FromMilliseconds(1));
 
         caster.AcquireItem(scribedScroll);
@@ -191,6 +193,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         craftedWand.Description = _spellDescription;
 
         AddClassRestrictions(craftedWand);
+
+        craftedWand.Stolen = true;
 
         caster.AcquireItem(craftedWand);
     }
@@ -227,6 +231,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
 
         brewedPotion.Name = "Potion of "+_spellName;
         brewedPotion.Description = _spellDescription;
+
+        brewedPotion.Stolen = true;
 
         await NwTask.Delay(TimeSpan.FromMilliseconds(1));
 

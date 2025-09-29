@@ -1,0 +1,15 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "platinum_ore",
+  "Name": "Platinum Ore",
+  "Description": "Silvery-white precious ore of platinum, valued for rarity and resilience.",
+  "Materials": ["Platinum"],
+  "BaseValue": 300,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}

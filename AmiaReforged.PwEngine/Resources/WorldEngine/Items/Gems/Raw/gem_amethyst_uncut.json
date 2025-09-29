@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_amethyst_uncut",
+  "Name": "Uncut Amethyst",
+  "Description": "A rough stone of amethyst hue, said by the wise to hold protective virtues when properly cut and blessed.",
+  "Materials": [
+    "GemAmethyst"
+  ],
+  "BaseValue": 80,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}

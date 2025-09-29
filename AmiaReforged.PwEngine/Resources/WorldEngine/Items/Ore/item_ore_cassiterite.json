@@ -1,0 +1,15 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "cassiterite_ore",
+  "Name": "Cassiterite Ore",
+  "Description": "Dark crystalline ore, the primary source of tin.",
+  "Materials": ["Tin"],
+  "BaseValue": 70,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}

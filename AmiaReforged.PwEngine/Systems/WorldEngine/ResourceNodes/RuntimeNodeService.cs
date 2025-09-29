@@ -23,13 +23,10 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
             case ResourceType.Undefined:
                 break;
             case ResourceType.Ore:
-                placeable.OnPhysicalAttacked += HandleAttackedHarvest;
-                break;
             case ResourceType.Geode:
-                break;
             case ResourceType.Boulder:
-                break;
             case ResourceType.Tree:
+                placeable.OnPhysicalAttacked += HandleAttackedHarvest;
                 break;
             case ResourceType.Flora:
                 break;
@@ -87,10 +84,14 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
         switch (result)
         {
             case HarvestResult.Finished:
-                player.FloatingTextString($"This node has {node.Instance.Uses} uses left.");
+                player.FloatingTextString($"This resource has {node.Instance.Uses} uses left.");
                 break;
             case HarvestResult.InProgress:
-                plc.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ComChunkStoneMedium));
+                Effect visualEffect = node.Instance.Definition.Type == ResourceType.Tree
+                    ? Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f)
+                    : Effect.VisualEffect(VfxType.ComChunkStoneMedium);
+
+                plc.Location.ApplyEffect(EffectDuration.Instant, visualEffect);
                 break;
             case HarvestResult.NoTool:
                 player.FloatingTextString("You don't have the correct tool for this job.");

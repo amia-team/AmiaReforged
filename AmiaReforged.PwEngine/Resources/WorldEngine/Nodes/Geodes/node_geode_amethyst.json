@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4902,
+  "Type": "Geode",
+  "Name": "Amethyst Deposit",
+  "Description": "A deposit of purple quartz crystals, treasured as amethyst gems.",
+  "Tag": "geode_amethyst",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_amethyst_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

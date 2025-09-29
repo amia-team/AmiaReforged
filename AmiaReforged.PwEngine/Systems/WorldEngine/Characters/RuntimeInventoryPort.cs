@@ -20,7 +20,7 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
 
         if (gameItem is null) return;
 
-        string qualityLabel = QualityLabel.ToQualityLabel((int)item.Quality);
+        string qualityLabel = QualityLabel.QualityLabelForItem(item.BaseDefinition.JobSystemType, item.Quality);
         gameItem.Name = qualityLabel.IsNullOrEmpty()
             ? $"{item.BaseDefinition.Name}"
             : $"{item.BaseDefinition.Name} ({qualityLabel})";
@@ -29,8 +29,18 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
         gameItem.AddItemProperty(quality, EffectDuration.Permanent);
         gameItem.Description = item.BaseDefinition.Description;
 
+        CalculateAddedValue(item, gameItem);
+        IPWeightIncrease weight = (IPWeightIncrease)item.BaseDefinition.WeightIncreaseConstant;
+
+        if (item.BaseDefinition.WeightIncreaseConstant >= 0)
+        {
+            gameItem.AddItemProperty(
+                ItemProperty.WeightIncrease(weight),
+                EffectDuration.Permanent);
+        }
+
         string materialNumbers = "";
-        foreach (Material m in item.BaseDefinition.Materials)
+        foreach (MaterialEnum m in item.BaseDefinition.Materials)
         {
             ItemProperty matProp = ItemProperty.Material((int)m);
             gameItem.AddItemProperty(matProp, EffectDuration.Permanent);
@@ -51,6 +61,14 @@ public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
         }
 
         creature.AcquireItem(gameItem);
+    }
+
+    private static void CalculateAddedValue(ItemDto item, NwItem gameItem)
+    {
+        int qualityValueAdded = (int)(item.BaseDefinition.BaseValue * ItemCostHelper.GetCostMultiplier(item.Quality));
+        int materialValueAdded = ItemCostHelper.GetAddedCost(item, item.BaseDefinition.Materials);
+
+        gameItem.AddGoldValue = item.BaseDefinition.BaseValue + qualityValueAdded + materialValueAdded;
     }
 
     public List<ItemSnapshot> GetInventory()

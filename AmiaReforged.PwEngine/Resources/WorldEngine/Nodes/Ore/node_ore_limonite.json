@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4806,
+  "Type": "Ore",
+  "Name": "Limonite Ore Vein",
+  "Description": "A vein of limonite, an earthy yellow-brown iron ore found in bogs and sedimentary deposits.",
+  "Tag": "ore_vein_limonite",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "limonite_ore",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 6
+}
