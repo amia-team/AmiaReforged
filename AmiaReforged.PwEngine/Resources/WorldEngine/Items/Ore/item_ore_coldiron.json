@@ -1,0 +1,15 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "coldiron_ore",
+  "Name": "Cold Iron Ore",
+  "Description": "Pale-gray iron ore known for its potency against supernatural beings.",
+  "Materials": ["Cold Iron"],
+  "BaseValue": 120,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}
