@@ -1,61 +1,30 @@
 using Anvil.API;
-using Anvil.API.Events;
-using Anvil.Services;
 
 namespace AmiaReforged.Classes.Warlock.Feats;
 
-[ServiceBinding((typeof(ArmoredCaster)))]
-public class ArmoredCaster
+public static class ArmoredCaster
 {
-    private const VfxType SpellFailHeadVfx = (VfxType)292;
-    private const VfxType SpellFailHandVfx = (VfxType)293;
-
-    public ArmoredCaster()
+    public static int CalculateAsf(NwCreature warlock)
     {
-        NwModule.Instance.OnSpellCast += CheckArmoredCaster;
-    }
-
-    private void CheckArmoredCaster(OnSpellCast eventData)
-    {
-        if (eventData.Caster is not NwCreature warlock) return;
-        if (warlock.ArcaneSpellFailure <= 0) return;
-        if (warlock.Classes[eventData.ClassIndex].Class != WarlockConstants.WarlockClass) return;
-        if (eventData.Spell?.SpellComponents is SpellComponents.None or SpellComponents.Verbal) return;
-
-        bool majorityLevelWarlock = warlock.CasterLevel > warlock.Level / 2;
-        bool hasValidOffhand = warlock.GetItemInSlot(InventorySlot.LeftHand)?
-            .BaseItem.ItemType is not BaseItemType.LargeShield and not BaseItemType.TowerShield;
-        bool hasLightArmor = warlock.GetItemInSlot(InventorySlot.Chest)?
-            .ACValue is not > 3;
-
-        bool qualifiesForArmoredCaster = majorityLevelWarlock && hasValidOffhand && hasLightArmor;
-
         int effectiveAsf = warlock.ArcaneSpellFailure;
 
-        if (qualifiesForArmoredCaster)
-        {
-            byte? armorAsf = warlock.GetItemInSlot(InventorySlot.Chest)?.BaseItem.ArcaneSpellFailure;
-            if (armorAsf != null)
-                effectiveAsf -= (int)armorAsf;
+        bool majorityLevelWarlock = warlock.CasterLevel > warlock.Level / 2;
+        if (!majorityLevelWarlock) return effectiveAsf;
 
-            byte? shieldAsf = warlock.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.ArcaneSpellFailure;
-            if (shieldAsf != null)
-                effectiveAsf -= (int)shieldAsf;
-        }
+        NwItem? armor = warlock.GetItemInSlot(InventorySlot.Chest);
+        if (armor != null)
+            effectiveAsf -= armor.BaseItem.BaseAC switch
+            {
+                1 => 5,
+                2 => 10,
+                3 => 20,
+                _ => 0
+            };
 
-        if (effectiveAsf <= 0) return;
+        NwItem? shield = warlock.GetItemInSlot(InventorySlot.LeftHand);
+        if (shield != null && shield.BaseItem.ItemType == BaseItemType.SmallShield)
+            effectiveAsf -= shield.BaseItem.ArcaneSpellFailure;
 
-        if (Random.Shared.Roll(100) > effectiveAsf) return;
-
-        eventData.PreventSpellCast = true;
-
-        VfxType spellFailVfx = SpellFailHandVfx;
-        if (eventData.Spell?.CastAnim == SpellCastAnimType.Up)
-            spellFailVfx = SpellFailHeadVfx;
-
-        warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(spellFailVfx));
-
-        if (warlock.IsPlayerControlled(out NwPlayer? player))
-            player.SendServerMessage("Arcane spell failure!");
+        return effectiveAsf;
     }
 }
