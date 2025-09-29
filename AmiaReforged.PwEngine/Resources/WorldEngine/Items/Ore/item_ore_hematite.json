@@ -1,0 +1,15 @@
+{
+  "ResRef": "econ_msmall3",
+  "ItemTag": "hematite_ore",
+  "Name": "Hematite Ore",
+  "Description": "Iron ore with a reddish-brown coloration caused by oxidation.",
+  "Materials": ["Iron"],
+  "BaseValue": 70,
+  "JobSystemType": "ResourceOre",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": 0,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 132
+  }
+}
