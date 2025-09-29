@@ -6,7 +6,7 @@
   "Materials": [
     "Copper"
   ],
-  "BaseValue": 60,
+  "BaseValue": 100,
   "JobSystemType": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,

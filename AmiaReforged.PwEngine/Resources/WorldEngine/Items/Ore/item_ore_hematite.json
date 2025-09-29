@@ -4,7 +4,7 @@
   "Name": "Hematite Ore",
   "Description": "Iron ore with a reddish-brown coloration caused by oxidation.",
   "Materials": ["Iron"],
-  "BaseValue": 70,
+  "BaseValue": 170,
   "JobSystemType": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,

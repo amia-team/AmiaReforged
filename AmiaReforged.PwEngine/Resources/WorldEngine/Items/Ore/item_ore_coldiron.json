@@ -4,7 +4,7 @@
   "Name": "Cold Iron Ore",
   "Description": "Pale-gray iron ore known for its potency against supernatural beings.",
   "Materials": ["Cold Iron"],
-  "BaseValue": 120,
+  "BaseValue": 150,
   "JobSystemType": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,

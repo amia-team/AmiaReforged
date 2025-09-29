@@ -4,7 +4,7 @@
   "Name": "Magnetite Ore",
   "Description": "Heavy, black iron ore with natural magnetic properties.",
   "Materials": ["Iron"],
-  "BaseValue": 80,
+  "BaseValue": 170,
   "JobSystemType": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,

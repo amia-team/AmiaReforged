@@ -4,7 +4,7 @@
   "Name": "Silver Ore",
   "Description": "Bright, metallic silver ore often found as wiry veins in stone.",
   "Materials": ["Silver"],
-  "BaseValue": 150,
+  "BaseValue": 200,
   "JobSystemType": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,

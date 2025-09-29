@@ -4,7 +4,7 @@
   "Name": "Limonite Ore",
   "Description": "Yellow-brown earthy iron ore, often found in bogs.",
   "Materials": ["Iron"],
-  "BaseValue": 50,
+  "BaseValue": 120,
   "JobSystemType": "ResourceOre",
   "BaseItemType": 120,
   "WeightIncreaseConstant": 0,
