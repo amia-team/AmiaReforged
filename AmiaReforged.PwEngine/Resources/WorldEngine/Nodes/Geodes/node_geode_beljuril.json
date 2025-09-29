@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4904,
+  "Type": "Geode",
+  "Name": "Beljuril Deposit",
+  "Description": "A rare and radiant yellow-green gemstone, glowing faintly with inner fire.",
+  "Tag": "geode_beljuril",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_beljuril_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

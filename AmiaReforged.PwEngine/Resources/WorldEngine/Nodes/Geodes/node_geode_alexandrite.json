@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4901,
+  "Type": "Geode",
+  "Name": "Alexandrite Deposit",
+  "Description": "A deposit containing rare alexandrite crystals, known for shifting colors under different light.",
+  "Tag": "geode_alexandrite",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_alexandrite_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

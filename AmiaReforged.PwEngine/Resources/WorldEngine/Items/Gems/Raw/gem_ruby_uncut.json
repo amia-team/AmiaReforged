@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_ruby_uncut",
+  "Name": "Uncut Ruby",
+  "Description": "A rough stone of ruby hue, said by the wise to hold protective virtues when properly cut and blessed.",
+  "Materials": [
+    "GemRuby"
+  ],
+  "BaseValue": 400,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}

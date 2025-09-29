@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4913,
+  "Type": "Geode",
+  "Name": "Garnet Deposit",
+  "Description": "A deposit of garnet crystals, typically deep red but sometimes green or yellow.",
+  "Tag": "geode_garnet",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_garnet_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_roguestone_uncut",
+  "Name": "Uncut Rogue Stone",
+  "Description": "A rough stone of rogue stone hue, said by the wise to hold protective virtues when properly cut and blessed.",
+  "Materials": [
+    "GemRogueStone"
+  ],
+  "BaseValue": 220,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}

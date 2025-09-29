@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_garnet_uncut",
+  "Name": "Uncut Garnet",
+  "Description": "A rough stone of garnet hue, said by the wise to hold protective virtues when properly cut and blessed.",
+  "Materials": [
+    "GemGarnet"
+  ],
+  "BaseValue": 90,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}

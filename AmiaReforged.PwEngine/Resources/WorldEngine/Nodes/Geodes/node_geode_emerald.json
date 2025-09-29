@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4909,
+  "Type": "Geode",
+  "Name": "Emerald Deposit",
+  "Description": "A deposit of vibrant green emerald crystals, clear and luminous.",
+  "Tag": "geode_emerald",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_emerald_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

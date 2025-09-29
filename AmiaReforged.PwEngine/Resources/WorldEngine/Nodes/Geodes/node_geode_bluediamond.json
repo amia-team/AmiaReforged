@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4906,
+  "Type": "Geode",
+  "Name": "Blue Diamond Deposit",
+  "Description": "An exceptionally rare diamond with a faint blue tint.",
+  "Tag": "geode_bluediamond",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_bluediamond_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

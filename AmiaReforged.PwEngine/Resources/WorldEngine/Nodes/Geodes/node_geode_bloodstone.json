@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4905,
+  "Type": "Geode",
+  "Name": "Bloodstone Deposit",
+  "Description": "A dark green gem flecked with crimson spots resembling drops of blood.",
+  "Tag": "geode_bloodstone",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_bloodstone_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4920,
+  "Type": "Geode",
+  "Name": "Rogue Stone Deposit",
+  "Description": "A mysterious and chaotic gemstone known as rogue stone, shifting with rainbow hues.",
+  "Tag": "geode_roguestone",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_roguestone_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

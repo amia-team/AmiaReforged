@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4921,
+  "Type": "Geode",
+  "Name": "Ruby Deposit",
+  "Description": "A deposit of deep red ruby crystals, hard and luminous.",
+  "Tag": "geode_ruby",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_ruby_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

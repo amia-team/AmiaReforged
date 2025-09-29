@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_phenalope_uncut",
+  "Name": "Uncut Phenalope",
+  "Description": "A rough stone of phenalope hue, said by the wise to hold protective virtues when properly cut and blessed.",
+  "Materials": [
+    "GemPhenalope"
+  ],
+  "BaseValue": 200,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}

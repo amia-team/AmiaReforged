@@ -1,0 +1,17 @@
+{
+  "ResRef": "econ_gem1",
+  "ItemTag": "gem_fireopal_uncut",
+  "Name": "Uncut Fire Opal",
+  "Description": "A rough stone of fire opal hue, said by the wise to hold protective virtues when properly cut and blessed.",
+  "Materials": [
+    "GemFireOpal"
+  ],
+  "BaseValue": 120,
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 120,
+  "WeightIncreaseConstant": -1,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 98
+  }
+}

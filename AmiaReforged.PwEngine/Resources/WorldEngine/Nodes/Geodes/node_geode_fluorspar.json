@@ -1,0 +1,18 @@
+{
+  "PlcAppearance": 4912,
+  "Type": "Geode",
+  "Name": "Fluorspar Deposit",
+  "Description": "A deposit of fluorspar, a translucent mineral often glowing under ultraviolet light.",
+  "Tag": "geode_fluorspar",
+  "Requirement": {
+    "RequiredItemType": "ToolPick"
+  },
+  "Outputs": [
+    {
+      "ItemDefinitionTag": "gem_fluorspar_uncut",
+      "Quantity": 1,
+      "Chance": 100
+    }
+  ],
+  "BaseHarvestRounds": 8
+}

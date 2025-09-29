@@ -1,9 +1,9 @@
 {
-  "PlcAppearance": 4814,
+  "PlcAppearance": 4917,
   "Type": "Geode",
   "Name": "Malachite Deposit",
-  "Description": "A vein of malachite, a copper carbonate mineral with a vivid green coloration.",
-  "Tag": "ore_vein_malachite",
+  "Description": "A geode of green malachite, banded and rich in copper traces.",
+  "Tag": "geode_malachite",
   "Requirement": {
     "RequiredItemType": "ToolPick"
   },
@@ -12,11 +12,6 @@
       "ItemDefinitionTag": "gem_malachite_uncut",
       "Quantity": 1,
       "Chance": 100
-    },
-    {
-      "ItemDefinitionTag": "copper_ore_native",
-      "Quantity": 1,
-      "Chance": 25
     }
   ],
   "BaseHarvestRounds": 8
