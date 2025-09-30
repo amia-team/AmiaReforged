@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Items;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Items.ItemData;
 
 public record WeaponPartData(
     int TopPartModel,

@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Items.ItemData;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using Moq;
 using NUnit.Framework;

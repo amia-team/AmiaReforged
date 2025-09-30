@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Items.ItemData;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using Anvil;
 using Anvil.API;

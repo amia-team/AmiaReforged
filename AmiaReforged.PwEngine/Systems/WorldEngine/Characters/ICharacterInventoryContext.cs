@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Items.ItemData;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;

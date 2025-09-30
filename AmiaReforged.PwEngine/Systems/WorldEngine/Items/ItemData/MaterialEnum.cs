@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Items;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Items.ItemData;
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum MaterialEnum
