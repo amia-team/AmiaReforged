@@ -36,7 +36,7 @@ public class SpellSongHandler
 
         if (bard.ActiveEffects.Any(e => e.EffectType == EffectType.Polymorph))
         {
-            player?.SendServerMessage("Cannot cast songs while polymorphed.");
+            player?.SendServerMessage("Cannot cast spell songs while polymorphed.");
             eventData.PreventFeatUse = true;
             return;
         }
@@ -64,7 +64,7 @@ public class SpellSongHandler
 
         if (bardSongFeat == null || !bard.KnowsFeat(bardSongFeat))
         {
-            player?.SendServerMessage("You need Bard Song to be able to cast spell songs.");
+            player?.SendServerMessage("You need to know Bard Song to cast spell songs.");
             eventData.PreventFeatUse = true;
             return;
         }
