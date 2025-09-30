@@ -10,7 +10,6 @@ public static class EldritchBlast
         EssenceEffectApplier effectApplier)
     {
         LogManager.GetCurrentClassLogger().Info("Casting Eldritch Blast.");
-        if (SpellFailure(nwnObjectId) == TRUE) return;
 
         SignalEvent(targetObject, EventSpellCastAt(nwnObjectId, 981));
         LogManager.GetCurrentClassLogger().Info("EventSpellCastAt signal sent.");
@@ -24,16 +23,5 @@ public static class EldritchBlast
 
         ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EssenceVfx.Beam(essenceType, nwnObjectId), targetObject, 1.1f);
         effectApplier.ApplyEffects(damage * touchAttackRanged);
-    }
-
-    private static int SpellFailure(uint nwnObjectId)
-    {
-        if (d100() <= GetArcaneSpellFailure(nwnObjectId))
-        {
-            SendMessageToPC(nwnObjectId, szMessage: "Arcane spell failure!");
-            return TRUE;
-        }
-
-        return FALSE;
     }
 }
