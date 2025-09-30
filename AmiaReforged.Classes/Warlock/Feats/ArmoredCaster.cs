@@ -8,12 +8,14 @@ public static class ArmoredCaster
     {
         int effectiveAsf = warlock.ArcaneSpellFailure;
 
-        bool majorityLevelWarlock = warlock.CasterLevel > warlock.Level / 2;
+        byte warlockLevel = warlock.GetClassInfo(WarlockConstants.WarlockClass)?.Level ?? 0;
+
+        bool majorityLevelWarlock = warlockLevel > warlock.Level / 2;
         if (!majorityLevelWarlock) return effectiveAsf;
 
         NwItem? armor = warlock.GetItemInSlot(InventorySlot.Chest);
         if (armor != null)
-            effectiveAsf -= armor.BaseItem.BaseAC switch
+            effectiveAsf -= armor.BaseACValue switch
             {
                 1 => 5,
                 2 => 10,
