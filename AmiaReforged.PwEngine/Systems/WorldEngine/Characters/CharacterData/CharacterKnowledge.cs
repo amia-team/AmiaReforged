@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters.CharacterData;
 
 public class CharacterKnowledge
 {

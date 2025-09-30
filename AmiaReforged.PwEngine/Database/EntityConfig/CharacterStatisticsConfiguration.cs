@@ -1,9 +1,9 @@
 using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters.CharacterData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AmiaReforged.PwEngine.Database;
+namespace AmiaReforged.PwEngine.Database.EntityConfig;
 
 public class CharacterStatisticsConfiguration : IEntityTypeConfiguration<CharacterStatistics>
 {

@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters.CharacterData;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;

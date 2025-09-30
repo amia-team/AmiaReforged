@@ -1,6 +1,7 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters.CharacterData;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters.Services;
 
 [ServiceBinding(typeof(ICharacterStatService))]
 public class CharacterStatService(ICharacterStatRepository statRepository) : ICharacterStatService

@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters.CharacterData;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 
