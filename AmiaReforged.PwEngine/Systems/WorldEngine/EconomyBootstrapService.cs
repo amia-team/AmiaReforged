@@ -1,6 +1,8 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.Services;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

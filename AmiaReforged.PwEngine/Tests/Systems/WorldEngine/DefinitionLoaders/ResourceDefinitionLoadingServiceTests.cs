@@ -1,5 +1,7 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.Services;
 using Moq;
 using NUnit.Framework;
 

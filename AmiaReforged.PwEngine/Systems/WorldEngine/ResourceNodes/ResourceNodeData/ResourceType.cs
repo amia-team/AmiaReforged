@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ResourceType

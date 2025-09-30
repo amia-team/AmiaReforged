@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;

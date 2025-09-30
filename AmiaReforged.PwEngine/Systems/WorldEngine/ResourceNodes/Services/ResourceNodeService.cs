@@ -1,12 +1,13 @@
 using System.Numerics;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.Services;
 
 [ServiceBinding(typeof(ResourceNodeService))]
 public class ResourceNodeService(RuntimeNodeService runtimeNodes)

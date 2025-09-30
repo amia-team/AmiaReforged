@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.Services;
 using Anvil.API;
 using Anvil.Services;
 

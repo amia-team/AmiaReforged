@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 

@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.Services;
 using Anvil.Services;
 using NLog;
 using NWN.Core.NWNX;

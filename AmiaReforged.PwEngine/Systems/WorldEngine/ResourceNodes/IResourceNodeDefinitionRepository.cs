@@ -1,3 +1,5 @@
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
+
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 
 /// <summary>

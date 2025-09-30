@@ -1,11 +1,12 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.Services;
 
 [ServiceBinding(typeof(ResourceNodeInstanceSetupService))]
 public class ResourceNodeInstanceSetupService(

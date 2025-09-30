@@ -1,14 +1,12 @@
 using System.Numerics;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Items.ItemData;
 using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
 using Anvil.API;
 using NLog;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
 
 public class ResourceNodeInstance
 {

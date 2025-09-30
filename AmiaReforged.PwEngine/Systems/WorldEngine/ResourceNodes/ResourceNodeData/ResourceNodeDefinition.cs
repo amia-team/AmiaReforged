@@ -3,7 +3,7 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
 
 public record ResourceNodeDefinition(
     int PlcAppearance,

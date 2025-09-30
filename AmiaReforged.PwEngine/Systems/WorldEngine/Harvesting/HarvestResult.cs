@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
 
 public enum HarvestResult
 {

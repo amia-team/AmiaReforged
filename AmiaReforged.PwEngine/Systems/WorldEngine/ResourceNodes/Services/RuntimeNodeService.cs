@@ -1,12 +1,12 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
+using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
-using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.Services;
 
 [ServiceBinding(typeof(RuntimeNodeService))]
 public class RuntimeNodeService(RuntimeCharacterService characterService, IHarvestProcessor harvestService)
