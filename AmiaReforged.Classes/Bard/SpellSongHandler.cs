@@ -24,13 +24,27 @@ public class SpellSongHandler
     {
         if (eventData.Feat.Spell is not { } spell || !SongSpells.TryGetValue(spell, out SpellSongData songData)) return;
 
+        NwCreature bard = eventData.Creature;
+        NwPlayer? player = bard.ControllingPlayer;
+
+        if (bard.GetAbilityScore(Ability.Charisma, true) < songData.RequiredBaseCharisma)
+        {
+            player?.SendServerMessage($"Casting {spell.Name} requires base charisma {songData.RequiredBaseCharisma}.");
+            eventData.PreventFeatUse = true;
+            return;
+        }
+
+        if (bard.ActiveEffects.Any(e => e.EffectType == EffectType.Polymorph))
+        {
+            player?.SendServerMessage("Cannot cast songs while polymorphed.");
+            eventData.PreventFeatUse = true;
+            return;
+        }
+
         // Return early for normal Bard Song, since that feat handles itself
         if (spell == NwSpell.FromSpellType(SongConstants.BardSong)) return;
 
-        NwCreature bard = eventData.Creature;
-
         byte bardLevel = bard.GetClassInfo(ClassType.Bard)?.Level ?? 0;
-        NwPlayer? player = bard.ControllingPlayer;
 
         if (bardLevel == 0)
         {
@@ -42,13 +56,6 @@ public class SpellSongHandler
         if (bardLevel < songData.RequiredLevel)
         {
             player?.SendServerMessage($"Casting {spell.Name} requires bard level {songData.RequiredLevel}.");
-            eventData.PreventFeatUse = true;
-            return;
-        }
-
-        if (bard.GetAbilityScore(Ability.Charisma, true) < songData.RequiredBaseCharisma)
-        {
-            player?.SendServerMessage($"Casting {spell.Name} requires base charisma {songData.RequiredBaseCharisma}.");
             eventData.PreventFeatUse = true;
             return;
         }
