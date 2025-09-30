@@ -1,7 +1,6 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Spells;
 using AmiaReforged.Classes.Warlock.Feats;
-using AmiaReforged.Classes.Warlock.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -14,8 +13,9 @@ public class WarlockSpellCastHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private const VfxType SpellFailHeadVfx = (VfxType)292;
-    private const VfxType SpellFailHandVfx = (VfxType)293;
+    private const VfxType SpellFailHandVfx = (VfxType)292;
+    private const VfxType SpellFailHeadVfx = (VfxType)293;
+    private const int EldritchBlastId = 981;
 
     public WarlockSpellCastHandler()
     {
@@ -27,7 +27,9 @@ public class WarlockSpellCastHandler
     private void OnInvocationCast(OnSpellCast eventData)
     {
         if (eventData.Caster is not NwCreature warlock) return;
-        if (warlock.Classes[eventData.ClassIndex].Class != WarlockConstants.WarlockClass) return;
+        if (eventData.Spell is not { } spell) return;
+        if (spell.Id != EldritchBlastId && warlock.Classes[eventData.ClassIndex].Class != WarlockConstants.WarlockClass)
+            return;
 
         // First disable action modes
         foreach (ActionMode actionMode in Enum.GetValues(typeof(ActionMode)))
@@ -37,7 +39,6 @@ public class WarlockSpellCastHandler
 
         // Then do arcane spell failure that accounts for Armored Caster feat
         if (warlock.ArcaneSpellFailure <= 0) return;
-        if ((eventData.Spell?.SpellComponents & SpellComponents.Somatic) == 0) return;
 
         int effectiveAsf = ArmoredCaster.CalculateAsf(warlock);
 
@@ -48,7 +49,7 @@ public class WarlockSpellCastHandler
         eventData.PreventSpellCast = true;
 
         VfxType spellFailVfx = SpellFailHandVfx;
-        if (eventData.Spell?.CastAnim == SpellCastAnimType.Up)
+        if (spell.CastAnim == SpellCastAnimType.Up)
             spellFailVfx = SpellFailHeadVfx;
 
         warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(spellFailVfx));
