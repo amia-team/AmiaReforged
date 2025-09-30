@@ -1,6 +1,6 @@
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters.Runtime;
 
 [ServiceBinding(typeof(ICharacterRepository))]
 public class RuntimeCharacterRepository : ICharacterRepository

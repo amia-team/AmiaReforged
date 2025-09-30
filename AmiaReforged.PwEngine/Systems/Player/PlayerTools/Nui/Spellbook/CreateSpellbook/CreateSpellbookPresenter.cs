@@ -4,6 +4,7 @@ using AmiaReforged.Core.Services;
 using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters.Runtime;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

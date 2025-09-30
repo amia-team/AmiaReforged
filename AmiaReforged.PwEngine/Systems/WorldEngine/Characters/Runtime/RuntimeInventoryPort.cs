@@ -6,7 +6,7 @@ using Anvil.API;
 using Microsoft.IdentityModel.Tokens;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters.Runtime;
 
 public class RuntimeInventoryPort(NwCreature creature) : IInventoryPort
 {

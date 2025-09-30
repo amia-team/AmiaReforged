@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.CreateSpell
 using AmiaReforged.PwEngine.Systems.Player.PlayerTools.Nui.Spellbook.OpenSpellbook;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters.Runtime;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;

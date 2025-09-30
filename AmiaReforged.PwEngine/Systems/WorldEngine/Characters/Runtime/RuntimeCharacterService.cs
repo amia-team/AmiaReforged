@@ -5,7 +5,7 @@ using Anvil.Services;
 using NWN.Core;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters.Runtime;
 
 [ServiceBinding(typeof(RuntimeCharacterService))]
 public class RuntimeCharacterService

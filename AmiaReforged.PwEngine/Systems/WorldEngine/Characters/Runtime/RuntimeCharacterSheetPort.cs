@@ -1,6 +1,6 @@
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters.Runtime;
 
 public class RuntimeCharacterSheetPort(NwCreature creature) : ICharacterSheetPort
 {
