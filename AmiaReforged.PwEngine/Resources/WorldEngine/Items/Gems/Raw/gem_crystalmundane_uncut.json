@@ -4,7 +4,7 @@
   "Name": "Uncut Mundane Crystal",
   "Description": "A rough stone of mundane crystal hue, said by the wise to hold protective virtues when properly cut and blessed.",
   "Materials": [
-    "GemMundaneCrystal"
+    "GemCrystalMundane"
   ],
   "BaseValue": 50,
   "JobSystemType": "ResourceGem",

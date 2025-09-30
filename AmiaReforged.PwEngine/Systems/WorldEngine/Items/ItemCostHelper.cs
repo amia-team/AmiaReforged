@@ -90,7 +90,7 @@ public static class ItemCostHelper
             MaterialEnum.GemEmerald => 1f,
             MaterialEnum.GemFireAgate => 0.4f,
             MaterialEnum.GemFireOpal => 0.5f,
-            MaterialEnum.GemFlourspar => 0.4f,
+            MaterialEnum.GemFluorspar => 0.4f,
             MaterialEnum.GemGarnet => 0.3f,
             MaterialEnum.GemGreenstone => 0.1f,
             MaterialEnum.GemJacinth => 0.2f,

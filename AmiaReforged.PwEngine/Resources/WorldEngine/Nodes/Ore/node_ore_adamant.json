@@ -5,7 +5,8 @@
   "Description": "A vein of the legendary adamant, famed for its nearly indestructible nature. It gleams with a dark, metallic luster.",
   "Tag": "ore_vein_adamant",
   "Requirement": {
-    "RequiredItemType": "ToolPick"
+    "RequiredItemType": "ToolPick",
+    "RequiredItemMaterial": "Mithral"
   },
   "Outputs": [
     {

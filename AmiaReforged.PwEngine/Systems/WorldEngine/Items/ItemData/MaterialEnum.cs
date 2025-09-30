@@ -69,7 +69,7 @@ public enum MaterialEnum
     GemEmerald = 60,
     GemFireAgate = 61,
     GemFireOpal = 62,
-    GemFlourspar = 63,
+    GemFluorspar = 63,
     GemGarnet = 64,
     GemGreenstone = 65,
     GemJacinth = 66,

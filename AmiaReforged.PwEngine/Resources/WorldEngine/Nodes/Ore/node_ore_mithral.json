@@ -5,7 +5,8 @@
   "Description": "A vein of mithral, a rare silvery metal famed for being both lighter and stronger than steel.",
   "Tag": "ore_vein_mithral",
   "Requirement": {
-    "RequiredItemType": "ToolPick"
+    "RequiredItemType": "ToolPick",
+    "RequiredItemMaterial": "Steel"
   },
   "Outputs": [
     {

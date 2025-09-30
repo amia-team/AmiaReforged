@@ -4,7 +4,7 @@
   "Name": "Uncut King's Tear",
   "Description": "A rough stone of king's tear hue, said by the wise to hold protective virtues when properly cut and blessed.",
   "Materials": [
-    "GemKing'sTear"
+    "GemKingsTear"
   ],
   "BaseValue": 300,
   "JobSystemType": "ResourceGem",
