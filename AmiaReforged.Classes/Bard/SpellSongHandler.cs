@@ -46,6 +46,13 @@ public class SpellSongHandler
             return;
         }
 
+        if (bard.GetAbilityScore(Ability.Charisma, true) < songData.RequiredBaseCharisma)
+        {
+            player?.SendServerMessage($"Casting {spell.Name} requires base charisma {songData.RequiredBaseCharisma}.");
+            eventData.PreventFeatUse = true;
+            return;
+        }
+
         NwFeat? bardSongFeat = NwFeat.FromFeatType(Feat.BardSongs);
 
         if (bardSongFeat == null || !bard.KnowsFeat(bardSongFeat))
