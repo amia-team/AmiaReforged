@@ -1,11 +1,9 @@
 using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
 using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
 using Anvil.API;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
+namespace AmiaReforged.PwEngine.Systems.WorldEngine;
 
 public static class QualityLabel
 {
