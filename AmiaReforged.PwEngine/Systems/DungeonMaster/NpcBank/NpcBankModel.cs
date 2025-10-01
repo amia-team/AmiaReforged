@@ -5,6 +5,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using Microsoft.IdentityModel.Tokens;
+using YamlDotNet.Core.Tokens;
 
 namespace AmiaReforged.PwEngine.Systems.DungeonMaster.NpcBank;
 
@@ -91,7 +92,8 @@ public sealed class NpcBankModel(NwPlayer player)
 
     private void ValidateAndSpawn(ModuleEvents.OnPlayerTarget obj)
     {
-        if (SelectedNpc == null) return;
+        if (SelectedNpc is null) return;
+        if (player.LoginCreature is null) return;
 
         NwCreature? creature = NwCreature.Deserialize(SelectedNpc.Serialized);
 
@@ -101,10 +103,17 @@ public sealed class NpcBankModel(NwPlayer player)
             return;
         }
 
-        Location spawnLocation = Location.Create(player.LoginCreature.Area, obj.TargetPosition, 0);
-        creature.Faction = SelectedFaction;
-        creature.Clone(spawnLocation);
+        NwArea? loginCreatureArea = player.LoginCreature.Area;
+
+        if (loginCreatureArea is null) return;
+
+        Location spawnLocation = Location.Create(loginCreatureArea, obj.TargetPosition, 0);
+
+        NwCreature newCreature = creature.Clone(spawnLocation);
         creature.Destroy();
+
+        newCreature.Faction = SelectedFaction;
+
     }
 
     public void PromptAdd()

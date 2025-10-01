@@ -3,7 +3,9 @@ using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
 
 namespace AmiaReforged.PwEngine.Systems.WorldEngine.Regions;
 
-public record AreaDefinition(string ResRef, List<string> DefinitionTags, EnvironmentData Environment);
+public record AreaDefinition(string ResRef, List<string> DefinitionTags, EnvironmentData Environment, SiteData? PlaceOfInterest = null);
+
+public record SiteData(string Tag, string Name);
 
 public record EnvironmentData(Climate Climate, EconomyQuality SoilQuality, QualityRange MineralQualityRange);
 

@@ -11,12 +11,12 @@ public class EncounterBuilderView : ScryView<EncounterBuilderPresenter>, IDmWind
     public readonly NuiBind<int> EncounterCount = new("enc_count");
     public readonly NuiBind<string> EncounterNames = new("enc_names");
     public readonly NuiBind<int> Selection = new("selection");
-    
+
     public readonly NuiBind<string> Search = new(key: "search_val");
-    
+
     public NuiButtonImage SearchButton = null!;
     public NuiButtonImage AddEncounterButton = null!;
-    
+
     public NuiButtonImage SpawnEncounterButton = null!;
     public NuiButtonImage EditEncounterButton = null!;
     public NuiButtonImage DeleteEncounterButton = null!;
@@ -71,7 +71,6 @@ public class EncounterBuilderView : ScryView<EncounterBuilderPresenter>, IDmWind
                 Width = 35f
             },
         ];
-
         NuiColumn rootLayout = new()
         {
             Children =
@@ -113,9 +112,19 @@ public class EncounterBuilderView : ScryView<EncounterBuilderPresenter>, IDmWind
                         }
                     ]
                 },
-                new NuiList(cells, EncounterCount)
+                new NuiRow()
+                {
+                    Children =
+                    [
+                        new NuiList(cells, EncounterCount)
+                        {
+                            RowHeight = 35f
+                        }
+                    ]
+                }
             ]
         };
+
         return rootLayout;
     }
 }

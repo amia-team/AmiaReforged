@@ -16,6 +16,23 @@
           "Max": "Excellent"
         }
       }
+    },
+    {
+      "ResRef": "zwrldsettlemnt",
+      "DefinitionTags": [
+      ],
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "Good",
+        "MineralQualityRange": {
+          "Min": "BelowAverage",
+          "Max": "Excellent"
+        }
+      },
+      "PlaceOfInterest": {
+        "Tag": "test_settlement_district1",
+        "Name": "Test Settlement Main District"
+      }
     }
   ]
 }

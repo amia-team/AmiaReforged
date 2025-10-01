@@ -95,25 +95,16 @@ public class NpcBankPresenter : ScryPresenter<NpcBankView>
                  && eventData.ArrayIndex < Model.VisibleNpcs.Count())
         {
             int selected = Token().GetBindValue(View.Selection);
-            StandardFaction selectedFaction = StandardFaction.Commoner;
-            switch (selected)
+            StandardFaction selectedFaction = selected switch
             {
-                case 0:
-                    selectedFaction = StandardFaction.Commoner;
-                    break;
-                case 1:
-                    selectedFaction = StandardFaction.Merchant;
-                    break;
-                case 2:
-                    selectedFaction = StandardFaction.Defender;
-                    break;
-                case 3:
-                    selectedFaction = StandardFaction.Hostile;
-                    break;
-            }
+                0 => StandardFaction.Commoner,
+                1 => StandardFaction.Merchant,
+                2 => StandardFaction.Defender,
+                3 => StandardFaction.Hostile,
+                _ => StandardFaction.Commoner
+            };
 
             NwFaction faction = NwFaction.FromStandardFaction(selectedFaction)!;
-            
             Model.PromptSpawn(eventData.ArrayIndex, faction);
         }
         else if (eventData.ElementId == View.DeleteNpcButton.Id
