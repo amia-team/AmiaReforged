@@ -8,7 +8,7 @@ public class TechniqueFactory
 {
     private readonly Dictionary<TechniqueType, ITechnique>? _techniques;
 
-    public TechniqueFactory(List<ITechnique> techniques)
+    public TechniqueFactory(IEnumerable<ITechnique> techniques)
     {
         _techniques = techniques.ToDictionary(t => t.TechniqueType);
     }

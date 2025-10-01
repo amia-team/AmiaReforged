@@ -8,7 +8,7 @@ public class AugmentationFactory
 {
     private readonly Dictionary<PathType, IAugmentation>? _augmentations;
 
-    public AugmentationFactory(List<IAugmentation> augmentations)
+    public AugmentationFactory(IEnumerable<IAugmentation> augmentations)
     {
         _augmentations = augmentations.ToDictionary(t => t.PathType);
     }
