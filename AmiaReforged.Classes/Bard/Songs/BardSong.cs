@@ -4,7 +4,7 @@ using Anvil.API.Events;
 using Anvil.Services;
 using static AmiaReforged.Classes.Bard.SongConstants;
 
-namespace AmiaReforged.Classes.Bard;
+namespace AmiaReforged.Classes.Bard.Songs;
 
 [ServiceBinding(typeof(ISpell))]
 public class BardSong : ISpell
