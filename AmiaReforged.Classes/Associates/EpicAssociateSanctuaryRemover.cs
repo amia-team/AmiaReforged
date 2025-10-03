@@ -16,12 +16,14 @@ public class EpicAssociateSanctuaryRemover
     {
         if (eventData.Associate.Level < 21) return;
 
-        Effect? sanctuary =
-            eventData.Owner.ActiveEffects.FirstOrDefault(e => e.EffectType == EffectType.Sanctuary);
+        Effect[] sanctuaryEffects = eventData.Owner.ActiveEffects
+            .Where(e => e.EffectType is EffectType.Sanctuary or EffectType.Ethereal)
+            .ToArray();
 
-        if (sanctuary == null) return;
+        if (sanctuaryEffects.Length == 0) return;
 
-        eventData.Owner.RemoveEffect(sanctuary);
+        foreach (Effect effect in sanctuaryEffects)
+            eventData.Owner.RemoveEffect(effect);
 
         if (eventData.Owner.IsPlayerControlled(out NwPlayer? player))
             player.SendServerMessage
