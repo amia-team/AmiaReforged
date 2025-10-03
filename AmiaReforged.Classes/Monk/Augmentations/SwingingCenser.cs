@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
@@ -13,11 +14,23 @@ public sealed class SwingingCenser : IAugmentation
 {
     private static readonly NwFeat? BodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
     public PathType PathType => PathType.SwingingCenser;
+
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
-        if (technique == TechniqueType.Stunning)
-            AugmentStunningStrike(monk, attackData);
+        switch (technique)
+        {
+            case TechniqueType.Stunning:
+                AugmentStunningStrike(monk, attackData);
+                break;
+            case TechniqueType.Eagle:
+                EagleStrike.DoEagleStrike(monk, attackData);
+                break;
+            case TechniqueType.Axiomatic:
+                AxiomaticStrike.DoAxiomaticStrike(attackData);
+                break;
+        }
     }
+
     public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
     {
         switch (technique)
@@ -30,6 +43,12 @@ public sealed class SwingingCenser : IAugmentation
                 break;
             case TechniqueType.KiShout:
                 AugmentKiShout(monk);
+                break;
+            case TechniqueType.KiBarrier:
+                KiBarrier.DoKiBarrier(monk);
+                break;
+            case TechniqueType.Quivering:
+                QuiveringPalm.DoQuiveringPalm(monk, castData);
                 break;
         }
     }

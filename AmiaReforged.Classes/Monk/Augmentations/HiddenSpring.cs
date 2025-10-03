@@ -1,5 +1,6 @@
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
+using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -30,8 +31,21 @@ public class HiddenSpring : IAugmentation
 
     public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
     {
-        if (technique == TechniqueType.EmptyBody)
-            AugmentEmptyBody(monk);
+        switch (technique)
+        {
+            case TechniqueType.EmptyBody:
+                AugmentEmptyBody(monk);
+                break;
+            case TechniqueType.KiBarrier:
+                KiBarrier.DoKiBarrier(monk);
+                break;
+            case TechniqueType.Quivering:
+                QuiveringPalm.DoQuiveringPalm(monk, castData);
+                break;
+            case TechniqueType.KiShout:
+                KiShout.DoKiShout(monk);
+                break;
+        }
     }
 
     /// <summary>

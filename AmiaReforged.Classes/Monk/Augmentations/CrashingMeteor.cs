@@ -25,6 +25,9 @@ public sealed class CrashingMeteor : IAugmentation
             case TechniqueType.Axiomatic:
                 AugmentAxiomaticStrike(attackData, meteor);
                 break;
+            case TechniqueType.Eagle:
+                EagleStrike.DoEagleStrike(monk, attackData);
+                break;
         }
     }
     public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
@@ -38,6 +41,15 @@ public sealed class CrashingMeteor : IAugmentation
                 break;
             case TechniqueType.KiShout:
                 AugmentKiShout(monk, meteor);
+                break;
+            case TechniqueType.EmptyBody:
+                EmptyBody.DoEmptyBody(monk);
+                break;
+            case TechniqueType.KiBarrier:
+                KiBarrier.DoKiBarrier(monk);
+                break;
+            case TechniqueType.Quivering:
+                QuiveringPalm.DoQuiveringPalm(monk, castData);
                 break;
         }
     }

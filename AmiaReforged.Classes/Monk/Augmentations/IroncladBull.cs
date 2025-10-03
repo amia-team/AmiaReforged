@@ -16,8 +16,18 @@ public sealed class IroncladBull : IAugmentation
     public PathType PathType => PathType.IroncladBull;
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
-        if (technique == TechniqueType.Stunning)
-            AugmentEagleStrike(monk, attackData);
+        switch (technique)
+        {
+            case TechniqueType.Eagle:
+                AugmentEagleStrike(monk, attackData);
+                break;
+            case TechniqueType.Stunning:
+                StunningStrike.DoStunningStrike(attackData);
+                break;
+            case TechniqueType.Axiomatic:
+                AxiomaticStrike.DoAxiomaticStrike(attackData);
+                break;
+        }
     }
     public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
     {
@@ -31,6 +41,12 @@ public sealed class IroncladBull : IAugmentation
                 break;
             case TechniqueType.Quivering:
                 AugmentQuiveringPalm(monk, castData);
+                break;
+            case TechniqueType.EmptyBody:
+                EmptyBody.DoEmptyBody(monk);
+                break;
+            case TechniqueType.KiShout:
+                KiShout.DoKiShout(monk);
                 break;
         }
     }

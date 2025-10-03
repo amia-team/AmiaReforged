@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
@@ -22,6 +23,9 @@ public class FickleStrand : IAugmentation
             case TechniqueType.Axiomatic:
                 AugmentAxiomaticStrike(monk, attackData);
                 break;
+            case TechniqueType.Stunning:
+                StunningStrike.DoStunningStrike(attackData);
+                break;
         }
     }
 
@@ -34,6 +38,15 @@ public class FickleStrand : IAugmentation
                 break;
             case TechniqueType.KiShout:
                 AugmentKiShout(monk);
+                break;
+            case TechniqueType.Wholeness:
+                WholenessOfBody.DoWholenessOfBody(monk);
+                break;
+            case TechniqueType.KiBarrier:
+                KiBarrier.DoKiBarrier(monk);
+                break;
+            case TechniqueType.Quivering:
+                QuiveringPalm.DoQuiveringPalm(monk, castData);
                 break;
         }
     }

@@ -26,6 +26,9 @@ public sealed class EchoingValley : IAugmentation
             case TechniqueType.Axiomatic:
                 AugmentAxiomaticStrike(monk, attackData);
                 break;
+            case TechniqueType.Eagle:
+                EagleStrike.DoEagleStrike(monk, attackData);
+                break;
         }
     }
 
@@ -38,6 +41,15 @@ public sealed class EchoingValley : IAugmentation
                 break;
             case TechniqueType.KiShout:
                 AugmentKiShout(monk);
+                break;
+            case TechniqueType.Wholeness:
+                WholenessOfBody.DoWholenessOfBody(monk);
+                break;
+            case TechniqueType.KiBarrier:
+                KiBarrier.DoKiBarrier(monk);
+                break;
+            case TechniqueType.Quivering:
+                QuiveringPalm.DoQuiveringPalm(monk, castData);
                 break;
         }
     }

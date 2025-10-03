@@ -19,8 +19,19 @@ public sealed class CrackedVessel : IAugmentation
     {
         MonkCondition condition = GetMonkCondition(monk);
 
-        if (technique == TechniqueType.Axiomatic)
-            AugmentAxiomaticStrike(monk, attackData, condition);
+        switch (technique)
+        {
+            case TechniqueType.Axiomatic:
+                AugmentAxiomaticStrike(monk, attackData, condition);
+                break;
+            case TechniqueType.Stunning:
+                StunningStrike.DoStunningStrike(attackData);
+                break;
+            case TechniqueType.Eagle:
+                EagleStrike.DoEagleStrike(monk, attackData);
+                break;
+        }
+
     }
     public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
     {
@@ -36,6 +47,12 @@ public sealed class CrackedVessel : IAugmentation
                 break;
             case TechniqueType.Quivering:
                 AugmentQuiveringPalm(monk, castData, condition);
+                break;
+            case TechniqueType.KiBarrier:
+                KiBarrier.DoKiBarrier(monk);
+                break;
+            case TechniqueType.KiShout:
+                KiShout.DoKiShout(monk);
                 break;
         }
     }
