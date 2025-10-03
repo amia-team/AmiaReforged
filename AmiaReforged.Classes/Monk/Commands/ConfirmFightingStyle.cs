@@ -69,7 +69,7 @@ public class ConfirmFightingStyle : IChatCommand
             monk.AddFeat(feat, 6);
         }
 
-        caller.FloatingTextString($"Added feats {featsToAdd[0]} and {featsToAdd[1]}");
+        caller.FloatingTextString($"Added feats {featsToAdd[0].Name} and {featsToAdd[1].Name}");
 
         return Task.CompletedTask;
     }
