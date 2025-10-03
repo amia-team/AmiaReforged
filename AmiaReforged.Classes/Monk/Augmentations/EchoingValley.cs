@@ -20,13 +20,13 @@ public sealed class EchoingValley : IAugmentation
     {
         switch (technique)
         {
-            case TechniqueType.Stunning:
+            case TechniqueType.StunningStrike:
                 AugmentStunningStrike(monk, attackData);
                 break;
-            case TechniqueType.Axiomatic:
+            case TechniqueType.AxiomaticStrike:
                 AugmentAxiomaticStrike(monk, attackData);
                 break;
-            case TechniqueType.Eagle:
+            case TechniqueType.EagleStrike:
                 EagleStrike.DoEagleStrike(monk, attackData);
                 break;
         }
@@ -42,13 +42,13 @@ public sealed class EchoingValley : IAugmentation
             case TechniqueType.KiShout:
                 AugmentKiShout(monk);
                 break;
-            case TechniqueType.Wholeness:
+            case TechniqueType.WholenessOfBody:
                 WholenessOfBody.DoWholenessOfBody(monk);
                 break;
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(monk);
                 break;
-            case TechniqueType.Quivering:
+            case TechniqueType.QuiveringPalm:
                 QuiveringPalm.DoQuiveringPalm(monk, castData);
                 break;
         }

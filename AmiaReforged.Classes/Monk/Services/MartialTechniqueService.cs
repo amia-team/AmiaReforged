@@ -244,9 +244,9 @@ public class MartialTechniqueService
     private static TechniqueType? GetTechniqueByTag(string? techniqueTag)
         => techniqueTag switch
         {
-            StunningTag => TechniqueType.Stunning,
-            EagleTag => TechniqueType.Eagle,
-            AxiomaticTag => TechniqueType.Axiomatic,
+            StunningTag => TechniqueType.StunningStrike,
+            EagleTag => TechniqueType.EagleStrike,
+            AxiomaticTag => TechniqueType.AxiomaticStrike,
             _ => null
         };
 

@@ -17,13 +17,13 @@ public class HiddenSpring : IAugmentation
     {
         switch (technique)
         {
-            case TechniqueType.Stunning:
+            case TechniqueType.StunningStrike:
                 AugmentStunningStrike(attackData);
                 break;
-            case TechniqueType.Eagle:
+            case TechniqueType.EagleStrike:
                 AugmentEagleStrike(monk, attackData);
                 break;
-            case TechniqueType.Axiomatic:
+            case TechniqueType.AxiomaticStrike:
                 AugmentAxiomaticStrike(attackData);
                 break;
         }
@@ -39,7 +39,7 @@ public class HiddenSpring : IAugmentation
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(monk);
                 break;
-            case TechniqueType.Quivering:
+            case TechniqueType.QuiveringPalm:
                 QuiveringPalm.DoQuiveringPalm(monk, castData);
                 break;
             case TechniqueType.KiShout:

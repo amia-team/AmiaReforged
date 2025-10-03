@@ -19,13 +19,13 @@ public sealed class SwingingCenser : IAugmentation
     {
         switch (technique)
         {
-            case TechniqueType.Stunning:
+            case TechniqueType.StunningStrike:
                 AugmentStunningStrike(monk, attackData);
                 break;
-            case TechniqueType.Eagle:
+            case TechniqueType.EagleStrike:
                 EagleStrike.DoEagleStrike(monk, attackData);
                 break;
-            case TechniqueType.Axiomatic:
+            case TechniqueType.AxiomaticStrike:
                 AxiomaticStrike.DoAxiomaticStrike(attackData);
                 break;
         }
@@ -35,7 +35,7 @@ public sealed class SwingingCenser : IAugmentation
     {
         switch (technique)
         {
-            case TechniqueType.Wholeness:
+            case TechniqueType.WholenessOfBody:
                 AugmentWholenessOfBody(monk);
                 break;
             case TechniqueType.EmptyBody:
@@ -47,7 +47,7 @@ public sealed class SwingingCenser : IAugmentation
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(monk);
                 break;
-            case TechniqueType.Quivering:
+            case TechniqueType.QuiveringPalm:
                 QuiveringPalm.DoQuiveringPalm(monk, castData);
                 break;
         }

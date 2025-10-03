@@ -21,13 +21,13 @@ public sealed class CrackedVessel : IAugmentation
 
         switch (technique)
         {
-            case TechniqueType.Axiomatic:
+            case TechniqueType.AxiomaticStrike:
                 AugmentAxiomaticStrike(monk, attackData, condition);
                 break;
-            case TechniqueType.Stunning:
+            case TechniqueType.StunningStrike:
                 StunningStrike.DoStunningStrike(attackData);
                 break;
-            case TechniqueType.Eagle:
+            case TechniqueType.EagleStrike:
                 EagleStrike.DoEagleStrike(monk, attackData);
                 break;
         }
@@ -39,13 +39,13 @@ public sealed class CrackedVessel : IAugmentation
 
         switch (technique)
         {
-            case TechniqueType.Wholeness:
+            case TechniqueType.WholenessOfBody:
                 AugmentWholenessOfBody(monk, condition);
                 break;
             case TechniqueType.EmptyBody:
                 AugmentEmptyBody(monk, condition);
                 break;
-            case TechniqueType.Quivering:
+            case TechniqueType.QuiveringPalm:
                 AugmentQuiveringPalm(monk, castData, condition);
                 break;
             case TechniqueType.KiBarrier:

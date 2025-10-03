@@ -9,7 +9,7 @@ namespace AmiaReforged.Classes.Monk.Techniques.Body;
 [ServiceBinding(typeof(ITechnique))]
 public class WholenessOfBody(AugmentationFactory augmentationFactory) : ITechnique
 {
-    public TechniqueType TechniqueType => TechniqueType.Wholeness;
+    public TechniqueType TechniqueType => TechniqueType.WholenessOfBody;
 
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {

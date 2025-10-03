@@ -99,7 +99,7 @@ public class BodyTechniqueService
     {
         return techniqueFeatId switch
         {
-            MonkFeat.WholenessOfBodyNew => TechniqueType.Wholeness,
+            MonkFeat.WholenessOfBodyNew => TechniqueType.WholenessOfBody,
             MonkFeat.EmptyBodyNew => TechniqueType.EmptyBody,
             MonkFeat.KiBarrier => TechniqueType.KiBarrier,
             _ => null

@@ -100,7 +100,7 @@ public class SpiritTechniqueService
     {
         return techniqueFeatId switch
         {
-            MonkFeat.QuiveringPalmNew => TechniqueType.Quivering,
+            MonkFeat.QuiveringPalmNew => TechniqueType.QuiveringPalm,
             MonkFeat.KiShout => TechniqueType.KiShout,
             _ => null
         };

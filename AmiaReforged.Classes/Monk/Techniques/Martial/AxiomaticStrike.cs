@@ -9,7 +9,7 @@ namespace AmiaReforged.Classes.Monk.Techniques.Martial;
 [ServiceBinding(typeof(ITechnique))]
 public class AxiomaticStrike(AugmentationFactory augmentationFactory) : ITechnique
 {
-    public TechniqueType TechniqueType => TechniqueType.Axiomatic;
+    public TechniqueType TechniqueType => TechniqueType.AxiomaticStrike;
     public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);

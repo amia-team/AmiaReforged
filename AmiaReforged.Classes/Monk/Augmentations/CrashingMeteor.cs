@@ -19,13 +19,13 @@ public sealed class CrashingMeteor : IAugmentation
 
         switch (technique)
         {
-            case TechniqueType.Stunning:
+            case TechniqueType.StunningStrike:
                 AugmentStunningStrike(monk, attackData, meteor);
                 break;
-            case TechniqueType.Axiomatic:
+            case TechniqueType.AxiomaticStrike:
                 AugmentAxiomaticStrike(attackData, meteor);
                 break;
-            case TechniqueType.Eagle:
+            case TechniqueType.EagleStrike:
                 EagleStrike.DoEagleStrike(monk, attackData);
                 break;
         }
@@ -36,7 +36,7 @@ public sealed class CrashingMeteor : IAugmentation
 
         switch (technique)
         {
-            case TechniqueType.Wholeness:
+            case TechniqueType.WholenessOfBody:
                 AugmentWholenessOfBody(monk, meteor);
                 break;
             case TechniqueType.KiShout:
@@ -48,7 +48,7 @@ public sealed class CrashingMeteor : IAugmentation
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(monk);
                 break;
-            case TechniqueType.Quivering:
+            case TechniqueType.QuiveringPalm:
                 QuiveringPalm.DoQuiveringPalm(monk, castData);
                 break;
         }

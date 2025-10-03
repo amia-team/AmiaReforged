@@ -9,7 +9,7 @@ namespace AmiaReforged.Classes.Monk.Techniques.Spirit;
 [ServiceBinding(typeof(ITechnique))]
 public class QuiveringPalm(AugmentationFactory augmentationFactory) : ITechnique
 {
-    public TechniqueType TechniqueType => TechniqueType.Quivering;
+    public TechniqueType TechniqueType => TechniqueType.QuiveringPalm;
 
 
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)

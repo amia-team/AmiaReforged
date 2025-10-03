@@ -10,7 +10,7 @@ namespace AmiaReforged.Classes.Monk.Techniques.Martial;
 [ServiceBinding(typeof(ITechnique))]
 public class StunningStrike(AugmentationFactory augmentationFactory) : ITechnique
 {
-    public TechniqueType TechniqueType => TechniqueType.Stunning;
+    public TechniqueType TechniqueType => TechniqueType.StunningStrike;
 
     public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {

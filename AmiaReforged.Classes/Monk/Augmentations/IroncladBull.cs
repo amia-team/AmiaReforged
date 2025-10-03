@@ -18,13 +18,13 @@ public sealed class IroncladBull : IAugmentation
     {
         switch (technique)
         {
-            case TechniqueType.Eagle:
+            case TechniqueType.EagleStrike:
                 AugmentEagleStrike(monk, attackData);
                 break;
-            case TechniqueType.Stunning:
+            case TechniqueType.StunningStrike:
                 StunningStrike.DoStunningStrike(attackData);
                 break;
-            case TechniqueType.Axiomatic:
+            case TechniqueType.AxiomaticStrike:
                 AxiomaticStrike.DoAxiomaticStrike(attackData);
                 break;
         }
@@ -33,13 +33,13 @@ public sealed class IroncladBull : IAugmentation
     {
         switch (technique)
         {
-            case TechniqueType.Wholeness:
+            case TechniqueType.WholenessOfBody:
                 AugmentWholenessOfBody(monk);
                 break;
             case TechniqueType.KiBarrier:
                 AugmentKiBarrier(monk);
                 break;
-            case TechniqueType.Quivering:
+            case TechniqueType.QuiveringPalm:
                 AugmentQuiveringPalm(monk, castData);
                 break;
             case TechniqueType.EmptyBody:

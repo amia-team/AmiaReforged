@@ -4,12 +4,12 @@ namespace AmiaReforged.Classes.Monk.Types;
 
 public enum TechniqueType
 {
-    Stunning,
-    Eagle,
-    Axiomatic,
-    Wholeness,
+    StunningStrike,
+    EagleStrike,
+    AxiomaticStrike,
+    WholenessOfBody,
     EmptyBody,
     KiBarrier,
-    Quivering,
-    KiShout,
+    QuiveringPalm,
+    KiShout
 }

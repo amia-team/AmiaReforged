@@ -10,7 +10,7 @@ namespace AmiaReforged.Classes.Monk.Techniques.Martial;
 public class EagleStrike(AugmentationFactory augmentationFactory) : ITechnique
 {
     private const string EagleEffectTag = "eaglestrike_effect";
-    public TechniqueType TechniqueType => TechniqueType.Eagle;
+    public TechniqueType TechniqueType => TechniqueType.EagleStrike;
 
     public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {

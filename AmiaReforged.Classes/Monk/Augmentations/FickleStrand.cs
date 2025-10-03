@@ -17,13 +17,13 @@ public class FickleStrand : IAugmentation
     {
         switch (technique)
         {
-            case TechniqueType.Eagle:
+            case TechniqueType.EagleStrike:
                 AugmentEagleStrike(monk, attackData);
                 break;
-            case TechniqueType.Axiomatic:
+            case TechniqueType.AxiomaticStrike:
                 AugmentAxiomaticStrike(monk, attackData);
                 break;
-            case TechniqueType.Stunning:
+            case TechniqueType.StunningStrike:
                 StunningStrike.DoStunningStrike(attackData);
                 break;
         }
@@ -39,13 +39,13 @@ public class FickleStrand : IAugmentation
             case TechniqueType.KiShout:
                 AugmentKiShout(monk);
                 break;
-            case TechniqueType.Wholeness:
+            case TechniqueType.WholenessOfBody:
                 WholenessOfBody.DoWholenessOfBody(monk);
                 break;
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(monk);
                 break;
-            case TechniqueType.Quivering:
+            case TechniqueType.QuiveringPalm:
                 QuiveringPalm.DoQuiveringPalm(monk, castData);
                 break;
         }
