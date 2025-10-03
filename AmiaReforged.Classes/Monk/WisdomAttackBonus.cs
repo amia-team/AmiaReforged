@@ -6,21 +6,18 @@ public static class WisdomAttackBonus
 {
     public static void AdjustWisdomAttackBonus(NwCreature monk, bool abilitiesRestricted)
     {
+        UnsetWisdomAttackBonus(monk);
+
         if (monk.IsRangedWeaponEquipped || abilitiesRestricted)
-        {
-            UnsetWisdomAttackBonus(monk);
             return;
-        }
 
         int wisModifier = monk.GetAbilityModifier(Ability.Wisdom);
         int strModifier =  monk.GetAbilityModifier(Ability.Strength);
         int dexModifier =  monk.GetAbilityModifier(Ability.Dexterity);
 
         if (wisModifier <= strModifier || FinesseApplies(monk, wisModifier, dexModifier))
-        {
-            UnsetWisdomAttackBonus(monk);
             return;
-        }
+
 
         int meleeAttackBonus = monk.GetAttackBonus(isMelee: true);
 
