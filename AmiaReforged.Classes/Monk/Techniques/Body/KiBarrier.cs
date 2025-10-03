@@ -9,6 +9,7 @@ namespace AmiaReforged.Classes.Monk.Techniques.Body;
 [ServiceBinding(typeof(ITechnique))]
 public class KiBarrier(AugmentationFactory augmentationFactory) : ITechnique
 {
+    private const string KiBarrierTag = "kibarrier";
     public TechniqueType TechniqueType => TechniqueType.KiBarrier;
 
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
@@ -28,6 +29,9 @@ public class KiBarrier(AugmentationFactory augmentationFactory) : ITechnique
     /// </summary>
     public static void DoKiBarrier(NwCreature monk)
     {
+        Effect? existingKiBarrier = monk.ActiveEffects.FirstOrDefault(e => e.Tag == KiBarrierTag);
+        if (existingKiBarrier != null) monk.RemoveEffect(existingKiBarrier);
+
         byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
         byte bonusWis = MonkUtils.GetKiFocus(monk) switch
@@ -42,6 +46,8 @@ public class KiBarrier(AugmentationFactory augmentationFactory) : ITechnique
             Effect.AbilityIncrease(Ability.Wisdom, bonusWis),
             Effect.VisualEffect(VfxType.DurCessatePositive)
         );
+        kiBarrier.SubType = EffectSubType.Supernatural;
+        kiBarrier.Tag = KiBarrierTag;
 
         Effect kiBarrierVfx = Effect.VisualEffect(VfxType.ImpDeathWard, false, 0.7f);
 
