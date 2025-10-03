@@ -17,16 +17,13 @@ public class SummonDurationIndicator
         if (eventData.Effect.EffectType != EffectType.SummonCreature) return;
         if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
 
-        string? summonName = eventData.Effect.ObjectParams[1]?.Name;
+        TimeSpan summonTimeSpan = TimeSpan.FromSeconds(eventData.Effect.TotalDuration);
 
-        TimeSpan cdTimeSpan = TimeSpan.FromSeconds(eventData.Effect.DurationRemaining);
+        string formatTime =
+            summonTimeSpan.TotalHours >= 1 ? $"{summonTimeSpan.Hours}h {summonTimeSpan.Minutes}m {summonTimeSpan.Seconds}s" :
+            summonTimeSpan.TotalMinutes >= 1 ? $"{summonTimeSpan.Minutes}m {summonTimeSpan.Seconds}s"
+            : $"{summonTimeSpan.Seconds}s";
 
-        string formatTime = cdTimeSpan.TotalMinutes >= 1 ? $"{cdTimeSpan.Minutes}m {cdTimeSpan.Seconds}s"
-            : $"{cdTimeSpan.Seconds}s";
-
-        string message = summonName != null ? $"{summonName} duration: {formatTime}"
-            : $"Summoned creature duration: {formatTime}";
-
-        player.SendServerMessage(message);
+        player.SendServerMessage($"Summon duration: {formatTime}");
     }
 }
