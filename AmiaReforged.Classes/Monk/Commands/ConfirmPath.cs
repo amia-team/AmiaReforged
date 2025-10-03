@@ -2,6 +2,7 @@
 using AmiaReforged.PwEngine.Systems.Chat.Commands;
 using Anvil.API;
 using Anvil.Services;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Commands;
 
@@ -26,7 +27,9 @@ public class ConfirmPath : IChatCommand
         NwCreature? monk = caller.ControlledCreature;
         if (monk == null) return Task.CompletedTask;
 
-        if (MonkUtils.GetMonkPath(monk) != null)
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+
+        if (MonkUtils.GetMonkPath(monk) != null && environment == "live")
         {
             caller.FloatingTextString
             ("Path of Enlightenment has already been selected. " +
@@ -65,6 +68,12 @@ public class ConfirmPath : IChatCommand
         }
 
         if (chosenFeat == null) return Task.CompletedTask;
+
+        if (environment != "live")
+        {
+            NwFeat? existingPath = monk.Feats.FirstOrDefault(f => _pathFeats.ContainsValue(f));
+            if (existingPath != null) monk.RemoveFeat(existingPath);
+        }
 
         monk.AddFeat(chosenFeat, 12);
 
