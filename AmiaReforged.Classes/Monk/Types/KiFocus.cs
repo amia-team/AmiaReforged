@@ -2,7 +2,7 @@
 
 public enum KiFocus
 {
-    KiFocus1 = 0,
-    KiFocus2 = 1,
-    KiFocus3 = 2
+    KiFocus1,
+    KiFocus2,
+    KiFocus3
 }

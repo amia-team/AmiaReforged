@@ -4,11 +4,11 @@ namespace AmiaReforged.Classes.Monk.Types;
 
 public enum PathType
 {
-    CrashingMeteor = 0,
-    SwingingCenser = 1,
-    HiddenSpring = 2,
-    FickleStrand = 3,
-    IroncladBull = 4,
-    CrackedVessel = 5,
-    EchoingValley = 6
+    CrashingMeteor,
+    SwingingCenser,
+    HiddenSpring,
+    FickleStrand,
+    IroncladBull,
+    CrackedVessel,
+    EchoingValley
 }
