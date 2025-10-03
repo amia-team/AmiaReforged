@@ -7,9 +7,9 @@ namespace AmiaReforged.Classes.Associates;
 [ServiceBinding(typeof(SummonDurationIndicator))]
 public class SummonDurationIndicator
 {
-    public SummonDurationIndicator(EventService eventService)
+    public SummonDurationIndicator()
     {
-        eventService.SubscribeAll<OnEffectApply, OnEffectApply.Factory>(IndicateSummonDuration, EventCallbackType.After);
+        NwModule.Instance.OnEffectApply += IndicateSummonDuration;
     }
 
     private void IndicateSummonDuration(OnEffectApply eventData)
@@ -17,11 +17,16 @@ public class SummonDurationIndicator
         if (eventData.Effect.EffectType != EffectType.SummonCreature) return;
         if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
 
-        TimeSpan durationTimeSpan = TimeSpan.FromSeconds(eventData.Effect.DurationRemaining);
+        string? summonName = eventData.Effect.ObjectParams[1]?.Name;
 
-        string formatTime = durationTimeSpan.TotalMinutes >= 1 ? $"{durationTimeSpan.Minutes}m {durationTimeSpan.Seconds}s"
-            : $"{durationTimeSpan.Seconds}s";
+        TimeSpan cdTimeSpan = TimeSpan.FromSeconds(eventData.Effect.DurationRemaining);
 
-        player.SendServerMessage($"Summoned creature duration: {formatTime}");
+        string formatTime = cdTimeSpan.TotalMinutes >= 1 ? $"{cdTimeSpan.Minutes}m {cdTimeSpan.Seconds}s"
+            : $"{cdTimeSpan.Seconds}s";
+
+        string message = summonName != null ? $"{summonName} duration: {formatTime}"
+            : $"Summoned creature duration: {formatTime}";
+
+        player.SendServerMessage(message);
     }
 }
