@@ -43,12 +43,12 @@ public class FightingStyleSelector
 
     private void ToggleFightingStyle(NwCreature monk, NwPlayer player)
     {
-        int descriptionKey = monk.GetObjectVariable<LocalVariableInt>(FightingStyleDescriptionKey).Value;
+        LocalVariableInt descriptionKey = monk.GetObjectVariable<LocalVariableInt>(FightingStyleDescriptionKey);
 
         // Reset key to first choice if it goes past the last style
-        descriptionKey = descriptionKey % 3 + 1;
+        descriptionKey.Value = descriptionKey.Value % 3 + 1;
 
-        player.SendServerMessage($"{_styleDescriptions[descriptionKey]}".ColorString(ColorConstants.Teal));
+        player.SendServerMessage($"{_styleDescriptions[descriptionKey.Value]}".ColorString(ColorConstants.Teal));
     }
 
     private const string Knockdown =

@@ -53,22 +53,24 @@ public class MonkPathSelector
 
         NwCreature monk = eventData.Creature;
 
-        if (MonkUtils.GetMonkPath(monk) != null) return;
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+        if (environment == "live")
+            if (MonkUtils.GetMonkPath(monk) != null) return;
 
         TogglePath(monk, player);
     }
 
     private void TogglePath(NwCreature monk, NwPlayer player)
     {
-        int descriptionKey = monk.GetObjectVariable<LocalVariableInt>(PathDescriptionKey).Value;
+        LocalVariableInt descriptionKey = monk.GetObjectVariable<LocalVariableInt>(PathDescriptionKey);
 
         // Reset key to first choice if it goes past the last path
-        descriptionKey = descriptionKey % 7 + 1;
+        descriptionKey.Value = descriptionKey.Value % 7 + 1;
 
         string pathMessage = "Path of Enlightenment: ";
-        pathMessage += _pathDescriptions[descriptionKey];
+        pathMessage += _pathDescriptions[descriptionKey.Value];
         pathMessage += "\n\nTo confirm this path as your choice, enter this command in the chat: " +
-                       $"./confirmpath {_pathKeys[descriptionKey]}";
+                       $"./confirmpath {_pathKeys[descriptionKey.Value]}";
 
         player.SendServerMessage($"{pathMessage}".ColorString(ColorConstants.Teal));
     }

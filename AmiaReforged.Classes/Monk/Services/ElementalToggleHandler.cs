@@ -28,13 +28,13 @@ public class ElementalToggleHandler
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
         NwCreature monk = eventData.Creature;
-        int elementalType = monk.GetObjectVariable<LocalVariableInt>(MonkElemental.VarName).Value;
+        LocalVariableInt elementalType = monk.GetObjectVariable<LocalVariableInt>(MonkElemental.VarName);
 
         // On feat use, elemental type always switches to the next
-        elementalType++;
-        if (elementalType > MonkElemental.Earth) elementalType = MonkElemental.Fire;
+        elementalType.Value++;
+        if (elementalType.Value > MonkElemental.Earth) elementalType.Value = MonkElemental.Fire;
 
-        string elementalName = elementalType switch
+        string elementalName = elementalType.Value switch
         {
             MonkElemental.Fire => "Fire",
             MonkElemental.Water => "Water",
@@ -43,7 +43,7 @@ public class ElementalToggleHandler
             _ => "Fire"
         };
 
-        string elementalSound = elementalType switch
+        string elementalSound = elementalType.Value switch
         {
             MonkElemental.Fire => "sff_explfire",
             MonkElemental.Water => "as_na_splash1",
@@ -52,7 +52,7 @@ public class ElementalToggleHandler
             _ => "sff_explfire"
         };
 
-        Color elementalColor = elementalType switch
+        Color elementalColor = elementalType.Value switch
         {
             MonkElemental.Fire => ColorConstants.Orange,
             MonkElemental.Water => ColorConstants.Cyan,
@@ -60,9 +60,8 @@ public class ElementalToggleHandler
             MonkElemental.Earth => ColorConstants.Green,
             _ => ColorConstants.Orange
         };
-        elementalName.ColorString(elementalColor);
 
         monk.PlaySound(elementalSound);
-        player.FloatingTextString($"*Activated {elementalName}*", false, false);
+        player.FloatingTextString($"*Activated {elementalName.ColorString(elementalColor)}*", false, false);
     }
 }
