@@ -16,21 +16,19 @@ public class MartialTechniqueService
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private readonly Effect _martialEffect = Effect.VisualEffect(VfxType.None);
     private readonly Effect _martialCooldownEffect = Effect.VisualEffect(VfxType.None);
 
     private const string MartialCooldownTag = "martialtechnique_cd";
     private const string MartialTechnique = "martial_technique";
-    private const string StunningTag = "martial_technique_stunning";
-    private const string EagleTag = "martial_technique_eagle";
-    private const string AxiomaticTag = "martial_technique_axiomatic";
+    private const string StunningTag = "Stunning Strike";
+    private const string EagleTag = "Eagle Strike";
+    private const string AxiomaticTag = "Axiomatic Strike";
     private const string EagleStrikeCounter = "eagle_strike_counter";
 
     public MartialTechniqueService(TechniqueFactory techniqueFactory)
     {
         _techniqueFactory = techniqueFactory;
 
-        _martialEffect.SubType = EffectSubType.Unyielding;
         _martialCooldownEffect.SubType = EffectSubType.Unyielding;
         _martialCooldownEffect.Tag = MartialCooldownTag;
 
@@ -43,6 +41,24 @@ public class MartialTechniqueService
         NwModule.Instance.OnEffectApply += CueMartialTechniqueActivated;
         NwModule.Instance.OnEffectRemove += CueMartialTechniqueDeactivated;
         Log.Info(message: "Monk Martial Technique Service initialized.");
+    }
+
+    private record TechniqueInfo(int FeatId, string Tag, TechniqueType Type);
+
+    private static readonly List<TechniqueInfo> Techniques =
+    [
+        new(MonkFeat.StunningStrike, StunningTag, TechniqueType.StunningStrike),
+        new(MonkFeat.EagleStrike, EagleTag, TechniqueType.EagleStrike),
+        new(MonkFeat.AxiomaticStrike, AxiomaticTag, TechniqueType.AxiomaticStrike)
+    ];
+
+    private static readonly Dictionary<int, TechniqueInfo> FeatIdToTechnique;
+    private static readonly Dictionary<string, TechniqueInfo> TagToTechnique;
+
+    static MartialTechniqueService()
+    {
+        FeatIdToTechnique = Techniques.ToDictionary(tech => tech.FeatId);
+        TagToTechnique = Techniques.ToDictionary(tech => tech.Tag);
     }
 
     /// <summary>
@@ -76,25 +92,28 @@ public class MartialTechniqueService
 
     private void ActivateTechnique(NwCreature monk, int techniqueId)
     {
-        string newTechniqueTag = techniqueId switch
-        {
-            MonkFeat.StunningStrike => StunningTag,
-            MonkFeat.EagleStrike => EagleTag,
-            MonkFeat.AxiomaticStrike => AxiomaticTag,
-            _ => ""
-        };
+        if (!FeatIdToTechnique.TryGetValue(techniqueId, out TechniqueInfo? techInfo))
+            return;
+
+        string newTechniqueTag = techInfo.Tag;
 
         Effect? activeTechnique = GetActiveTechniqueEffect(monk);
+
+        // If the old technique was the same as the new one, we're just toggling it off.
+        if (activeTechnique?.Tag == newTechniqueTag)
+        {
+            monk.RemoveEffect(activeTechnique);
+            return;
+        }
 
         if (activeTechnique != null)
             monk.RemoveEffect(activeTechnique);
 
-        // If the old technique was the same as the new one, we're just toggling it off.
-        if (activeTechnique?.Tag == newTechniqueTag)
-            return;
+        Effect newTechnique = Effect.VisualEffect(VfxType.None);
+        newTechnique.SubType = EffectSubType.Unyielding;
+        newTechnique.Tag = newTechniqueTag;
 
-        _martialEffect.Tag = newTechniqueTag;
-        monk.ApplyEffect(EffectDuration.Permanent, _martialEffect);
+        monk.ApplyEffect(EffectDuration.Permanent, newTechnique);
     }
 
     /// <summary>
@@ -113,14 +132,11 @@ public class MartialTechniqueService
             queuedTechnique.Delete();
         }
 
-        Effect? activeTechnique = GetActiveTechniqueEffect(monk);
+        string? activeTechniqueTag = GetActiveTechniqueEffect(monk)?.Tag;
 
-        if (activeTechnique is null) return;
+        if (activeTechniqueTag == null) return;
 
-        // Check if gear restricts technique use
-        string techniqueName = GetTechniqueNameByTag(activeTechnique.Tag);
-
-        if (PreventMartialTechnique(monk, techniqueName)) return;
+        if (PreventMartialTechnique(monk, activeTechniqueTag)) return;
 
         ResetTechniqueCooldownAndCounter(monk);
     }
@@ -140,15 +156,12 @@ public class MartialTechniqueService
 
         if (!isHit) return;
 
-        string? techniqueTag = monk.ActiveEffects
-            .Where(effect => effect.Tag is StunningTag or EagleTag or AxiomaticTag)
-            .Select(effect => effect.Tag)
-            .FirstOrDefault();
+        string? techniqueTag = GetActiveTechniqueEffect(monk)?.Tag;
 
-        TechniqueType? techniqueType = GetTechniqueByTag(techniqueTag);
-        if (techniqueType is null) return;
+        if (techniqueTag == null || !TagToTechnique.TryGetValue(techniqueTag, out TechniqueInfo? techInfo))
+            return;
 
-        ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(techniqueType.Value);
+        ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(techInfo.Type);
         techniqueHandler?.HandleAttackTechnique(monk, attackData);
 
         ApplyTechniqueCooldown(monk, techniqueTag);
@@ -180,9 +193,7 @@ public class MartialTechniqueService
         if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
         if (eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
 
-        string techniqueName = GetTechniqueNameByTag(eventData.Effect.Tag);
-
-        player.FloatingTextString($"*{techniqueName} Activated*", false, false);
+        player.FloatingTextString($"*{eventData.Effect.Tag} Activated*", false, false);
     }
 
     /// <summary>
@@ -193,23 +204,17 @@ public class MartialTechniqueService
         if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
         if (eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
 
-        string techniqueName = GetTechniqueNameByTag(eventData.Effect.Tag);
-
-        player.FloatingTextString($"*{techniqueName} Deactivated*", false, false);
+        player.FloatingTextString($"*{eventData.Effect.Tag} Deactivated*", false, false);
     }
 
     private static bool PreventMartialTechnique(NwCreature monk, string techniqueName)
     {
-        bool hasRangedWeapon = false;
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
         bool hasFocusWithoutUnarmed =
             monk.GetItemInSlot(InventorySlot.RightHand) != null
             && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Torches;
-
-
-        if (MonkUtils.GetMonkPath(monk) != PathType.HiddenSpring && monk.IsRangedWeaponEquipped)
-            hasRangedWeapon = true;
+        bool hasRangedWeapon = MonkUtils.GetMonkPath(monk) != PathType.HiddenSpring && monk.IsRangedWeaponEquipped;
 
         if (!monk.IsPlayerControlled(out NwPlayer? player))
             return hasArmor || hasShield || hasFocusWithoutUnarmed || hasRangedWeapon;
@@ -237,18 +242,9 @@ public class MartialTechniqueService
             player.SendServerMessage($"Wielding a ranged weapon has prevented your {techniqueName}.");
             return true;
         }
-        
+
         return false;
     }
-
-    private static TechniqueType? GetTechniqueByTag(string? techniqueTag)
-        => techniqueTag switch
-        {
-            StunningTag => TechniqueType.StunningStrike,
-            EagleTag => TechniqueType.EagleStrike,
-            AxiomaticTag => TechniqueType.AxiomaticStrike,
-            _ => null
-        };
 
     private static Effect? GetActiveTechniqueEffect(NwCreature monk) =>
         monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is StunningTag or EagleTag or AxiomaticTag);
@@ -264,13 +260,4 @@ public class MartialTechniqueService
         if (eagleStrikeCounter.HasValue)
             eagleStrikeCounter.Delete();
     }
-
-    private static string GetTechniqueNameByTag(string? techniqueTag)
-        => techniqueTag switch
-        {
-            StunningTag => "Stunning Strike",
-            EagleTag => "Eagle Strike",
-            AxiomaticTag => "Axiomatic Strike",
-            _ => ""
-        };
 }
