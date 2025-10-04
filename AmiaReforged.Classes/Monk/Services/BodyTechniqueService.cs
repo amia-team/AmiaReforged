@@ -52,6 +52,12 @@ public class BodyTechniqueService
 
         techniqueHandler?.HandleCastTechnique(monk, castData);
 
+        if (techniqueType == TechniqueType.WholenessOfBody && Random.Shared.Roll(2) == 1)
+        {
+            monk.ControllingPlayer?.FloatingTextString("*Ki Body Point preserved*");
+            return;
+        }
+
         monk.DecrementRemainingFeatUses(BodyKiPointFeat);
     }
 
