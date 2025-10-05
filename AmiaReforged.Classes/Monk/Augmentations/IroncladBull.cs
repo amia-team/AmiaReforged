@@ -18,11 +18,11 @@ public sealed class IroncladBull : IAugmentation
     {
         switch (technique)
         {
-            case TechniqueType.EagleStrike:
-                AugmentEagleStrike(monk, attackData);
-                break;
             case TechniqueType.StunningStrike:
-                StunningStrike.DoStunningStrike(attackData);
+                AugmentStunningStrike(monk, attackData);
+                break;
+            case TechniqueType.EagleStrike:
+                EagleStrike.DoEagleStrike(monk, attackData);
                 break;
             case TechniqueType.AxiomaticStrike:
                 AxiomaticStrike.DoAxiomaticStrike(attackData);
@@ -52,18 +52,31 @@ public sealed class IroncladBull : IAugmentation
     }
 
     /// <summary>
-    /// Eagle Strike has a 1% chance to regenerate a Body Ki Point. Each Ki Focus increases the chance by 1%,
-    /// to a maximum of 4% chance.
+    /// When Stunning Strike lands, gain immunity to damage vulnerability for 1 round. Ki Focus I grants immunity
+    /// to armor decrease, Ki Focus II grants immunity to flanking, and Ki Focus III grants immunity to knockdown.
     /// </summary>
-    private static void AugmentEagleStrike(NwCreature monk, OnCreatureAttack attackData)
+    private static void AugmentStunningStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        EagleStrike.DoEagleStrike(monk, attackData);
+        StunningStrike.DoStunningStrike(attackData);
 
         if (attackData.Target is not NwCreature target) return;
 
         if (!monk.IsReactionTypeHostile(target)) return;
 
-        KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
+        Effect immunities = MonkUtils.GetKiFocus(monk) switch
+        {
+            KiFocus.KiFocus1 => Effect.LinkEffects(Effect.Immunity(ImmunityType.DamageImmunityDecrease),
+                Effect.Immunity(ImmunityType.AcDecrease)),
+            KiFocus.KiFocus2 => Effect.LinkEffects(Effect.Immunity(ImmunityType.DamageImmunityDecrease),
+                Effect.Immunity(ImmunityType.AcDecrease), Effect.BonusFeat(Feat.PrestigeDefensiveAwareness2!)),
+            KiFocus.KiFocus3 => Effect.LinkEffects(Effect.Immunity(ImmunityType.DamageImmunityDecrease),
+                Effect.Immunity(ImmunityType.AcDecrease), Effect.BonusFeat(Feat.PrestigeDefensiveAwareness2!),
+                Effect.Immunity(ImmunityType.Knockdown)),
+            _ => Effect.Immunity(ImmunityType.DamageImmunityDecrease)
+        };
+        immunities.SubType = EffectSubType.Extraordinary;
+
+        monk.ApplyEffect(EffectDuration.Temporary, immunities, NwTimeSpan.FromRounds(1));
     }
 
     /// <summary>
