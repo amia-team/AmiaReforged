@@ -99,7 +99,7 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
         Effect abBonusEffect = Effect.LinkEffects(Effect.AttackIncrease(abBonus),
             Effect.VisualEffect(VfxType.DurCessatePositive));
 
-        Effect abBonusVfx = Effect.VisualEffect(VfxType.ImpHeadSonic);
+        Effect abBonusVfx = Effect.VisualEffect(VfxType.ImpHeadHoly);
 
         foreach (NwGameObject nwObject in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
         {
@@ -135,6 +135,7 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
         };
 
         TimeSpan duration = TimeSpan.FromSeconds((pulseAmount - 1) * 3);
+        TimeSpan pulseInterval = TimeSpan.FromSeconds(3);
 
         Effect wholenessEffect = Effect.LinkEffects(Effect.Heal(healAmount),
             Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f));
@@ -142,7 +143,7 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
         ScriptCallbackHandle doPulse
             = scriptHandleFactory.CreateUniqueHandler(_ => PulseHeal(monk, wholenessEffect));
 
-        Effect wholenessPulse = Effect.RunAction(doPulse, doPulse);
+        Effect wholenessPulse = Effect.RunAction(doPulse, doPulse, doPulse, pulseInterval);
         wholenessPulse.Tag = WholenessPulseTag;
 
         monk.ApplyEffect(EffectDuration.Temporary, wholenessPulse, duration);
