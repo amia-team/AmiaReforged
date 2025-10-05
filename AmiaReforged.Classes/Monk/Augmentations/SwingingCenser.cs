@@ -1,4 +1,3 @@
-using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
@@ -12,7 +11,6 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 [ServiceBinding(typeof(IAugmentation))]
 public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IAugmentation
 {
-    private static readonly NwFeat? BodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
     public PathType PathType => PathType.SwingingCenser;
 
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
@@ -114,12 +112,17 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
         }
     }
 
+    private const string WholenessPulseTag = "wholenesspulse";
+
     /// <summary>
     /// Wholeness of Body pulses in a large area around the monk, healing allies.
     /// Each Ki Focus adds a pulse to the heal, to a maximum of four pulses.
     /// </summary>
     private void AugmentWholenessOfBody(NwCreature monk)
     {
+        if (monk.ActiveEffects.Any(e => e.Tag == WholenessPulseTag))
+            return;
+
         byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int healAmount = monkLevel * 2;
 
@@ -140,6 +143,7 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
             = scriptHandleFactory.CreateUniqueHandler(_ => PulseHeal(monk, wholenessEffect));
 
         Effect wholenessPulse = Effect.RunAction(doPulse, doPulse);
+        wholenessPulse.Tag = WholenessPulseTag;
 
         monk.ApplyEffect(EffectDuration.Temporary, wholenessPulse, duration);
     }
