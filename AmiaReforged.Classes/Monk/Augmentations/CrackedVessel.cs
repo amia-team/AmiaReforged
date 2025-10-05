@@ -211,9 +211,9 @@ public sealed class CrackedVessel : IAugmentation
             monk.RemoveEffect(emptyBodyEffect);
 
         emptyBodyEffect = Effect.LinkEffects(
-            Effect.DamageIncrease(pctImmunityTotal, DamageType.Piercing),
-            Effect.DamageIncrease(pctImmunityTotal, DamageType.Slashing),
-            Effect.DamageIncrease(pctImmunityTotal, DamageType.Bludgeoning));
+            Effect.DamageImmunityIncrease(DamageType.Piercing, pctImmunityTotal),
+            Effect.DamageImmunityIncrease(DamageType.Slashing, pctImmunityTotal),
+            Effect.DamageImmunityIncrease(DamageType.Bludgeoning, pctImmunityTotal));
 
         emptyBodyEffect.SubType = EffectSubType.Extraordinary;
         emptyBodyEffect.Tag = CrackedEmptyBodyTag;
@@ -255,6 +255,12 @@ public sealed class CrackedVessel : IAugmentation
 
         int damage = Random.Shared.Roll(damageDie, 20);
 
+        _ = ApplyQuivering(targetCreature, monk, damage);
+    }
+
+    private static async Task ApplyQuivering(NwCreature targetCreature, NwCreature monk, int damage)
+    {
+        await monk.WaitForObjectContext();
         Effect quiveringEffect = Effect.LinkEffects(Effect.Damage(damage, DamageType.Negative),
             Effect.VisualEffect(VfxType.ImpNegativeEnergy));
 
