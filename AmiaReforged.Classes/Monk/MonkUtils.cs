@@ -72,7 +72,7 @@ public static class MonkUtils
         float vfxDefaultSize = vfxType switch
         {
             VfxType.ImpFrostL or VfxType.ImpAcidS or VfxType.ImpBlindDeafM => 1f,
-            VfxType.FnfLosEvil10 or (VfxType)1046 => RadiusSize.Medium,
+            VfxType.FnfLosEvil10 or (VfxType)1046 or VfxType.ImpPulseHoly => RadiusSize.Medium,
             VfxType.FnfFireball => RadiusSize.Huge,
             VfxType.FnfElectricExplosion or VfxType.FnfMysticalExplosion => RadiusSize.Gargantuan,
             VfxType.FnfHowlOdd or VfxType.FnfHowlMind or VfxType.FnfLosEvil30 or VfxType.FnfFirestorm => RadiusSize.Colossal,

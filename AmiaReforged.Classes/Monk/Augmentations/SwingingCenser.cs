@@ -10,7 +10,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
 [ServiceBinding(typeof(IAugmentation))]
-public sealed class SwingingCenser : IAugmentation
+public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IAugmentation
 {
     private static readonly NwFeat? BodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
     public PathType PathType => PathType.SwingingCenser;
@@ -118,11 +118,8 @@ public sealed class SwingingCenser : IAugmentation
     /// Wholeness of Body pulses in a large area around the monk, healing allies.
     /// Each Ki Focus adds a pulse to the heal, to a maximum of four pulses.
     /// </summary>
-    private static readonly HashSet<NwCreature> WholenessCooldown = [];
-    private static void AugmentWholenessOfBody(NwCreature monk)
+    private void AugmentWholenessOfBody(NwCreature monk)
     {
-        if (OnCooldown(monk)) return;
-
         byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int healAmount = monkLevel * 2;
 
@@ -134,66 +131,33 @@ public sealed class SwingingCenser : IAugmentation
             _ => 1
         };
 
-        Effect wholenessEffect = Effect.LinkEffects(
-            Effect.Heal(healAmount),
+        TimeSpan duration = TimeSpan.FromSeconds((pulseAmount - 1) * 3);
+
+        Effect wholenessEffect = Effect.LinkEffects(Effect.Heal(healAmount),
             Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f));
 
-        _ = WholenessPulse(monk, pulseAmount, wholenessEffect);
+        ScriptCallbackHandle doPulse
+            = scriptHandleFactory.CreateUniqueHandler(_ => PulseHeal(monk, wholenessEffect));
+
+        Effect wholenessPulse = Effect.RunAction(doPulse, doPulse);
+
+        monk.ApplyEffect(EffectDuration.Temporary, wholenessPulse, duration);
     }
 
-    private static bool OnCooldown(NwCreature monk)
+    private static ScriptHandleResult PulseHeal(NwCreature monk, Effect wholenessEffect)
     {
-        if (!WholenessCooldown.Contains(monk)) return false;
+        if (monk.IsDead || !monk.IsValid || monk.Location == null) return ScriptHandleResult.True;
 
-        if (monk.IsPlayerControlled(out NwPlayer? player))
+        monk.ApplyEffect(EffectDuration.Instant, MonkUtils.ResizedVfx(VfxType.ImpPulseHoly, RadiusSize.Large));
+
+        foreach (NwCreature creatureInShape in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large,false))
         {
-            player.FloatingTextString("Wholeness of Body is still active, wait for the effect to end.");
-        }
-
-        if (BodyKiFeat != null && monk.KnowsFeat(BodyKiFeat))
-        {
-            monk.IncrementRemainingFeatUses(BodyKiFeat);
-        }
-
-        return true;
-    }
-
-    private static async Task WholenessPulse(NwCreature monk, int pulseAmount, Effect wholenessEffect)
-    {
-        WholenessCooldown.Add(monk);
-
-        try
-        {
-            for (int i = 0; i < pulseAmount; i++)
-            {
-                if (monk.IsDead || !monk.IsValid) break;
-
-                monk.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPulseHoly));
-
-                ApplyAoeHeal(monk, wholenessEffect);
-
-                await NwTask.Delay(TimeSpan.FromSeconds(3));
-            }
-        }
-        finally
-        {
-            WholenessCooldown.Remove(monk);
-        }
-    }
-
-    private static void ApplyAoeHeal(NwCreature monk, Effect wholenessEffect)
-    {
-        if (monk.Location == null) return;
-
-        foreach (NwGameObject nwObject in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large,
-                     false))
-        {
-            NwCreature creatureInShape = (NwCreature)nwObject;
-
             if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
 
             creatureInShape.ApplyEffect(EffectDuration.Instant, wholenessEffect);
         }
+
+        return ScriptHandleResult.True;
     }
 
     /// <summary>
