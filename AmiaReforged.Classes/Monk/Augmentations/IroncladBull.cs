@@ -103,10 +103,7 @@ public sealed class IroncladBull : IAugmentation
             Effect.DamageResistance(DamageType.Piercing, resistanceAmount), Effect.VisualEffect(VfxType.DurCessatePositive)
         );
 
-        Effect stoneImpVfx = Effect.VisualEffect(VfxType.DurProtStoneskin);
-
         monk.ApplyEffect(EffectDuration.Temporary, kiBarrierEffect, NwTimeSpan.FromTurns(monkLevel));
-        monk.ApplyEffect(EffectDuration.Temporary, stoneImpVfx, TimeSpan.FromSeconds(2));
     }
 
     /// <summary>
