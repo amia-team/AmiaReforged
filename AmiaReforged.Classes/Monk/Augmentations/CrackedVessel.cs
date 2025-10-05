@@ -88,7 +88,6 @@ public sealed class CrackedVessel : IAugmentation
     {
         AxiomaticStrike.DoAxiomaticStrike(attackData);
 
-        if (attackData.Target is not NwCreature targetCreature) return;
         if (condition == MonkCondition.Healthy) return;
 
         int damageSides = condition switch
@@ -112,64 +111,10 @@ public sealed class CrackedVessel : IAugmentation
         DamageData<short> damageData = attackData.DamageData;
         short negativeDamage = damageData.GetDamageByType(DamageType.Negative);
 
-        int negativeDamageBefore = negativeDamage;
-
         negativeDamage += (short)bonusNegativeDamage;
         damageData.SetDamageByType(DamageType.Negative, negativeDamage);
-
-        byte bonusDamageDealt = CalculateBonusDamageDealt(targetCreature, bonusNegativeDamage, negativeDamageBefore);
-
-        UpdateBodyKiCounter(monk, bonusDamageDealt);
     }
 
-    private static byte CalculateBonusDamageDealt(NwCreature targetCreature, float bonusNegativeDamage, float negativeDamageBefore)
-    {
-        int highestNegativeResistance = targetCreature.ActiveEffects
-            .Where(e => e.EffectType == EffectType.DamageResistance && e.IntParams[0] == (int)DamageType.Negative)
-            .Select(e => e.IntParams[1])
-            .DefaultIfEmpty(0)
-            .Max();
-
-        int negativeVulnerability = targetCreature.ActiveEffects
-            .Where(e => e.EffectType == EffectType.DamageImmunityDecrease && e.IntParams[0] == (int)DamageType.Negative)
-            .Select(e => e.IntParams[1])
-            .DefaultIfEmpty(0)
-            .Max();
-
-        int negativeImmunity = targetCreature.ActiveEffects
-            .Where(e => e.EffectType == EffectType.DamageImmunityIncrease && e.IntParams[0] == (int)DamageType.Negative)
-            .Select(e => e.IntParams[1])
-            .DefaultIfEmpty(0)
-            .Max();
-
-        float negativeDamageModifier = 1f + (negativeImmunity - negativeVulnerability) / 100f;
-
-        bonusNegativeDamage *= negativeDamageModifier;
-
-        negativeDamageBefore *= negativeDamageModifier;
-
-        float resistanceLeft = Math.Max(0, highestNegativeResistance - negativeDamageBefore);
-
-        bonusNegativeDamage -= resistanceLeft;
-
-        if (bonusNegativeDamage < 0)
-            return 0;
-
-        return (byte)bonusNegativeDamage;
-    }
-
-    private static void UpdateBodyKiCounter(NwCreature monk, int bonusDamageDealt)
-    {
-        if (bonusDamageDealt <= 0) return;
-
-        LocalVariableInt damageCounter = monk.GetObjectVariable<LocalVariableInt>("crackedvessel_damagecounter");
-
-        damageCounter.Value += bonusDamageDealt;
-
-        if (damageCounter.Value < 100) return;
-
-        MonkUtils.RegenerateBodyKi(monk);
-    }
 
     /// <summary>
     /// Wholeness of Body unleashes 2d6 negative energy and physical damage in a large radius when the monk is injured,

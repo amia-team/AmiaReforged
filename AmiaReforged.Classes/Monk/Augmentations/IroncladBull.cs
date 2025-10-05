@@ -63,18 +63,7 @@ public sealed class IroncladBull : IAugmentation
 
         if (!monk.IsReactionTypeHostile(target)) return;
 
-        int kiBodyRegenChance = MonkUtils.GetKiFocus(monk) switch
-        {
-            KiFocus.KiFocus1 => 2,
-            KiFocus.KiFocus2 => 3,
-            KiFocus.KiFocus3 => 4,
-            _ => 1
-        };
-
-        int d100Roll = Random.Shared.Roll(100);
-
-        if (d100Roll <= kiBodyRegenChance)
-                MonkUtils.RegenerateBodyKi(monk);
+        KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
     }
 
     /// <summary>

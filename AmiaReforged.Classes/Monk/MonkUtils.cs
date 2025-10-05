@@ -111,25 +111,6 @@ public static class MonkUtils
         return elementalType;
     }
 
-    public static void RegenerateBodyKi(NwCreature monk)
-    {
-        NwFeat? bodyKiFeat = NwFeat.FromFeatId(MonkFeat.BodyKiPoint);
-        if (bodyKiFeat == null || !monk.KnowsFeat(bodyKiFeat)) return;
-
-        if (monk.GetFeatRemainingUses(bodyKiFeat) < monk.GetFeatTotalUses(bodyKiFeat))
-            return;
-
-        monk.IncrementRemainingFeatUses(bodyKiFeat);
-
-        if (monk.IsPlayerControlled(out NwPlayer? player))
-        {
-            player.FloatingTextString(
-                "Ki Body Point regained!".ColorString(ColorConstants.Teal),
-                false
-            );
-        }
-    }
-
     public static bool AbilityRestricted(NwCreature monk, string abilityName, NwFeat kiPointFeat)
     {
         bool noKiLeft = !monk.KnowsFeat(kiPointFeat) || NWScript.GetFeatRemainingUses(kiPointFeat.Id, monk) < 1;

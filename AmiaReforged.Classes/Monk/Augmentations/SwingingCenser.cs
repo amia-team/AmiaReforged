@@ -54,8 +54,7 @@ public sealed class SwingingCenser : IAugmentation
     }
 
     /// <summary>
-    /// Stunning Strike heals the monk or a nearby ally for 1d6 damage. Healing 100 damage with this attack regenerates
-    /// a Body Ki Point. Each Ki Focus heals for an additional 1d6, to a maximum of 4d6 damage.
+    /// Stunning Strike heals the monk or a nearby ally for 1d6 damage. Each Ki Focus heals for an additional 1d6, to a maximum of 4d6 damage.
     /// </summary>
     private static void AugmentStunningStrike(NwCreature monk, OnCreatureAttack attackData)
     {
@@ -73,75 +72,13 @@ public sealed class SwingingCenser : IAugmentation
 
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHeadHeal, fScale: 0.7f);
 
-        int totalHealedAmount = 0;
-
-        HealResult selfHealResult = HealSelf(monk, healAmount, healVfx);
-        totalHealedAmount += selfHealResult.HealedAmount;
-
-        HealResult allyHealResult = HealAlly(monk, selfHealResult.HealRemainder, healVfx);
-        totalHealedAmount += allyHealResult.HealedAmount;
-
-        UpdateBodyKiCounter(monk, totalHealedAmount);
-    }
-
-    private class HealResult
-    {
-        public int HealedAmount { get; init; }
-        public int HealRemainder { get; init; }
-    }
-
-    private static HealResult HealSelf(NwCreature monk, int healAmount, Effect healVfx)
-    {
-        int healedAmount = Math.Min(healAmount, monk.MaxHP - monk.HP);
-
-        monk.ApplyEffect(EffectDuration.Instant, Effect.Heal(healedAmount));
-        monk.ApplyEffect(EffectDuration.Instant, healVfx);
-
-        int remainder = healAmount - healedAmount;
-
-        return new HealResult
-        {
-            HealedAmount = healedAmount,
-            HealRemainder = remainder
-        };
-    }
-
-    private static HealResult HealAlly(NwCreature monk, int healRemainder, Effect healVfx)
-    {
-        if (healRemainder <= 0)
-            return new HealResult { HealedAmount = 0, HealRemainder = 0 };
-
         // Find the most wounded ally to heal
-        NwCreature? mostWoundedAlly = monk.Location?.GetObjectsInShape(Shape.Sphere, RadiusSize.Medium, true)
-            .OfType<NwCreature>()
+        NwCreature? mostWoundedAlly = monk.Location?.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Medium, true)
             .Where(creature => monk.IsReactionTypeFriendly(creature) && creature.HP < creature.MaxHP)
             .MaxBy(creature => creature.MaxHP - creature.HP);
 
-        if (mostWoundedAlly == null)
-            return new HealResult { HealedAmount = 0, HealRemainder = 0 };
-
-        int missingHp = mostWoundedAlly.MaxHP - mostWoundedAlly.HP;
-        int healedAmount = Math.Min(healRemainder, missingHp);
-        int newRemainder = healRemainder - healedAmount;
-
-        mostWoundedAlly.ApplyEffect(EffectDuration.Instant, Effect.Heal(healRemainder));
-        mostWoundedAlly.ApplyEffect(EffectDuration.Instant, healVfx);
-
-        return new HealResult
-        {
-            HealedAmount = healedAmount,
-            HealRemainder = newRemainder
-        };
-    }
-
-    private static void UpdateBodyKiCounter(NwCreature monk, int totalHealedAmount)
-    {
-        LocalVariableInt healCounter = monk.GetObjectVariable<LocalVariableInt>("swingingcenser_healcounter");
-        healCounter.Value += totalHealedAmount;
-
-        if (healCounter.Value < 100) return;
-
-        MonkUtils.RegenerateBodyKi(monk);
+        mostWoundedAlly?.ApplyEffect(EffectDuration.Instant, Effect.Heal(healAmount));
+        mostWoundedAlly?.ApplyEffect(EffectDuration.Instant, healVfx);
     }
 
     /// <summary>
