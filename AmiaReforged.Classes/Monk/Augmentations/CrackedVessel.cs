@@ -11,7 +11,6 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 [ServiceBinding(typeof(IAugmentation))]
 public sealed class CrackedVessel : IAugmentation
 {
-    private const string CrackedQuiveringTag = "crackedvessel_quiveringpalm";
     private const string CrackedEmptyBodyTag = "crackedvessel_emptybody";
 
     public PathType PathType => PathType.CrackedVessel;
@@ -177,9 +176,9 @@ public sealed class CrackedVessel : IAugmentation
     }
 
     /// <summary>
-    /// Empty Body grants 5% physical damage immunity when the monk is injured, 10% when badly wounded, and 15% when
-    /// near death. This effect is only granted while the monk is in combat. Each Ki Focus grants 5% more physical
-    /// damage immunity, to a maximum of 20%, 25%, and 30% physical damage immunity.
+    /// While in combat, Empty Body grants 5% physical damage immunity when the monk is injured, 10% when badly wounded,
+    /// and 15% when near death. Each Ki Focus grants 5% more physical damage immunity, to a maximum of 20%, 25%,
+    /// and 30% physical damage immunity.
     /// </summary>
     private static void AugmentEmptyBody(NwCreature monk, MonkCondition condition)
     {
@@ -223,8 +222,8 @@ public sealed class CrackedVessel : IAugmentation
     }
 
     /// <summary>
-    /// Quivering Palm inflicts 5% negative energy and physical damage vulnerability for three rounds.
-    /// Each Ki Focus adds 5% to a maximum of 20%.
+    /// Quivering Palm inflicts an additional 20d2 negative energy damage when the monk is injured,
+    /// 20d4 when badly wounded, and 20d6 when near death. Each Ki Focus adds 30% negative energy vulnerability to this attack.
     /// </summary>
     private static void AugmentQuiveringPalm(NwCreature monk, OnSpellCast castData, MonkCondition condition)
     {
@@ -235,32 +234,30 @@ public sealed class CrackedVessel : IAugmentation
 
         if (condition == MonkCondition.Healthy) return;
 
-        int pctVulnerability = MonkUtils.GetKiFocus(monk) switch
+        int vulnPercentage = MonkUtils.GetKiFocus(monk) switch
         {
-            KiFocus.KiFocus1 => 10,
-            KiFocus.KiFocus2 => 15,
-            KiFocus.KiFocus3 => 20,
-            _ => 5
+            KiFocus.KiFocus1 => 30,
+            KiFocus.KiFocus2 => 60,
+            KiFocus.KiFocus3 => 90,
+            _ => 0
         };
 
-        Effect? quiveringEffect = targetCreature.ActiveEffects.FirstOrDefault(e => e.Tag == CrackedQuiveringTag);
-        if (quiveringEffect != null)
-            targetCreature.RemoveEffect(quiveringEffect);
+        targetCreature.ApplyEffect(EffectDuration.Temporary, Effect.DamageImmunityDecrease(DamageType.Negative,
+            vulnPercentage), TimeSpan.FromSeconds(0.5f));
 
+        int damageDie = condition switch
+        {
+            MonkCondition.Injured => 2,
+            MonkCondition.BadlyWounded => 4,
+            MonkCondition.NearDeath => 6,
+            _ => 0
+        };
 
-        quiveringEffect = Effect.LinkEffects(
-            Effect.DamageImmunityDecrease(DamageType.Negative, pctVulnerability),
-            Effect.DamageImmunityDecrease(DamageType.Piercing, pctVulnerability),
-            Effect.DamageImmunityDecrease(DamageType.Slashing, pctVulnerability),
-            Effect.DamageImmunityDecrease(DamageType.Bludgeoning, pctVulnerability),
-            Effect.VisualEffect(VfxType.DurCessateNegative)
-        );
+        int damage = Random.Shared.Roll(damageDie, 20);
 
-        quiveringEffect.Tag = CrackedQuiveringTag;
+        Effect quiveringEffect = Effect.LinkEffects(Effect.Damage(damage, DamageType.Negative),
+            Effect.VisualEffect(VfxType.ImpNegativeEnergy));
 
-        Effect quiveringVfx = Effect.VisualEffect(VfxType.ImpNegativeEnergy, false, 0.7f);
-
-        targetCreature.ApplyEffect(EffectDuration.Temporary, quiveringEffect, NwTimeSpan.FromRounds(3));
-        targetCreature.ApplyEffect(EffectDuration.Instant, quiveringVfx);
+        targetCreature.ApplyEffect(EffectDuration.Instant, quiveringEffect);
     }
 }
