@@ -76,7 +76,7 @@ public sealed class EchoingValley : IAugmentation
             .Where(associate => associate.ResRef == SummonEchoResRef)
             .ToArray();
 
-        _ = SummonEcho(monk, echoCap, echoes);
+        _ = SummonEcho(monk, targetCreature, echoCap, echoes);
 
         foreach (NwCreature echo in echoes)
         {
@@ -87,13 +87,13 @@ public sealed class EchoingValley : IAugmentation
         }
     }
 
-    private async Task SummonEcho(NwCreature monk, byte echoCap, NwCreature[] echoes)
+    private async Task SummonEcho(NwCreature monk, NwCreature targetCreature, byte echoCap, NwCreature[] echoes)
     {
-        if (monk.Location == null) return;
+        if (targetCreature.Location == null) return;
 
         if (echoes.Length >= echoCap) return;
 
-        Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(monk.Location, 3f);
+        Location? summonLocation = SummonUtility.GetRandomLocationAroundPoint(targetCreature.Location, 2.5f);
 
         if (summonLocation is null) return;
 
@@ -135,8 +135,10 @@ public sealed class EchoingValley : IAugmentation
         echo.Immortal = true;
     }
 
-    private void EchoAoe(NwCreature monk, NwCreature echo)
+    private async Task EchoAoe(NwCreature monk, NwCreature echo)
     {
+        await NwTask.Delay(TimeSpan.FromMilliseconds(1));
+
         if (echo.Location == null) return;
 
         Effect echoVfx = MonkUtils.ResizedVfx(VfxType.ImpBlindDeafM, RadiusSize.Medium);
@@ -149,16 +151,11 @@ public sealed class EchoingValley : IAugmentation
 
             int damageAmount = Random.Shared.Roll(6);
 
-            _ = ApplyEchoDamage(hostileCreature, monk, damageAmount);
+            await monk.WaitForObjectContext();
+            Effect damageEffect = Effect.Damage(damageAmount, DamageType.Sonic);
+
+            hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
         }
-    }
-
-    private async Task ApplyEchoDamage(NwCreature hostileCreature, NwCreature monk, int damageAmount)
-    {
-        await monk.WaitForObjectContext();
-        Effect damageEffect = Effect.Damage(damageAmount, DamageType.Sonic);
-
-        hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 
     /// <summary>
@@ -219,7 +216,7 @@ public sealed class EchoingValley : IAugmentation
 
         foreach (NwCreature echo in echoes)
         {
-            float delay = echo.Distance(monk);
+            float delay = echo.Distance(monk) / 10;
             _ = ReleaseEcho(monk, echo, delay);
         }
     }
@@ -231,7 +228,6 @@ public sealed class EchoingValley : IAugmentation
         if (echo.Location == null) return;
 
         ExplodeEcho(monk, echo);
-        echo.IsDestroyable = true;
         echo.Destroy();
     }
 
