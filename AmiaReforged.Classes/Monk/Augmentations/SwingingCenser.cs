@@ -99,17 +99,21 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
         Effect abBonusEffect = Effect.LinkEffects(Effect.AttackIncrease(abBonus),
             Effect.VisualEffect(VfxType.DurCessatePositive));
 
-        Effect abBonusVfx = Effect.VisualEffect(VfxType.ImpHeadHoly);
-
-        foreach (NwGameObject nwObject in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        foreach (NwCreature ally in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, false))
         {
-            NwCreature creatureInShape = (NwCreature)nwObject;
+            if (!monk.IsReactionTypeFriendly(ally)) continue;
 
-            if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
-
-            creatureInShape.ApplyEffect(EffectDuration.Temporary, abBonusEffect, NwTimeSpan.FromRounds(3));
-            creatureInShape.ApplyEffect(EffectDuration.Instant, abBonusVfx);
+            _ = ApplyBonusAb(monk, ally, abBonusEffect);
         }
+    }
+
+    private static async Task ApplyBonusAb(NwCreature monk, NwCreature ally, Effect abBonusEffect)
+    {
+        float delay = monk.Distance(ally) / 10;
+        await NwTask.Delay(TimeSpan.FromSeconds(delay));
+
+        ally.ApplyEffect(EffectDuration.Temporary, abBonusEffect, NwTimeSpan.FromRounds(3));
+        ally.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadHoly));
     }
 
     private const string WholenessPulseTag = "wholenesspulse";
