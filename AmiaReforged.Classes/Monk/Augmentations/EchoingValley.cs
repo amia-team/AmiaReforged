@@ -83,7 +83,7 @@ public sealed class EchoingValley : IAugmentation
             if (echo.Distance(targetCreature) > 3)
                 echo.JumpToObject(targetCreature);
 
-            EchoAoe(monk, echo);
+            _ = EchoAoe(monk, echo);
         }
     }
 
@@ -151,7 +151,7 @@ public sealed class EchoingValley : IAugmentation
 
             int damageAmount = Random.Shared.Roll(6);
 
-            await monk.WaitForObjectContext();
+            await echo.WaitForObjectContext();
             Effect damageEffect = Effect.Damage(damageAmount, DamageType.Sonic);
 
             hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
@@ -211,37 +211,32 @@ public sealed class EchoingValley : IAugmentation
     {
         KiShout.DoKiShout(monk);
 
-        IEnumerable<NwCreature> echoes = monk.Associates
-            .Where(associate => associate.ResRef == SummonEchoResRef);
+        if (monk.Location == null) return;
 
-        foreach (NwCreature echo in echoes)
+        foreach (NwCreature echo in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
+                     RadiusSize.Colossal, false))
         {
-            float delay = echo.Distance(monk) / 10;
-            _ = ReleaseEcho(monk, echo, delay);
+            if (echo.Master == monk && echo.ResRef == SummonEchoResRef)
+            {
+                _ = ExplodeEcho(monk, echo);
+            }
         }
+
     }
 
-    private async Task ReleaseEcho(NwCreature monk, NwCreature echo, float delay)
+    private async Task ExplodeEcho(NwCreature monk, NwCreature echo)
     {
+        float delay = monk.Distance(echo) / 10;
         await NwTask.Delay(TimeSpan.FromSeconds(delay));
 
-        if (echo.Location == null) return;
-
-        ExplodeEcho(monk, echo);
-        echo.Destroy();
-    }
-
-    private void ExplodeEcho(NwCreature monk, NwCreature echo)
-    {
-        if (echo.Location == null) return;
-
         Effect explosionVfx = MonkUtils.ResizedVfx(VfxType.FnfMysticalExplosion, RadiusSize.Large);
+        if (echo.Location == null) return;
 
         echo.Location.ApplyEffect(EffectDuration.Instant, explosionVfx);
 
-        foreach (NwGameObject nwObject in echo.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, false))
+        foreach (NwCreature hostileCreature in echo.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large, false))
         {
-            if (nwObject is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
+            if (!monk.IsReactionTypeHostile(hostileCreature)) continue;
 
             int dc = MonkUtils.CalculateMonkDc(monk);
 
@@ -261,18 +256,15 @@ public sealed class EchoingValley : IAugmentation
                     break;
             }
 
-            _ = ApplyKiShoutDamage(hostileCreature, monk, damageAmount);
+            await monk.WaitForObjectContext();
+            Effect damageEffect = Effect.LinkEffects(
+                Effect.Damage(damageAmount, DamageType.Sonic),
+                Effect.VisualEffect(VfxType.ImpSonic)
+            );
+
+            hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
         }
-    }
 
-    private async Task ApplyKiShoutDamage(NwCreature hostileCreature, NwCreature monk, int damageAmount)
-    {
-        await monk.WaitForObjectContext();
-        Effect damageEffect = Effect.LinkEffects(
-            Effect.Damage(damageAmount, DamageType.Sonic),
-            Effect.VisualEffect(VfxType.ImpSonic)
-        );
-
-        hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
+        echo.Destroy();
     }
 }
