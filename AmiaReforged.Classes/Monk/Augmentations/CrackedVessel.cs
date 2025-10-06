@@ -165,14 +165,20 @@ public sealed class CrackedVessel : IAugmentation
                 hostileCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
             }
 
-            Effect wholenessEffect = Effect.LinkEffects(
-                Effect.Damage(damageAmount, DamageType.Negative),
-                Effect.Damage(damageAmount, DamageType.Piercing),
-                Effect.VisualEffect(VfxType.ImpNegativeEnergy)
-            );
-
-            hostileCreature.ApplyEffect(EffectDuration.Instant, wholenessEffect);
+            _ = ApplyWholenessDamage(hostileCreature, monk, damageAmount);
         }
+    }
+
+    private static async Task ApplyWholenessDamage(NwCreature hostileCreature, NwCreature monk, int damageAmount)
+    {
+        await monk.WaitForObjectContext();
+        Effect wholenessEffect = Effect.LinkEffects(
+            Effect.Damage(damageAmount, DamageType.Negative),
+            Effect.Damage(damageAmount, DamageType.Piercing),
+            Effect.VisualEffect(VfxType.ImpNegativeEnergy)
+        );
+
+        hostileCreature.ApplyEffect(EffectDuration.Instant, wholenessEffect);
     }
 
     /// <summary>

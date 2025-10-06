@@ -140,10 +140,17 @@ public sealed class EchoingValley : IAugmentation
             if (nwObject is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
 
             int damageAmount = Random.Shared.Roll(6);
-            Effect damageEffect = Effect.Damage(damageAmount, DamageType.Sonic);
 
-            hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
+            _ = ApplyEchoDamage(hostileCreature, monk, damageAmount);
         }
+    }
+
+    private async Task ApplyEchoDamage(NwCreature hostileCreature, NwCreature monk, int damageAmount)
+    {
+        await monk.WaitForObjectContext();
+        Effect damageEffect = Effect.Damage(damageAmount, DamageType.Sonic);
+
+        hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 
     /// <summary>
@@ -250,12 +257,18 @@ public sealed class EchoingValley : IAugmentation
                     break;
             }
 
-            Effect damageEffect = Effect.LinkEffects(
-                Effect.Damage(damageAmount, DamageType.Sonic),
-                Effect.VisualEffect(VfxType.ImpSonic)
-            );
-
-            hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
+            _ = ApplyKiShoutDamage(hostileCreature, monk, damageAmount);
         }
+    }
+
+    private async Task ApplyKiShoutDamage(NwCreature hostileCreature, NwCreature monk, int damageAmount)
+    {
+        await monk.WaitForObjectContext();
+        Effect damageEffect = Effect.LinkEffects(
+            Effect.Damage(damageAmount, DamageType.Sonic),
+            Effect.VisualEffect(VfxType.ImpSonic)
+        );
+
+        hostileCreature.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 }

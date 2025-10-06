@@ -47,10 +47,8 @@ public class KiShout(AugmentationFactory augmentationFactory) : ITechnique
         int dc = MonkUtils.CalculateMonkDc(monk);
         byte damageDice = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int damageAmount = Random.Shared.Roll(4, damageDice);
-        Effect damageEffect = Effect.Damage(damageAmount, damageType);
 
-        target.ApplyEffect(EffectDuration.Instant, damageEffect);
-        target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(damageVfx));
+        _ = ApplyDamage(target, monk, damageAmount, damageType, damageVfx);
 
         SavingThrowResult savingThrowResult = target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
 
@@ -65,6 +63,15 @@ public class KiShout(AugmentationFactory augmentationFactory) : ITechnique
                 ApplyKiShoutStun(target);
                 break;
         }
+    }
+
+    private static async Task ApplyDamage(NwCreature target, NwCreature monk, int damageAmount,
+        DamageType damageType, VfxType damageVfx)
+    {
+        await monk.WaitForObjectContext();
+        Effect damageEffect = Effect.Damage(damageAmount, damageType);
+        target.ApplyEffect(EffectDuration.Instant, damageEffect);
+        target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(damageVfx));
     }
 
     private static void ApplyKiShoutStun(NwCreature target)
