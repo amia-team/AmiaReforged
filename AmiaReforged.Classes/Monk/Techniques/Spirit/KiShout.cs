@@ -48,7 +48,9 @@ public class KiShout(AugmentationFactory augmentationFactory) : ITechnique
         byte damageDice = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
         int damageAmount = Random.Shared.Roll(4, damageDice);
 
-        _ = ApplyDamage(target, monk, damageAmount, damageType, damageVfx);
+        float delay = monk.Distance(target) / 10;
+
+        _ = ApplyDamage(target, monk, damageAmount, damageType, damageVfx, delay);
 
         SavingThrowResult savingThrowResult = target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
 
@@ -60,22 +62,27 @@ public class KiShout(AugmentationFactory augmentationFactory) : ITechnique
                 target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
                 break;
             case SavingThrowResult.Failure:
-                ApplyKiShoutStun(target);
+                ApplyKiShoutStun(target, delay);
                 break;
         }
     }
 
     private static async Task ApplyDamage(NwCreature target, NwCreature monk, int damageAmount,
-        DamageType damageType, VfxType damageVfx)
+        DamageType damageType, VfxType damageVfx, float delay)
     {
+
+        await NwTask.Delay(TimeSpan.FromSeconds(delay));
+
         await monk.WaitForObjectContext();
         Effect damageEffect = Effect.Damage(damageAmount, damageType);
         target.ApplyEffect(EffectDuration.Instant, damageEffect);
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(damageVfx));
     }
 
-    private static void ApplyKiShoutStun(NwCreature target)
+    private static async Task ApplyKiShoutStun(NwCreature target, float delay)
     {
+        await NwTask.Delay(TimeSpan.FromSeconds(delay));
+
         Effect kiShoutEffect = Effect.Stunned();
         kiShoutEffect.SubType = EffectSubType.Supernatural;
         TimeSpan effectDuration = NwTimeSpan.FromRounds(3);
