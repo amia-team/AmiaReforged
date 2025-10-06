@@ -98,6 +98,9 @@ public sealed class EchoingValley : IAugmentation
 
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 1, monk);
 
+        foreach (NwCreature echo in echoes)
+            echo.IsDestroyable = false;
+
         Effect summonEcho =
             Effect.SummonCreature(SummonEchoResRef, VfxType.ImpMagicProtection!, unsummonVfx: VfxType.ImpGrease);
 
@@ -113,18 +116,22 @@ public sealed class EchoingValley : IAugmentation
             PacifyEcho(newEcho);
 
         FeedbackPlugin.SetFeedbackMessageHidden(FeedbackPlugin.NWNX_FEEDBACK_ASSOCIATE_UNSUMMONING, 0, monk);
+
+        foreach (NwCreature echo in echoes)
+            echo.IsDestroyable = true;
     }
 
     private void PacifyEcho(NwCreature echo)
     {
         Effect echoEffect = Effect.LinkEffects(
             Effect.Pacified(),
-            Effect.Ethereal()
+            Effect.Ethereal(),
+            Effect.Immunity(ImmunityType.None) // This is actually immunity to all
         );
         echoEffect.SubType = EffectSubType.Unyielding;
 
         echo.ApplyEffect(EffectDuration.Permanent, echoEffect);
-        echo.IsDestroyable = false;
+        echo.Immortal = true;
     }
 
     private void EchoAoe(NwCreature monk, NwCreature echo)
