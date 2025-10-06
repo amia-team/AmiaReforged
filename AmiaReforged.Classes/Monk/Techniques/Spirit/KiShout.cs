@@ -32,9 +32,10 @@ public class KiShout(AugmentationFactory augmentationFactory) : ITechnique
         Effect kiShoutVfx = Effect.VisualEffect(VfxType.FnfHowlMind);
         monk.ApplyEffect(EffectDuration.Instant, kiShoutVfx);
 
-        foreach (NwGameObject obj in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        foreach (NwCreature hostileCreature in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
+                     RadiusSize.Colossal, false))
         {
-            if (obj is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
+            if (!monk.IsReactionTypeHostile(hostileCreature)) continue;
 
             CreatureEvents.OnSpellCastAt.Signal(monk, hostileCreature, NwSpell.FromSpellType(Spell.AbilityHowlSonic)!);
 
