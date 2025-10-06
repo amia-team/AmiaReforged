@@ -8,15 +8,16 @@ public static class StaticBuff
 {
     private static readonly NwFeat? MonkDefenseFeat = NwFeat.FromFeatId(MonkFeat.MonkDefense);
     private static readonly NwFeat? MonkSpeedFeat = NwFeat.FromFeatId(MonkFeat.MonkSpeedNew);
+    private const string StaticBuffTag = "monk_static_buff";
 
     public static void AdjustBuff(NwCreature monk)
     {
         int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
-        Effect? monkBuff = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == "monk_static_buff");
+        Effect? existingMonkBuff = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == StaticBuffTag);
 
-        if (monkBuff != null)
-                monk.RemoveEffect(monkBuff);
+        if (existingMonkBuff != null)
+                monk.RemoveEffect(existingMonkBuff);
 
         bool abilitiesRestricted = AbilityRestricted(monk);
 
@@ -27,35 +28,45 @@ public static class StaticBuff
 
         if (abilitiesRestricted) return;
 
-        monkBuff = null;
+        List<Effect> effectsToLink = [];
 
         if (MonkDefenseFeat != null && monk.KnowsFeat(MonkDefenseFeat))
         {
             int wisMod = monk.GetAbilityModifier(Ability.Wisdom);
-
             Effect monkDefenseEffect = MonkDefense(monkLevel, wisMod);
-            monkBuff = Effect.LinkEffects(monkDefenseEffect);
+            monkDefenseEffect.ShowIcon = false;
+            effectsToLink.Add(monkDefenseEffect);
         }
 
         if (MonkSpeedFeat != null && monk.KnowsFeat(MonkSpeedFeat))
         {
             Effect monkSpeedEffect = MonkSpeed(monkLevel);
-            monkBuff = Effect.LinkEffects(monkSpeedEffect);
+            monkSpeedEffect.ShowIcon = false;
+            effectsToLink.Add(monkSpeedEffect);
         }
 
         KiFocus? kiFocusTier = MonkUtils.GetKiFocus(monk);
-
         if (kiFocusTier != null)
         {
-            Effect kiFocusAb = KiFocusAb(kiFocusTier);
-            monkBuff = Effect.LinkEffects(kiFocusAb);
+            Effect kiFocusAbEffect = KiFocusAb(kiFocusTier);
+            kiFocusAbEffect.ShowIcon = false;
+            effectsToLink.Add(kiFocusAbEffect);
         }
+
+        Effect? monkBuff =
+            effectsToLink.Count switch
+            {
+                1 => effectsToLink[0],
+                2 => Effect.LinkEffects(effectsToLink[0], effectsToLink[1]),
+                3 => Effect.LinkEffects(effectsToLink[0], effectsToLink[1], effectsToLink[2]),
+                _ => null
+            };
 
         if (monkBuff == null) return;
 
         monkBuff.ShowIcon = false;
         monkBuff.SubType = EffectSubType.Unyielding;
-        monkBuff.Tag = "monk_static_buff";
+        monkBuff.Tag = StaticBuffTag;
 
         monk.ApplyEffect(EffectDuration.Permanent, monkBuff);
     }
@@ -82,17 +93,13 @@ public static class StaticBuff
     }
 
     private static Effect KiFocusAb(KiFocus? kiFocusTier)
-    {
-        int abAmount = kiFocusTier switch
+    =>  kiFocusTier switch
         {
-            KiFocus.KiFocus1 => 1,
-            KiFocus.KiFocus2 => 2,
-            KiFocus.KiFocus3 => 3,
-            _ => 0
+            KiFocus.KiFocus1 => Effect.AttackIncrease(1),
+            KiFocus.KiFocus2 => Effect.AttackIncrease(2),
+            KiFocus.KiFocus3 => Effect.AttackIncrease(3),
+            _ => Effect.AttackIncrease(0)
         };
-
-        return Effect.AttackIncrease(abAmount);
-    }
 
     private static bool AbilityRestricted(NwCreature monk)
     {
