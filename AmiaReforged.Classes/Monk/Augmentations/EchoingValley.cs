@@ -80,7 +80,8 @@ public sealed class EchoingValley : IAugmentation
 
         foreach (NwCreature echo in echoes)
         {
-            echo.JumpToObject(targetCreature);
+            if (echo.Distance(targetCreature) > 3)
+                echo.JumpToObject(targetCreature);
 
             EchoAoe(monk, echo);
         }
