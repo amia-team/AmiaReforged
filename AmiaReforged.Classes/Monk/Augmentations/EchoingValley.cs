@@ -241,7 +241,7 @@ public sealed class EchoingValley : IAugmentation
             int dc = MonkUtils.CalculateMonkDc(monk);
 
             SavingThrowResult savingThrowResult =
-                hostileCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Sonic, monk);
+                hostileCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Sonic, monk);
 
             int damageAmount = Random.Shared.Roll(6, 10);
 
@@ -256,7 +256,7 @@ public sealed class EchoingValley : IAugmentation
                     break;
             }
 
-            await monk.WaitForObjectContext();
+            await echo.WaitForObjectContext();
             Effect damageEffect = Effect.LinkEffects(
                 Effect.Damage(damageAmount, DamageType.Sonic),
                 Effect.VisualEffect(VfxType.ImpSonic)
