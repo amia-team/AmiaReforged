@@ -62,7 +62,7 @@ public class KiShout(AugmentationFactory augmentationFactory) : ITechnique
                 target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
                 break;
             case SavingThrowResult.Failure:
-                ApplyKiShoutStun(target, delay);
+                _ = ApplyKiShoutStun(target, delay);
                 break;
         }
     }
