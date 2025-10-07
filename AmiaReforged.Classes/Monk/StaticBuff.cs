@@ -30,7 +30,7 @@ public static class StaticBuff
 
         List<Effect> effectsToLink = [];
 
-        if (MonkDefenseFeat != null && monk.KnowsFeat(MonkDefenseFeat))
+        if (!monk.KnowsFeat(Feat.MonkAcBonus!) && MonkDefenseFeat != null && monk.KnowsFeat(MonkDefenseFeat))
         {
             int wisMod = monk.GetAbilityModifier(Ability.Wisdom);
             Effect monkDefenseEffect = MonkDefense(monkLevel, wisMod);
