@@ -26,7 +26,13 @@ public class WarlockSpellCastHandler
 
     private void OnInvocationCast(OnSpellCast eventData)
     {
-        if (eventData.Caster is not NwCreature warlock) return;
+        if (!eventData.Caster.IsPlayerControlled(out NwPlayer player))
+        {
+            return;
+        }
+
+        if (eventData.Caster is not NwCreature warlock)
+            return;
         if (eventData.Spell is not { } spell) return;
         if (spell.Id != EldritchBlastId && warlock.Classes[eventData.ClassIndex].Class != WarlockConstants.WarlockClass)
             return;
@@ -54,8 +60,7 @@ public class WarlockSpellCastHandler
 
         warlock.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(spellFailVfx));
 
-        if (warlock.IsPlayerControlled(out NwPlayer? player))
-            player.SendServerMessage("Spell failed due to arcane spell failure!");
+        player.SendServerMessage("Spell failed due to arcane spell failure!");
     }
 
     private void OnInvocationInterrupt(OnSpellInterrupt eventData)
