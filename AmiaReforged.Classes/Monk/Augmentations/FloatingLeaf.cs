@@ -9,10 +9,10 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class HiddenSpring : IAugmentation
+public class FloatingLeaf : IAugmentation
 {
-    private const string HiddenEagleStrikeTag = "hiddenspring_eaglestrike";
-    public PathType PathType => PathType.HiddenSpring;
+    private const string FloatingEagleStrikeTag = "floatingleaf_eaglestrike";
+    public PathType PathType => PathType.FloatingLeaf;
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
         switch (technique)
@@ -98,12 +98,12 @@ public class HiddenSpring : IAugmentation
 
         if (abDecrease == 0) return;
 
-        Effect? eagleEffect = targetCreature.ActiveEffects.FirstOrDefault(e => e.Tag == HiddenEagleStrikeTag);
+        Effect? eagleEffect = targetCreature.ActiveEffects.FirstOrDefault(e => e.Tag == FloatingEagleStrikeTag);
         if (eagleEffect != null)
             targetCreature.RemoveEffect(eagleEffect);
 
         eagleEffect = Effect.AttackDecrease(abDecrease);
-        eagleEffect.Tag = HiddenEagleStrikeTag;
+        eagleEffect.Tag = FloatingEagleStrikeTag;
 
         targetCreature.ApplyEffect(EffectDuration.Temporary, eagleEffect, NwTimeSpan.FromRounds(2));
     }

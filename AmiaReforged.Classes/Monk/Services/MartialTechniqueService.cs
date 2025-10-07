@@ -214,7 +214,7 @@ public class MartialTechniqueService
         bool hasFocusWithoutUnarmed =
             monk.GetItemInSlot(InventorySlot.RightHand) != null
             && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Torches;
-        bool hasRangedWeapon = MonkUtils.GetMonkPath(monk) != PathType.HiddenSpring && monk.IsRangedWeaponEquipped;
+        bool hasRangedWeapon = MonkUtils.GetMonkPath(monk) != PathType.FloatingLeaf && monk.IsRangedWeaponEquipped;
 
         if (!monk.IsPlayerControlled(out NwPlayer? player))
             return hasArmor || hasShield || hasFocusWithoutUnarmed || hasRangedWeapon;

@@ -6,9 +6,9 @@ public enum PathType
 {
     CrashingMeteor,
     SwingingCenser,
-    HiddenSpring,
+    FloatingLeaf,
     FickleStrand,
     IroncladBull,
-    CrackedVessel,
+    SplinteredChalice,
     EchoingValley
 }

@@ -13,10 +13,10 @@ public static class MonkUtils
     {
         { MonkFeat.PoeCrashingMeteor, PathType.CrashingMeteor },
         { MonkFeat.PoeSwingingCenser, PathType.SwingingCenser },
-        { MonkFeat.PoeHiddenSpring, PathType.HiddenSpring },
+        { MonkFeat.PoeFloatingLeaf, PathType.FloatingLeaf },
         { MonkFeat.PoeFickleStrand, PathType.FickleStrand },
         { MonkFeat.PoeIroncladBull, PathType.IroncladBull },
-        { MonkFeat.PoeCrackedVessel, PathType.CrackedVessel },
+        { MonkFeat.PoeSplinteredChalice, PathType.SplinteredChalice },
         { MonkFeat.PoeEchoingValley, PathType.EchoingValley }
     };
 

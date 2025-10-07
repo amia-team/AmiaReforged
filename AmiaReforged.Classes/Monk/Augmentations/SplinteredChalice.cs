@@ -9,11 +9,11 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
 [ServiceBinding(typeof(IAugmentation))]
-public sealed class CrackedVessel : IAugmentation
+public sealed class SplinteredChalice : IAugmentation
 {
-    private const string CrackedEmptyBodyTag = "crackedvessel_emptybody";
+    private const string SplinteredEmptyBodyTag = "SplinteredChalice_emptybody";
 
-    public PathType PathType => PathType.CrackedVessel;
+    public PathType PathType => PathType.SplinteredChalice;
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
         MonkCondition condition = GetMonkCondition(monk);
@@ -213,7 +213,7 @@ public sealed class CrackedVessel : IAugmentation
 
         int pctImmunityTotal = pctImmunityBase + pctImmunityBonus;
 
-        Effect? emptyBodyEffect = monk.ActiveEffects.FirstOrDefault(e => e.Tag == CrackedEmptyBodyTag);
+        Effect? emptyBodyEffect = monk.ActiveEffects.FirstOrDefault(e => e.Tag == SplinteredEmptyBodyTag);
         if (emptyBodyEffect != null)
             monk.RemoveEffect(emptyBodyEffect);
 
@@ -223,7 +223,7 @@ public sealed class CrackedVessel : IAugmentation
             Effect.DamageImmunityIncrease(DamageType.Bludgeoning, pctImmunityTotal));
 
         emptyBodyEffect.SubType = EffectSubType.Extraordinary;
-        emptyBodyEffect.Tag = CrackedEmptyBodyTag;
+        emptyBodyEffect.Tag = SplinteredEmptyBodyTag;
 
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, NwTimeSpan.FromRounds(monkLevel));
     }
@@ -236,8 +236,8 @@ public sealed class CrackedVessel : IAugmentation
     {
         TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(monk, castData);
 
-        if (castData.TargetObject is not NwCreature targetCreature) return;
-        if (touchAttackResult is TouchAttackResult.Miss) return;
+        if (castData.TargetObject is not NwCreature targetCreature || touchAttackResult is TouchAttackResult.Miss)
+            return;
 
         if (condition == MonkCondition.Healthy) return;
 

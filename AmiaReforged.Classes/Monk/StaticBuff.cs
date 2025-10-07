@@ -21,7 +21,7 @@ public static class StaticBuff
 
         bool abilitiesRestricted = AbilityRestricted(monk);
 
-        if (MonkUtils.GetMonkPath(monk) == PathType.HiddenSpring)
+        if (MonkUtils.GetMonkPath(monk) == PathType.FloatingLeaf)
         {
             WisdomAttackBonus.AdjustWisdomAttackBonus(monk, abilitiesRestricted);
         }

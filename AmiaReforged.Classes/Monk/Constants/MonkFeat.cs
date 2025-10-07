@@ -31,8 +31,8 @@ public static class MonkFeat
     public const int PoeSwingingCenser = 1360;
     public const int PoeIroncladBull = 1361;
     public const int PoeFickleStrand = 1362;
-    public const int PoeCrackedVessel = 1363;
-    public const int PoeHiddenSpring = 1366;
+    public const int PoeSplinteredChalice = 1363;
+    public const int PoeFloatingLeaf = 1366;
     public const int WholenessOfBodyNew = 1364;
     public const int EmptyBodyNew = 1365;
 }

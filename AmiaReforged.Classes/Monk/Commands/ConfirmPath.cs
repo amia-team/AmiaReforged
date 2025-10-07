@@ -11,11 +11,11 @@ public class ConfirmPath : IChatCommand
 {
     private readonly Dictionary<string, NwFeat?> _pathFeats = new()
     {
-        { "cracked_vessel", NwFeat.FromFeatId(MonkFeat.PoeCrackedVessel) },
+        { "splintered_chalice", NwFeat.FromFeatId(MonkFeat.PoeSplinteredChalice) },
         { "crashing_meteor", NwFeat.FromFeatId(MonkFeat.PoeCrashingMeteor) },
         { "echoing_valley", NwFeat.FromFeatId(MonkFeat.PoeEchoingValley) },
         { "fickle_strand", NwFeat.FromFeatId(MonkFeat.PoeFickleStrand) },
-        { "hidden_spring", NwFeat.FromFeatId(MonkFeat.PoeHiddenSpring) },
+        { "floating_leaf", NwFeat.FromFeatId(MonkFeat.PoeFloatingLeaf) },
         { "ironclad_bull", NwFeat.FromFeatId(MonkFeat.PoeIroncladBull) },
         { "swinging_censer", NwFeat.FromFeatId(MonkFeat.PoeSwingingCenser) }
     };

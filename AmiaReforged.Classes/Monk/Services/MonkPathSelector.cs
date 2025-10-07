@@ -12,22 +12,22 @@ public class MonkPathSelector
 {
     private readonly Dictionary<int, string> _pathDescriptions = new()
     {
-        { 1, CrackedVessel },
+        { 1, SplinteredChalice },
         { 2, CrashingMeteor },
         { 3, EchoingValley },
         { 4, FickleStrand },
-        { 5, HiddenSpring },
+        { 5, FloatingLeaf },
         { 6, IroncladBull },
         { 7, SwingingCenser }
     };
 
     private readonly Dictionary<int, string> _pathKeys = new()
     {
-        { 1, "cracked_vessel" },
+        { 1, "splintered_chalice" },
         { 2, "crashing_meteor" },
         { 3, "echoing_valley" },
         { 4, "fickle_strand" },
-        { 5, "hidden_spring" },
+        { 5, "floating_leaf" },
         { 6, "ironclad_bull" },
         { 7, "swinging_censer" }
     };
@@ -75,8 +75,8 @@ public class MonkPathSelector
         player.SendServerMessage($"{pathMessage}".ColorString(ColorConstants.Teal));
     }
 
-    private const string CrackedVessel =
-        "Cracked Vessel\n\nSeek clarity and power through the ritual infliction of pain. " +
+    private const string SplinteredChalice =
+        "Splintered Chalice\n\nSeek clarity and power through the ritual infliction of pain. " +
         "This path shares your suffering with foes, dividing your own to multiply theirs.";
 
     private const string CrashingMeteor =
@@ -91,8 +91,8 @@ public class MonkPathSelector
         "Fickle Strand\n\nLike pulling a loose thread, you tug at the Weave with your Ki. This path unravels " +
         "magical defenses and reshapes magic into unpredictable magical strikes.";
 
-    private const string HiddenSpring =
-        "Hidden Spring\n\nIn stillness, you uncover inner strength and awaken an inner sight. " +
+    private const string FloatingLeaf =
+        "Floating Leaf\n\nAdrift in the clear currents of Ki, the monk awakens their inner sight. " +
         "This path lets you anticipate the future flow of the fight and strike with peerless foresight.";
 
     private const string IroncladBull =
