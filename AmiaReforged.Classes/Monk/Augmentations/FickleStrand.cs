@@ -36,8 +36,8 @@ public class FickleStrand : IAugmentation
             case TechniqueType.EmptyBody:
                 AugmentEmptyBody(monk);
                 break;
-            case TechniqueType.KiShout:
-                AugmentKiShout(monk);
+            case TechniqueType.QuiveringPalm:
+                AugmentQuiveringPalm(monk, castData);
                 break;
             case TechniqueType.WholenessOfBody:
                 WholenessOfBody.DoWholenessOfBody(monk);
@@ -45,8 +45,8 @@ public class FickleStrand : IAugmentation
             case TechniqueType.KiBarrier:
                 KiBarrier.DoKiBarrier(monk);
                 break;
-            case TechniqueType.QuiveringPalm:
-                QuiveringPalm.DoQuiveringPalm(monk, castData);
+            case TechniqueType.KiShout:
+                KiShout.DoKiShout(monk);
                 break;
         }
     }
@@ -97,6 +97,7 @@ public class FickleStrand : IAugmentation
     /// </summary>
     private  void AugmentEmptyBody(NwCreature monk)
     {
+        EmptyBody.DoEmptyBody(monk);
         byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
         byte diceAmount = MonkUtils.GetKiFocus(monk) switch
@@ -119,16 +120,17 @@ public class FickleStrand : IAugmentation
     }
 
     /// <summary>
-    /// Ki Shout deals magical damage instead of sonic. In addition, it breaches enemy creatures of 1 magical defense
-    /// according to the breach list. Each Ki Focus adds an additional breached magical defense, to a maximum of 4 magical effects.
+    /// Quivering Palm strips the enemy creature of a magical defense according to the breach list, with a 50% chance to
+    /// steal the magical defense. Each Ki Focus adds an additional magical defense.
     /// </summary>
-    private  void AugmentKiShout(NwCreature monk)
+    private  void AugmentQuiveringPalm(NwCreature monk, OnSpellCast castData)
     {
-        KiShout.DoKiShout(monk, DamageType.Magical, VfxType.ImpMagblue);
+        TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(monk, castData);
 
-        if (monk.Location == null) return;
+        if (castData.TargetObject is not NwCreature targetCreature || touchAttackResult is TouchAttackResult.Miss)
+            return;
 
-        int spellsBreached = MonkUtils.GetKiFocus(monk) switch
+        int spellsToSteal = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -136,29 +138,53 @@ public class FickleStrand : IAugmentation
             _ => 1
         };
 
-        foreach (NwGameObject nwObject in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
+        var stealableSpellGroups = targetCreature.ActiveEffects
+            .Where(e => e.Spell != null && BreachList.BreachSpells.Contains(e.Spell.SpellType))
+            .GroupBy(e => e.Spell)
+            .Select(spellGroup => new
+            {
+                Spell = spellGroup.Key,
+                Effects = spellGroup.ToList(),
+                Duration = spellGroup.First().DurationRemaining
+            })
+            .Take(spellsToSteal)
+            .ToArray();
+
+
+        if (stealableSpellGroups.Length == 0)
         {
-            if (nwObject is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
+            monk.ControllingPlayer?.FloatingTextString("No magical defenses to steal!"
+                .ColorString(ColorConstants.Purple));
 
-            DoBreach(hostileCreature, spellsBreached);
+            return;
         }
-    }
 
-    private static void DoBreach(NwCreature targetCreature, int breachAmount)
-    {
-        int breachedCount = 0;
-
-        foreach (Spell spell in BreachList.BreachSpells)
+        List<string?> stolenSpellNames = [];
+        foreach (var spellGroup in stealableSpellGroups)
         {
-            Effect? effectToBreach = targetCreature.ActiveEffects.FirstOrDefault(effect => effect.Spell?.SpellType == spell);
+            if (Random.Shared.Roll(2) == 1)
+            {
+                stolenSpellNames.Add(spellGroup.Spell?.Name.ToString());
 
-            if (effectToBreach == null) continue;
+                foreach (Effect effect in spellGroup.Effects)
+                {
+                    monk.ApplyEffect(EffectDuration.Temporary, effect, TimeSpan.FromSeconds(spellGroup.Duration));
+                }
+            }
 
-            targetCreature.RemoveEffect(effectToBreach);
-            targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpBreach));
-            breachedCount++;
-
-            if (breachedCount >= breachAmount) break;
+            foreach (Effect effect in spellGroup.Effects)
+            {
+                targetCreature.RemoveEffect(effect);
+            }
         }
+
+        if (stolenSpellNames.Count > 0)
+        {
+            string stolenMessageList = string.Join(", ", stolenSpellNames);
+            string finalMessage = $"You successfully steal {stolenMessageList.ColorString(ColorConstants.Purple)}";
+            monk.ControllingPlayer?.FloatingTextString(finalMessage);
+        }
+
+        targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpBreach));
     }
 }
