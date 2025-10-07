@@ -5,12 +5,12 @@ namespace AmiaReforged.Classes.Spells;
 /// <summary>
 /// A public breach list you can use; based on nw_i0_spells.nss
 /// </summary>
-public class BreachList
+public static class BreachList
 {
     private const Spell GreaterSanctuary = (Spell)443;
 
-    public static readonly List<Spell> BreachSpells = new()
-    {
+    public static readonly List<Spell> BreachSpells =
+    [
         Spell.GreaterSpellMantle,
         Spell.Premonition,
         Spell.ShadowShield,
@@ -40,5 +40,5 @@ public class BreachList
         Spell.LesserMindBlank,
         Spell.Ironguts,
         Spell.Resistance
-    };
+    ];
 }
