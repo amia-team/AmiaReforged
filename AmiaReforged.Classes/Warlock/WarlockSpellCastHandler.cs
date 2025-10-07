@@ -26,7 +26,7 @@ public class WarlockSpellCastHandler
 
     private void OnInvocationCast(OnSpellCast eventData)
     {
-        if (!eventData.Caster.IsPlayerControlled(out NwPlayer player))
+        if (!eventData.Caster.IsPlayerControlled(out NwPlayer? player))
         {
             return;
         }
