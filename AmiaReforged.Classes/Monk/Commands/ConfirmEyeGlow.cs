@@ -14,9 +14,9 @@ public class ConfirmEyeGlow : IChatCommand
         NwCreature? monk = caller.ControlledCreature;
         if (monk == null) return Task.CompletedTask;
 
-        Effect? eyeGlowEffect = monk.ActiveEffects.FirstOrDefault(e => e.Tag == MonkEyeGlowTag);
+        Effect? existingEyeGlow = monk.ActiveEffects.FirstOrDefault(e => e.Tag == MonkEyeGlowTag);
 
-        if (eyeGlowEffect == null)
+        if (existingEyeGlow == null)
         {
             caller.
                 FloatingTextString("Eye glow visual effect not found. Try using the Perfect Self feat to " +
@@ -25,6 +25,12 @@ public class ConfirmEyeGlow : IChatCommand
             return Task.CompletedTask;
         }
 
+        VfxType eyeGlowVfx = (VfxType)existingEyeGlow.IntParams[0];
+        float scale = monk.VisualTransform.Scale;
+
+        monk.RemoveEffect(existingEyeGlow);
+
+        Effect eyeGlowEffect = Effect.VisualEffect(eyeGlowVfx, fScale: scale);
         eyeGlowEffect.SubType = EffectSubType.Unyielding;
         eyeGlowEffect.Tag = MonkEyeGlowTag;
 
