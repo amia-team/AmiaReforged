@@ -190,7 +190,10 @@ public sealed class CrashingMeteor : IAugmentation
         DamageData<short> damageData = attackData.DamageData;
         short elementalDamage = damageData.GetDamageByType(meteor.DamageType);
 
-        elementalDamage += meteor.BonusDamage;
+        short bonusDamage = meteor.BonusDamage;
+        if (elementalDamage == -1) bonusDamage++;
+
+        elementalDamage += bonusDamage;
         damageData.SetDamageByType(meteor.DamageType, elementalDamage);
     }
 

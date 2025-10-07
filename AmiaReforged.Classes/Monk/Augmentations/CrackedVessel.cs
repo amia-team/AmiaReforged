@@ -109,6 +109,7 @@ public sealed class CrackedVessel : IAugmentation
 
         DamageData<short> damageData = attackData.DamageData;
         short negativeDamage = damageData.GetDamageByType(DamageType.Negative);
+        if (negativeDamage == -1) bonusNegativeDamage++;
 
         negativeDamage += (short)bonusNegativeDamage;
         damageData.SetDamageByType(DamageType.Negative, negativeDamage);

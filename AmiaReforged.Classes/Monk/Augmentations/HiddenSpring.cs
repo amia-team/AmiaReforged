@@ -128,6 +128,8 @@ public class HiddenSpring : IAugmentation
             _ => 1
         };
 
+        if (positiveDamage == -1) bonusDamage++;
+
         positiveDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Positive, positiveDamage);
     }

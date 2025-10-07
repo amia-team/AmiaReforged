@@ -38,6 +38,7 @@ public class AxiomaticStrike(AugmentationFactory augmentationFactory) : ITechniq
             KiFocus.KiFocus3 => 4,
             _ => 1
         };
+        if (bludgeoningDamage == -1) bonusDamage++;
 
         bludgeoningDamage += bonusDamage;
         damageData.SetDamageByType(DamageType.Bludgeoning, bludgeoningDamage);

@@ -170,11 +170,13 @@ public sealed class EchoingValley : IAugmentation
             .ToArray();
 
         if (echoes.Length == 0) return;
+        int bonusDamage = echoes.Length;
 
         DamageData<short> damageData = attackData.DamageData;
         short sonicDamage = damageData.GetDamageByType(DamageType.Sonic);
+        if (sonicDamage == -1) bonusDamage++;
 
-        sonicDamage += (short)echoes.Length;
+        sonicDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Sonic, sonicDamage);
     }
 

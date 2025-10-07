@@ -85,6 +85,7 @@ public class FickleStrand : IAugmentation
 
         DamageData<short> damageData = attackData.DamageData;
         short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
+        if (magicalDamage == -1) bonusDamage++;
 
         magicalDamage += bonusDamage;
         damageData.SetDamageByType(DamageType.Magical, magicalDamage);
