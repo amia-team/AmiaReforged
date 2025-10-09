@@ -75,10 +75,6 @@ public class MonkPathSelector
         player.SendServerMessage($"{pathMessage}".ColorString(ColorConstants.Teal));
     }
 
-    private const string SplinteredChalice =
-        "Splintered Chalice\n\nSeek clarity and power through the ritual infliction of pain. " +
-        "This path shares your suffering with foes, dividing your own to multiply theirs.";
-
     private const string CrashingMeteor =
         "Crashing Meteor\n\nBecome as the elements and an unstoppable force of nature. " +
         "This path channels Ki through elemental forces to deliver devastating strikes";
@@ -98,6 +94,10 @@ public class MonkPathSelector
     private const string IroncladBull =
         "Ironclad Bull\n\nLike a stalwart gorgon, swords bounce off your skin from the sheer flow of Ki. " +
         "This path seperates body from mind, turning you into an impenetrable fortress.";
+
+    private const string SplinteredChalice =
+        "Splintered Chalice\n\nSeek clarity and power through the ritual infliction of pain. " +
+        "This path shares your suffering with foes, dividing your own to multiply theirs.";
 
     private const string SwingingCenser =
         "Swinging Censer\n\nListen to the heartbeat of Ki that courses through all living things. " +
