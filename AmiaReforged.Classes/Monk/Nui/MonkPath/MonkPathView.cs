@@ -6,6 +6,8 @@ namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 
 public sealed class MonkPathView : ScryView<MonkPathPresenter>
 {
+    public NuiBind<PathType> PathBind = new(key: "path_type");
+
     public MonkPathView(NwPlayer player)
     {
         Presenter = new MonkPathPresenter(this, player);
