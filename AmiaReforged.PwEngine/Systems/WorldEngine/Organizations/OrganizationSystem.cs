@@ -13,7 +13,7 @@ public class OrganizationSystem(IOrganizationRepository organizations) : IOrgani
 
     public OrganizationResponse SendRequest(OrganizationRequest request)
     {
-        throw new NotImplementedException();
+        return new OrganizationResponse(OrganizationRequestResponse.Failed, "Not implemented");
     }
 
     public List<IOrganization> SubordinateOrganizationsFor(IOrganization org)

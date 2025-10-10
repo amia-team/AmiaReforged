@@ -25,7 +25,7 @@ public record OrganizationRequest(
     OrganizationActionType Action,
     string? Message = null);
 
-public record OrganizationResponse(Guid CharacterId, Guid OrganizationId, OrganizationRequestResponse Response);
+public record OrganizationResponse(OrganizationRequestResponse Response, string Message);
 
 public enum OrganizationActionType
 {
