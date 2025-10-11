@@ -5,23 +5,21 @@ using Anvil.API;
 
 namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 
-public sealed class ConfirmPathView : ScryView<ConfirmPathPresenter>
+public sealed class ConfirmPathView : ScryView<MonkPathPresenter>
 {
     public NuiBind<string> PathLabel = new(key: "path_label");
     public NuiBind<string> PathIcon = new(key: "path_icon");
     public NuiBind<string> PathText = new(key: "path_text");
-    public NuiBind<PathType> SelectedPath = new(key: "selected_path");
 
     public NuiButton ConfirmPathButton = null!;
-    public ConfirmPathView(MonkPathPresenter parent, NwPlayer player)
+    public NuiButton BackButton = null!;
+    public ConfirmPathView(MonkPathPresenter presenter)
     {
-        Parent = parent;
-        Presenter = new ConfirmPathPresenter(parent, player, this);
+        Presenter = presenter;
     }
 
-    public MonkPathPresenter Parent;
 
-    public override ConfirmPathPresenter Presenter { get; protected set; }
+    public override MonkPathPresenter Presenter { get; protected set; }
 
     public override NuiLayout RootLayout() =>
         new NuiColumn
@@ -67,7 +65,12 @@ public sealed class ConfirmPathView : ScryView<ConfirmPathPresenter>
                             Id = "confirm_button",
                             Width = 120f
                         }.Assign(out ConfirmPathButton),
-                        new NuiSpacer()
+                        new NuiSpacer(),
+                        new NuiButton("Back")
+                        {
+                            Id = "back_button",
+                            Width = 120f
+                        }.Assign(out BackButton),
                     }
                 }
             }
