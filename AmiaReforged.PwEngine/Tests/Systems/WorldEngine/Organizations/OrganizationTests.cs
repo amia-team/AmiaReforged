@@ -118,7 +118,9 @@ public class OrganizationTests
     {
         IOrganization org = Organization.CreateNew("test", "test", OrganizationType.Guild);
 
-        Assert.That(org.Inbox, Is.Not.Null);
+        IReadOnlyList<OrganizationRequest> list = org.GetInbox();
+
+        Assert.That(list, Is.Not.Null);
     }
 
     [Test]
@@ -128,12 +130,12 @@ public class OrganizationTests
 
         _organizationSystem.Register(org);
 
-        OrganizationRequest organizationRequest = new OrganizationRequest(Guid.NewGuid(), org.Id, OrganizationActionType.Join,
+        OrganizationRequest organizationRequest = new(Guid.NewGuid(), org.Id, OrganizationActionType.Join,
             "test");
 
         OrganizationResponse response = _organizationSystem.SendRequest(organizationRequest);
 
         Assert.That(response.Response, Is.EqualTo(OrganizationRequestResponse.Sent), response.Message);
-        Assert.That(org.Inbox, Does.Contain(organizationRequest));
+        Assert.That(org.GetInbox(), Does.Contain(organizationRequest));
     }
 }

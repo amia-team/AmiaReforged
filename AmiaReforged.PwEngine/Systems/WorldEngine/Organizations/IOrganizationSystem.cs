@@ -14,10 +14,15 @@ public interface IOrganization
 {
     public string Name { get; init; }
     public string Description { get; init; }
-    public List<OrganizationRequest> Inbox { get; init; }
     public OrganizationType Type { get; init; }
     public OrganizationId Id { get; init; }
     public OrganizationId? ParentOrganization { get; init; }
+
+    public delegate OrganizationRequest RequestMade();
+
+    public event RequestMade? OnRequestMade;
+    IReadOnlyList<OrganizationRequest> GetInbox();
+    void AddToInbox(OrganizationRequest request);
 }
 
 public record OrganizationRequest(

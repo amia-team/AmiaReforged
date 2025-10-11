@@ -15,7 +15,7 @@ public class OrganizationSystem(IOrganizationRepository organizations) : IOrgani
     {
         IOrganization? org = organizations.GetById(request.OrganizationId);
 
-        org?.Inbox.Add(request);
+        org?.AddToInbox(request);
 
         return org is null ? OrganizationResponse.NotFound() : OrganizationResponse.Sent();
     }

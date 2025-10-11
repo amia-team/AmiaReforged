@@ -22,6 +22,19 @@ public class Organization : IOrganization
         Type = type;
     }
 
+    public IReadOnlyList<OrganizationRequest> GetInbox()
+    {
+        return Inbox;
+    }
+
+    public void AddToInbox(OrganizationRequest request)
+    {
+        Inbox.Add(request);
+        OnRequestMade?.Invoke();
+    }
+
+    public event IOrganization.RequestMade? OnRequestMade;
+
     public static IOrganization CreateNew(string test, string description, OrganizationType type,
         OrganizationId? parent = null)
     {
