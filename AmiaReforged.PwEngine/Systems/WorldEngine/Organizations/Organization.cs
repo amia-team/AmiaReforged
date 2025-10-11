@@ -4,10 +4,11 @@ namespace AmiaReforged.PwEngine.Systems.WorldEngine.Organizations;
 
 public class Organization : IOrganization
 {
+    public List<OrganizationRequest> Inbox { get; init; } = [];
     public string Name { get; init; }
     public string Description { get; init; }
     public OrganizationType Type { get; init; }
-    public OrganizationId Id { get; init; }
+    public required OrganizationId Id { get; init; }
 
     public OrganizationId? ParentOrganization { get; init; } = null;
 

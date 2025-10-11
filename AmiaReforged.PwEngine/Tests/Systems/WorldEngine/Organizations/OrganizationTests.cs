@@ -67,7 +67,7 @@ public class OrganizationTests
     {
         IOrganization org = Organization.CreateNew("test", "test", OrganizationType.Guild);
 
-        SystemResponse response = _organizationSystem.Register(org);
+        _organizationSystem.Register(org);
 
         IOrganization childOrg = Organization.CreateNew("child", "child", OrganizationType.Guild, org.Id);
 
@@ -111,5 +111,29 @@ public class OrganizationTests
         response.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
 
         Assert.That(response, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Has_An_Inbox()
+    {
+        IOrganization org = Organization.CreateNew("test", "test", OrganizationType.Guild);
+
+        Assert.That(org.Inbox, Is.Not.Null);
+    }
+
+    [Test]
+    public void Receives_Requests()
+    {
+        IOrganization org = Organization.CreateNew("test", "test", OrganizationType.Guild);
+
+        _organizationSystem.Register(org);
+
+        OrganizationRequest organizationRequest = new OrganizationRequest(Guid.NewGuid(), org.Id, OrganizationActionType.Join,
+            "test");
+
+        OrganizationResponse response = _organizationSystem.SendRequest(organizationRequest);
+
+        Assert.That(response.Response, Is.EqualTo(OrganizationRequestResponse.Sent), response.Message);
+        Assert.That(org.Inbox, Does.Contain(organizationRequest));
     }
 }

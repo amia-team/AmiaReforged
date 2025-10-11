@@ -13,7 +13,11 @@ public class OrganizationSystem(IOrganizationRepository organizations) : IOrgani
 
     public OrganizationResponse SendRequest(OrganizationRequest request)
     {
-        return new OrganizationResponse(OrganizationRequestResponse.Failed, "Not implemented");
+        IOrganization? org = organizations.GetById(request.OrganizationId);
+
+        org?.Inbox.Add(request);
+
+        return org is null ? OrganizationResponse.NotFound() : OrganizationResponse.Sent();
     }
 
     public List<IOrganization> SubordinateOrganizationsFor(IOrganization org)

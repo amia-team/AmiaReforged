@@ -14,6 +14,7 @@ public interface IOrganization
 {
     public string Name { get; init; }
     public string Description { get; init; }
+    public List<OrganizationRequest> Inbox { get; init; }
     public OrganizationType Type { get; init; }
     public OrganizationId Id { get; init; }
     public OrganizationId? ParentOrganization { get; init; }
@@ -21,11 +22,17 @@ public interface IOrganization
 
 public record OrganizationRequest(
     Guid CharacterId,
-    Guid OrganizationId,
+    OrganizationId OrganizationId,
     OrganizationActionType Action,
     string? Message = null);
 
-public record OrganizationResponse(OrganizationRequestResponse Response, string Message);
+public record OrganizationResponse(OrganizationRequestResponse Response, string Message)
+{
+
+    public static OrganizationResponse NotFound() => new(OrganizationRequestResponse.Failed, "Organization not found");
+    public static OrganizationResponse Blocked() => new(OrganizationRequestResponse.Blocked, "Organization is blocked");
+    public static OrganizationResponse Sent() => new(OrganizationRequestResponse.Sent, "Request sent");
+};
 
 public enum OrganizationActionType
 {
