@@ -78,11 +78,13 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         int spellPropId = spellPropIdAndCl.Value.SpellPropId;
         int spellPropCl = spellPropIdAndCl.Value.SpellPropCl;
 
+        byte innateSpellLevel = spell.MasterSpell?.InnateSpellLevel ?? spell.InnateSpellLevel;
+
         switch (targetItem.BaseItem.ItemType)
         {
             case BaseItemType.BlankScroll:
-                SpellCraftResult scrollResult = ValidateScribeScroll(caster, spell.InnateSpellLevel, spellPropCl, out int scribeCost);
-                HandleCraftingResult(scrollResult, player, caster, spell.InnateSpellLevel, scribeCost,9);
+                SpellCraftResult scrollResult = ValidateScribeScroll(caster, innateSpellLevel, spellPropCl, out int scribeCost);
+                HandleCraftingResult(scrollResult, player, caster, innateSpellLevel, scribeCost,9);
 
                 if (scrollResult == SpellCraftResult.Success)
                 {
@@ -92,8 +94,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 break;
 
             case BaseItemType.BlankWand:
-                SpellCraftResult wandResult = ValidateCraftWand(caster, spell.InnateSpellLevel, out int wandCost);
-                HandleCraftingResult(wandResult, player, caster, spell.InnateSpellLevel, wandCost, 4);
+                SpellCraftResult wandResult = ValidateCraftWand(caster, innateSpellLevel, out int wandCost);
+                HandleCraftingResult(wandResult, player, caster, innateSpellLevel, wandCost, 4);
 
                 if (wandResult == SpellCraftResult.Success)
                 {
@@ -104,8 +106,8 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
                 break;
 
             case BaseItemType.BlankPotion:
-                SpellCraftResult potionResult = ValidateBrewPotion(caster, spell.InnateSpellLevel, spell.IsHostileSpell, out int potionCost);
-                HandleCraftingResult(potionResult, player, caster, spell.InnateSpellLevel, potionCost, 3);
+                SpellCraftResult potionResult = ValidateBrewPotion(caster, innateSpellLevel, spell.IsHostileSpell, out int potionCost);
+                HandleCraftingResult(potionResult, player, caster, innateSpellLevel, potionCost, 3);
 
                 if (potionResult == SpellCraftResult.Success)
                 {
