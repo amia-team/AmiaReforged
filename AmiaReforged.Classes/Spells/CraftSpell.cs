@@ -259,6 +259,7 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         Dictionary<int, (int SpellPropId, int SpellPropCl)> exceptions = new()
         {
             { (int)Spell.GreaterMagicWeapon, (511, 10) },
+            { (int)Spell.BlessWeapon, (516, 10) }
             // Add more exceptions here as needed, you need to check the iprp_spells.2da
             // { (int)Spell.AnotherSpell, (SpellPropId, SpellPropCl) }
         };
