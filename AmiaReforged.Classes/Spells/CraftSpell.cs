@@ -206,7 +206,9 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         string prefix = targetItem.BaseItem.ItemType == BaseItemType.BlankPotion ? PotionPrefix : WandPrefix;
         string universalItem = targetItem.BaseItem.ItemType == BaseItemType.BlankPotion ? PotionUniversal : WandUniversal;
 
-        return _schoolSuffixes.TryGetValue(spell.SpellSchool, out string? suffix) ? $"{prefix}{suffix}" : universalItem;
+        SpellSchool spellSchool = spell.MasterSpell?.SpellSchool ?? spell.SpellSchool;
+
+        return _schoolSuffixes.TryGetValue(spellSchool, out string? suffix) ? $"{prefix}{suffix}" : universalItem;
     }
 
     private static int CalculateCraftWandCost(int spellInnateLevel, int casterLevel) =>
