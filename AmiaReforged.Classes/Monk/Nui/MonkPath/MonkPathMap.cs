@@ -1,9 +1,8 @@
 ﻿using AmiaReforged.Classes.Monk.Constants;
-using AmiaReforged.Classes.Monk.Nui.MonkPath;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 
-namespace AmiaReforged.Classes.Monk.Nui;
+namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 
 public static class MonkPathMap
 {

@@ -8,7 +8,6 @@ namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 public sealed class MonkPathView : ScryView<MonkPathPresenter>
 {
     public NuiBind<PathType> PathBind = new(key: "path_type");
-    public NuiBind<bool> IsPathViewOpen = new(key: "is_path_view_open");
     public NuiBind<bool> IsConfirmViewOpen = new(key: "is_confirm_view_open");
     public NuiBind<string> PathLabel = new(key: "path_label");
     public NuiBind<string> PathIcon = new(key: "path_icon");
@@ -32,7 +31,6 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                 {
                     Children =
                     {
-                        // Start of your original 7 NuiRow elements...
                         new NuiRow
                         {
                             Children =
