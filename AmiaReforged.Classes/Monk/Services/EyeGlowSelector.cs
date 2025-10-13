@@ -69,7 +69,6 @@ public class EyeGlowSelector
 
     private void ToggleEyeGlow(NwCreature monk, NwPlayer player)
     {
-        LocalVariableInt eyeGlowKey = monk.GetObjectVariable<LocalVariableInt>(MonkEyeGlowTag);
         Effect? eyeGlowEffect = monk.ActiveEffects.FirstOrDefault(e => e.Tag == MonkEyeGlowTag);
 
         if (eyeGlowEffect != null)
@@ -83,6 +82,8 @@ public class EyeGlowSelector
             // Otherwise remove the old eye glow and cycle on to the next
             monk.RemoveEffect(eyeGlowEffect);
         }
+
+        LocalVariableInt eyeGlowKey = monk.GetObjectVariable<LocalVariableInt>(MonkEyeGlowTag);
 
         // Reset key to first choice if it goes past the last color
         eyeGlowKey.Value = eyeGlowKey.Value % 8 + 1;
