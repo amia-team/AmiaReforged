@@ -10,17 +10,6 @@ public static class MonkUtils
 {
     private static readonly NwClass? ObsoletePoeClass = NwClass.FromClassId(50);
 
-    private static readonly Dictionary<int, PathType> MonkPathsByFeatId = new()
-    {
-        { MonkFeat.PoeCrashingMeteor, PathType.CrashingMeteor },
-        { MonkFeat.PoeSwingingCenser, PathType.SwingingCenser },
-        { MonkFeat.PoeFloatingLeaf, PathType.FloatingLeaf },
-        { MonkFeat.PoeFickleStrand, PathType.FickleStrand },
-        { MonkFeat.PoeIroncladBull, PathType.IroncladBull },
-        { MonkFeat.PoeSplinteredChalice, PathType.SplinteredChalice },
-        { MonkFeat.PoeEchoingValley, PathType.EchoingValley }
-    };
-
     /// <summary>
     ///     Returns the monk's path type
     /// </summary>
@@ -29,25 +18,26 @@ public static class MonkUtils
         // Check for Path of Enlightenment PrC as a failsafe
         if (monk.GetClassInfo(ObsoletePoeClass) is not null) return null;
 
-        NwFeat? pathFeat = monk.Feats.FirstOrDefault(feat => MonkPathsByFeatId.ContainsKey(feat.Id));
+        foreach (PathType path in Enum.GetValues<PathType>())
+        {
+            if (monk.KnowsFeat(NwFeat.FromFeatId((int)path)!))
+                return path;
+        }
 
-        if (pathFeat == null)
-            return null;
-
-        return MonkPathsByFeatId[pathFeat.Id];
+        return null;
     }
 
     /// <summary>
-    /// Use in tandem with GetMonkPath, ie if GetMonkPath is not null, you can get the KiFocus. UPDATE TO USE MONK FEATS WHEN IMPLEMENTED!!!
+    /// Use in tandem with GetMonkPath, ie if GetMonkPath is not null, you can get the KiFocus.
     /// </summary>
     /// <returns>Ki Focus tier for scaling monk powers</returns>
     public static KiFocus? GetKiFocus(NwCreature monk)
     {
-        if (monk.KnowsFeat(((Feat)MonkFeat.KiStrike3)!))
+        if (monk.KnowsFeat(((Feat)KiFocus.KiFocus3)!))
             return KiFocus.KiFocus3;
-        if (monk.KnowsFeat(((Feat)MonkFeat.KiStrike2)!))
+        if (monk.KnowsFeat(((Feat)KiFocus.KiFocus2)!))
             return KiFocus.KiFocus2;
-        if (monk.KnowsFeat(((Feat)MonkFeat.KiStrike)!))
+        if (monk.KnowsFeat(((Feat)KiFocus.KiFocus1)!))
             return KiFocus.KiFocus1;
 
         return null;
