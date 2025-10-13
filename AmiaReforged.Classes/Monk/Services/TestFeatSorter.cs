@@ -48,8 +48,7 @@ public class TestFeatSorter
     private void OnLevelDownAdjustFeats(OnLevelDown eventData)
     {
         if (!eventData.Creature.IsLoginPlayerCharacter(out NwPlayer? player)) return;
-        if (!eventData.Creature.Name.Contains("test", StringComparison.CurrentCultureIgnoreCase)) return;
-        if (!eventData.Creature.Name.Contains("monk", StringComparison.CurrentCultureIgnoreCase)) return;
+        if (!eventData.Creature.Name.Contains("testmonk")) return;
 
         AdjustFeats(eventData.Creature, player);
     }
@@ -57,8 +56,7 @@ public class TestFeatSorter
     private void OnLevelUpAdjustFeats(OnLevelUp eventData)
     {
         if (!eventData.Creature.IsLoginPlayerCharacter(out NwPlayer? player)) return;
-        if (!eventData.Creature.Name.Contains("test", StringComparison.CurrentCultureIgnoreCase)) return;
-        if (!eventData.Creature.Name.Contains("monk", StringComparison.CurrentCultureIgnoreCase)) return;
+        if (!eventData.Creature.Name.Contains("testmonk")) return;
 
         AdjustFeats(eventData.Creature, player);
     }
