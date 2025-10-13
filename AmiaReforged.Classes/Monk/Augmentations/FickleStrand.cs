@@ -71,9 +71,9 @@ public class FickleStrand : IAugmentation
     /// </summary>
     private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        AxiomaticStrike.DoAxiomaticStrike(attackData);
+        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
 
-        short bonusDamage = MonkUtils.GetKiFocus(monk) switch
+        int bonusDamage = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -85,7 +85,10 @@ public class FickleStrand : IAugmentation
         short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
         if (magicalDamage == -1) bonusDamage++;
 
-        magicalDamage += bonusDamage;
+        if (attackData.AttackResult == AttackResult.CriticalHit)
+            bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
+
+        magicalDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Magical, magicalDamage);
     }
 

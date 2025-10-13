@@ -24,7 +24,7 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
                 EagleStrike.DoEagleStrike(monk, attackData);
                 break;
             case TechniqueType.AxiomaticStrike:
-                AxiomaticStrike.DoAxiomaticStrike(attackData);
+                AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
                 break;
         }
     }

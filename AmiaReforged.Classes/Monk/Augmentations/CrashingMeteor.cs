@@ -23,7 +23,7 @@ public sealed class CrashingMeteor : IAugmentation
                 AugmentStunningStrike(monk, attackData, meteor);
                 break;
             case TechniqueType.AxiomaticStrike:
-                AugmentAxiomaticStrike(attackData, meteor);
+                AugmentAxiomaticStrike(monk, attackData, meteor);
                 break;
             case TechniqueType.EagleStrike:
                 EagleStrike.DoEagleStrike(monk, attackData);
@@ -183,17 +183,20 @@ public sealed class CrashingMeteor : IAugmentation
     ///     Axiomatic Strike deals +1 bonus elemental damage, with an additional +1 for every Ki Focus,
     ///     to a maximum of +4 elemental damage.
     /// </summary>
-    private void AugmentAxiomaticStrike(OnCreatureAttack attackData, CrashingMeteorData meteor)
+    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData, CrashingMeteorData meteor)
     {
-        AxiomaticStrike.DoAxiomaticStrike(attackData);
+        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
 
         DamageData<short> damageData = attackData.DamageData;
         short elementalDamage = damageData.GetDamageByType(meteor.DamageType);
 
-        short bonusDamage = meteor.BonusDamage;
+        int bonusDamage = meteor.BonusDamage;
         if (elementalDamage == -1) bonusDamage++;
 
-        elementalDamage += bonusDamage;
+        if (attackData.AttackResult == AttackResult.CriticalHit)
+            bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
+
+        elementalDamage += (short)bonusDamage;
         damageData.SetDamageByType(meteor.DamageType, elementalDamage);
     }
 

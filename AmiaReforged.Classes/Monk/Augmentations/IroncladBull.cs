@@ -26,7 +26,7 @@ public sealed class IroncladBull : IAugmentation
                 StunningStrike.DoStunningStrike(attackData);
                 break;
             case TechniqueType.AxiomaticStrike:
-                AxiomaticStrike.DoAxiomaticStrike(attackData);
+                AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
                 break;
         }
     }

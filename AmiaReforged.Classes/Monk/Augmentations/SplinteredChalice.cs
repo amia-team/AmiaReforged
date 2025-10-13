@@ -83,7 +83,7 @@ public sealed class SplinteredChalice : IAugmentation
     /// </summary>
     private static void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData, MonkCondition condition)
     {
-        AxiomaticStrike.DoAxiomaticStrike(attackData);
+        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
 
         if (condition == MonkCondition.Healthy) return;
 
@@ -95,13 +95,16 @@ public sealed class SplinteredChalice : IAugmentation
             _ => 1
         };
 
-        int bonusNegativeDamage = Random.Shared.Roll(damageSides, (int)condition);
+        int bonusDamage = Random.Shared.Roll(damageSides, (int)condition);
 
         DamageData<short> damageData = attackData.DamageData;
         short negativeDamage = damageData.GetDamageByType(DamageType.Negative);
-        if (negativeDamage == -1) bonusNegativeDamage++;
+        if (negativeDamage == -1) bonusDamage++;
 
-        negativeDamage += (short)bonusNegativeDamage;
+        if (attackData.AttackResult == AttackResult.CriticalHit)
+            bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
+
+        negativeDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Negative, negativeDamage);
     }
 

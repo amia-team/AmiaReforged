@@ -163,7 +163,7 @@ public sealed class EchoingValley : IAugmentation
     /// </summary>
     private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        AxiomaticStrike.DoAxiomaticStrike(attackData);
+        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
 
         NwCreature[] echoes = monk.Associates
             .Where(associate => associate.ResRef == SummonEchoResRef)
@@ -175,6 +175,9 @@ public sealed class EchoingValley : IAugmentation
         DamageData<short> damageData = attackData.DamageData;
         short sonicDamage = damageData.GetDamageByType(DamageType.Sonic);
         if (sonicDamage == -1) bonusDamage++;
+
+        if (attackData.AttackResult == AttackResult.CriticalHit)
+            bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
 
         sonicDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Sonic, sonicDamage);

@@ -24,7 +24,7 @@ public class FloatingLeaf : IAugmentation
                 AugmentEagleStrike(monk, attackData);
                 break;
             case TechniqueType.AxiomaticStrike:
-                AugmentAxiomaticStrike(attackData);
+                AugmentAxiomaticStrike(monk, attackData);
                 break;
         }
     }
@@ -112,11 +112,10 @@ public class FloatingLeaf : IAugmentation
     /// Axiomatic Strike deals +1 bonus positive damage, increased by an additional +1 for every Ki Focus to a maximum
     /// of +4 bonus positive damage.
     /// </summary>
-    private static void AugmentAxiomaticStrike(OnCreatureAttack attackData)
+    private static void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        AxiomaticStrike.DoAxiomaticStrike(attackData);
+        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
 
-        NwCreature monk = attackData.Attacker;
         DamageData<short> damageData = attackData.DamageData;
         short positiveDamage = damageData.GetDamageByType(DamageType.Positive);
 
@@ -129,6 +128,9 @@ public class FloatingLeaf : IAugmentation
         };
 
         if (positiveDamage == -1) bonusDamage++;
+
+        if (attackData.AttackResult == AttackResult.CriticalHit)
+            bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
 
         positiveDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Positive, positiveDamage);
