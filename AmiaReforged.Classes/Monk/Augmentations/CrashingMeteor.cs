@@ -114,10 +114,10 @@ public sealed class CrashingMeteor : IAugmentation
             },
             DamageVulnerability = MonkUtils.GetKiFocus(monk) switch
             {
-                KiFocus.KiFocus1 => 20,
-                KiFocus.KiFocus2 => 30,
-                KiFocus.KiFocus3 => 40,
-                _ => 10
+                KiFocus.KiFocus1 => 10,
+                KiFocus.KiFocus2 => 15,
+                KiFocus.KiFocus3 => 20,
+                _ => 5
             }
         };
     }
