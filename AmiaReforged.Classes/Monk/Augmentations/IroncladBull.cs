@@ -12,17 +12,18 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 public sealed class IroncladBull : IAugmentation
 {
     private const string IroncladWholenessTag = "ironcladbull_wholenessofbody";
+    private const string IroncladEagleTag = "ironcladbull_eaglestrike";
 
     public PathType PathType => PathType.IroncladBull;
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
         switch (technique)
         {
-            case TechniqueType.StunningStrike:
-                AugmentStunningStrike(monk, attackData);
-                break;
             case TechniqueType.EagleStrike:
-                EagleStrike.DoEagleStrike(monk, attackData);
+                AugmentEagleStrike(monk, attackData);
+                break;
+            case TechniqueType.StunningStrike:
+                StunningStrike.DoStunningStrike(attackData);
                 break;
             case TechniqueType.AxiomaticStrike:
                 AxiomaticStrike.DoAxiomaticStrike(attackData);
@@ -52,31 +53,31 @@ public sealed class IroncladBull : IAugmentation
     }
 
     /// <summary>
-    /// When Stunning Strike lands, gain immunity to damage vulnerability for 1 round. Ki Focus I grants immunity
-    /// to armor decrease, Ki Focus II grants immunity to flanking, and Ki Focus III grants immunity to knockdown.
+    /// Eagle Strike incurs a -1 physical damage penalty. Each Ki Focus increases this by 1 to a maximum of -4.
     /// </summary>
-    private static void AugmentStunningStrike(NwCreature monk, OnCreatureAttack attackData)
+    private static void AugmentEagleStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        StunningStrike.DoStunningStrike(attackData);
+        SavingThrowResult savingThrowResult = EagleStrike.DoEagleStrike(monk, attackData);
 
-        if (attackData.Target is not NwCreature target) return;
+        if (savingThrowResult != SavingThrowResult.Failure) return;
 
-        if (!monk.IsReactionTypeHostile(target)) return;
+        Effect? existingEffect = attackData.Target.ActiveEffects.FirstOrDefault(e => e.Tag == IroncladEagleTag);
+        if (existingEffect != null)
+            attackData.Target.RemoveEffect(existingEffect);
 
-        Effect immunities = MonkUtils.GetKiFocus(monk) switch
+        int damageDecrease = MonkUtils.GetKiFocus(monk) switch
         {
-            KiFocus.KiFocus1 => Effect.LinkEffects(Effect.Immunity(ImmunityType.DamageImmunityDecrease),
-                Effect.Immunity(ImmunityType.AcDecrease)),
-            KiFocus.KiFocus2 => Effect.LinkEffects(Effect.Immunity(ImmunityType.DamageImmunityDecrease),
-                Effect.Immunity(ImmunityType.AcDecrease), Effect.BonusFeat(Feat.PrestigeDefensiveAwareness2!)),
-            KiFocus.KiFocus3 => Effect.LinkEffects(Effect.Immunity(ImmunityType.DamageImmunityDecrease),
-                Effect.Immunity(ImmunityType.AcDecrease), Effect.BonusFeat(Feat.PrestigeDefensiveAwareness2!),
-                Effect.Immunity(ImmunityType.Knockdown)),
-            _ => Effect.Immunity(ImmunityType.DamageImmunityDecrease)
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
+            _ => 1
         };
-        immunities.SubType = EffectSubType.Extraordinary;
 
-        monk.ApplyEffect(EffectDuration.Temporary, immunities, NwTimeSpan.FromRounds(1));
+        Effect eagleDamageDecrease = Effect.DamageDecrease(damageDecrease, DamageType.BaseWeapon);
+        eagleDamageDecrease.SubType = EffectSubType.Extraordinary;
+        eagleDamageDecrease.Tag = IroncladEagleTag;
+
+        monk.ApplyEffect(EffectDuration.Temporary, eagleDamageDecrease, NwTimeSpan.FromRounds(2));
     }
 
     /// <summary>
