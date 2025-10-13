@@ -1,4 +1,5 @@
-﻿using AmiaReforged.Classes.Monk.Types;
+﻿using System.Text;
+using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 
 namespace AmiaReforged.Classes.Monk;
@@ -15,6 +16,12 @@ public static class WildMagicEffects
         { KiFocus.KiFocus3, (33, 33, 33) },
     };
 
+    private static readonly Color[] RainbowColors =
+    [
+        ColorConstants.Red, ColorConstants.Orange, ColorConstants.Yellow, ColorConstants.Green, ColorConstants.Navy,
+        ColorConstants.Purple
+    ];
+
     public static void DoWildMagic(NwCreature monk, NwCreature targetCreature)
     {
         KiFocus? kiFocus = MonkUtils.GetKiFocus(monk);
@@ -25,9 +32,38 @@ public static class WildMagicEffects
 
         Spell[] randomSpellList = GetRandomSpellArray(d100Roll, chances);
 
-        Spell randomSpell = randomSpellList[Random.Shared.Next(randomSpellList.Length)];
+        NwSpell? randomSpell = NwSpell.FromSpellType(randomSpellList[Random.Shared.Next(randomSpellList.Length)]);
+        if (randomSpell == null)
+        {
+            monk.ControllingPlayer?.SendServerMessage("Wild Magic spell not found!");
+            return;
+        }
 
-        monk.ActionCastSpellAt(randomSpell!, targetCreature, MetaMagic.None, true, instant: true, spellClass: ClassType.Monk);
+        string spellName = randomSpell.Name.ToString();
+
+        StringBuilder rainbowName = new();
+        int colorIndex = 0;
+
+        foreach (char letter in spellName)
+        {
+            if (char.IsWhiteSpace(letter))
+            {
+                rainbowName.Append(letter);
+            }
+            else
+            {
+                Color color = RainbowColors[colorIndex % RainbowColors.Length];
+
+                rainbowName.Append(letter.ToString().ColorString(color));
+                colorIndex++;
+            }
+        }
+
+        monk.ControllingPlayer?.FloatingTextString($"{rainbowName}", false, false);
+
+        monk.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpMagblue, fScale: 0.5f));
+
+        monk.ActionCastSpellAt(randomSpell, targetCreature, MetaMagic.None, true, instant: true);
     }
 
     private static Spell[] GetRandomSpellArray(int d100Roll, (int weak, int moderate, int strong) chances)
