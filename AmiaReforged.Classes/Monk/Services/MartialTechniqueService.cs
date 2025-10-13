@@ -132,11 +132,15 @@ public class MartialTechniqueService
             queuedTechnique.Delete();
         }
 
-        string? activeTechniqueTag = GetActiveTechniqueEffect(monk)?.Tag;
+        Effect? activeTechnique = GetActiveTechniqueEffect(monk);
 
-        if (activeTechniqueTag == null) return;
+        if (activeTechnique == null) return;
 
-        if (PreventMartialTechnique(monk, activeTechniqueTag)) return;
+        if (PreventMartialTechnique(monk, activeTechnique.Tag))
+        {
+            monk.RemoveEffect(activeTechnique);
+            return;
+        }
 
         ResetTechniqueCooldownAndCounter(monk);
     }
@@ -207,7 +211,7 @@ public class MartialTechniqueService
         player.FloatingTextString($"*{eventData.Effect.Tag} Deactivated*", false, false);
     }
 
-    private static bool PreventMartialTechnique(NwCreature monk, string techniqueName)
+    private static bool PreventMartialTechnique(NwCreature monk, string? techniqueName)
     {
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
