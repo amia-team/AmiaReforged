@@ -174,10 +174,11 @@ public sealed class EchoingValley : IAugmentation
 
         DamageData<short> damageData = attackData.DamageData;
         short sonicDamage = damageData.GetDamageByType(DamageType.Sonic);
-        if (sonicDamage == -1) bonusDamage++;
 
         if (attackData.AttackResult == AttackResult.CriticalHit)
             bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
+
+        if (sonicDamage == -1) bonusDamage++;
 
         sonicDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Sonic, sonicDamage);

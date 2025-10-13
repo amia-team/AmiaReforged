@@ -191,10 +191,11 @@ public sealed class CrashingMeteor : IAugmentation
         short elementalDamage = damageData.GetDamageByType(meteor.DamageType);
 
         int bonusDamage = meteor.BonusDamage;
-        if (elementalDamage == -1) bonusDamage++;
 
         if (attackData.AttackResult == AttackResult.CriticalHit)
             bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
+
+        if (elementalDamage == -1) bonusDamage++;
 
         elementalDamage += (short)bonusDamage;
         damageData.SetDamageByType(meteor.DamageType, elementalDamage);

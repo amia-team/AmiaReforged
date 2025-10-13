@@ -37,10 +37,11 @@ public class AxiomaticStrike(AugmentationFactory augmentationFactory) : ITechniq
             KiFocus.KiFocus3 => 4,
             _ => 1
         };
-        if (bludgeoningDamage == -1) bonusDamage++;
 
         if (attackData.AttackResult == AttackResult.CriticalHit)
             bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
+
+        if (bludgeoningDamage == -1) bonusDamage++;
 
         bludgeoningDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Bludgeoning, bludgeoningDamage);

@@ -99,10 +99,11 @@ public sealed class SplinteredChalice : IAugmentation
 
         DamageData<short> damageData = attackData.DamageData;
         short negativeDamage = damageData.GetDamageByType(DamageType.Negative);
-        if (negativeDamage == -1) bonusDamage++;
 
         if (attackData.AttackResult == AttackResult.CriticalHit)
             bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
+
+        if (negativeDamage == -1) bonusDamage++;
 
         negativeDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Negative, negativeDamage);

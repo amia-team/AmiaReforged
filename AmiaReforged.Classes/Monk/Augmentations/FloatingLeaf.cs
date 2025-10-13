@@ -127,10 +127,10 @@ public class FloatingLeaf : IAugmentation
             _ => 1
         };
 
-        if (positiveDamage == -1) bonusDamage++;
-
         if (attackData.AttackResult == AttackResult.CriticalHit)
             bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
+
+        if (positiveDamage == -1) bonusDamage++;
 
         positiveDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Positive, positiveDamage);

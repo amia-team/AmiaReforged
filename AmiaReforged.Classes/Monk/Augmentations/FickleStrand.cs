@@ -83,10 +83,11 @@ public class FickleStrand : IAugmentation
 
         DamageData<short> damageData = attackData.DamageData;
         short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
-        if (magicalDamage == -1) bonusDamage++;
 
         if (attackData.AttackResult == AttackResult.CriticalHit)
             bonusDamage *= MonkUtils.GetCritMultiplier(attackData, monk);
+
+        if (magicalDamage == -1) bonusDamage++;
 
         magicalDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Magical, magicalDamage);
