@@ -10,7 +10,6 @@ public sealed class FightingStyleView : ScryView<FightingStylePresenter>
     public NuiButton KnockdownStyleButton = null!;
     public NuiButton DisarmStyleButton = null!;
     public NuiButton RangedStyleButton = null!;
-    public NuiBind<string> ChosenStyle = new(key: "chosen_style");
     public FightingStyleView(NwPlayer player)
     {
         Presenter = new FightingStylePresenter(this, player);
@@ -28,6 +27,7 @@ public sealed class FightingStyleView : ScryView<FightingStylePresenter>
                     {
                         new NuiButton(KnockdownStyleName)
                         {
+                            Tooltip = "Click to confirm",
                             Id = "knockdown_button"
                         }.Assign(out KnockdownStyleButton),
                         new NuiText(KnockdownStyleDescription)
@@ -43,6 +43,7 @@ public sealed class FightingStyleView : ScryView<FightingStylePresenter>
                     {
                         new NuiButton(DisarmStyleName)
                         {
+                            Tooltip = "Click to confirm",
                             Id = "disarm_button"
                         }.Assign(out DisarmStyleButton),
                         new NuiText(DisarmStyleDescription)
@@ -58,6 +59,7 @@ public sealed class FightingStyleView : ScryView<FightingStylePresenter>
                     {
                         new NuiButton(RangedStyleName)
                         {
+                            Tooltip = "Click to confirm",
                             Id = "ranged_button"
                         }.Assign(out RangedStyleButton),
                         new NuiText(RangedStyleDescription)
