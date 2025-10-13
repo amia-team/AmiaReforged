@@ -9,5 +9,5 @@ public static class FightingStyleNuiElements
     public const string DisarmStyleDescription = "Learn Improved Disarm";
 
     public const string RangedStyleName = "Leaping Manticore";
-    public const string RangedStyleDescription = "Learn Point Blank Shot and Called Shot";
+    public const string RangedStyleDescription = "Learn Mobility and Called Shot";
 }

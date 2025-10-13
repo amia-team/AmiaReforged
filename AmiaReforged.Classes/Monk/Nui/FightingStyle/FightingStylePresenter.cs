@@ -18,7 +18,7 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
     {
         { KnockdownStyleName, [NwFeat.FromFeatType(Feat.Knockdown)!, NwFeat.FromFeatType(Feat.ImprovedKnockdown)!] },
         { DisarmStyleName, [NwFeat.FromFeatType(Feat.Disarm)!, NwFeat.FromFeatType(Feat.ImprovedDisarm)!] },
-        { RangedStyleName, [NwFeat.FromFeatType(Feat.CalledShot)!, NwFeat.FromFeatType(Feat.PointBlankShot)!] }
+        { RangedStyleName, [NwFeat.FromFeatType(Feat.CalledShot)!, NwFeat.FromFeatType(Feat.Mobility)!] }
     };
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
