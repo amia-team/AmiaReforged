@@ -10,14 +10,14 @@ public static class MonkPathNuiElements
 
     public const string CrashingMeteorAbilities =
         "Stunning Strike deals 2d6 elemental damage in a large area around the target. " +
-        "A successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental damage." +
+        "A successful reflex save halves the damage. Each Ki Focus adds 2d6, to a maximum of 8d6 elemental damage." +
         "\n\nAxiomatic Strike deals +1 bonus elemental damage to the target, " +
         "with an additional +1 for every Ki Focus, to a maximum of +4 elemental damage." +
         "\n\nWholeness of Body deals 2d6 elemental damage in a large area around the monk, with a successful reflex " +
-        "save halving the damage. Each Ki Focus adds 2d6 damage to a maximum of 8d6 elemental damage." +
-        "\n\nKi Shout changes the damage from sonic to the chosen element. In addition, all enemies receive 10% " +
-        "vulnerability to the element for three rounds, with every Ki Focus increasing it by 10%, " +
-        "to a maximum of 40% elemental damage vulnerability.";
+        "save halving the damage. Each Ki Focus adds 2d6 damage, to a maximum of 8d6 elemental damage." +
+        "\n\nKi Shout deals damage type of the chosen element. In addition, " +
+        "all enemies receive 5 % vulnerability to the element for three rounds, " +
+        "with every Ki Focus increasing it by 5 %, to a maximum of 20 % elemental damage vulnerability.";
 
     public const string EchoingValleyDescription =
         "Echoing Valley: Become a conduit for the Ki of all living things which yearn to manifest through " +
@@ -73,9 +73,8 @@ public static class MonkPathNuiElements
     public const string IroncladBullIcon = "ife_poe_ironbull";
 
     public const string IroncladBullAbilities =
-        "Stunning Strike grants the monk immunity to damage vulnerability for 1 round. " +
-        "Ki Focus I grants immunity to armor decrease, Ki Focus II grants immunity to flanking, " +
-        "and Ki Focus III grants immunity to knockdown." +
+        "Eagle Strike incurs a -1 physical damage penalty. " +
+        "Each Ki Focus increases this by 1 to a maximum of -4 physical damage penalty." +
         "\n\nWholeness of Body grants overheal as temporary hit points and heals for 20 more hit points. " +
         "Each Ki Focus increases the amount of extra hit points healed by 20, to a maximum of 80 extra hit points." +
         "\n\nKi Barrier grants 6/- physical damage resistance, with each Ki Focus increasing it by 3, " +
@@ -90,17 +89,16 @@ public static class MonkPathNuiElements
     public const string SplinteredChaliceIcon = "ife_poe_splinter";
 
     public const string SplinteredChaliceAbilities =
-        "Axiomatic Strike deals 1d2 bonus negative energy damage when the monk is injured, " +
-        "1d3 when badly wounded, and 1d4 when near death. Each Ki Focus multiplies the damage bonus, " +
-        "to a maximum of 4d2, 4d3, and 4d4 bonus negative energy damage." +
-        "\n\nWholeness of Body unleashes 2d6 negative energy and physical damage in a large radius when the monk is injured, " +
-        "2d8 when badly wounded, and 2d10 when near death. Fortitude saving throw halves the damage. " +
-        "Each Ki Focus multiplies the damage bonus, to a maximum of 8d6, 8d8, and 8d10 negative energy and physical damage." +
-        "\n\nWhile in combat, Empty Body grants 5% physical damage immunity when the monk is injured, " +
-        "10% when badly wounded, and 15% when near death. Each Ki Focus grants 5% more physical damage immunity, " +
-        "to a maximum of 20%, 25%, and 30% physical damage immunity." +
-        "\n\nQuivering Palm inflicts an additional 20d2 negative energy damage when the monk is injured, " +
-        "20d4 when badly wounded, and 20d6 when near death. Each Ki Focus adds 30% negative energy vulnerability to this attack.";
+        "X is 1 when the monk is injured, 2 when badly wounded, and 3 when near death." +
+        "\n\nAxiomatic Strike deals Xd1 bonus negative energy. Ki Focus I increases this to Xd2, Ki Focus II to Xd3, " +
+        "and Ki Focus III to Xd4." +
+        "\n\nWholeness of Body unleashes Xd6 negative and piercing damage in a large area around the monk, " +
+        "with a successful fortitude save halving the damage. Ki Focus I increases this to Xd8, Ki Focus II to Xd10, " +
+        "and Ki Focus III to Xd12 damage." +
+        "\n\nWhile in combat, Empty Body grants X times 5 % physical damage immunity. " +
+        "Each Ki Focus adds a further 5 % immunity." +
+        "\n\nQuivering Palm inflicts an additional 30dX negative damage. " +
+        "Each Ki Focus inflicts 30 % negative energy vulnerability against attack.";
 
     public const string SwingingCenserDescription =
         "Swining Censer: Listen to the heartbeat of Ki that courses through all living things. " +
