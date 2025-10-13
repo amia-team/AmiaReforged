@@ -42,11 +42,16 @@ public static class MonkUtils
     /// <returns>Ki Focus tier for scaling monk powers</returns>
     public static KiFocus? GetKiFocus(NwCreature monk)
     {
-        return monk.GetClassInfo(ClassType.Monk)?.Level switch
+        int highestKiStrike = monk.Feats
+            .Select(f => f.Id)
+            .Where(id => id is MonkFeat.KiStrike or MonkFeat.KiStrike2 or MonkFeat.KiStrike3)
+            .Max();
+
+        return highestKiStrike switch
         {
-            >= 18 and < 24 => KiFocus.KiFocus1,
-            >= 24 and < 30 => KiFocus.KiFocus2,
-            30 => KiFocus.KiFocus3,
+            MonkFeat.KiStrike3 => KiFocus.KiFocus3,
+            MonkFeat.KiStrike2 => KiFocus.KiFocus2,
+            MonkFeat.KiStrike => KiFocus.KiFocus1,
             _ => null
         };
     }
