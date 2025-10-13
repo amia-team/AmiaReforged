@@ -59,11 +59,9 @@ public class FickleStrand : IAugmentation
     {
         EagleStrike.DoEagleStrike(monk, attackData);
 
-        if (attackData.Target is not NwCreature targetCreature || !targetCreature.IsReactionTypeHostile(monk)) return;
+        if (attackData.Target is not NwCreature targetCreature || !monk.IsReactionTypeHostile(targetCreature)) return;
 
-        int d100Roll = Random.Shared.Roll(100);
-
-        if (d100Roll <= 30)
+        if (Random.Shared.Roll(100) <= 30)
             WildMagicEffects.DoWildMagic(monk, targetCreature);
     }
 
@@ -111,7 +109,7 @@ public class FickleStrand : IAugmentation
         int totalSpellsAbsorbed = Random.Shared.Roll(3, diceAmount);
 
         Effect spellAbsorb = Effect.LinkEffects(
-            Effect.SpellLevelAbsorption(9,totalSpellsAbsorbed),
+            Effect.SpellLevelAbsorption(9, totalSpellsAbsorbed),
             Effect.VisualEffect(VfxType.DurSpellturning)
         );
         spellAbsorb.SubType = EffectSubType.Extraordinary;
