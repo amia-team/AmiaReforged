@@ -249,9 +249,9 @@ public sealed class CrashingMeteor : IAugmentation
     }
 
     /// <summary>
-    ///     Ki Shout changes the damage from sonic to the chosen element. In addition, all enemies receive 10% vulnerability
-    ///     to the element for three rounds, with every Ki Focus increasing it by 10%, to a maximum of 40% elemental damage
-    ///     vulnerability.
+    /// Ki Shout changes the damage from sonic to the chosen element. In addition, all enemies receive 5 %
+    /// vulnerability to the element for three rounds, with every Ki Focus increasing it by 5 %, to a maximum of
+    /// 20 % elemental damage vulnerability.
     /// </summary>
     private static void AugmentKiShout(NwCreature monk, CrashingMeteorData meteor)
     {
@@ -259,18 +259,19 @@ public sealed class CrashingMeteor : IAugmentation
 
         if (monk.Location == null) return;
 
+        Effect elementalEffect = Effect.LinkEffects(Effect.DamageImmunityDecrease(meteor.DamageType, meteor.DamageVulnerability),
+            Effect.VisualEffect(VfxType.DurCessateNegative));
+
+        elementalEffect.SubType = EffectSubType.Extraordinary;
+        elementalEffect.Tag = MeteorKiShoutTag;
+
         foreach (NwGameObject obj in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Colossal, false))
         {
             if (obj is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
 
-            Effect? elementalEffect = hostileCreature.ActiveEffects.FirstOrDefault(e => e.Tag == MeteorKiShoutTag);
-            if (elementalEffect != null)
-                hostileCreature.RemoveEffect(elementalEffect);
-
-            elementalEffect = Effect.LinkEffects(
-                Effect.DamageImmunityDecrease(meteor.DamageType, meteor.DamageVulnerability),
-                Effect.VisualEffect(VfxType.DurCessateNegative)
-            );
+            Effect? existingEffect = hostileCreature.ActiveEffects.FirstOrDefault(e => e.Tag == MeteorKiShoutTag);
+            if (existingEffect != null)
+                hostileCreature.RemoveEffect(existingEffect);
 
             hostileCreature.ApplyEffect(EffectDuration.Temporary, elementalEffect, NwTimeSpan.FromRounds(3));
         }
