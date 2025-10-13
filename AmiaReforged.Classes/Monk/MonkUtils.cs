@@ -1,6 +1,7 @@
 using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
+using Anvil.API.Events;
 using NWN.Core;
 
 namespace AmiaReforged.Classes.Monk;
@@ -42,18 +43,14 @@ public static class MonkUtils
     /// <returns>Ki Focus tier for scaling monk powers</returns>
     public static KiFocus? GetKiFocus(NwCreature monk)
     {
-        int highestKiStrike = monk.Feats
-            .Select(f => f.Id)
-            .Where(id => id is MonkFeat.KiStrike or MonkFeat.KiStrike2 or MonkFeat.KiStrike3)
-            .Max();
+        if (monk.KnowsFeat(((Feat)MonkFeat.KiStrike3)!))
+            return KiFocus.KiFocus3;
+        if (monk.KnowsFeat(((Feat)MonkFeat.KiStrike2)!))
+            return KiFocus.KiFocus2;
+        if (monk.KnowsFeat(((Feat)MonkFeat.KiStrike)!))
+            return KiFocus.KiFocus1;
 
-        return highestKiStrike switch
-        {
-            MonkFeat.KiStrike3 => KiFocus.KiFocus3,
-            MonkFeat.KiStrike2 => KiFocus.KiFocus2,
-            MonkFeat.KiStrike => KiFocus.KiFocus1,
-            _ => null
-        };
+        return null;
     }
 
     /// <summary>
@@ -153,5 +150,28 @@ public static class MonkUtils
         }
 
         return false;
+    }
+
+    public static int GetCritMultiplier(OnCreatureAttack attackData, NwCreature monk)
+    {
+        byte baseMultiplier = attackData.WeaponAttackType switch
+        {
+            WeaponAttackType.Unarmed or WeaponAttackType.UnarmedExtra or WeaponAttackType.CreatureBite
+                or WeaponAttackType.CreatureLeft or WeaponAttackType.CreatureRight
+                => 2,
+            WeaponAttackType.MainHand or WeaponAttackType.HastedAttack
+                => monk.GetItemInSlot(InventorySlot.RightHand)?.BaseItem.CritMultiplier ?? 2,
+            WeaponAttackType.Offhand
+                => monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.CritMultiplier ?? 2,
+            _ => 2
+        };
+
+        if (monk.IsRangedWeaponEquipped) return baseMultiplier;
+
+        if (monk.KnowsFeat(Feat.IncreaseMultiplier!)
+            && attackData.WeaponAttackType is WeaponAttackType.MainHand or WeaponAttackType.Offhand)
+            return baseMultiplier + 1;
+
+        return baseMultiplier;
     }
 }
