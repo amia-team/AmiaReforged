@@ -80,7 +80,7 @@ public static class MonkUtils
             VfxType.FnfLosEvil10 or (VfxType)1046 or VfxType.ImpPulseHoly => RadiusSize.Medium,
             VfxType.FnfFireball => RadiusSize.Huge,
             VfxType.FnfElectricExplosion or VfxType.FnfMysticalExplosion => RadiusSize.Gargantuan,
-            VfxType.FnfHowlOdd or VfxType.FnfHowlMind or VfxType.FnfLosEvil30 or VfxType.FnfFirestorm => RadiusSize.Colossal,
+            VfxType.FnfHowlOdd or VfxType.FnfHowlMind or VfxType.FnfLosEvil30 => RadiusSize.Colossal,
             _ => RadiusSize.Large
         };
 
