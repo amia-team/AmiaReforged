@@ -58,10 +58,10 @@ public sealed class SplinteredChalice : IAugmentation
 
     private enum MonkCondition
     {
-        Healthy,
-        Injured,
-        BadlyWounded,
-        NearDeath
+        Healthy = 0,
+        Injured = 1,
+        BadlyWounded = 2,
+        NearDeath = 3
     }
 
     private static MonkCondition GetMonkCondition(NwCreature monk)
@@ -78,10 +78,8 @@ public sealed class SplinteredChalice : IAugmentation
     }
 
     /// <summary>
-    /// Axiomatic Strike deals 1d2 bonus negative energy damage when the monk is injured, 1d4 when badly wounded,
-    /// and 1d6 when near death. In addition, every 100 damage made with this attack against living enemies
-    /// regenerates a Body Ki Point. Each Ki Focus multiplies the damage bonus,
-    /// to a maximum of 4d2, 4d4, and 4d6 bonus negative energy damage.
+    /// Axiomatic Strike deals Xd1 bonus negative energy. Ki Focus I increases this to Xd2, Ki Focus II to Xd3,
+    /// and Ki Focus III to Xd4.
     /// </summary>
     private static void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData, MonkCondition condition)
     {
@@ -89,15 +87,7 @@ public sealed class SplinteredChalice : IAugmentation
 
         if (condition == MonkCondition.Healthy) return;
 
-        int damageSides = condition switch
-        {
-            MonkCondition.Injured => 2,
-            MonkCondition.BadlyWounded => 4,
-            MonkCondition.NearDeath => 6,
-            _ => 0
-        };
-
-        int damageDice = MonkUtils.GetKiFocus(monk) switch
+        int damageSides = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -105,7 +95,7 @@ public sealed class SplinteredChalice : IAugmentation
             _ => 1
         };
 
-        int bonusNegativeDamage = Random.Shared.Roll(damageSides, damageDice);
+        int bonusNegativeDamage = Random.Shared.Roll(damageSides, (int)condition);
 
         DamageData<short> damageData = attackData.DamageData;
         short negativeDamage = damageData.GetDamageByType(DamageType.Negative);
@@ -117,45 +107,42 @@ public sealed class SplinteredChalice : IAugmentation
 
 
     /// <summary>
-    /// Wholeness of Body unleashes 2d6 negative energy and physical damage in a large radius when the monk is injured,
-    /// 2d8 when badly wounded, and 2d10 when near death. Fortitude saving throw halves the damage. Each Ki Focus
-    /// multiplies the damage bonus, to a maximum of 8d6, 8d8, and 8d10 negative energy and physical damage.
+    /// Wholeness of Body unleashes Xd6 negative and piercing damage in a large area around the monk, with a successful
+    /// fortitude save halving the damage. Ki Focus I increases this to Xd8, Ki Focus II to Xd10, and Ki Focus III to Xd12 damage.
     /// </summary>
     private static void AugmentWholenessOfBody(NwCreature monk, MonkCondition condition)
     {
-        WholenessOfBody.DoWholenessOfBody(monk);
-
         if (condition == MonkCondition.Healthy) return;
+
+        WholenessAoe(monk, condition);
+
+        WholenessOfBody.DoWholenessOfBody(monk);
+    }
+
+    private static void WholenessAoe(NwCreature monk, MonkCondition condition)
+    {
         if (monk.Location == null) return;
 
+        int damageSides = MonkUtils.GetKiFocus(monk) switch
+        {
+            KiFocus.KiFocus1 => 8,
+            KiFocus.KiFocus2 => 10,
+            KiFocus.KiFocus3 => 12,
+            _ => 6
+        };
+
         int dc = MonkUtils.CalculateMonkDc(monk);
-
-        int damageSides = condition switch
-        {
-            MonkCondition.Injured => 6,
-            MonkCondition.BadlyWounded => 8,
-            MonkCondition.NearDeath => 10,
-            _ => 0
-        };
-
-        int damageDice = MonkUtils.GetKiFocus(monk) switch
-        {
-            KiFocus.KiFocus1 => 4,
-            KiFocus.KiFocus2 => 6,
-            KiFocus.KiFocus3 => 8,
-            _ => 2
-        };
 
         Effect aoeVfx = MonkUtils.ResizedVfx(VfxType.FnfLosEvil30, RadiusSize.Large);
 
         monk.ApplyEffect(EffectDuration.Instant, aoeVfx);
-        foreach (NwGameObject obj in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, false))
+        foreach (NwCreature hostileCreature in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large, false))
         {
-            if (obj is not NwCreature hostileCreature || !monk.IsReactionTypeHostile(hostileCreature)) continue;
+            if (monk.IsReactionTypeHostile(hostileCreature)) continue;
 
             CreatureEvents.OnSpellCastAt.Signal(monk, hostileCreature, NwSpell.FromSpellType(Spell.NegativeEnergyBurst)!);
 
-            int damageAmount = Random.Shared.Roll(damageSides, damageDice);
+            int damageAmount = Random.Shared.Roll(damageSides, (int)condition);
 
             SavingThrowResult savingThrowResult =
                 hostileCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Negative, monk);
@@ -183,9 +170,7 @@ public sealed class SplinteredChalice : IAugmentation
     }
 
     /// <summary>
-    /// While in combat, Empty Body grants 5% physical damage immunity when the monk is injured, 10% when badly wounded,
-    /// and 15% when near death. Each Ki Focus grants 5% more physical damage immunity, to a maximum of 20%, 25%,
-    /// and 30% physical damage immunity.
+    /// While in combat, Empty Body grants X times 5 % physical damage immunity. Each Ki Focus adds a further 5 % immunity.
     /// </summary>
     private static void AugmentEmptyBody(NwCreature monk, MonkCondition condition)
     {
@@ -195,13 +180,7 @@ public sealed class SplinteredChalice : IAugmentation
 
         int monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
 
-        int pctImmunityBase = condition switch
-        {
-            MonkCondition.Injured => 5,
-            MonkCondition.BadlyWounded => 10,
-            MonkCondition.NearDeath => 15,
-            _ => 0
-        };
+        int pctImmunityBase = 5 * (int)condition;
 
         int pctImmunityBonus = MonkUtils.GetKiFocus(monk) switch
         {
@@ -213,11 +192,11 @@ public sealed class SplinteredChalice : IAugmentation
 
         int pctImmunityTotal = pctImmunityBase + pctImmunityBonus;
 
-        Effect? emptyBodyEffect = monk.ActiveEffects.FirstOrDefault(e => e.Tag == SplinteredEmptyBodyTag);
-        if (emptyBodyEffect != null)
-            monk.RemoveEffect(emptyBodyEffect);
+        Effect? existingEffect = monk.ActiveEffects.FirstOrDefault(e => e.Tag == SplinteredEmptyBodyTag);
+        if (existingEffect != null)
+            monk.RemoveEffect(existingEffect);
 
-        emptyBodyEffect = Effect.LinkEffects(
+        Effect emptyBodyEffect = Effect.LinkEffects(
             Effect.DamageImmunityIncrease(DamageType.Piercing, pctImmunityTotal),
             Effect.DamageImmunityIncrease(DamageType.Slashing, pctImmunityTotal),
             Effect.DamageImmunityIncrease(DamageType.Bludgeoning, pctImmunityTotal));
@@ -229,8 +208,8 @@ public sealed class SplinteredChalice : IAugmentation
     }
 
     /// <summary>
-    /// Quivering Palm inflicts an additional 20d2 negative energy damage when the monk is injured,
-    /// 20d4 when badly wounded, and 20d6 when near death. Each Ki Focus adds 30% negative energy vulnerability to this attack.
+    /// Quivering Palm inflicts an additional 30dX negative damage.
+    /// Each Ki Focus inflicts 30 % negative energy vulnerability against attack.
     /// </summary>
     private static void AugmentQuiveringPalm(NwCreature monk, OnSpellCast castData, MonkCondition condition)
     {
@@ -241,7 +220,7 @@ public sealed class SplinteredChalice : IAugmentation
 
         if (condition == MonkCondition.Healthy) return;
 
-        int vulnPercentage = MonkUtils.GetKiFocus(monk) switch
+        int vulnerabilityPct = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 30,
             KiFocus.KiFocus2 => 60,
@@ -250,17 +229,10 @@ public sealed class SplinteredChalice : IAugmentation
         };
 
         targetCreature.ApplyEffect(EffectDuration.Temporary, Effect.DamageImmunityDecrease(DamageType.Negative,
-            vulnPercentage), TimeSpan.FromSeconds(0.5f));
+            vulnerabilityPct), TimeSpan.FromSeconds(0.5f));
 
-        int damageDie = condition switch
-        {
-            MonkCondition.Injured => 2,
-            MonkCondition.BadlyWounded => 4,
-            MonkCondition.NearDeath => 6,
-            _ => 0
-        };
 
-        int damage = Random.Shared.Roll(damageDie, 20);
+        int damage = Random.Shared.Roll((int)condition, 30);
 
         _ = ApplyQuivering(targetCreature, monk, damage);
     }
