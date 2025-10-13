@@ -15,7 +15,7 @@ public sealed class IroncladBull : IAugmentation
     private const string IroncladEagleTag = nameof(PathType.IroncladBull) + nameof(TechniqueType.EagleStrike);
 
     public PathType PathType => PathType.IroncladBull;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage attackData)
+    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
         switch (technique)
         {
@@ -23,10 +23,10 @@ public sealed class IroncladBull : IAugmentation
                 AugmentEagleStrike(monk, attackData);
                 break;
             case TechniqueType.StunningStrike:
-                StunningStrike.DoStunningStrike(monk, attackData);
+                StunningStrike.DoStunningStrike(attackData);
                 break;
             case TechniqueType.AxiomaticStrike:
-                AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
+                AxiomaticStrike.DoAxiomaticStrike(attackData);
                 break;
         }
     }
@@ -55,7 +55,7 @@ public sealed class IroncladBull : IAugmentation
     /// <summary>
     /// Eagle Strike incurs a -1 physical damage penalty. Each Ki Focus increases this by 1 to a maximum of -4.
     /// </summary>
-    private static void AugmentEagleStrike(NwCreature monk, OnCreatureDamage attackData)
+    private static void AugmentEagleStrike(NwCreature monk, OnCreatureAttack attackData)
     {
         SavingThrowResult savingThrowResult = EagleStrike.DoEagleStrike(monk, attackData);
 

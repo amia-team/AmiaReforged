@@ -10,7 +10,7 @@ namespace AmiaReforged.Classes.Monk.Techniques.Martial;
 public class AxiomaticStrike(AugmentationFactory augmentationFactory) : ITechnique
 {
     public TechniqueType TechniqueType => TechniqueType.AxiomaticStrike;
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureDamage attackData)
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
@@ -19,18 +19,19 @@ public class AxiomaticStrike(AugmentationFactory augmentationFactory) : ITechniq
         if (augmentation != null)
             augmentation.ApplyAttackAugmentation(monk, TechniqueType, attackData);
         else
-            DoAxiomaticStrike(monk, attackData);
+            DoAxiomaticStrike(attackData);
     }
 
     /// <summary>
     /// Each successful hit deals +1 bonus physical damage. Every 10 monk levels increases the damage by +1.
     /// </summary>
-    public static void DoAxiomaticStrike(NwCreature monk, OnCreatureDamage attackData)
+    public static void DoAxiomaticStrike(OnCreatureAttack attackData)
     {
-        DamageData<int> damageData = attackData.DamageData;
+        NwCreature monk = attackData.Attacker;
+        DamageData<short> damageData = attackData.DamageData;
 
-        int bludgeoningDamage = damageData.GetDamageByType(DamageType.Bludgeoning);
-        int bonusDamage = MonkUtils.GetKiFocus(monk) switch
+        short bludgeoningDamage = damageData.GetDamageByType(DamageType.Bludgeoning);
+        short bonusDamage = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,

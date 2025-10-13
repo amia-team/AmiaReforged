@@ -12,7 +12,7 @@ public class StunningStrike(AugmentationFactory augmentationFactory) : ITechniqu
 {
     public TechniqueType TechniqueType => TechniqueType.StunningStrike;
 
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureDamage attackData)
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
@@ -21,12 +21,14 @@ public class StunningStrike(AugmentationFactory augmentationFactory) : ITechniqu
         if (augmentation != null)
             augmentation.ApplyAttackAugmentation(monk, TechniqueType, attackData);
         else
-            DoStunningStrike(monk, attackData);
+            DoStunningStrike(attackData);
     }
 
-    public static SavingThrowResult DoStunningStrike(NwCreature monk, OnCreatureDamage attackData)
+    public static SavingThrowResult DoStunningStrike(OnCreatureAttack attackData)
     {
         if (attackData.Target is not NwCreature targetCreature) return SavingThrowResult.Immune;
+
+        NwCreature monk = attackData.Attacker;
 
         Effect stunningStrikeEffect = Effect.LinkEffects(
             Effect.Stunned(),

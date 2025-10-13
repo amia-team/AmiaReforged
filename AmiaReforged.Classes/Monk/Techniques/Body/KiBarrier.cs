@@ -55,5 +55,5 @@ public class KiBarrier(AugmentationFactory augmentationFactory) : ITechnique
         monk.ApplyEffect(EffectDuration.Instant, kiBarrierVfx);
     }
 
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureDamage attackData) { }
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
 }

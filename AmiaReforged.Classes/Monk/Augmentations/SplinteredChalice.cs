@@ -14,7 +14,7 @@ public sealed class SplinteredChalice : IAugmentation
     private const string SplinteredEmptyBodyTag = nameof(PathType.SplinteredChalice) + nameof(TechniqueType.EmptyBody);
 
     public PathType PathType => PathType.SplinteredChalice;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage attackData)
+    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
         MonkCondition condition = GetMonkCondition(monk);
 
@@ -24,7 +24,7 @@ public sealed class SplinteredChalice : IAugmentation
                 AugmentAxiomaticStrike(monk, attackData, condition);
                 break;
             case TechniqueType.StunningStrike:
-                StunningStrike.DoStunningStrike(monk, attackData);
+                StunningStrike.DoStunningStrike(attackData);
                 break;
             case TechniqueType.EagleStrike:
                 EagleStrike.DoEagleStrike(monk, attackData);
@@ -81,9 +81,9 @@ public sealed class SplinteredChalice : IAugmentation
     /// Axiomatic Strike deals Xd1 bonus negative energy. Ki Focus I increases this to Xd2, Ki Focus II to Xd3,
     /// and Ki Focus III to Xd4.
     /// </summary>
-    private static void AugmentAxiomaticStrike(NwCreature monk, OnCreatureDamage attackData, MonkCondition condition)
+    private static void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData, MonkCondition condition)
     {
-        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
+        AxiomaticStrike.DoAxiomaticStrike(attackData);
 
         if (condition == MonkCondition.Healthy) return;
 
@@ -97,11 +97,11 @@ public sealed class SplinteredChalice : IAugmentation
 
         int bonusNegativeDamage = Random.Shared.Roll(damageSides, (int)condition);
 
-        DamageData<int> damageData = attackData.DamageData;
-        int negativeDamage = damageData.GetDamageByType(DamageType.Negative);
+        DamageData<short> damageData = attackData.DamageData;
+        short negativeDamage = damageData.GetDamageByType(DamageType.Negative);
         if (negativeDamage == -1) bonusNegativeDamage++;
 
-        negativeDamage += bonusNegativeDamage;
+        negativeDamage += (short)bonusNegativeDamage;
         damageData.SetDamageByType(DamageType.Negative, negativeDamage);
     }
 

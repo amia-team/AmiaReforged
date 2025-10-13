@@ -90,5 +90,5 @@ public class KiShout(AugmentationFactory augmentationFactory) : ITechnique
         target.ApplyEffect(EffectDuration.Temporary, kiShoutEffect, effectDuration);
     }
 
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureDamage attackData) { }
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
 }

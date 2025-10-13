@@ -37,7 +37,7 @@ public class MartialTechniqueService
 
         NwModule.Instance.OnUseFeat += MartialTechniqueUseFeat;
         NwModule.Instance.OnCombatRoundStart += EnterMartialTechnique;
-        NwModule.Instance.OnCreatureDamage += OnHitApplyTechnique;
+        NwModule.Instance.OnCreatureAttack += OnHitApplyTechnique;
         NwModule.Instance.OnEffectApply += CueMartialTechniqueActivated;
         NwModule.Instance.OnEffectRemove += CueMartialTechniqueDeactivated;
         Log.Info(message: "Monk Martial Technique Service initialized.");
@@ -144,12 +144,17 @@ public class MartialTechniqueService
     /// <summary>
     ///     Applies the martial technique effects and cooldown on hit
     /// </summary>
-    private void OnHitApplyTechnique(OnCreatureDamage attackData)
+    private void OnHitApplyTechnique(OnCreatureAttack attackData)
     {
-        if (attackData.DamagedBy is not NwCreature monk) return;
-        if (monk.GetClassInfo(ClassType.Monk) is null) return;
+        NwCreature monk = attackData.Attacker;
+        if (attackData.Attacker.GetClassInfo(ClassType.Monk) is null) return;
 
         if (monk.ActiveEffects.Any(effect => effect.Tag is MartialCooldownTag)) return;
+
+        bool isHit = attackData.AttackResult is AttackResult.Hit or AttackResult.AutomaticHit
+            or AttackResult.CriticalHit or AttackResult.DevastatingCritical;
+
+        if (!isHit) return;
 
         string? techniqueTag = GetActiveTechniqueEffect(monk)?.Tag;
 

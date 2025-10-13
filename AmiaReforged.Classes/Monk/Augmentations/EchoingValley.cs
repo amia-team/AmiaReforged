@@ -16,7 +16,7 @@ public sealed class EchoingValley : IAugmentation
     private const string SummonEchoResRef = "summon_echo";
     private const string EchoingEmptyBodyTag = nameof(PathType.EchoingValley) + nameof(TechniqueType.EmptyBody);
     public PathType PathType => PathType.EchoingValley;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage attackData)
+    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
         switch (technique)
         {
@@ -58,9 +58,9 @@ public sealed class EchoingValley : IAugmentation
     /// Stunning Strike summons an Echo and makes summoned Echoes deal 1d6 sonic damage in a medium radius.
     /// Echoes last for two turns. Each Ki Focus allows an additional Echo to be summoned.
     /// </summary>
-    private void AugmentStunningStrike(NwCreature monk, OnCreatureDamage attackData)
+    private void AugmentStunningStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        StunningStrike.DoStunningStrike(monk, attackData);
+        StunningStrike.DoStunningStrike(attackData);
 
         if (attackData.Target is not NwCreature targetCreature || !targetCreature.IsReactionTypeHostile(monk)) return;
 
@@ -161,9 +161,9 @@ public sealed class EchoingValley : IAugmentation
     /// <summary>
     /// Axiomatic Strike deals +1 bonus sonic damage for each Echo the monk has.
     /// </summary>
-    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureDamage attackData)
+    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
     {
-        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
+        AxiomaticStrike.DoAxiomaticStrike(attackData);
 
         NwCreature[] echoes = monk.Associates
             .Where(associate => associate.ResRef == SummonEchoResRef)
@@ -172,11 +172,11 @@ public sealed class EchoingValley : IAugmentation
         if (echoes.Length == 0) return;
         int bonusDamage = echoes.Length;
 
-        DamageData<int> damageData = attackData.DamageData;
-        int sonicDamage = damageData.GetDamageByType(DamageType.Sonic);
+        DamageData<short> damageData = attackData.DamageData;
+        short sonicDamage = damageData.GetDamageByType(DamageType.Sonic);
         if (sonicDamage == -1) bonusDamage++;
 
-        sonicDamage += bonusDamage;
+        sonicDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Sonic, sonicDamage);
     }
 

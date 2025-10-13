@@ -12,7 +12,7 @@ public class EagleStrike(AugmentationFactory augmentationFactory) : ITechnique
     private const string EagleEffectTag = nameof(TechniqueType.EagleStrike);
     public TechniqueType TechniqueType => TechniqueType.EagleStrike;
 
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureDamage attackData)
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
@@ -28,7 +28,7 @@ public class EagleStrike(AugmentationFactory augmentationFactory) : ITechnique
     /// On two successful hits per round against an enemy creature, the target must succeed at a reflex save or suffer
     /// a penalty of -2 to their armor class for two rounds.
     /// </summary>
-    public static SavingThrowResult DoEagleStrike(NwCreature monk, OnCreatureDamage attackData)
+    public static SavingThrowResult DoEagleStrike(NwCreature monk, OnCreatureAttack attackData)
     {
         if (attackData.Target is not NwCreature targetCreature)
             return SavingThrowResult.Immune;

@@ -13,7 +13,7 @@ public sealed class CrashingMeteor : IAugmentation
 {
     private const string MeteorKiShoutTag = nameof(PathType.CrashingMeteor) + nameof(TechniqueType.KiShout);
     public PathType PathType => PathType.CrashingMeteor;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage attackData)
+    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {
         CrashingMeteorData meteor = GetCrashingMeteorData(monk);
 
@@ -23,7 +23,7 @@ public sealed class CrashingMeteor : IAugmentation
                 AugmentStunningStrike(monk, attackData, meteor);
                 break;
             case TechniqueType.AxiomaticStrike:
-                AugmentAxiomaticStrike(monk, attackData, meteor);
+                AugmentAxiomaticStrike(attackData, meteor);
                 break;
             case TechniqueType.EagleStrike:
                 EagleStrike.DoEagleStrike(monk, attackData);
@@ -58,7 +58,7 @@ public sealed class CrashingMeteor : IAugmentation
     {
         public int Dc;
         public int DiceAmount;
-        public int BonusDamage;
+        public short BonusDamage;
         public Effect AoeVfx;
         public VfxType DamageVfx;
         public DamageType DamageType;
@@ -127,10 +127,10 @@ public sealed class CrashingMeteor : IAugmentation
     ///     critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental
     ///     damage.
     /// </summary>
-    private void AugmentStunningStrike(NwCreature monk, OnCreatureDamage attackData,
+    private void AugmentStunningStrike(NwCreature monk, OnCreatureAttack attackData,
         CrashingMeteorData meteor)
     {
-        StunningStrike.DoStunningStrike(monk, attackData);
+        StunningStrike.DoStunningStrike(attackData);
 
         attackData.Target.ApplyEffect(EffectDuration.Instant, meteor.AoeVfx);
 
@@ -183,14 +183,14 @@ public sealed class CrashingMeteor : IAugmentation
     ///     Axiomatic Strike deals +1 bonus elemental damage, with an additional +1 for every Ki Focus,
     ///     to a maximum of +4 elemental damage.
     /// </summary>
-    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureDamage attackData, CrashingMeteorData meteor)
+    private void AugmentAxiomaticStrike(OnCreatureAttack attackData, CrashingMeteorData meteor)
     {
-        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
+        AxiomaticStrike.DoAxiomaticStrike(attackData);
 
-        DamageData<int> damageData = attackData.DamageData;
-        int elementalDamage = damageData.GetDamageByType(meteor.DamageType);
+        DamageData<short> damageData = attackData.DamageData;
+        short elementalDamage = damageData.GetDamageByType(meteor.DamageType);
 
-        int bonusDamage = meteor.BonusDamage;
+        short bonusDamage = meteor.BonusDamage;
         if (elementalDamage == -1) bonusDamage++;
 
         elementalDamage += bonusDamage;
