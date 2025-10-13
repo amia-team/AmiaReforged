@@ -38,5 +38,5 @@ public class WholenessOfBody(AugmentationFactory augmentationFactory) : ITechniq
         monk.ApplyEffect(EffectDuration.Instant, wholenessVfx);
     }
 
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureDamage attackData) { }
 }

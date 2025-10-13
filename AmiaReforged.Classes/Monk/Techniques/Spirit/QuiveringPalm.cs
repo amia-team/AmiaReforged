@@ -85,5 +85,5 @@ public class QuiveringPalm(AugmentationFactory augmentationFactory) : ITechnique
         targetCreature.ApplyEffect(EffectDuration.Instant, quiveringVfx);
     }
 
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureDamage attackData) { }
 }

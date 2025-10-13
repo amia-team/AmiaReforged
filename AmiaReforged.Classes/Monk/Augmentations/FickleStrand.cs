@@ -13,7 +13,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 public class FickleStrand : IAugmentation
 {
     public PathType PathType => PathType.FickleStrand;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
+    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage attackData)
     {
         switch (technique)
         {
@@ -24,7 +24,7 @@ public class FickleStrand : IAugmentation
                 AugmentAxiomaticStrike(monk, attackData);
                 break;
             case TechniqueType.StunningStrike:
-                StunningStrike.DoStunningStrike(attackData);
+                StunningStrike.DoStunningStrike(monk, attackData);
                 break;
         }
     }
@@ -55,7 +55,7 @@ public class FickleStrand : IAugmentation
     /// Eagle Strike has a 30% chance to impart a wild magic effect.
     /// Each Ki Focus makes potent effects more likely to occur.
     /// </summary>
-    private void AugmentEagleStrike(NwCreature monk, OnCreatureAttack attackData)
+    private void AugmentEagleStrike(NwCreature monk, OnCreatureDamage attackData)
     {
         EagleStrike.DoEagleStrike(monk, attackData);
 
@@ -69,11 +69,11 @@ public class FickleStrand : IAugmentation
     /// Axiomatic Strike deals +1 bonus magical damage. Each Ki Focus increases the damage by 1,
     /// to a maximum of +4 bonus magical damage.
     /// </summary>
-    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureAttack attackData)
+    private void AugmentAxiomaticStrike(NwCreature monk, OnCreatureDamage attackData)
     {
-        AxiomaticStrike.DoAxiomaticStrike(attackData);
+        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
 
-        short bonusDamage = MonkUtils.GetKiFocus(monk) switch
+        int bonusDamage = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
             KiFocus.KiFocus2 => 3,
@@ -81,8 +81,8 @@ public class FickleStrand : IAugmentation
             _ => 1
         };
 
-        DamageData<short> damageData = attackData.DamageData;
-        short magicalDamage = damageData.GetDamageByType(DamageType.Magical);
+        DamageData<int> damageData = attackData.DamageData;
+        int magicalDamage = damageData.GetDamageByType(DamageType.Magical);
         if (magicalDamage == -1) bonusDamage++;
 
         magicalDamage += bonusDamage;

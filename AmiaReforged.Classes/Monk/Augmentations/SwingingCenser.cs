@@ -13,7 +13,7 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
 {
     public PathType PathType => PathType.SwingingCenser;
 
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
+    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage attackData)
     {
         switch (technique)
         {
@@ -24,7 +24,7 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
                 EagleStrike.DoEagleStrike(monk, attackData);
                 break;
             case TechniqueType.AxiomaticStrike:
-                AxiomaticStrike.DoAxiomaticStrike(attackData);
+                AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
                 break;
         }
     }
@@ -54,9 +54,9 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
     /// <summary>
     /// Stunning Strike heals the monk or a nearby ally for 1d6 damage. Each Ki Focus heals for an additional 1d6, to a maximum of 4d6 damage.
     /// </summary>
-    private static void AugmentStunningStrike(NwCreature monk, OnCreatureAttack attackData)
+    private static void AugmentStunningStrike(NwCreature monk, OnCreatureDamage attackData)
     {
-        StunningStrike.DoStunningStrike(attackData);
+        StunningStrike.DoStunningStrike(monk, attackData);
 
         if (!monk.IsReactionTypeHostile((NwCreature)attackData.Target)) return;
 

@@ -40,5 +40,5 @@ public class EmptyBody(AugmentationFactory augmentationFactory) : ITechnique
         monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
     }
 
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureDamage attackData) { }
 }
