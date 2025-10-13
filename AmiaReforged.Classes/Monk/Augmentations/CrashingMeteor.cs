@@ -89,7 +89,7 @@ public sealed class CrashingMeteor : IAugmentation
             },
             AoeVfx = MonkUtils.ResizedVfx(elementalType switch
             {
-                DamageType.Fire => VfxType.FnfFirestorm,
+                DamageType.Fire => VfxType.FnfFireball,
                 DamageType.Cold => VfxType.ImpFrostL,
                 DamageType.Electrical => VfxType.FnfElectricExplosion,
                 DamageType.Acid => VfxType.ImpAcidS,
