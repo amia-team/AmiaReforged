@@ -166,7 +166,7 @@ public static class MonkUtils
             _ => 2
         };
 
-        if (monk.IsRangedWeaponEquipped) return baseMultiplier;
+        if (attackData.IsRangedAttack) return baseMultiplier;
 
         if (monk.KnowsFeat(Feat.IncreaseMultiplier!)
             && attackData.WeaponAttackType is WeaponAttackType.MainHand or WeaponAttackType.Offhand)
