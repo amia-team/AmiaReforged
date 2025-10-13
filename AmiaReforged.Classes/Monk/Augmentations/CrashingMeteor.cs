@@ -11,7 +11,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 [ServiceBinding(typeof(IAugmentation))]
 public sealed class CrashingMeteor : IAugmentation
 {
-    private const string MeteorKiShoutTag = "crashingmeteor_kishout";
+    private const string MeteorKiShoutTag = nameof(PathType.CrashingMeteor) + nameof(TechniqueType.KiShout);
     public PathType PathType => PathType.CrashingMeteor;
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {

@@ -14,7 +14,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 public sealed class EchoingValley : IAugmentation
 {
     private const string SummonEchoResRef = "summon_echo";
-    private const string EchoingEmptyBodyTag = "echoingvalley_emptybody";
+    private const string EchoingEmptyBodyTag = nameof(PathType.EchoingValley) + nameof(TechniqueType.EmptyBody);
     public PathType PathType => PathType.EchoingValley;
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {

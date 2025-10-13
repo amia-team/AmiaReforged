@@ -11,7 +11,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 [ServiceBinding(typeof(IAugmentation))]
 public class FloatingLeaf : IAugmentation
 {
-    private const string FloatingEagleStrikeTag = "floatingleaf_eaglestrike";
+    private const string FloatingEagleStrikeTag = nameof(PathType.FloatingLeaf) +  nameof(TechniqueType.EagleStrike);
     public PathType PathType => PathType.FloatingLeaf;
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
     {

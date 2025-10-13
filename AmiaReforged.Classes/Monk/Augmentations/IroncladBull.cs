@@ -11,8 +11,8 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 [ServiceBinding(typeof(IAugmentation))]
 public sealed class IroncladBull : IAugmentation
 {
-    private const string IroncladWholenessTag = "ironcladbull_wholenessofbody";
-    private const string IroncladEagleTag = "ironcladbull_eaglestrike";
+    private const string IroncladWholenessTag = nameof(PathType.IroncladBull) + nameof(TechniqueType.WholenessOfBody);
+    private const string IroncladEagleTag = nameof(PathType.IroncladBull) + nameof(TechniqueType.EagleStrike);
 
     public PathType PathType => PathType.IroncladBull;
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)

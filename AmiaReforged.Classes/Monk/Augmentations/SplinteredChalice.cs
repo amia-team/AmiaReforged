@@ -11,7 +11,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 [ServiceBinding(typeof(IAugmentation))]
 public sealed class SplinteredChalice : IAugmentation
 {
-    private const string SplinteredEmptyBodyTag = "SplinteredChalice_emptybody";
+    private const string SplinteredEmptyBodyTag = nameof(PathType.SplinteredChalice) + nameof(TechniqueType.EmptyBody);
 
     public PathType PathType => PathType.SplinteredChalice;
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
