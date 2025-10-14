@@ -20,9 +20,9 @@ public class MartialTechniqueService
 
     private const string MartialCooldownTag = "martialtechnique_cd";
     private const string MartialTechnique = "martial_technique";
-    private const string StunningTag = "Stunning Strike";
-    private const string EagleTag = "Eagle Strike";
-    private const string AxiomaticTag = "Axiomatic Strike";
+    private const string StunningTag = nameof(TechniqueType.StunningStrike);
+    private const string EagleTag = nameof(TechniqueType.EagleStrike);
+    private const string AxiomaticTag = nameof(TechniqueType.AxiomaticStrike);
     private const string EagleStrikeCounter = "eagle_strike_counter";
 
     public MartialTechniqueService(TechniqueFactory techniqueFactory)
@@ -41,24 +41,6 @@ public class MartialTechniqueService
         NwModule.Instance.OnEffectApply += CueMartialTechniqueActivated;
         NwModule.Instance.OnEffectRemove += CueMartialTechniqueDeactivated;
         Log.Info(message: "Monk Martial Technique Service initialized.");
-    }
-
-    private record TechniqueInfo(int FeatId, string Tag, TechniqueType Type);
-
-    private static readonly List<TechniqueInfo> Techniques =
-    [
-        new(MonkFeat.StunningStrike, StunningTag, TechniqueType.StunningStrike),
-        new(MonkFeat.EagleStrike, EagleTag, TechniqueType.EagleStrike),
-        new(MonkFeat.AxiomaticStrike, AxiomaticTag, TechniqueType.AxiomaticStrike)
-    ];
-
-    private static readonly Dictionary<int, TechniqueInfo> FeatIdToTechnique;
-    private static readonly Dictionary<string, TechniqueInfo> TagToTechnique;
-
-    static MartialTechniqueService()
-    {
-        FeatIdToTechnique = Techniques.ToDictionary(tech => tech.FeatId);
-        TagToTechnique = Techniques.ToDictionary(tech => tech.Tag);
     }
 
     /// <summary>
@@ -92,17 +74,14 @@ public class MartialTechniqueService
 
     private void ActivateTechnique(NwCreature monk, int techniqueId)
     {
-        if (!FeatIdToTechnique.TryGetValue(techniqueId, out TechniqueInfo? techInfo))
-            return;
-
-        string newTechniqueTag = techInfo.Tag;
+        string? newTechniqueTag = Enum.GetName((TechniqueType)techniqueId);
 
         Effect? activeTechnique = GetActiveTechniqueEffect(monk);
 
         // If the old technique was the same as the new one, we're just toggling it off.
         if (activeTechnique?.Tag == newTechniqueTag)
         {
-            monk.RemoveEffect(activeTechnique);
+            monk.RemoveEffect(activeTechnique!);
             return;
         }
 
@@ -162,10 +141,10 @@ public class MartialTechniqueService
 
         string? techniqueTag = GetActiveTechniqueEffect(monk)?.Tag;
 
-        if (techniqueTag == null || !TagToTechnique.TryGetValue(techniqueTag, out TechniqueInfo? techInfo))
+        if (techniqueTag == null || !Enum.TryParse(techniqueTag, out TechniqueType techniqueType))
             return;
 
-        ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(techInfo.Type);
+        ITechnique? techniqueHandler = _techniqueFactory.GetTechnique(techniqueType);
         techniqueHandler?.HandleAttackTechnique(monk, attackData);
 
         ApplyTechniqueCooldown(monk, techniqueTag);
@@ -194,10 +173,10 @@ public class MartialTechniqueService
     /// </summary>
     private static void CueMartialTechniqueActivated(OnEffectApply eventData)
     {
-        if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
-        if (eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
+        if (!eventData.Object.IsPlayerControlled(out NwPlayer? player) ||
+            eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
 
-        player.FloatingTextString($"*{eventData.Effect.Tag} Activated*", false, false);
+        player.FloatingTextString($"*{GetSpacedTag(eventData.Effect.Tag)} Activated*", false, false);
     }
 
     /// <summary>
@@ -205,10 +184,21 @@ public class MartialTechniqueService
     /// </summary>
     private static void CueMartialTechniqueDeactivated(OnEffectRemove eventData)
     {
-        if (!eventData.Object.IsPlayerControlled(out NwPlayer? player)) return;
-        if (eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
+        if (!eventData.Object.IsPlayerControlled(out NwPlayer? player) ||
+            eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
 
-        player.FloatingTextString($"*{eventData.Effect.Tag} Deactivated*", false, false);
+        player.FloatingTextString($"*{GetSpacedTag(eventData.Effect.Tag)} Deactivated*", false, false);
+    }
+
+    private static string GetSpacedTag(string tag)
+    {
+        return tag switch
+        {
+            "StunningStrike" => "Stunning Strike",
+            "EagleStrike"    => "Eagle Strike",
+            "AxiomaticTag"   => "Axiomatic Tag",
+            _ => tag
+        };
     }
 
     private static bool PreventMartialTechnique(NwCreature monk, string? techniqueName)

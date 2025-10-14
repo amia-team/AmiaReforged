@@ -1,15 +1,15 @@
-// A public enum for the techniques to help path effect applier
+using AmiaReforged.Classes.Monk.Constants;
 
 namespace AmiaReforged.Classes.Monk.Types;
 
 public enum TechniqueType
 {
-    StunningStrike,
-    EagleStrike,
-    AxiomaticStrike,
-    WholenessOfBody,
-    EmptyBody,
-    KiBarrier,
-    QuiveringPalm,
-    KiShout
+    StunningStrike = MonkFeat.StunningStrike,
+    EagleStrike = MonkFeat.EagleStrike,
+    AxiomaticStrike = MonkFeat.AxiomaticStrike,
+    WholenessOfBody = MonkFeat.WholenessOfBodyNew,
+    EmptyBody = MonkFeat.EmptyBodyNew,
+    KiBarrier = MonkFeat.KiBarrier,
+    QuiveringPalm = MonkFeat.QuiveringPalmNew,
+    KiShout = MonkFeat.KiShout
 }
