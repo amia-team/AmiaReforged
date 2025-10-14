@@ -160,7 +160,7 @@ public class Grease(ScriptHandleFactory handleFactory) : ISpell
         AreaOfEffectEvents.OnExit evtData = new();
         NwGameObject obj = evtData.Exiting;
 
-        Effect? moveSpeed = obj.ActiveEffects.SingleOrDefault(e => e.Tag == GreaseMoveTag);
+        Effect? moveSpeed = obj.ActiveEffects.FirstOrDefault(e => e.Tag == GreaseMoveTag);
 
         if (moveSpeed != null)
         {
