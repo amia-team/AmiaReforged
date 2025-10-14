@@ -18,7 +18,7 @@ public static class WildMagicEffects
 
     private static readonly Color[] RainbowColors =
     [
-        ColorConstants.Red, ColorConstants.Orange, ColorConstants.Yellow, ColorConstants.Green, ColorConstants.Navy,
+        ColorConstants.Red, ColorConstants.Orange, ColorConstants.Yellow, ColorConstants.Green, ColorConstants.Teal,
         ColorConstants.Purple
     ];
 
