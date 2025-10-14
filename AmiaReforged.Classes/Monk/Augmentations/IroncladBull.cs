@@ -166,9 +166,8 @@ public sealed class IroncladBull : IAugmentation
     {
         TouchAttackResult touchAttackResult = QuiveringPalm.DoQuiveringPalm(monk, castData);
 
-        if (castData.TargetObject is not NwCreature targetCreature) return;
-        if (touchAttackResult is TouchAttackResult.Miss) return;
-        if (targetCreature.IsImmuneTo(ImmunityType.Paralysis)) return;
+        if (touchAttackResult is TouchAttackResult.Miss || castData.TargetObject is not NwCreature targetCreature
+            || targetCreature.IsImmuneTo(ImmunityType.Paralysis)) return;
 
         int dc = MonkUtils.CalculateMonkDc(monk);
 
@@ -181,10 +180,7 @@ public sealed class IroncladBull : IAugmentation
             return;
         }
 
-        Effect quiveringEffect = Effect.LinkEffects(
-            Effect.Paralyze(),
-            Effect.VisualEffect(VfxType.DurStonehold)
-        );
+        Effect quiveringEffect = Effect.LinkEffects(Effect.Paralyze(), Effect.VisualEffect(VfxType.DurStonehold));
 
         // Base game paralysis is stopped by mind immunity, so we do our own freedom check
         quiveringEffect.IgnoreImmunity = true;
