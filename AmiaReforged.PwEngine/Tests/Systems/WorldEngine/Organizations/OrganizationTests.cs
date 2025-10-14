@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Systems.WorldEngine.Organizations;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using NUnit.Framework;
@@ -137,5 +138,23 @@ public class OrganizationTests
 
         Assert.That(response.Response, Is.EqualTo(OrganizationRequestResponse.Sent), response.Message);
         Assert.That(org.GetInbox(), Does.Contain(organizationRequest));
+    }
+
+    [Test]
+    public void Gets_Organization_Relationship_Tree()
+    {
+
+
+    }
+
+    [Test]
+    public void Rejects_Banned_Characters()
+    {
+        IOrganization org = Organization.CreateNew("test", "test", OrganizationType.Guild);
+
+        _organizationSystem.Register(org);
+
+        Guid fakeId = Guid.NewGuid();
+        _organizationSystem.BanCharacterFrom(fakeId, org);
     }
 }

@@ -35,11 +35,18 @@ public class OrganizationSystem(IOrganizationRepository organizations) : IOrgani
         return children;
     }
 
+    public void BanCharacterFrom(Guid fakeId, IOrganization org)
+    {
+    }
+
     public IOrganization? ParentFor(IOrganization organization)
     {
         return organizations.All().FirstOrDefault(p => p.Id == organization.ParentOrganization);
     }
+
 }
+
+
 
 public interface IOrganizationRepository
 {

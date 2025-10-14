@@ -8,6 +8,7 @@ public interface IOrganizationSystem
     SystemResponse Register(IOrganization organization);
     IOrganization? ParentFor(IOrganization childOrgId);
     List<IOrganization> SubordinateOrganizationsFor(IOrganization org);
+    void BanCharacterFrom(Guid fakeId, IOrganization org);
 }
 
 public interface IOrganization

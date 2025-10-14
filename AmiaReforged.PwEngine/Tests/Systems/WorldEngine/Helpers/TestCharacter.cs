@@ -110,4 +110,5 @@ public class TestCharacter(
         IndustryMembership? membership = AllIndustryMemberships().FirstOrDefault(i => i.IndustryTag == industryTag);
         return membership == null ? RankUpResult.IndustryNotFound : membershipService.RankUp(membership);
     }
+
 }
