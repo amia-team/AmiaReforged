@@ -1,6 +1,5 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Characters.CharacterData;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Characters;
+using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 

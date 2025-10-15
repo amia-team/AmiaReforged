@@ -1,9 +1,8 @@
 using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Organizations;
+using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using NUnit.Framework;
-using Organization = AmiaReforged.PwEngine.Systems.WorldEngine.Organizations.Organization;
+using Organization = AmiaReforged.PwEngine.Features.WorldEngine.Organizations.Organization;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Organizations;
 

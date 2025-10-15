@@ -1,6 +1,5 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes;
+using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 

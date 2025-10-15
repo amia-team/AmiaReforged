@@ -1,9 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Database.EntityConfig;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Characters.CharacterData;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;

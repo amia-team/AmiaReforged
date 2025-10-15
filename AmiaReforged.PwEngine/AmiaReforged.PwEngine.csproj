@@ -29,9 +29,9 @@
     <ItemGroup>
         <Folder Include="Migrations\" />
         <Folder Include="Resources\WorldEngine\Industries\" />
-        <Folder Include="Systems\MiniGame\LiarsDice\Nui\"/>
-        <Folder Include="Systems\MiniGame\LiarsDice\Tests\"/>
-        <Folder Include="Systems\WorldEngine\Regions\Sites\" />
+        <Folder Include="Features\MiniGame\LiarsDice\Nui\" />
+        <Folder Include="Features\MiniGame\LiarsDice\Tests\" />
+        <Folder Include="Features\WorldEngine\Regions\Sites\" />
     </ItemGroup>
 
     <ItemGroup>

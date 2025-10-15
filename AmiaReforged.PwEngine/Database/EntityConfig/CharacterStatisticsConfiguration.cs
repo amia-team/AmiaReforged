@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Characters.CharacterData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

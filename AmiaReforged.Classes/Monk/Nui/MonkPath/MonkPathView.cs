@@ -1,7 +1,7 @@
 ﻿using AmiaReforged.Classes.Monk.Types;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WindowingSystem;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
-using AmiaReforged.PwEngine.Systems.WindowingSystem;
 
 namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
 

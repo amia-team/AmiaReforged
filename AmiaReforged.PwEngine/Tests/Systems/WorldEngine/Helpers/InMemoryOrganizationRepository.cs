@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine.Organizations;
+using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 

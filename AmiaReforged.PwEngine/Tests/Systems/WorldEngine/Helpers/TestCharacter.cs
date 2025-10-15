@@ -1,10 +1,8 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine.Characters;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Characters.CharacterData;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Harvesting;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Items.ItemData;
-using AmiaReforged.PwEngine.Systems.WorldEngine.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.Characters;
+using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData;
+using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
