@@ -1,5 +1,4 @@
-﻿using AmiaReforged.Classes.Monk.Types;
-using AmiaReforged.PwEngine.Systems.WindowingSystem;
+﻿using AmiaReforged.PwEngine.Systems.WindowingSystem;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 
