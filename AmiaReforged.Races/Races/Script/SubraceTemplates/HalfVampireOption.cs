@@ -1,10 +1,10 @@
-﻿using AmiaReforged.Races.Races.Utils;
+using AmiaReforged.Races.Races.Utils;
 using NWN.Core;
 using NWN.Core.NWNX;
 
 namespace AmiaReforged.Races.Races.Script.SubraceTemplates;
 
-public class HalfDragonOption : ISubraceApplier
+public class HalfVampireOption : ISubraceApplier
 {
     public void Apply(uint nwnObjectId)
     {
@@ -21,7 +21,6 @@ public class HalfDragonOption : ISubraceApplier
 
         TemplateRunner.Run(nwnObjectId);
 
-        CreaturePlugin.SetRacialType(nwnObjectId, NWScript.RACIAL_TYPE_DRAGON);
         CreaturePlugin.AddFeatByLevel(nwnObjectId,228,1);
         CreaturePlugin.AddFeatByLevel(nwnObjectId,240,1);
     }

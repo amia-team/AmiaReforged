@@ -20,13 +20,7 @@ public class PlayerToolsService
     public PlayerToolsService(WindowDirector windowManager)
     {
         _windowManager = windowManager;
-        NwArea? entryArea = NwModule.Instance.Areas.FirstOrDefault(t => t.Tag == EntryAreaTag);
-
-        if (entryArea == null)
-        {
-            Log.Error(message: "Entry area not found.");
-            return;
-        }
+        NwArea entryArea = NwModule.Instance.StartingLocation.Area;
 
         entryArea.OnEnter += AddPlayerToolsFeat;
 
