@@ -4,6 +4,7 @@ namespace AmiaReforged.Classes.Monk;
 
 public static class WisdomAttackBonus
 {
+    private const string WisdomAbTag = "monk_wis_ab";
     public static void AdjustWisdomAttackBonus(NwCreature monk, bool abilitiesRestricted)
     {
         UnsetWisdomAttackBonus(monk);
@@ -18,8 +19,8 @@ public static class WisdomAttackBonus
         if (wisModifier <= strModifier || FinesseApplies(monk, wisModifier, dexModifier))
             return;
 
-
-        int meleeAttackBonus = monk.GetAttackBonus(isMelee: true);
+        // Leaving this commented out for later-day function hooking
+        /*int meleeAttackBonus = monk.GetAttackBonus(isMelee: true);
 
         if (monk.GetItemInSlot(InventorySlot.RightHand) is null
             && monk.GetItemInSlot(InventorySlot.Arms) is { } gloves
@@ -37,9 +38,16 @@ public static class WisdomAttackBonus
                 meleeAttackBonus - dexModifier + wisModifier
                 : meleeAttackBonus - strModifier + wisModifier;
 
-        int newBaseAttackBonus = monk.BaseAttackBonus + wisAttackBonus - meleeAttackBonus;
+        int newBaseAttackBonus = monk.BaseAttackBonus + wisAttackBonus - meleeAttackBonus;*/
 
-        monk.BaseAttackBonus = newBaseAttackBonus;
+        int wisAttackBonus =
+            FinesseApplies(monk, strModifier, dexModifier) ? wisModifier - dexModifier : wisModifier - strModifier;
+
+        Effect wisAbEffect = Effect.AttackIncrease(wisAttackBonus);
+        wisAbEffect.SubType = EffectSubType.Unyielding;
+        wisAbEffect.Tag = WisdomAbTag;
+
+        monk.ApplyEffect(EffectDuration.Permanent, wisAbEffect);
     }
 
     private static bool FinesseApplies(NwCreature monk, int abilityModifier, int dexModifier)
@@ -53,8 +61,14 @@ public static class WisdomAttackBonus
     /// <summary>
     /// Setting BAB to 0 reverts to original BAB
     /// </summary>
-    private static void UnsetWisdomAttackBonus(NwCreature monk) =>
-        monk.BaseAttackBonus = 0;
+    private static void UnsetWisdomAttackBonus(NwCreature monk)
+    {
+        Effect? existingAbEffect = monk.ActiveEffects.FirstOrDefault(e => e.Tag == WisdomAbTag);
+
+        if (existingAbEffect == null) return;
+
+        monk.RemoveEffect(existingAbEffect);
+    }
 
 
 }
