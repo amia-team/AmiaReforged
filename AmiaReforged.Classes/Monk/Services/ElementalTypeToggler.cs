@@ -43,15 +43,6 @@ public class ElementalTypeToggler
             _ => "Fire"
         };
 
-        string elementalSound = elementalType.Value switch
-        {
-            MonkElemental.Fire => "sff_explfire",
-            MonkElemental.Water => "as_na_splash1",
-            MonkElemental.Air => "sco_mehansonc02",
-            MonkElemental.Earth => "sff_rainice",
-            _ => "sff_explfire"
-        };
-
         Color elementalColor = elementalType.Value switch
         {
             MonkElemental.Fire => ColorConstants.Orange,
@@ -60,8 +51,7 @@ public class ElementalTypeToggler
             MonkElemental.Earth => ColorConstants.Green,
             _ => ColorConstants.Orange
         };
-
-        monk.PlaySound(elementalSound);
+        
         player.FloatingTextString($"*Activated {elementalName.ColorString(elementalColor)}*", false, false);
     }
 }
