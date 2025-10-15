@@ -188,8 +188,8 @@ public sealed class MonkPathView : ScryView<MonkPathPresenter>
                             {
                                 new NuiText(PathText)
                                 {
-                                    Height = 450,
-                                    Scrollbars = NuiScrollbars.None
+                                    Height = 280f,
+                                    Scrollbars = NuiScrollbars.Y
                                 }
                             }
                         },

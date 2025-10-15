@@ -194,9 +194,9 @@ public class MartialTechniqueService
     {
         return tag switch
         {
-            "StunningStrike" => "Stunning Strike",
-            "EagleStrike"    => "Eagle Strike",
-            "AxiomaticTag"   => "Axiomatic Tag",
+            StunningTag => "Stunning Strike",
+            EagleTag    => "Eagle Strike",
+            AxiomaticTag => "Axiomatic Strike",
             _ => tag
         };
     }
