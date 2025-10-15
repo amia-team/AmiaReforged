@@ -65,7 +65,7 @@ public class FloatingLeaf : IAugmentation
         {
             KiFocus.KiFocus1  => Effect.Pacified(),
             KiFocus.KiFocus2 => Effect.Dazed(),
-            KiFocus.KiFocus3 => Effect.Paralyze(),
+            KiFocus.KiFocus3 => Effect.Stunned(),
             _ => null
         };
 
