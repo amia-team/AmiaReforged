@@ -12,7 +12,6 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools;
 [ServiceBinding(typeof(PlayerToolsService))]
 public class PlayerToolsService
 {
-    private const string EntryAreaTag = "welcometotheeete";
     private const int PlayerToolsFeatId = 1337;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly WindowDirector _windowManager;
