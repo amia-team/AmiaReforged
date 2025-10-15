@@ -91,7 +91,7 @@ public class TestFeatSorter
         // Remove old feats or new feats that monk doesn't qualify for
         foreach (NwFeat feat in monk.Feats.Where(feat => oldFeats.Contains(feat) || incorrectFeats.Contains(feat)))
         {
-                monk.RemoveFeat(feat);
+                monk.RemoveFeat(feat, true);
                 player.SendServerMessage($"Feat {feat.Name} was removed.");
         }
 
