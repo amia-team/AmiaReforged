@@ -35,7 +35,7 @@ public class ElementalTypeToggler
         elementalTypeVar.Value++;
         if (elementalTypeVar.Value > ElementalType.Earth) elementalTypeVar.Value = ElementalType.Fire;
 
-        const string elementalName = nameof(elementalTypeVar.Value);
+        string elementalName = elementalTypeVar.Value.ToString();
 
         Color elementalColor = elementalTypeVar.Value switch
         {
