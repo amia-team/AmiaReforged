@@ -134,6 +134,6 @@ public sealed class MonkPathPresenter(MonkPathView pathView, NwPlayer player) : 
         if (environment != "live")
             return;
 
-        monkCharacter.RemoveFeat(poeBaseFeat);
+        monkCharacter.RemoveFeat(poeBaseFeat, true);
     }
 }
