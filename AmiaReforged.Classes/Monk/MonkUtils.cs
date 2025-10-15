@@ -2,6 +2,7 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core;
+using AmiaReforged.Classes.Monk.Constants;
 
 namespace AmiaReforged.Classes.Monk;
 
@@ -63,10 +64,11 @@ public static class MonkUtils
     {
         float vfxDefaultSize = vfxType switch
         {
-            VfxType.ImpFrostL or VfxType.ImpAcidS or VfxType.ImpBlindDeafM => 1f,
-            VfxType.FnfLosEvil10 or (VfxType)1046 or VfxType.ImpPulseHoly => RadiusSize.Medium,
-            VfxType.FnfFireball => RadiusSize.Huge,
-            VfxType.FnfElectricExplosion or VfxType.FnfMysticalExplosion => RadiusSize.Gargantuan,
+            VfxType.ImpFrostL => 0.7f,
+            VfxType.ImpAcidS or VfxType.ImpBlindDeafM => 1f,
+            VfxType.FnfLosEvil10 or VfxType.ImpPulseHoly => RadiusSize.Medium,
+            VfxType.FnfElectricExplosion or MonkVfx.FnfFreezingSphere or MonkVfx.FnfVitriolicSphere
+                or VfxType.FnfMysticalExplosion => RadiusSize.Gargantuan,
             VfxType.FnfHowlOdd or VfxType.FnfHowlMind or VfxType.FnfLosEvil30 => RadiusSize.Colossal,
             _ => RadiusSize.Large
         };

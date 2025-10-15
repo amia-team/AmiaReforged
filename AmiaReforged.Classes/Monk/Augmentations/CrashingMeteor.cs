@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
@@ -5,6 +6,7 @@ using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+
 
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
@@ -90,9 +92,9 @@ public sealed class CrashingMeteor : IAugmentation
             AoeVfx = MonkUtils.ResizedVfx(elementalType switch
             {
                 ElementalType.Fire => VfxType.FnfFireball,
-                ElementalType.Water => VfxType.ImpFrostL,
+                ElementalType.Water => MonkVfx.FnfFreezingSphere,
                 ElementalType.Air => VfxType.FnfElectricExplosion,
-                ElementalType.Earth => VfxType.ImpAcidS,
+                ElementalType.Earth => MonkVfx.FnfVitriolicSphere,
                 _ => VfxType.FnfFireball
             }, RadiusSize.Large),
             DamageVfx = elementalType switch
