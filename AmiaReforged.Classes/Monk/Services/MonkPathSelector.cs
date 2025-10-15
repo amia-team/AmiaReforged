@@ -1,6 +1,6 @@
 ﻿using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Nui.MonkPath;
-using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

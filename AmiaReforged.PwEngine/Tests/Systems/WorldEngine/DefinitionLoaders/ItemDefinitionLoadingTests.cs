@@ -1,7 +1,6 @@
-using AmiaReforged.PwEngine.Systems.WorldEngine;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Items;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Items.ItemData;
-using AmiaReforged.PwEngine.Systems.WorldEngine.ResourceNodes;
+using AmiaReforged.PwEngine.Features.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Items;
+using AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData;
 using Moq;
 using NUnit.Framework;
 

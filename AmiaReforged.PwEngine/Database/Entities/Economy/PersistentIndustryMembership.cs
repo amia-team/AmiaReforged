@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 
 namespace AmiaReforged.PwEngine.Database.Entities.Economy;
 

@@ -1,8 +1,8 @@
 using System;
 using System.IO;
+using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using Moq;
 using NUnit.Framework;
-using AmiaReforged.PwEngine.Systems.WorldEngine.Industries;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
 {
