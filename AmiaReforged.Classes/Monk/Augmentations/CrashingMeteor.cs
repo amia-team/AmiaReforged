@@ -147,7 +147,7 @@ public sealed class CrashingMeteor : IAugmentation
             int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
             if (nwObject is not NwCreature creatureInShape)
             {
-                _ = ApplyStunningDamage(nwObject, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
+                _ = ApplyAoeDamage(nwObject, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
                 continue;
             }
 
@@ -170,21 +170,9 @@ public sealed class CrashingMeteor : IAugmentation
             if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
                 damageAmount /= 2;
 
-            _ = ApplyStunningDamage(creatureInShape, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
+            _ = ApplyAoeDamage(creatureInShape, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
         }
     }
-
-    private async Task ApplyStunningDamage(NwGameObject targetObject, NwCreature monk, int damageAmount,
-        DamageType damageType, VfxType damageVfx)
-    {
-        await monk.WaitForObjectContext();
-        Effect damageEffect = Effect.LinkEffects(
-            Effect.Damage(damageAmount, damageType),
-            Effect.VisualEffect(damageVfx));
-
-        targetObject.ApplyEffect(EffectDuration.Instant, damageEffect);
-    }
-
 
     /// <summary>
     ///     Axiomatic Strike deals +1 bonus elemental damage, with an additional +1 for every Ki Focus,
@@ -222,7 +210,12 @@ public sealed class CrashingMeteor : IAugmentation
         foreach (NwGameObject nwObject in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
-            NwCreature creatureInShape = (NwCreature)nwObject;
+            int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
+            if (nwObject is not NwCreature creatureInShape)
+            {
+                _ = ApplyAoeDamage(nwObject, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
+                continue;
+            }
             if (monk.IsReactionTypeFriendly(creatureInShape)) continue;
 
             CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.Fireball)!);
@@ -232,8 +225,6 @@ public sealed class CrashingMeteor : IAugmentation
 
             SavingThrowResult savingThrowResult =
                 creatureInShape.RollSavingThrow(SavingThrow.Reflex, meteor.Dc, meteor.SaveType, monk);
-
-            int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
 
             if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
                 damageAmount /= 2;
@@ -254,9 +245,19 @@ public sealed class CrashingMeteor : IAugmentation
                 continue;
             }
 
-            creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
-            creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
+            _ = ApplyAoeDamage(creatureInShape, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
         }
+    }
+
+    private static async Task ApplyAoeDamage(NwGameObject targetObject, NwCreature monk, int damageAmount,
+        DamageType damageType, VfxType damageVfx)
+    {
+        await monk.WaitForObjectContext();
+        Effect damageEffect = Effect.LinkEffects(
+            Effect.Damage(damageAmount, damageType),
+            Effect.VisualEffect(damageVfx));
+
+        targetObject.ApplyEffect(EffectDuration.Instant, damageEffect);
     }
 
     /// <summary>
