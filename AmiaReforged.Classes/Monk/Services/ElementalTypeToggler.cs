@@ -7,12 +7,12 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(ElementalToggleHandler))]
-public class ElementalToggleHandler
+[ServiceBinding(typeof(ElementalTypeToggler))]
+public class ElementalTypeToggler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    public ElementalToggleHandler()
+    public ElementalTypeToggler()
     {
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
 

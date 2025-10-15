@@ -1,12 +1,12 @@
 ﻿using AmiaReforged.Classes.Monk.Constants;
-using AmiaReforged.Classes.Monk.Services;
+using AmiaReforged.Classes.Monk.Nui.FightingStyle;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.Classes.Monk.Nui.FightingStyle;
+namespace AmiaReforged.Classes.Monk.Services;
 
 [ServiceBinding(typeof(FightingStyleSelector))]
 public class FightingStyleSelector
@@ -16,6 +16,10 @@ public class FightingStyleSelector
     public FightingStyleSelector(WindowDirector windowManager)
     {
         _windowManager = windowManager;
+
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+        if (environment == "live") return;
+
         NwModule.Instance.OnUseFeat += OpenPathSelectorWindow;
     }
 

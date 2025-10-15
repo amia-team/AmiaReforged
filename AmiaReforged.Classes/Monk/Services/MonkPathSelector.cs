@@ -1,11 +1,12 @@
 ﻿using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.Classes.Monk.Nui.MonkPath;
 using AmiaReforged.PwEngine.Systems.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.Classes.Monk.Nui.MonkPath;
+namespace AmiaReforged.Classes.Monk.Services;
 
 [ServiceBinding(typeof(MonkPathSelector))]
 public class MonkPathSelector
@@ -15,6 +16,10 @@ public class MonkPathSelector
     public MonkPathSelector(WindowDirector windowManager)
     {
         _windowManager = windowManager;
+
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+        if (environment == "live") return;
+
         NwModule.Instance.OnUseFeat += OpenPathSelectorWindow;
     }
 
