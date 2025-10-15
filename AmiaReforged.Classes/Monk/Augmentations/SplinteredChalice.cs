@@ -95,7 +95,7 @@ public sealed class SplinteredChalice : IAugmentation
             _ => 1
         };
 
-        int bonusDamage = Random.Shared.Roll(damageSides, (int)condition);
+        int bonusDamage = Random.Shared.Roll((int)condition, damageSides);
 
         DamageData<short> damageData = attackData.DamageData;
         short negativeDamage = damageData.GetDamageByType(DamageType.Negative);
@@ -127,12 +127,12 @@ public sealed class SplinteredChalice : IAugmentation
     {
         if (monk.Location == null) return;
 
-        int damageSides = MonkUtils.GetKiFocus(monk) switch
+        int diceAmount = MonkUtils.GetKiFocus(monk) switch
         {
-            KiFocus.KiFocus1 => 8,
-            KiFocus.KiFocus2 => 10,
-            KiFocus.KiFocus3 => 12,
-            _ => 6
+            KiFocus.KiFocus1 => 20,
+            KiFocus.KiFocus2 => 15,
+            KiFocus.KiFocus3 => 10,
+            _ => 5
         };
 
         int dc = MonkUtils.CalculateMonkDc(monk);
@@ -146,7 +146,7 @@ public sealed class SplinteredChalice : IAugmentation
 
             CreatureEvents.OnSpellCastAt.Signal(monk, hostileCreature, NwSpell.FromSpellType(Spell.NegativeEnergyBurst)!);
 
-            int damageAmount = Random.Shared.Roll(damageSides, (int)condition);
+            int damageAmount = Random.Shared.Roll((int)condition, diceAmount);
 
             SavingThrowResult savingThrowResult =
                 hostileCreature.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Negative, monk);
