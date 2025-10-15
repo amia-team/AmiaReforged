@@ -1,4 +1,3 @@
-using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
@@ -8,6 +7,7 @@ namespace AmiaReforged.Classes.Monk;
 
 public static class MonkUtils
 {
+    private const string ElementalVarName = "monk_elemental_type";
     private static readonly NwClass? ObsoletePoeClass = NwClass.FromClassId(50);
 
     /// <summary>
@@ -88,19 +88,11 @@ public static class MonkUtils
     }
 
     /// <summary>
-    ///     A helper function for elements monk, gets the damage type based on the chosen element.
+    /// A helper function for elements monk, gets the elemental type local variable whose value is used to switch the type.
     /// </summary>
-    public static DamageType GetElementalType(NwCreature monk)
+    public static LocalVariableEnum<ElementalType> GetElementalTypeVar(NwCreature monk)
     {
-        DamageType elementalType = monk.GetObjectVariable<LocalVariableInt>(MonkElemental.VarName).Value switch
-        {
-            MonkElemental.Fire => DamageType.Fire,
-            MonkElemental.Water => DamageType.Cold,
-            MonkElemental.Air => DamageType.Electrical,
-            MonkElemental.Earth => DamageType.Acid,
-            _ => DamageType.Fire
-        };
-        return elementalType;
+        return monk.GetObjectVariable<LocalVariableEnum<ElementalType>>(ElementalVarName);
     }
 
     public static bool AbilityRestricted(NwCreature monk, string abilityName, NwFeat kiPointFeat)

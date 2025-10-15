@@ -1,4 +1,5 @@
 using AmiaReforged.Classes.Monk.Constants;
+using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -19,7 +20,7 @@ public class ElementalTypeToggler
         if (environment == "live") return;
 
         NwModule.Instance.OnUseFeat += ToggleElementalType;
-        Log.Info(message: "Monk Elemental Toggle Handler initialized.");
+        Log.Info(message: "Monk Elemental Type Toggler initialized.");
     }
 
     private static void ToggleElementalType(OnUseFeat eventData)
@@ -28,30 +29,23 @@ public class ElementalTypeToggler
         if (!eventData.Creature.IsPlayerControlled(out NwPlayer? player)) return;
 
         NwCreature monk = eventData.Creature;
-        LocalVariableInt elementalType = monk.GetObjectVariable<LocalVariableInt>(MonkElemental.VarName);
+        LocalVariableEnum<ElementalType> elementalTypeVar = MonkUtils.GetElementalTypeVar(monk);
 
         // On feat use, elemental type always switches to the next
-        elementalType.Value++;
-        if (elementalType.Value > MonkElemental.Earth) elementalType.Value = MonkElemental.Fire;
+        elementalTypeVar.Value++;
+        if (elementalTypeVar.Value > ElementalType.Earth) elementalTypeVar.Value = ElementalType.Fire;
 
-        string elementalName = elementalType.Value switch
-        {
-            MonkElemental.Fire => "Fire",
-            MonkElemental.Water => "Water",
-            MonkElemental.Air => "Air",
-            MonkElemental.Earth => "Earth",
-            _ => "Fire"
-        };
+        const string elementalName = nameof(elementalTypeVar.Value);
 
-        Color elementalColor = elementalType.Value switch
+        Color elementalColor = elementalTypeVar.Value switch
         {
-            MonkElemental.Fire => ColorConstants.Orange,
-            MonkElemental.Water => ColorConstants.Cyan,
-            MonkElemental.Air => ColorConstants.Silver,
-            MonkElemental.Earth => ColorConstants.Green,
+            ElementalType.Fire => ColorConstants.Orange,
+            ElementalType.Water => ColorConstants.Cyan,
+            ElementalType.Air => ColorConstants.Silver,
+            ElementalType.Earth => ColorConstants.Green,
             _ => ColorConstants.Orange
         };
-        
+
         player.FloatingTextString($"*Activated {elementalName.ColorString(elementalColor)}*", false, false);
     }
 }

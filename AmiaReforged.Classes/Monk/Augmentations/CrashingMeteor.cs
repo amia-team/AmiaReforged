@@ -68,7 +68,7 @@ public sealed class CrashingMeteor : IAugmentation
 
     private static CrashingMeteorData GetCrashingMeteorData(NwCreature monk)
     {
-        DamageType elementalType = MonkUtils.GetElementalType(monk);
+        ElementalType elementalType = MonkUtils.GetElementalTypeVar(monk).Value;
 
         return new CrashingMeteorData
         {
@@ -89,27 +89,34 @@ public sealed class CrashingMeteor : IAugmentation
             },
             AoeVfx = MonkUtils.ResizedVfx(elementalType switch
             {
-                DamageType.Fire => VfxType.FnfFireball,
-                DamageType.Cold => VfxType.ImpFrostL,
-                DamageType.Electrical => VfxType.FnfElectricExplosion,
-                DamageType.Acid => VfxType.ImpAcidS,
+                ElementalType.Fire => VfxType.FnfFireball,
+                ElementalType.Water => VfxType.ImpFrostL,
+                ElementalType.Air => VfxType.FnfElectricExplosion,
+                ElementalType.Earth => VfxType.ImpAcidS,
                 _ => VfxType.FnfFireball
             }, RadiusSize.Large),
             DamageVfx = elementalType switch
             {
-                DamageType.Fire => VfxType.ImpFlameS,
-                DamageType.Cold => VfxType.ImpFrostS,
-                DamageType.Electrical => VfxType.ComHitElectrical,
-                DamageType.Acid => VfxType.ImpAcidS,
+                ElementalType.Fire => VfxType.ImpFlameS,
+                ElementalType.Water => VfxType.ImpFrostS,
+                ElementalType.Air => VfxType.ComHitElectrical,
+                ElementalType.Earth => VfxType.ImpAcidS,
                 _ => VfxType.ImpFlameS
             },
-            DamageType = elementalType,
+            DamageType = elementalType switch
+            {
+                ElementalType.Fire => DamageType.Fire,
+                ElementalType.Water => DamageType.Cold,
+                ElementalType.Air => DamageType.Electrical,
+                ElementalType.Earth => DamageType.Acid,
+                _ => DamageType.Fire
+            },
             SaveType = elementalType switch
             {
-                DamageType.Fire => SavingThrowType.Fire,
-                DamageType.Cold => SavingThrowType.Cold,
-                DamageType.Electrical => SavingThrowType.Electricity,
-                DamageType.Acid => SavingThrowType.Acid,
+                ElementalType.Fire => SavingThrowType.Fire,
+                ElementalType.Water => SavingThrowType.Cold,
+                ElementalType.Air => SavingThrowType.Electricity,
+                ElementalType.Earth => SavingThrowType.Acid,
                 _ => SavingThrowType.Fire
             },
             DamageVulnerability = MonkUtils.GetKiFocus(monk) switch
