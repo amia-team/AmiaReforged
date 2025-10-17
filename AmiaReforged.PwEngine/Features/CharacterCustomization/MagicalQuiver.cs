@@ -10,7 +10,7 @@ namespace AmiaReforged.PwEngine.Features.CharacterCustomization;
 [ServiceBinding(typeof(MagicalQuiver))]
 public class MagicalQuiver
 {
-    private readonly MagicalQuiver _magicalQuiver;
+    private readonly MagicQuiverMap _magicalQuiver;
     private const string QuiverTag = "magical_quiver";
 
     private const string PcKeyResRef = "ds_pckey";
@@ -32,7 +32,8 @@ public class MagicalQuiver
         { 5, "Half-Orc Size" },
         { 6, "Human Size" }
     };
-    public MagicalQuiver(MagicalQuiver magicalQuiver)
+
+    public MagicalQuiver(MagicQuiverMap magicalQuiver)
     {
         NwModule.Instance.OnItemUse += HandleMagicalQuiver;
         _magicalQuiver = magicalQuiver;
@@ -134,8 +135,8 @@ public class MagicalQuiver
         int gender = NWScript.GetGender(player);
 
         int? vfx = gender == NWScript.GENDER_MALE
-            ? _magicalQuiver.QuiverForRace[selectedRace].maleQuivers.GetValueOrDefault(quiverEnum)
-            : _magicalQuiver.QuiverForRace[selectedRace].femaleQuivers.GetValueOrDefault(quiverEnum);
+            ? _magicalQuiver.QuiversForRace[selectedRace].MaleQuivers.GetValueOrDefault(quiverEnum)
+            : _magicalQuiver.QuiversForRace[selectedRace].FemaleQuivers.GetValueOrDefault(quiverEnum);
 
         if (vfx is null)
         {
@@ -152,14 +153,14 @@ public class MagicalQuiver
     }
 }
 
-[ServiceBinding(typeof(MagicQuiver))]
-public sealed class MagicQuiver
+[ServiceBinding(typeof(MagicQuiverMap))]
+public sealed class MagicQuiverMap
 {
     public Dictionary<int, RaceQuivers> QuiversForRace { get; }
     public Dictionary<int, RaceArrows> ArrowsForRace { get; }
 
 
-    public MagicQuiver()
+    public MagicQuiverMap()
     {
         QuiversForRace = new Dictionary<int, RaceQuivers>
         {
@@ -207,7 +208,6 @@ public sealed class MagicQuiver
             { WearableQuiver.ArrowOrange, 0 },
             { WearableQuiver.ArrowPurple, 0 },
             { WearableQuiver.ArrowAqua, 0 }
-
         }, new Dictionary<WearableQuiver, int>()
         {
             { WearableQuiver.QuiverBrown, 0 },
@@ -230,6 +230,15 @@ public sealed class MagicQuiver
             { WearableQuiver.ArrowOrange, 0 },
             { WearableQuiver.ArrowPurple, 0 },
             { WearableQuiver.ArrowAqua, 0 }
+        }
+    );
+
+    private readonly RaceArrows _dwarfArrows = new RaceArrows(
+        new Dictionary<WearableQuiver, int>()
+        {
+        },
+        new Dictionary<WearableQuiver, int>()
+        {
         }
     );
 
@@ -255,7 +264,6 @@ public sealed class MagicQuiver
             { WearableQuiver.ArrowOrange, 0 },
             { WearableQuiver.ArrowPurple, 0 },
             { WearableQuiver.ArrowAqua, 0 }
-
         }, new Dictionary<WearableQuiver, int>()
         {
             { WearableQuiver.QuiverBrown, 0 },
@@ -281,6 +289,15 @@ public sealed class MagicQuiver
         }
     );
 
+    private readonly RaceArrows _humanArrows = new RaceArrows(
+        new Dictionary<WearableQuiver, int>()
+        {
+        },
+        new Dictionary<WearableQuiver, int>()
+        {
+        }
+    );
+
     private readonly RaceQuivers _elfQuivers = new RaceQuivers(new Dictionary<WearableQuiver, int>()
         {
             { WearableQuiver.QuiverBrown, 0 },
@@ -303,7 +320,6 @@ public sealed class MagicQuiver
             { WearableQuiver.ArrowOrange, 0 },
             { WearableQuiver.ArrowPurple, 0 },
             { WearableQuiver.ArrowAqua, 0 }
-
         }, new Dictionary<WearableQuiver, int>()
         {
             { WearableQuiver.QuiverBrown, 0 },
@@ -326,6 +342,15 @@ public sealed class MagicQuiver
             { WearableQuiver.ArrowOrange, 0 },
             { WearableQuiver.ArrowPurple, 0 },
             { WearableQuiver.ArrowAqua, 0 }
+        }
+    );
+
+    private readonly RaceArrows _elfArrows = new RaceArrows(
+        new Dictionary<WearableQuiver, int>()
+        {
+        },
+        new Dictionary<WearableQuiver, int>()
+        {
         }
     );
 
@@ -376,7 +401,14 @@ public sealed class MagicQuiver
             { WearableQuiver.ArrowAqua, 0 }
         }
     );
-
+    private readonly RaceArrows _hinArrows = new RaceArrows(
+        new Dictionary<WearableQuiver, int>()
+        {
+        },
+        new Dictionary<WearableQuiver, int>()
+        {
+        }
+    );
     private readonly RaceQuivers _halfOrcQuivers = new RaceQuivers(new Dictionary<WearableQuiver, int>()
         {
             { WearableQuiver.QuiverBrown, 0 },
@@ -424,9 +456,20 @@ public sealed class MagicQuiver
             { WearableQuiver.ArrowAqua, 0 }
         }
     );
+
+    private readonly RaceArrows _halfOrcArrows = new RaceArrows(
+        new Dictionary<WearableQuiver, int>()
+        {
+        },
+        new Dictionary<WearableQuiver, int>()
+        {
+        }
+    );
 }
 
-public record RaceQuivers(Dictionary<WearableQuiver, int> maleQuivers, Dictionary<WearableQuiver, int> femaleQuivers);
+public record RaceQuivers(Dictionary<WearableQuiver, int> MaleQuivers, Dictionary<WearableQuiver, int> FemaleQuivers);
+
+public record RaceArrows(Dictionary<WearableQuiver, int> MaleArrows, Dictionary<WearableQuiver, int> FemaleArrows);
 
 public enum WearableQuiver
 {
@@ -456,4 +499,3 @@ public enum WearableQuiver
     ArrowPurple = 19,
     ArrowAqua = 20,
 }
-
