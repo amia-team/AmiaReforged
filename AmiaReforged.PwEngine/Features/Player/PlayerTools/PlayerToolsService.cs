@@ -13,6 +13,7 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools;
 public class PlayerToolsService
 {
     private const int PlayerToolsFeatId = 1337;
+    private const int WeaponFinesseFeatId = 42;
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly WindowDirector _windowManager;
 
@@ -22,6 +23,7 @@ public class PlayerToolsService
         NwArea entryArea = NwModule.Instance.StartingLocation.Area;
 
         entryArea.OnEnter += AddPlayerToolsFeat;
+        entryArea.OnEnter += AddWeaponFinesseFeat;
 
         NwModule.Instance.OnUseFeat += OnUsePlayerTools;
     }
@@ -79,5 +81,30 @@ public class PlayerToolsService
 
         player.FloatingTextString(message: "Adding PlayerTools feat.", false);
         CreaturePlugin.AddFeatByLevel(character, PlayerToolsFeatId, 1);
+    }
+    private void AddWeaponFinesseFeat(AreaEvents.OnEnter obj)
+    {
+        if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
+
+        NwCreature? character = player.LoginCreature;
+
+        if (character is null)
+        {
+            Log.Error($"{player.PlayerName}'s Character not found.");
+            return;
+        }
+
+        if (character.Feats.Any(f => f.Id == WeaponFinesseFeatId)) return;
+
+        NwFeat? weaponFinesse = NwFeat.FromFeatId(WeaponFinesseFeatId);
+
+        if (weaponFinesse is null)
+        {
+            Log.Error(message: "Weapon Finesse feat not found.");
+            return;
+        }
+
+        player.FloatingTextString(message: "Adding Weapon Finesse feat.", false);
+        CreaturePlugin.AddFeatByLevel(character, WeaponFinesseFeatId, 1);
     }
 }
