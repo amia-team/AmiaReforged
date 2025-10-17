@@ -224,7 +224,7 @@ public class BoxOfHats
 
         VisualEffectTableEntry maskEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
         Effect maskVfx = Effect.VisualEffect(maskEntry);
-        maskVfx.Tag = HatVfxTag;
+        maskVfx.Tag = MaskVfxTag;
 
         playerCreature.ApplyEffect(EffectDuration.Permanent, maskVfx);
     }
