@@ -32,7 +32,7 @@ public class BoxOfHats
 
     private void HandleBoxOfMasks(OnItemUse obj)
     {
-        if (obj.Item.Tag != BoxOfHatsTag || obj.Item.Tag != BoxOfMasksTag) return;
+        if (obj.Item.Tag != BoxOfHatsTag && obj.Item.Tag != BoxOfMasksTag) return;
 
         if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
 
