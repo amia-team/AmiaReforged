@@ -51,6 +51,7 @@ public class BoxOfHats
                     return;
                 }
 
+                NWScript.SetLocalObject(pcKey, HatBoxPcKeyLocalObject, obj.Item);
                 player.ActionStartConversation(player.LoginCreature!, "hatchanger_conv", true, false);
                 return;
 
@@ -62,6 +63,7 @@ public class BoxOfHats
                     return;
                 }
 
+                NWScript.SetLocalObject(pcKey, MaskBoxPcKeyLocalObject, obj.Item);
                 player.ActionStartConversation(player.LoginCreature!, "maskchanger_conv", true, false);
                 return;
             default:
@@ -206,8 +208,9 @@ public class BoxOfHats
             return;
         }
 
+        uint maskBox = NWScript.GetLocalObject(pcKey, MaskBoxPcKeyLocalObject);
         int gender = NWScript.GetGender(player);
-        int race = NWScript.GetAppearanceType(player);
+        int race = NWScript.GetLocalInt(maskBox, SelectedRaceLocalInt);
 
         int? vfx = gender == NWScript.GENDER_MALE
             ? _masksAndHats.MasksForRace[race].MaleMasks.GetValueOrDefault(maskEnum)
