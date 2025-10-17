@@ -24,6 +24,16 @@ public class BoxOfHats
     private const string HatVfxTag = "hat_vfx";
     private const string MaskVfxTag = "mask_vfx";
 
+    private readonly Dictionary<int, string> _raceLabels = new()
+    {
+        { 0, "Dwarf Sized" },
+        { 1, "Elf Sized" },
+        { 2, "Hin Sized" },
+        { 3, "Gnome Sized" },
+        { 4, "Half Elf Sized" },
+        { 5, "Half Orc Sized" },
+        { 6, "Medium Sized" }
+    };
     public BoxOfHats(BoxOfStyle masksAndHats)
     {
         NwModule.Instance.OnItemUse += HandleBoxOfMasks;
@@ -88,6 +98,8 @@ public class BoxOfHats
         uint boxOfHats = NWScript.GetLocalObject(pcKey, HatBoxPcKeyLocalObject);
         NWScript.SetLocalInt(boxOfHats, SelectedRaceLocalInt, selectedRace);
         NWScript.SetLocalInt(boxOfHats, IsSetUpLocalInt, NWScript.TRUE);
+
+        NWScript.SetName(boxOfHats, $"Box of {_raceLabels[selectedRace]} Hats");
     }
 
     [ScriptHandler(scriptName: "mask_race_select")]
@@ -108,6 +120,9 @@ public class BoxOfHats
 
         NWScript.SetLocalInt(boxOfMasks, SelectedRaceLocalInt, selectedRace);
         NWScript.SetLocalInt(boxOfMasks, IsSetUpLocalInt, NWScript.TRUE);
+
+        NWScript.SetName(boxOfMasks, $"Box of {_raceLabels[selectedRace]} Masks");
+
     }
 
     [ScriptHandler(scriptName: "hat_select")]
