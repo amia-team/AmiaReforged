@@ -32,7 +32,7 @@ public class BoxOfHats
         { 3, "Gnome Sized" },
         { 4, "Half Elf Sized" },
         { 5, "Half Orc Sized" },
-        { 6, "Medium Sized" }
+        { 6, "Human Sized" }
     };
     public BoxOfHats(BoxOfStyle masksAndHats)
     {
