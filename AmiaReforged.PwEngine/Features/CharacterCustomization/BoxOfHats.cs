@@ -832,23 +832,33 @@ public enum WearableMask
     None = 0,
 
     // Lenses
-    Glasses1,
-    Glasses2,
-    Glasses3,
-    Shades1,
-    Shades2,
-    Monocle1,
-    LensesBlack,
-    LensesSilver,
-    Goggles1,
-    Goggles2,
+    LensesBlack = 1, // gold, round
+    LensesSilver = 2, // silver, round
+    Glasses1 = 3, // gray, square*
+    Glasses2 = 4, // gold, red lenses*
+    Glasses3 = 5, // gold, hexagonal*
+    Glasses3A = 6, // silver, blue lenses*, also called glasses3 in list
+    Glasses4 = 7, // gold, green lenses*
+    Glasses5 = 8, // silver, black lenses*
+    Glasses6 = 9, // silver, gray lenses*
+    Shades1 = 10, // black, black lenses*
+    Shades2 = 11, // silver, silver lenses*
+    Monocle1 = 12, // gold, monocle*
+
+    // Goggles
+    Goggles1 = 13, // black, over eyes*
+    Goggles2 = 14, // black, forehead*
 
     // Masks
-    Butterfly,
-    Mask01,
-    Mask02,
-    Mask03,
-    MaskStar,
+    MaskStar = 15,
+    Butterfly = 16,
+    Mask01 = 17, // domino, black and red
+    Mask02 = 18, // domino, white
+    Mask03 = 19, // domino, black
+    Veil = 20, // half niqab
+    Bandage = 21, // blindfold, white*
+    Flower = 22, // rose*
+    Mask0 = 23, // tribal*
 }
 
 public enum WearableHat
