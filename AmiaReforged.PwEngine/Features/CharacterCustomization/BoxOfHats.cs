@@ -151,12 +151,10 @@ public class BoxOfHats
         uint hatbox = NWScript.GetLocalObject(pcKey, HatBoxPcKeyLocalObject);
         int selectedRace = NWScript.GetLocalInt(hatbox, SelectedRaceLocalInt);
         int gender = NWScript.GetGender(player);
-        int race = NWScript.GetAppearanceType(player);
 
         int? vfx = gender == NWScript.GENDER_MALE
             ? _masksAndHats.HatsForRace[selectedRace].maleHats.GetValueOrDefault(hatEnum)
             : _masksAndHats.HatsForRace[selectedRace].femaleHats.GetValueOrDefault(hatEnum);
-
 
         if (vfx is null)
         {
@@ -165,10 +163,11 @@ public class BoxOfHats
             return;
         }
 
+        VisualEffectTableEntry hatEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
+        Effect hatVfx = Effect.VisualEffect(hatEntry);
+        hatVfx.Tag = HatVfxTag;
 
-        IntPtr hatEffect = NWScript.EffectVisualEffect((int)vfx);
-        NWScript.TagEffect(hatEffect, HatVfxTag);
-        NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_PERMANENT, hatEffect, playerCreature);
+        playerCreature.ApplyEffect(EffectDuration.Permanent, hatVfx);
     }
 
     [ScriptHandler(scriptName: "mask_select")]
@@ -180,7 +179,6 @@ public class BoxOfHats
         {
             return;
         }
-
 
         NwCreature? playerCreature = player.ToNwObjectSafe<NwCreature>();
 
@@ -221,10 +219,11 @@ public class BoxOfHats
             return;
         }
 
+        VisualEffectTableEntry maskEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
+        Effect maskVfx = Effect.VisualEffect(maskEntry);
+        maskVfx.Tag = HatVfxTag;
 
-        IntPtr hatEffect = NWScript.EffectVisualEffect((int)vfx);
-        NWScript.TagEffect(hatEffect, HatVfxTag);
-        NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_PERMANENT, hatEffect, playerCreature);
+        playerCreature.ApplyEffect(EffectDuration.Permanent, maskVfx);
     }
 }
 
