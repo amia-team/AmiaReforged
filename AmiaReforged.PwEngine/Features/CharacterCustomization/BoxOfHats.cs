@@ -494,7 +494,7 @@ public sealed class BoxOfStyle
             { WearableHat.Hood1, 1592 },
             { WearableHat.WizardHat, 1600 },
             { WearableHat.WitchHat, 1599 },
-            { WearableHat.TopHat, 1296 },
+            { WearableHat.TopHat, 1297 },
             { WearableHat.TopHatTall, 1598 },
             { WearableHat.TricornePlainBrown, 1608 },
             { WearableHat.TricornePlainBlack, 1656 },
