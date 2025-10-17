@@ -72,66 +72,31 @@ public class BoxOfHats
     [ScriptHandler(scriptName: "hat_race_select")]
     public void HatRaceSelection(CallInfo info)
     {
-        string raceString = NWScript.GetScriptParam("race");
-        bool hasArgs = raceString.IsNullOrEmpty();
-        uint player = NWScript.GetPCSpeaker();
+        uint player = info.ObjectSelf;
+        int selectedRace = NWScript.GetLocalInt(player, "race");
+
         if (NWScript.GetIsObjectValid(player) != NWScript.TRUE)
         {
             return;
         }
 
 
-        if (!hasArgs)
-        {
-            NWScript.SendMessageToPC(player,
-                "BUG REPORT: Could not set a hat/mask size for your race, no parameter set. Screenshot this and send this and file a bug report in the Discord bug report section or on the Improving Amia forums (www.amiaworld.com)");
-
-            return;
-        }
-
-        bool couldParse = int.TryParse(raceString, out int race);
-
-        if (!couldParse)
-        {
-            NWScript.SendMessageToPC(player,
-                $"BUG REPORT: Could not parse {raceString} as a valid race. Screenshot this and send this and file a bug report in the Discord bug report section or on the Improving Amia forums (www.amiaworld.com)");
-
-            return;
-        }
-
         uint pcKey = NWScript.GetItemPossessedBy(player, PcKeyResRef);
 
         uint boxOfHats = NWScript.GetLocalObject(pcKey, HatBoxPcKeyLocalObject);
-        NWScript.SetLocalInt(boxOfHats, SelectedRaceLocalInt, race);
+        NWScript.SetLocalInt(boxOfHats, SelectedRaceLocalInt, selectedRace);
         NWScript.SetLocalInt(boxOfHats, IsSetUpLocalInt, NWScript.TRUE);
     }
 
     [ScriptHandler(scriptName: "mask_race_select")]
     public void MaskRaceSelection(CallInfo info)
     {
-        string raceString = info.ScriptParams["race"];
-        bool hasArgs = raceString.IsNullOrEmpty();
-        uint player = NWScript.GetPCSpeaker();
+        uint player = info.ObjectSelf;
+
+        int selectedRace = NWScript.GetLocalInt(player, "race");
+
         if (NWScript.GetIsObjectValid(player) != NWScript.TRUE)
         {
-            return;
-        }
-
-
-        if (!hasArgs)
-        {
-            NWScript.SendMessageToPC(player,
-                "BUG REPORT: Could not set a hat/mask size for your race, no parameter set. Screenshot this and send this and file a bug report in the Discord bug report section or on the Improving Amia forums (www.amiaworld.com)");
-
-            return;
-        }
-
-        bool couldParse = int.TryParse(raceString, out int race);
-        if (!couldParse)
-        {
-            NWScript.SendMessageToPC(player,
-                $"BUG REPORT: Could not parse {raceString} as a valid race. Screenshot this and send this and file a bug report in the Discord bug report section or on the Improving Amia forums (www.amiaworld.com)");
-
             return;
         }
 
@@ -139,16 +104,17 @@ public class BoxOfHats
 
         uint boxOfMasks = NWScript.GetLocalObject(pcKey, MaskBoxPcKeyLocalObject);
 
-        NWScript.SetLocalInt(boxOfMasks, SelectedRaceLocalInt, race);
+        NWScript.SetLocalInt(boxOfMasks, SelectedRaceLocalInt, selectedRace);
         NWScript.SetLocalInt(boxOfMasks, IsSetUpLocalInt, NWScript.TRUE);
     }
 
     [ScriptHandler(scriptName: "hat_select")]
     public void HatAppearanceSelection(CallInfo info)
     {
-        string hatString = info.ScriptParams["hat"];
-        bool hasArgs = hatString.IsNullOrEmpty();
-        uint player = NWScript.GetPCSpeaker();
+        uint player = info.ObjectSelf;
+
+        int selectedHat = NWScript.GetLocalInt(player, "hat");
+
         if (NWScript.GetIsObjectValid(player) != NWScript.TRUE)
         {
             return;
@@ -161,25 +127,8 @@ public class BoxOfHats
             return;
         }
 
-        if (!hasArgs)
-        {
-            NWScript.SendMessageToPC(player,
-                "BUG REPORT: Could not set a hat/mask size for your race, no parameter set. Screenshot this and send this and file a bug report in the Discord bug report section or on the Improving Amia forums (www.amiaworld.com)");
 
-            return;
-        }
-
-        bool couldParse = int.TryParse(hatString, out int hat);
-
-        if (!couldParse)
-        {
-            NWScript.SendMessageToPC(player,
-                $"BUG REPORT: Failed to wear a nice looking hat. Couldn't retrieve the vfx number. Screenshot this and send this and file a bug report in the Discord bug report section or on the Improving Amia forums (www.amiaworld.com)");
-
-            return;
-        }
-
-        WearableHat hatEnum = (WearableHat)hat;
+        WearableHat hatEnum = (WearableHat)selectedHat;
         NwItem? pcKey = playerCreature.Inventory.Items.FirstOrDefault(i => i.Tag == PcKeyResRef);
         if (pcKey is null)
         {
@@ -207,10 +156,12 @@ public class BoxOfHats
         int? vfx = gender == NWScript.GENDER_MALE
             ? _masksAndHats.HatsForRace[selectedRace].maleHats.GetValueOrDefault(hatEnum)
             : _masksAndHats.HatsForRace[selectedRace].femaleHats.GetValueOrDefault(hatEnum);
+
+
         if (vfx is null)
         {
             NWScript.SendMessageToPC(playerCreature,
-                $"BUG REPORT: Could not select hat from {hat}. Screenshot this and send this to staff on Discord or on the Forums");
+                $"BUG REPORT: Could not select hat from {selectedHat}. Screenshot this and send this to staff on Discord or on the Forums");
             return;
         }
 
@@ -223,9 +174,8 @@ public class BoxOfHats
     [ScriptHandler(scriptName: "mask_select")]
     public void MaskAppearanceSelection(CallInfo info)
     {
-        string maskString = info.ScriptParams["race"];
-        bool hasArgs = maskString.IsNullOrEmpty();
-        uint player = NWScript.GetPCSpeaker();
+        uint player = info.ObjectSelf;
+        int mask = NWScript.GetLocalInt(player, "mask");
         if (NWScript.GetIsObjectValid(player) != NWScript.TRUE)
         {
             return;
@@ -235,22 +185,6 @@ public class BoxOfHats
         NwCreature? playerCreature = player.ToNwObjectSafe<NwCreature>();
 
         if (playerCreature is null)
-        {
-            return;
-        }
-
-
-        if (!hasArgs)
-        {
-            NWScript.SendMessageToPC(player,
-                "BUG REPORT: Could not set a hat/mask size for your race, no parameter set. Screenshot this and send this and file a bug report in the Discord bug report section or on the Improving Amia forums (www.amiaworld.com)");
-
-            return;
-        }
-
-        bool couldParse = int.TryParse(maskString, out int mask);
-
-        if (!couldParse)
         {
             return;
         }
@@ -916,7 +850,6 @@ public enum WearableMask
     Mask02,
     Mask03,
     MaskStar,
-
 }
 
 public enum WearableHat
