@@ -26,13 +26,13 @@ public class BoxOfHats
 
     private readonly Dictionary<int, string> _raceLabels = new()
     {
-        { 0, "Dwarf Sized" },
-        { 1, "Elf Sized" },
-        { 2, "Hin Sized" },
-        { 3, "Gnome Sized" },
-        { 4, "Half Elf Sized" },
-        { 5, "Half Orc Sized" },
-        { 6, "Human Sized" }
+        { 0, "Dwarf Size" },
+        { 1, "Elf Size" },
+        { 2, "Gnome Size" },
+        { 3, "Hin Size" },
+        { 4, "Half-Elf Size" },
+        { 5, "Half-Orc Size" },
+        { 6, "Human Size" }
     };
     public BoxOfHats(BoxOfStyle masksAndHats)
     {
