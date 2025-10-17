@@ -198,12 +198,14 @@ public class BoxOfHats
             return;
         }
 
+        uint hatbox = NWScript.GetLocalObject(pcKey, HatBoxPcKeyLocalObject);
+        int selectedRace = NWScript.GetLocalInt(hatbox, SelectedRaceLocalInt);
         int gender = NWScript.GetGender(player);
         int race = NWScript.GetAppearanceType(player);
 
         int? vfx = gender == NWScript.GENDER_MALE
-            ? _masksAndHats.HatsForRace[race].maleHats.GetValueOrDefault(hatEnum)
-            : _masksAndHats.HatsForRace[race].femaleHats.GetValueOrDefault(hatEnum);
+            ? _masksAndHats.HatsForRace[selectedRace].maleHats.GetValueOrDefault(hatEnum)
+            : _masksAndHats.HatsForRace[selectedRace].femaleHats.GetValueOrDefault(hatEnum);
         if (vfx is null)
         {
             NWScript.SendMessageToPC(playerCreature,
