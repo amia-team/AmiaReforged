@@ -72,13 +72,14 @@ public class BoxOfHats
     [ScriptHandler(scriptName: "hat_race_select")]
     public void HatRaceSelection(CallInfo info)
     {
-        string raceString = info.ScriptParams["race"];
+        string raceString = NWScript.GetScriptParam("race");
         bool hasArgs = raceString.IsNullOrEmpty();
         uint player = NWScript.GetPCSpeaker();
         if (NWScript.GetIsObjectValid(player) != NWScript.TRUE)
         {
             return;
         }
+
 
         if (!hasArgs)
         {
