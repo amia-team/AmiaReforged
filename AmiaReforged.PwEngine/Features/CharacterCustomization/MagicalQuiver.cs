@@ -96,6 +96,11 @@ public class MagicalQuiver
         uint player = info.ObjectSelf;
 
         int selectedQuiver = NWScript.GetLocalInt(player, "quiver");
+        int selectedArrow = NWScript.GetLocalInt(player, "arrow");
+
+        int isQuiver = NWScript.GetLocalInt(player, "is_quiver");
+        int isArrow = NWScript.GetLocalInt(player, "is_arrow");
+
 
         if (NWScript.GetIsObjectValid(player) != NWScript.TRUE)
         {
@@ -109,7 +114,19 @@ public class MagicalQuiver
             return;
         }
 
+        if (isQuiver == NWScript.TRUE)
+        {
+            HandleQuiver(playerCreature, selectedQuiver);
+        }
 
+        if (isArrow == NWScript.TRUE)
+        {
+            HandleArrows(playerCreature, selectedArrow);
+        }
+    }
+
+    private void HandleQuiver(NwCreature playerCreature, int selectedQuiver)
+    {
         WearableQuiver quiverEnum = (WearableQuiver)selectedQuiver;
         NwItem? pcKey = playerCreature.Inventory.Items.FirstOrDefault(i => i.Tag == PcKeyResRef);
         if (pcKey is null)
@@ -132,11 +149,12 @@ public class MagicalQuiver
 
         uint magicalquiver = NWScript.GetLocalObject(pcKey, MagicalQuiverPcKeyLocalObject);
         int selectedRace = NWScript.GetLocalInt(magicalquiver, SelectedRaceLocalInt);
-        int gender = NWScript.GetGender(player);
+        int gender = NWScript.GetGender(playerCreature);
 
         int? vfx = gender == NWScript.GENDER_MALE
             ? _magicalQuiver.QuiversForRace[selectedRace].MaleQuivers.GetValueOrDefault(quiverEnum)
             : _magicalQuiver.QuiversForRace[selectedRace].FemaleQuivers.GetValueOrDefault(quiverEnum);
+
 
         if (vfx is null)
         {
@@ -151,6 +169,51 @@ public class MagicalQuiver
 
         playerCreature.ApplyEffect(EffectDuration.Permanent, quiverVfx);
     }
+
+    private void HandleArrows(NwCreature playerCreature, int selectedArrow)
+    {
+        WearableArrow quiverEnum = (WearableArrow)selectedArrow;
+        NwItem? pcKey = playerCreature.Inventory.Items.FirstOrDefault(i => i.Tag == PcKeyResRef);
+        if (pcKey is null)
+        {
+            return;
+        }
+
+
+        Effect? existingQuiver = playerCreature.ActiveEffects.FirstOrDefault(e => e.Tag == ArrowVfxTag);
+        if (existingQuiver is not null)
+        {
+            playerCreature.RemoveEffect(existingQuiver);
+        }
+
+        // The quiver was already removed, so return if their selection was "none"
+        if (quiverEnum == WearableArrow.None)
+        {
+            return;
+        }
+
+        uint magicalquiver = NWScript.GetLocalObject(pcKey, MagicalQuiverPcKeyLocalObject);
+        int selectedRace = NWScript.GetLocalInt(magicalquiver, SelectedRaceLocalInt);
+        int gender = NWScript.GetGender(playerCreature);
+
+        int? vfx = gender == NWScript.GENDER_MALE
+            ? _magicalQuiver.ArrowsForRace[selectedRace].MaleArrows.GetValueOrDefault(quiverEnum)
+            : _magicalQuiver.ArrowsForRace[selectedRace].FemaleArrows.GetValueOrDefault(quiverEnum);
+
+
+        if (vfx is null)
+        {
+            NWScript.SendMessageToPC(playerCreature,
+                $"BUG REPORT: Could not select quiver from {selectedArrow}. Screenshot this and send this to staff on Discord or on the Forums");
+            return;
+        }
+
+        VisualEffectTableEntry quiverEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
+        Effect quiverVfx = Effect.VisualEffect(quiverEntry);
+        quiverVfx.Tag = ArrowVfxTag;
+
+        playerCreature.ApplyEffect(EffectDuration.Permanent, quiverVfx);
+    }
 }
 
 [ServiceBinding(typeof(MagicQuiverMap))]
@@ -158,7 +221,6 @@ public sealed class MagicQuiverMap
 {
     public Dictionary<int, RaceQuivers> QuiversForRace { get; }
     public Dictionary<int, RaceArrows> ArrowsForRace { get; }
-
 
     public MagicQuiverMap()
     {
@@ -197,17 +259,7 @@ public sealed class MagicQuiverMap
             { WearableQuiver.QuiverGreen, 2474 },
             { WearableQuiver.QuiverPurple, 2486 },
             { WearableQuiver.QuiverYellow, 2498 },
-            { WearableQuiver.QuiverRed, 2510 },
-            { WearableQuiver.ArrowRed, 2306 },
-            { WearableQuiver.ArrowBlue, 2318 },
-            { WearableQuiver.ArrowGreen, 2330 },
-            { WearableQuiver.ArrowGray, 2342 },
-            { WearableQuiver.ArrowWhite, 2354 },
-            { WearableQuiver.ArrowBlack, 2366 },
-            { WearableQuiver.ArrowYellow, 2378 },
-            { WearableQuiver.ArrowOrange, 2390 },
-            { WearableQuiver.ArrowPurple, 2402 },
-            { WearableQuiver.ArrowAqua, 2414 }
+            { WearableQuiver.QuiverRed, 2510 }
         }, new Dictionary<WearableQuiver, int>()
         {
             { WearableQuiver.QuiverBrown, 2283 },
@@ -219,26 +271,36 @@ public sealed class MagicQuiverMap
             { WearableQuiver.QuiverGreen, 2475 },
             { WearableQuiver.QuiverPurple, 2487 },
             { WearableQuiver.QuiverYellow, 2499 },
-            { WearableQuiver.QuiverRed, 2511 },
-            { WearableQuiver.ArrowRed, 2307 },
-            { WearableQuiver.ArrowBlue, 2319 },
-            { WearableQuiver.ArrowGreen, 2331 },
-            { WearableQuiver.ArrowGray, 2343 },
-            { WearableQuiver.ArrowWhite, 2355 },
-            { WearableQuiver.ArrowBlack, 2367 },
-            { WearableQuiver.ArrowYellow, 2379 },
-            { WearableQuiver.ArrowOrange, 2391 },
-            { WearableQuiver.ArrowPurple, 2403 },
-            { WearableQuiver.ArrowAqua, 2415 }
+            { WearableQuiver.QuiverRed, 2511 }
         }
     );
 
     private readonly RaceArrows _dwarfArrows = new RaceArrows(
-        new Dictionary<WearableQuiver, int>()
+        new Dictionary<WearableArrow, int>()
         {
+            { WearableArrow.ArrowRed, 2306 },
+            { WearableArrow.ArrowBlue, 2318 },
+            { WearableArrow.ArrowGreen, 2330 },
+            { WearableArrow.ArrowGray, 2342 },
+            { WearableArrow.ArrowWhite, 2354 },
+            { WearableArrow.ArrowBlack, 2366 },
+            { WearableArrow.ArrowYellow, 2378 },
+            { WearableArrow.ArrowOrange, 2390 },
+            { WearableArrow.ArrowPurple, 2402 },
+            { WearableArrow.ArrowAqua, 2414 }
         },
-        new Dictionary<WearableQuiver, int>()
+        new Dictionary<WearableArrow, int>()
         {
+            { WearableArrow.ArrowRed, 2307 },
+            { WearableArrow.ArrowBlue, 2319 },
+            { WearableArrow.ArrowGreen, 2331 },
+            { WearableArrow.ArrowGray, 2343 },
+            { WearableArrow.ArrowWhite, 2355 },
+            { WearableArrow.ArrowBlack, 2367 },
+            { WearableArrow.ArrowYellow, 2379 },
+            { WearableArrow.ArrowOrange, 2391 },
+            { WearableArrow.ArrowPurple, 2403 },
+            { WearableArrow.ArrowAqua, 2415 }
         }
     );
 
@@ -253,17 +315,7 @@ public sealed class MagicQuiverMap
             { WearableQuiver.QuiverGreen, 2466 },
             { WearableQuiver.QuiverPurple, 2478 },
             { WearableQuiver.QuiverYellow, 2490 },
-            { WearableQuiver.QuiverRed, 2502 },
-            { WearableQuiver.ArrowRed, 2298 },
-            { WearableQuiver.ArrowBlue, 2310 },
-            { WearableQuiver.ArrowGreen, 2322 },
-            { WearableQuiver.ArrowGray, 2334 },
-            { WearableQuiver.ArrowWhite, 2346 },
-            { WearableQuiver.ArrowBlack, 2358 },
-            { WearableQuiver.ArrowYellow, 2370 },
-            { WearableQuiver.ArrowOrange, 2382 },
-            { WearableQuiver.ArrowPurple, 2394 },
-            { WearableQuiver.ArrowAqua, 2406 }
+            { WearableQuiver.QuiverRed, 2502 }
         }, new Dictionary<WearableQuiver, int>()
         {
             { WearableQuiver.QuiverBrown, 2275 },
@@ -275,26 +327,36 @@ public sealed class MagicQuiverMap
             { WearableQuiver.QuiverGreen, 2467 },
             { WearableQuiver.QuiverPurple, 2479 },
             { WearableQuiver.QuiverYellow, 2491 },
-            { WearableQuiver.QuiverRed, 2503 },
-            { WearableQuiver.ArrowRed, 2299 },
-            { WearableQuiver.ArrowBlue, 2311 },
-            { WearableQuiver.ArrowGreen, 2323 },
-            { WearableQuiver.ArrowGray, 2335 },
-            { WearableQuiver.ArrowWhite, 2347 },
-            { WearableQuiver.ArrowBlack, 2359 },
-            { WearableQuiver.ArrowYellow, 2371 },
-            { WearableQuiver.ArrowOrange, 2383 },
-            { WearableQuiver.ArrowPurple, 2395 },
-            { WearableQuiver.ArrowAqua, 2407 }
+            { WearableQuiver.QuiverRed, 2503 }
         }
     );
 
     private readonly RaceArrows _humanArrows = new RaceArrows(
-        new Dictionary<WearableQuiver, int>()
+        new Dictionary<WearableArrow, int>()
         {
+            { WearableArrow.ArrowRed, 2298 },
+            { WearableArrow.ArrowBlue, 2310 },
+            { WearableArrow.ArrowGreen, 2322 },
+            { WearableArrow.ArrowGray, 2334 },
+            { WearableArrow.ArrowWhite, 2346 },
+            { WearableArrow.ArrowBlack, 2358 },
+            { WearableArrow.ArrowYellow, 2370 },
+            { WearableArrow.ArrowOrange, 2382 },
+            { WearableArrow.ArrowPurple, 2394 },
+            { WearableArrow.ArrowAqua, 2406 }
         },
-        new Dictionary<WearableQuiver, int>()
+        new Dictionary<WearableArrow, int>()
         {
+            { WearableArrow.ArrowRed, 2299 },
+            { WearableArrow.ArrowBlue, 2311 },
+            { WearableArrow.ArrowGreen, 2323 },
+            { WearableArrow.ArrowGray, 2335 },
+            { WearableArrow.ArrowWhite, 2347 },
+            { WearableArrow.ArrowBlack, 2359 },
+            { WearableArrow.ArrowYellow, 2371 },
+            { WearableArrow.ArrowOrange, 2383 },
+            { WearableArrow.ArrowPurple, 2395 },
+            { WearableArrow.ArrowAqua, 2407 }
         }
     );
 
@@ -309,17 +371,7 @@ public sealed class MagicQuiverMap
             { WearableQuiver.QuiverGreen, 2472 },
             { WearableQuiver.QuiverPurple, 2484 },
             { WearableQuiver.QuiverYellow, 2496 },
-            { WearableQuiver.QuiverRed, 2508 },
-            { WearableQuiver.ArrowRed, 2304 },
-            { WearableQuiver.ArrowBlue, 2316 },
-            { WearableQuiver.ArrowGreen, 2328 },
-            { WearableQuiver.ArrowGray, 2340 },
-            { WearableQuiver.ArrowWhite, 2352 },
-            { WearableQuiver.ArrowBlack, 2364 },
-            { WearableQuiver.ArrowYellow, 2376 },
-            { WearableQuiver.ArrowOrange, 2388 },
-            { WearableQuiver.ArrowPurple, 2400 },
-            { WearableQuiver.ArrowAqua, 2412 }
+            { WearableQuiver.QuiverRed, 2508 }
         }, new Dictionary<WearableQuiver, int>()
         {
             { WearableQuiver.QuiverBrown, 2281 },
@@ -328,29 +380,39 @@ public sealed class MagicQuiverMap
             { WearableQuiver.QuiverWhite, 2437 },
             { WearableQuiver.QuiverGray, 2449 },
             { WearableQuiver.QuiverAqua, 2461 },
-            { WearableQuiver.QuiverGreen, 2743 },
+            { WearableQuiver.QuiverGreen, 2473 },
             { WearableQuiver.QuiverPurple, 2485 },
             { WearableQuiver.QuiverYellow, 2497 },
-            { WearableQuiver.QuiverRed, 2509 },
-            { WearableQuiver.ArrowRed, 2305 },
-            { WearableQuiver.ArrowBlue, 2317 },
-            { WearableQuiver.ArrowGreen, 2329 },
-            { WearableQuiver.ArrowGray, 2341 },
-            { WearableQuiver.ArrowWhite, 2353 },
-            { WearableQuiver.ArrowBlack, 2365 },
-            { WearableQuiver.ArrowYellow, 2377 },
-            { WearableQuiver.ArrowOrange, 2389 },
-            { WearableQuiver.ArrowPurple, 2401 },
-            { WearableQuiver.ArrowAqua, 2413 }
+            { WearableQuiver.QuiverRed, 2509 }
         }
     );
 
     private readonly RaceArrows _elfArrows = new RaceArrows(
-        new Dictionary<WearableQuiver, int>()
+        new Dictionary<WearableArrow, int>()
         {
+            { WearableArrow.ArrowRed, 2304 },
+            { WearableArrow.ArrowBlue, 2316 },
+            { WearableArrow.ArrowGreen, 2328 },
+            { WearableArrow.ArrowGray, 2340 },
+            { WearableArrow.ArrowWhite, 2352 },
+            { WearableArrow.ArrowBlack, 2364 },
+            { WearableArrow.ArrowYellow, 2376 },
+            { WearableArrow.ArrowOrange, 2388 },
+            { WearableArrow.ArrowPurple, 2400 },
+            { WearableArrow.ArrowAqua, 2412 }
         },
-        new Dictionary<WearableQuiver, int>()
+        new Dictionary<WearableArrow, int>()
         {
+            { WearableArrow.ArrowRed, 2305 },
+            { WearableArrow.ArrowBlue, 2317 },
+            { WearableArrow.ArrowGreen, 2329 },
+            { WearableArrow.ArrowGray, 2341 },
+            { WearableArrow.ArrowWhite, 2353 },
+            { WearableArrow.ArrowBlack, 2365 },
+            { WearableArrow.ArrowYellow, 2377 },
+            { WearableArrow.ArrowOrange, 2389 },
+            { WearableArrow.ArrowPurple, 2401 },
+            { WearableArrow.ArrowAqua, 2413 }
         }
     );
 
@@ -365,17 +427,7 @@ public sealed class MagicQuiverMap
             { WearableQuiver.QuiverGreen, 2468 },
             { WearableQuiver.QuiverPurple, 2480 },
             { WearableQuiver.QuiverYellow, 2492 },
-            { WearableQuiver.QuiverRed, 2504 },
-            { WearableQuiver.ArrowRed, 2300 },
-            { WearableQuiver.ArrowBlue, 2312 },
-            { WearableQuiver.ArrowGreen, 2324 },
-            { WearableQuiver.ArrowGray, 2336 },
-            { WearableQuiver.ArrowWhite, 2348 },
-            { WearableQuiver.ArrowBlack, 2360 },
-            { WearableQuiver.ArrowYellow, 2372 },
-            { WearableQuiver.ArrowOrange, 2384 },
-            { WearableQuiver.ArrowPurple, 2396 },
-            { WearableQuiver.ArrowAqua, 2408 }
+            { WearableQuiver.QuiverRed, 2504 }
         },
         new Dictionary<WearableQuiver, int>()
         {
@@ -388,27 +440,39 @@ public sealed class MagicQuiverMap
             { WearableQuiver.QuiverGreen, 2469 },
             { WearableQuiver.QuiverPurple, 2481 },
             { WearableQuiver.QuiverYellow, 2493 },
-            { WearableQuiver.QuiverRed, 2505 },
-            { WearableQuiver.ArrowRed, 2301 },
-            { WearableQuiver.ArrowBlue, 2313 },
-            { WearableQuiver.ArrowGreen, 2325 },
-            { WearableQuiver.ArrowGray, 2337 },
-            { WearableQuiver.ArrowWhite, 2349 },
-            { WearableQuiver.ArrowBlack, 2361 },
-            { WearableQuiver.ArrowYellow, 2373 },
-            { WearableQuiver.ArrowOrange, 2385 },
-            { WearableQuiver.ArrowPurple, 2397 },
-            { WearableQuiver.ArrowAqua, 2409 }
+            { WearableQuiver.QuiverRed, 2505 }
         }
     );
+
     private readonly RaceArrows _hinArrows = new RaceArrows(
-        new Dictionary<WearableQuiver, int>()
+        new Dictionary<WearableArrow, int>()
         {
+            { WearableArrow.ArrowRed, 2300 },
+            { WearableArrow.ArrowBlue, 2312 },
+            { WearableArrow.ArrowGreen, 2324 },
+            { WearableArrow.ArrowGray, 2336 },
+            { WearableArrow.ArrowWhite, 2348 },
+            { WearableArrow.ArrowBlack, 2360 },
+            { WearableArrow.ArrowYellow, 2372 },
+            { WearableArrow.ArrowOrange, 2384 },
+            { WearableArrow.ArrowPurple, 2396 },
+            { WearableArrow.ArrowAqua, 2408 }
         },
-        new Dictionary<WearableQuiver, int>()
+        new Dictionary<WearableArrow, int>()
         {
+            { WearableArrow.ArrowRed, 2301 },
+            { WearableArrow.ArrowBlue, 2313 },
+            { WearableArrow.ArrowGreen, 2325 },
+            { WearableArrow.ArrowGray, 2337 },
+            { WearableArrow.ArrowWhite, 2349 },
+            { WearableArrow.ArrowBlack, 2361 },
+            { WearableArrow.ArrowYellow, 2373 },
+            { WearableArrow.ArrowOrange, 2385 },
+            { WearableArrow.ArrowPurple, 2397 },
+            { WearableArrow.ArrowAqua, 2409 }
         }
     );
+
     private readonly RaceQuivers _halfOrcQuivers = new RaceQuivers(new Dictionary<WearableQuiver, int>()
         {
             { WearableQuiver.QuiverBrown, 2284 },
@@ -420,17 +484,7 @@ public sealed class MagicQuiverMap
             { WearableQuiver.QuiverGreen, 2476 },
             { WearableQuiver.QuiverPurple, 2488 },
             { WearableQuiver.QuiverYellow, 2500 },
-            { WearableQuiver.QuiverRed, 2512 },
-            { WearableQuiver.ArrowRed, 2308 },
-            { WearableQuiver.ArrowBlue, 2320 },
-            { WearableQuiver.ArrowGreen, 2332 },
-            { WearableQuiver.ArrowGray, 2344 },
-            { WearableQuiver.ArrowWhite, 2356 },
-            { WearableQuiver.ArrowBlack, 2368 },
-            { WearableQuiver.ArrowYellow, 2380 },
-            { WearableQuiver.ArrowOrange, 2392 },
-            { WearableQuiver.ArrowPurple, 2404 },
-            { WearableQuiver.ArrowAqua, 2416 }
+            { WearableQuiver.QuiverRed, 2512 }
         },
         new Dictionary<WearableQuiver, int>()
         {
@@ -443,33 +497,43 @@ public sealed class MagicQuiverMap
             { WearableQuiver.QuiverGreen, 2477 },
             { WearableQuiver.QuiverPurple, 2489 },
             { WearableQuiver.QuiverYellow, 2501 },
-            { WearableQuiver.QuiverRed, 2513 },
-            { WearableQuiver.ArrowRed, 2309 },
-            { WearableQuiver.ArrowBlue, 2321 },
-            { WearableQuiver.ArrowGreen, 2333 },
-            { WearableQuiver.ArrowGray, 2345 },
-            { WearableQuiver.ArrowWhite, 2357 },
-            { WearableQuiver.ArrowBlack, 2369 },
-            { WearableQuiver.ArrowYellow, 2381 },
-            { WearableQuiver.ArrowOrange, 2393 },
-            { WearableQuiver.ArrowPurple, 2405 },
-            { WearableQuiver.ArrowAqua, 2417 }
+            { WearableQuiver.QuiverRed, 2513 }
         }
     );
 
     private readonly RaceArrows _halfOrcArrows = new RaceArrows(
-        new Dictionary<WearableQuiver, int>()
+        new Dictionary<WearableArrow, int>()
         {
+            { WearableArrow.ArrowRed, 2308 },
+            { WearableArrow.ArrowBlue, 2320 },
+            { WearableArrow.ArrowGreen, 2332 },
+            { WearableArrow.ArrowGray, 2344 },
+            { WearableArrow.ArrowWhite, 2356 },
+            { WearableArrow.ArrowBlack, 2368 },
+            { WearableArrow.ArrowYellow, 2380 },
+            { WearableArrow.ArrowOrange, 2392 },
+            { WearableArrow.ArrowPurple, 2404 },
+            { WearableArrow.ArrowAqua, 2416 }
         },
-        new Dictionary<WearableQuiver, int>()
+        new Dictionary<WearableArrow, int>()
         {
+            { WearableArrow.ArrowRed, 2309 },
+            { WearableArrow.ArrowBlue, 2321 },
+            { WearableArrow.ArrowGreen, 2333 },
+            { WearableArrow.ArrowGray, 2345 },
+            { WearableArrow.ArrowWhite, 2357 },
+            { WearableArrow.ArrowBlack, 2369 },
+            { WearableArrow.ArrowYellow, 2381 },
+            { WearableArrow.ArrowOrange, 2393 },
+            { WearableArrow.ArrowPurple, 2405 },
+            { WearableArrow.ArrowAqua, 2417 }
         }
     );
 }
 
 public record RaceQuivers(Dictionary<WearableQuiver, int> MaleQuivers, Dictionary<WearableQuiver, int> FemaleQuivers);
 
-public record RaceArrows(Dictionary<WearableQuiver, int> MaleArrows, Dictionary<WearableQuiver, int> FemaleArrows);
+public record RaceArrows(Dictionary<WearableArrow, int> MaleArrows, Dictionary<WearableArrow, int> FemaleArrows);
 
 public enum WearableQuiver
 {
@@ -486,6 +550,11 @@ public enum WearableQuiver
     QuiverPurple = 8,
     QuiverYellow = 9,
     QuiverRed = 10,
+}
+
+public enum WearableArrow
+{
+    None = 0,
 
     // Arrows
     ArrowRed = 11,
