@@ -42,6 +42,7 @@ public class DefensiveStance
         if (defensiveEffect != null)
         {
             character.RemoveEffect(defensiveEffect);
+            character.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPdkHeroicShield));
             return;
         }
 
@@ -92,6 +93,8 @@ public class DefensiveStance
 
         // Apply it to the character.
         character.ApplyEffect(EffectDuration.Permanent, defensiveStance);
+        VisualEffectTableEntry bulwark = NwGameTables.VisualEffectTable.GetRow(2522);
+        character.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(bulwark));
     }
 
     private void ClearDefensiveStance(ModuleEvents.OnClientEnter obj)
