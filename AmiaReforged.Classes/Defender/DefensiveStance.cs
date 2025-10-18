@@ -80,7 +80,7 @@ public class DefensiveStance
         int ac = 1 + defenderLevel / 5 + acCapstone;
         Effect acBonus = Effect.ACIncrease(ac);
 
-        Effect moveSpeedPenalty = Effect.MovementSpeedDecrease(95);
+        Effect moveSpeedPenalty = Effect.MovementSpeedDecrease(90);
 
         // Link the effects so they are all joined together.
         // Temp HP needs to be its own effect, lest the whole effect be yeeted with it
