@@ -9,16 +9,10 @@ namespace AmiaReforged.Classes.Defender;
 [ServiceBinding(typeof(DefensiveStance))]
 public class DefensiveStance
 {
-    private const int EventsDefensiveStanceConst = 11;
-    private const string CombatModeId = "COMBAT_MODE_ID";
     private const string DefensiveStanceEffectTag = "DEFENIVE_STANCE";
-    private const string DefensiveStanceTempHpTag = "DEFENIVE_STANCE_TEMP_HP";
-    private readonly EventService _eventService;
 
-    public DefensiveStance(EventService eventService)
+    public DefensiveStance()
     {
-        _eventService = eventService;
-
         NwModule.Instance.OnClientEnter += ClearDefensiveStance;
         NwModule.Instance.OnCombatModeToggle += NewDefensiveStance;
     }
