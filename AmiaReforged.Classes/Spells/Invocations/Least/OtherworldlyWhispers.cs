@@ -8,7 +8,8 @@ public class OtherworldlyWhispers
     public int CastOtherworldlyWhispers(uint nwnObjectId)
     {
         int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        const int bonus = 10;
+        int chaMod = GetAbilityModifier(ABILITY_CHARISMA, nwnObjectId);
+        int bonus = 10 + warlockLevels / 2 +  chaMod;
 
         IntPtr whispers = NwEffects.LinkEffectList(new List<IntPtr>
         {
