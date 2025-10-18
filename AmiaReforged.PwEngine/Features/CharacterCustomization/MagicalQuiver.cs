@@ -172,7 +172,7 @@ public class MagicalQuiver
 
     private void HandleArrows(NwCreature playerCreature, int selectedArrow)
     {
-        WearableArrow quiverEnum = (WearableArrow)selectedArrow;
+        WearableArrow arrowEnum = (WearableArrow)selectedArrow;
         NwItem? pcKey = playerCreature.Inventory.Items.FirstOrDefault(i => i.Tag == PcKeyResRef);
         if (pcKey is null)
         {
@@ -180,15 +180,16 @@ public class MagicalQuiver
         }
 
 
-        Effect? existingQuiver = playerCreature.ActiveEffects.FirstOrDefault(e => e.Tag == ArrowVfxTag);
-        if (existingQuiver is not null)
+        Effect? existingArrows = playerCreature.ActiveEffects.FirstOrDefault(e => e.Tag == ArrowVfxTag);
+        if (existingArrows is not null)
         {
-            playerCreature.RemoveEffect(existingQuiver);
+            playerCreature.RemoveEffect(existingArrows);
         }
 
         // The quiver was already removed, so return if their selection was "none"
-        if (quiverEnum == WearableArrow.None)
+        if (arrowEnum == WearableArrow.None)
         {
+            NWScript.SendMessageToPC(playerCreature, "Removing Arrows...");
             return;
         }
 
@@ -197,8 +198,8 @@ public class MagicalQuiver
         int gender = NWScript.GetGender(playerCreature);
 
         int? vfx = gender == NWScript.GENDER_MALE
-            ? _magicalQuiver.ArrowsForRace[selectedRace].MaleArrows.GetValueOrDefault(quiverEnum)
-            : _magicalQuiver.ArrowsForRace[selectedRace].FemaleArrows.GetValueOrDefault(quiverEnum);
+            ? _magicalQuiver.ArrowsForRace[selectedRace].MaleArrows.GetValueOrDefault(arrowEnum)
+            : _magicalQuiver.ArrowsForRace[selectedRace].FemaleArrows.GetValueOrDefault(arrowEnum);
 
 
         if (vfx is null)
@@ -208,11 +209,11 @@ public class MagicalQuiver
             return;
         }
 
-        VisualEffectTableEntry quiverEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
-        Effect quiverVfx = Effect.VisualEffect(quiverEntry);
-        quiverVfx.Tag = ArrowVfxTag;
+        VisualEffectTableEntry arrowEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
+        Effect arrowVfx = Effect.VisualEffect(arrowEntry);
+        arrowVfx.Tag = ArrowVfxTag;
 
-        playerCreature.ApplyEffect(EffectDuration.Permanent, quiverVfx);
+        playerCreature.ApplyEffect(EffectDuration.Permanent, arrowVfx);
     }
 }
 
