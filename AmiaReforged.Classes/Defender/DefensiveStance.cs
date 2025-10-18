@@ -81,7 +81,8 @@ public class DefensiveStance
 
         // Link the effects so they are all joined together.
         // Temp HP needs to be its own effect, lest the whole effect be yeeted with it
-        Effect defensiveStance = Effect.LinkEffects(attackBonus, strengthBonus, savingThrowBonus, acBonus, tempHpBonus, moveSpeedPenalty);
+        Effect defensiveStance = Effect.LinkEffects(attackBonus, strengthBonus, savingThrowBonus, acBonus, tempHpBonus,
+            moveSpeedPenalty);
 
         // Tag it and make it undispellable.
         defensiveStance.Tag = DefensiveStanceEffectTag;
@@ -112,12 +113,12 @@ public class DefensiveStance
     [ScriptHandler(scriptName: "stance_defdr_on")]
     public void DefensiveStanceOn(CallInfo script)
     {
-
+        // Ignored, leave it so legacy call is ignored
     }
 
     [ScriptHandler(scriptName: "stance_defdr_off")]
     public void DefensiveStanceOff(CallInfo script)
     {
-
+        // Ignored, leave it so legacy call is ignored
     }
 }
