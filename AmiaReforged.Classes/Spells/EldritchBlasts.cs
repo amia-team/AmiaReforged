@@ -18,8 +18,7 @@ public class EldritchBlasts
         uint targetObject = GetSpellTargetObject();
         bool hasEldritchMastery = GetHasFeat(1298, nwnObjectId) == TRUE;
 
-        Log.Info($"Casting Eldritch Blast with essence {essence}.");
-        
+
         if (NwEffects.IsPolymorphed(nwnObjectId))
         {
             SendMessageToPC(nwnObjectId, szMessage: "You cannot cast while polymorphed.");
