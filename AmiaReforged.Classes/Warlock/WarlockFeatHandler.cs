@@ -26,7 +26,8 @@ public class WarlockFeatHandler
     {
         if (NWScript.GetLevelByClass(57, obj.Player.ControlledCreature) < 3) return;
 
-        NwCreature warlock = obj.Player.ControlledCreature;
+        NwCreature? warlock = obj.Player.ControlledCreature;
+        if(warlock == null) return;
         int warlockLevels = NWScript.GetLevelByClass(57, warlock);
         int power = warlockLevels switch
         {
@@ -55,7 +56,8 @@ public class WarlockFeatHandler
     {
         if (NWScript.GetLevelByClass(57, obj.Player.ControlledCreature) < 3) return;
 
-        NwCreature warlock = obj.Player.ControlledCreature;
+        NwCreature? warlock = obj.Player.ControlledCreature;
+        if (warlock == null) return;
         int warlockLevels = NWScript.GetLevelByClass(57, warlock);
         int power = warlockLevels switch
         {
@@ -124,7 +126,9 @@ public class WarlockFeatHandler
 
     private void OnLevelUpGiveEnergyResist(ModuleEvents.OnPlayerLevelUp obj)
     {
-        NwCreature warlock = obj.Player.ControlledCreature;
+        NwCreature? warlock = obj.Player.ControlledCreature;
+        if (warlock == null) return;
+
         int warlockLevels = NWScript.GetLevelByClass(57, warlock);
         if (warlockLevels < 10) return;
         if (warlock.ActiveEffects.Any(effect => effect.Tag == "warlock_epicresistfeat"))

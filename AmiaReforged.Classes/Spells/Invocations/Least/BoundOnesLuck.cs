@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
 using AmiaReforged.Classes.Warlock;
+using NWN.Core;
 using static NWN.Core.NWScript;
 
 namespace AmiaReforged.Classes.Spells.Invocations.Least;
@@ -15,14 +16,16 @@ public class BoundOnesLuck
         }
 
         int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        int savesBonus = warlockLevels / 7;
+        int savesCap = warlockLevels / 7;
 
         if (warlockLevels == 30)
-            savesBonus = 5;
+            savesCap += 6;
+
+        int save = Math.Min(savesCap, GetAbilityModifier(ABILITY_CHARISMA, nwnObjectId));
 
         IntPtr luck = NwEffects.LinkEffectList(new List<IntPtr>
         {
-            EffectSavingThrowIncrease(SAVING_THROW_ALL, savesBonus),
+            EffectSavingThrowIncrease(SAVING_THROW_ALL, save),
             EffectVisualEffect(VFX_DUR_CESSATE_POSITIVE)
         });
 
