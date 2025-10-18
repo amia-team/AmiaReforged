@@ -43,7 +43,6 @@ public class DefensiveStance
             return;
         }
 
-
         int defenderLevel =
             character.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.DwarvenDefender)?.Level ?? 0;
 
