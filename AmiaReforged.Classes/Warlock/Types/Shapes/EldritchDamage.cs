@@ -12,7 +12,8 @@ public static class EldritchDamage
     {
         int warlockLevels = GetLevelByClass(57, caster);
         int chaMod = GetAbilityModifier(ABILITY_CHARISMA, caster);
-        int damageBonus = chaMod;
+        // At most 25% extra damage
+        int damageBonus = (int)(warlockLevels == 30 ? Math.Min(25, chaMod * 1.5) : chaMod);
         if (warlockLevels / 2 < chaMod && warlockLevels < 30) damageBonus = warlockLevels / 2;
         int damageDice = d2(warlockLevels) + d6(ExtraDieFromFeats(caster));
         damageDice += damageDice * damageBonus / 100;
