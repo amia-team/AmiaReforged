@@ -8,7 +8,8 @@ public class RepelTheHail
     public int CastRepelTheHail(uint nwnObjectId)
     {
         int warlockLevels = GetLevelByClass(57, nwnObjectId);
-        int concealment = 25 + warlockLevels;
+        int chaModBonus = GetAbilityModifier(ABILITY_CHARISMA, nwnObjectId) / 2;
+        int concealment = 25 + warlockLevels + chaModBonus;
 
         IntPtr repelHailEffect = NwEffects.LinkEffectList(new List<IntPtr>
         {
