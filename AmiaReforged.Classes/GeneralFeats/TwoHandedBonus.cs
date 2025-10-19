@@ -46,7 +46,6 @@ public static class TwoHandedBonus
         if (weapon == null ||
             weapon.BaseItem.WeaponSize <= (BaseItemWeaponSize)creature.Size ||
             weapon.IsRangedWeapon ||
-            weapon.BaseItem.IsMonkWeapon ||
             weapon.BaseItem.WeaponWieldType == BaseItemWeaponWieldType.DoubleSided ||
             creature.GetItemInSlot(InventorySlot.LeftHand) != null)
         {
