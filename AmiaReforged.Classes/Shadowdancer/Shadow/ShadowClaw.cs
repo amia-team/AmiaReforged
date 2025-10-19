@@ -23,18 +23,14 @@ public class ShadowClaw
 
     public ShadowClaw()
     {
-        NwModule.Instance.OnCreatureAttack += DoShadowClaw;
+        NwModule.Instance.OnCreatureDamage += DoShadowClaw;
     }
 
-    private void DoShadowClaw(OnCreatureAttack attackData)
+    private void DoShadowClaw(OnCreatureDamage attackData)
     {
-        if (attackData.Attacker.ResRef is not "sd_shadow_4") return;
-        if (attackData.Target is not NwCreature targetCreature) return;
-        if (attackData.AttackResult is not (AttackResult.Hit or AttackResult.AutomaticHit or AttackResult.CriticalHit))
+        if (attackData.DamagedBy.ResRef is not "sd_shadow_4" || attackData.DamagedBy is not NwCreature shadow ||
+            attackData.Target is not NwCreature targetCreature || targetCreature.IsImmuneTo(ImmunityType.AbilityDecrease))
             return;
-        if (targetCreature.IsImmuneTo(ImmunityType.AbilityDecrease)) return;
-
-        NwCreature shadow = attackData.Attacker;
 
         int sdLevel = shadow.GetObjectVariable<LocalVariableInt>("sd_level").Value;
 
