@@ -8,7 +8,7 @@ namespace AmiaReforged.Classes.Defender;
 [ServiceBinding(typeof(DefensiveStance))]
 public class DefensiveStance
 {
-    private const string DefensiveStanceEffectTag = "DEFENIVE_STANCE";
+    private const string DefensiveStanceEffectTag = "DEFENSIVE_STANCE";
 
     public DefensiveStance()
     {
@@ -27,14 +27,14 @@ public class DefensiveStance
         obj.PreventToggle = true;
 
         NwCreature character = obj.Creature;
-        Effect? defensiveEffect = character.ActiveEffects.FirstOrDefault(e => e.Tag == DefensiveStanceEffectTag);
 
-        if (defensiveEffect != null)
+        foreach (Effect effect in character.ActiveEffects)
         {
-            character.RemoveEffect(defensiveEffect);
-            character.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPdkHeroicShield));
-            return;
+            if (effect.Tag == DefensiveStanceEffectTag)
+                character.RemoveEffect(effect);
         }
+
+        character.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPdkHeroicShield));
 
         int defenderLevel =
             character.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.DwarvenDefender)?.Level ?? 0;
@@ -73,13 +73,16 @@ public class DefensiveStance
 
         // Link the effects so they are all joined together.
         // Temp HP needs to be its own effect, lest the whole effect be yeeted with it
-        Effect defensiveStance = Effect.LinkEffects(attackBonus, strengthBonus, savingThrowBonus, acBonus, tempHpBonus,
+        Effect defensiveStance = Effect.LinkEffects(attackBonus, strengthBonus, savingThrowBonus, acBonus,
             moveSpeedPenalty);
 
         // Tag it and make it undispellable.
         defensiveStance.Tag = DefensiveStanceEffectTag;
         defensiveStance.SubType = EffectSubType.Supernatural;
         defensiveStance.IgnoreImmunity = true;
+
+        tempHpBonus.Tag = DefensiveStanceEffectTag;
+        tempHpBonus.SubType = EffectSubType.Supernatural;
 
         // Apply it to the character.
         character.ApplyEffect(EffectDuration.Permanent, defensiveStance);
