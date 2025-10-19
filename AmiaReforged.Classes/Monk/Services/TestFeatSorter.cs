@@ -101,5 +101,14 @@ public class TestFeatSorter
             monk.AddFeat(feat);
             player.SendServerMessage($"Feat {feat.Name} was added.");
         }
+
+        // Upon taking monk 6, remove KD/IKD for Fighting Style selection
+        if (monkLevel != 6) return;
+        
+        foreach (NwFeat feat in monk.Feats)
+        {
+            if (feat.FeatType is Feat.Knockdown or Feat.ImprovedKnockdown)
+                monk.RemoveFeat(feat, true);
+        }
     }
 }
