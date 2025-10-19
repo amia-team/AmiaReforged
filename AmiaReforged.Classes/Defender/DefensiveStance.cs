@@ -86,6 +86,7 @@ public class DefensiveStance
 
         // Apply it to the character.
         character.ApplyEffect(EffectDuration.Permanent, defensiveStance);
+        character.ApplyEffect(EffectDuration.Permanent, tempHpBonus);
         VisualEffectTableEntry bulwark = NwGameTables.VisualEffectTable.GetRow(2522);
         character.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(bulwark));
     }
