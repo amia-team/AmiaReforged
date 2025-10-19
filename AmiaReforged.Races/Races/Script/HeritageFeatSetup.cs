@@ -22,18 +22,20 @@ public static class HeritageFeatSetup
         _player = player;
         _pckey = NWScript.GetItemPossessedBy(_nwnObject, "ds_pckey");
         _playerRace = ResolvePlayerRace();
-        Log.Info($"Player race type: {_playerRace}");
-        Log.Info($"Checking if {player.PlayerName} => {player.LoginCreature.Name} is a managed race.");
-            
+
+
+        if (NWScript.GetIsObjectValid(_pckey) != NWScript.TRUE)
+        {
+            player.SendServerMessage("The DM needs to give you your PC key back and your rebuild is probably screwed up.");
+            return;
+        }
+
         bool playerRaceSupported = !PlayerRaceIsSupported();
-        Log.Info($"Supported Race? {playerRaceSupported}");
 
         bool heritageFeatInitialized = HeritageFeatInitialized();
-        Log.Info($"Heritage feat initialized already? {heritageFeatInitialized}");
 
         bool alreadyHasFeat = !HasHeritageFeat();
-        Log.Info($"Already has heritage feat? {alreadyHasFeat}");
-            
+
         if (playerRaceSupported || heritageFeatInitialized || alreadyHasFeat) return;
 
         PerformHeritageFeatSetup();
