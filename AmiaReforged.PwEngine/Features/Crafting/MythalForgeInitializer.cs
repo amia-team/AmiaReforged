@@ -112,10 +112,6 @@ public class MythalForgeInitializer
     /// <param name="obj"></param>
     private void OpenForge(PlaceableEvents.OnUsed obj)
     {
-        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
-
-        if (environment == "live") return;
-
         if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
 
         if (_windowSystem.IsWindowOpen(player, typeof(MythalForgePresenter)))
