@@ -2,6 +2,7 @@
 using AmiaReforged.PwEngine.Features.Crafting.Models.PropertyValidationRules;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
+using AmiaReforged.PwEngine.Features.NwObjectHelpers;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
@@ -33,6 +34,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private bool _creating;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+
+    // Caches to minimize UI messages
+    private readonly Dictionary<string, object?> _scalarCache = new();
+    private readonly Dictionary<string, List<string>> _stringListCache = new();
+    private readonly Dictionary<string, List<bool>> _boolListCache = new();
+    private readonly Dictionary<string, List<Color>> _colorListCache = new();
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="MythalForgePresenter" /> class.
@@ -76,7 +83,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         NwItem? item = obj.Item;
 
-        if(item == null) return;
+        if (item == null) return;
         if (!item.ResRef.Contains(value: "mythal")) return;
 
         GenericWindow
@@ -107,37 +114,50 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     ///     Handles button click events. Gets passed in from the Window Director.
     /// </summary>
     /// <param name="eventData">The event data for the button click.</param>
-        private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
+    private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
         if (Model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
                 out MythalCategoryModel.MythalProperty? property))
         {
-            // Check budget, mythals, and validation synchronously
+            // Guarded addition: check budget, mythals, and validation synchronously
             int remaining = Model.RemainingPowers;
             bool hasMythals = Model.MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
             bool canAfford = property.Internal.PowerCost <= remaining || property.Internal.PowerCost == 0;
 
             if (!hasMythals || !canAfford)
             {
-                // reflect the reason without adding
                 property.Selectable = false;
                 property.CostLabelTooltip = !hasMythals ? "Not enough mythals." : "Not enough points left.";
             }
             else
             {
-                // Use cached state to avoid allocations; single-property validation
                 List<ItemProperty> currentProps = Model.Item.ItemProperties.ToList();
                 List<ChangeListModel.ChangelistEntry> changeList = Model.ChangeListModel.ChangeList();
-                ValidationResult result = Model.ValidateSingle(property, currentProps, changeList);
 
-                if (result.Result == ValidationEnum.Valid)
+                // Prevent duplicate adds in the same session
+                bool alreadyQueued = changeList.Any(e =>
+                    e.State == ChangeListModel.ChangeState.Added &&
+                    e.Property.ItemProperty.Property.PropertyType ==
+                    property.Internal.ItemProperty.Property.PropertyType &&
+                    ItemPropertyHelper.PropertiesAreSame(e.Property, property.Internal.ItemProperty));
+
+                if (alreadyQueued)
                 {
-                    Model.AddNewProperty(property);
+                    property.Selectable = false;
+                    property.CostLabelTooltip = "Already queued for addition.";
                 }
                 else
                 {
-                    property.Selectable = false;
-                    property.CostLabelTooltip = result.ErrorMessage ?? "Validation failed.";
+                    ValidationResult result = Model.ValidateSingle(property, currentProps, changeList);
+                    if (result.Result == ValidationEnum.Valid)
+                    {
+                        Model.AddNewProperty(property);
+                    }
+                    else
+                    {
+                        property.Selectable = false;
+                        property.CostLabelTooltip = result.ErrorMessage ?? "Validation failed.";
+                    }
                 }
             }
 
@@ -211,9 +231,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void InitBefore()
     {
-        // N.B: Other things can happen here, so if you're following this as an example
-        // you can do more than just create the window here. The window is supposed to be created here, but you might
-        // want to initialize other data that might not be present at construction time.
         _window = new NuiWindow(View.RootLayout(), WindowTitle)
         {
             Geometry = new NuiRect(400f, 400f, 1200f, 640f)
@@ -221,7 +238,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     }
 
     /// <summary>
-    ///     Updates the view with the latest data.
+    ///     Updates the view with the latest data, minimizing UI churn.
     /// </summary>
     public override void UpdateView()
     {
@@ -233,20 +250,102 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         UpdateDifficultyClass();
         UpdateCategoryBindings();
 
-        // Raise the event to subscribed child windows.
         OnViewUpdated();
+    }
+
+    // Cached bind setters
+
+    private void SetIfChanged(NuiBind<string> bind, string value)
+    {
+        string key = bind.Key;
+        if (_scalarCache.TryGetValue(key, out var old) && old is string s && s == value) return;
+        _scalarCache[key] = value;
+        Token().SetBindValue(bind, value);
+    }
+
+    private void SetIfChanged(NuiBind<bool> bind, bool value)
+    {
+        string key = bind.Key;
+        if (_scalarCache.TryGetValue(key, out var old) && old is bool b && b == value) return;
+        _scalarCache[key] = value;
+        Token().SetBindValue(bind, value);
+    }
+
+    private void SetIfChanged(NuiBind<Color> bind, Color value)
+    {
+        string key = bind.Key;
+        if (_scalarCache.TryGetValue(key, out var old) && old is Color c && c.Equals(value)) return;
+        _scalarCache[key] = value;
+        Token().SetBindValue(bind, value);
+    }
+
+    // Add overload for int binds (e.g., counts)
+    private void SetIfChanged(NuiBind<int> bind, int value)
+    {
+        string key = bind.Key;
+        if (_scalarCache.TryGetValue(key, out var old) && old is int i && i == value) return;
+        _scalarCache[key] = value;
+        Token().SetBindValue(bind, value);
+    }
+
+    private void SetListIfChanged(NuiBind<string> bind, List<string> values)
+    {
+        string key = bind.Key;
+        if (_stringListCache.TryGetValue(key, out var old) && old.Count == values.Count)
+        {
+            bool same = true;
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (!string.Equals(old[i], values[i], StringComparison.Ordinal)) { same = false; break; }
+            }
+            if (same) return;
+        }
+        _stringListCache[key] = new List<string>(values);
+        Token().SetBindValues(bind, values);
+    }
+
+    private void SetListIfChanged(NuiBind<bool> bind, List<bool> values)
+    {
+        string key = bind.Key;
+        if (_boolListCache.TryGetValue(key, out var old) && old.Count == values.Count)
+        {
+            bool same = true;
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (old[i] != values[i]) { same = false; break; }
+            }
+            if (same) return;
+        }
+        _boolListCache[key] = new List<bool>(values);
+        Token().SetBindValues(bind, values);
+    }
+
+    private void SetListIfChanged(NuiBind<Color> bind, List<Color> values)
+    {
+        string key = bind.Key;
+        if (_colorListCache.TryGetValue(key, out var old) && old.Count == values.Count)
+        {
+            bool same = true;
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (!old[i].Equals(values[i])) { same = false; break; }
+            }
+            if (same) return;
+        }
+        _colorListCache[key] = new List<Color>(values);
+        Token().SetBindValues(bind, values);
     }
 
     private void UpdateNameField()
     {
-        Token().SetBindValue(View.ItemName, Model.Item.Name);
+        SetIfChanged(View.ItemName, Model.Item.Name);
     }
 
     private void UpdateItemPowerBindings()
     {
-        Token().SetBindValue(View.MaxPowers, Model.MaxBudget.ToString());
+        SetIfChanged(View.MaxPowers, Model.MaxBudget.ToString());
         int remaining = Model.RemainingPowers;
-        Token().SetBindValue(View.RemainingPowers, remaining.ToString());
+        SetIfChanged(View.RemainingPowers, remaining.ToString());
 
         if (_creating) DisplayPopupIfOverBudget(remaining);
     }
@@ -274,10 +373,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
-                Token().SetBindValue(View.CategoryView.EnabledPropertyBindings[property.Id], property.Selectable);
-                Token().SetBindValue(View.CategoryView.EmphasizedProperties[property.Id], !property.Selectable);
-                Token().SetBindValue(View.CategoryView.PowerCostColors[property.Id], property.Color);
-                Token().SetBindValue(View.CategoryView.PowerCostTooltips[property.Id], property.CostLabelTooltip);
+                SetIfChanged(View.CategoryView.EnabledPropertyBindings[property.Id], property.Selectable);
+                SetIfChanged(View.CategoryView.EmphasizedProperties[property.Id], !property.Selectable);
+                SetIfChanged(View.CategoryView.PowerCostColors[property.Id], property.Color);
+                SetIfChanged(View.CategoryView.PowerCostTooltips[property.Id], property.CostLabelTooltip ?? string.Empty);
             }
         }
     }
@@ -286,60 +385,60 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         List<MythalCategoryModel.MythalProperty> visibleProperties = Model.VisibleProperties.ToList();
 
-        int count = visibleProperties.Count;
-        Token().SetBindValue(View.ActivePropertiesView.PropertyCount, count);
+        SetIfChanged(View.ActivePropertiesView.PropertyCount, visibleProperties.Count);
 
         List<string> labels = visibleProperties.Select(m => m.Label).ToList();
-        Token().SetBindValues(View.ActivePropertiesView.PropertyNames, labels);
+        SetListIfChanged(View.ActivePropertiesView.PropertyNames, labels);
 
         List<string> powerCosts = visibleProperties.Select(m => m.Internal.PowerCost.ToString()).ToList();
-        Token().SetBindValues(View.ActivePropertiesView.PropertyPowerCosts, powerCosts);
+        SetListIfChanged(View.ActivePropertiesView.PropertyPowerCosts, powerCosts);
 
         List<bool> removable = visibleProperties.Select(m => m.Internal.Removable).ToList();
-        Token().SetBindValues(View.ActivePropertiesView.Removable, removable);
+        SetListIfChanged(View.ActivePropertiesView.Removable, removable);
     }
 
     private void UpdateChangeListBindings()
     {
-        int count = Model.ChangeListModel.ChangeList().Count;
-        Token().SetBindValue(View.ChangelistView.ChangeCount, count);
+        var changes = Model.ChangeListModel.ChangeList();
 
-        List<string> entryLabels = Model.ChangeListModel.ChangeList().Select(m => m.Label).ToList();
-        Token().SetBindValues(View.ChangelistView.PropertyLabel, entryLabels);
+        SetIfChanged(View.ChangelistView.ChangeCount, changes.Count);
 
-        List<string> entryCosts =
-            Model.ChangeListModel.ChangeList().Select(m => m.Property.PowerCost.ToString()).ToList();
-        Token().SetBindValues(View.ChangelistView.CostString, entryCosts);
+        List<string> entryLabels = changes.Select(m => m.Label).ToList();
+        SetListIfChanged(View.ChangelistView.PropertyLabel, entryLabels);
 
-        List<Color> entryColors = Model.ChangeListModel.ChangeList().Select(m => m.State switch
+        List<string> entryCosts = changes.Select(m => m.Property.PowerCost.ToString()).ToList();
+        SetListIfChanged(View.ChangelistView.CostString, entryCosts);
+
+        List<Color> entryColors = changes.Select(m => m.State switch
         {
             ChangeListModel.ChangeState.Added => ColorConstants.Lime,
             ChangeListModel.ChangeState.Removed => ColorConstants.Red,
             _ => ColorConstants.White
         }).ToList();
-
-        Token().SetBindValues(View.ChangelistView.Colors, entryColors);
+        SetListIfChanged(View.ChangelistView.Colors, entryColors);
     }
 
     private void UpdateGoldCost()
     {
-        Token().SetBindValue(View.GoldCost, Model.ChangeListModel.TotalGpCost().ToString());
+        int total = Model.ChangeListModel.TotalGpCost();
+        SetIfChanged(View.GoldCost, total.ToString());
 
-        bool canAfford = Model.ChangeListModel.TotalGpCost() < _player.LoginCreature?.Gold;
-        Token().SetBindValue(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
-        Token().SetBindValue(View.GoldCostTooltip, canAfford ? "" : "You cannot afford this.");
+        bool canAfford = total < (_player.LoginCreature?.Gold ?? 0);
+        SetIfChanged(View.GoldCostColor, canAfford ? ColorConstants.White : ColorConstants.Red);
+        SetIfChanged(View.GoldCostTooltip, canAfford ? "" : "You cannot afford this.");
+
         bool validAction = canAfford && Model.CanMakeCheck() && Model.RemainingPowers <= Model.MaxBudget;
-        Token().SetBindValue(View.ApplyEnabled, validAction);
-        Token().SetBindValue(View.EncourageGold, !canAfford);
+        SetIfChanged(View.ApplyEnabled, validAction);
+        SetIfChanged(View.EncourageGold, !canAfford);
     }
 
     private void UpdateDifficultyClass()
     {
         bool canMakeCheck = Model.CanMakeCheck();
-        Token().SetBindValue(View.SkillColor, canMakeCheck ? ColorConstants.White : ColorConstants.Red);
-        Token().SetBindValue(View.DifficultyClass, Model.GetCraftingDifficulty().ToString());
-        Token().SetBindValue(View.SkillTooltip, Model.SkillToolTip());
-        Token().SetBindValue(View.EncourageDifficulty, !canMakeCheck);
+        SetIfChanged(View.SkillColor, canMakeCheck ? ColorConstants.White : ColorConstants.Red);
+        SetIfChanged(View.DifficultyClass, Model.GetCraftingDifficulty().ToString());
+        SetIfChanged(View.SkillTooltip, Model.SkillToolTip());
+        SetIfChanged(View.EncourageDifficulty, !canMakeCheck);
     }
 
     /// <summary>
@@ -348,12 +447,9 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     public override void Create()
     {
         _creating = true;
-        // Create the window if it's null.
         if (_window == null)
-            // Try to create the window if it doesn't exist.
             InitBefore();
 
-        // If the window wasn't created, then tell the user we screwed up.
         if (_window == null)
         {
             _player.SendServerMessage(
@@ -362,13 +458,10 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             return;
         }
 
-        // This assigns out our token and renders the actual NUI window.
         _player.TryCreateNuiWindow(_window, out _token);
         _ledgerView.Presenter.Create();
 
         UpdateView();
-
-        // Create the child view (the ledger)
 
         _creating = false;
     }
@@ -380,10 +473,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     {
         if (_player.LoginCreature != null) _player.LoginCreature.OnUnacquireItem -= PreventMunchkins;
 
-        // Raise an event to child windows.
         OnForgeClosing();
 
-        // Raise an event to the system.
         _token.Close();
     }
 
