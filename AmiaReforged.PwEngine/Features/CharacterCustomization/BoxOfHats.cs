@@ -62,9 +62,9 @@ public class BoxOfHats
         }
 
         Effect? existingHat = creature.ActiveEffects.FirstOrDefault(e => e.Tag == HatVfxTag);
-        if (existingMask is not null)
+        if (existingHat is not null)
         {
-            creature.RemoveEffect(existingHat!);
+            creature.RemoveEffect(existingHat);
         }
 
         NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(i => i.ResRef == PcKeyResRef);

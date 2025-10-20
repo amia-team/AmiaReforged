@@ -36,7 +36,60 @@ public class MagicalQuiver
     public MagicalQuiver(MagicQuiverMap magicalQuiver)
     {
         NwModule.Instance.OnItemUse += HandleMagicalQuiver;
+        NwModule.Instance.OnClientEnter += ApplyVfx;
+
         _magicalQuiver = magicalQuiver;
+    }
+
+    private void ApplyVfx(ModuleEvents.OnClientEnter obj)
+    {
+        NwCreature? creature = obj.Player.LoginCreature;
+
+        if (creature is null)
+        {
+            return;
+        }
+
+        Effect? existingQuiver = creature.ActiveEffects.FirstOrDefault(e => e.Tag == QuiverVfxTag);
+        if (existingQuiver is not null)
+        {
+            creature.RemoveEffect(existingQuiver);
+        }
+
+        Effect? existingArrow = creature.ActiveEffects.FirstOrDefault(e => e.Tag == ArrowVfxTag);
+        if (existingArrow is not null)
+        {
+            creature.RemoveEffect(existingArrow);
+        }
+
+        NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(i => i.ResRef == PcKeyResRef);
+
+        if (pcKey is null)
+        {
+            return;
+        }
+
+        int quiverVfx = NWScript.GetLocalInt(pcKey, QuiverVfxTag);
+        int arrowVfx = NWScript.GetLocalInt(pcKey, ArrowVfxTag);
+
+        if (arrowVfx != 0)
+        {
+            VisualEffectTableEntry arrows = NwGameTables.VisualEffectTable.GetRow(arrowVfx);
+            Effect arrowEffect = Effect.VisualEffect(arrows);
+            arrowEffect.Tag = ArrowVfxTag;
+
+            creature.ApplyEffect(EffectDuration.Permanent, arrowEffect);
+        }
+
+        if (quiverVfx != 0)
+        {
+            VisualEffectTableEntry quiver = NwGameTables.VisualEffectTable.GetRow(quiverVfx);
+
+            Effect quiverEffect = Effect.VisualEffect(quiver);
+            quiverEffect.Tag = QuiverVfxTag;
+
+            creature.ApplyEffect(EffectDuration.Permanent, quiverEffect);
+        }
     }
 
     private void HandleMagicalQuiver(OnItemUse obj)
@@ -168,6 +221,8 @@ public class MagicalQuiver
         quiverVfx.Tag = QuiverVfxTag;
 
         playerCreature.ApplyEffect(EffectDuration.Permanent, quiverVfx);
+        NWScript.SetLocalInt(pcKey, QuiverVfxTag, (int)vfx);
+
     }
 
     private void HandleArrows(NwCreature playerCreature, int selectedArrow)
@@ -214,6 +269,8 @@ public class MagicalQuiver
         arrowVfx.Tag = ArrowVfxTag;
 
         playerCreature.ApplyEffect(EffectDuration.Permanent, arrowVfx);
+
+        NWScript.SetLocalInt(pcKey, ArrowVfxTag, (int)vfx);
     }
 }
 
