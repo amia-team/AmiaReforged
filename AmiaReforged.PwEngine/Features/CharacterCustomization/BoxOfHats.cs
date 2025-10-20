@@ -71,7 +71,7 @@ public class BoxOfHats
             creature.RemoveEffect(existingHat!);
         }
 
-        NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(i => i.Name == PcKeyResRef);
+        NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(i => i.ResRef == PcKeyResRef);
 
         if (pcKey is null)
         {
