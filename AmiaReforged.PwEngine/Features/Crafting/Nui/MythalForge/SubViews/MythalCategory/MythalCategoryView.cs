@@ -65,9 +65,9 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                 Color foreground = property.Internal.CraftingTier switch
                 {
                     CraftingTier.Minor => ColorConstants.White,
-                    CraftingTier.Lesser => ColorConstants.Green,
+                    CraftingTier.Lesser => ColorConstants.Lime,
                     CraftingTier.Intermediate => ColorConstants.Blue,
-                    CraftingTier.Greater => ColorConstants.Purple,
+                    CraftingTier.Greater => ColorConstants.Magenta,
                     CraftingTier.Perfect => ColorConstants.Orange,
                     CraftingTier.Divine => ColorConstants.Yellow,
                     _ => ColorConstants.White
