@@ -1,4 +1,5 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.Crafting.Models;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
@@ -61,12 +62,23 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                 NuiBind<string> powerCostTooltip = new(property.Id + "_tooltip");
                 NuiBind<bool> emphasized = new(property.Id + "_emphasized");
 
+                Color foreground = property.Internal.CraftingTier switch
+                {
+                    CraftingTier.Minor => ColorConstants.Gray,
+                    CraftingTier.Lesser => ColorConstants.White,
+                    CraftingTier.Intermediate => ColorConstants.Green,
+                    CraftingTier.Greater => ColorConstants.Blue,
+                    CraftingTier.Perfect => ColorConstants.Purple,
+                    CraftingTier.Divine => ColorConstants.Yellow,
+                    _ => ColorConstants.White
+                };
                 NuiRow propertyRow = new()
                 {
                     Children =
                     {
                         new NuiButton(property.Label)
                         {
+                            ForegroundColor = foreground,
                             Id = property.Id,
                             Width = 200f,
                             Enabled = enableProperty
