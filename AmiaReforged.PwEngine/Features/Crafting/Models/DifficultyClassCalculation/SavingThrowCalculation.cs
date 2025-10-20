@@ -9,6 +9,6 @@ public class SavingThrowCalculation : IComputableDifficulty
     {
         PropertyData.SavingThrow savingThrow = new(property);
 
-        return 10 + 4 * savingThrow.Bonus;
+        return 10 + 3 * savingThrow.Bonus;
     }
 }
