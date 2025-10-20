@@ -197,6 +197,8 @@ public class MagicalQuiver
         // The quiver was already removed, so return if their selection was "none"
         if (quiverEnum == WearableQuiver.None)
         {
+            NWScript.SetLocalInt(pcKey, QuiverVfxTag, 0);
+
             return;
         }
 
@@ -222,7 +224,6 @@ public class MagicalQuiver
 
         playerCreature.ApplyEffect(EffectDuration.Permanent, quiverVfx);
         NWScript.SetLocalInt(pcKey, QuiverVfxTag, (int)vfx);
-
     }
 
     private void HandleArrows(NwCreature playerCreature, int selectedArrow)
@@ -244,7 +245,7 @@ public class MagicalQuiver
         // The quiver was already removed, so return if their selection was "none"
         if (arrowEnum == WearableArrow.None)
         {
-            NWScript.SendMessageToPC(playerCreature, "Removing Arrows...");
+            NWScript.SetLocalInt(pcKey, ArrowVfxTag, 0);
             return;
         }
 
