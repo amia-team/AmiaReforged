@@ -1,4 +1,6 @@
-﻿using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeList;
+﻿using AmiaReforged.PwEngine.Features.Crafting.Models;
+using AmiaReforged.PwEngine.Features.Crafting.Models.PropertyValidationRules;
+using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
@@ -105,12 +107,40 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     ///     Handles button click events. Gets passed in from the Window Director.
     /// </summary>
     /// <param name="eventData">The event data for the button click.</param>
-    private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
+        private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
         if (Model.MythalCategoryModel.PropertyMap.TryGetValue(eventData.ElementId,
                 out MythalCategoryModel.MythalProperty? property))
         {
-            Model.AddNewProperty(property);
+            // Check budget, mythals, and validation synchronously
+            int remaining = Model.RemainingPowers;
+            bool hasMythals = Model.MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
+            bool canAfford = property.Internal.PowerCost <= remaining || property.Internal.PowerCost == 0;
+
+            if (!hasMythals || !canAfford)
+            {
+                // reflect the reason without adding
+                property.Selectable = false;
+                property.CostLabelTooltip = !hasMythals ? "Not enough mythals." : "Not enough points left.";
+            }
+            else
+            {
+                // Use cached state to avoid allocations; single-property validation
+                List<ItemProperty> currentProps = Model.Item.ItemProperties.ToList();
+                List<ChangeListModel.ChangelistEntry> changeList = Model.ChangeListModel.ChangeList();
+                ValidationResult result = Model.ValidateSingle(property, currentProps, changeList);
+
+                if (result.Result == ValidationEnum.Valid)
+                {
+                    Model.AddNewProperty(property);
+                }
+                else
+                {
+                    property.Selectable = false;
+                    property.CostLabelTooltip = result.ErrorMessage ?? "Validation failed.";
+                }
+            }
+
             Model.RefreshCategories();
         }
 

@@ -287,4 +287,11 @@ public class MythalForgeModel
             if (!passesValidation) UndoAddition(entry.Property);
         }
     }
+
+    public ValidationResult ValidateSingle(MythalCategoryModel.MythalProperty property,
+        IReadOnlyList<ItemProperty> currentItemProps,
+        List<ChangeListModel.ChangelistEntry> changeList)
+    {
+        return _validator.Validate(property, currentItemProps, changeList);
+    }
 }
