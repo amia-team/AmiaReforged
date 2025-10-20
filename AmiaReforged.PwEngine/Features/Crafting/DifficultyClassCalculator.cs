@@ -52,8 +52,8 @@ public class DifficultyClassCalculator
             // Preset: Lmin=10, Lmax=60, K=3, n=2
             int p = Math.Max(0, property.PowerCost);
             const double lmin = 10.0;
-            const double lmax = 60.0;
-            const double k = 3.0;
+            const double lmax = 70.0;
+            const double k = 2.236;
             const double n = 2.0;
 
             double pn = Math.Pow(p, n);
