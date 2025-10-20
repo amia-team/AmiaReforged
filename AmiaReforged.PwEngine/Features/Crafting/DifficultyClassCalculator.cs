@@ -46,8 +46,22 @@ public class DifficultyClassCalculator
     {
         if (!_difficulties.TryGetValue(property.ItemProperty.Property.PropertyType,
                 out IComputableDifficulty? operation))
-            // Generic difficulty class calculation
-            return 10 + 6 * property.PowerCost;
+        {
+            // Hill function (a.k.a. Naka–Rushton): saturating curve with half-saturation K and steepness n
+            // DC = floor(Lmin + (Lmax − Lmin) * P^n / (P^n + K^n))
+            // Preset: Lmin=10, Lmax=60, K=3, n=2
+            int p = Math.Max(0, property.PowerCost);
+            const double lmin = 10.0;
+            const double lmax = 60.0;
+            const double k = 3.0;
+            const double n = 2.0;
+
+            double pn = Math.Pow(p, n);
+            double kn = Math.Pow(k, n);
+            double frac = pn <= 0 ? 0.0 : pn / (pn + kn);
+            int dc = (int)Math.Floor(lmin + (lmax - lmin) * frac);
+            return dc;
+        }
 
         return operation.CalculateDifficultyClass(property);
     }
