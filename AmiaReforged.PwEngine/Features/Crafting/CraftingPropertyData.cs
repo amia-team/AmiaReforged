@@ -150,7 +150,7 @@ public class CraftingPropertyData
         });
 
         properties.Add(GenericItemProperties.VampiricRegeneration);
-        properties.Add(GenericItemProperties.Other);
+        properties.Add(GenericItemProperties.Keen);
 
         Properties.TryAdd(NWScript.BASE_ITEM_GLOVES, properties);
     }
@@ -221,7 +221,7 @@ public class CraftingPropertyData
         properties.Add(GenericItemProperties.VampiricRegeneration);
         properties.Add(GenericItemProperties.Armor);
         properties.Add(GenericItemProperties.Regeneration);
-        properties.Add(GenericItemProperties.Other);
+        properties.Add(GenericItemProperties.Keen);
 
         properties.Add(SkillProperties.Personal);
         properties.Add(SkillProperties.Advantageous);
@@ -240,6 +240,7 @@ public class CraftingPropertyData
             List<CraftingCategory> properties =
             [
                 DamageProperties.OneHanders,
+                GenericItemProperties.KeenThrown
             ];
 
             AddSharedWeaponProperties(properties);
@@ -261,6 +262,7 @@ public class CraftingPropertyData
                 SkillProperties.Advantageous,
                 SkillProperties.Personal,
                 GenericItemProperties.Regeneration,
+                GenericItemProperties.Keen,
                 AbilityProperties.Abilities,
             ];
 

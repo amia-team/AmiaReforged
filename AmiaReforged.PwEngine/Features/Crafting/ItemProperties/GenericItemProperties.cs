@@ -410,7 +410,7 @@ public static class GenericItemProperties
         BaseDifficulty = 6
     };
 
-    public static readonly CraftingCategory Other = new(categoryId: "others")
+    public static readonly CraftingCategory Keen = new(categoryId: "keen")
     {
         Label = "Keen",
         Properties =
@@ -418,6 +418,24 @@ public static class GenericItemProperties
             new CraftingProperty
             {
                 PowerCost = 1,
+                ItemProperty = NWScript.ItemPropertyKeen()!,
+                GuiLabel = "Keen",
+                GoldCost = MythalKeenCost,
+                CraftingTier = CraftingTier.Perfect
+            }
+        ],
+        BaseDifficulty = 15
+    };
+
+
+    public static readonly CraftingCategory KeenThrown = new(categoryId: "keen_thrown")
+    {
+        Label = "Keen",
+        Properties =
+        [
+            new CraftingProperty
+            {
+                PowerCost = 2,
                 ItemProperty = NWScript.ItemPropertyKeen()!,
                 GuiLabel = "Keen",
                 GoldCost = MythalKeenCost,
