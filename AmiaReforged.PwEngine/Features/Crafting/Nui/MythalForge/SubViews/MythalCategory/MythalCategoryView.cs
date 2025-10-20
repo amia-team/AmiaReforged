@@ -72,6 +72,8 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                     CraftingTier.Divine => ColorConstants.Yellow,
                     _ => ColorConstants.White
                 };
+
+                string tooltip = property.Internal.CraftingTier.ToString();
                 NuiRow propertyRow = new()
                 {
                     Children =
@@ -79,6 +81,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                         new NuiButton(property.Label)
                         {
                             ForegroundColor = foreground,
+                            Tooltip = tooltip,
                             Id = property.Id,
                             Width = 200f,
                             Enabled = enableProperty
