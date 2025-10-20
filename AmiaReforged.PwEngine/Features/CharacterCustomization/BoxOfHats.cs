@@ -20,9 +20,12 @@ public class BoxOfHats
     private const string MaskBoxPcKeyLocalObject = "mask_box";
     private const string IsSetUpLocalInt = "is_setup";
     private const string SelectedRaceLocalInt = "selected_race";
+    private const string MaskVfxLocalInt = "mask_vfx";
+    private const string HatVfxLocalInt = "hat_vfx";
 
     private const string HatVfxTag = "hat_vfx";
     private const string MaskVfxTag = "mask_vfx";
+
 
     private readonly Dictionary<int, string> _raceLabels = new()
     {
@@ -34,10 +37,58 @@ public class BoxOfHats
         { 5, "Half-Orc Size" },
         { 6, "Human Size" }
     };
+
     public BoxOfHats(BoxOfStyle masksAndHats)
     {
         NwModule.Instance.OnItemUse += HandleBoxOfMasks;
+        NwModule.Instance.OnClientEnter += ApplyVfx;
         _masksAndHats = masksAndHats;
+    }
+
+    private void ApplyVfx(ModuleEvents.OnClientEnter obj)
+    {
+        NwCreature? creature = obj.Player.LoginCreature;
+
+        if (creature is null) return;
+
+        Effect? existingMask = creature.ActiveEffects.FirstOrDefault(e => e.Tag == MaskVfxTag);
+        if (existingMask is not null)
+        {
+            creature.RemoveEffect(existingMask);
+        }
+
+        Effect? existingHat = creature.ActiveEffects.FirstOrDefault(e => e.Tag == HatVfxTag);
+        if (existingMask is not null)
+        {
+            creature.RemoveEffect(existingHat);
+        }
+
+        NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(i => i.Name == PcKeyResRef);
+
+        if (pcKey is null) return;
+
+        int maskVfx = NWScript.GetLocalInt(pcKey, MaskVfxLocalInt);
+        int hatVfx = NWScript.GetLocalInt(pcKey, HatVfxLocalInt);
+
+        if (maskVfx != 0)
+        {
+            VisualEffectTableEntry mask = NwGameTables.VisualEffectTable.GetRow(maskVfx);
+
+            Effect maskEffect = Effect.VisualEffect(mask);
+            maskEffect.Tag = HatVfxTag;
+
+            creature.ApplyEffect(EffectDuration.Permanent, maskEffect);
+        }
+
+        if (hatVfx != 0)
+        {
+            VisualEffectTableEntry hat = NwGameTables.VisualEffectTable.GetRow(hatVfx);
+
+            Effect hatEffect = Effect.VisualEffect(hat);
+            hatEffect.Tag = HatVfxTag;
+
+            creature.ApplyEffect(EffectDuration.Permanent, hatEffect);
+        }
     }
 
     private void HandleBoxOfMasks(OnItemUse obj)
@@ -122,7 +173,6 @@ public class BoxOfHats
         NWScript.SetLocalInt(boxOfMasks, IsSetUpLocalInt, NWScript.TRUE);
 
         NWScript.SetName(boxOfMasks, $"Box of {_raceLabels[selectedRace]} Masks");
-
     }
 
     [ScriptHandler(scriptName: "hat_select")]
@@ -177,8 +227,12 @@ public class BoxOfHats
         {
             NWScript.SendMessageToPC(playerCreature,
                 $"BUG REPORT: Could not select hat from {selectedHat}. Screenshot this and send this to staff on Discord or on the Forums");
+            NWScript.SetLocalInt(pcKey, HatVfxLocalInt, 0);
+
             return;
         }
+
+        NWScript.SetLocalInt(pcKey, HatVfxLocalInt, (int)vfx);
 
         VisualEffectTableEntry hatEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
         Effect hatVfx = Effect.VisualEffect(hatEntry);
@@ -232,10 +286,14 @@ public class BoxOfHats
             : _masksAndHats.MasksForRace[race].FemaleMasks.GetValueOrDefault(maskEnum);
         if (vfx is null)
         {
+            NWScript.SetLocalInt(pcKey, MaskVfxLocalInt, 0);
+
             NWScript.SendMessageToPC(playerCreature,
                 $"BUG REPORT: Could not select hat from {mask}. Screenshot this and send this to staff on Discord or on the Forums");
             return;
         }
+
+        NWScript.SetLocalInt(pcKey, MaskVfxLocalInt, (int)vfx);
 
         VisualEffectTableEntry maskEntry = NwGameTables.VisualEffectTable.GetRow((int)vfx);
         Effect maskVfx = Effect.VisualEffect(maskEntry);
