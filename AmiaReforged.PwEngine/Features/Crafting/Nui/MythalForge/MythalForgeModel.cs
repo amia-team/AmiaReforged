@@ -154,17 +154,22 @@ public class MythalForgeModel
 
     public void RefreshCategories()
     {
-        MythalCategoryModel.UpdateFromRemainingBudget(RemainingPowers);
+        // Compute once and reuse within this refresh.
+        int remainingPowers = RemainingPowers;
+
+        // Cache current state to avoid repeated allocations/enumerations in loops.
+        IReadOnlyList<ItemProperty> currentItemProps = Item.ItemProperties.ToList();
+        List<ChangeListModel.ChangelistEntry> currentChangeList = ChangeListModel.ChangeList();
+
+        MythalCategoryModel.UpdateFromRemainingBudget(remainingPowers);
 
         foreach (MythalCategoryModel.MythalCategory category in MythalCategoryModel.Categories)
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
-                // Pre-checks to avoid expensive validation when not selectable anyway.
+                // Cheap pre-checks to skip expensive validation
                 bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
-                bool canAfford =
-                    property.Internal.PowerCost <= RemainingPowers ||
-                    property.Internal.PowerCost == 0; // Free powers don't contribute to affordability
+                bool canAfford = property.Internal.PowerCost <= remainingPowers || property.Internal.PowerCost == 0;
 
                 if (!hasTheMythals || !canAfford)
                 {
@@ -175,17 +180,16 @@ public class MythalForgeModel
                     continue;
                 }
 
+                // Validate only when affordable and mythals available
                 ValidationResult operation =
-                    _validator.Validate(property,
-                        ActivePropertiesModel.GetVisibleProperties().Select(m => m.Internal.ItemProperty),
-                        ChangeListModel.ChangeList());
+                    _validator.Validate(property, currentItemProps, currentChangeList);
 
                 bool passesValidation = operation.Result == ValidationEnum.Valid;
 
-                property.Selectable = passesValidation && canAfford && hasTheMythals;
-                property.CostLabelTooltip = !passesValidation
-                    ? operation.ErrorMessage ?? "Validation failed."
-                    : string.Empty;
+                property.Selectable = passesValidation;
+                property.CostLabelTooltip = passesValidation
+                    ? string.Empty
+                    : operation.ErrorMessage ?? "Validation failed.";
             }
         }
     }
