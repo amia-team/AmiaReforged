@@ -3,6 +3,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using Microsoft.IdentityModel.Tokens;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.CharacterCustomization;
@@ -10,6 +11,7 @@ namespace AmiaReforged.PwEngine.Features.CharacterCustomization;
 [ServiceBinding(typeof(BoxOfHats))]
 public class BoxOfHats
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly BoxOfStyle _masksAndHats;
     private const string BoxOfHatsTag = "hatchanger";
     private const string BoxOfMasksTag = "maskchanger";
@@ -49,23 +51,33 @@ public class BoxOfHats
     {
         NwCreature? creature = obj.Player.LoginCreature;
 
-        if (creature is null) return;
+        if (creature is null)
+        {
+            Log.Info("Null critter");
+            return;
+        }
 
         Effect? existingMask = creature.ActiveEffects.FirstOrDefault(e => e.Tag == MaskVfxTag);
         if (existingMask is not null)
         {
+            Log.Info("Had a mask.");
             creature.RemoveEffect(existingMask);
         }
 
         Effect? existingHat = creature.ActiveEffects.FirstOrDefault(e => e.Tag == HatVfxTag);
         if (existingMask is not null)
         {
-            creature.RemoveEffect(existingHat);
+            Log.Info("Had a hat.");
+            creature.RemoveEffect(existingHat!);
         }
 
         NwItem? pcKey = creature.Inventory.Items.FirstOrDefault(i => i.Name == PcKeyResRef);
 
-        if (pcKey is null) return;
+        if (pcKey is null)
+        {
+            Log.Info("Null PC key");
+            return;
+        }
 
         int maskVfx = NWScript.GetLocalInt(pcKey, MaskVfxLocalInt);
         int hatVfx = NWScript.GetLocalInt(pcKey, HatVfxLocalInt);
@@ -73,7 +85,7 @@ public class BoxOfHats
         if (maskVfx != 0)
         {
             VisualEffectTableEntry mask = NwGameTables.VisualEffectTable.GetRow(maskVfx);
-
+            Log.Info($"Mask being set to {maskVfx}");
             Effect maskEffect = Effect.VisualEffect(mask);
             maskEffect.Tag = HatVfxTag;
 
@@ -83,6 +95,7 @@ public class BoxOfHats
         if (hatVfx != 0)
         {
             VisualEffectTableEntry hat = NwGameTables.VisualEffectTable.GetRow(hatVfx);
+            Log.Info($"Hat being set to {hatVfx}");
 
             Effect hatEffect = Effect.VisualEffect(hat);
             hatEffect.Tag = HatVfxTag;
