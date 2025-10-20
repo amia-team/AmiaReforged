@@ -160,26 +160,32 @@ public class MythalForgeModel
         {
             foreach (MythalCategoryModel.MythalProperty property in category.Properties)
             {
+                // Pre-checks to avoid expensive validation when not selectable anyway.
+                bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
+                bool canAfford =
+                    property.Internal.PowerCost <= RemainingPowers ||
+                    property.Internal.PowerCost == 0; // Free powers don't contribute to affordability
+
+                if (!hasTheMythals || !canAfford)
+                {
+                    property.Selectable = false;
+                    property.CostLabelTooltip = !hasTheMythals
+                        ? "Not enough mythals."
+                        : "Not enough points left.";
+                    continue;
+                }
+
                 ValidationResult operation =
                     _validator.Validate(property,
                         ActivePropertiesModel.GetVisibleProperties().Select(m => m.Internal.ItemProperty),
                         ChangeListModel.ChangeList());
 
                 bool passesValidation = operation.Result == ValidationEnum.Valid;
-                bool canAfford =
-                    property.Internal.PowerCost <= RemainingPowers ||
-                    property.Internal.PowerCost == 0; // Free powers don't contribute to affordability
-                bool hasTheMythals = MythalCategoryModel.HasMythals(property.Internal.CraftingTier);
-                property.Selectable = passesValidation &&
-                                      canAfford &&
-                                      hasTheMythals;
+
+                property.Selectable = passesValidation && canAfford && hasTheMythals;
                 property.CostLabelTooltip = !passesValidation
                     ? operation.ErrorMessage ?? "Validation failed."
-                    : !canAfford
-                        ? "Not enough points left."
-                        : !hasTheMythals
-                            ? "Not enough mythals."
-                            : string.Empty;
+                    : string.Empty;
             }
         }
     }
