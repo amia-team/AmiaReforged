@@ -84,7 +84,6 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
         NwItem? item = obj.Item;
 
         if (item == null) return;
-        if (!item.ResRef.Contains(value: "mythal")) return;
 
         GenericWindow
             .Builder()
@@ -92,11 +91,11 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             .SimplePopup()
             .WithPlayer(Token().Player)
             .WithTitle(title: "Don't Try That")
-            .WithMessage(message: "Don't try to game the system by dropping the mythals. You will lose all progress.")
+            .WithMessage(message: "Don't try to game the system by dropping items, gold, etc. The window will close and you will lose all progress.")
             .OpenWithParent(Token());
 
         NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName +
-                                              " tried to drop a mythal while crafting.");
+                                              " tried to drop items while crafting.");
         _player.LoginCreature?.AcquireItem(item);
     }
 
