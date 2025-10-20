@@ -61,7 +61,25 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
 
         _ledgerView = new MythalLedgerView(this, player);
 
-        if (player.LoginCreature != null) player.LoginCreature.OnUnacquireItem += PreventMunchkins;
+        if (player.LoginCreature != null)
+        {
+            player.LoginCreature.OnInventoryGoldRemove += PreventGoldCheese;
+            player.LoginCreature.OnUnacquireItem += PreventMunchkins;
+        }
+    }
+
+    private void PreventGoldCheese(OnInventoryGoldRemove obj)
+    {
+        obj.PreventGoldRemove = true;
+
+        GenericWindow
+            .Builder()
+            .For()
+            .SimplePopup()
+            .WithPlayer(Token().Player)
+            .WithTitle(title: "Don't Try That")
+            .WithMessage(message: "Don't try to game the system by dropping items, gold, etc.")
+            .OpenWithParent(Token());
     }
 
     /// <summary>
@@ -91,7 +109,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             .SimplePopup()
             .WithPlayer(Token().Player)
             .WithTitle(title: "Don't Try That")
-            .WithMessage(message: "Don't try to game the system by dropping items, gold, etc. The window will close and you will lose all progress.")
+            .WithMessage(message: "Don't try to game the system by dropping items, gold, etc.")
             .OpenWithParent(Token());
 
         NwModule.Instance.SendMessageToAllDMs("Player " + Token().Player.PlayerName +
@@ -295,10 +313,16 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             bool same = true;
             for (int i = 0; i < values.Count; i++)
             {
-                if (!string.Equals(old[i], values[i], StringComparison.Ordinal)) { same = false; break; }
+                if (!string.Equals(old[i], values[i], StringComparison.Ordinal))
+                {
+                    same = false;
+                    break;
+                }
             }
+
             if (same) return;
         }
+
         _stringListCache[key] = new List<string>(values);
         Token().SetBindValues(bind, values);
     }
@@ -311,10 +335,16 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             bool same = true;
             for (int i = 0; i < values.Count; i++)
             {
-                if (old[i] != values[i]) { same = false; break; }
+                if (old[i] != values[i])
+                {
+                    same = false;
+                    break;
+                }
             }
+
             if (same) return;
         }
+
         _boolListCache[key] = new List<bool>(values);
         Token().SetBindValues(bind, values);
     }
@@ -327,10 +357,16 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             bool same = true;
             for (int i = 0; i < values.Count; i++)
             {
-                if (!old[i].Equals(values[i])) { same = false; break; }
+                if (!old[i].Equals(values[i]))
+                {
+                    same = false;
+                    break;
+                }
             }
+
             if (same) return;
         }
+
         _colorListCache[key] = new List<Color>(values);
         Token().SetBindValues(bind, values);
     }
@@ -375,7 +411,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
                 SetIfChanged(View.CategoryView.EnabledPropertyBindings[property.Id], property.Selectable);
                 SetIfChanged(View.CategoryView.EmphasizedProperties[property.Id], !property.Selectable);
                 SetIfChanged(View.CategoryView.PowerCostColors[property.Id], property.Color);
-                SetIfChanged(View.CategoryView.PowerCostTooltips[property.Id], property.CostLabelTooltip ?? string.Empty);
+                SetIfChanged(View.CategoryView.PowerCostTooltips[property.Id],
+                    property.CostLabelTooltip ?? string.Empty);
             }
         }
     }
@@ -470,7 +507,12 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     public override void Close()
     {
-        if (_player.LoginCreature != null) _player.LoginCreature.OnUnacquireItem -= PreventMunchkins;
+        if (_player.LoginCreature != null)
+        {
+            _player.LoginCreature.OnUnacquireItem -= PreventMunchkins;
+            _player.LoginCreature.OnInventoryGoldRemove -= PreventGoldCheese;
+
+        }
 
         OnForgeClosing();
 
