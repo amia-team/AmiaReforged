@@ -20,6 +20,8 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
     public readonly NuiBind<bool> ValidObjectSelected = new("valid_obj");
 
     public readonly NuiBind<int> AppearanceValue = new("plc_appear");
+    public readonly NuiBind<string> AppearanceValueString = new("plc_appear_str");
+
 
     public readonly NuiBind<float> Scale = new("plc_scale");
     public readonly NuiBind<string> ScaleString = new("plc_scale_str");
@@ -109,6 +111,18 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                     {
                                         Width = 200f,
                                         Enabled = ValidObjectSelected
+                                    },
+
+                                    new NuiLabel("Appearance:")
+                                    {
+                                        Height = 15f,
+                                        Width = 60f,
+                                        VerticalAlign = NuiVAlign.Middle
+                                    },
+                                    new NuiTextEdit("Appearance Number", AppearanceValueString, 16, false)
+                                    {
+                                        Width = 200f,
+                                        Enabled = ValidObjectSelected
                                     }
                                 ]
                             }
@@ -162,6 +176,8 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         [
                                             new NuiLabel("X")
                                             {
+                                                HorizontalAlign = NuiHAlign.Center,
+
                                                 VerticalAlign = NuiVAlign.Middle,
                                                 Height = 15f,
                                                 Width = 20,
@@ -190,6 +206,8 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         [
                                             new NuiLabel("Y")
                                             {
+                                                HorizontalAlign = NuiHAlign.Center,
+
                                                 VerticalAlign = NuiVAlign.Middle,
                                                 Width = 20,
                                                 Height = 15f,
@@ -219,6 +237,8 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         [
                                             new NuiLabel("Z")
                                             {
+                                                HorizontalAlign = NuiHAlign.Center,
+
                                                 VerticalAlign = NuiVAlign.Middle,
                                                 Height = 15f,
                                                 Width = 20,
@@ -267,6 +287,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         [
                                             new NuiLabel("X")
                                             {
+                                                HorizontalAlign = NuiHAlign.Center,
                                                 VerticalAlign = NuiVAlign.Middle,
                                                 Height = 15f,
                                                 Width = 20,
@@ -292,6 +313,8 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         [
                                             new NuiLabel("Y")
                                             {
+                                                HorizontalAlign = NuiHAlign.Center,
+
                                                 VerticalAlign = NuiVAlign.Middle,
                                                 Height = 15f,
                                                 Width = 20,
@@ -317,6 +340,8 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         [
                                             new NuiLabel("Z")
                                             {
+                                                HorizontalAlign = NuiHAlign.Center,
+
                                                 VerticalAlign = NuiVAlign.Middle,
                                                 Height = 15f,
                                                 Width = 20,
@@ -347,6 +372,8 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         [
                                             new NuiLabel("X")
                                             {
+                                                HorizontalAlign = NuiHAlign.Center,
+
                                                 VerticalAlign = NuiVAlign.Middle,
                                                 Height = 15f,
                                                 Width = 20,
@@ -372,6 +399,8 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         [
                                             new NuiLabel("Y")
                                             {
+                                                HorizontalAlign = NuiHAlign.Center,
+
                                                 VerticalAlign = NuiVAlign.Middle,
                                                 Height = 15f,
                                                 Width = 20,
@@ -397,6 +426,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         [
                                             new NuiLabel("Z")
                                             {
+                                                HorizontalAlign = NuiHAlign.Center,
                                                 VerticalAlign = NuiVAlign.Middle,
                                                 Height = 15f,
                                                 Width = 20f,

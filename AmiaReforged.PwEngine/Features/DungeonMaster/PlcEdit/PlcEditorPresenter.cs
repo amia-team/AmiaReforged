@@ -59,6 +59,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
 
         int appearanceRowIndex = _model.Selected?.Appearance.RowIndex ?? 1;
         Token().SetBindValue(View.AppearanceValue, appearanceRowIndex);
+        Token().SetBindValue(View.AppearanceValueString, appearanceRowIndex.ToString(CultureInfo.InvariantCulture));
 
         Token().SetBindValue(View.TransformX, _model.Selected!.VisualTransform.Translation.X);
         Token().SetBindValue(View.TransformY, _model.Selected.VisualTransform.Translation.Y);
