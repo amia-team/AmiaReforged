@@ -50,20 +50,6 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
 
     public NuiButton SelectPlcButton = null!;
 
-    public NuiButton Step1Button = null!;
-    public NuiButton Step01Button = null!;
-    public NuiButton Step001Button = null!;
-
-    public NuiButton DecrementPositionXButton = null!;
-    public NuiButton IncrementPositionXButton = null!;
-
-    public NuiButton DecrementPositionYButton = null!;
-    public NuiButton IncrementPositionYButton = null!;
-
-    public NuiButton DecrementPositionZButton = null!;
-    public NuiButton IncrementPositionZButton = null!;
-
-
     public PlcEditorView(NwPlayer player)
     {
         Presenter = new PlcEditorPresenter(this, player);
@@ -174,8 +160,16 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         Height = 60f,
                                         Children =
                                         [
+                                            new NuiLabel("X")
+                                            {
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Height = 15f,
+                                                Width = 20,
+                                            },
                                             new NuiTextEdit("0", PositionXString, 10, false)
                                             {
+                                                Width = 70f,
+
                                                 Tooltip = "X Value. Must be a valid decimal number",
                                                 Enabled = ValidObjectSelected
                                             },
@@ -194,8 +188,16 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         Height = 60f,
                                         Children =
                                         [
+                                            new NuiLabel("Y")
+                                            {
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Width = 20,
+                                                Height = 15f,
+                                            },
                                             new NuiTextEdit("0", PositionYString, 10, false)
                                             {
+                                                Width = 70f,
+
                                                 Tooltip = "Y Value. Must be a valid decimal number",
                                                 Enabled = ValidObjectSelected
                                             },
@@ -215,8 +217,15 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         Height = 60f,
                                         Children =
                                         [
+                                            new NuiLabel("Z")
+                                            {
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Height = 15f,
+                                                Width = 20,
+                                            },
                                             new NuiTextEdit("0", PositionZString, 10, false)
                                             {
+                                                Width = 70f,
                                                 Tooltip = "Z Value. Must be a valid decimal number",
                                                 Enabled = ValidObjectSelected
                                             },
@@ -256,6 +265,12 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                     {
                                         Children =
                                         [
+                                            new NuiLabel("X")
+                                            {
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Height = 15f,
+                                                Width = 20,
+                                            },
                                             new NuiTextEdit("0", TransformXString, 10, false)
                                             {
                                                 Width = 70f,
@@ -275,6 +290,12 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                     {
                                         Children =
                                         [
+                                            new NuiLabel("Y")
+                                            {
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Height = 15f,
+                                                Width = 20,
+                                            },
                                             new NuiTextEdit("0", TransformYString, 10, false)
                                             {
                                                 Width = 70f,
@@ -294,6 +315,12 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                     {
                                         Children =
                                         [
+                                            new NuiLabel("Z")
+                                            {
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Height = 15f,
+                                                Width = 20,
+                                            },
                                             new NuiTextEdit("0", TransformZString, 10, false)
                                             {
                                                 Width = 70f,
@@ -318,6 +345,12 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                     {
                                         Children =
                                         [
+                                            new NuiLabel("X")
+                                            {
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Height = 15f,
+                                                Width = 20,
+                                            },
                                             new NuiTextEdit("0", RotationXString, 10, false)
                                             {
                                                 Width = 70f,
@@ -337,6 +370,12 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                     {
                                         Children =
                                         [
+                                            new NuiLabel("Y")
+                                            {
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Height = 15f,
+                                                Width = 20,
+                                            },
                                             new NuiTextEdit("0", RotationYString, 10, false)
                                             {
                                                 Width = 70f,
@@ -356,6 +395,12 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                     {
                                         Children =
                                         [
+                                            new NuiLabel("Z")
+                                            {
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                Height = 15f,
+                                                Width = 20f,
+                                            },
                                             new NuiTextEdit("0", RotationZString, 10, false)
                                             {
                                                 Width = 70f,
@@ -380,19 +425,23 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                     {
                                         Children =
                                         [
+                                            new NuiSpacer
+                                            {
+                                                Width = 24f,
+                                            },
                                             new NuiTextEdit("0", ScaleString, 10, false)
                                             {
                                                 Width = 70f,
                                                 Enabled = ValidObjectSelected
                                             },
-                                            new NuiSliderFloat(Scale, 0, 100)
+                                            new NuiSliderFloat(Scale, 0, 10)
                                             {
                                                 Width = 190f,
                                                 Tooltip =
                                                     "The amount that a position/transform (X,Y,Z) will be decremented or incremented",
                                                 Enabled = ValidObjectSelected,
                                                 Id = "scale_slider"
-                                            },
+                                            }
                                         ]
                                     },
                                 ]
