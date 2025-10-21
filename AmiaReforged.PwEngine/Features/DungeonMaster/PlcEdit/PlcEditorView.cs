@@ -158,32 +158,6 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                     HorizontalAlign = NuiHAlign.Center,
                     VerticalAlign = NuiVAlign.Middle
                 },
-
-                new NuiLabel("Step Value")
-                {
-                    Height = 15f,
-                    Width = 100f,
-                    VerticalAlign = NuiVAlign.Middle
-                },
-                new NuiRow
-                {
-                    Height = 40f,
-                    Children =
-                    [
-                        new NuiTextEdit("1.0", PositionStepString, 10, false)
-                        {
-                            Width = 70f,
-                            Enabled = ValidObjectSelected
-                        },
-                        new NuiSliderFloat(PositionStep, 0, 100)
-                        {
-                            Width = 190f,
-                            Tooltip = "The amount that a position/transform (X,Y,Z) will be decremented or incremented",
-                            Enabled = ValidObjectSelected,
-                            Id = "pos_step_slider"
-                        },
-                    ]
-                },
                 new NuiRow
                 {
                     Height = 200f,
@@ -313,7 +287,6 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                                     "The amount that a position/transform (X,Y,Z) will be decremented or incremented",
                                                 Enabled = ValidObjectSelected,
                                                 Id = "trans_y_slider"
-
                                             },
                                         ]
                                     },
@@ -333,7 +306,6 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                                     "The amount that a position/transform (X,Y,Z) will be decremented or incremented",
                                                 Enabled = ValidObjectSelected,
                                                 Id = "trans_z_slider"
-
                                             },
                                         ]
                                     },
