@@ -74,7 +74,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
 
     public override NuiLayout RootLayout()
     {
-        return new NuiColumn()
+        return new NuiColumn
         {
             Children =
             [
@@ -94,10 +94,10 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                     Width = 600f,
                     Children =
                     [
-                        new NuiGroup()
+                        new NuiGroup
                         {
                             Width = 300f,
-                            Element = new NuiColumn()
+                            Element = new NuiColumn
                             {
                                 Children =
                                 [
@@ -131,7 +131,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                         {
                             Width = 300f,
 
-                            Element = new NuiColumn()
+                            Element = new NuiColumn
                             {
                                 Children =
                                 [
@@ -191,11 +191,11 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                     [
                         new NuiGroup
                         {
-                            Element = new NuiColumn()
+                            Element = new NuiColumn
                             {
                                 Children =
                                 [
-                                    new NuiRow()
+                                    new NuiRow
                                     {
                                         Height = 60f,
                                         Children =
@@ -215,7 +215,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                             },
                                         ]
                                     },
-                                    new NuiRow()
+                                    new NuiRow
                                     {
                                         Height = 60f,
                                         Children =
@@ -274,11 +274,11 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                     [
                         new NuiGroup
                         {
-                            Element = new NuiColumn()
+                            Element = new NuiColumn
                             {
                                 Children =
                                 [
-                                    new NuiRow()
+                                    new NuiRow
                                     {
                                         Children =
                                         [
@@ -297,7 +297,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                             },
                                         ]
                                     },
-                                    new NuiRow()
+                                    new NuiRow
                                     {
                                         Children =
                                         [
@@ -317,7 +317,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                             },
                                         ]
                                     },
-                                    new NuiRow()
+                                    new NuiRow
                                     {
                                         Children =
                                         [
@@ -342,7 +342,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         Height = 15f,
                                         VerticalAlign = NuiVAlign.Middle
                                     },
-                                    new NuiRow()
+                                    new NuiRow
                                     {
                                         Children =
                                         [
@@ -361,7 +361,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                             },
                                         ]
                                     },
-                                    new NuiRow()
+                                    new NuiRow
                                     {
                                         Children =
                                         [
@@ -380,7 +380,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                             },
                                         ]
                                     },
-                                    new NuiRow()
+                                    new NuiRow
                                     {
                                         Children =
                                         [
@@ -404,7 +404,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                         Height = 15f,
                                         VerticalAlign = NuiVAlign.Middle
                                     },
-                                    new NuiRow()
+                                    new NuiRow
                                     {
                                         Children =
                                         [

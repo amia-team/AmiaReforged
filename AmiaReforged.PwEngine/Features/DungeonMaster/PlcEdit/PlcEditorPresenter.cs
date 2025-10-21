@@ -18,6 +18,8 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
 
     private readonly PlcEditorModel _model;
 
+    // Suppress watch processing while the user is actively dragging a slider.
+    private bool _isSliderDrag;
 
     public PlcEditorPresenter(PlcEditorView plcEditorView, NwPlayer player)
     {
@@ -56,17 +58,24 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         Token().SetBindValue(View.TransformX, _model.Selected!.VisualTransform.Translation.X);
         Token().SetBindValue(View.TransformY, _model.Selected.VisualTransform.Translation.Y);
         Token().SetBindValue(View.TransformZ, _model.Selected.VisualTransform.Translation.Z);
-        Token().SetBindValue(View.TransformXString, _model.Selected.VisualTransform.Translation.X.ToString(CultureInfo.InvariantCulture));
-        Token().SetBindValue(View.TransformYString, _model.Selected.VisualTransform.Translation.Y.ToString(CultureInfo.InvariantCulture));
-        Token().SetBindValue(View.TransformZString, _model.Selected.VisualTransform.Translation.Z.ToString(CultureInfo.InvariantCulture));
+        Token().SetBindValue(View.TransformXString,
+            _model.Selected.VisualTransform.Translation.X.ToString(CultureInfo.InvariantCulture));
+        Token().SetBindValue(View.TransformYString,
+            _model.Selected.VisualTransform.Translation.Y.ToString(CultureInfo.InvariantCulture));
+        Token().SetBindValue(View.TransformZString,
+            _model.Selected.VisualTransform.Translation.Z.ToString(CultureInfo.InvariantCulture));
         Token().SetBindValue(View.RotationX, _model.Selected.VisualTransform.Rotation.X);
         Token().SetBindValue(View.RotationY, _model.Selected.VisualTransform.Rotation.Y);
         Token().SetBindValue(View.RotationZ, _model.Selected.VisualTransform.Rotation.Z);
-        Token().SetBindValue(View.RotationXString, _model.Selected.VisualTransform.Rotation.X.ToString(CultureInfo.InvariantCulture));
-        Token().SetBindValue(View.RotationYString, _model.Selected.VisualTransform.Rotation.Y.ToString(CultureInfo.InvariantCulture));
-        Token().SetBindValue(View.RotationZString, _model.Selected.VisualTransform.Rotation.Z.ToString(CultureInfo.InvariantCulture));
+        Token().SetBindValue(View.RotationXString,
+            _model.Selected.VisualTransform.Rotation.X.ToString(CultureInfo.InvariantCulture));
+        Token().SetBindValue(View.RotationYString,
+            _model.Selected.VisualTransform.Rotation.Y.ToString(CultureInfo.InvariantCulture));
+        Token().SetBindValue(View.RotationZString,
+            _model.Selected.VisualTransform.Rotation.Z.ToString(CultureInfo.InvariantCulture));
         Token().SetBindValue(View.Scale, _model.Selected.VisualTransform.Scale);
-        Token().SetBindValue(View.ScaleString, _model.Selected.VisualTransform.Scale.ToString(CultureInfo.InvariantCulture));
+        Token().SetBindValue(View.ScaleString,
+            _model.Selected.VisualTransform.Scale.ToString(CultureInfo.InvariantCulture));
 
         Token().SetBindValue(View.PositionX, _model.Selected.Position.X);
         Token().SetBindValue(View.PositionXString, _model.Selected.Position.X.ToString(CultureInfo.InvariantCulture));
@@ -111,7 +120,19 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
             case NuiEventType.Click:
                 HandleButtonClick(eventData);
                 break;
+
+            case NuiEventType.MouseDown:
+                HandleMouseDown(eventData);
+                break;
+
+            case NuiEventType.MouseUp:
+                HandleMouseUp(eventData);
+                break;
+
             case NuiEventType.Watch:
+                // Ignore watch updates while dragging; update on release.
+                if (_isSliderDrag) return;
+
                 ToggleBindWatch(false);
                 SanitizeInputs();
                 UpdatePlc();
@@ -120,9 +141,96 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         }
     }
 
+    private void HandleMouseDown(ModuleEvents.OnNuiEvent eventData)
+    {
+        if (IsSliderId(eventData.ElementId))
+        {
+            _isSliderDrag = true;
+        }
+    }
+
+    private void HandleMouseUp(ModuleEvents.OnNuiEvent eventData)
+    {
+        if (IsSliderId(eventData.ElementId))
+        {
+            ToggleBindWatch(false);
+
+            void SyncFloat(NuiBind<float> valBind, NuiBind<string> strBind)
+            {
+                float v = Token().GetBindValue(valBind);
+                Token().SetBindValue(strBind, v.ToString(CultureInfo.InvariantCulture));
+            }
+
+            switch (eventData.ElementId)
+            {
+                case "pos_x_slider": SyncFloat(View.PositionX, View.PositionXString); break;
+                case "pos_y_slider": SyncFloat(View.PositionY, View.PositionYString); break;
+                case "pos_z_slider": SyncFloat(View.PositionZ, View.PositionZString); break;
+
+                case "trans_x_slider": SyncFloat(View.TransformX, View.TransformXString); break;
+                case "trans_y_slider": SyncFloat(View.TransformY, View.TransformYString); break;
+                case "trans_z_slider": SyncFloat(View.TransformZ, View.TransformZString); break;
+
+                case "rot_x_slider": SyncFloat(View.RotationX, View.RotationXString); break;
+                case "rot_y_slider": SyncFloat(View.RotationY, View.RotationYString); break;
+                case "rot_z_slider": SyncFloat(View.RotationZ, View.RotationZString); break;
+
+                case "scale_slider": SyncFloat(View.Scale, View.ScaleString); break;
+
+                case "pos_step_slider": SyncFloat(View.PositionStep, View.PositionStepString); break;
+            }
+
+            SanitizeInputs();
+            UpdatePlc();
+
+            ToggleBindWatch(true);
+        }
+
+        _isSliderDrag = false;
+    }
+
+    private static bool IsSliderId(string? id)
+        => !string.IsNullOrEmpty(id) && id.EndsWith("_slider", StringComparison.OrdinalIgnoreCase);
+
     private static string SanitizeNumericString(string input)
     {
-        return new string(input.Where(c => char.IsDigit(c) || c == '.').ToArray());
+        // Allow optional leading '-' and a single '.'; remove everything else.
+        bool seenDot = false;
+        bool seenSign = false;
+        var chars = new List<char>(input.Length);
+
+        foreach (char c in input)
+        {
+            if (!seenSign && chars.Count == 0 && (c == '-' || c == '+'))
+            {
+                // Keep only one leading sign; we normalize '+' away later.
+                chars.Add(c);
+                seenSign = true;
+                continue;
+            }
+
+            if (char.IsDigit(c))
+            {
+                chars.Add(c);
+                continue;
+            }
+
+            if (c == '.' && !seenDot)
+            {
+                chars.Add('.');
+                seenDot = true;
+            }
+        }
+
+        // If it's just a sign or empty, return empty to avoid parse issues.
+        if (chars.Count == 0 || (chars.Count == 1 && (chars[0] == '-' || chars[0] == '+')))
+            return string.Empty;
+
+        // Normalize leading '+'
+        if (chars[0] == '+')
+            chars.RemoveAt(0);
+
+        return new string(chars.ToArray());
     }
 
     private void SanitizeInputs()
@@ -263,28 +371,33 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         Token().SetBindWatch(View.PortraitResRef, b);
         Token().SetBindWatch(View.AppearanceValue, b);
 
-        Token().SetBindWatch(View.RotationX, b);
+        // Do not watch numeric slider binds to avoid feedback during drag; string mirrors stay watched.
+        Token().SetBindWatch(View.RotationX, false);
         Token().SetBindWatch(View.RotationXString, b);
-        Token().SetBindWatch(View.RotationY, b);
+        Token().SetBindWatch(View.RotationY, false);
         Token().SetBindWatch(View.RotationYString, b);
-        Token().SetBindWatch(View.RotationZ, b);
+        Token().SetBindWatch(View.RotationZ, false);
         Token().SetBindWatch(View.RotationZString, b);
-        Token().SetBindWatch(View.TransformX, b);
+
+        Token().SetBindWatch(View.TransformX, false);
         Token().SetBindWatch(View.TransformXString, b);
-        Token().SetBindWatch(View.TransformY, b);
+        Token().SetBindWatch(View.TransformY, false);
         Token().SetBindWatch(View.TransformYString, b);
-        Token().SetBindWatch(View.TransformZ, b);
+        Token().SetBindWatch(View.TransformZ, false);
         Token().SetBindWatch(View.TransformZString, b);
 
-        Token().SetBindWatch(View.Scale, b);
+        Token().SetBindWatch(View.Scale, false);
         Token().SetBindWatch(View.ScaleString, b);
 
-        Token().SetBindWatch(View.PositionX, b);
+        Token().SetBindWatch(View.PositionX, false);
         Token().SetBindWatch(View.PositionXString, b);
-        Token().SetBindWatch(View.PositionY, b);
+        Token().SetBindWatch(View.PositionY, false);
         Token().SetBindWatch(View.PositionYString, b);
-        Token().SetBindWatch(View.PositionZ, b);
+        Token().SetBindWatch(View.PositionZ, false);
         Token().SetBindWatch(View.PositionZString, b);
+
+        Token().SetBindWatch(View.PositionStep, false);
+        Token().SetBindWatch(View.PositionStepString, b);
     }
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
