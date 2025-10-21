@@ -134,6 +134,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
                     SyncSliderText(eventData.ElementId);
                     ApplyPlcSafe();
                 }
+
                 break;
 
             case NuiEventType.Watch:
@@ -149,6 +150,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
                         ApplyPlcSafe();
                         _lastApplyAt = now;
                     }
+
                     return;
                 }
 
@@ -168,6 +170,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         {
             if (!string.IsNullOrEmpty(id)) _watchBlacklist.Add(id);
         }
+
         try
         {
             action();
@@ -204,10 +207,8 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         void SyncFloat(NuiBind<float> valBind, NuiBind<string> strBind)
         {
             float v = Token().GetBindValue(valBind);
-            WithWatchBlacklist(BlacklistPair(strBind), () =>
-            {
-                Token().SetBindValue(strBind, v.ToString(CultureInfo.InvariantCulture));
-            });
+            WithWatchBlacklist(BlacklistPair(strBind),
+                () => { Token().SetBindValue(strBind, v.ToString(CultureInfo.InvariantCulture)); });
         }
 
         switch (sliderId)
@@ -268,12 +269,37 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         return new string(chars.ToArray());
     }
 
+    /// <summary>
+    /// Sanitizes the input parameters for PLC (placeable) editing.
+    /// This method ensures that position, transformation, scale, and rotation values
+    /// provided by the user or module are within valid ranges and formats.
+    /// </summary>
+    /// <remarks>
+    /// This method internally calls specific sanitation routines:
+    /// - <see cref="SanitizePositions"/> to validate and correct positional data.
+    /// - <see cref="SanitizeTransforms"/> to process transformation data for consistency.
+    /// - <see cref="SanitizeScale"/> to normalize scale values.
+    /// - <see cref="SanitizeRotations"/> to correct rotational data.
+    /// Use this method whenever text binds or user inputs are updated to prevent
+    /// invalid configurations or unexpected behavior in the PLC editing process.
+    /// </remarks>
     private void SanitizeInputs()
     {
         SanitizePositions();
         SanitizeTransforms();
         SanitizeScale();
         SanitizeRotations();
+
+        string? appearance = Token().GetBindValue(View.AppearanceValueString);
+        if (appearance is null) return;
+        string sanitized = SanitizeNumericString(appearance);
+        Token().SetBindValue(View.AppearanceValueString, sanitized);
+
+        if (int.TryParse(sanitized, out int value))
+        {
+            value = Math.Abs(value);
+            Token().SetBindValue(View.AppearanceValue, value);
+        }
     }
 
     private void SanitizeRotations()
@@ -449,7 +475,10 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         string? newName = Token().GetBindValue(View.Name);
         string? newDescription = Token().GetBindValue(View.Description);
         string? newPortraitResRef = Token().GetBindValue(View.PortraitResRef);
+
+
         int newAppearance = Token().GetBindValue(View.AppearanceValue);
+
         float newRotationX = Token().GetBindValue(View.RotationX);
         float newRotationY = Token().GetBindValue(View.RotationY);
         float newRotationZ = Token().GetBindValue(View.RotationZ);
