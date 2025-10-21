@@ -18,6 +18,12 @@ public class CraftingProperty
 
     public int GoldCost { get; set; }
 
+    /// <summary>
+    /// Collection of tags associated with this crafting property.
+    /// Tags can be used for categorization, filtering, and special behavior handling.
+    /// </summary>
+    public HashSet<string> Tags { get; init; } = new();
+
     public ItemPropertyModel ToItemPropertyModel() =>
         new()
         {

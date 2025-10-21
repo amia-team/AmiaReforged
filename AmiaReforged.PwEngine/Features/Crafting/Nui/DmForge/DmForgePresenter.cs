@@ -43,13 +43,13 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         if (isCasterWeapon)
             baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
 
-        if (_propertyData.Properties.TryGetValue(baseItemType, out IReadOnlyList<CraftingCategory>? categories))
+        if (_propertyData.Properties.TryGetValue(baseItemType, out var categories))
         {
             foreach (CraftingCategory cat in categories)
             {
                 foreach (CraftingProperty p in cat.Properties)
                 {
-                    // Clone with zero costs for DM display
+                    // Clone with zero costs for DM display; copy tag set (HashSet)
                     _available.Add(new CraftingProperty
                     {
                         GuiLabel = p.GuiLabel,
@@ -57,7 +57,8 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
                         PowerCost = 0,
                         CraftingTier = p.CraftingTier,
                         GoldCost = 0,
-                        Removable = true
+                        Removable = true,
+                        Tags = p.Tags != null ? new HashSet<string>(p.Tags, StringComparer.OrdinalIgnoreCase) : new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                     });
                 }
             }
@@ -67,6 +68,7 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         {
             bool removable = ItemPropertyHelper.CanBeRemoved(ip) || ip.DurationType == EffectDuration.Permanent;
             CraftingProperty cp = ItemPropertyHelper.ToCraftingProperty(ip);
+
             _current.Add((ip, cp, removable));
         }
 
@@ -151,7 +153,7 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         if (index < 0 || index >= _current.Count) return;
 
         // Remove only the specific instance at this index, not all matching properties.
-        (ItemProperty ip, _, bool removable) = _current[index];
+        var (ip, _, removable) = _current[index];
         if (!removable) return;
 
         if (ip.IsValid)
@@ -160,7 +162,6 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         }
         else
         {
-            // Fallback: remove just one matching instance by reference equality
             ItemProperty? match = _item.ItemProperties.FirstOrDefault(p => ReferenceEquals(p, ip));
             if (match != null)
                 _item.RemoveItemProperty(match);
@@ -172,7 +173,7 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
 
     private void AddAt(int index)
     {
-        List<CraftingProperty> visible = FilteredAvailable();
+        var visible = FilteredAvailable();
         if (index < 0 || index >= visible.Count) return;
 
         CraftingProperty cp = visible[index];
@@ -199,7 +200,7 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
 
     private void UpdateAvailableList()
     {
-        List<CraftingProperty> visible = FilteredAvailable();
+        var visible = FilteredAvailable();
         Token().SetBindValue(View.AvailableCount, visible.Count);
         Token().SetBindValues(View.AvailableLabels, visible.Select(a => a.GuiLabel).ToList());
     }
@@ -208,6 +209,13 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
     {
         if (string.IsNullOrWhiteSpace(_search)) return _available;
         string s = _search.ToLowerInvariant();
-        return _available.Where(a => a.GuiLabel != null && a.GuiLabel.ToLowerInvariant().Contains(s)).ToList();
+
+        // Match label or any tag in the hashset (case-insensitive)
+        return _available.Where(a =>
+        {
+            bool labelHit = a.GuiLabel != null && a.GuiLabel.ToLowerInvariant().Contains(s);
+            bool tagHit = a.Tags != null && a.Tags.Any(t => t != null && t.ToLowerInvariant().Contains(s));
+            return labelHit || tagHit;
+        }).ToList();
     }
 }
