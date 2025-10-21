@@ -68,7 +68,7 @@ public class EagleStrike(AugmentationFactory augmentationFactory) : ITechnique
         eagleStrikeEffect.Tag = EagleEffectTag;
         eagleStrikeEffect.SubType = EffectSubType.Extraordinary;
 
-        Effect eagleStrikeVfx = Effect.VisualEffect(VfxType.ImpStarburstRed, false, 0.7f);
+        Effect eagleStrikeVfx = Effect.VisualEffect(VfxType.ImpStarburstRed);
 
         targetCreature.ApplyEffect(EffectDuration.Temporary, eagleStrikeEffect, NwTimeSpan.FromRounds(2));
         targetCreature.ApplyEffect(EffectDuration.Instant, eagleStrikeVfx);
