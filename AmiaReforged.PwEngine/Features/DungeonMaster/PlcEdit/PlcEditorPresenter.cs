@@ -3,6 +3,7 @@ using System.Numerics;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using Action = System.Action;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.PlcEdit;
 
@@ -18,8 +19,12 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
 
     private readonly PlcEditorModel _model;
 
-    // Suppress watch processing while the user is actively dragging a slider.
-    private bool _isSliderDrag;
+    // Centralized blacklist for elementIds we want to ignore in Watch.
+    private readonly HashSet<string> _watchBlacklist = new(StringComparer.OrdinalIgnoreCase);
+
+    // Optionally debounce heavy updates. Keep interval modest to feel live but not spammy.
+    private DateTime _lastApplyAt = DateTime.MinValue;
+    private static readonly TimeSpan LiveApplyMinInterval = TimeSpan.FromMilliseconds(50);
 
     public PlcEditorPresenter(PlcEditorView plcEditorView, NwPlayer player)
     {
@@ -121,76 +126,108 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
                 HandleButtonClick(eventData);
                 break;
 
-            case NuiEventType.MouseDown:
-                HandleMouseDown(eventData);
-                break;
-
             case NuiEventType.MouseUp:
-                HandleMouseUp(eventData);
+                // On release: sync numeric -> string for that slider once.
+                if (IsSliderId(eventData.ElementId))
+                {
+                    SyncSliderText(eventData.ElementId);
+                    ApplyPlcSafe();
+                }
                 break;
 
             case NuiEventType.Watch:
-                // Ignore watch updates while dragging; update on release.
-                if (_isSliderDrag) return;
+                if (IsBlacklisted(eventData.ElementId))
+                    return;
 
+                // Live updates from sliders: apply PLC without touching the string mirrors.
+                if (IsSliderId(eventData.ElementId))
+                {
+                    var now = DateTime.UtcNow;
+                    if (now - _lastApplyAt >= LiveApplyMinInterval)
+                    {
+                        ApplyPlcSafe();
+                        _lastApplyAt = now;
+                    }
+                    return;
+                }
+
+                // Text edits (string binds): sanitize and apply.
                 ToggleBindWatch(false);
                 SanitizeInputs();
-                UpdatePlc();
+                ApplyPlcSafe();
                 ToggleBindWatch(true);
                 break;
         }
     }
 
-    private void HandleMouseDown(ModuleEvents.OnNuiEvent eventData)
+    // Utility: execute an action while ignoring specified elementIds in the watch loop.
+    private void WithWatchBlacklist(IEnumerable<string> elementIds, Action action)
     {
-        if (IsSliderId(eventData.ElementId))
+        foreach (var id in elementIds)
         {
-            _isSliderDrag = true;
+            if (!string.IsNullOrEmpty(id)) _watchBlacklist.Add(id);
+        }
+        try
+        {
+            action();
+        }
+        finally
+        {
+            foreach (var id in elementIds)
+            {
+                if (!string.IsNullOrEmpty(id)) _watchBlacklist.Remove(id);
+            }
         }
     }
 
-    private void HandleMouseUp(ModuleEvents.OnNuiEvent eventData)
-    {
-        if (IsSliderId(eventData.ElementId))
-        {
-            ToggleBindWatch(false);
+    // Helper to decide if a watch event should be ignored now.
+    private bool IsBlacklisted(string? elementId)
+        => !string.IsNullOrEmpty(elementId) && _watchBlacklist.Contains(elementId!);
 
-            void SyncFloat(NuiBind<float> valBind, NuiBind<string> strBind)
-            {
-                float v = Token().GetBindValue(valBind);
-                Token().SetBindValue(strBind, v.ToString(CultureInfo.InvariantCulture));
-            }
-
-            switch (eventData.ElementId)
-            {
-                case "pos_x_slider": SyncFloat(View.PositionX, View.PositionXString); break;
-                case "pos_y_slider": SyncFloat(View.PositionY, View.PositionYString); break;
-                case "pos_z_slider": SyncFloat(View.PositionZ, View.PositionZString); break;
-
-                case "trans_x_slider": SyncFloat(View.TransformX, View.TransformXString); break;
-                case "trans_y_slider": SyncFloat(View.TransformY, View.TransformYString); break;
-                case "trans_z_slider": SyncFloat(View.TransformZ, View.TransformZString); break;
-
-                case "rot_x_slider": SyncFloat(View.RotationX, View.RotationXString); break;
-                case "rot_y_slider": SyncFloat(View.RotationY, View.RotationYString); break;
-                case "rot_z_slider": SyncFloat(View.RotationZ, View.RotationZString); break;
-
-                case "scale_slider": SyncFloat(View.Scale, View.ScaleString); break;
-
-                case "pos_step_slider": SyncFloat(View.PositionStep, View.PositionStepString); break;
-            }
-
-            SanitizeInputs();
-            UpdatePlc();
-
-            ToggleBindWatch(true);
-        }
-
-        _isSliderDrag = false;
-    }
-
+    // Common slider ids (so we can treat them uniformly).
     private static bool IsSliderId(string? id)
         => !string.IsNullOrEmpty(id) && id.EndsWith("_slider", StringComparison.OrdinalIgnoreCase);
+
+    private void ApplyPlcSafe()
+    {
+        UpdatePlc();
+    }
+
+    // Sync a single slider’s numeric value to its paired string without triggering watch loops.
+    private void SyncSliderText(string? sliderId)
+    {
+        if (string.IsNullOrEmpty(sliderId)) return;
+
+        IEnumerable<string> BlacklistPair(NuiBind<string> strBind) => new[] { strBind.Key };
+
+        void SyncFloat(NuiBind<float> valBind, NuiBind<string> strBind)
+        {
+            float v = Token().GetBindValue(valBind);
+            WithWatchBlacklist(BlacklistPair(strBind), () =>
+            {
+                Token().SetBindValue(strBind, v.ToString(CultureInfo.InvariantCulture));
+            });
+        }
+
+        switch (sliderId)
+        {
+            case "pos_x_slider": SyncFloat(View.PositionX, View.PositionXString); break;
+            case "pos_y_slider": SyncFloat(View.PositionY, View.PositionYString); break;
+            case "pos_z_slider": SyncFloat(View.PositionZ, View.PositionZString); break;
+
+            case "trans_x_slider": SyncFloat(View.TransformX, View.TransformXString); break;
+            case "trans_y_slider": SyncFloat(View.TransformY, View.TransformYString); break;
+            case "trans_z_slider": SyncFloat(View.TransformZ, View.TransformZString); break;
+
+            case "rot_x_slider": SyncFloat(View.RotationX, View.RotationXString); break;
+            case "rot_y_slider": SyncFloat(View.RotationY, View.RotationYString); break;
+            case "rot_z_slider": SyncFloat(View.RotationZ, View.RotationZString); break;
+
+            case "scale_slider": SyncFloat(View.Scale, View.ScaleString); break;
+
+            case "pos_step_slider": SyncFloat(View.PositionStep, View.PositionStepString); break;
+        }
+    }
 
     private static string SanitizeNumericString(string input)
     {
@@ -203,7 +240,6 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         {
             if (!seenSign && chars.Count == 0 && (c == '-' || c == '+'))
             {
-                // Keep only one leading sign; we normalize '+' away later.
                 chars.Add(c);
                 seenSign = true;
                 continue;
@@ -222,11 +258,9 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
             }
         }
 
-        // If it's just a sign or empty, return empty to avoid parse issues.
         if (chars.Count == 0 || (chars.Count == 1 && (chars[0] == '-' || chars[0] == '+')))
             return string.Empty;
 
-        // Normalize leading '+'
         if (chars[0] == '+')
             chars.RemoveAt(0);
 
@@ -371,7 +405,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         Token().SetBindWatch(View.PortraitResRef, b);
         Token().SetBindWatch(View.AppearanceValue, b);
 
-        // Do not watch numeric slider binds to avoid feedback during drag; string mirrors stay watched.
+        // Keep numeric binds unwatched to avoid feedback; we update PLC directly on slider movement.
         Token().SetBindWatch(View.RotationX, false);
         Token().SetBindWatch(View.RotationXString, b);
         Token().SetBindWatch(View.RotationY, false);
