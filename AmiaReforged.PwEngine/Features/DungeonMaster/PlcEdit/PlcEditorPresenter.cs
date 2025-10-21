@@ -143,7 +143,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
                 // Live updates from sliders: apply PLC without touching the string mirrors.
                 if (IsSliderId(eventData.ElementId))
                 {
-                    var now = DateTime.UtcNow;
+                    DateTime now = DateTime.UtcNow;
                     if (now - _lastApplyAt >= LiveApplyMinInterval)
                     {
                         ApplyPlcSafe();
@@ -164,7 +164,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
     // Utility: execute an action while ignoring specified elementIds in the watch loop.
     private void WithWatchBlacklist(IEnumerable<string> elementIds, Action action)
     {
-        foreach (var id in elementIds)
+        foreach (string id in elementIds)
         {
             if (!string.IsNullOrEmpty(id)) _watchBlacklist.Add(id);
         }
@@ -174,7 +174,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         }
         finally
         {
-            foreach (var id in elementIds)
+            foreach (string id in elementIds)
             {
                 if (!string.IsNullOrEmpty(id)) _watchBlacklist.Remove(id);
             }
@@ -235,7 +235,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         // Allow optional leading '-' and a single '.'; remove everything else.
         bool seenDot = false;
         bool seenSign = false;
-        var chars = new List<char>(input.Length);
+        List<char> chars = new List<char>(input.Length);
 
         foreach (char c in input)
         {
