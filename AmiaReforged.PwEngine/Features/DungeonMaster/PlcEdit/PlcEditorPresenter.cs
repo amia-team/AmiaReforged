@@ -405,6 +405,8 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         Token().SetBindWatch(View.Description, b);
         Token().SetBindWatch(View.PortraitResRef, b);
         Token().SetBindWatch(View.AppearanceValue, b);
+        Token().SetBindWatch(View.AppearanceValueString, b);
+
 
         // Keep numeric binds unwatched to avoid feedback; we update PLC directly on slider movement.
         Token().SetBindWatch(View.RotationX, false);
