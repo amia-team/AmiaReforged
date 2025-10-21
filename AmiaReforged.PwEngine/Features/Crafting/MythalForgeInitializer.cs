@@ -78,8 +78,8 @@ public class MythalForgeInitializer
     /// <param name="obj"></param>
     private void EnableForgeUse(TriggerEvents.OnEnter obj)
     {
-        if (!obj.EnteringObject.IsPlayerControlled(out NwPlayer? player)) return;
-
+        if (!obj.EnteringObject.IsLoginPlayerCharacter(out NwPlayer? player)) return;
+        player.SendServerMessage("Hello mario");
         NwCreature? character = player.LoginCreature;
         if (character == null) return;
 
@@ -93,7 +93,7 @@ public class MythalForgeInitializer
     /// <exception cref="NotImplementedException"></exception>
     private void DisableForgeUse(TriggerEvents.OnExit obj)
     {
-        if (!obj.ExitingObject.IsPlayerControlled(out NwPlayer? player)) return;
+        if (!obj.ExitingObject.IsLoginPlayerCharacter(out NwPlayer? player)) return;
 
         NwCreature? character = player.LoginCreature;
         if (character == null) return;
