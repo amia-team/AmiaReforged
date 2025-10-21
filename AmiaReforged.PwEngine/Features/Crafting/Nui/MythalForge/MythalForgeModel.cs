@@ -92,8 +92,6 @@ public class MythalForgeModel
         foreach (CraftingProperty craftingProperty in changelistProperties)
         {
             int newDifficulty = _dcCalculator.ComputeDifficulty(craftingProperty);
-
-            craftingDifficulty = newDifficulty > craftingDifficulty ? newDifficulty : craftingDifficulty;
         }
 
         return craftingDifficulty;
@@ -238,7 +236,7 @@ public class MythalForgeModel
         return NWScript.SKILL_SPELLCRAFT;
     }
 
-    public bool CanMakeCheck() => NWScript.GetSkillRank(GetSkill(), _player.LoginCreature) >= GetCraftingDifficulty();
+        public bool CanMakeCheck() => NWScript.GetSkillRank(GetSkill(), _player.LoginCreature) + 20 >= GetCraftingDifficulty();
 
     public void RemoveActiveProperty(CraftingProperty property)
     {
