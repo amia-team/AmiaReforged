@@ -10,10 +10,7 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.PwEngine.Features.Crafting;
 
-/// <summary>
-///     Initializes the Mythal Forge system at startup. Responsible for listening to player interactions with the forge and
-///     its triggers.
-/// </summary>
+// ... existing code ...
 [ServiceBinding(typeof(MythalForgeInitializer))]
 public class MythalForgeInitializer
 {
@@ -31,14 +28,7 @@ public class MythalForgeInitializer
 
     private readonly WindowDirector _windowSystem;
 
-    /// <summary>
-    ///     Dependency injected by the DI container. Do not use this constructor directly.
-    /// </summary>
-    /// <param name="windowSystem"></param>
-    /// <param name="propertyData"></param>
-    /// <param name="budget"></param>
-    /// <param name="validator"></param>
-    /// <param name="dcCalculator"></param>
+    // ... existing code ...
     public MythalForgeInitializer(WindowDirector windowSystem, CraftingPropertyData propertyData,
         CraftingBudgetService budget, PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
@@ -51,9 +41,7 @@ public class MythalForgeInitializer
         InitForges();
     }
 
-    /// <summary>
-    ///     Looks for all forges and triggers in the module and sets up event listeners.
-    /// </summary>
+    // ... existing code ...
     private void InitForges()
     {
         IEnumerable<NwPlaceable> forges = NwObject.FindObjectsWithTag<NwPlaceable>(MythalForgeTag);
@@ -72,25 +60,17 @@ public class MythalForgeInitializer
         }
     }
 
-    /// <summary>
-    ///     Sets a local int on the player's character to indicate they are near a forge, so they can use it.
-    /// </summary>
-    /// <param name="obj"></param>
+    // ... existing code ...
     private void EnableForgeUse(TriggerEvents.OnEnter obj)
     {
         if (!obj.EnteringObject.IsLoginPlayerCharacter(out NwPlayer? player)) return;
-        player.SendServerMessage("Hello mario");
         NwCreature? character = player.LoginCreature;
         if (character == null) return;
 
         NWScript.SetLocalInt(character, CanUseForge, 1);
     }
 
-    /// <summary>
-    ///     Unsets the local int on the player's character to indicate they are no longer near a forge.
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <exception cref="NotImplementedException"></exception>
+    // ... existing code ...
     private void DisableForgeUse(TriggerEvents.OnExit obj)
     {
         if (!obj.ExitingObject.IsLoginPlayerCharacter(out NwPlayer? player)) return;
@@ -106,14 +86,12 @@ public class MythalForgeInitializer
         NWScript.DeleteLocalInt(character, ForgeIsClosing);
     }
 
-    /// <summary>
-    ///     Sets up the targeting mode for the player to select an item from their inventory to use with the forge.
-    /// </summary>
-    /// <param name="obj"></param>
+    // ... existing code ...
     private void OpenForge(PlaceableEvents.OnUsed obj)
     {
         if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
 
+        // Toggle close if already open
         if (_windowSystem.IsWindowOpen(player, typeof(MythalForgePresenter)))
         {
             _windowSystem.CloseWindow(player, typeof(MythalForgePresenter));
@@ -123,46 +101,52 @@ public class MythalForgeInitializer
         NwCreature? character = player.LoginCreature;
         if (character == null) return;
 
+        // DM avatar path: bypass triggers/lvars and allow picking any item (including outside inventory).
+        if (character.IsDMAvatar)
+        {
+            player.OnPlayerTarget += ValidateAndSelectAsDM;
+            EnterTargetingModeForDM(player);
+            return;
+        }
+
+        // Player path (unchanged proximity/closing checks)
         if (NWScript.GetLocalInt(character, CanUseForge) != 1 || NWScript.GetLocalInt(character, ForgeIsClosing) == 1)
         {
             player.FloatingTextString(message: "Get closer to the forge.", false);
             return;
         }
 
-        player.OnPlayerTarget += ValidateAndSelect;
+        player.OnPlayerTarget += ValidateAndSelectPlayer;
 
         EnterTargetingMode(player);
 
         NWScript.SetLocalString(player.LoginCreature, LvarTargetingMode, TargetingModeMythalForge);
     }
 
-    /// <summary>
-    ///     Officially enters the targeting mode for the player to select an item from their inventory. Sets a local string on
-    ///     the player's character to indicate they are in the Mythal Forge targeting mode.
-    /// </summary>
-    /// <param name="player"></param>
+    // ... existing code ...
     private void EnterTargetingMode(NwPlayer player)
     {
         player.FloatingTextString(message: "Pick an Item from your inventory.", false);
         player.OpenInventory();
-        NWScript.EnterTargetingMode(player.LoginCreature, NWScript.OBJECT_TYPE_ITEM);
         NWScript.SetLocalString(player.LoginCreature, LvarTargetingMode, TargetingModeMythalForge);
+        NWScript.EnterTargetingMode(player.LoginCreature, NWScript.OBJECT_TYPE_ITEM);
     }
 
-    /// <summary>
-    ///     Targeting mode listener for the player to select an item from their inventory. Validates the item and opens the
-    ///     Mythal Forge window.
-    ///     Makes sure to check if the player is still in the Mythal Forge targeting mode to avoid conflicts with other systems
-    ///     that use targeting mode.
-    /// </summary>
-    /// <param name="obj"></param>
-    private void ValidateAndSelect(ModuleEvents.OnPlayerTarget obj)
+    // DM targeting mode: no lvars, allow selecting any item
+    private void EnterTargetingModeForDM(NwPlayer player)
+    {
+        player.FloatingTextString(message: "DM: Select any item.", false);
+        // Allow targeting of any item (not constrained by inventory token)
+        NWScript.EnterTargetingMode(player.LoginCreature!, NWScript.OBJECT_TYPE_ITEM);
+    }
+
+    // Player validator (original behavior)
+    private void ValidateAndSelectPlayer(ModuleEvents.OnPlayerTarget obj)
     {
         if (obj.TargetObject is not NwItem item || !obj.TargetObject.IsValid) return;
         if (obj.Player.LoginCreature == null) return;
 
         if (NWScript.GetLocalString(obj.Player.LoginCreature, LvarTargetingMode) != TargetingModeMythalForge) return;
-
         int baseItemType = NWScript.GetBaseItemType(item);
 
         bool isTwoHander = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
@@ -182,11 +166,10 @@ public class MythalForgeInitializer
                 .WithMessage(message: "Item not supported by Mythal forge")
                 .Open();
 
-            obj.Player.OnPlayerTarget -= ValidateAndSelect;
+            obj.Player.OnPlayerTarget -= ValidateAndSelectPlayer;
 
             NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
-            //  Closes the inventory window
             obj.Player.OpenInventory();
 
             return;
@@ -217,20 +200,51 @@ public class MythalForgeInitializer
                     "Item supported by the Mythal forge, but has no properties. This is a bug and should be reported.")
                 .Open();
 
-            obj.Player.OnPlayerTarget -= ValidateAndSelect;
+            obj.Player.OnPlayerTarget -= ValidateAndSelectPlayer;
             NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
             return;
         }
 
-
-        // Remove the token.
         NWScript.DeleteLocalString(obj.Player.LoginCreature, LvarTargetingMode);
 
         MythalForgeView itemWindow = new(_propertyData, _budget, item, obj.Player, _validator, _dcCalculator);
         _windowSystem.OpenWindow(itemWindow.Presenter);
 
         obj.Player.OpenInventory();
-        obj.Player.OnPlayerTarget -= ValidateAndSelect;
+        obj.Player.OnPlayerTarget -= ValidateAndSelectPlayer;
+    }
+
+    // DM validator: no lvar or proximity checks; no ownership restriction
+    private void ValidateAndSelectAsDM(ModuleEvents.OnPlayerTarget obj)
+    {
+        if (obj.TargetObject is not NwItem item || !obj.TargetObject.IsValid) return;
+        if (obj.Player.LoginCreature == null) return;
+
+        int baseItemType = NWScript.GetBaseItemType(item);
+        bool isTwoHander = ItemTypeConstants.Melee2HWeapons().Contains(baseItemType);
+        bool isCasterWeapon = NWScript.GetLocalInt(item, sVarName: "CASTER_WEAPON") == NWScript.TRUE;
+        if (isCasterWeapon)
+            baseItemType = isTwoHander ? CraftingPropertyData.CasterWeapon2H : CraftingPropertyData.CasterWeapon1H;
+
+        if (!_propertyData.Properties.ContainsKey(baseItemType))
+        {
+            GenericWindow.Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(obj.Player)
+                .WithTitle("DM Forge: Notice")
+                .WithMessage("Item base type not mapped for forge properties.")
+                .Open();
+
+            obj.Player.OnPlayerTarget -= ValidateAndSelectAsDM;
+            return;
+        }
+
+        // Open DM Forge (no costs, no mythals, duplicates allowed)
+        DmForgePresenter dmPresenter = new(obj.Player, item, _propertyData);
+        _windowSystem.OpenWindow(dmPresenter);
+
+        obj.Player.OnPlayerTarget -= ValidateAndSelectAsDM;
     }
 }

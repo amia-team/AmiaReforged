@@ -76,6 +76,7 @@ public sealed class WindowDirector : IDisposable
     /// <param name="obj">The event object containing details about the client enter event.</param>
     private void RegisterPlayer(ModuleEvents.OnClientEnter obj)
     {
+        Log.Info($"Registering {obj.Player.PlayerName}");
         _activeWindows.Add(obj.Player, new List<IScryPresenter>());
     }
 
