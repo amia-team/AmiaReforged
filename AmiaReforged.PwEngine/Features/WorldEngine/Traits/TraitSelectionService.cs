@@ -72,7 +72,8 @@ public class TraitSelectionService
     }
 
     /// <summary>
-    /// Confirms all unconfirmed traits for a character, making them permanent.
+    /// Confirms all unconfirmed traits for a character, finalizing the initial selection.
+    /// Note: Confirmed traits can still be changed later - this just marks the end of the initial selection phase.
     /// </summary>
     public bool ConfirmTraits(Guid characterId)
     {

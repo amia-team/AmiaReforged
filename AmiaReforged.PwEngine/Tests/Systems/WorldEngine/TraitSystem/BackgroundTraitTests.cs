@@ -135,9 +135,9 @@ public class BackgroundTraitTests
     }
 
     [Test]
-    public void CannotDeselectConfirmedTrait()
+    public void CanDeselectConfirmedTrait()
     {
-        // Arrange
+        // Arrange - Confirmed traits can be deselected
         CharacterTrait confirmedTrait = new CharacterTrait
         {
             Id = Guid.NewGuid(),
@@ -151,7 +151,7 @@ public class BackgroundTraitTests
         bool canDeselect = TraitSelectionValidator.CanDeselect(confirmedTrait);
 
         // Assert
-        Assert.That(canDeselect, Is.False);
+        Assert.That(canDeselect, Is.True, "Confirmed traits can be changed after initial selection");
     }
 
     [Test]
@@ -245,7 +245,7 @@ public class BackgroundTraitTests
         Assert.That(confirmed, Is.True);
         Assert.That(traits, Has.Count.EqualTo(1));
         Assert.That(traits[0].IsConfirmed, Is.True);
-        Assert.That(canDeselect, Is.False, "Confirmed traits cannot be deselected");
+        Assert.That(canDeselect, Is.True, "Confirmed traits can be deselected - confirmation just finalizes initial selection");
     }
 
     [Test]
