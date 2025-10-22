@@ -189,7 +189,7 @@ public class BackgroundTraitTests
             PointCost = 1
         });
 
-        ICharacterTraitRepository charTraitRepo = PersistentCharacterTraitRepository.Create();
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
         TraitSelectionService service = TraitSelectionService.Create(charTraitRepo, traitRepo);
 
         Guid characterId = Guid.NewGuid();
@@ -214,19 +214,110 @@ public class BackgroundTraitTests
     [Test]
     public void ConfirmingTraits_MakesThemPermanent()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "brave",
+            Name = "Brave",
+            Description = "Fearless",
+            PointCost = 1
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        TraitSelectionService service = TraitSelectionService.Create(charTraitRepo, traitRepo);
+
+        Guid characterId = Guid.NewGuid();
+        ICharacterInfo character = new TestCharacterInfo
+        {
+            Race = "Human",
+            Classes = ["Fighter"]
+        };
+        Dictionary<string, bool> unlockedTraits = new();
+
+        // Act - Select trait and confirm
+        service.SelectTrait(characterId, "brave", character, unlockedTraits);
+        bool confirmed = service.ConfirmTraits(characterId);
+        List<CharacterTrait> traits = service.GetCharacterTraits(characterId);
+        bool canDeselect = service.DeselectTrait(characterId, "brave");
+
+        // Assert
+        Assert.That(confirmed, Is.True);
+        Assert.That(traits, Has.Count.EqualTo(1));
+        Assert.That(traits[0].IsConfirmed, Is.True);
+        Assert.That(canDeselect, Is.False, "Confirmed traits cannot be deselected");
     }
 
     [Test]
     public void CannotConfirmTraits_WhenBudgetIsNegative()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "expensive",
+            Name = "Expensive Trait",
+            Description = "Costs too much",
+            PointCost = 5
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        TraitSelectionService service = TraitSelectionService.Create(charTraitRepo, traitRepo);
+
+        Guid characterId = Guid.NewGuid();
+        ICharacterInfo character = new TestCharacterInfo
+        {
+            Race = "Human",
+            Classes = ["Fighter"]
+        };
+        Dictionary<string, bool> unlockedTraits = new();
+
+        // Act - Select expensive trait (costs 5, budget is 2) and try to confirm
+        service.SelectTrait(characterId, "expensive", character, unlockedTraits);
+        bool confirmed = service.ConfirmTraits(characterId);
+        List<CharacterTrait> traits = service.GetCharacterTraits(characterId);
+
+        // Assert
+        Assert.That(confirmed, Is.False, "Should not confirm when budget is negative");
+        Assert.That(traits, Has.Count.EqualTo(1));
+        Assert.That(traits[0].IsConfirmed, Is.False, "Trait should remain unconfirmed");
     }
 
     [Test]
     public void ConfirmedTraits_PersistAcrossLogins()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "brave",
+            Name = "Brave",
+            Description = "Fearless",
+            PointCost = 1
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        TraitSelectionService service = TraitSelectionService.Create(charTraitRepo, traitRepo);
+
+        Guid characterId = Guid.NewGuid();
+        ICharacterInfo character = new TestCharacterInfo
+        {
+            Race = "Human",
+            Classes = ["Fighter"]
+        };
+        Dictionary<string, bool> unlockedTraits = new();
+
+        // Act - Select, confirm, then simulate "login" by querying again
+        service.SelectTrait(characterId, "brave", character, unlockedTraits);
+        service.ConfirmTraits(characterId);
+
+        // Simulate new login by retrieving persisted traits
+        List<CharacterTrait> traitsAfterLogin = service.GetCharacterTraits(characterId);
+
+        // Assert
+        Assert.That(traitsAfterLogin, Has.Count.EqualTo(1));
+        Assert.That(traitsAfterLogin[0].IsConfirmed, Is.True);
+        Assert.That(traitsAfterLogin[0].TraitTag, Is.EqualTo("brave"));
     }
 
     #endregion

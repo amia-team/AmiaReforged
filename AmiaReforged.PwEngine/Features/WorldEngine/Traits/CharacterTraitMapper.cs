@@ -38,4 +38,9 @@ public class CharacterTraitMapper
             CustomData = persistentTrait.CustomData
         };
     }
+
+    public static CharacterTraitMapper Create()
+    {
+        return new CharacterTraitMapper();
+    }
 }

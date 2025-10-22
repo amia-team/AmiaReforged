@@ -56,4 +56,11 @@ public class PersistentCharacterTraitRepository(CharacterTraitMapper mapper, PwC
         ctx.CharacterTraits.Remove(existing);
         ctx.SaveChanges();
     }
+
+    public static PersistentCharacterTraitRepository Create()
+    {
+        return new PersistentCharacterTraitRepository(
+            CharacterTraitMapper.Create(),
+            new PwContextFactory());
+    }
 }
