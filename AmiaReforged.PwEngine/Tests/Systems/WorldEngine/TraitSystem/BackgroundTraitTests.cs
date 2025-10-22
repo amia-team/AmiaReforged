@@ -98,11 +98,7 @@ public class BackgroundTraitTests
             PointCost = 1
         };
 
-        ICharacterInfo character = new TestCharacterInfo
-        {
-            Race = "Human",
-            Classes = ["Fighter"]
-        };
+        ICharacterInfo character = TestCharacterInfo.From("Human", "Fighter");
 
         TraitBudget budget = TraitBudget.CreateDefault();
         List<CharacterTrait> selectedTraits = [];
@@ -193,11 +189,7 @@ public class BackgroundTraitTests
         TraitSelectionService service = TraitSelectionService.Create(charTraitRepo, traitRepo);
 
         Guid characterId = Guid.NewGuid();
-        ICharacterInfo character = new TestCharacterInfo
-        {
-            Race = "Human",
-            Classes = ["Fighter"]
-        };
+        ICharacterInfo character = TestCharacterInfo.From("Human", "Fighter");
         Dictionary<string, bool> unlockedTraits = new();
 
         // Act - Select, then deselect before confirming
@@ -228,11 +220,7 @@ public class BackgroundTraitTests
         TraitSelectionService service = TraitSelectionService.Create(charTraitRepo, traitRepo);
 
         Guid characterId = Guid.NewGuid();
-        ICharacterInfo character = new TestCharacterInfo
-        {
-            Race = "Human",
-            Classes = ["Fighter"]
-        };
+        ICharacterInfo character = TestCharacterInfo.From("Human", "Fighter");
         Dictionary<string, bool> unlockedTraits = new();
 
         // Act - Select trait and confirm
@@ -265,11 +253,7 @@ public class BackgroundTraitTests
         TraitSelectionService service = TraitSelectionService.Create(charTraitRepo, traitRepo);
 
         Guid characterId = Guid.NewGuid();
-        ICharacterInfo character = new TestCharacterInfo
-        {
-            Race = "Human",
-            Classes = ["Fighter"]
-        };
+        ICharacterInfo character = TestCharacterInfo.From("Human", "Fighter");
         Dictionary<string, bool> unlockedTraits = new();
 
         // Act - Select expensive trait (costs 5, budget is 2) and try to confirm
@@ -300,11 +284,7 @@ public class BackgroundTraitTests
         TraitSelectionService service = TraitSelectionService.Create(charTraitRepo, traitRepo);
 
         Guid characterId = Guid.NewGuid();
-        ICharacterInfo character = new TestCharacterInfo
-        {
-            Race = "Human",
-            Classes = ["Fighter"]
-        };
+        ICharacterInfo character = TestCharacterInfo.From("Human", "Fighter");
         Dictionary<string, bool> unlockedTraits = new();
 
         // Act - Select, confirm, then simulate "login" by querying again
@@ -337,11 +317,7 @@ public class BackgroundTraitTests
             RequiresUnlock = false
         };
 
-        ICharacterInfo character = new TestCharacterInfo
-        {
-            Race = "Human",
-            Classes = ["Fighter"]
-        };
+        ICharacterInfo character = TestCharacterInfo.From("Human", "Fighter");
 
         TraitBudget budget = TraitBudget.CreateDefault();
         List<CharacterTrait> selectedTraits = [];
@@ -368,11 +344,7 @@ public class BackgroundTraitTests
             RequiresUnlock = true
         };
 
-        ICharacterInfo character = new TestCharacterInfo
-        {
-            Race = "Human",
-            Classes = ["Fighter"]
-        };
+        ICharacterInfo character = TestCharacterInfo.From("Human", "Fighter");
 
         TraitBudget budget = TraitBudget.CreateDefault();
         List<CharacterTrait> selectedTraits = [];
@@ -399,11 +371,7 @@ public class BackgroundTraitTests
             PrerequisiteTraits = ["alcoholic"]
         };
 
-        ICharacterInfo character = new TestCharacterInfo
-        {
-            Race = "Human",
-            Classes = ["Fighter"]
-        };
+        ICharacterInfo character = TestCharacterInfo.From("Human", "Fighter");
 
         TraitBudget budget = TraitBudget.CreateDefault();
         List<CharacterTrait> selectedTraits = []; // No prerequisites selected
@@ -430,11 +398,7 @@ public class BackgroundTraitTests
             RequiresUnlock = true
         };
 
-        ICharacterInfo character = new TestCharacterInfo
-        {
-            Race = "Human",
-            Classes = ["Fighter"]
-        };
+        ICharacterInfo character = TestCharacterInfo.From("Human", "Fighter");
 
         TraitBudget budget = TraitBudget.CreateDefault();
         List<CharacterTrait> selectedTraits = [];
@@ -469,11 +433,7 @@ public class BackgroundTraitTests
             PrerequisiteTraits = ["alcoholic"]
         };
 
-        ICharacterInfo character = new TestCharacterInfo
-        {
-            Race = "Human",
-            Classes = ["Fighter"]
-        };
+        ICharacterInfo character = TestCharacterInfo.From("Human", "Fighter");
 
         TraitBudget budget = TraitBudget.CreateDefault();
 

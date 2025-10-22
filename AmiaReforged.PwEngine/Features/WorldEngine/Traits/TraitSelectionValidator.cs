@@ -1,3 +1,5 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 
 /// <summary>
@@ -97,10 +99,10 @@ public static class TraitSelectionValidator
         return true;
     }
 
-    private static bool IsRaceEligible(Trait trait, string characterRace)
+    private static bool IsRaceEligible(Trait trait, RaceData characterRace)
     {
         // If forbidden, reject
-        if (trait.ForbiddenRaces.Contains(characterRace))
+        if (trait.ForbiddenRaces.Contains(characterRace.Name))
             return false;
 
         // If no restrictions, allow
@@ -108,13 +110,15 @@ public static class TraitSelectionValidator
             return true;
 
         // Check if race is in allowed list
-        return trait.AllowedRaces.Contains(characterRace);
+        return trait.AllowedRaces.Contains(characterRace.Name);
     }
 
-    private static bool IsClassEligible(Trait trait, List<string> characterClasses)
+    private static bool IsClassEligible(Trait trait, IReadOnlyList<CharacterClassData> characterClasses)
     {
+        List<string> classNames = characterClasses.Select(c => c.Name).ToList();
+
         // If any class is forbidden, reject
-        if (trait.ForbiddenClasses.Any(fc => characterClasses.Contains(fc)))
+        if (trait.ForbiddenClasses.Any(fc => classNames.Contains(fc)))
             return false;
 
         // If no restrictions, allow
@@ -122,7 +126,7 @@ public static class TraitSelectionValidator
             return true;
 
         // Check if any character class is in allowed list
-        return trait.AllowedClasses.Any(ac => characterClasses.Contains(ac));
+        return trait.AllowedClasses.Any(ac => classNames.Contains(ac));
     }
 
     private static bool HasConflictingTrait(Trait trait, List<CharacterTrait> currentSelections)
