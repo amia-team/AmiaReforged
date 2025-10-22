@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Services;
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil;
 using Anvil.API;
 
@@ -12,7 +13,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 /// Runtime specific implementation for a character. Acts as a facade for various character services
 /// </summary>
 public class RuntimeCharacter(
-    Guid characterId,
+    CharacterId characterId,
     IInventoryPort inventoryPort,
     ICharacterSheetPort characterSheetPort,
     IIndustryMembershipService membershipService,
@@ -88,7 +89,7 @@ public class RuntimeCharacter(
     {
         IndustryMembership m = new()
         {
-            IndustryTag = industryTag,
+            IndustryTag = new IndustryTag(industryTag),
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = [],
             CharacterId = characterId
@@ -107,7 +108,7 @@ public class RuntimeCharacter(
         return membershipService.RankUp(characterId, industryTag);
     }
 
-    public Guid GetId()
+    public CharacterId GetId()
     {
         return characterId;
     }
@@ -124,6 +125,6 @@ public class RuntimeCharacter(
         IInventoryPort inventoryPort = RuntimeInventoryPort.For(creature);
         ICharacterSheetPort characterSheetPort = RuntimeCharacterSheetPort.For(creature);
 
-        return new RuntimeCharacter(creature.UUID, inventoryPort, characterSheetPort, memberships, stats);
+        return new RuntimeCharacter(CharacterId.From(creature.UUID), inventoryPort, characterSheetPort, memberships, stats);
     }
 }

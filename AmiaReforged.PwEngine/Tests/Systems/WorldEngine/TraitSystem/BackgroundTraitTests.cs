@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 using AmiaReforged.PwEngine.Features.WorldEngine.Traits.Effects;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.TraitSystem;
@@ -118,8 +119,8 @@ public class BackgroundTraitTests
         CharacterTrait unconfirmedTrait = new CharacterTrait
         {
             Id = Guid.NewGuid(),
-            CharacterId = Guid.NewGuid(),
-            TraitTag = "brave",
+            CharacterId = CharacterId.From(Guid.NewGuid()),
+            TraitTag = new TraitTag("brave"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = false
         };
@@ -138,8 +139,8 @@ public class BackgroundTraitTests
         CharacterTrait confirmedTrait = new CharacterTrait
         {
             Id = Guid.NewGuid(),
-            CharacterId = Guid.NewGuid(),
-            TraitTag = "brave",
+            CharacterId = CharacterId.From(Guid.NewGuid()),
+            TraitTag = new TraitTag("brave"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = true
         };
@@ -298,7 +299,7 @@ public class BackgroundTraitTests
         // Assert
         Assert.That(traitsAfterLogin, Has.Count.EqualTo(1));
         Assert.That(traitsAfterLogin[0].IsConfirmed, Is.True);
-        Assert.That(traitsAfterLogin[0].TraitTag, Is.EqualTo("brave"));
+        Assert.That(traitsAfterLogin[0].TraitTag.Value, Is.EqualTo("brave"));
     }
 
     #endregion
@@ -444,8 +445,8 @@ public class BackgroundTraitTests
             new CharacterTrait
             {
                 Id = Guid.NewGuid(),
-                CharacterId = Guid.NewGuid(),
-                TraitTag = "alcoholic",
+                CharacterId = CharacterId.From(Guid.NewGuid()),
+                TraitTag = new TraitTag("alcoholic"),
                 DateAcquired = DateTime.UtcNow,
                 IsConfirmed = false
             }
@@ -485,8 +486,8 @@ public class BackgroundTraitTests
         CharacterTrait braveTrait = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = "brave",
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("brave"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = true,
             IsActive = true
@@ -496,14 +497,14 @@ public class BackgroundTraitTests
         TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
 
         // Act - Character dies
-        bool permadeath = deathHandler.ProcessDeath(characterId);
-        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(characterId);
+        bool permadeath = deathHandler.ProcessDeath(CharacterId.From(characterId));
+        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(CharacterId.From(characterId));
 
         // Assert
         Assert.That(permadeath, Is.False, "Standard traits should not cause permadeath");
         Assert.That(traitsAfterDeath, Has.Count.EqualTo(1), "Trait should still exist");
         Assert.That(traitsAfterDeath[0].IsActive, Is.True, "Trait should remain active");
-        Assert.That(traitsAfterDeath[0].TraitTag, Is.EqualTo("brave"));
+        Assert.That(traitsAfterDeath[0].TraitTag.Value, Is.EqualTo("brave"));
     }
 
     [Test]
@@ -527,8 +528,8 @@ public class BackgroundTraitTests
         CharacterTrait heroTrait = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = "hero",
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("hero"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = true,
             IsActive = true,
@@ -539,8 +540,8 @@ public class BackgroundTraitTests
         TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
 
         // Act - Character dies
-        bool permadeath = deathHandler.ProcessDeath(characterId);
-        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(characterId);
+        bool permadeath = deathHandler.ProcessDeath(CharacterId.From(characterId));
+        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(CharacterId.From(characterId));
 
         // Assert
         Assert.That(permadeath, Is.False, "Hero death should not cause permadeath");
@@ -569,8 +570,8 @@ public class BackgroundTraitTests
         CharacterTrait heroTrait = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = "hero",
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("hero"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = true,
             IsActive = false, // Inactive after death
@@ -581,8 +582,8 @@ public class BackgroundTraitTests
         TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
 
         // Act - Reactivate the trait (simulating bonus rebuilding)
-        deathHandler.ReactivateResettableTraits(characterId);
-        List<CharacterTrait> traitsAfterReactivation = charTraitRepo.GetByCharacterId(characterId);
+        deathHandler.ReactivateResettableTraits(CharacterId.From(characterId));
+        List<CharacterTrait> traitsAfterReactivation = charTraitRepo.GetByCharacterId(CharacterId.From(characterId));
 
         // Assert
         Assert.That(traitsAfterReactivation, Has.Count.EqualTo(1));
@@ -610,8 +611,8 @@ public class BackgroundTraitTests
         CharacterTrait villainTrait = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = "villain",
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("villain"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = true,
             IsActive = true
@@ -621,7 +622,7 @@ public class BackgroundTraitTests
         TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
 
         // Act - Character dies by hero's hand
-        bool permadeath = deathHandler.ProcessDeath(characterId, killedByHero: true);
+        bool permadeath = deathHandler.ProcessDeath(CharacterId.From(characterId), killedByHero: true);
 
         // Assert
         Assert.That(permadeath, Is.True, "Villain killed by Hero should trigger permadeath");
@@ -647,8 +648,8 @@ public class BackgroundTraitTests
         CharacterTrait villainTrait = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = "villain",
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("villain"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = true,
             IsActive = true
@@ -658,7 +659,7 @@ public class BackgroundTraitTests
         TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
 
         // Act - Character dies by non-hero (monster, trap, etc)
-        bool permadeath = deathHandler.ProcessDeath(characterId, killedByHero: false);
+        bool permadeath = deathHandler.ProcessDeath(CharacterId.From(characterId), killedByHero: false);
 
         // Assert
         Assert.That(permadeath, Is.False, "Villain killed by non-Hero should allow respawn");
@@ -684,8 +685,8 @@ public class BackgroundTraitTests
         CharacterTrait trackedTrait = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = "tracked_trait",
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("tracked_trait"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = true,
             IsActive = true,
@@ -696,8 +697,8 @@ public class BackgroundTraitTests
         TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
 
         // Act - Character dies
-        deathHandler.ProcessDeath(characterId);
-        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(characterId);
+        deathHandler.ProcessDeath(CharacterId.From(characterId));
+        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(CharacterId.From(characterId));
 
         // Assert
         Assert.That(traitsAfterDeath, Has.Count.EqualTo(1));
@@ -893,8 +894,8 @@ public class BackgroundTraitTests
             new CharacterTrait
             {
                 Id = Guid.NewGuid(),
-                CharacterId = Guid.NewGuid(),
-                TraitTag = "brave",
+                CharacterId = CharacterId.From(Guid.NewGuid()),
+                TraitTag = new TraitTag("brave"),
                 DateAcquired = DateTime.UtcNow,
                 IsConfirmed = false
             }
@@ -917,8 +918,8 @@ public class BackgroundTraitTests
         CharacterTrait unlockedTrait = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = "hero",
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("hero"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = false,
             IsActive = false,
@@ -929,8 +930,8 @@ public class BackgroundTraitTests
         charTraitRepo.Add(unlockedTrait);
 
         // Simulate logout/login by retrieving persisted unlock
-        List<CharacterTrait> traitsAfterLogin = charTraitRepo.GetByCharacterId(characterId);
-        CharacterTrait? persistedUnlock = traitsAfterLogin.FirstOrDefault(t => t.TraitTag == "hero");
+        List<CharacterTrait> traitsAfterLogin = charTraitRepo.GetByCharacterId(CharacterId.From(characterId));
+        CharacterTrait? persistedUnlock = traitsAfterLogin.FirstOrDefault(t => t.TraitTag.Value == "hero");
 
         // Assert - Unlock should persist
         Assert.That(persistedUnlock, Is.Not.Null, "Unlock should be persisted");
@@ -947,7 +948,7 @@ public class BackgroundTraitTests
         Guid legacyCharacterId = Guid.NewGuid();
 
         // Act - Check if character has any trait records
-        List<CharacterTrait> existingTraits = charTraitRepo.GetByCharacterId(legacyCharacterId);
+        List<CharacterTrait> existingTraits = charTraitRepo.GetByCharacterId(CharacterId.From(legacyCharacterId));
         bool isLegacyCharacter = existingTraits.Count == 0;
 
         // Legacy characters get the default budget on first login
@@ -988,8 +989,8 @@ public class BackgroundTraitTests
         CharacterTrait skilledTrait = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = "skilled",
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("skilled"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = true,
             IsActive = true
@@ -999,7 +1000,7 @@ public class BackgroundTraitTests
         TraitEffectApplicationService effectService = TraitEffectApplicationService.Create(charTraitRepo, traitRepo);
 
         // Act - Get effects to apply on login
-        List<(string TraitTag, TraitEffect Effect)> effects = effectService.GetActiveEffects(characterId);
+        List<(string TraitTag, TraitEffect Effect)> effects = effectService.GetActiveEffects(CharacterId.From(characterId));
 
         // Assert
         Assert.That(effects, Has.Count.EqualTo(1), "Should have one effect");
@@ -1033,8 +1034,8 @@ public class BackgroundTraitTests
         CharacterTrait strongTrait = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = "strong",
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("strong"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = true,
             IsActive = true
@@ -1044,8 +1045,8 @@ public class BackgroundTraitTests
         TraitEffectApplicationService effectService = TraitEffectApplicationService.Create(charTraitRepo, traitRepo);
 
         // Act - Get effects multiple times (simulating reapplication)
-        List<(string TraitTag, TraitEffect Effect)> effects1 = effectService.GetActiveEffects(characterId);
-        List<(string TraitTag, TraitEffect Effect)> effects2 = effectService.GetActiveEffects(characterId);
+        List<(string TraitTag, TraitEffect Effect)> effects1 = effectService.GetActiveEffects(CharacterId.From(characterId));
+        List<(string TraitTag, TraitEffect Effect)> effects2 = effectService.GetActiveEffects(CharacterId.From(characterId));
 
         // Assert - Both calls return same effects (safe to reapply)
         Assert.That(effects1, Has.Count.EqualTo(1));
@@ -1080,8 +1081,8 @@ public class BackgroundTraitTests
         CharacterTrait heroTrait = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = "hero",
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag("hero"),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = true,
             IsActive = false // Inactive after death
@@ -1091,7 +1092,7 @@ public class BackgroundTraitTests
         TraitEffectApplicationService effectService = TraitEffectApplicationService.Create(charTraitRepo, traitRepo);
 
         // Act - Get effects when trait is inactive
-        List<(string TraitTag, TraitEffect Effect)> effects = effectService.GetActiveEffects(characterId);
+        List<(string TraitTag, TraitEffect Effect)> effects = effectService.GetActiveEffects(CharacterId.From(characterId));
 
         // Assert - No effects should be applied when trait is inactive
         Assert.That(effects, Is.Empty, "Inactive traits should not apply effects");

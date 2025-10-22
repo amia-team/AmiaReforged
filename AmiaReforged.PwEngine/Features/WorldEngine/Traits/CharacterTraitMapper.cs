@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
@@ -39,8 +40,8 @@ public class CharacterTraitMapper
         return new CharacterTrait
         {
             Id = persistentTrait.Id,
-            CharacterId = persistentTrait.CharacterId,
-            TraitTag = persistentTrait.TraitTag,
+            CharacterId = CharacterId.From(persistentTrait.CharacterId),
+            TraitTag = new TraitTag(persistentTrait.TraitTag),
             DateAcquired = persistentTrait.DateAcquired,
             IsConfirmed = persistentTrait.IsConfirmed,
             IsActive = persistentTrait.IsActive,

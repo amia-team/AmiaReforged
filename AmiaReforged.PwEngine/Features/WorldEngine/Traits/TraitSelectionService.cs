@@ -1,4 +1,5 @@
 using Anvil.Services;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 
@@ -41,7 +42,7 @@ public class TraitSelectionService
         if (trait == null)
             return false;
 
-        List<CharacterTrait> currentSelections = _characterTraitRepository.GetByCharacterId(characterId);
+        List<CharacterTrait> currentSelections = _characterTraitRepository.GetByCharacterId(CharacterId.From(characterId));
         TraitBudget budget = CalculateBudget(currentSelections);
 
         if (!TraitSelectionValidator.CanSelect(trait, character, currentSelections, budget, unlockedTraits))
@@ -50,8 +51,8 @@ public class TraitSelectionService
         CharacterTrait newSelection = new()
         {
             Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            TraitTag = traitTag,
+            CharacterId = CharacterId.From(characterId),
+            TraitTag = new TraitTag(traitTag),
             DateAcquired = DateTime.UtcNow,
             IsConfirmed = false,
             IsActive = true,
@@ -70,8 +71,8 @@ public class TraitSelectionService
     /// <returns>True if deselection succeeded, false if trait not found or cannot be deselected</returns>
     public bool DeselectTrait(Guid characterId, string traitTag)
     {
-        List<CharacterTrait> currentSelections = _characterTraitRepository.GetByCharacterId(characterId);
-        CharacterTrait? selection = currentSelections.FirstOrDefault(ct => ct.TraitTag == traitTag);
+        List<CharacterTrait> currentSelections = _characterTraitRepository.GetByCharacterId(CharacterId.From(characterId));
+        CharacterTrait? selection = currentSelections.FirstOrDefault(ct => ct.TraitTag.Value == traitTag);
 
         if (selection == null)
             return false;
@@ -95,7 +96,7 @@ public class TraitSelectionService
     /// </remarks>
     public bool ConfirmTraits(Guid characterId)
     {
-        List<CharacterTrait> currentSelections = _characterTraitRepository.GetByCharacterId(characterId);
+        List<CharacterTrait> currentSelections = _characterTraitRepository.GetByCharacterId(CharacterId.From(characterId));
         TraitBudget budget = CalculateBudget(currentSelections);
 
         // Cannot confirm if budget is negative
@@ -120,7 +121,7 @@ public class TraitSelectionService
     /// <returns>List of all character traits (confirmed and unconfirmed)</returns>
     public List<CharacterTrait> GetCharacterTraits(Guid characterId)
     {
-        return _characterTraitRepository.GetByCharacterId(characterId);
+        return _characterTraitRepository.GetByCharacterId(CharacterId.From(characterId));
     }
 
     /// <summary>
@@ -137,7 +138,7 @@ public class TraitSelectionService
         int spentPoints = 0;
         foreach (CharacterTrait selection in currentSelections)
         {
-            Trait? trait = _traitRepository.Get(selection.TraitTag);
+            Trait? trait = _traitRepository.Get(selection.TraitTag.Value);
             if (trait != null && selection.IsActive)
             {
                 spentPoints += trait.PointCost;

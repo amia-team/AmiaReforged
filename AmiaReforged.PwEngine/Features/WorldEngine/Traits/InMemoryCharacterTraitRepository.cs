@@ -1,3 +1,5 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 
 /// <summary>
@@ -7,10 +9,10 @@ public class InMemoryCharacterTraitRepository : ICharacterTraitRepository
 {
     private readonly Dictionary<Guid, CharacterTrait> _traits = new();
 
-    public List<CharacterTrait> GetByCharacterId(Guid characterId)
+    public List<CharacterTrait> GetByCharacterId(CharacterId characterId)
     {
         return _traits.Values
-            .Where(t => t.CharacterId == characterId)
+            .Where(t => t.CharacterId.Value == characterId.Value)
             .ToList();
     }
 

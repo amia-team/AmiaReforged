@@ -1,3 +1,5 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 
 /// <summary>
@@ -10,7 +12,7 @@ public interface ICharacterTraitRepository
     /// </summary>
     /// <param name="characterId">ID of the character</param>
     /// <returns>List of all character traits</returns>
-    List<CharacterTrait> GetByCharacterId(Guid characterId);
+    List<CharacterTrait> GetByCharacterId(CharacterId characterId);
 
     /// <summary>
     /// Adds a new character trait selection to persistence.

@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
@@ -28,7 +29,7 @@ public class TraitDeathHandler
     /// <returns>True if character should permadeath, false otherwise</returns>
     public bool ProcessDeath(Guid characterId, bool killedByHero = false)
     {
-        List<CharacterTrait> traits = _characterTraitRepository.GetByCharacterId(characterId);
+        List<CharacterTrait> traits = _characterTraitRepository.GetByCharacterId(CharacterId.From(characterId));
         bool shouldPermadeath = false;
 
         foreach (CharacterTrait characterTrait in traits)
@@ -73,7 +74,7 @@ public class TraitDeathHandler
     /// <param name="characterId">ID of the character</param>
     public void ReactivateResettableTraits(Guid characterId)
     {
-        List<CharacterTrait> traits = _characterTraitRepository.GetByCharacterId(characterId);
+        List<CharacterTrait> traits = _characterTraitRepository.GetByCharacterId(CharacterId.From(characterId));
 
         foreach (CharacterTrait characterTrait in traits.Where(t => !t.IsActive))
         {

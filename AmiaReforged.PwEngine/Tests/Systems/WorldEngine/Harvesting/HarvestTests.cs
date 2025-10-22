@@ -8,6 +8,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes;
 using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using Anvil.API;
 using NUnit.Framework;
@@ -326,7 +327,7 @@ public class HarvestTests
         List<SkillData>? skills = null, List<ItemSnapshot>? inventory = null)
     {
         return new TestCharacter(injectedEquipment ?? new Dictionary<EquipmentSlots, ItemSnapshot>(), skills ?? [],
-            Guid.NewGuid(), _characterKnowledgeRepository, _membershipService,
+            CharacterId.From(Guid.NewGuid()), _characterKnowledgeRepository, _membershipService,
             inventory: inventory);
     }
 

@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
@@ -8,12 +9,12 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 public class PersistentCharacterTraitRepository(CharacterTraitMapper mapper, PwContextFactory factory)
     : ICharacterTraitRepository
 {
-    public List<CharacterTrait> GetByCharacterId(Guid characterId)
+    public List<CharacterTrait> GetByCharacterId(CharacterId characterId)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
-        
+
         List<PersistentCharacterTrait> persistent = ctx.CharacterTraits
-            .Where(t => t.CharacterId == characterId)
+            .Where(t => t.CharacterId == characterId.Value)
             .ToList();
 
         return persistent.Select(mapper.ToDomain).ToList();

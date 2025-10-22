@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits.Effects;
@@ -33,7 +34,7 @@ public class TraitEffectApplicationService
     /// <returns>List of effects to apply with their source trait tags</returns>
     public List<(string TraitTag, TraitEffect Effect)> GetActiveEffects(Guid characterId)
     {
-        List<CharacterTrait> traits = _characterTraitRepository.GetByCharacterId(characterId);
+        List<CharacterTrait> traits = _characterTraitRepository.GetByCharacterId(CharacterId.From(characterId));
         List<(string TraitTag, TraitEffect Effect)> effects = new();
 
         foreach (CharacterTrait characterTrait in traits)

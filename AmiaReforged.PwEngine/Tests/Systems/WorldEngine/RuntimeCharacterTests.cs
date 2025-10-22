@@ -6,6 +6,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using Anvil.API;
 using Moq;
@@ -117,10 +118,10 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_Return_Id()
     {
-        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+        RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);
 
-        Assert.That(character.GetId(), Is.EqualTo(_characterId), "ID should have been injected.");
+        Assert.That(character.GetId(), Is.EqualTo(CharacterId.From(_characterId)), "ID should have been injected.");
     }
 
     /// <summary>
@@ -138,7 +139,7 @@ public class RuntimeCharacterTests
 
         mockCharacterSheet.Setup(x => x.GetSkills()).Returns(expectedSkills);
 
-        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), mockCharacterSheet.Object,
+        RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), mockCharacterSheet.Object,
             _membershipService, _characterStatService);
 
         List<SkillData> actualSkills = character.GetSkills();
@@ -150,7 +151,7 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_Return_Knowledge()
     {
-        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+        RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);
 
         _characters.Add(character);
@@ -170,7 +171,7 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_Rank_Up_In_Industry()
     {
-        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+        RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);
 
         _characters.Add(character);
@@ -189,7 +190,7 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_Get_All_Memberships()
     {
-        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+        RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);
 
         _characters.Add(character);
@@ -201,8 +202,8 @@ public class RuntimeCharacterTests
 
         Assert.That(memberships, Is.Not.Empty);
         Assert.That(memberships.Count, Is.EqualTo(2));
-        Assert.That(memberships.Any(m => m.IndustryTag == IndustryWithKnowledge), Is.True);
-        Assert.That(memberships.Any(m => m.IndustryTag == TestIndustry), Is.True);
+        Assert.That(memberships.Any(m => m.IndustryTag == new IndustryTag(IndustryWithKnowledge)), Is.True);
+        Assert.That(memberships.Any(m => m.IndustryTag == new IndustryTag(TestIndustry)), Is.True);
     }
 
     /// <summary>
@@ -218,7 +219,7 @@ public class RuntimeCharacterTests
         ];
         mockInventory.Setup(x => x.GetInventory()).Returns(expectedInventory);
 
-        RuntimeCharacter character = new(_characterId, mockInventory.Object, Mock.Of<ICharacterSheetPort>(),
+        RuntimeCharacter character = new(CharacterId.From(_characterId), mockInventory.Object, Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);
 
         _characters.Add(character);
@@ -241,7 +242,7 @@ public class RuntimeCharacterTests
         };
         mockInventory.Setup(x => x.GetEquipment()).Returns(expectedEquipment);
 
-        RuntimeCharacter character = new(_characterId, mockInventory.Object, Mock.Of<ICharacterSheetPort>(),
+        RuntimeCharacter character = new(CharacterId.From(_characterId), mockInventory.Object, Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);
 
         _characters.Add(character);
@@ -254,7 +255,7 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_Get_Knowledge_Points()
     {
-        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+        RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);
 
         _characters.Add(character);
@@ -274,7 +275,7 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_Deduct_Knowledge_Points_After_Learning()
     {
-        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+        RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);
 
         _characters.Add(character);
@@ -299,7 +300,7 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_See_If_Character_Can_Not_Learn_Knowledge()
     {
-        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+        RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);
 
         _characters.Add(character);
@@ -312,7 +313,7 @@ public class RuntimeCharacterTests
     [Test]
     public void Should_See_If_Character_Can_Learn_Knowledge()
     {
-        RuntimeCharacter character = new(_characterId, Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
+        RuntimeCharacter character = new(CharacterId.From(_characterId), Mock.Of<IInventoryPort>(), Mock.Of<ICharacterSheetPort>(),
             _membershipService, _characterStatService);
 
         _characters.Add(character);

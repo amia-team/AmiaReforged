@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using Anvil.API;
 using NUnit.Framework;
@@ -80,7 +81,7 @@ public class IndustryMembershipTests
         _characterKnowledgeRepository = InMemoryCharacterKnowledgeRepository.Create();
         _sut = new IndustryMembershipService(new InMemoryIndustryMembershipRepository(), testIndustryRepo, _characterRepository,
             _characterKnowledgeRepository);
-        TestCharacter c = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], _characterGuid, _characterKnowledgeRepository, _sut, inventory: [], 999);
+        TestCharacter c = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], CharacterId.From(_characterGuid), _characterKnowledgeRepository, _sut, inventory: [], 999);
         _characterRepository.Add(c);
     }
 
@@ -89,17 +90,17 @@ public class IndustryMembershipTests
     {
         IndustryMembership membership = new()
         {
-            IndustryTag = "test_industry",
+            IndustryTag = new IndustryTag("test_industry"),
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
-            CharacterId = _characterGuid
+            CharacterId = CharacterId.From(_characterGuid)
         };
 
         _sut.AddMembership(membership);
 
-        Assert.That(_sut.GetMemberships(_characterGuid), Is.Not.Empty);
-        Assert.That(_sut.GetMemberships(_characterGuid), Does.Contain(membership));
+        Assert.That(_sut.GetMemberships(CharacterId.From(_characterGuid)), Is.Not.Empty);
+        Assert.That(_sut.GetMemberships(CharacterId.From(_characterGuid)), Does.Contain(membership));
     }
 
     [Test]
@@ -107,16 +108,16 @@ public class IndustryMembershipTests
     {
         IndustryMembership membership = new()
         {
-            IndustryTag = "invalid_industry",
+            IndustryTag = new IndustryTag("invalid_industry"),
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
-            CharacterId = _characterGuid
+            CharacterId = CharacterId.From(_characterGuid)
         };
 
         _sut.AddMembership(membership);
 
-        Assert.That(_sut.GetMemberships(_characterGuid), Does.Not.Contain(membership));
+        Assert.That(_sut.GetMemberships(CharacterId.From(_characterGuid)), Does.Not.Contain(membership));
     }
 
     [Test]
@@ -124,16 +125,16 @@ public class IndustryMembershipTests
     {
         IndustryMembership membership = new()
         {
-            IndustryTag = "test_industry",
+            IndustryTag = new IndustryTag("test_industry"),
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
-            CharacterId = Guid.NewGuid()
+            CharacterId = CharacterId.From(Guid.NewGuid())
         };
 
         _sut.AddMembership(membership);
 
-        Assert.That(_sut.GetMemberships(_characterGuid), Does.Not.Contain(membership));
+        Assert.That(_sut.GetMemberships(CharacterId.From(_characterGuid)), Does.Not.Contain(membership));
     }
 
     [Test]
@@ -141,17 +142,17 @@ public class IndustryMembershipTests
     {
         IndustryMembership membership = new()
         {
-            IndustryTag = "test_industry",
+            IndustryTag = new IndustryTag("test_industry"),
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
-            CharacterId = _characterGuid
+            CharacterId = CharacterId.From(_characterGuid)
         };
 
         _sut.AddMembership(membership);
         RankUpResult success = _sut.RankUp(membership);
 
-        IndustryMembership actual = _sut.GetMemberships(_characterGuid).First();
+        IndustryMembership actual = _sut.GetMemberships(CharacterId.From(_characterGuid)).First();
 
         Assert.That(success, Is.EqualTo(RankUpResult.InsufficientKnowledge),
             "The character's industry rank should not have been incremented");
@@ -162,13 +163,13 @@ public class IndustryMembershipTests
     [Test]
     public void Should_Not_Learn_Knowledge_Without_Enough_Points()
     {
-        TestCharacter character = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], Guid.NewGuid(), _characterKnowledgeRepository, _sut, []);
+        TestCharacter character = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], CharacterId.From(Guid.NewGuid()), _characterKnowledgeRepository, _sut, []);
 
         _characterRepository.Add(character);
 
         IndustryMembership membership = new()
         {
-            IndustryTag = "test_industry",
+            IndustryTag = new IndustryTag("test_industry"),
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
@@ -189,16 +190,16 @@ public class IndustryMembershipTests
     {
         IndustryMembership membership = new()
         {
-            IndustryTag = "test_industry",
+            IndustryTag = new IndustryTag("test_industry"),
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
-            CharacterId = _characterGuid
+            CharacterId = CharacterId.From(_characterGuid)
         };
 
         _sut.AddMembership(membership);
 
-        LearningResult result = _sut.LearnKnowledge(_characterGuid, ApprenticeKnowledge);
+        LearningResult result = _sut.LearnKnowledge(CharacterId.From(_characterGuid), ApprenticeKnowledge);
 
         Assert.That(result, Is.EqualTo(LearningResult.InsufficientRank));
     }
@@ -208,11 +209,11 @@ public class IndustryMembershipTests
     {
         IndustryMembership membership = new()
         {
-            IndustryTag = "test_industry",
+            IndustryTag = new IndustryTag("test_industry"),
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
-            CharacterId = _characterGuid
+            CharacterId = CharacterId.From(_characterGuid)
         };
 
         _sut.AddMembership(membership);
@@ -235,11 +236,11 @@ public class IndustryMembershipTests
     {
         IndustryMembership membership = new()
         {
-            IndustryTag = "test_industry",
+            IndustryTag = new IndustryTag("test_industry"),
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = [],
             Id = Guid.NewGuid(),
-            CharacterId = _characterGuid
+            CharacterId = CharacterId.From(_characterGuid)
         };
 
         _sut.AddMembership(membership);
@@ -253,7 +254,7 @@ public class IndustryMembershipTests
 
 
         RankUpResult success = _sut.RankUp(membership);
-        IndustryMembership actual = _sut.GetMemberships(_characterGuid).First();
+        IndustryMembership actual = _sut.GetMemberships(CharacterId.From(_characterGuid)).First();
 
         Assert.That(success, Is.EqualTo(RankUpResult.Success),
             "The character's industry rank should have been incremented");

@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
@@ -16,7 +17,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 public class TestCharacter(
     Dictionary<EquipmentSlots, ItemSnapshot> injectedEquipment,
     List<SkillData> skills,
-    Guid id,
+    CharacterId id,
     ICharacterKnowledgeRepository knowledgeRepository,
     IIndustryMembershipService membershipService,
     List<ItemSnapshot>? inventory = null,
@@ -49,7 +50,7 @@ public class TestCharacter(
         _knowledgePoints -= points;
     }
 
-    public Guid GetId()
+    public CharacterId GetId()
     {
         return id;
     }
@@ -80,12 +81,13 @@ public class TestCharacter(
 
     public void JoinIndustry(string industryTag)
     {
-        if (AllIndustryMemberships().Any(m => m.IndustryTag == industryTag)) return;
+        IndustryTag tag = new(industryTag);
+        if (AllIndustryMemberships().Any(m => m.IndustryTag.Value == tag.Value)) return;
 
         IndustryMembership m = new()
         {
             CharacterId = GetId(),
-            IndustryTag = industryTag,
+            IndustryTag = tag,
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = []
         };
@@ -105,7 +107,8 @@ public class TestCharacter(
 
     public RankUpResult RankUp(string industryTag)
     {
-        IndustryMembership? membership = AllIndustryMemberships().FirstOrDefault(i => i.IndustryTag == industryTag);
+        IndustryTag tag = new(industryTag);
+        IndustryMembership? membership = AllIndustryMemberships().FirstOrDefault(i => i.IndustryTag.Value == tag.Value);
         return membership == null ? RankUpResult.IndustryNotFound : membershipService.RankUp(membership);
     }
 

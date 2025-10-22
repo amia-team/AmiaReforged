@@ -1,3 +1,5 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 
 /// <summary>
@@ -14,12 +16,12 @@ public class CharacterTrait
     /// <summary>
     /// ID of the character who selected this trait
     /// </summary>
-    public required Guid CharacterId { get; init; }
+    public required CharacterId CharacterId { get; init; }
 
     /// <summary>
     /// Tag referencing the trait definition (from Trait.Tag)
     /// </summary>
-    public required string TraitTag { get; init; }
+    public required TraitTag TraitTag { get; init; }
 
     /// <summary>
     /// When this trait was first selected by the character

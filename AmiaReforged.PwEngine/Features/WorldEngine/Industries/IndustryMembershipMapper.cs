@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Industries;
@@ -41,8 +42,8 @@ public class IndustryMembershipMapper(PersistentKnowledgeMapper knowledgeMapper,
 
         return new IndustryMembership
         {
-            CharacterId = membership.CharacterId,
-            IndustryTag = membership.IndustryTag,
+            CharacterId = CharacterId.From(membership.CharacterId),
+            IndustryTag = new IndustryTag(membership.IndustryTag),
             Level = ProficiencyLevel.Novice,
             CharacterKnowledge = characterKnowledge
         };
