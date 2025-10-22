@@ -40,6 +40,12 @@ public class Trait
     public TraitDeathBehavior DeathBehavior { get; init; } = TraitDeathBehavior.Persist;
 
     /// <summary>
+    /// Mechanical effects this trait applies (skill bonuses, attribute mods, etc).
+    /// Empty list means no mechanical effects (flavor trait only).
+    /// </summary>
+    public List<Effects.TraitEffect> Effects { get; init; } = [];
+
+    /// <summary>
     /// If populated, only these races can select this trait.
     /// Empty list means no race restriction.
     /// </summary>
