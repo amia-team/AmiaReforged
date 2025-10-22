@@ -273,6 +273,10 @@ public class MythalForgeModel
         int goldCost = ChangeListModel.TotalGpCost();
         _player.LoginCreature?.TakeGold(goldCost);
 
+        Effect explosion = Effect.VisualEffect(VfxType.FnfElectricExplosion);
+
+        _player.LoginCreature?.ApplyEffect(EffectDuration.Instant, explosion);
+
         MythalCategoryModel.DestroyMythals(_player);
     }
 
@@ -395,13 +399,14 @@ public class MythalForgeModel
     /// True if the player's skill rank plus a modifier is greater than or equal to the crafting difficulty;
     /// otherwise, false.
     /// </returns>
-    public bool CanMakeCheck() => NWScript.GetSkillRank(GetSkill(), _player.LoginCreature) + 20 >= GetCraftingDifficulty();
+    public bool CanMakeCheck() =>
+        NWScript.GetSkillRank(GetSkill(), _player.LoginCreature) + 20 >= GetCraftingDifficulty();
 
-        /// <summary>
-        /// Removes an active crafting property from the current model and updates the changelist.
-        /// </summary>
-        /// <param name="property">The crafting property to be removed.</param>
-        public void RemoveActiveProperty(CraftingProperty property)
+    /// <summary>
+    /// Removes an active crafting property from the current model and updates the changelist.
+    /// </summary>
+    /// <param name="property">The crafting property to be removed.</param>
+    public void RemoveActiveProperty(CraftingProperty property)
     {
         ActivePropertiesModel.HideProperty(property);
         ChangeListModel.AddRemovedProperty(property);
