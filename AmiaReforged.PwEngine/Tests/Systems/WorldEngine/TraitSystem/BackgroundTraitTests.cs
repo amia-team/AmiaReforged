@@ -101,11 +101,11 @@ public class BackgroundTraitTests
         ICharacterInfo character = new TestCharacterInfo
         {
             Race = "Human",
-            Classes = new List<string> { "Fighter" }
+            Classes = ["Fighter"]
         };
 
         TraitBudget budget = TraitBudget.CreateDefault();
-        List<CharacterTrait> selectedTraits = new();
+        List<CharacterTrait> selectedTraits = [];
 
         // Act
         bool canSelect = TraitSelectionValidator.CanSelect(braveTrait, character, selectedTraits, budget);
