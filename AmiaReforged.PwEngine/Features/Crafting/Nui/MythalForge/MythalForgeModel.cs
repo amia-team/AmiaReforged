@@ -10,13 +10,56 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge;
 
+/// <summary>
+/// Represents the model for the Mythal Forge crafting system, handling the data and logic
+/// required to interact with the crafting UI. The model manages current crafting properties,
+/// categories, changes, and validations while adhering to the provided crafting budget.
+/// </summary>
 public class MythalForgeModel
 {
+    /// <summary>
+    /// Represents the crafting budget service utilized for managing and calculating
+    /// the mythal budget associated with item crafting operations.
+    /// </summary>
     private readonly CraftingBudgetService _budget;
+
+    /// <summary>
+    /// Represents a private instance of the <see cref="DifficultyClassCalculator"/> used to
+    /// calculate the difficulty class for crafting operations in the Mythal Forge feature.
+    /// </summary>
     private readonly DifficultyClassCalculator _dcCalculator;
+
+    /// <summary>
+    /// Represents the player associated with the current Mythal Forge crafting process.
+    /// This player interacts with the interface, performs crafting actions, and
+    /// executes any validation or property changes on the item being crafted.
+    /// </summary>
     private readonly NwPlayer _player;
+
+    /// <summary>
+    /// A private, readonly field utilized for validating property-related operations within the <see cref="MythalForgeModel"/> class.
+    /// </summary>
+    /// <remarks>
+    /// The <c>_validator</c> is an instance of the <see cref="PropertyValidator"/> class, allowing the validation of crafting properties
+    /// against the current item properties and change list. It ensures that property additions, removals, and modifications
+    /// adhere to the defined rules and constraints, such as power costs, crafting tiers, and other specific validation checks.
+    /// </remarks>
     private readonly PropertyValidator _validator;
 
+    /// <summary>
+    /// Represents the core model for the Mythal Forge crafting interface.
+    /// This class is responsible for managing and organizing crafting data and behavior in the context of the Mythal Forge system.
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="MythalForgeModel"/> class initializes and holds references to various related crafting models including:
+    /// <list type="bullet">
+    /// <item><description><see cref="MythalCategoryModel"/>: The data structure for categorized crafting properties.</description></item>
+    /// <item><description><see cref="ChangeListModel"/>: Tracks changes made to crafting properties during modification.</description></item>
+    /// <item><description><see cref="ActivePropertiesModel"/>: Manages the active crafting properties for the given item.</description></item>
+    /// </list>
+    /// It utilizes services such as the <see cref="CraftingBudgetService"/> for budget calculations, <see cref="PropertyValidator"/> for property validation, and <see cref="DifficultyClassCalculator"/> for managing difficulty class logic.
+    /// This model also determines whether an item qualifies as a caster weapon and adjusts its crafting logic accordingly.
+    /// </remarks>
     public MythalForgeModel(NwItem item, CraftingPropertyData data, CraftingBudgetService budget, NwPlayer player,
         PropertyValidator validator, DifficultyClassCalculator dcCalculator)
     {
@@ -44,15 +87,62 @@ public class MythalForgeModel
         ActivePropertiesModel = new ActivePropertiesModel(item, categories);
     }
 
+    /// Represents the model responsible for managing a list of changes to be applied within the Mythal Forge system.
+    /// This includes tracking added and removed properties, calculating costs, and undoing changes.
     public ChangeListModel ChangeListModel { get; }
+
+    /// <summary>
+    /// Represents a model used in the Mythal Forge crafting system, managing categories of mythals and their associated data.
+    /// </summary>
     public MythalCategoryModel MythalCategoryModel { get; }
+
+    /// <summary>
+    /// Represents the model responsible for managing the active crafting properties currently
+    /// associated with an item in the Mythal Forge crafting system.
+    /// </summary>
+    /// <remarks>
+    /// This model provides functionality to manage the visibility and manipulation of
+    /// the active crafting properties for a particular item. It interacts with crafting
+    /// categories and supports operations such as hiding and revealing properties, as well
+    /// as retrieving a list of visible properties.
+    /// </remarks>
+    /// <seealso cref="MythalForgeModel"/>
+    /// <seealso cref="MythalCategoryModel"/>
     public ActivePropertiesModel ActivePropertiesModel { get; }
 
 
+    /// <summary>
+    /// Gets the <see cref="NwItem"/> instance associated with the current crafting operation.
+    /// This property provides access to the item being modified or analyzed in the Mythal Forge functionality.
+    /// </summary>
     public NwItem Item { get; }
 
+    /// <summary>
+    /// Gets the maximum crafting budget for the current item within the context of the Mythal Forge.
+    /// </summary>
+    /// <remarks>
+    /// The maximum budget is determined based on the item's type and specific conditions, such as whether
+    /// it is a two-handed weapon or has a caster-based property. The calculation is performed by the
+    /// CraftingBudgetService associated with the Mythal Forge.
+    /// </remarks>
+    /// <value>
+    /// An integer representing the total allowable crafting points for the item.
+    /// </value>
     public int MaxBudget => _budget.MythalBudgetForNwItem(Item);
 
+    /// <summary>
+    /// Gets the remaining number of available powers in the crafting budget after accounting for the power costs
+    /// of active properties and pending additions in the change list.
+    /// </summary>
+    /// <remarks>
+    /// The remaining powers calculation considers both currently visible properties and changes marked for addition.
+    /// The result is clamped within a permissible range defined by the crafting system, typically between -16 and the
+    /// maximum budget. This value is critical for determining if additional properties can be added or adjustments
+    /// need to be made to stay within the allowed crafting limits.
+    /// </remarks>
+    /// <returns>
+    /// The number of powers remaining in the crafting budget.
+    /// </returns>
     public int RemainingPowers
     {
         get
@@ -73,9 +163,27 @@ public class MythalForgeModel
         }
     }
 
+    /// <summary>
+    /// Gets a collection of visible mythal properties associated with the active properties model.
+    /// </summary>
+    /// <remarks>
+    /// The VisibleProperties property retrieves a list of properties that are currently active and visible
+    /// in the crafting interface. These properties are derived from the active properties model,
+    /// which determines their visibility based on specific criteria.
+    /// </remarks>
+    /// <returns>
+    /// An enumerable collection of <see cref="MythalCategoryModel.MythalProperty"/> objects representing
+    /// the visible mythal properties.
+    /// </returns>
     public IEnumerable<MythalCategoryModel.MythalProperty> VisibleProperties =>
         ActivePropertiesModel.GetVisibleProperties();
 
+    /// <summary>
+    /// Calculates and returns the crafting difficulty value based on the current change list.
+    /// </summary>
+    /// <returns>
+    /// An integer representing the crafting difficulty. Returns 0 if the change list is empty.
+    /// </returns>
     public int GetCraftingDifficulty()
     {
         if (ChangeListModel.ChangeList().Count == 0) return 0;
@@ -97,12 +205,30 @@ public class MythalForgeModel
         return craftingDifficulty;
     }
 
+    /// <summary>
+    /// Adds a new property to the current crafting session and updates the mythal category accordingly.
+    /// </summary>
+    /// <param name="property">The property to be added, containing information like crafting tier and associated details.</param>
     public void AddNewProperty(MythalCategoryModel.MythalProperty property)
     {
         ChangeListModel.AddNewProperty(property);
         MythalCategoryModel.ConsumeMythal(property.Internal.CraftingTier);
     }
 
+    /// <summary>
+    /// Applies changes to the item properties based on the current change list.
+    /// This method processes the removal and addition of item properties as specified
+    /// by the associated <see cref="ChangeListModel"/>. It ensures atomicity by first
+    /// validating all property changes before applying them. If any removal operation
+    /// fails, no changes will be applied and an error message is sent to the player.
+    /// Upon successful application, the player is charged the total gold cost from the
+    /// change list, and any required cleanup (e.g., destroying mythals) is performed.
+    /// </summary>
+    /// <remarks>
+    /// The method checks the validity of property removals before applying them.
+    /// Additions are then processed separately. Any issues during the removal process
+    /// will result in the process being aborted and a message being sent to the player.
+    /// </remarks>
     public void ApplyChanges()
     {
         bool failed = false;
@@ -150,6 +276,16 @@ public class MythalForgeModel
         MythalCategoryModel.DestroyMythals(_player);
     }
 
+    /// <summary>
+    /// Refreshes and updates the state of all mythal categories and their properties based on
+    /// the remaining power budget, current item properties, and active changes.
+    /// </summary>
+    /// <remarks>
+    /// This method recalculates the selectability and tooltips of all properties within each
+    /// mythal category. It does so by performing validation checks to ensure the current budget,
+    /// mythal availability, and validation criteria are met. Non-affordable or invalid properties
+    /// are marked as non-selectable, and corresponding tooltip messages are set.
+    /// </remarks>
     public void RefreshCategories()
     {
         // Compute once and reuse within this refresh.
@@ -192,6 +328,13 @@ public class MythalForgeModel
         }
     }
 
+    /// Generates a tooltip string that displays the crafting skill associated with the item.
+    /// The method determines the appropriate skill based on the base type of the item.
+    /// If the item is equippable (such as armor, shields, belts, bracers), it assigns "Craft Armor"
+    /// or "Spellcraft" as the skill. If the item is a weapon, it assigns "Craft Weapon" as the skill.
+    /// Additionally, the tooltip includes a warning if the required skill rank to craft the item
+    /// is not met.
+    /// <returns>A string representing the crafting skill tooltip for the item.</returns>
     public string SkillToolTip()
     {
         int baseType = NWScript.GetBaseItemType(Item);
@@ -216,6 +359,15 @@ public class MythalForgeModel
         return tooltip;
     }
 
+    /// <summary>
+    /// Determines the relevant crafting skill required for the given item based on its base item type.
+    /// </summary>
+    /// <returns>
+    /// The skill constant associated with the item type:
+    /// - Returns SKILL_CRAFT_ARMOR for equippable items related to armor and shields.
+    /// - Returns SKILL_CRAFT_WEAPON for ranged, thrown weapons, or ammo.
+    /// - Defaults to SKILL_SPELLCRAFT if no specific match is found.
+    /// </returns>
     private int GetSkill()
     {
         int baseType = NWScript.GetBaseItemType(Item);
@@ -236,20 +388,40 @@ public class MythalForgeModel
         return NWScript.SKILL_SPELLCRAFT;
     }
 
-        public bool CanMakeCheck() => NWScript.GetSkillRank(GetSkill(), _player.LoginCreature) + 20 >= GetCraftingDifficulty();
+    /// <summary>
+    /// Determines if the player has sufficient skill rank to meet or exceed the crafting difficulty.
+    /// </summary>
+    /// <returns>
+    /// True if the player's skill rank plus a modifier is greater than or equal to the crafting difficulty;
+    /// otherwise, false.
+    /// </returns>
+    public bool CanMakeCheck() => NWScript.GetSkillRank(GetSkill(), _player.LoginCreature) + 20 >= GetCraftingDifficulty();
 
-    public void RemoveActiveProperty(CraftingProperty property)
+        /// <summary>
+        /// Removes an active crafting property from the current model and updates the changelist.
+        /// </summary>
+        /// <param name="property">The crafting property to be removed.</param>
+        public void RemoveActiveProperty(CraftingProperty property)
     {
         ActivePropertiesModel.HideProperty(property);
         ChangeListModel.AddRemovedProperty(property);
     }
 
+    /// <summary>
+    /// Reverts the addition of a crafting property to the change list and refunds the resource cost associated with its tier.
+    /// </summary>
+    /// <param name="property">The <see cref="CraftingProperty"/> to undo from the change list.</param>
     public void UndoAddition(CraftingProperty property)
     {
         ChangeListModel.UndoAddition(property);
         MythalCategoryModel.RefundMythal(property.CraftingTier);
     }
 
+    /// <summary>
+    /// Reverts the removal of a specified crafting property from the change list and updates the active properties model.
+    /// Also validates dependent properties and undoes their addition if validation fails.
+    /// </summary>
+    /// <param name="property">The crafting property to be restored.</param>
     public void UndoRemoval(CraftingProperty property)
     {
         List<ChangeListModel.ChangelistEntry> additions;
@@ -286,6 +458,15 @@ public class MythalForgeModel
         }
     }
 
+    /// <summary>
+    /// Validates a single property against the current item properties and change list to ensure it meets the criteria for addition or modification.
+    /// </summary>
+    /// <param name="property">The property to be validated.</param>
+    /// <param name="currentItemProps">The list of current item properties to validate against.</param>
+    /// <param name="changeList">The list of changes pending for the item.</param>
+    /// <returns>
+    /// A <see cref="ValidationResult"/> indicating the result of the validation and any associated error messages.
+    /// </returns>
     public ValidationResult ValidateSingle(MythalCategoryModel.MythalProperty property,
         IReadOnlyList<ItemProperty> currentItemProps,
         List<ChangeListModel.ChangelistEntry> changeList)
