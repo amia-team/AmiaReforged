@@ -194,6 +194,9 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         Token().SetBindValues(View.CurrentLabels, _current.Select(c => c.cp.GuiLabel).ToList());
         Token().SetBindValues(View.CurrentRemovable, _current.Select(c => c.removable).ToList());
 
+        int totalPower = _current.Sum(c => c.cp.PowerCost);
+        Token().SetBindValue(View.PowerTotal, totalPower.ToString());
+
         // Available (filtered)
         UpdateAvailableList();
     }
@@ -215,7 +218,8 @@ public sealed class DmForgePresenter : ScryPresenter<DmForgeView>
         {
             bool labelHit = a.GuiLabel != null && a.GuiLabel.ToLowerInvariant().Contains(s);
             bool tagHit = a.Tags != null && a.Tags.Any(t => t != null && t.ToLowerInvariant().Contains(s));
-            return labelHit || tagHit;
+            bool tierHit = a.CraftingTier.ToString().Contains(s, StringComparison.InvariantCultureIgnoreCase);
+            return labelHit || tagHit || tierHit;
         }).ToList();
     }
 }

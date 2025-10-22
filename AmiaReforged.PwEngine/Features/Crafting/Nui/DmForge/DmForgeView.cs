@@ -32,6 +32,8 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
     // Search
     public NuiBind<string> SearchBind { get; } = new("dm_search");
 
+    public NuiBind<string> PowerTotal { get; } = new("power_total");
+
     public override NuiLayout RootLayout()
     {
         // Current props list
@@ -53,7 +55,7 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
         List<NuiListTemplateCell> availableCells = new List<NuiListTemplateCell>
         {
             new(new NuiLabel(AvailableLabels)),
-            new(new NuiButtonImage("ir_cntrspell") // same add icon style as mythal forge
+            new(new NuiButtonImage("ir_craft") // same add icon style as mythal forge
             {
                 Id = AvailableAddId
             })
@@ -74,55 +76,73 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
                         new NuiTextEdit("Edit Name", ItemName, 100, false) { Width = 250f, Height = 40f },
                         new NuiButton("Change Name") { Id = ApplyNameButtonId, Height = 40f, Width = 140f },
                         new NuiSpacer(),
-                        new NuiButton("Close") { Id = CloseId, Height = 40f, Width = 120f }
-                    }
-                },
-                new NuiRow
-                {
-                    Children =
-                    {
-                        new NuiGroup
+                        new NuiGroup()
                         {
-                            Element = new NuiColumn
+                            Width = 60f,
+                            Height = 60f,
+                            Element = new NuiLabel(PowerTotal)
                             {
-                                Children =
-                                {
-                                    new NuiLabel("Current Properties"),
-                                    new NuiList(currentCells, CurrentCount) { RowHeight = 28f }
-                                }
-                            },
-                            Width = 520f,
-                            Height = 500f,
-                            Border = true
+                                VerticalAlign = NuiVAlign.Middle,
+                                HorizontalAlign = NuiHAlign.Center
+                            }
                         },
-                        new NuiGroup
+                        new NuiButton("Close") { Id = CloseId, Height = 40f, Width = 120f
+                    }
+                }
+            },
+            new NuiRow
+            {
+                Children =
+                {
+                    new NuiGroup
+                    {
+                        Element = new NuiColumn
                         {
-                            Element = new NuiColumn
+                            Children =
                             {
-                                Children =
+                                new NuiLabel("Current Properties")
                                 {
-                                    new NuiRow
+                                    Height = 15f
+                                },
+                                new NuiList(currentCells, CurrentCount) { RowHeight = 28f }
+                            }
+                        },
+                        Width = 520f,
+                        Height = 500f,
+                        Border = true
+                    },
+                    new NuiGroup
+                    {
+                        Element = new NuiColumn
+                        {
+                            Children =
+                            {
+                                new NuiRow
+                                {
+                                    Height = 30f,
+                                    Children =
                                     {
-                                        Children =
+                                        new NuiLabel("Search:"),
+                                        new NuiTextEdit("type to filter...", SearchBind, 64, false)
                                         {
-                                            new NuiLabel("Search:"),
-                                            new NuiTextEdit("type to filter...", SearchBind, 64, false)
-                                            {
-                                                Width = 260f
-                                            }
+                                            Width = 260f
                                         }
-                                    },
-                                    new NuiLabel("Available Properties"),
-                                    new NuiList(availableCells, AvailableCount) { RowHeight = 28f }
-                                }
-                            },
-                            Width = 520f,
-                            Height = 500f,
-                            Border = true
-                        }
+                                    }
+                                },
+                                new NuiLabel("Available Properties")
+                                {
+                                    Height = 15f
+                                },
+                                new NuiList(availableCells, AvailableCount) { RowHeight = 28f }
+                            }
+                        },
+                        Width = 520f,
+                        Height = 500f,
+                        Border = true
                     }
                 }
             }
+        }
         };
     }
 }

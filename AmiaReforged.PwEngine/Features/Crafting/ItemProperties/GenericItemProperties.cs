@@ -40,7 +40,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Acid",
                 GoldCost = ResistanceCost1,
-                CraftingTier = CraftingTier.Greater
+                CraftingTier = CraftingTier.Greater,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -50,7 +51,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Cold",
                 GoldCost = ResistanceCost1,
-                CraftingTier = CraftingTier.Greater
+                CraftingTier = CraftingTier.Greater,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -59,7 +61,8 @@ public static class GenericItemProperties
                     NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Electrical",
                 GoldCost = ResistanceCost1,
-                CraftingTier = CraftingTier.Greater
+                CraftingTier = CraftingTier.Greater,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -69,7 +72,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Fire",
                 GoldCost = ResistanceCost1,
-                CraftingTier = CraftingTier.Greater
+                CraftingTier = CraftingTier.Greater,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -79,7 +83,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Sonic",
                 GoldCost = ResistanceCost1,
-                CraftingTier = CraftingTier.Greater
+                CraftingTier = CraftingTier.Greater,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -89,7 +94,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_10)!,
                 GuiLabel = "10/- Acid",
                 GoldCost = ResistanceCost2,
-                CraftingTier = CraftingTier.Flawless
+                CraftingTier = CraftingTier.Flawless,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -99,7 +105,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_10)!,
                 GuiLabel = "10/- Cold",
                 GoldCost = ResistanceCost2,
-                CraftingTier = CraftingTier.Flawless
+                CraftingTier = CraftingTier.Flawless,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -108,7 +115,8 @@ public static class GenericItemProperties
                     NWScript.IP_CONST_DAMAGERESIST_10)!,
                 GuiLabel = "10/- Electrical",
                 GoldCost = ResistanceCost2,
-                CraftingTier = CraftingTier.Flawless
+                CraftingTier = CraftingTier.Flawless,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -118,7 +126,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_10)!,
                 GuiLabel = "10/- Fire",
                 GoldCost = ResistanceCost2,
-                CraftingTier = CraftingTier.Flawless
+                CraftingTier = CraftingTier.Flawless,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -128,7 +137,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_10)!,
                 GuiLabel = "10/- Sonic",
                 GoldCost = ResistanceCost2,
-                CraftingTier = CraftingTier.Flawless
+                CraftingTier = CraftingTier.Flawless,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -137,8 +147,9 @@ public static class GenericItemProperties
                     NWScript.ItemPropertyDamageResistance(NWScript.IP_CONST_DAMAGETYPE_ACID,
                         NWScript.IP_CONST_DAMAGERESIST_15)!,
                 GuiLabel = "15/- Acid",
-                GoldCost = ResistanceCost2,
-                CraftingTier = CraftingTier.Divine
+                GoldCost = ResistanceCost3,
+                CraftingTier = CraftingTier.Divine,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -148,7 +159,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_15)!,
                 GuiLabel = "15/- Cold",
                 GoldCost = ResistanceCost3,
-                CraftingTier = CraftingTier.Divine
+                CraftingTier = CraftingTier.Divine,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -157,7 +169,8 @@ public static class GenericItemProperties
                     NWScript.IP_CONST_DAMAGERESIST_15)!,
                 GuiLabel = "15/- Electrical",
                 GoldCost = ResistanceCost3,
-                CraftingTier = CraftingTier.Divine
+                CraftingTier = CraftingTier.Divine,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -167,7 +180,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_15)!,
                 GuiLabel = "15/- Fire",
                 GoldCost = ResistanceCost3,
-                CraftingTier = CraftingTier.Divine
+                CraftingTier = CraftingTier.Divine,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -177,15 +191,13 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_15)!,
                 GuiLabel = "15/- Sonic",
                 GoldCost = ResistanceCost3,
-                CraftingTier = CraftingTier.Divine
+                CraftingTier = CraftingTier.Divine,
+                Tags = ["Damage Reduction", "Reduction"]
             }
         ],
         BaseDifficulty = 13
     };
 
-    /// <summary>
-    ///     Physical damage resistance category
-    /// </summary>
     public static readonly CraftingCategory PhysicalDamageResistances = new(categoryId: "physical_resists")
     {
         Label = "Physical Damage Resistance",
@@ -198,7 +210,8 @@ public static class GenericItemProperties
                     NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Bludgeoning",
                 GoldCost = ResistanceCost3,
-                CraftingTier = CraftingTier.Divine
+                CraftingTier = CraftingTier.Divine,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -208,7 +221,8 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Piercing",
                 GoldCost = ResistanceCost3,
-                CraftingTier = CraftingTier.Divine
+                CraftingTier = CraftingTier.Divine,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -218,16 +232,13 @@ public static class GenericItemProperties
                         NWScript.IP_CONST_DAMAGERESIST_5)!,
                 GuiLabel = "5/- Slashing",
                 GoldCost = ResistanceCost3,
-                CraftingTier = CraftingTier.Divine
+                CraftingTier = CraftingTier.Divine,
+                Tags = ["Damage Reduction", "Reduction"]
             }
         ],
         BaseDifficulty = 18
     };
 
-
-    /// <summary>
-    ///     Damage reduction category
-    /// </summary>
     public static readonly CraftingCategory DamageReductions = new(categoryId: "damage_reduction")
     {
         Label = "Damage Reduction",
@@ -239,7 +250,8 @@ public static class GenericItemProperties
                 ItemProperty = NWScript.ItemPropertyDamageReduction(1, NWScript.IP_CONST_DAMAGESOAK_5_HP)!,
                 GuiLabel = "+1 Soak 5 Damage",
                 GoldCost = ResistanceCost1,
-                CraftingTier = CraftingTier.Minor
+                CraftingTier = CraftingTier.Minor,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -247,7 +259,8 @@ public static class GenericItemProperties
                 ItemProperty = NWScript.ItemPropertyDamageReduction(2, NWScript.IP_CONST_DAMAGESOAK_5_HP)!,
                 GuiLabel = "+2 Soak 5 Damage",
                 GoldCost = ResistanceCost2,
-                CraftingTier = CraftingTier.Lesser
+                CraftingTier = CraftingTier.Lesser,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -255,7 +268,8 @@ public static class GenericItemProperties
                 ItemProperty = NWScript.ItemPropertyDamageReduction(3, NWScript.IP_CONST_DAMAGESOAK_5_HP)!,
                 GuiLabel = "+3 Soak 5 Damage",
                 GoldCost = ResistanceCost3,
-                CraftingTier = CraftingTier.Intermediate
+                CraftingTier = CraftingTier.Intermediate,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -263,7 +277,8 @@ public static class GenericItemProperties
                 ItemProperty = NWScript.ItemPropertyDamageReduction(4, NWScript.IP_CONST_DAMAGESOAK_5_HP)!,
                 GuiLabel = "+4 Soak 5 Damage",
                 GoldCost = ResistanceCost4,
-                CraftingTier = CraftingTier.Greater
+                CraftingTier = CraftingTier.Greater,
+                Tags = ["Damage Reduction", "Reduction"]
             },
             new CraftingProperty
             {
@@ -271,7 +286,8 @@ public static class GenericItemProperties
                 ItemProperty = NWScript.ItemPropertyDamageReduction(5, NWScript.IP_CONST_DAMAGESOAK_5_HP)!,
                 GuiLabel = "+5 Soak 5 Damage",
                 GoldCost = ResistanceCost5,
-                CraftingTier = CraftingTier.Flawless
+                CraftingTier = CraftingTier.Flawless,
+                Tags = ["Damage Reduction", "Reduction"]
             }
         ],
         BaseDifficulty = 18
