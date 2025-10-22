@@ -38,30 +38,25 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
 
     private void UpdateFromSelection()
     {
-        if (_model.Selected == null) return;
-
-        ToggleBindWatch(false);
-
-        BindNewValues();
-
-        ToggleBindWatch(_model.Selected != null);
+        UpdateFromModel();
     }
 
-    private void BindNewValues()
+    private void BindNewValuesFromSelected()
     {
         bool selectionAvailable = _model.Selected != null;
         Token().SetBindValue(View.ValidObjectSelected, selectionAvailable);
         if (_model.Selected is null) return;
+
         Token().SetBindValue(View.Name, _model.Selected.Name);
         Token().SetBindValue(View.Description, _model.Selected.Description);
         Token().SetBindValue(View.PortraitResRef, _model.Selected.PortraitResRef);
         Token().SetBindValue(View.PortraitPreview, _model.Selected.PortraitResRef + "l");
 
-        int appearanceRowIndex = _model.Selected?.Appearance.RowIndex ?? 1;
+        int appearanceRowIndex = _model.Selected.Appearance.RowIndex;
         Token().SetBindValue(View.AppearanceValue, appearanceRowIndex);
         Token().SetBindValue(View.AppearanceValueString, appearanceRowIndex.ToString(CultureInfo.InvariantCulture));
 
-        Token().SetBindValue(View.TransformX, _model.Selected!.VisualTransform.Translation.X);
+        Token().SetBindValue(View.TransformX, _model.Selected.VisualTransform.Translation.X);
         Token().SetBindValue(View.TransformY, _model.Selected.VisualTransform.Translation.Y);
         Token().SetBindValue(View.TransformZ, _model.Selected.VisualTransform.Translation.Z);
         Token().SetBindValue(View.TransformXString,
@@ -70,6 +65,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
             _model.Selected.VisualTransform.Translation.Y.ToString(CultureInfo.InvariantCulture));
         Token().SetBindValue(View.TransformZString,
             _model.Selected.VisualTransform.Translation.Z.ToString(CultureInfo.InvariantCulture));
+
         Token().SetBindValue(View.RotationX, _model.Selected.VisualTransform.Rotation.X);
         Token().SetBindValue(View.RotationY, _model.Selected.VisualTransform.Rotation.Y);
         Token().SetBindValue(View.RotationZ, _model.Selected.VisualTransform.Rotation.Z);
@@ -79,15 +75,16 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
             _model.Selected.VisualTransform.Rotation.Y.ToString(CultureInfo.InvariantCulture));
         Token().SetBindValue(View.RotationZString,
             _model.Selected.VisualTransform.Rotation.Z.ToString(CultureInfo.InvariantCulture));
+
         Token().SetBindValue(View.Scale, _model.Selected.VisualTransform.Scale);
         Token().SetBindValue(View.ScaleString,
             _model.Selected.VisualTransform.Scale.ToString(CultureInfo.InvariantCulture));
 
         Token().SetBindValue(View.PositionX, _model.Selected.Position.X);
-        Token().SetBindValue(View.PositionXString, _model.Selected.Position.X.ToString(CultureInfo.InvariantCulture));
         Token().SetBindValue(View.PositionY, _model.Selected.Position.Y);
-        Token().SetBindValue(View.PositionYString, _model.Selected.Position.Y.ToString(CultureInfo.InvariantCulture));
         Token().SetBindValue(View.PositionZ, _model.Selected.Position.Z);
+        Token().SetBindValue(View.PositionXString, _model.Selected.Position.X.ToString(CultureInfo.InvariantCulture));
+        Token().SetBindValue(View.PositionYString, _model.Selected.Position.Y.ToString(CultureInfo.InvariantCulture));
         Token().SetBindValue(View.PositionZString, _model.Selected.Position.Z.ToString(CultureInfo.InvariantCulture));
     }
 
@@ -117,6 +114,7 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         _player.TryCreateNuiWindow(_window, out _token);
 
         Token().SetBindValue(View.ValidObjectSelected, _model.Selected != null);
+        UpdateFromModel();
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -126,41 +124,143 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
             case NuiEventType.Click:
                 HandleButtonClick(eventData);
                 break;
-
-            case NuiEventType.MouseUp:
-                // On release: sync numeric -> string for that slider once.
-                if (IsSliderId(eventData.ElementId))
+            case NuiEventType.Watch:
+                // Mirror the reference pattern: when selection is null, refresh binds and exit.
+                if (_model.Selected == null)
                 {
-                    SyncSliderText(eventData.ElementId);
-                    ApplyPlcSafe();
+                    UpdateFromModel();
+                    return;
                 }
 
-                break;
-
-            case NuiEventType.Watch:
                 if (IsBlacklisted(eventData.ElementId))
                     return;
 
-                // Live updates from sliders: apply PLC without touching the string mirrors.
-                if (IsSliderId(eventData.ElementId))
-                {
-                    DateTime now = DateTime.UtcNow;
-                    if (now - _lastApplyAt >= LiveApplyMinInterval)
-                    {
-                        ApplyPlcSafe();
-                        _lastApplyAt = now;
-                    }
-
-                    return;
-                }
-
-                // Text edits (string binds): sanitize and apply.
                 ToggleBindWatch(false);
-                SanitizeInputs();
-                ApplyPlcSafe();
+                HandleWatchUpdate(eventData.ElementId);
                 ToggleBindWatch(true);
                 break;
         }
+    }
+
+
+    private void HandleWatchUpdate(string? elementId)
+    {
+        if (string.IsNullOrEmpty(elementId)) return;
+
+        // Check if this is a numeric slider bind (not the slider ID, but the bind key)
+        if (IsNumericSliderBind(elementId))
+        {
+            DateTime now = DateTime.UtcNow;
+            SyncNumericToString(elementId);
+            if (now - _lastApplyAt >= LiveApplyMinInterval)
+            {
+                ApplyPlcSafe();
+                _lastApplyAt = now;
+            }
+            return;
+        }
+
+        // Text fields that mirror floats: sanitize, push numeric, then apply.
+        if (TryHandleNumericTextPair(elementId))
+        {
+            ApplyPlcSafe();
+            return;
+        }
+
+        // Other simple fields (name/desc/portrait/appearance string): sanitize where needed, then apply.
+        if (elementId.Equals(View.Name.Key, StringComparison.OrdinalIgnoreCase) ||
+            elementId.Equals(View.Description.Key, StringComparison.OrdinalIgnoreCase) ||
+            elementId.Equals(View.PortraitResRef.Key, StringComparison.OrdinalIgnoreCase))
+        {
+            ApplyPlcSafe();
+            return;
+        }
+
+        if (elementId.Equals(View.AppearanceValueString.Key, StringComparison.OrdinalIgnoreCase))
+        {
+            string? s = Token().GetBindValue(View.AppearanceValueString) ?? string.Empty;
+            string sanitized = SanitizeNumericString(s);
+            Token().SetBindValue(View.AppearanceValueString, sanitized);
+            if (int.TryParse(sanitized, out int idx))
+            {
+                idx = Math.Abs(idx);
+                Token().SetBindValue(View.AppearanceValue, idx);
+            }
+            ApplyPlcSafe();
+            return;
+        }
+    }
+
+    private bool IsNumericSliderBind(string? elementId)
+    {
+        if (string.IsNullOrEmpty(elementId)) return false;
+
+        return elementId.Equals(View.PositionX.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.PositionY.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.PositionZ.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.TransformX.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.TransformY.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.TransformZ.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.RotationX.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.RotationY.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.RotationZ.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.Scale.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.PositionStep.Key, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void SyncNumericToString(string? elementId)
+    {
+        if (string.IsNullOrEmpty(elementId)) return;
+
+        void SyncFloat(NuiBind<float> valBind, NuiBind<string> strBind)
+        {
+            if (!elementId.Equals(valBind.Key, StringComparison.OrdinalIgnoreCase)) return;
+            float v = Token().GetBindValue(valBind);
+            Token().SetBindValue(strBind, v.ToString(CultureInfo.InvariantCulture));
+        }
+
+        SyncFloat(View.PositionX, View.PositionXString);
+        SyncFloat(View.PositionY, View.PositionYString);
+        SyncFloat(View.PositionZ, View.PositionZString);
+        SyncFloat(View.TransformX, View.TransformXString);
+        SyncFloat(View.TransformY, View.TransformYString);
+        SyncFloat(View.TransformZ, View.TransformZString);
+        SyncFloat(View.RotationX, View.RotationXString);
+        SyncFloat(View.RotationY, View.RotationYString);
+        SyncFloat(View.RotationZ, View.RotationZString);
+        SyncFloat(View.Scale, View.ScaleString);
+        SyncFloat(View.PositionStep, View.PositionStepString);
+    }
+
+
+    // Try to process a text bind that mirrors a float bind. Returns true if handled.
+    private bool TryHandleNumericTextPair(string elementId)
+    {
+        bool HandledText(NuiBind<float> numeric, NuiBind<string> text)
+        {
+            if (!elementId.Equals(text.Key, StringComparison.OrdinalIgnoreCase)) return false;
+            string? s = Token().GetBindValue(text) ?? string.Empty;
+            string sanitized = SanitizeNumericString(s);
+            Token().SetBindValue(text, sanitized);
+            if (float.TryParse(sanitized, NumberStyles.Float, CultureInfo.InvariantCulture, out float f))
+            {
+                Token().SetBindValue(numeric, f);
+            }
+            return true;
+        }
+
+        return
+            HandledText(View.TransformX, View.TransformXString) ||
+            HandledText(View.TransformY, View.TransformYString) ||
+            HandledText(View.TransformZ, View.TransformZString) ||
+            HandledText(View.RotationX, View.RotationXString) ||
+            HandledText(View.RotationY, View.RotationYString) ||
+            HandledText(View.RotationZ, View.RotationZString) ||
+            HandledText(View.Scale, View.ScaleString) ||
+            HandledText(View.PositionX, View.PositionXString) ||
+            HandledText(View.PositionY, View.PositionYString) ||
+            HandledText(View.PositionZ, View.PositionZString) ||
+            HandledText(View.PositionStep, View.PositionStepString);
     }
 
     // Utility: execute an action while ignoring specified elementIds in the watch loop.
@@ -195,40 +295,6 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
     private void ApplyPlcSafe()
     {
         UpdatePlc();
-    }
-
-    // Sync a single slider’s numeric value to its paired string without triggering watch loops.
-    private void SyncSliderText(string? sliderId)
-    {
-        if (string.IsNullOrEmpty(sliderId)) return;
-
-        IEnumerable<string> BlacklistPair(NuiBind<string> strBind) => new[] { strBind.Key };
-
-        void SyncFloat(NuiBind<float> valBind, NuiBind<string> strBind)
-        {
-            float v = Token().GetBindValue(valBind);
-            WithWatchBlacklist(BlacklistPair(strBind),
-                () => { Token().SetBindValue(strBind, v.ToString(CultureInfo.InvariantCulture)); });
-        }
-
-        switch (sliderId)
-        {
-            case "pos_x_slider": SyncFloat(View.PositionX, View.PositionXString); break;
-            case "pos_y_slider": SyncFloat(View.PositionY, View.PositionYString); break;
-            case "pos_z_slider": SyncFloat(View.PositionZ, View.PositionZString); break;
-
-            case "trans_x_slider": SyncFloat(View.TransformX, View.TransformXString); break;
-            case "trans_y_slider": SyncFloat(View.TransformY, View.TransformYString); break;
-            case "trans_z_slider": SyncFloat(View.TransformZ, View.TransformZString); break;
-
-            case "rot_x_slider": SyncFloat(View.RotationX, View.RotationXString); break;
-            case "rot_y_slider": SyncFloat(View.RotationY, View.RotationYString); break;
-            case "rot_z_slider": SyncFloat(View.RotationZ, View.RotationZString); break;
-
-            case "scale_slider": SyncFloat(View.Scale, View.ScaleString); break;
-
-            case "pos_step_slider": SyncFloat(View.PositionStep, View.PositionStepString); break;
-        }
     }
 
     private static string SanitizeNumericString(string input)
@@ -269,20 +335,6 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         return new string(chars.ToArray());
     }
 
-    /// <summary>
-    /// Sanitizes the input parameters for PLC (placeable) editing.
-    /// This method ensures that position, transformation, scale, and rotation values
-    /// provided by the user or module are within valid ranges and formats.
-    /// </summary>
-    /// <remarks>
-    /// This method internally calls specific sanitation routines:
-    /// - <see cref="SanitizePositions"/> to validate and correct positional data.
-    /// - <see cref="SanitizeTransforms"/> to process transformation data for consistency.
-    /// - <see cref="SanitizeScale"/> to normalize scale values.
-    /// - <see cref="SanitizeRotations"/> to correct rotational data.
-    /// Use this method whenever text binds or user inputs are updated to prevent
-    /// invalid configurations or unexpected behavior in the PLC editing process.
-    /// </remarks>
     private void SanitizeInputs()
     {
         SanitizePositions();
@@ -433,33 +485,32 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         Token().SetBindWatch(View.AppearanceValue, b);
         Token().SetBindWatch(View.AppearanceValueString, b);
 
-
-        // Keep numeric binds unwatched to avoid feedback; we update PLC directly on slider movement.
-        Token().SetBindWatch(View.RotationX, false);
+        // Numeric binds watched; we avoid loops using blacklist + scoped toggling.
+        Token().SetBindWatch(View.RotationX, b);
         Token().SetBindWatch(View.RotationXString, b);
-        Token().SetBindWatch(View.RotationY, false);
+        Token().SetBindWatch(View.RotationY, b);
         Token().SetBindWatch(View.RotationYString, b);
-        Token().SetBindWatch(View.RotationZ, false);
+        Token().SetBindWatch(View.RotationZ, b);
         Token().SetBindWatch(View.RotationZString, b);
 
-        Token().SetBindWatch(View.TransformX, false);
+        Token().SetBindWatch(View.TransformX, b);
         Token().SetBindWatch(View.TransformXString, b);
-        Token().SetBindWatch(View.TransformY, false);
+        Token().SetBindWatch(View.TransformY, b);
         Token().SetBindWatch(View.TransformYString, b);
-        Token().SetBindWatch(View.TransformZ, false);
+        Token().SetBindWatch(View.TransformZ, b);
         Token().SetBindWatch(View.TransformZString, b);
 
-        Token().SetBindWatch(View.Scale, false);
+        Token().SetBindWatch(View.Scale, b);
         Token().SetBindWatch(View.ScaleString, b);
 
-        Token().SetBindWatch(View.PositionX, false);
+        Token().SetBindWatch(View.PositionX, b);
         Token().SetBindWatch(View.PositionXString, b);
-        Token().SetBindWatch(View.PositionY, false);
+        Token().SetBindWatch(View.PositionY, b);
         Token().SetBindWatch(View.PositionYString, b);
-        Token().SetBindWatch(View.PositionZ, false);
+        Token().SetBindWatch(View.PositionZ, b);
         Token().SetBindWatch(View.PositionZString, b);
 
-        Token().SetBindWatch(View.PositionStep, false);
+        Token().SetBindWatch(View.PositionStep, b);
         Token().SetBindWatch(View.PositionStepString, b);
     }
 
@@ -475,7 +526,6 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         string? newName = Token().GetBindValue(View.Name);
         string? newDescription = Token().GetBindValue(View.Description);
         string? newPortraitResRef = Token().GetBindValue(View.PortraitResRef);
-
 
         int newAppearance = Token().GetBindValue(View.AppearanceValue);
 
@@ -535,6 +585,25 @@ public sealed class PlcEditorPresenter : ScryPresenter<PlcEditorView>
         );
 
         _model.Update(newData);
+    }
+
+    // Pull values from the selected PLC into the binds, similar to the reference controller's Update().
+    private void UpdateFromModel()
+    {
+        ToggleBindWatch(false);
+
+        bool selectionAvailable = _model.Selected != null;
+        Token().SetBindValue(View.ValidObjectSelected, selectionAvailable);
+
+        if (_model.Selected == null)
+        {
+            ToggleBindWatch(true);
+            return;
+        }
+
+        BindNewValuesFromSelected();
+
+        ToggleBindWatch(true);
     }
 
     public override void Close()
