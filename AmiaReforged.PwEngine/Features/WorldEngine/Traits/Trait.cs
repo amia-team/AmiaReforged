@@ -34,6 +34,12 @@ public class Trait
     public bool RequiresUnlock { get; init; }
 
     /// <summary>
+    /// Defines how this trait behaves when the character dies.
+    /// Default is Persist (trait remains unchanged).
+    /// </summary>
+    public TraitDeathBehavior DeathBehavior { get; init; } = TraitDeathBehavior.Persist;
+
+    /// <summary>
     /// If populated, only these races can select this trait.
     /// Empty list means no race restriction.
     /// </summary>

@@ -467,38 +467,241 @@ public class BackgroundTraitTests
     [Test]
     public void StandardTraits_PersistThroughDeath()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "brave",
+            Name = "Brave",
+            Description = "Fearless",
+            PointCost = 1,
+            DeathBehavior = TraitDeathBehavior.Persist
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait braveTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = characterId,
+            TraitTag = "brave",
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true
+        };
+        charTraitRepo.Add(braveTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Character dies
+        bool permadeath = deathHandler.ProcessDeath(characterId);
+        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(characterId);
+
+        // Assert
+        Assert.That(permadeath, Is.False, "Standard traits should not cause permadeath");
+        Assert.That(traitsAfterDeath, Has.Count.EqualTo(1), "Trait should still exist");
+        Assert.That(traitsAfterDeath[0].IsActive, Is.True, "Trait should remain active");
+        Assert.That(traitsAfterDeath[0].TraitTag, Is.EqualTo("brave"));
     }
 
     [Test]
     public void HeroTrait_BonusesResetOnDeath()
     {
         // Hero keeps the trait but loses accumulated bonuses
-        Assert.Fail("Not implemented");
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "hero",
+            Name = "Hero",
+            Description = "Heroic character",
+            PointCost = 2,
+            DeathBehavior = TraitDeathBehavior.ResetOnDeath
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait heroTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = characterId,
+            TraitTag = "hero",
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true,
+            CustomData = "{\"bonuses\": [\"strength+1\", \"constitution+1\"]}" // Accumulated bonuses
+        };
+        charTraitRepo.Add(heroTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Character dies
+        bool permadeath = deathHandler.ProcessDeath(characterId);
+        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(characterId);
+
+        // Assert
+        Assert.That(permadeath, Is.False, "Hero death should not cause permadeath");
+        Assert.That(traitsAfterDeath, Has.Count.EqualTo(1), "Hero trait should still exist");
+        Assert.That(traitsAfterDeath[0].IsActive, Is.False, "Hero trait should be inactive after death");
+        Assert.That(traitsAfterDeath[0].CustomData, Is.Null, "Custom data (bonuses) should be cleared");
     }
 
     [Test]
     public void HeroTrait_CanRebuildBonuses_AfterDeath()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "hero",
+            Name = "Hero",
+            Description = "Heroic character",
+            PointCost = 2,
+            DeathBehavior = TraitDeathBehavior.ResetOnDeath
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait heroTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = characterId,
+            TraitTag = "hero",
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = false, // Inactive after death
+            CustomData = null
+        };
+        charTraitRepo.Add(heroTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Reactivate the trait (simulating bonus rebuilding)
+        deathHandler.ReactivateResettableTraits(characterId);
+        List<CharacterTrait> traitsAfterReactivation = charTraitRepo.GetByCharacterId(characterId);
+
+        // Assert
+        Assert.That(traitsAfterReactivation, Has.Count.EqualTo(1));
+        Assert.That(traitsAfterReactivation[0].IsActive, Is.True, "Hero trait should be reactivated");
+        Assert.That(traitsAfterReactivation[0].CustomData, Is.Null, "Custom data starts fresh");
     }
 
     [Test]
     public void VillainDeath_ByHeroHand_TriggersPermadeath()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "villain",
+            Name = "Villain",
+            Description = "Evil character with permadeath risk",
+            PointCost = 2,
+            DeathBehavior = TraitDeathBehavior.Permadeath
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait villainTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = characterId,
+            TraitTag = "villain",
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true
+        };
+        charTraitRepo.Add(villainTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Character dies by hero's hand
+        bool permadeath = deathHandler.ProcessDeath(characterId, killedByHero: true);
+
+        // Assert
+        Assert.That(permadeath, Is.True, "Villain killed by Hero should trigger permadeath");
     }
 
     [Test]
     public void VillainDeath_ByNonHero_AllowsRespawn()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "villain",
+            Name = "Villain",
+            Description = "Evil character with permadeath risk",
+            PointCost = 2,
+            DeathBehavior = TraitDeathBehavior.Permadeath
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait villainTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = characterId,
+            TraitTag = "villain",
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true
+        };
+        charTraitRepo.Add(villainTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Character dies by non-hero (monster, trap, etc)
+        bool permadeath = deathHandler.ProcessDeath(characterId, killedByHero: false);
+
+        // Assert
+        Assert.That(permadeath, Is.False, "Villain killed by non-Hero should allow respawn");
     }
 
     [Test]
     public void TraitWithResetBehavior_ClearsCustomData_OnDeath()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "tracked_trait",
+            Name = "Tracked Trait",
+            Description = "Trait with custom tracking data",
+            PointCost = 1,
+            DeathBehavior = TraitDeathBehavior.ResetOnDeath
+        });
+
+        ICharacterTraitRepository charTraitRepo = InMemoryCharacterTraitRepository.Create();
+        Guid characterId = Guid.NewGuid();
+
+        CharacterTrait trackedTrait = new()
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = characterId,
+            TraitTag = "tracked_trait",
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true,
+            IsActive = true,
+            CustomData = "{\"someData\": \"important value\"}"
+        };
+        charTraitRepo.Add(trackedTrait);
+
+        TraitDeathHandler deathHandler = TraitDeathHandler.Create(charTraitRepo, traitRepo);
+
+        // Act - Character dies
+        deathHandler.ProcessDeath(characterId);
+        List<CharacterTrait> traitsAfterDeath = charTraitRepo.GetByCharacterId(characterId);
+
+        // Assert
+        Assert.That(traitsAfterDeath, Has.Count.EqualTo(1));
+        Assert.That(traitsAfterDeath[0].CustomData, Is.Null, "CustomData should be cleared on death");
+        Assert.That(traitsAfterDeath[0].IsActive, Is.False, "Trait should be deactivated");
     }
 
     #endregion
