@@ -8,3 +8,4 @@ public sealed record TraitAcquiredEvent(
     TraitTag TraitTag,
     string AcquisitionMethod
 ) : CodexDomainEvent(CharacterId, OccurredAt);
+
