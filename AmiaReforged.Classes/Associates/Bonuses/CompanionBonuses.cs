@@ -144,7 +144,7 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
         Effect Effects
     );
 
-    private readonly EpicCompanionBonus _bonuses = associate.AnimalCompanionType switch
+    private readonly EpicCompanionBonus _bonuses = owner.AnimalCompanionType switch
     {
         AnimalCompanionCreatureType.Badger => new EpicCompanionBonus
         (
