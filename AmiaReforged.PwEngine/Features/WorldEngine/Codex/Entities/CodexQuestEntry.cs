@@ -103,7 +103,7 @@ public class CodexQuestEntry
         if (string.IsNullOrWhiteSpace(searchTerm))
             return false;
 
-        var lowerSearch = searchTerm.ToLowerInvariant();
+        string lowerSearch = searchTerm.ToLowerInvariant();
 
         return Title.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ||
                Description.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ||

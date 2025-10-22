@@ -26,7 +26,7 @@ public class PlayerCodexTests
     public void Constructor_WithValidParameters_CreatesInstance()
     {
         // Act
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
 
         // Assert
         Assert.That(codex.OwnerId, Is.EqualTo(_testCharacterId));
@@ -38,7 +38,7 @@ public class PlayerCodexTests
     public void Constructor_InitializesEmptyCollections()
     {
         // Act
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
 
         // Assert
         Assert.That(codex.Quests, Is.Empty);
@@ -55,9 +55,9 @@ public class PlayerCodexTests
     public void RecordQuestStarted_WithValidQuest_AddsQuest()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest = CreateTestQuest("quest_001", "Test Quest");
-        var occurredAt = _testDate.AddHours(1);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest = CreateTestQuest("quest_001", "Test Quest");
+        DateTime occurredAt = _testDate.AddHours(1);
 
         // Act
         codex.RecordQuestStarted(quest, occurredAt);
@@ -72,13 +72,13 @@ public class PlayerCodexTests
     public void RecordQuestStarted_WithDuplicateQuestId_ThrowsInvalidOperationException()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest1 = CreateTestQuest("quest_001", "Test Quest 1");
-        var quest2 = CreateTestQuest("quest_001", "Test Quest 2");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest1 = CreateTestQuest("quest_001", "Test Quest 1");
+        CodexQuestEntry quest2 = CreateTestQuest("quest_001", "Test Quest 2");
         codex.RecordQuestStarted(quest1, _testDate);
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             codex.RecordQuestStarted(quest2, _testDate.AddHours(1)));
         Assert.That(ex.Message, Does.Contain("quest_001"));
         Assert.That(ex.Message, Does.Contain("already exists"));
@@ -88,7 +88,7 @@ public class PlayerCodexTests
     public void RecordQuestStarted_WithNullQuest_ThrowsArgumentNullException()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
@@ -99,16 +99,16 @@ public class PlayerCodexTests
     public void RecordQuestCompleted_WithValidQuest_UpdatesQuestStateAndLastUpdated()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest = CreateTestQuest("quest_001", "Test Quest");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest = CreateTestQuest("quest_001", "Test Quest");
         codex.RecordQuestStarted(quest, _testDate);
-        var completedAt = _testDate.AddHours(2);
+        DateTime completedAt = _testDate.AddHours(2);
 
         // Act
         codex.RecordQuestCompleted(quest.QuestId, completedAt);
 
         // Assert
-        var retrievedQuest = codex.GetQuest(quest.QuestId);
+        CodexQuestEntry? retrievedQuest = codex.GetQuest(quest.QuestId);
         Assert.That(retrievedQuest, Is.Not.Null);
         Assert.That(retrievedQuest!.State, Is.EqualTo(QuestState.Completed));
         Assert.That(retrievedQuest.DateCompleted, Is.EqualTo(completedAt));
@@ -119,11 +119,11 @@ public class PlayerCodexTests
     public void RecordQuestCompleted_WithNonExistentQuest_ThrowsInvalidOperationException()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var questId = new QuestId("nonexistent");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        QuestId questId = new QuestId("nonexistent");
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             codex.RecordQuestCompleted(questId, _testDate));
         Assert.That(ex.Message, Does.Contain("nonexistent"));
         Assert.That(ex.Message, Does.Contain("not found"));
@@ -133,16 +133,16 @@ public class PlayerCodexTests
     public void RecordQuestFailed_WithValidQuest_UpdatesQuestState()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest = CreateTestQuest("quest_001", "Test Quest");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest = CreateTestQuest("quest_001", "Test Quest");
         codex.RecordQuestStarted(quest, _testDate);
-        var failedAt = _testDate.AddHours(2);
+        DateTime failedAt = _testDate.AddHours(2);
 
         // Act
         codex.RecordQuestFailed(quest.QuestId, failedAt);
 
         // Assert
-        var retrievedQuest = codex.GetQuest(quest.QuestId);
+        CodexQuestEntry? retrievedQuest = codex.GetQuest(quest.QuestId);
         Assert.That(retrievedQuest!.State, Is.EqualTo(QuestState.Failed));
         Assert.That(codex.LastUpdated, Is.EqualTo(failedAt));
     }
@@ -151,16 +151,16 @@ public class PlayerCodexTests
     public void RecordQuestAbandoned_WithValidQuest_UpdatesQuestState()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest = CreateTestQuest("quest_001", "Test Quest");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest = CreateTestQuest("quest_001", "Test Quest");
         codex.RecordQuestStarted(quest, _testDate);
-        var abandonedAt = _testDate.AddHours(2);
+        DateTime abandonedAt = _testDate.AddHours(2);
 
         // Act
         codex.RecordQuestAbandoned(quest.QuestId, abandonedAt);
 
         // Assert
-        var retrievedQuest = codex.GetQuest(quest.QuestId);
+        CodexQuestEntry? retrievedQuest = codex.GetQuest(quest.QuestId);
         Assert.That(retrievedQuest!.State, Is.EqualTo(QuestState.Abandoned));
         Assert.That(codex.LastUpdated, Is.EqualTo(abandonedAt));
     }
@@ -169,12 +169,12 @@ public class PlayerCodexTests
     public void GetQuest_WithExistingQuest_ReturnsQuest()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest = CreateTestQuest("quest_001", "Test Quest");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest = CreateTestQuest("quest_001", "Test Quest");
         codex.RecordQuestStarted(quest, _testDate);
 
         // Act
-        var result = codex.GetQuest(quest.QuestId);
+        CodexQuestEntry? result = codex.GetQuest(quest.QuestId);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -185,11 +185,11 @@ public class PlayerCodexTests
     public void GetQuest_WithNonExistentQuest_ReturnsNull()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var questId = new QuestId("nonexistent");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        QuestId questId = new QuestId("nonexistent");
 
         // Act
-        var result = codex.GetQuest(questId);
+        CodexQuestEntry? result = codex.GetQuest(questId);
 
         // Assert
         Assert.That(result, Is.Null);
@@ -199,8 +199,8 @@ public class PlayerCodexTests
     public void HasQuest_WithExistingQuest_ReturnsTrue()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest = CreateTestQuest("quest_001", "Test Quest");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest = CreateTestQuest("quest_001", "Test Quest");
         codex.RecordQuestStarted(quest, _testDate);
 
         // Act & Assert
@@ -211,8 +211,8 @@ public class PlayerCodexTests
     public void HasQuest_WithNonExistentQuest_ReturnsFalse()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var questId = new QuestId("nonexistent");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        QuestId questId = new QuestId("nonexistent");
 
         // Act & Assert
         Assert.That(codex.HasQuest(questId), Is.False);
@@ -226,9 +226,9 @@ public class PlayerCodexTests
     public void RecordLoreDiscovered_WithValidLore_AddsLore()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var lore = CreateTestLore("lore_001", "Test Lore");
-        var occurredAt = _testDate.AddHours(1);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexLoreEntry lore = CreateTestLore("lore_001", "Test Lore");
+        DateTime occurredAt = _testDate.AddHours(1);
 
         // Act
         codex.RecordLoreDiscovered(lore, occurredAt);
@@ -243,13 +243,13 @@ public class PlayerCodexTests
     public void RecordLoreDiscovered_WithDuplicateLoreId_ThrowsInvalidOperationException()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var lore1 = CreateTestLore("lore_001", "Test Lore 1");
-        var lore2 = CreateTestLore("lore_001", "Test Lore 2");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexLoreEntry lore1 = CreateTestLore("lore_001", "Test Lore 1");
+        CodexLoreEntry lore2 = CreateTestLore("lore_001", "Test Lore 2");
         codex.RecordLoreDiscovered(lore1, _testDate);
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             codex.RecordLoreDiscovered(lore2, _testDate.AddHours(1)));
         Assert.That(ex.Message, Does.Contain("lore_001"));
         Assert.That(ex.Message, Does.Contain("already exists"));
@@ -259,7 +259,7 @@ public class PlayerCodexTests
     public void RecordLoreDiscovered_WithNullLore_ThrowsArgumentNullException()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
@@ -270,12 +270,12 @@ public class PlayerCodexTests
     public void GetLore_WithExistingLore_ReturnsLore()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var lore = CreateTestLore("lore_001", "Test Lore");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexLoreEntry lore = CreateTestLore("lore_001", "Test Lore");
         codex.RecordLoreDiscovered(lore, _testDate);
 
         // Act
-        var result = codex.GetLore(lore.LoreId);
+        CodexLoreEntry? result = codex.GetLore(lore.LoreId);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -286,11 +286,11 @@ public class PlayerCodexTests
     public void GetLore_WithNonExistentLore_ReturnsNull()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var loreId = new LoreId("nonexistent");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        LoreId loreId = new LoreId("nonexistent");
 
         // Act
-        var result = codex.GetLore(loreId);
+        CodexLoreEntry? result = codex.GetLore(loreId);
 
         // Assert
         Assert.That(result, Is.Null);
@@ -300,8 +300,8 @@ public class PlayerCodexTests
     public void HasLore_WithExistingLore_ReturnsTrue()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var lore = CreateTestLore("lore_001", "Test Lore");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexLoreEntry lore = CreateTestLore("lore_001", "Test Lore");
         codex.RecordLoreDiscovered(lore, _testDate);
 
         // Act & Assert
@@ -312,8 +312,8 @@ public class PlayerCodexTests
     public void HasLore_WithNonExistentLore_ReturnsFalse()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var loreId = new LoreId("nonexistent");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        LoreId loreId = new LoreId("nonexistent");
 
         // Act & Assert
         Assert.That(codex.HasLore(loreId), Is.False);
@@ -327,9 +327,9 @@ public class PlayerCodexTests
     public void AddNote_WithValidNote_AddsNote()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var note = CreateTestNote(Guid.NewGuid(), "Test note content");
-        var occurredAt = _testDate.AddHours(1);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexNoteEntry note = CreateTestNote(Guid.NewGuid(), "Test note content");
+        DateTime occurredAt = _testDate.AddHours(1);
 
         // Act
         codex.AddNote(note, occurredAt);
@@ -344,14 +344,14 @@ public class PlayerCodexTests
     public void AddNote_WithDuplicateId_ThrowsInvalidOperationException()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var noteId = Guid.NewGuid();
-        var note1 = CreateTestNote(noteId, "Test note 1");
-        var note2 = CreateTestNote(noteId, "Test note 2");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        Guid noteId = Guid.NewGuid();
+        CodexNoteEntry note1 = CreateTestNote(noteId, "Test note 1");
+        CodexNoteEntry note2 = CreateTestNote(noteId, "Test note 2");
         codex.AddNote(note1, _testDate);
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             codex.AddNote(note2, _testDate.AddHours(1)));
         Assert.That(ex.Message, Does.Contain(noteId.ToString()));
         Assert.That(ex.Message, Does.Contain("already exists"));
@@ -361,7 +361,7 @@ public class PlayerCodexTests
     public void AddNote_WithNullNote_ThrowsArgumentNullException()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
@@ -372,17 +372,17 @@ public class PlayerCodexTests
     public void EditNote_WithValidNote_UpdatesContentAndLastUpdated()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var note = CreateTestNote(Guid.NewGuid(), "Original content");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexNoteEntry note = CreateTestNote(Guid.NewGuid(), "Original content");
         codex.AddNote(note, _testDate);
-        var editedAt = _testDate.AddHours(1);
-        var newContent = "Updated content";
+        DateTime editedAt = _testDate.AddHours(1);
+        string newContent = "Updated content";
 
         // Act
         codex.EditNote(note.Id, newContent, editedAt);
 
         // Assert
-        var retrievedNote = codex.GetNote(note.Id);
+        CodexNoteEntry? retrievedNote = codex.GetNote(note.Id);
         Assert.That(retrievedNote!.Content, Is.EqualTo(newContent));
         Assert.That(retrievedNote.LastModified, Is.EqualTo(editedAt));
         Assert.That(codex.LastUpdated, Is.EqualTo(editedAt));
@@ -392,11 +392,11 @@ public class PlayerCodexTests
     public void EditNote_WithNonExistentNote_ThrowsInvalidOperationException()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var noteId = Guid.NewGuid();
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        Guid noteId = Guid.NewGuid();
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             codex.EditNote(noteId, "New content", _testDate));
         Assert.That(ex.Message, Does.Contain(noteId.ToString()));
         Assert.That(ex.Message, Does.Contain("not found"));
@@ -406,10 +406,10 @@ public class PlayerCodexTests
     public void DeleteNote_WithValidNote_RemovesNoteAndUpdatesLastUpdated()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var note = CreateTestNote(Guid.NewGuid(), "Test note");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexNoteEntry note = CreateTestNote(Guid.NewGuid(), "Test note");
         codex.AddNote(note, _testDate);
-        var deletedAt = _testDate.AddHours(1);
+        DateTime deletedAt = _testDate.AddHours(1);
 
         // Act
         codex.DeleteNote(note.Id, deletedAt);
@@ -424,11 +424,11 @@ public class PlayerCodexTests
     public void DeleteNote_WithNonExistentNote_ThrowsInvalidOperationException()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var noteId = Guid.NewGuid();
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        Guid noteId = Guid.NewGuid();
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             codex.DeleteNote(noteId, _testDate));
         Assert.That(ex.Message, Does.Contain(noteId.ToString()));
         Assert.That(ex.Message, Does.Contain("not found"));
@@ -438,12 +438,12 @@ public class PlayerCodexTests
     public void GetNote_WithExistingNote_ReturnsNote()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var note = CreateTestNote(Guid.NewGuid(), "Test note");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexNoteEntry note = CreateTestNote(Guid.NewGuid(), "Test note");
         codex.AddNote(note, _testDate);
 
         // Act
-        var result = codex.GetNote(note.Id);
+        CodexNoteEntry? result = codex.GetNote(note.Id);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -454,11 +454,11 @@ public class PlayerCodexTests
     public void GetNote_WithNonExistentNote_ReturnsNull()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var noteId = Guid.NewGuid();
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        Guid noteId = Guid.NewGuid();
 
         // Act
-        var result = codex.GetNote(noteId);
+        CodexNoteEntry? result = codex.GetNote(noteId);
 
         // Assert
         Assert.That(result, Is.Null);
@@ -468,8 +468,8 @@ public class PlayerCodexTests
     public void HasNote_WithExistingNote_ReturnsTrue()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var note = CreateTestNote(Guid.NewGuid(), "Test note");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexNoteEntry note = CreateTestNote(Guid.NewGuid(), "Test note");
         codex.AddNote(note, _testDate);
 
         // Act & Assert
@@ -480,8 +480,8 @@ public class PlayerCodexTests
     public void HasNote_WithNonExistentNote_ReturnsFalse()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var noteId = Guid.NewGuid();
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        Guid noteId = Guid.NewGuid();
 
         // Act & Assert
         Assert.That(codex.HasNote(noteId), Is.False);
@@ -495,10 +495,10 @@ public class PlayerCodexTests
     public void RecordReputationChange_FirstInteraction_CreatesNewReputation()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var factionId = new FactionId("faction_001");
-        var factionName = "Test Faction";
-        var occurredAt = _testDate.AddHours(1);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        FactionId factionId = new FactionId("faction_001");
+        string factionName = "Test Faction";
+        DateTime occurredAt = _testDate.AddHours(1);
 
         // Act
         codex.RecordReputationChange(factionId, factionName, 10, "Helped villagers", occurredAt);
@@ -506,7 +506,7 @@ public class PlayerCodexTests
         // Assert
         Assert.That(codex.Reputations, Has.Count.EqualTo(1));
         Assert.That(codex.HasReputation(factionId), Is.True);
-        var reputation = codex.GetReputation(factionId);
+        FactionReputation? reputation = codex.GetReputation(factionId);
         Assert.That(reputation, Is.Not.Null);
         Assert.That(reputation!.FactionId, Is.EqualTo(factionId));
         Assert.That(reputation.FactionName, Is.EqualTo(factionName));
@@ -518,18 +518,18 @@ public class PlayerCodexTests
     public void RecordReputationChange_ExistingReputation_UpdatesReputation()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var factionId = new FactionId("faction_001");
-        var factionName = "Test Faction";
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        FactionId factionId = new FactionId("faction_001");
+        string factionName = "Test Faction";
         codex.RecordReputationChange(factionId, factionName, 10, "First deed", _testDate);
-        var secondChangeAt = _testDate.AddHours(1);
+        DateTime secondChangeAt = _testDate.AddHours(1);
 
         // Act
         codex.RecordReputationChange(factionId, factionName, 5, "Second deed", secondChangeAt);
 
         // Assert
         Assert.That(codex.Reputations, Has.Count.EqualTo(1));
-        var reputation = codex.GetReputation(factionId);
+        FactionReputation? reputation = codex.GetReputation(factionId);
         Assert.That(reputation!.CurrentScore.Value, Is.EqualTo(15));
         Assert.That(reputation.History, Has.Count.EqualTo(2));
         Assert.That(codex.LastUpdated, Is.EqualTo(secondChangeAt));
@@ -539,9 +539,9 @@ public class PlayerCodexTests
     public void RecordReputationChange_UpdatesLastUpdated()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var factionId = new FactionId("faction_001");
-        var occurredAt = _testDate.AddHours(2);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        FactionId factionId = new FactionId("faction_001");
+        DateTime occurredAt = _testDate.AddHours(2);
 
         // Act
         codex.RecordReputationChange(factionId, "Test Faction", 10, "Test", occurredAt);
@@ -554,12 +554,12 @@ public class PlayerCodexTests
     public void GetReputation_WithExistingFaction_ReturnsReputation()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var factionId = new FactionId("faction_001");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        FactionId factionId = new FactionId("faction_001");
         codex.RecordReputationChange(factionId, "Test Faction", 10, "Test", _testDate);
 
         // Act
-        var result = codex.GetReputation(factionId);
+        FactionReputation? result = codex.GetReputation(factionId);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -570,11 +570,11 @@ public class PlayerCodexTests
     public void GetReputation_WithNonExistentFaction_ReturnsNull()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var factionId = new FactionId("nonexistent");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        FactionId factionId = new FactionId("nonexistent");
 
         // Act
-        var result = codex.GetReputation(factionId);
+        FactionReputation? result = codex.GetReputation(factionId);
 
         // Assert
         Assert.That(result, Is.Null);
@@ -584,8 +584,8 @@ public class PlayerCodexTests
     public void HasReputation_WithExistingFaction_ReturnsTrue()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var factionId = new FactionId("faction_001");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        FactionId factionId = new FactionId("faction_001");
         codex.RecordReputationChange(factionId, "Test Faction", 10, "Test", _testDate);
 
         // Act & Assert
@@ -596,8 +596,8 @@ public class PlayerCodexTests
     public void HasReputation_WithNonExistentFaction_ReturnsFalse()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var factionId = new FactionId("nonexistent");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        FactionId factionId = new FactionId("nonexistent");
 
         // Act & Assert
         Assert.That(codex.HasReputation(factionId), Is.False);
@@ -611,15 +611,15 @@ public class PlayerCodexTests
     public void GetQuestsByState_WithDiscoveredState_ReturnsOnlyDiscoveredQuests()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest1 = CreateTestQuest("quest_001", "Discovered Quest");
-        var quest2 = CreateTestQuest("quest_002", "Completed Quest");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest1 = CreateTestQuest("quest_001", "Discovered Quest");
+        CodexQuestEntry quest2 = CreateTestQuest("quest_002", "Completed Quest");
         codex.RecordQuestStarted(quest1, _testDate);
         codex.RecordQuestStarted(quest2, _testDate);
         codex.RecordQuestCompleted(quest2.QuestId, _testDate.AddHours(1));
 
         // Act
-        var result = codex.GetQuestsByState(QuestState.Discovered).ToList();
+        List<CodexQuestEntry> result = codex.GetQuestsByState(QuestState.Discovered).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -630,15 +630,15 @@ public class PlayerCodexTests
     public void GetQuestsByState_WithCompletedState_ReturnsOnlyCompletedQuests()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest1 = CreateTestQuest("quest_001", "Quest 1");
-        var quest2 = CreateTestQuest("quest_002", "Quest 2");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest1 = CreateTestQuest("quest_001", "Quest 1");
+        CodexQuestEntry quest2 = CreateTestQuest("quest_002", "Quest 2");
         codex.RecordQuestStarted(quest1, _testDate);
         codex.RecordQuestStarted(quest2, _testDate);
         codex.RecordQuestCompleted(quest2.QuestId, _testDate.AddHours(1));
 
         // Act
-        var result = codex.GetQuestsByState(QuestState.Completed).ToList();
+        List<CodexQuestEntry> result = codex.GetQuestsByState(QuestState.Completed).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -649,15 +649,15 @@ public class PlayerCodexTests
     public void GetQuestsByState_WithFailedState_ReturnsOnlyFailedQuests()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest1 = CreateTestQuest("quest_001", "Quest 1");
-        var quest2 = CreateTestQuest("quest_002", "Quest 2");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest1 = CreateTestQuest("quest_001", "Quest 1");
+        CodexQuestEntry quest2 = CreateTestQuest("quest_002", "Quest 2");
         codex.RecordQuestStarted(quest1, _testDate);
         codex.RecordQuestStarted(quest2, _testDate);
         codex.RecordQuestFailed(quest2.QuestId, _testDate.AddHours(1));
 
         // Act
-        var result = codex.GetQuestsByState(QuestState.Failed).ToList();
+        List<CodexQuestEntry> result = codex.GetQuestsByState(QuestState.Failed).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -668,15 +668,15 @@ public class PlayerCodexTests
     public void GetQuestsByState_WithAbandonedState_ReturnsOnlyAbandonedQuests()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest1 = CreateTestQuest("quest_001", "Quest 1");
-        var quest2 = CreateTestQuest("quest_002", "Quest 2");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest1 = CreateTestQuest("quest_001", "Quest 1");
+        CodexQuestEntry quest2 = CreateTestQuest("quest_002", "Quest 2");
         codex.RecordQuestStarted(quest1, _testDate);
         codex.RecordQuestStarted(quest2, _testDate);
         codex.RecordQuestAbandoned(quest2.QuestId, _testDate.AddHours(1));
 
         // Act
-        var result = codex.GetQuestsByState(QuestState.Abandoned).ToList();
+        List<CodexQuestEntry> result = codex.GetQuestsByState(QuestState.Abandoned).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -687,14 +687,14 @@ public class PlayerCodexTests
     public void GetLoreByTier_WithCommonTier_ReturnsOnlyCommonLore()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var lore1 = CreateTestLoreWithTier("lore_001", "Common Lore", LoreTier.Common);
-        var lore2 = CreateTestLoreWithTier("lore_002", "Rare Lore", LoreTier.Rare);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexLoreEntry lore1 = CreateTestLoreWithTier("lore_001", "Common Lore", LoreTier.Common);
+        CodexLoreEntry lore2 = CreateTestLoreWithTier("lore_002", "Rare Lore", LoreTier.Rare);
         codex.RecordLoreDiscovered(lore1, _testDate);
         codex.RecordLoreDiscovered(lore2, _testDate);
 
         // Act
-        var result = codex.GetLoreByTier(LoreTier.Common).ToList();
+        List<CodexLoreEntry> result = codex.GetLoreByTier(LoreTier.Common).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -705,14 +705,14 @@ public class PlayerCodexTests
     public void GetLoreByTier_WithRareTier_ReturnsOnlyRareLore()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var lore1 = CreateTestLoreWithTier("lore_001", "Common Lore", LoreTier.Common);
-        var lore2 = CreateTestLoreWithTier("lore_002", "Rare Lore", LoreTier.Rare);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexLoreEntry lore1 = CreateTestLoreWithTier("lore_001", "Common Lore", LoreTier.Common);
+        CodexLoreEntry lore2 = CreateTestLoreWithTier("lore_002", "Rare Lore", LoreTier.Rare);
         codex.RecordLoreDiscovered(lore1, _testDate);
         codex.RecordLoreDiscovered(lore2, _testDate);
 
         // Act
-        var result = codex.GetLoreByTier(LoreTier.Rare).ToList();
+        List<CodexLoreEntry> result = codex.GetLoreByTier(LoreTier.Rare).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -723,14 +723,14 @@ public class PlayerCodexTests
     public void GetLoreByTier_WithLegendaryTier_ReturnsOnlyLegendaryLore()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var lore1 = CreateTestLoreWithTier("lore_001", "Common Lore", LoreTier.Common);
-        var lore2 = CreateTestLoreWithTier("lore_002", "Legendary Lore", LoreTier.Legendary);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexLoreEntry lore1 = CreateTestLoreWithTier("lore_001", "Common Lore", LoreTier.Common);
+        CodexLoreEntry lore2 = CreateTestLoreWithTier("lore_002", "Legendary Lore", LoreTier.Legendary);
         codex.RecordLoreDiscovered(lore1, _testDate);
         codex.RecordLoreDiscovered(lore2, _testDate);
 
         // Act
-        var result = codex.GetLoreByTier(LoreTier.Legendary).ToList();
+        List<CodexLoreEntry> result = codex.GetLoreByTier(LoreTier.Legendary).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -741,14 +741,14 @@ public class PlayerCodexTests
     public void GetNotesByCategory_WithGeneralCategory_ReturnsOnlyGeneralNotes()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var note1 = CreateTestNoteWithCategory(Guid.NewGuid(), "General note", NoteCategory.General);
-        var note2 = CreateTestNoteWithCategory(Guid.NewGuid(), "Quest note", NoteCategory.Quest);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexNoteEntry note1 = CreateTestNoteWithCategory(Guid.NewGuid(), "General note", NoteCategory.General);
+        CodexNoteEntry note2 = CreateTestNoteWithCategory(Guid.NewGuid(), "Quest note", NoteCategory.Quest);
         codex.AddNote(note1, _testDate);
         codex.AddNote(note2, _testDate);
 
         // Act
-        var result = codex.GetNotesByCategory(NoteCategory.General).ToList();
+        List<CodexNoteEntry> result = codex.GetNotesByCategory(NoteCategory.General).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -759,14 +759,14 @@ public class PlayerCodexTests
     public void GetNotesByCategory_WithQuestCategory_ReturnsOnlyQuestNotes()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var note1 = CreateTestNoteWithCategory(Guid.NewGuid(), "General note", NoteCategory.General);
-        var note2 = CreateTestNoteWithCategory(Guid.NewGuid(), "Quest note", NoteCategory.Quest);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexNoteEntry note1 = CreateTestNoteWithCategory(Guid.NewGuid(), "General note", NoteCategory.General);
+        CodexNoteEntry note2 = CreateTestNoteWithCategory(Guid.NewGuid(), "Quest note", NoteCategory.Quest);
         codex.AddNote(note1, _testDate);
         codex.AddNote(note2, _testDate);
 
         // Act
-        var result = codex.GetNotesByCategory(NoteCategory.Quest).ToList();
+        List<CodexNoteEntry> result = codex.GetNotesByCategory(NoteCategory.Quest).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -777,14 +777,14 @@ public class PlayerCodexTests
     public void GetNotesByCategory_WithLocationCategory_ReturnsOnlyLocationNotes()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var note1 = CreateTestNoteWithCategory(Guid.NewGuid(), "Character note", NoteCategory.Character);
-        var note2 = CreateTestNoteWithCategory(Guid.NewGuid(), "Location note", NoteCategory.Location);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexNoteEntry note1 = CreateTestNoteWithCategory(Guid.NewGuid(), "Character note", NoteCategory.Character);
+        CodexNoteEntry note2 = CreateTestNoteWithCategory(Guid.NewGuid(), "Location note", NoteCategory.Location);
         codex.AddNote(note1, _testDate);
         codex.AddNote(note2, _testDate);
 
         // Act
-        var result = codex.GetNotesByCategory(NoteCategory.Location).ToList();
+        List<CodexNoteEntry> result = codex.GetNotesByCategory(NoteCategory.Location).ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -795,14 +795,14 @@ public class PlayerCodexTests
     public void SearchQuests_WithMatchingTerm_ReturnsMatchingQuests()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest1 = CreateTestQuest("quest_001", "Dragon Quest");
-        var quest2 = CreateTestQuest("quest_002", "Village Help");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest1 = CreateTestQuest("quest_001", "Dragon Quest");
+        CodexQuestEntry quest2 = CreateTestQuest("quest_002", "Village Help");
         codex.RecordQuestStarted(quest1, _testDate);
         codex.RecordQuestStarted(quest2, _testDate);
 
         // Act
-        var result = codex.SearchQuests("dragon").ToList();
+        List<CodexQuestEntry> result = codex.SearchQuests("dragon").ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -813,12 +813,12 @@ public class PlayerCodexTests
     public void SearchQuests_WithNoMatches_ReturnsEmpty()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var quest = CreateTestQuest("quest_001", "Dragon Quest");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexQuestEntry quest = CreateTestQuest("quest_001", "Dragon Quest");
         codex.RecordQuestStarted(quest, _testDate);
 
         // Act
-        var result = codex.SearchQuests("nonexistent").ToList();
+        List<CodexQuestEntry> result = codex.SearchQuests("nonexistent").ToList();
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -828,14 +828,14 @@ public class PlayerCodexTests
     public void SearchLore_WithMatchingTerm_ReturnsMatchingLore()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var lore1 = CreateTestLore("lore_001", "Ancient Dragon History");
-        var lore2 = CreateTestLore("lore_002", "Village Traditions");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexLoreEntry lore1 = CreateTestLore("lore_001", "Ancient Dragon History");
+        CodexLoreEntry lore2 = CreateTestLore("lore_002", "Village Traditions");
         codex.RecordLoreDiscovered(lore1, _testDate);
         codex.RecordLoreDiscovered(lore2, _testDate);
 
         // Act
-        var result = codex.SearchLore("dragon").ToList();
+        List<CodexLoreEntry> result = codex.SearchLore("dragon").ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -846,14 +846,14 @@ public class PlayerCodexTests
     public void SearchNotes_WithMatchingTerm_ReturnsMatchingNotes()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
-        var note1 = CreateTestNote(Guid.NewGuid(), "Met a dragon today");
-        var note2 = CreateTestNote(Guid.NewGuid(), "Visited the village");
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
+        CodexNoteEntry note1 = CreateTestNote(Guid.NewGuid(), "Met a dragon today");
+        CodexNoteEntry note2 = CreateTestNote(Guid.NewGuid(), "Visited the village");
         codex.AddNote(note1, _testDate);
         codex.AddNote(note2, _testDate);
 
         // Act
-        var result = codex.SearchNotes("dragon").ToList();
+        List<CodexNoteEntry> result = codex.SearchNotes("dragon").ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -864,7 +864,7 @@ public class PlayerCodexTests
     public void GetTotalEntryCount_WithMultipleEntries_ReturnsCorrectSum()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
         codex.RecordQuestStarted(CreateTestQuest("quest_001", "Quest 1"), _testDate);
         codex.RecordQuestStarted(CreateTestQuest("quest_002", "Quest 2"), _testDate);
         codex.RecordLoreDiscovered(CreateTestLore("lore_001", "Lore 1"), _testDate);
@@ -874,7 +874,7 @@ public class PlayerCodexTests
         codex.RecordReputationChange(new FactionId("faction_001"), "Faction 1", 10, "Test", _testDate);
 
         // Act
-        var count = codex.GetTotalEntryCount();
+        int count = codex.GetTotalEntryCount();
 
         // Assert
         Assert.That(count, Is.EqualTo(7)); // 2 quests + 1 lore + 3 notes + 1 reputation
@@ -884,10 +884,10 @@ public class PlayerCodexTests
     public void GetTotalEntryCount_WithEmptyCodex_ReturnsZero()
     {
         // Arrange
-        var codex = new PlayerCodex(_testCharacterId, _testDate);
+        PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
 
         // Act
-        var count = codex.GetTotalEntryCount();
+        int count = codex.GetTotalEntryCount();
 
         // Assert
         Assert.That(count, Is.EqualTo(0));
@@ -901,10 +901,10 @@ public class PlayerCodexTests
     public void PlayerCodex_CanBeCreatedWithDmId()
     {
         // Arrange
-        var dmId = CharacterId.New();
+        CharacterId dmId = CharacterId.New();
 
         // Act
-        var codex = new PlayerCodex(dmId, _testDate);
+        PlayerCodex codex = new PlayerCodex(dmId, _testDate);
 
         // Assert
         Assert.That(codex.OwnerId, Is.EqualTo(dmId));
@@ -914,9 +914,9 @@ public class PlayerCodexTests
     public void DM_CanAddQuests()
     {
         // Arrange
-        var dmId = CharacterId.New();
-        var codex = new PlayerCodex(dmId, _testDate);
-        var quest = CreateTestQuest("quest_001", "DM Quest");
+        CharacterId dmId = CharacterId.New();
+        PlayerCodex codex = new PlayerCodex(dmId, _testDate);
+        CodexQuestEntry quest = CreateTestQuest("quest_001", "DM Quest");
 
         // Act
         codex.RecordQuestStarted(quest, _testDate);
@@ -929,9 +929,9 @@ public class PlayerCodexTests
     public void DM_CanAddLore()
     {
         // Arrange
-        var dmId = CharacterId.New();
-        var codex = new PlayerCodex(dmId, _testDate);
-        var lore = CreateTestLore("lore_001", "DM Lore");
+        CharacterId dmId = CharacterId.New();
+        PlayerCodex codex = new PlayerCodex(dmId, _testDate);
+        CodexLoreEntry lore = CreateTestLore("lore_001", "DM Lore");
 
         // Act
         codex.RecordLoreDiscovered(lore, _testDate);
@@ -944,9 +944,9 @@ public class PlayerCodexTests
     public void DM_CanAddNotes()
     {
         // Arrange
-        var dmId = CharacterId.New();
-        var codex = new PlayerCodex(dmId, _testDate);
-        var note = CreateTestNote(Guid.NewGuid(), "DM Note", isDmNote: true);
+        CharacterId dmId = CharacterId.New();
+        PlayerCodex codex = new PlayerCodex(dmId, _testDate);
+        CodexNoteEntry note = CreateTestNote(Guid.NewGuid(), "DM Note", isDmNote: true);
 
         // Act
         codex.AddNote(note, _testDate);
@@ -960,9 +960,9 @@ public class PlayerCodexTests
     public void DM_CanAddReputation()
     {
         // Arrange
-        var dmId = CharacterId.New();
-        var codex = new PlayerCodex(dmId, _testDate);
-        var factionId = new FactionId("faction_001");
+        CharacterId dmId = CharacterId.New();
+        PlayerCodex codex = new PlayerCodex(dmId, _testDate);
+        FactionId factionId = new FactionId("faction_001");
 
         // Act
         codex.RecordReputationChange(factionId, "Test Faction", 10, "DM Award", _testDate);

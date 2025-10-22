@@ -13,7 +13,7 @@ public class QuestIdTests
         const string value = "quest_dragons_lair";
 
         // Act
-        var questId = new QuestId(value);
+        QuestId questId = new QuestId(value);
 
         // Assert
         Assert.That(questId.Value, Is.EqualTo(value));
@@ -23,7 +23,7 @@ public class QuestIdTests
     public void Constructor_WithNullValue_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new QuestId(null!));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new QuestId(null!));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("QuestId cannot be null or whitespace"));
     }
@@ -32,7 +32,7 @@ public class QuestIdTests
     public void Constructor_WithEmptyValue_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new QuestId(string.Empty));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new QuestId(string.Empty));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("QuestId cannot be null or whitespace"));
     }
@@ -41,7 +41,7 @@ public class QuestIdTests
     public void Constructor_WithWhitespace_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new QuestId("   "));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new QuestId("   "));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("QuestId cannot be null or whitespace"));
     }
@@ -50,10 +50,10 @@ public class QuestIdTests
     public void Constructor_WithValueExceedingMaxLength_ThrowsArgumentException()
     {
         // Arrange
-        var longValue = new string('a', 101);
+        string longValue = new string('a', 101);
 
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new QuestId(longValue));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new QuestId(longValue));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("QuestId cannot exceed 100 characters"));
     }
@@ -62,10 +62,10 @@ public class QuestIdTests
     public void Constructor_WithExactlyMaxLength_Succeeds()
     {
         // Arrange
-        var maxLengthValue = new string('a', 100);
+        string maxLengthValue = new string('a', 100);
 
         // Act
-        var questId = new QuestId(maxLengthValue);
+        QuestId questId = new QuestId(maxLengthValue);
 
         // Assert
         Assert.That(questId.Value, Is.EqualTo(maxLengthValue));
@@ -77,8 +77,8 @@ public class QuestIdTests
     {
         // Arrange
         const string value = "quest_ancient_ruins";
-        var id1 = new QuestId(value);
-        var id2 = new QuestId(value);
+        QuestId id1 = new QuestId(value);
+        QuestId id2 = new QuestId(value);
 
         // Act & Assert
         Assert.That(id1, Is.EqualTo(id2));
@@ -89,8 +89,8 @@ public class QuestIdTests
     public void StructuralEquality_WithDifferentValue_AreNotEqual()
     {
         // Arrange
-        var id1 = new QuestId("quest_one");
-        var id2 = new QuestId("quest_two");
+        QuestId id1 = new QuestId("quest_one");
+        QuestId id2 = new QuestId("quest_two");
 
         // Act & Assert
         Assert.That(id1, Is.Not.EqualTo(id2));
@@ -101,7 +101,7 @@ public class QuestIdTests
     {
         // Arrange
         const string value = "quest_forbidden_forest";
-        var questId = new QuestId(value);
+        QuestId questId = new QuestId(value);
 
         // Act
         string result = questId;
@@ -117,7 +117,7 @@ public class QuestIdTests
         const string value = "quest_mystic_tower";
 
         // Act
-        var questId = (QuestId)value;
+        QuestId questId = (QuestId)value;
 
         // Assert
         Assert.That(questId.Value, Is.EqualTo(value));
@@ -135,10 +135,10 @@ public class QuestIdTests
     {
         // Arrange
         const string value = "quest_treasure_hunt";
-        var questId = new QuestId(value);
+        QuestId questId = new QuestId(value);
 
         // Act
-        var result = questId.ToString();
+        string result = questId.ToString();
 
         // Assert
         Assert.That(result, Is.EqualTo(value));
@@ -148,9 +148,9 @@ public class QuestIdTests
     public void CanBeUsedAsDictionaryKey()
     {
         // Arrange
-        var id1 = new QuestId("quest_one");
-        var id2 = new QuestId("quest_two");
-        var dict = new Dictionary<QuestId, string>
+        QuestId id1 = new QuestId("quest_one");
+        QuestId id2 = new QuestId("quest_two");
+        Dictionary<QuestId, string> dict = new Dictionary<QuestId, string>
         {
             [id1] = "Dragon's Lair",
             [id2] = "Ancient Ruins"
@@ -166,11 +166,11 @@ public class QuestIdTests
     public void CanBeUsedInHashSet()
     {
         // Arrange
-        var id1 = new QuestId("quest_one");
-        var id2 = new QuestId("quest_two");
-        var id3 = new QuestId("quest_one"); // Duplicate
+        QuestId id1 = new QuestId("quest_one");
+        QuestId id2 = new QuestId("quest_two");
+        QuestId id3 = new QuestId("quest_one"); // Duplicate
 
-        var hashSet = new HashSet<QuestId> { id1, id2, id3 };
+        HashSet<QuestId> hashSet = new HashSet<QuestId> { id1, id2, id3 };
 
         // Act & Assert
         Assert.That(hashSet.Count, Is.EqualTo(2)); // id3 is duplicate of id1

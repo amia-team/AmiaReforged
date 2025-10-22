@@ -73,7 +73,7 @@ public class CodexEventProcessor
         // TODO: Implement per-character sequential processing using GroupBy or similar
         // For now, simple sequential processing
 
-        await foreach (var domainEvent in _eventChannel.Reader.ReadAllAsync(cancellationToken))
+        await foreach (CodexDomainEvent domainEvent in _eventChannel.Reader.ReadAllAsync(cancellationToken))
         {
             try
             {
@@ -93,8 +93,8 @@ public class CodexEventProcessor
     private async Task ProcessSingleEventAsync(CodexDomainEvent domainEvent, CancellationToken cancellationToken)
     {
         // Load codex (or create if first event)
-        var codex = await _repository.LoadAsync(domainEvent.CharacterId, cancellationToken)
-                    ?? new PlayerCodex(domainEvent.CharacterId, domainEvent.OccurredAt);
+        PlayerCodex codex = await _repository.LoadAsync(domainEvent.CharacterId, cancellationToken)
+                            ?? new PlayerCodex(domainEvent.CharacterId, domainEvent.OccurredAt);
 
         // Apply event to aggregate
         ApplyEvent(codex, domainEvent);

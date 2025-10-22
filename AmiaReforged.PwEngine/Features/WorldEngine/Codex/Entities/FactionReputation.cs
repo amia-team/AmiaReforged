@@ -74,7 +74,7 @@ public class FactionReputation
         if (delta == 0)
             return;
 
-        var oldScore = CurrentScore;
+        ReputationScore oldScore = CurrentScore;
         CurrentScore = CurrentScore.Add(delta);
         LastChanged = changedAt;
 

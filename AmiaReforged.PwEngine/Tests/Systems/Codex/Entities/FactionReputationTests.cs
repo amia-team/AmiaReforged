@@ -21,7 +21,7 @@ public class FactionReputationTests
     public void Constructor_WithValidRequiredProperties_CreatesInstance()
     {
         // Arrange & Act
-        var reputation = new FactionReputation(new ReputationScore(0), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(0), _testDate)
         {
             FactionId = new FactionId("faction_001"),
             FactionName = "The Silver Order",
@@ -40,7 +40,7 @@ public class FactionReputationTests
     public void Constructor_WithOptionalDescription_SetsDescription()
     {
         // Arrange & Act
-        var reputation = new FactionReputation(new ReputationScore(0), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(0), _testDate)
         {
             FactionId = new FactionId("faction_002"),
             FactionName = "The Dark Brotherhood",
@@ -56,7 +56,7 @@ public class FactionReputationTests
     public void Constructor_WithoutDescription_HasNullDescription()
     {
         // Arrange & Act
-        var reputation = new FactionReputation(new ReputationScore(0), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(0), _testDate)
         {
             FactionId = new FactionId("faction_003"),
             FactionName = "Test Faction",
@@ -71,7 +71,7 @@ public class FactionReputationTests
     public void Constructor_InitialHistory_IsEmpty()
     {
         // Arrange & Act
-        var reputation = new FactionReputation(new ReputationScore(0), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(0), _testDate)
         {
             FactionId = new FactionId("faction_004"),
             FactionName = "Test Faction",
@@ -91,13 +91,13 @@ public class FactionReputationTests
     public void AdjustReputation_WithPositiveDelta_IncreasesScore()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(0), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(0), _testDate)
         {
             FactionId = new FactionId("faction_005"),
             FactionName = "Test Faction",
             DateEstablished = _testDate
         };
-        var adjustDate = _testDate.AddHours(1);
+        DateTime adjustDate = _testDate.AddHours(1);
 
         // Act
         reputation.AdjustReputation(10, "Helped a citizen", adjustDate);
@@ -111,13 +111,13 @@ public class FactionReputationTests
     public void AdjustReputation_WithNegativeDelta_DecreasesScore()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(0), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(0), _testDate)
         {
             FactionId = new FactionId("faction_006"),
             FactionName = "Test Faction",
             DateEstablished = _testDate
         };
-        var adjustDate = _testDate.AddHours(1);
+        DateTime adjustDate = _testDate.AddHours(1);
 
         // Act
         reputation.AdjustReputation(-15, "Attacked a guard", adjustDate);
@@ -131,13 +131,13 @@ public class FactionReputationTests
     public void AdjustReputation_WithZeroDelta_DoesNothing()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(25), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(25), _testDate)
         {
             FactionId = new FactionId("faction_007"),
             FactionName = "Test Faction",
             DateEstablished = _testDate
         };
-        var adjustDate = _testDate.AddHours(1);
+        DateTime adjustDate = _testDate.AddHours(1);
 
         // Act
         reputation.AdjustReputation(0, "No change", adjustDate);
@@ -152,7 +152,7 @@ public class FactionReputationTests
     public void AdjustReputation_MultipleTimes_AccumulatesChanges()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(0), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(0), _testDate)
         {
             FactionId = new FactionId("faction_008"),
             FactionName = "Test Faction",
@@ -172,7 +172,7 @@ public class FactionReputationTests
     public void AdjustReputation_AboveMaximum_ClampsToMaximum()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(90), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(90), _testDate)
         {
             FactionId = new FactionId("faction_009"),
             FactionName = "Test Faction",
@@ -190,7 +190,7 @@ public class FactionReputationTests
     public void AdjustReputation_BelowMinimum_ClampsToMinimum()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(-90), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(-90), _testDate)
         {
             FactionId = new FactionId("faction_010"),
             FactionName = "Test Faction",
@@ -212,20 +212,20 @@ public class FactionReputationTests
     public void AdjustReputation_AddsEntryToHistory()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(0), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(0), _testDate)
         {
             FactionId = new FactionId("faction_011"),
             FactionName = "Test Faction",
             DateEstablished = _testDate
         };
-        var adjustDate = _testDate.AddHours(1);
+        DateTime adjustDate = _testDate.AddHours(1);
 
         // Act
         reputation.AdjustReputation(10, "Helped citizen", adjustDate);
 
         // Assert
         Assert.That(reputation.History, Has.Count.EqualTo(1));
-        var entry = reputation.History[0];
+        ReputationChange entry = reputation.History[0];
         Assert.That(entry.Timestamp, Is.EqualTo(adjustDate));
         Assert.That(entry.Delta, Is.EqualTo(10));
         Assert.That(entry.OldScore.Value, Is.EqualTo(0));
@@ -237,7 +237,7 @@ public class FactionReputationTests
     public void AdjustReputation_MultipleChanges_AddsMultipleHistoryEntries()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(0), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(0), _testDate)
         {
             FactionId = new FactionId("faction_012"),
             FactionName = "Test Faction",
@@ -260,7 +260,7 @@ public class FactionReputationTests
     public void AdjustReputation_WithClamping_RecordsClampedValue()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(90), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(90), _testDate)
         {
             FactionId = new FactionId("faction_013"),
             FactionName = "Test Faction",
@@ -271,7 +271,7 @@ public class FactionReputationTests
         reputation.AdjustReputation(50, "Exceeds maximum", _testDate.AddHours(1));
 
         // Assert
-        var entry = reputation.History[0];
+        ReputationChange entry = reputation.History[0];
         Assert.That(entry.OldScore.Value, Is.EqualTo(90));
         Assert.That(entry.NewScore.Value, Is.EqualTo(100)); // Clamped
         Assert.That(entry.Delta, Is.EqualTo(50)); // Original delta preserved
@@ -281,7 +281,7 @@ public class FactionReputationTests
     public void History_IsReadOnly()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(0), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(0), _testDate)
         {
             FactionId = new FactionId("faction_014"),
             FactionName = "Test Faction",
@@ -300,7 +300,7 @@ public class FactionReputationTests
     public void GetStanding_WithExaltedScore_ReturnsExalted()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(75), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(75), _testDate)
         {
             FactionId = new FactionId("faction_015"),
             FactionName = "Test Faction",
@@ -318,7 +318,7 @@ public class FactionReputationTests
     public void GetStanding_WithReveredScore_ReturnsRevered()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(50), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(50), _testDate)
         {
             FactionId = new FactionId("faction_016"),
             FactionName = "Test Faction",
@@ -336,7 +336,7 @@ public class FactionReputationTests
     public void GetStanding_WithHonoredScore_ReturnsHonored()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(25), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(25), _testDate)
         {
             FactionId = new FactionId("faction_017"),
             FactionName = "Test Faction",
@@ -354,7 +354,7 @@ public class FactionReputationTests
     public void GetStanding_WithFriendlyScore_ReturnsFriendly()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(10), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(10), _testDate)
         {
             FactionId = new FactionId("faction_018"),
             FactionName = "Test Faction",
@@ -372,10 +372,10 @@ public class FactionReputationTests
     public void GetStanding_WithNeutralScore_ReturnsNeutral()
     {
         // Arrange & Act & Assert
-        var neutralScores = new[] { -9, -5, 0, 5, 9 };
-        foreach (var score in neutralScores)
+        int[] neutralScores = new[] { -9, -5, 0, 5, 9 };
+        foreach (int score in neutralScores)
         {
-            var reputation = new FactionReputation(new ReputationScore(score), _testDate)
+            FactionReputation reputation = new FactionReputation(new ReputationScore(score), _testDate)
             {
                 FactionId = new FactionId($"faction_neutral_{score}"),
                 FactionName = "Test Faction",
@@ -391,7 +391,7 @@ public class FactionReputationTests
     public void GetStanding_WithUnfriendlyScore_ReturnsUnfriendly()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(-10), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(-10), _testDate)
         {
             FactionId = new FactionId("faction_019"),
             FactionName = "Test Faction",
@@ -409,7 +409,7 @@ public class FactionReputationTests
     public void GetStanding_WithHostileScore_ReturnsHostile()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(-26), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(-26), _testDate)
         {
             FactionId = new FactionId("faction_020"),
             FactionName = "Test Faction",
@@ -427,7 +427,7 @@ public class FactionReputationTests
     public void GetStanding_WithHatedScore_ReturnsHated()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(-51), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(-51), _testDate)
         {
             FactionId = new FactionId("faction_021"),
             FactionName = "Test Faction",
@@ -445,7 +445,7 @@ public class FactionReputationTests
     public void GetStanding_WithNemesisScore_ReturnsNemesis()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(-75), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(-75), _testDate)
         {
             FactionId = new FactionId("faction_022"),
             FactionName = "Test Faction",
@@ -463,7 +463,7 @@ public class FactionReputationTests
     public void GetStanding_AtBoundaries_ReturnsCorrectStanding()
     {
         // Test boundary values for each standing
-        var testCases = new[]
+        (int, string)[] testCases = new[]
         {
             (75, "Exalted"),
             (50, "Revered"),
@@ -483,9 +483,9 @@ public class FactionReputationTests
             (-100, "Nemesis")
         };
 
-        foreach (var (score, expectedStanding) in testCases)
+        foreach ((int score, string expectedStanding) in testCases)
         {
-            var reputation = new FactionReputation(new ReputationScore(score), _testDate)
+            FactionReputation reputation = new FactionReputation(new ReputationScore(score), _testDate)
             {
                 FactionId = new FactionId($"faction_boundary_{score}"),
                 FactionName = "Test Faction",
@@ -505,7 +505,7 @@ public class FactionReputationTests
     public void IsAtLeast_WithScoreAboveThreshold_ReturnsTrue()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(50), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(50), _testDate)
         {
             FactionId = new FactionId("faction_023"),
             FactionName = "Test Faction",
@@ -522,7 +522,7 @@ public class FactionReputationTests
     public void IsAtLeast_WithScoreEqualToThreshold_ReturnsTrue()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(50), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(50), _testDate)
         {
             FactionId = new FactionId("faction_024"),
             FactionName = "Test Faction",
@@ -537,7 +537,7 @@ public class FactionReputationTests
     public void IsAtLeast_WithScoreBelowThreshold_ReturnsFalse()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(30), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(30), _testDate)
         {
             FactionId = new FactionId("faction_025"),
             FactionName = "Test Faction",
@@ -554,7 +554,7 @@ public class FactionReputationTests
     public void IsAtLeast_WithNegativeScores_WorksCorrectly()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(-30), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(-30), _testDate)
         {
             FactionId = new FactionId("faction_026"),
             FactionName = "Test Faction",
@@ -576,7 +576,7 @@ public class FactionReputationTests
     public void IsAtMost_WithScoreBelowThreshold_ReturnsTrue()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(30), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(30), _testDate)
         {
             FactionId = new FactionId("faction_027"),
             FactionName = "Test Faction",
@@ -593,7 +593,7 @@ public class FactionReputationTests
     public void IsAtMost_WithScoreEqualToThreshold_ReturnsTrue()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(50), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(50), _testDate)
         {
             FactionId = new FactionId("faction_028"),
             FactionName = "Test Faction",
@@ -608,7 +608,7 @@ public class FactionReputationTests
     public void IsAtMost_WithScoreAboveThreshold_ReturnsFalse()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(60), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(60), _testDate)
         {
             FactionId = new FactionId("faction_029"),
             FactionName = "Test Faction",
@@ -625,7 +625,7 @@ public class FactionReputationTests
     public void IsAtMost_WithNegativeScores_WorksCorrectly()
     {
         // Arrange
-        var reputation = new FactionReputation(new ReputationScore(-30), _testDate)
+        FactionReputation reputation = new FactionReputation(new ReputationScore(-30), _testDate)
         {
             FactionId = new FactionId("faction_030"),
             FactionName = "Test Faction",

@@ -13,7 +13,7 @@ public class LoreIdTests
         const string value = "lore_ancient_history";
 
         // Act
-        var loreId = new LoreId(value);
+        LoreId loreId = new LoreId(value);
 
         // Assert
         Assert.That(loreId.Value, Is.EqualTo(value));
@@ -23,7 +23,7 @@ public class LoreIdTests
     public void Constructor_WithNullValue_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new LoreId(null!));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new LoreId(null!));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("LoreId cannot be null or whitespace"));
     }
@@ -32,7 +32,7 @@ public class LoreIdTests
     public void Constructor_WithEmptyValue_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new LoreId(string.Empty));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new LoreId(string.Empty));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("LoreId cannot be null or whitespace"));
     }
@@ -41,7 +41,7 @@ public class LoreIdTests
     public void Constructor_WithWhitespace_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new LoreId("   "));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new LoreId("   "));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("LoreId cannot be null or whitespace"));
     }
@@ -50,10 +50,10 @@ public class LoreIdTests
     public void Constructor_WithValueExceedingMaxLength_ThrowsArgumentException()
     {
         // Arrange
-        var longValue = new string('a', 101);
+        string longValue = new string('a', 101);
 
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new LoreId(longValue));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new LoreId(longValue));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("LoreId cannot exceed 100 characters"));
     }
@@ -62,10 +62,10 @@ public class LoreIdTests
     public void Constructor_WithExactlyMaxLength_Succeeds()
     {
         // Arrange
-        var maxLengthValue = new string('a', 100);
+        string maxLengthValue = new string('a', 100);
 
         // Act
-        var loreId = new LoreId(maxLengthValue);
+        LoreId loreId = new LoreId(maxLengthValue);
 
         // Assert
         Assert.That(loreId.Value, Is.EqualTo(maxLengthValue));
@@ -77,8 +77,8 @@ public class LoreIdTests
     {
         // Arrange
         const string value = "lore_elven_legends";
-        var id1 = new LoreId(value);
-        var id2 = new LoreId(value);
+        LoreId id1 = new LoreId(value);
+        LoreId id2 = new LoreId(value);
 
         // Act & Assert
         Assert.That(id1, Is.EqualTo(id2));
@@ -89,8 +89,8 @@ public class LoreIdTests
     public void StructuralEquality_WithDifferentValue_AreNotEqual()
     {
         // Arrange
-        var id1 = new LoreId("lore_one");
-        var id2 = new LoreId("lore_two");
+        LoreId id1 = new LoreId("lore_one");
+        LoreId id2 = new LoreId("lore_two");
 
         // Act & Assert
         Assert.That(id1, Is.Not.EqualTo(id2));
@@ -101,7 +101,7 @@ public class LoreIdTests
     {
         // Arrange
         const string value = "lore_dragon_tales";
-        var loreId = new LoreId(value);
+        LoreId loreId = new LoreId(value);
 
         // Act
         string result = loreId;
@@ -117,7 +117,7 @@ public class LoreIdTests
         const string value = "lore_dwarven_forge";
 
         // Act
-        var loreId = (LoreId)value;
+        LoreId loreId = (LoreId)value;
 
         // Assert
         Assert.That(loreId.Value, Is.EqualTo(value));
@@ -135,10 +135,10 @@ public class LoreIdTests
     {
         // Arrange
         const string value = "lore_magic_theory";
-        var loreId = new LoreId(value);
+        LoreId loreId = new LoreId(value);
 
         // Act
-        var result = loreId.ToString();
+        string result = loreId.ToString();
 
         // Assert
         Assert.That(result, Is.EqualTo(value));
@@ -148,9 +148,9 @@ public class LoreIdTests
     public void CanBeUsedAsDictionaryKey()
     {
         // Arrange
-        var id1 = new LoreId("lore_one");
-        var id2 = new LoreId("lore_two");
-        var dict = new Dictionary<LoreId, string>
+        LoreId id1 = new LoreId("lore_one");
+        LoreId id2 = new LoreId("lore_two");
+        Dictionary<LoreId, string> dict = new Dictionary<LoreId, string>
         {
             [id1] = "Ancient History",
             [id2] = "Elven Legends"
@@ -166,11 +166,11 @@ public class LoreIdTests
     public void CanBeUsedInHashSet()
     {
         // Arrange
-        var id1 = new LoreId("lore_one");
-        var id2 = new LoreId("lore_two");
-        var id3 = new LoreId("lore_one"); // Duplicate
+        LoreId id1 = new LoreId("lore_one");
+        LoreId id2 = new LoreId("lore_two");
+        LoreId id3 = new LoreId("lore_one"); // Duplicate
 
-        var hashSet = new HashSet<LoreId> { id1, id2, id3 };
+        HashSet<LoreId> hashSet = new HashSet<LoreId> { id1, id2, id3 };
 
         // Act & Assert
         Assert.That(hashSet.Count, Is.EqualTo(2)); // id3 is duplicate of id1

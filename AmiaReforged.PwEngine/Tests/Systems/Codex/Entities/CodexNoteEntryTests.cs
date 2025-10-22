@@ -23,7 +23,7 @@ public class CodexNoteEntryTests
     public void Constructor_WithValidParameters_CreatesInstance()
     {
         // Arrange & Act
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "This is my note content",
             NoteCategory.General,
@@ -48,7 +48,7 @@ public class CodexNoteEntryTests
     public void Constructor_WithoutTitle_CreatesInstanceWithNullTitle()
     {
         // Arrange & Act
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content without title",
             NoteCategory.General,
@@ -65,7 +65,7 @@ public class CodexNoteEntryTests
     public void Constructor_AsDmNote_SetsDmNoteFlag()
     {
         // Arrange & Act
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "DM note content",
             NoteCategory.DmNote,
@@ -82,7 +82,7 @@ public class CodexNoteEntryTests
     public void Constructor_AsPrivateNote_SetsPrivateFlag()
     {
         // Arrange & Act
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Private note content",
             NoteCategory.General,
@@ -99,7 +99,7 @@ public class CodexNoteEntryTests
     public void Constructor_WithAllCategories_CreatesCorrectly()
     {
         // Arrange & Act & Assert
-        var categories = new[]
+        NoteCategory[] categories = new[]
         {
             NoteCategory.General,
             NoteCategory.Quest,
@@ -109,9 +109,9 @@ public class CodexNoteEntryTests
             NoteCategory.DmPrivate
         };
 
-        foreach (var category in categories)
+        foreach (NoteCategory category in categories)
         {
-            var note = new CodexNoteEntry(
+            CodexNoteEntry note = new CodexNoteEntry(
                 Guid.NewGuid(),
                 "Test content",
                 category,
@@ -132,7 +132,7 @@ public class CodexNoteEntryTests
     public void Constructor_WithEmptyContent_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new CodexNoteEntry(
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new CodexNoteEntry(
             _testId,
             "",
             NoteCategory.General,
@@ -149,7 +149,7 @@ public class CodexNoteEntryTests
     public void Constructor_WithWhitespaceContent_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new CodexNoteEntry(
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new CodexNoteEntry(
             _testId,
             "   ",
             NoteCategory.General,
@@ -165,7 +165,7 @@ public class CodexNoteEntryTests
     public void Constructor_WithNullContent_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new CodexNoteEntry(
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new CodexNoteEntry(
             _testId,
             null!,
             NoteCategory.General,
@@ -181,7 +181,7 @@ public class CodexNoteEntryTests
     public void Constructor_WithEmptyGuid_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new CodexNoteEntry(
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new CodexNoteEntry(
             Guid.Empty,
             "Valid content",
             NoteCategory.General,
@@ -202,7 +202,7 @@ public class CodexNoteEntryTests
     public void UpdateContent_WithValidContent_UpdatesContentAndTimestamp()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Original content",
             NoteCategory.General,
@@ -210,7 +210,7 @@ public class CodexNoteEntryTests
             false,
             false
         );
-        var modifiedDate = _testDate.AddHours(1);
+        DateTime modifiedDate = _testDate.AddHours(1);
 
         // Act
         note.UpdateContent("Updated content", modifiedDate);
@@ -224,7 +224,7 @@ public class CodexNoteEntryTests
     public void UpdateContent_MultipleTimes_UpdatesCorrectly()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Original content",
             NoteCategory.General,
@@ -247,7 +247,7 @@ public class CodexNoteEntryTests
     public void UpdateContent_WithEmptyContent_ThrowsArgumentException()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Original content",
             NoteCategory.General,
@@ -257,7 +257,7 @@ public class CodexNoteEntryTests
         );
 
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             note.UpdateContent("", _testDate.AddHours(1)));
 
         Assert.That(ex.Message, Does.Contain("Note content cannot be empty"));
@@ -268,7 +268,7 @@ public class CodexNoteEntryTests
     public void UpdateContent_WithWhitespaceContent_ThrowsArgumentException()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Original content",
             NoteCategory.General,
@@ -278,7 +278,7 @@ public class CodexNoteEntryTests
         );
 
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             note.UpdateContent("   ", _testDate.AddHours(1)));
 
         Assert.That(ex.Message, Does.Contain("Note content cannot be empty"));
@@ -288,7 +288,7 @@ public class CodexNoteEntryTests
     public void UpdateContent_WithNullContent_ThrowsArgumentException()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Original content",
             NoteCategory.General,
@@ -298,7 +298,7 @@ public class CodexNoteEntryTests
         );
 
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             note.UpdateContent(null!, _testDate.AddHours(1)));
 
         Assert.That(ex.Message, Does.Contain("Note content cannot be empty"));
@@ -308,7 +308,7 @@ public class CodexNoteEntryTests
     public void UpdateContent_DoesNotChangeOtherProperties()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Original content",
             NoteCategory.Quest,
@@ -337,7 +337,7 @@ public class CodexNoteEntryTests
     public void UpdateTitle_WithValidTitle_UpdatesTitleAndTimestamp()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -346,7 +346,7 @@ public class CodexNoteEntryTests
             false,
             "Original Title"
         );
-        var modifiedDate = _testDate.AddHours(1);
+        DateTime modifiedDate = _testDate.AddHours(1);
 
         // Act
         note.UpdateTitle("New Title", modifiedDate);
@@ -360,7 +360,7 @@ public class CodexNoteEntryTests
     public void UpdateTitle_WithNull_SetsTitleToNull()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -381,7 +381,7 @@ public class CodexNoteEntryTests
     public void UpdateTitle_FromNullToValue_SetsTitle()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -401,7 +401,7 @@ public class CodexNoteEntryTests
     public void UpdateTitle_UpdatesLastModified()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -409,7 +409,7 @@ public class CodexNoteEntryTests
             false,
             false
         );
-        var modifiedDate = _testDate.AddHours(2);
+        DateTime modifiedDate = _testDate.AddHours(2);
 
         // Act
         note.UpdateTitle("Title", modifiedDate);
@@ -426,7 +426,7 @@ public class CodexNoteEntryTests
     public void UpdateCategory_WithValidCategory_UpdatesCategoryAndTimestamp()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -434,7 +434,7 @@ public class CodexNoteEntryTests
             false,
             false
         );
-        var modifiedDate = _testDate.AddHours(1);
+        DateTime modifiedDate = _testDate.AddHours(1);
 
         // Act
         note.UpdateCategory(NoteCategory.Quest, modifiedDate);
@@ -448,7 +448,7 @@ public class CodexNoteEntryTests
     public void UpdateCategory_WithAllCategories_WorksCorrectly()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -457,7 +457,7 @@ public class CodexNoteEntryTests
             false
         );
 
-        var categories = new[]
+        NoteCategory[] categories = new[]
         {
             NoteCategory.Quest,
             NoteCategory.Character,
@@ -467,8 +467,8 @@ public class CodexNoteEntryTests
         };
 
         // Act & Assert
-        var modifiedDate = _testDate;
-        foreach (var category in categories)
+        DateTime modifiedDate = _testDate;
+        foreach (NoteCategory category in categories)
         {
             modifiedDate = modifiedDate.AddHours(1);
             note.UpdateCategory(category, modifiedDate);
@@ -480,7 +480,7 @@ public class CodexNoteEntryTests
     public void UpdateCategory_UpdatesLastModified()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -488,7 +488,7 @@ public class CodexNoteEntryTests
             false,
             false
         );
-        var modifiedDate = _testDate.AddHours(3);
+        DateTime modifiedDate = _testDate.AddHours(3);
 
         // Act
         note.UpdateCategory(NoteCategory.Location, modifiedDate);
@@ -505,7 +505,7 @@ public class CodexNoteEntryTests
     public void UpdatePrivacy_FromFalseToTrue_UpdatesPrivacyAndTimestamp()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -513,7 +513,7 @@ public class CodexNoteEntryTests
             false,
             false
         );
-        var modifiedDate = _testDate.AddHours(1);
+        DateTime modifiedDate = _testDate.AddHours(1);
 
         // Act
         note.UpdatePrivacy(true, modifiedDate);
@@ -527,7 +527,7 @@ public class CodexNoteEntryTests
     public void UpdatePrivacy_FromTrueToFalse_UpdatesPrivacyAndTimestamp()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -535,7 +535,7 @@ public class CodexNoteEntryTests
             false,
             true
         );
-        var modifiedDate = _testDate.AddHours(1);
+        DateTime modifiedDate = _testDate.AddHours(1);
 
         // Act
         note.UpdatePrivacy(false, modifiedDate);
@@ -549,7 +549,7 @@ public class CodexNoteEntryTests
     public void UpdatePrivacy_WithSameValue_StillUpdatesTimestamp()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -557,7 +557,7 @@ public class CodexNoteEntryTests
             false,
             true
         );
-        var modifiedDate = _testDate.AddHours(1);
+        DateTime modifiedDate = _testDate.AddHours(1);
 
         // Act
         note.UpdatePrivacy(true, modifiedDate);
@@ -575,7 +575,7 @@ public class CodexNoteEntryTests
     public void MatchesSearch_WithContentMatch_ReturnsTrue()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "This is a note about dragons and treasure",
             NoteCategory.General,
@@ -594,7 +594,7 @@ public class CodexNoteEntryTests
     public void MatchesSearch_WithTitleMatch_ReturnsTrue()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content here",
             NoteCategory.General,
@@ -614,7 +614,7 @@ public class CodexNoteEntryTests
     public void MatchesSearch_WithNoMatch_ReturnsFalse()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Simple content",
             NoteCategory.General,
@@ -633,7 +633,7 @@ public class CodexNoteEntryTests
     public void MatchesSearch_WithNullTitle_OnlyMatchesContent()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content with dragons",
             NoteCategory.General,
@@ -651,7 +651,7 @@ public class CodexNoteEntryTests
     public void MatchesSearch_WithEmptySearchTerm_ReturnsFalse()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -669,7 +669,7 @@ public class CodexNoteEntryTests
     public void MatchesSearch_WithNullSearchTerm_ReturnsFalse()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -686,7 +686,7 @@ public class CodexNoteEntryTests
     public void MatchesSearch_IsCaseInsensitive()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content with DRAGONS",
             NoteCategory.General,
@@ -711,7 +711,7 @@ public class CodexNoteEntryTests
     public void MatchesCategory_WithMatchingCategory_ReturnsTrue()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.Quest,
@@ -728,7 +728,7 @@ public class CodexNoteEntryTests
     public void MatchesCategory_WithDifferentCategory_ReturnsFalse()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -746,7 +746,7 @@ public class CodexNoteEntryTests
     public void MatchesCategory_WithAllCategories_WorksCorrectly()
     {
         // Arrange & Act & Assert
-        var categories = new[]
+        NoteCategory[] categories = new[]
         {
             NoteCategory.General,
             NoteCategory.Quest,
@@ -756,9 +756,9 @@ public class CodexNoteEntryTests
             NoteCategory.DmPrivate
         };
 
-        foreach (var category in categories)
+        foreach (NoteCategory category in categories)
         {
-            var note = new CodexNoteEntry(
+            CodexNoteEntry note = new CodexNoteEntry(
                 Guid.NewGuid(),
                 "Content",
                 category,
@@ -779,7 +779,7 @@ public class CodexNoteEntryTests
     public void LastModified_InitiallyEqualsDateCreated()
     {
         // Arrange & Act
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -796,7 +796,7 @@ public class CodexNoteEntryTests
     public void LastModified_UpdatesWithEachOperation()
     {
         // Arrange
-        var note = new CodexNoteEntry(
+        CodexNoteEntry note = new CodexNoteEntry(
             _testId,
             "Content",
             NoteCategory.General,
@@ -807,19 +807,19 @@ public class CodexNoteEntryTests
         );
 
         // Act & Assert
-        var time1 = _testDate.AddHours(1);
+        DateTime time1 = _testDate.AddHours(1);
         note.UpdateContent("New content", time1);
         Assert.That(note.LastModified, Is.EqualTo(time1));
 
-        var time2 = _testDate.AddHours(2);
+        DateTime time2 = _testDate.AddHours(2);
         note.UpdateTitle("New title", time2);
         Assert.That(note.LastModified, Is.EqualTo(time2));
 
-        var time3 = _testDate.AddHours(3);
+        DateTime time3 = _testDate.AddHours(3);
         note.UpdateCategory(NoteCategory.Quest, time3);
         Assert.That(note.LastModified, Is.EqualTo(time3));
 
-        var time4 = _testDate.AddHours(4);
+        DateTime time4 = _testDate.AddHours(4);
         note.UpdatePrivacy(true, time4);
         Assert.That(note.LastModified, Is.EqualTo(time4));
     }

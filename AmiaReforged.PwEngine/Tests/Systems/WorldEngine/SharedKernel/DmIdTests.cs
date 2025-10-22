@@ -10,10 +10,10 @@ public class DmIdTests
     public void From_WithValidGuid_CreatesDmId()
     {
         // Arrange
-        var guid = Guid.NewGuid();
+        Guid guid = Guid.NewGuid();
 
         // Act
-        var dmId = DmId.From(guid);
+        DmId dmId = DmId.From(guid);
 
         // Assert
         Assert.That(dmId.Value, Is.EqualTo(guid));
@@ -23,7 +23,7 @@ public class DmIdTests
     public void From_WithEmptyGuid_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => DmId.From(Guid.Empty));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => DmId.From(Guid.Empty));
         Assert.That(ex!.ParamName, Is.EqualTo("id"));
         Assert.That(ex.Message, Does.Contain("DmId cannot be empty"));
     }
@@ -35,8 +35,8 @@ public class DmIdTests
         const string cdKey = "ABCD1234";
 
         // Act
-        var dmId1 = DmId.FromCdKey(cdKey);
-        var dmId2 = DmId.FromCdKey(cdKey);
+        DmId dmId1 = DmId.FromCdKey(cdKey);
+        DmId dmId2 = DmId.FromCdKey(cdKey);
 
         // Assert
         Assert.That(dmId1, Is.EqualTo(dmId2), "Same CD key should produce same DmId");
@@ -51,8 +51,8 @@ public class DmIdTests
         const string cdKey2 = "WXYZ9876";
 
         // Act
-        var dmId1 = DmId.FromCdKey(cdKey1);
-        var dmId2 = DmId.FromCdKey(cdKey2);
+        DmId dmId1 = DmId.FromCdKey(cdKey1);
+        DmId dmId2 = DmId.FromCdKey(cdKey2);
 
         // Assert
         Assert.That(dmId1, Is.Not.EqualTo(dmId2));
@@ -67,9 +67,9 @@ public class DmIdTests
         const string cdKeyMixed = "AbCd1234";
 
         // Act
-        var dmId1 = DmId.FromCdKey(cdKeyLower);
-        var dmId2 = DmId.FromCdKey(cdKeyUpper);
-        var dmId3 = DmId.FromCdKey(cdKeyMixed);
+        DmId dmId1 = DmId.FromCdKey(cdKeyLower);
+        DmId dmId2 = DmId.FromCdKey(cdKeyUpper);
+        DmId dmId3 = DmId.FromCdKey(cdKeyMixed);
 
         // Assert
         Assert.That(dmId1, Is.EqualTo(dmId2));
@@ -84,8 +84,8 @@ public class DmIdTests
         const string cdKeyClean = "ABCD1234";
 
         // Act
-        var dmId1 = DmId.FromCdKey(cdKeyWithSpaces);
-        var dmId2 = DmId.FromCdKey(cdKeyClean);
+        DmId dmId1 = DmId.FromCdKey(cdKeyWithSpaces);
+        DmId dmId2 = DmId.FromCdKey(cdKeyClean);
 
         // Assert
         Assert.That(dmId1, Is.EqualTo(dmId2));
@@ -95,7 +95,7 @@ public class DmIdTests
     public void FromCdKey_WithNullKey_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => DmId.FromCdKey(null!));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => DmId.FromCdKey(null!));
         Assert.That(ex!.ParamName, Is.EqualTo("publicCdKey"));
         Assert.That(ex.Message, Does.Contain("cannot be null or whitespace"));
     }
@@ -104,7 +104,7 @@ public class DmIdTests
     public void FromCdKey_WithEmptyKey_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => DmId.FromCdKey(""));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => DmId.FromCdKey(""));
         Assert.That(ex!.ParamName, Is.EqualTo("publicCdKey"));
     }
 
@@ -112,7 +112,7 @@ public class DmIdTests
     public void FromCdKey_WithWhitespaceOnly_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => DmId.FromCdKey("   "));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => DmId.FromCdKey("   "));
         Assert.That(ex!.ParamName, Is.EqualTo("publicCdKey"));
     }
 
@@ -120,7 +120,7 @@ public class DmIdTests
     public void FromCdKey_WithTooShortKey_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => DmId.FromCdKey("ABC123"));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => DmId.FromCdKey("ABC123"));
         Assert.That(ex!.ParamName, Is.EqualTo("publicCdKey"));
         Assert.That(ex.Message, Does.Contain("must be exactly 8 characters"));
     }
@@ -129,7 +129,7 @@ public class DmIdTests
     public void FromCdKey_WithTooLongKey_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => DmId.FromCdKey("ABCD12345"));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => DmId.FromCdKey("ABCD12345"));
         Assert.That(ex!.ParamName, Is.EqualTo("publicCdKey"));
         Assert.That(ex.Message, Does.Contain("must be exactly 8 characters"));
     }
@@ -141,7 +141,7 @@ public class DmIdTests
         const string cdKey = "12345678";
 
         // Act
-        var dmId = DmId.FromCdKey(cdKey);
+        DmId dmId = DmId.FromCdKey(cdKey);
 
         // Assert
         Assert.That(dmId.Value, Is.Not.EqualTo(Guid.Empty));
@@ -151,9 +151,9 @@ public class DmIdTests
     public void StructuralEquality_WithSameValue_AreEqual()
     {
         // Arrange
-        var guid = Guid.NewGuid();
-        var dmId1 = DmId.From(guid);
-        var dmId2 = DmId.From(guid);
+        Guid guid = Guid.NewGuid();
+        DmId dmId1 = DmId.From(guid);
+        DmId dmId2 = DmId.From(guid);
 
         // Act & Assert
         Assert.That(dmId1, Is.EqualTo(dmId2));
@@ -164,8 +164,8 @@ public class DmIdTests
     public void StructuralEquality_WithDifferentValue_AreNotEqual()
     {
         // Arrange
-        var dmId1 = DmId.From(Guid.NewGuid());
-        var dmId2 = DmId.From(Guid.NewGuid());
+        DmId dmId1 = DmId.From(Guid.NewGuid());
+        DmId dmId2 = DmId.From(Guid.NewGuid());
 
         // Act & Assert
         Assert.That(dmId1, Is.Not.EqualTo(dmId2));
@@ -175,8 +175,8 @@ public class DmIdTests
     public void ImplicitConversionToGuid_ReturnsUnderlyingValue()
     {
         // Arrange
-        var guid = Guid.NewGuid();
-        var dmId = DmId.From(guid);
+        Guid guid = Guid.NewGuid();
+        DmId dmId = DmId.From(guid);
 
         // Act
         Guid result = dmId;
@@ -189,10 +189,10 @@ public class DmIdTests
     public void ExplicitConversionFromGuid_CreatesDmId()
     {
         // Arrange
-        var guid = Guid.NewGuid();
+        Guid guid = Guid.NewGuid();
 
         // Act
-        var dmId = (DmId)guid;
+        DmId dmId = (DmId)guid;
 
         // Assert
         Assert.That(dmId.Value, Is.EqualTo(guid));
@@ -209,7 +209,7 @@ public class DmIdTests
     public void ImplicitConversionToCharacterId_Works()
     {
         // Arrange
-        var dmId = DmId.FromCdKey("ABCD1234");
+        DmId dmId = DmId.FromCdKey("ABCD1234");
 
         // Act
         CharacterId characterId = dmId;
@@ -222,10 +222,10 @@ public class DmIdTests
     public void ExplicitConversionFromCharacterId_Works()
     {
         // Arrange
-        var characterId = CharacterId.New();
+        CharacterId characterId = CharacterId.New();
 
         // Act
-        var dmId = (DmId)characterId;
+        DmId dmId = (DmId)characterId;
 
         // Assert
         Assert.That(dmId.Value, Is.EqualTo(characterId.Value));
@@ -235,11 +235,11 @@ public class DmIdTests
     public void ToString_ReturnsGuidString()
     {
         // Arrange
-        var guid = Guid.NewGuid();
-        var dmId = DmId.From(guid);
+        Guid guid = Guid.NewGuid();
+        DmId dmId = DmId.From(guid);
 
         // Act
-        var result = dmId.ToString();
+        string result = dmId.ToString();
 
         // Assert
         Assert.That(result, Is.EqualTo(guid.ToString()));
@@ -249,9 +249,9 @@ public class DmIdTests
     public void CanBeUsedAsDictionaryKey()
     {
         // Arrange
-        var dmId1 = DmId.FromCdKey("ABCD1234");
-        var dmId2 = DmId.FromCdKey("WXYZ9876");
-        var dict = new Dictionary<DmId, string>
+        DmId dmId1 = DmId.FromCdKey("ABCD1234");
+        DmId dmId2 = DmId.FromCdKey("WXYZ9876");
+        Dictionary<DmId, string> dict = new Dictionary<DmId, string>
         {
             [dmId1] = "DM Alice",
             [dmId2] = "DM Bob"
@@ -267,10 +267,10 @@ public class DmIdTests
     public void CanBeUsedInHashSet()
     {
         // Arrange
-        var dmId1 = DmId.FromCdKey("ABCD1234");
-        var dmId2 = DmId.FromCdKey("ABCD1234"); // Same key
-        var dmId3 = DmId.FromCdKey("WXYZ9876");
-        var set = new HashSet<DmId> { dmId1, dmId2, dmId3 };
+        DmId dmId1 = DmId.FromCdKey("ABCD1234");
+        DmId dmId2 = DmId.FromCdKey("ABCD1234"); // Same key
+        DmId dmId3 = DmId.FromCdKey("WXYZ9876");
+        HashSet<DmId> set = new HashSet<DmId> { dmId1, dmId2, dmId3 };
 
         // Act & Assert
         Assert.That(set.Count, Is.EqualTo(2)); // dmId1 and dmId2 are equal
@@ -288,9 +288,9 @@ public class DmIdTests
         const string cdKey = "TESTKEY1";
 
         // Act - Simulate different "sessions"
-        var dmIdSession1 = DmId.FromCdKey(cdKey);
-        var dmIdSession2 = DmId.FromCdKey(cdKey);
-        var dmIdSession3 = DmId.FromCdKey(cdKey);
+        DmId dmIdSession1 = DmId.FromCdKey(cdKey);
+        DmId dmIdSession2 = DmId.FromCdKey(cdKey);
+        DmId dmIdSession3 = DmId.FromCdKey(cdKey);
 
         // Assert
         Assert.That(dmIdSession1, Is.EqualTo(dmIdSession2));
@@ -305,7 +305,7 @@ public class DmIdTests
         // with character codices in the system
 
         // Arrange
-        var dmId = DmId.FromCdKey("DMKEY001");
+        DmId dmId = DmId.FromCdKey("DMKEY001");
 
         // Act - Implicit conversion to CharacterId
         CharacterId characterId = dmId;
@@ -314,7 +314,7 @@ public class DmIdTests
         Assert.That(characterId.Value, Is.EqualTo(dmId.Value));
 
         // Can be used in methods expecting CharacterId
-        var dict = new Dictionary<CharacterId, string>
+        Dictionary<CharacterId, string> dict = new Dictionary<CharacterId, string>
         {
             [characterId] = "DM Codex"
         };

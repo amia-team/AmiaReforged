@@ -26,7 +26,7 @@ public class CodexQueryService
     /// </summary>
     public async Task<IReadOnlyList<CodexQuestEntry>> GetAllQuestsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.Quests.ToList() ?? new List<CodexQuestEntry>();
     }
 
@@ -38,7 +38,7 @@ public class CodexQueryService
         QuestState state,
         CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.GetQuestsByState(state).ToList() ?? new List<CodexQuestEntry>();
     }
 
@@ -50,7 +50,7 @@ public class CodexQueryService
         string searchTerm,
         CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.SearchQuests(searchTerm).ToList() ?? new List<CodexQuestEntry>();
     }
 
@@ -63,7 +63,7 @@ public class CodexQueryService
     /// </summary>
     public async Task<IReadOnlyList<CodexLoreEntry>> GetAllLoreAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.Lore.ToList() ?? new List<CodexLoreEntry>();
     }
 
@@ -75,7 +75,7 @@ public class CodexQueryService
         LoreTier tier,
         CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.GetLoreByTier(tier).ToList() ?? new List<CodexLoreEntry>();
     }
 
@@ -87,7 +87,7 @@ public class CodexQueryService
         string searchTerm,
         CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.SearchLore(searchTerm).ToList() ?? new List<CodexLoreEntry>();
     }
 
@@ -100,7 +100,7 @@ public class CodexQueryService
     /// </summary>
     public async Task<IReadOnlyList<CodexNoteEntry>> GetAllNotesAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.Notes.ToList() ?? new List<CodexNoteEntry>();
     }
 
@@ -112,7 +112,7 @@ public class CodexQueryService
         NoteCategory category,
         CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.GetNotesByCategory(category).ToList() ?? new List<CodexNoteEntry>();
     }
 
@@ -124,7 +124,7 @@ public class CodexQueryService
         string searchTerm,
         CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.SearchNotes(searchTerm).ToList() ?? new List<CodexNoteEntry>();
     }
 
@@ -137,7 +137,7 @@ public class CodexQueryService
     /// </summary>
     public async Task<IReadOnlyList<FactionReputation>> GetAllReputationsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.Reputations.ToList() ?? new List<FactionReputation>();
     }
 
@@ -149,7 +149,7 @@ public class CodexQueryService
         FactionId factionId,
         CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.GetReputation(factionId);
     }
 
@@ -162,7 +162,7 @@ public class CodexQueryService
     /// </summary>
     public async Task<CodexStatistics> GetStatisticsAsync(CharacterId characterId, CancellationToken cancellationToken = default)
     {
-        var codex = await _repository.LoadAsync(characterId, cancellationToken);
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
 
         if (codex == null)
         {

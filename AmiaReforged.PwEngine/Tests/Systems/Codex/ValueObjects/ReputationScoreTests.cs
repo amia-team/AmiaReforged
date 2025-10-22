@@ -13,7 +13,7 @@ public class ReputationScoreTests
         const int value = 50;
 
         // Act
-        var score = new ReputationScore(value);
+        ReputationScore score = new ReputationScore(value);
 
         // Assert
         Assert.That(score.Value, Is.EqualTo(value));
@@ -23,7 +23,7 @@ public class ReputationScoreTests
     public void Constructor_WithMinimumValue_CreatesReputationScore()
     {
         // Act
-        var score = new ReputationScore(ReputationScore.MinReputation);
+        ReputationScore score = new ReputationScore(ReputationScore.MinReputation);
 
         // Assert
         Assert.That(score.Value, Is.EqualTo(-100));
@@ -33,7 +33,7 @@ public class ReputationScoreTests
     public void Constructor_WithMaximumValue_CreatesReputationScore()
     {
         // Act
-        var score = new ReputationScore(ReputationScore.MaxReputation);
+        ReputationScore score = new ReputationScore(ReputationScore.MaxReputation);
 
         // Assert
         Assert.That(score.Value, Is.EqualTo(100));
@@ -43,7 +43,7 @@ public class ReputationScoreTests
     public void Constructor_WithNeutralValue_CreatesReputationScore()
     {
         // Act
-        var score = new ReputationScore(ReputationScore.Neutral);
+        ReputationScore score = new ReputationScore(ReputationScore.Neutral);
 
         // Assert
         Assert.That(score.Value, Is.EqualTo(0));
@@ -53,7 +53,7 @@ public class ReputationScoreTests
     public void Constructor_WithValueBelowMinimum_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new ReputationScore(-101));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new ReputationScore(-101));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("Reputation must be between -100 and 100"));
         Assert.That(ex.Message, Does.Contain("got -101"));
@@ -63,7 +63,7 @@ public class ReputationScoreTests
     public void Constructor_WithValueAboveMaximum_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new ReputationScore(101));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new ReputationScore(101));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("Reputation must be between -100 and 100"));
         Assert.That(ex.Message, Does.Contain("got 101"));
@@ -73,7 +73,7 @@ public class ReputationScoreTests
     public void CreateNeutral_ReturnsNeutralScore()
     {
         // Act
-        var score = ReputationScore.CreateNeutral();
+        ReputationScore score = ReputationScore.CreateNeutral();
 
         // Assert
         Assert.That(score.Value, Is.EqualTo(0));
@@ -83,10 +83,10 @@ public class ReputationScoreTests
     public void Add_WithPositiveDelta_IncreasesScore()
     {
         // Arrange
-        var score = new ReputationScore(50);
+        ReputationScore score = new ReputationScore(50);
 
         // Act
-        var newScore = score.Add(20);
+        ReputationScore newScore = score.Add(20);
 
         // Assert
         Assert.That(newScore.Value, Is.EqualTo(70));
@@ -96,10 +96,10 @@ public class ReputationScoreTests
     public void Add_WithNegativeDelta_DecreasesScore()
     {
         // Arrange
-        var score = new ReputationScore(50);
+        ReputationScore score = new ReputationScore(50);
 
         // Act
-        var newScore = score.Add(-30);
+        ReputationScore newScore = score.Add(-30);
 
         // Assert
         Assert.That(newScore.Value, Is.EqualTo(20));
@@ -109,10 +109,10 @@ public class ReputationScoreTests
     public void Add_WithZeroDelta_ReturnsUnchangedScore()
     {
         // Arrange
-        var score = new ReputationScore(50);
+        ReputationScore score = new ReputationScore(50);
 
         // Act
-        var newScore = score.Add(0);
+        ReputationScore newScore = score.Add(0);
 
         // Assert
         Assert.That(newScore.Value, Is.EqualTo(50));
@@ -122,10 +122,10 @@ public class ReputationScoreTests
     public void Add_WhenResultExceedsMaximum_ClampsToMaximum()
     {
         // Arrange
-        var score = new ReputationScore(90);
+        ReputationScore score = new ReputationScore(90);
 
         // Act
-        var newScore = score.Add(50); // Would be 140 without clamping
+        ReputationScore newScore = score.Add(50); // Would be 140 without clamping
 
         // Assert
         Assert.That(newScore.Value, Is.EqualTo(100));
@@ -135,10 +135,10 @@ public class ReputationScoreTests
     public void Add_WhenResultBelowMinimum_ClampsToMinimum()
     {
         // Arrange
-        var score = new ReputationScore(-90);
+        ReputationScore score = new ReputationScore(-90);
 
         // Act
-        var newScore = score.Add(-50); // Would be -140 without clamping
+        ReputationScore newScore = score.Add(-50); // Would be -140 without clamping
 
         // Assert
         Assert.That(newScore.Value, Is.EqualTo(-100));
@@ -148,10 +148,10 @@ public class ReputationScoreTests
     public void Add_AtMaximum_StaysAtMaximum()
     {
         // Arrange
-        var score = new ReputationScore(100);
+        ReputationScore score = new ReputationScore(100);
 
         // Act
-        var newScore = score.Add(10);
+        ReputationScore newScore = score.Add(10);
 
         // Assert
         Assert.That(newScore.Value, Is.EqualTo(100));
@@ -161,10 +161,10 @@ public class ReputationScoreTests
     public void Add_AtMinimum_StaysAtMinimum()
     {
         // Arrange
-        var score = new ReputationScore(-100);
+        ReputationScore score = new ReputationScore(-100);
 
         // Act
-        var newScore = score.Add(-10);
+        ReputationScore newScore = score.Add(-10);
 
         // Assert
         Assert.That(newScore.Value, Is.EqualTo(-100));
@@ -174,10 +174,10 @@ public class ReputationScoreTests
     public void Add_DoesNotModifyOriginalScore()
     {
         // Arrange
-        var score = new ReputationScore(50);
+        ReputationScore score = new ReputationScore(50);
 
         // Act
-        var newScore = score.Add(20);
+        ReputationScore newScore = score.Add(20);
 
         // Assert
         Assert.That(score.Value, Is.EqualTo(50)); // Original unchanged
@@ -188,10 +188,10 @@ public class ReputationScoreTests
     public void Add_CanChainMultipleCalls()
     {
         // Arrange
-        var score = new ReputationScore(0);
+        ReputationScore score = new ReputationScore(0);
 
         // Act
-        var newScore = score.Add(10).Add(20).Add(-5);
+        ReputationScore newScore = score.Add(10).Add(20).Add(-5);
 
         // Assert
         Assert.That(newScore.Value, Is.EqualTo(25));
@@ -201,8 +201,8 @@ public class ReputationScoreTests
     public void StructuralEquality_WithSameValue_AreEqual()
     {
         // Arrange
-        var score1 = new ReputationScore(50);
-        var score2 = new ReputationScore(50);
+        ReputationScore score1 = new ReputationScore(50);
+        ReputationScore score2 = new ReputationScore(50);
 
         // Act & Assert
         Assert.That(score1, Is.EqualTo(score2));
@@ -213,8 +213,8 @@ public class ReputationScoreTests
     public void StructuralEquality_WithDifferentValue_AreNotEqual()
     {
         // Arrange
-        var score1 = new ReputationScore(50);
-        var score2 = new ReputationScore(60);
+        ReputationScore score1 = new ReputationScore(50);
+        ReputationScore score2 = new ReputationScore(60);
 
         // Act & Assert
         Assert.That(score1, Is.Not.EqualTo(score2));
@@ -224,7 +224,7 @@ public class ReputationScoreTests
     public void ImplicitConversionToInt_ReturnsUnderlyingValue()
     {
         // Arrange
-        var score = new ReputationScore(75);
+        ReputationScore score = new ReputationScore(75);
 
         // Act
         int result = score;
@@ -240,7 +240,7 @@ public class ReputationScoreTests
         const int value = 80;
 
         // Act
-        var score = (ReputationScore)value;
+        ReputationScore score = (ReputationScore)value;
 
         // Assert
         Assert.That(score.Value, Is.EqualTo(80));
@@ -257,10 +257,10 @@ public class ReputationScoreTests
     public void ToString_ReturnsValue()
     {
         // Arrange
-        var score = new ReputationScore(42);
+        ReputationScore score = new ReputationScore(42);
 
         // Act
-        var result = score.ToString();
+        string result = score.ToString();
 
         // Assert
         Assert.That(result, Is.EqualTo("42"));
@@ -270,10 +270,10 @@ public class ReputationScoreTests
     public void ToString_WithNegativeValue_ReturnsNegativeString()
     {
         // Arrange
-        var score = new ReputationScore(-42);
+        ReputationScore score = new ReputationScore(-42);
 
         // Act
-        var result = score.ToString();
+        string result = score.ToString();
 
         // Assert
         Assert.That(result, Is.EqualTo("-42"));
@@ -283,9 +283,9 @@ public class ReputationScoreTests
     public void CanBeUsedAsDictionaryKey()
     {
         // Arrange
-        var score1 = new ReputationScore(50);
-        var score2 = new ReputationScore(75);
-        var dict = new Dictionary<ReputationScore, string>
+        ReputationScore score1 = new ReputationScore(50);
+        ReputationScore score2 = new ReputationScore(75);
+        Dictionary<ReputationScore, string> dict = new Dictionary<ReputationScore, string>
         {
             [score1] = "Neutral",
             [score2] = "Friendly"
@@ -301,11 +301,11 @@ public class ReputationScoreTests
     public void CanBeUsedInHashSet()
     {
         // Arrange
-        var score1 = new ReputationScore(50);
-        var score2 = new ReputationScore(75);
-        var score3 = new ReputationScore(50); // Duplicate
+        ReputationScore score1 = new ReputationScore(50);
+        ReputationScore score2 = new ReputationScore(75);
+        ReputationScore score3 = new ReputationScore(50); // Duplicate
 
-        var hashSet = new HashSet<ReputationScore> { score1, score2, score3 };
+        HashSet<ReputationScore> hashSet = new HashSet<ReputationScore> { score1, score2, score3 };
 
         // Act & Assert
         Assert.That(hashSet.Count, Is.EqualTo(2)); // score3 is duplicate of score1

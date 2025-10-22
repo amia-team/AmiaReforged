@@ -354,7 +354,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void SetIfChanged(NuiBind<string> bind, string value)
     {
         string key = bind.Key;
-        if (_scalarCache.TryGetValue(key, out var old) && old is string s && s == value) return;
+        if (_scalarCache.TryGetValue(key, out object? old) && old is string s && s == value) return;
         _scalarCache[key] = value;
         Token().SetBindValue(bind, value);
     }
@@ -367,7 +367,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void SetIfChanged(NuiBind<bool> bind, bool value)
     {
         string key = bind.Key;
-        if (_scalarCache.TryGetValue(key, out var old) && old is bool b && b == value) return;
+        if (_scalarCache.TryGetValue(key, out object? old) && old is bool b && b == value) return;
         _scalarCache[key] = value;
         Token().SetBindValue(bind, value);
     }
@@ -380,7 +380,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void SetIfChanged(NuiBind<Color> bind, Color value)
     {
         string key = bind.Key;
-        if (_scalarCache.TryGetValue(key, out var old) && old is Color c && c.Equals(value)) return;
+        if (_scalarCache.TryGetValue(key, out object? old) && old is Color c && c.Equals(value)) return;
         _scalarCache[key] = value;
         Token().SetBindValue(bind, value);
     }
@@ -394,7 +394,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void SetIfChanged(NuiBind<int> bind, int value)
     {
         string key = bind.Key;
-        if (_scalarCache.TryGetValue(key, out var old) && old is int i && i == value) return;
+        if (_scalarCache.TryGetValue(key, out object? old) && old is int i && i == value) return;
         _scalarCache[key] = value;
         Token().SetBindValue(bind, value);
     }
@@ -407,7 +407,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void SetListIfChanged(NuiBind<string> bind, List<string> values)
     {
         string key = bind.Key;
-        if (_stringListCache.TryGetValue(key, out var old) && old.Count == values.Count)
+        if (_stringListCache.TryGetValue(key, out List<string>? old) && old.Count == values.Count)
         {
             bool same = true;
             for (int i = 0; i < values.Count; i++)
@@ -435,7 +435,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void SetListIfChanged(NuiBind<bool> bind, List<bool> values)
     {
         string key = bind.Key;
-        if (_boolListCache.TryGetValue(key, out var old) && old.Count == values.Count)
+        if (_boolListCache.TryGetValue(key, out List<bool>? old) && old.Count == values.Count)
         {
             bool same = true;
             for (int i = 0; i < values.Count; i++)
@@ -462,7 +462,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     private void SetListIfChanged(NuiBind<Color> bind, List<Color> values)
     {
         string key = bind.Key;
-        if (_colorListCache.TryGetValue(key, out var old) && old.Count == values.Count)
+        if (_colorListCache.TryGetValue(key, out List<Color>? old) && old.Count == values.Count)
         {
             bool same = true;
             for (int i = 0; i < values.Count; i++)
@@ -572,7 +572,7 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// </summary>
     private void UpdateChangeListBindings()
     {
-        var changes = Model.ChangeListModel.ChangeList();
+        List<ChangeListModel.ChangelistEntry> changes = Model.ChangeListModel.ChangeList();
 
         SetIfChanged(View.ChangelistView.ChangeCount, changes.Count);
 

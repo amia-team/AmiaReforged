@@ -13,7 +13,7 @@ public class IndustryTagTests
         const string value = "blacksmithing";
 
         // Act
-        var tag = new IndustryTag(value);
+        IndustryTag tag = new IndustryTag(value);
 
         // Assert
         Assert.That(tag.Value, Is.EqualTo(value));
@@ -23,7 +23,7 @@ public class IndustryTagTests
     public void Constructor_WithNullString_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new IndustryTag(null!));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new IndustryTag(null!));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("IndustryTag cannot be null or whitespace"));
     }
@@ -32,7 +32,7 @@ public class IndustryTagTests
     public void Constructor_WithEmptyString_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new IndustryTag(""));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new IndustryTag(""));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
     }
 
@@ -40,7 +40,7 @@ public class IndustryTagTests
     public void Constructor_WithWhitespace_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new IndustryTag("   "));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new IndustryTag("   "));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
     }
 
@@ -48,10 +48,10 @@ public class IndustryTagTests
     public void Constructor_WithStringExceeding50Characters_ThrowsArgumentException()
     {
         // Arrange
-        var longString = new string('a', 51);
+        string longString = new string('a', 51);
 
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new IndustryTag(longString));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new IndustryTag(longString));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("cannot exceed 50 characters"));
     }
@@ -60,10 +60,10 @@ public class IndustryTagTests
     public void Constructor_WithExactly50Characters_Succeeds()
     {
         // Arrange
-        var string50 = new string('a', 50);
+        string string50 = new string('a', 50);
 
         // Act
-        var tag = new IndustryTag(string50);
+        IndustryTag tag = new IndustryTag(string50);
 
         // Assert
         Assert.That(tag.Value, Is.EqualTo(string50));
@@ -73,8 +73,8 @@ public class IndustryTagTests
     public void StructuralEquality_WithSameValue_AreEqual()
     {
         // Arrange
-        var tag1 = new IndustryTag("blacksmithing");
-        var tag2 = new IndustryTag("blacksmithing");
+        IndustryTag tag1 = new IndustryTag("blacksmithing");
+        IndustryTag tag2 = new IndustryTag("blacksmithing");
 
         // Act & Assert
         Assert.That(tag1, Is.EqualTo(tag2));
@@ -85,8 +85,8 @@ public class IndustryTagTests
     public void StructuralEquality_WithDifferentValue_AreNotEqual()
     {
         // Arrange
-        var tag1 = new IndustryTag("blacksmithing");
-        var tag2 = new IndustryTag("alchemy");
+        IndustryTag tag1 = new IndustryTag("blacksmithing");
+        IndustryTag tag2 = new IndustryTag("alchemy");
 
         // Act & Assert
         Assert.That(tag1, Is.Not.EqualTo(tag2));
@@ -96,7 +96,7 @@ public class IndustryTagTests
     public void ImplicitConversionToString_ReturnsUnderlyingValue()
     {
         // Arrange
-        var tag = new IndustryTag("blacksmithing");
+        IndustryTag tag = new IndustryTag("blacksmithing");
 
         // Act
         string result = tag;
@@ -112,7 +112,7 @@ public class IndustryTagTests
         const string value = "blacksmithing";
 
         // Act
-        var tag = (IndustryTag)value;
+        IndustryTag tag = (IndustryTag)value;
 
         // Assert
         Assert.That(tag.Value, Is.EqualTo(value));
@@ -129,10 +129,10 @@ public class IndustryTagTests
     public void ToString_ReturnsValue()
     {
         // Arrange
-        var tag = new IndustryTag("blacksmithing");
+        IndustryTag tag = new IndustryTag("blacksmithing");
 
         // Act
-        var result = tag.ToString();
+        string result = tag.ToString();
 
         // Assert
         Assert.That(result, Is.EqualTo("blacksmithing"));
@@ -142,9 +142,9 @@ public class IndustryTagTests
     public void CanBeUsedAsDictionaryKey()
     {
         // Arrange
-        var tag1 = new IndustryTag("blacksmithing");
-        var tag2 = new IndustryTag("alchemy");
-        var dict = new Dictionary<IndustryTag, int>
+        IndustryTag tag1 = new IndustryTag("blacksmithing");
+        IndustryTag tag2 = new IndustryTag("alchemy");
+        Dictionary<IndustryTag, int> dict = new Dictionary<IndustryTag, int>
         {
             [tag1] = 10,
             [tag2] = 5
@@ -160,10 +160,10 @@ public class IndustryTagTests
     public void CanBeUsedInHashSet()
     {
         // Arrange
-        var tag1 = new IndustryTag("blacksmithing");
-        var tag2 = new IndustryTag("blacksmithing");
-        var tag3 = new IndustryTag("alchemy");
-        var set = new HashSet<IndustryTag> { tag1, tag2, tag3 };
+        IndustryTag tag1 = new IndustryTag("blacksmithing");
+        IndustryTag tag2 = new IndustryTag("blacksmithing");
+        IndustryTag tag3 = new IndustryTag("alchemy");
+        HashSet<IndustryTag> set = new HashSet<IndustryTag> { tag1, tag2, tag3 };
 
         // Act & Assert
         Assert.That(set.Count, Is.EqualTo(2)); // tag1 and tag2 are equal

@@ -13,7 +13,7 @@ public class TraitTagTests
         const string value = "brave";
 
         // Act
-        var tag = new TraitTag(value);
+        TraitTag tag = new TraitTag(value);
 
         // Assert
         Assert.That(tag.Value, Is.EqualTo(value));
@@ -23,7 +23,7 @@ public class TraitTagTests
     public void Constructor_WithNullString_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new TraitTag(null!));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new TraitTag(null!));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("TraitTag cannot be null or whitespace"));
     }
@@ -32,7 +32,7 @@ public class TraitTagTests
     public void Constructor_WithEmptyString_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new TraitTag(""));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new TraitTag(""));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
     }
 
@@ -40,7 +40,7 @@ public class TraitTagTests
     public void Constructor_WithWhitespace_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new TraitTag("   "));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new TraitTag("   "));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
     }
 
@@ -48,10 +48,10 @@ public class TraitTagTests
     public void Constructor_WithStringExceeding50Characters_ThrowsArgumentException()
     {
         // Arrange
-        var longString = new string('a', 51);
+        string longString = new string('a', 51);
 
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new TraitTag(longString));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new TraitTag(longString));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("cannot exceed 50 characters"));
     }
@@ -60,10 +60,10 @@ public class TraitTagTests
     public void Constructor_WithExactly50Characters_Succeeds()
     {
         // Arrange
-        var string50 = new string('a', 50);
+        string string50 = new string('a', 50);
 
         // Act
-        var tag = new TraitTag(string50);
+        TraitTag tag = new TraitTag(string50);
 
         // Assert
         Assert.That(tag.Value, Is.EqualTo(string50));
@@ -73,8 +73,8 @@ public class TraitTagTests
     public void StructuralEquality_WithSameValue_AreEqual()
     {
         // Arrange
-        var tag1 = new TraitTag("brave");
-        var tag2 = new TraitTag("brave");
+        TraitTag tag1 = new TraitTag("brave");
+        TraitTag tag2 = new TraitTag("brave");
 
         // Act & Assert
         Assert.That(tag1, Is.EqualTo(tag2));
@@ -85,8 +85,8 @@ public class TraitTagTests
     public void StructuralEquality_WithDifferentValue_AreNotEqual()
     {
         // Arrange
-        var tag1 = new TraitTag("brave");
-        var tag2 = new TraitTag("cowardly");
+        TraitTag tag1 = new TraitTag("brave");
+        TraitTag tag2 = new TraitTag("cowardly");
 
         // Act & Assert
         Assert.That(tag1, Is.Not.EqualTo(tag2));
@@ -96,7 +96,7 @@ public class TraitTagTests
     public void ImplicitConversionToString_ReturnsUnderlyingValue()
     {
         // Arrange
-        var tag = new TraitTag("brave");
+        TraitTag tag = new TraitTag("brave");
 
         // Act
         string result = tag;
@@ -112,7 +112,7 @@ public class TraitTagTests
         const string value = "brave";
 
         // Act
-        var tag = (TraitTag)value;
+        TraitTag tag = (TraitTag)value;
 
         // Assert
         Assert.That(tag.Value, Is.EqualTo(value));
@@ -129,10 +129,10 @@ public class TraitTagTests
     public void ToString_ReturnsValue()
     {
         // Arrange
-        var tag = new TraitTag("brave");
+        TraitTag tag = new TraitTag("brave");
 
         // Act
-        var result = tag.ToString();
+        string result = tag.ToString();
 
         // Assert
         Assert.That(result, Is.EqualTo("brave"));
@@ -142,9 +142,9 @@ public class TraitTagTests
     public void CanBeUsedAsDictionaryKey()
     {
         // Arrange
-        var tag1 = new TraitTag("brave");
-        var tag2 = new TraitTag("cowardly");
-        var dict = new Dictionary<TraitTag, int>
+        TraitTag tag1 = new TraitTag("brave");
+        TraitTag tag2 = new TraitTag("cowardly");
+        Dictionary<TraitTag, int> dict = new Dictionary<TraitTag, int>
         {
             [tag1] = 1,
             [tag2] = -1
@@ -160,10 +160,10 @@ public class TraitTagTests
     public void CanBeUsedInHashSet()
     {
         // Arrange
-        var tag1 = new TraitTag("brave");
-        var tag2 = new TraitTag("brave");
-        var tag3 = new TraitTag("cowardly");
-        var set = new HashSet<TraitTag> { tag1, tag2, tag3 };
+        TraitTag tag1 = new TraitTag("brave");
+        TraitTag tag2 = new TraitTag("brave");
+        TraitTag tag3 = new TraitTag("cowardly");
+        HashSet<TraitTag> set = new HashSet<TraitTag> { tag1, tag2, tag3 };
 
         // Act & Assert
         Assert.That(set.Count, Is.EqualTo(2)); // tag1 and tag2 are equal

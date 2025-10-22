@@ -117,7 +117,7 @@ public class CodexNoteEntry
         if (string.IsNullOrWhiteSpace(searchTerm))
             return false;
 
-        var lowerSearch = searchTerm.ToLowerInvariant();
+        string lowerSearch = searchTerm.ToLowerInvariant();
 
         return Content.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ||
                (Title?.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ?? false);

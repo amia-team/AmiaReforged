@@ -10,10 +10,10 @@ public class CharacterIdTests
     public void From_WithValidGuid_CreatesCharacterId()
     {
         // Arrange
-        var guid = Guid.NewGuid();
+        Guid guid = Guid.NewGuid();
 
         // Act
-        var characterId = CharacterId.From(guid);
+        CharacterId characterId = CharacterId.From(guid);
 
         // Assert
         Assert.That(characterId.Value, Is.EqualTo(guid));
@@ -23,7 +23,7 @@ public class CharacterIdTests
     public void From_WithEmptyGuid_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => CharacterId.From(Guid.Empty));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => CharacterId.From(Guid.Empty));
         Assert.That(ex!.ParamName, Is.EqualTo("id"));
         Assert.That(ex.Message, Does.Contain("CharacterId cannot be empty"));
     }
@@ -32,8 +32,8 @@ public class CharacterIdTests
     public void New_CreatesUniqueCharacterId()
     {
         // Act
-        var id1 = CharacterId.New();
-        var id2 = CharacterId.New();
+        CharacterId id1 = CharacterId.New();
+        CharacterId id2 = CharacterId.New();
 
         // Assert
         Assert.That(id1.Value, Is.Not.EqualTo(Guid.Empty));
@@ -45,9 +45,9 @@ public class CharacterIdTests
     public void StructuralEquality_WithSameValue_AreEqual()
     {
         // Arrange
-        var guid = Guid.NewGuid();
-        var id1 = CharacterId.From(guid);
-        var id2 = CharacterId.From(guid);
+        Guid guid = Guid.NewGuid();
+        CharacterId id1 = CharacterId.From(guid);
+        CharacterId id2 = CharacterId.From(guid);
 
         // Act & Assert
         Assert.That(id1, Is.EqualTo(id2));
@@ -58,8 +58,8 @@ public class CharacterIdTests
     public void StructuralEquality_WithDifferentValue_AreNotEqual()
     {
         // Arrange
-        var id1 = CharacterId.New();
-        var id2 = CharacterId.New();
+        CharacterId id1 = CharacterId.New();
+        CharacterId id2 = CharacterId.New();
 
         // Act & Assert
         Assert.That(id1, Is.Not.EqualTo(id2));
@@ -69,8 +69,8 @@ public class CharacterIdTests
     public void ImplicitConversionToGuid_ReturnsUnderlyingValue()
     {
         // Arrange
-        var guid = Guid.NewGuid();
-        var characterId = CharacterId.From(guid);
+        Guid guid = Guid.NewGuid();
+        CharacterId characterId = CharacterId.From(guid);
 
         // Act
         Guid result = characterId;
@@ -83,10 +83,10 @@ public class CharacterIdTests
     public void ExplicitConversionFromGuid_CreatesCharacterId()
     {
         // Arrange
-        var guid = Guid.NewGuid();
+        Guid guid = Guid.NewGuid();
 
         // Act
-        var characterId = (CharacterId)guid;
+        CharacterId characterId = (CharacterId)guid;
 
         // Assert
         Assert.That(characterId.Value, Is.EqualTo(guid));
@@ -103,11 +103,11 @@ public class CharacterIdTests
     public void ToString_ReturnsGuidString()
     {
         // Arrange
-        var guid = Guid.NewGuid();
-        var characterId = CharacterId.From(guid);
+        Guid guid = Guid.NewGuid();
+        CharacterId characterId = CharacterId.From(guid);
 
         // Act
-        var result = characterId.ToString();
+        string result = characterId.ToString();
 
         // Assert
         Assert.That(result, Is.EqualTo(guid.ToString()));
@@ -117,9 +117,9 @@ public class CharacterIdTests
     public void CanBeUsedAsDictionaryKey()
     {
         // Arrange
-        var id1 = CharacterId.New();
-        var id2 = CharacterId.New();
-        var dict = new Dictionary<CharacterId, string>
+        CharacterId id1 = CharacterId.New();
+        CharacterId id2 = CharacterId.New();
+        Dictionary<CharacterId, string> dict = new Dictionary<CharacterId, string>
         {
             [id1] = "Player1",
             [id2] = "Player2"

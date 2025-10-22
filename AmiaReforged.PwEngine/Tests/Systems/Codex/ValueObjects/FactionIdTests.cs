@@ -13,7 +13,7 @@ public class FactionIdTests
         const string value = "harpers";
 
         // Act
-        var factionId = new FactionId(value);
+        FactionId factionId = new FactionId(value);
 
         // Assert
         Assert.That(factionId.Value, Is.EqualTo(value));
@@ -23,7 +23,7 @@ public class FactionIdTests
     public void Constructor_WithNullValue_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new FactionId(null!));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new FactionId(null!));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("FactionId cannot be null or whitespace"));
     }
@@ -32,7 +32,7 @@ public class FactionIdTests
     public void Constructor_WithEmptyValue_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new FactionId(string.Empty));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new FactionId(string.Empty));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("FactionId cannot be null or whitespace"));
     }
@@ -41,7 +41,7 @@ public class FactionIdTests
     public void Constructor_WithWhitespace_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new FactionId("   "));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new FactionId("   "));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("FactionId cannot be null or whitespace"));
     }
@@ -50,10 +50,10 @@ public class FactionIdTests
     public void Constructor_WithValueExceedingMaxLength_ThrowsArgumentException()
     {
         // Arrange
-        var longValue = new string('a', 51);
+        string longValue = new string('a', 51);
 
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new FactionId(longValue));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new FactionId(longValue));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("FactionId cannot exceed 50 characters"));
     }
@@ -62,10 +62,10 @@ public class FactionIdTests
     public void Constructor_WithExactlyMaxLength_Succeeds()
     {
         // Arrange
-        var maxLengthValue = new string('a', 50);
+        string maxLengthValue = new string('a', 50);
 
         // Act
-        var factionId = new FactionId(maxLengthValue);
+        FactionId factionId = new FactionId(maxLengthValue);
 
         // Assert
         Assert.That(factionId.Value, Is.EqualTo(maxLengthValue));
@@ -77,8 +77,8 @@ public class FactionIdTests
     {
         // Arrange
         const string value = "zhentarim";
-        var id1 = new FactionId(value);
-        var id2 = new FactionId(value);
+        FactionId id1 = new FactionId(value);
+        FactionId id2 = new FactionId(value);
 
         // Act & Assert
         Assert.That(id1, Is.EqualTo(id2));
@@ -89,8 +89,8 @@ public class FactionIdTests
     public void StructuralEquality_WithDifferentValue_AreNotEqual()
     {
         // Arrange
-        var id1 = new FactionId("harpers");
-        var id2 = new FactionId("zhentarim");
+        FactionId id1 = new FactionId("harpers");
+        FactionId id2 = new FactionId("zhentarim");
 
         // Act & Assert
         Assert.That(id1, Is.Not.EqualTo(id2));
@@ -101,7 +101,7 @@ public class FactionIdTests
     {
         // Arrange
         const string value = "lord_alliance";
-        var factionId = new FactionId(value);
+        FactionId factionId = new FactionId(value);
 
         // Act
         string result = factionId;
@@ -117,7 +117,7 @@ public class FactionIdTests
         const string value = "red_wizards";
 
         // Act
-        var factionId = (FactionId)value;
+        FactionId factionId = (FactionId)value;
 
         // Assert
         Assert.That(factionId.Value, Is.EqualTo(value));
@@ -135,10 +135,10 @@ public class FactionIdTests
     {
         // Arrange
         const string value = "emerald_enclave";
-        var factionId = new FactionId(value);
+        FactionId factionId = new FactionId(value);
 
         // Act
-        var result = factionId.ToString();
+        string result = factionId.ToString();
 
         // Assert
         Assert.That(result, Is.EqualTo(value));
@@ -148,9 +148,9 @@ public class FactionIdTests
     public void CanBeUsedAsDictionaryKey()
     {
         // Arrange
-        var id1 = new FactionId("harpers");
-        var id2 = new FactionId("zhentarim");
-        var dict = new Dictionary<FactionId, string>
+        FactionId id1 = new FactionId("harpers");
+        FactionId id2 = new FactionId("zhentarim");
+        Dictionary<FactionId, string> dict = new Dictionary<FactionId, string>
         {
             [id1] = "The Harpers",
             [id2] = "The Zhentarim"
@@ -166,11 +166,11 @@ public class FactionIdTests
     public void CanBeUsedInHashSet()
     {
         // Arrange
-        var id1 = new FactionId("harpers");
-        var id2 = new FactionId("zhentarim");
-        var id3 = new FactionId("harpers"); // Duplicate
+        FactionId id1 = new FactionId("harpers");
+        FactionId id2 = new FactionId("zhentarim");
+        FactionId id3 = new FactionId("harpers"); // Duplicate
 
-        var hashSet = new HashSet<FactionId> { id1, id2, id3 };
+        HashSet<FactionId> hashSet = new HashSet<FactionId> { id1, id2, id3 };
 
         // Act & Assert
         Assert.That(hashSet.Count, Is.EqualTo(2)); // id3 is duplicate of id1

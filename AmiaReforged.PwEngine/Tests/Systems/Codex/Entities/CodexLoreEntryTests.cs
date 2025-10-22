@@ -22,7 +22,7 @@ public class CodexLoreEntryTests
     public void Constructor_WithValidRequiredProperties_CreatesInstance()
     {
         // Arrange & Act
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_001"),
             Title = "The Ancient Dragon Wars",
@@ -45,7 +45,7 @@ public class CodexLoreEntryTests
     public void Constructor_WithOptionalProperties_SetsThemCorrectly()
     {
         // Arrange & Act
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_002"),
             Title = "The Lost City",
@@ -68,7 +68,7 @@ public class CodexLoreEntryTests
     public void Constructor_WithEmptyKeywords_CreatesEmptyList()
     {
         // Arrange & Act
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_003"),
             Title = "Simple Lore",
@@ -87,7 +87,7 @@ public class CodexLoreEntryTests
     public void Constructor_WithAllTiers_CreatesCorrectly()
     {
         // Arrange & Act
-        var commonLore = new CodexLoreEntry
+        CodexLoreEntry commonLore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_common"),
             Title = "Common Knowledge",
@@ -97,7 +97,7 @@ public class CodexLoreEntryTests
             DateDiscovered = _testDate
         };
 
-        var uncommonLore = new CodexLoreEntry
+        CodexLoreEntry uncommonLore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_uncommon"),
             Title = "Uncommon Knowledge",
@@ -107,7 +107,7 @@ public class CodexLoreEntryTests
             DateDiscovered = _testDate
         };
 
-        var rareLore = new CodexLoreEntry
+        CodexLoreEntry rareLore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_rare"),
             Title = "Rare Knowledge",
@@ -117,7 +117,7 @@ public class CodexLoreEntryTests
             DateDiscovered = _testDate
         };
 
-        var legendaryLore = new CodexLoreEntry
+        CodexLoreEntry legendaryLore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_legendary"),
             Title = "Legendary Knowledge",
@@ -142,7 +142,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithTitleMatch_ReturnsTrue()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_004"),
             Title = "The Ancient Dragon Wars",
@@ -162,7 +162,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithContentMatch_ReturnsTrue()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_005"),
             Title = "Simple Title",
@@ -182,7 +182,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithCategoryMatch_ReturnsTrue()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_006"),
             Title = "Test",
@@ -201,7 +201,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithDiscoveryLocationMatch_ReturnsTrue()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_007"),
             Title = "Test",
@@ -221,7 +221,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithDiscoverySourceMatch_ReturnsTrue()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_008"),
             Title = "Test",
@@ -241,7 +241,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithKeywordMatch_ReturnsTrue()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_009"),
             Title = "Test",
@@ -261,7 +261,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithNoMatch_ReturnsFalse()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_010"),
             Title = "Simple Title",
@@ -280,7 +280,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithNullDiscoveryLocation_ReturnsFalse()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_011"),
             Title = "Test",
@@ -299,7 +299,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithNullDiscoverySource_ReturnsFalse()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_012"),
             Title = "Test",
@@ -318,7 +318,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithEmptySearchTerm_ReturnsFalse()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_013"),
             Title = "Test",
@@ -337,7 +337,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithNullSearchTerm_ReturnsFalse()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_014"),
             Title = "Test",
@@ -355,7 +355,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_IsCaseInsensitive()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_015"),
             Title = "The ANCIENT Dragon Wars",
@@ -382,7 +382,7 @@ public class CodexLoreEntryTests
     public void MatchesTier_WithMatchingTier_ReturnsTrue()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_016"),
             Title = "Test",
@@ -400,7 +400,7 @@ public class CodexLoreEntryTests
     public void MatchesTier_WithDifferentTier_ReturnsFalse()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_017"),
             Title = "Test",
@@ -419,7 +419,7 @@ public class CodexLoreEntryTests
     public void MatchesTier_WithAllTiers_WorksCorrectly()
     {
         // Arrange
-        var commonLore = new CodexLoreEntry
+        CodexLoreEntry commonLore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_018"),
             Title = "Common",
@@ -429,7 +429,7 @@ public class CodexLoreEntryTests
             DateDiscovered = _testDate
         };
 
-        var uncommonLore = new CodexLoreEntry
+        CodexLoreEntry uncommonLore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_019"),
             Title = "Uncommon",
@@ -439,7 +439,7 @@ public class CodexLoreEntryTests
             DateDiscovered = _testDate
         };
 
-        var rareLore = new CodexLoreEntry
+        CodexLoreEntry rareLore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_020"),
             Title = "Rare",
@@ -449,7 +449,7 @@ public class CodexLoreEntryTests
             DateDiscovered = _testDate
         };
 
-        var legendaryLore = new CodexLoreEntry
+        CodexLoreEntry legendaryLore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_021"),
             Title = "Legendary",
@@ -474,7 +474,7 @@ public class CodexLoreEntryTests
     public void MatchesCategory_WithExactMatch_ReturnsTrue()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_022"),
             Title = "Test",
@@ -492,7 +492,7 @@ public class CodexLoreEntryTests
     public void MatchesCategory_IsCaseInsensitive()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_023"),
             Title = "Test",
@@ -513,7 +513,7 @@ public class CodexLoreEntryTests
     public void MatchesCategory_WithDifferentCategory_ReturnsFalse()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_024"),
             Title = "Test",
@@ -532,7 +532,7 @@ public class CodexLoreEntryTests
     public void MatchesCategory_WithEmptyString_ReturnsFalse()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_025"),
             Title = "Test",
@@ -551,7 +551,7 @@ public class CodexLoreEntryTests
     public void MatchesCategory_WithNullString_ReturnsFalse()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_026"),
             Title = "Test",
@@ -569,7 +569,7 @@ public class CodexLoreEntryTests
     public void MatchesCategory_WithPartialMatch_ReturnsFalse()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_027"),
             Title = "Test",
@@ -592,7 +592,7 @@ public class CodexLoreEntryTests
     public void Constructor_WithEmptyOptionalProperties_WorksCorrectly()
     {
         // Arrange & Act
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_028"),
             Title = "Test",
@@ -615,7 +615,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithEmptyKeywordsList_DoesNotMatchKeywords()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_029"),
             Title = "Test",
@@ -634,7 +634,7 @@ public class CodexLoreEntryTests
     public void MatchesSearch_WithMultipleMatches_ReturnsTrue()
     {
         // Arrange
-        var lore = new CodexLoreEntry
+        CodexLoreEntry lore = new CodexLoreEntry
         {
             LoreId = new LoreId("lore_030"),
             Title = "Dragon",

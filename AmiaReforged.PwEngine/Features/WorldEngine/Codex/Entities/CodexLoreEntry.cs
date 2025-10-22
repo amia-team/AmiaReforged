@@ -62,7 +62,7 @@ public class CodexLoreEntry
         if (string.IsNullOrWhiteSpace(searchTerm))
             return false;
 
-        var lowerSearch = searchTerm.ToLowerInvariant();
+        string lowerSearch = searchTerm.ToLowerInvariant();
 
         return Title.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ||
                Content.Contains(lowerSearch, StringComparison.OrdinalIgnoreCase) ||

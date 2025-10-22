@@ -220,12 +220,12 @@ public static class SongData
         int perform = bard.GetSkillRank(Skill.Perform!);
         int baseCha = bard.GetAbilityScore(Ability.Charisma, true);
 
-        var qualifiedSong = SongValuesList.FirstOrDefault(song =>
+        (int Perform, int BardLevel, int BaseCharisma, SongValues EffectValues) qualifiedSong = SongValuesList.FirstOrDefault(song =>
             bardLevel >= song.BardLevel &&
             perform >= song.Perform &&
             baseCha >= song.BaseCharisma);
 
-        var potentialSong = SongValuesList.FirstOrDefault(song =>
+        (int Perform, int BardLevel, int BaseCharisma, SongValues EffectValues) potentialSong = SongValuesList.FirstOrDefault(song =>
             bardLevel >= song.BardLevel);
 
         if (potentialSong.BardLevel == qualifiedSong.BardLevel || !bard.IsPlayerControlled(out NwPlayer? player))

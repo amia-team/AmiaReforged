@@ -13,7 +13,7 @@ public class KeywordTests
         const string value = "dragon";
 
         // Act
-        var keyword = new Keyword(value);
+        Keyword keyword = new Keyword(value);
 
         // Assert
         Assert.That(keyword.Value, Is.EqualTo("dragon"));
@@ -23,7 +23,7 @@ public class KeywordTests
     public void Constructor_WithNullValue_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new Keyword(null!));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new Keyword(null!));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("Keyword cannot be null or whitespace"));
     }
@@ -32,7 +32,7 @@ public class KeywordTests
     public void Constructor_WithEmptyValue_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new Keyword(string.Empty));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new Keyword(string.Empty));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("Keyword cannot be null or whitespace"));
     }
@@ -41,7 +41,7 @@ public class KeywordTests
     public void Constructor_WithWhitespace_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new Keyword("   "));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new Keyword("   "));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("Keyword cannot be null or whitespace"));
     }
@@ -50,10 +50,10 @@ public class KeywordTests
     public void Constructor_WithValueExceedingMaxLength_ThrowsArgumentException()
     {
         // Arrange
-        var longValue = new string('a', 51);
+        string longValue = new string('a', 51);
 
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => new Keyword(longValue));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => new Keyword(longValue));
         Assert.That(ex!.ParamName, Is.EqualTo("value"));
         Assert.That(ex.Message, Does.Contain("Keyword cannot exceed 50 characters"));
     }
@@ -62,10 +62,10 @@ public class KeywordTests
     public void Constructor_WithExactlyMaxLength_Succeeds()
     {
         // Arrange
-        var maxLengthValue = new string('a', 50);
+        string maxLengthValue = new string('a', 50);
 
         // Act
-        var keyword = new Keyword(maxLengthValue);
+        Keyword keyword = new Keyword(maxLengthValue);
 
         // Assert
         Assert.That(keyword.Value, Is.EqualTo(maxLengthValue));
@@ -79,7 +79,7 @@ public class KeywordTests
         const string value = "  dragon  ";
 
         // Act
-        var keyword = new Keyword(value);
+        Keyword keyword = new Keyword(value);
 
         // Assert
         Assert.That(keyword.Value, Is.EqualTo("dragon"));
@@ -92,7 +92,7 @@ public class KeywordTests
         const string value = "DRAGON";
 
         // Act
-        var keyword = new Keyword(value);
+        Keyword keyword = new Keyword(value);
 
         // Assert
         Assert.That(keyword.Value, Is.EqualTo("dragon"));
@@ -105,7 +105,7 @@ public class KeywordTests
         const string value = "  DraGon  ";
 
         // Act
-        var keyword = new Keyword(value);
+        Keyword keyword = new Keyword(value);
 
         // Assert
         Assert.That(keyword.Value, Is.EqualTo("dragon"));
@@ -115,8 +115,8 @@ public class KeywordTests
     public void StructuralEquality_WithSameValue_AreEqual()
     {
         // Arrange
-        var keyword1 = new Keyword("magic");
-        var keyword2 = new Keyword("magic");
+        Keyword keyword1 = new Keyword("magic");
+        Keyword keyword2 = new Keyword("magic");
 
         // Act & Assert
         Assert.That(keyword1, Is.EqualTo(keyword2));
@@ -127,8 +127,8 @@ public class KeywordTests
     public void StructuralEquality_WithSameValueDifferentCase_AreEqual()
     {
         // Arrange
-        var keyword1 = new Keyword("magic");
-        var keyword2 = new Keyword("MAGIC");
+        Keyword keyword1 = new Keyword("magic");
+        Keyword keyword2 = new Keyword("MAGIC");
 
         // Act & Assert
         Assert.That(keyword1, Is.EqualTo(keyword2));
@@ -139,8 +139,8 @@ public class KeywordTests
     public void StructuralEquality_WithDifferentValue_AreNotEqual()
     {
         // Arrange
-        var keyword1 = new Keyword("magic");
-        var keyword2 = new Keyword("spells");
+        Keyword keyword1 = new Keyword("magic");
+        Keyword keyword2 = new Keyword("spells");
 
         // Act & Assert
         Assert.That(keyword1, Is.Not.EqualTo(keyword2));
@@ -150,10 +150,10 @@ public class KeywordTests
     public void Matches_WithExactMatch_ReturnsTrue()
     {
         // Arrange
-        var keyword = new Keyword("dragon");
+        Keyword keyword = new Keyword("dragon");
 
         // Act
-        var result = keyword.Matches("dragon");
+        bool result = keyword.Matches("dragon");
 
         // Assert
         Assert.That(result, Is.True);
@@ -163,10 +163,10 @@ public class KeywordTests
     public void Matches_WithCaseInsensitiveMatch_ReturnsTrue()
     {
         // Arrange
-        var keyword = new Keyword("dragon");
+        Keyword keyword = new Keyword("dragon");
 
         // Act
-        var result = keyword.Matches("DRAGON");
+        bool result = keyword.Matches("DRAGON");
 
         // Assert
         Assert.That(result, Is.True);
@@ -176,10 +176,10 @@ public class KeywordTests
     public void Matches_WithPartialMatch_ReturnsTrue()
     {
         // Arrange
-        var keyword = new Keyword("ancient dragon");
+        Keyword keyword = new Keyword("ancient dragon");
 
         // Act
-        var result = keyword.Matches("dragon");
+        bool result = keyword.Matches("dragon");
 
         // Assert
         Assert.That(result, Is.True);
@@ -189,10 +189,10 @@ public class KeywordTests
     public void Matches_WithNoMatch_ReturnsFalse()
     {
         // Arrange
-        var keyword = new Keyword("dragon");
+        Keyword keyword = new Keyword("dragon");
 
         // Act
-        var result = keyword.Matches("wizard");
+        bool result = keyword.Matches("wizard");
 
         // Assert
         Assert.That(result, Is.False);
@@ -202,10 +202,10 @@ public class KeywordTests
     public void Matches_WithEmptySearchTerm_ReturnsTrue()
     {
         // Arrange
-        var keyword = new Keyword("dragon");
+        Keyword keyword = new Keyword("dragon");
 
         // Act
-        var result = keyword.Matches(string.Empty);
+        bool result = keyword.Matches(string.Empty);
 
         // Assert
         Assert.That(result, Is.True); // Empty string is contained in all strings
@@ -215,10 +215,10 @@ public class KeywordTests
     public void Matches_WithWhitespaceInSearchTerm_WorksCorrectly()
     {
         // Arrange
-        var keyword = new Keyword("ancient dragon lore");
+        Keyword keyword = new Keyword("ancient dragon lore");
 
         // Act
-        var result = keyword.Matches("dragon lore");
+        bool result = keyword.Matches("dragon lore");
 
         // Assert
         Assert.That(result, Is.True);
@@ -228,7 +228,7 @@ public class KeywordTests
     public void ImplicitConversionToString_ReturnsUnderlyingValue()
     {
         // Arrange
-        var keyword = new Keyword("  DRAGON  ");
+        Keyword keyword = new Keyword("  DRAGON  ");
 
         // Act
         string result = keyword;
@@ -244,7 +244,7 @@ public class KeywordTests
         const string value = "WIZARD";
 
         // Act
-        var keyword = (Keyword)value;
+        Keyword keyword = (Keyword)value;
 
         // Assert
         Assert.That(keyword.Value, Is.EqualTo("wizard"));
@@ -261,10 +261,10 @@ public class KeywordTests
     public void ToString_ReturnsValue()
     {
         // Arrange
-        var keyword = new Keyword("DRAGON");
+        Keyword keyword = new Keyword("DRAGON");
 
         // Act
-        var result = keyword.ToString();
+        string result = keyword.ToString();
 
         // Assert
         Assert.That(result, Is.EqualTo("dragon"));
@@ -274,9 +274,9 @@ public class KeywordTests
     public void CanBeUsedAsDictionaryKey()
     {
         // Arrange
-        var keyword1 = new Keyword("dragon");
-        var keyword2 = new Keyword("wizard");
-        var dict = new Dictionary<Keyword, string>
+        Keyword keyword1 = new Keyword("dragon");
+        Keyword keyword2 = new Keyword("wizard");
+        Dictionary<Keyword, string> dict = new Dictionary<Keyword, string>
         {
             [keyword1] = "Fire breathing creatures",
             [keyword2] = "Spell casting masters"
@@ -292,11 +292,11 @@ public class KeywordTests
     public void CanBeUsedInHashSet()
     {
         // Arrange
-        var keyword1 = new Keyword("dragon");
-        var keyword2 = new Keyword("wizard");
-        var keyword3 = new Keyword("DRAGON"); // Duplicate (case-insensitive)
+        Keyword keyword1 = new Keyword("dragon");
+        Keyword keyword2 = new Keyword("wizard");
+        Keyword keyword3 = new Keyword("DRAGON"); // Duplicate (case-insensitive)
 
-        var hashSet = new HashSet<Keyword> { keyword1, keyword2, keyword3 };
+        HashSet<Keyword> hashSet = new HashSet<Keyword> { keyword1, keyword2, keyword3 };
 
         // Act & Assert
         Assert.That(hashSet.Count, Is.EqualTo(2)); // keyword3 is duplicate of keyword1

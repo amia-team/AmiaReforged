@@ -22,7 +22,7 @@ public class CodexQuestEntryTests
     public void Constructor_WithValidRequiredProperties_CreatesInstance()
     {
         // Arrange & Act
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_001"),
             Title = "The Dragon's Hoard",
@@ -43,7 +43,7 @@ public class CodexQuestEntryTests
     public void Constructor_WithOptionalProperties_SetsThemCorrectly()
     {
         // Arrange & Act
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_002"),
             Title = "Help the Villagers",
@@ -66,7 +66,7 @@ public class CodexQuestEntryTests
     public void Constructor_WithEmptyObjectives_CreatesEmptyList()
     {
         // Arrange & Act
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_003"),
             Title = "Simple Quest",
@@ -83,7 +83,7 @@ public class CodexQuestEntryTests
     public void Constructor_WithEmptyKeywords_CreatesEmptyList()
     {
         // Arrange & Act
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_004"),
             Title = "Another Quest",
@@ -104,14 +104,14 @@ public class CodexQuestEntryTests
     public void MarkCompleted_FromDiscoveredState_SetsStateAndDate()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_005"),
             Title = "Test Quest",
             Description = "Test",
             DateStarted = _testDate
         };
-        var completedDate = _testDate.AddHours(2);
+        DateTime completedDate = _testDate.AddHours(2);
 
         // Act
         quest.MarkCompleted(completedDate);
@@ -125,7 +125,7 @@ public class CodexQuestEntryTests
     public void MarkCompleted_FromInProgressState_SetsStateAndDate()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_006"),
             Title = "Test Quest",
@@ -133,7 +133,7 @@ public class CodexQuestEntryTests
             DateStarted = _testDate
         };
         // Note: Quest starts in Discovered state by default, which is valid for completion
-        var completedDate = _testDate.AddHours(3);
+        DateTime completedDate = _testDate.AddHours(3);
 
         // Act
         quest.MarkCompleted(completedDate);
@@ -147,7 +147,7 @@ public class CodexQuestEntryTests
     public void MarkCompleted_FromCompletedState_ThrowsInvalidOperationException()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_007"),
             Title = "Test Quest",
@@ -157,7 +157,7 @@ public class CodexQuestEntryTests
         quest.MarkCompleted(_testDate.AddHours(1));
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkCompleted(_testDate.AddHours(2)));
         Assert.That(ex.Message, Does.Contain("Cannot complete quest in state Completed"));
     }
@@ -166,7 +166,7 @@ public class CodexQuestEntryTests
     public void MarkCompleted_FromFailedState_ThrowsInvalidOperationException()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_008"),
             Title = "Test Quest",
@@ -176,7 +176,7 @@ public class CodexQuestEntryTests
         quest.MarkFailed(_testDate.AddHours(1));
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkCompleted(_testDate.AddHours(2)));
         Assert.That(ex.Message, Does.Contain("Cannot complete quest in state Failed"));
     }
@@ -185,7 +185,7 @@ public class CodexQuestEntryTests
     public void MarkCompleted_FromAbandonedState_ThrowsInvalidOperationException()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_009"),
             Title = "Test Quest",
@@ -195,7 +195,7 @@ public class CodexQuestEntryTests
         quest.MarkAbandoned(_testDate.AddHours(1));
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkCompleted(_testDate.AddHours(2)));
         Assert.That(ex.Message, Does.Contain("Cannot complete quest in state Abandoned"));
     }
@@ -208,14 +208,14 @@ public class CodexQuestEntryTests
     public void MarkFailed_FromDiscoveredState_SetsStateAndDate()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_010"),
             Title = "Test Quest",
             Description = "Test",
             DateStarted = _testDate
         };
-        var failedDate = _testDate.AddHours(1);
+        DateTime failedDate = _testDate.AddHours(1);
 
         // Act
         quest.MarkFailed(failedDate);
@@ -229,7 +229,7 @@ public class CodexQuestEntryTests
     public void MarkFailed_FromInProgressState_SetsStateAndDate()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_011"),
             Title = "Test Quest",
@@ -237,7 +237,7 @@ public class CodexQuestEntryTests
             DateStarted = _testDate
         };
         // Note: Quest starts in Discovered state by default, which is valid for failing
-        var failedDate = _testDate.AddHours(2);
+        DateTime failedDate = _testDate.AddHours(2);
 
         // Act
         quest.MarkFailed(failedDate);
@@ -251,7 +251,7 @@ public class CodexQuestEntryTests
     public void MarkFailed_FromCompletedState_ThrowsInvalidOperationException()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_012"),
             Title = "Test Quest",
@@ -261,7 +261,7 @@ public class CodexQuestEntryTests
         quest.MarkCompleted(_testDate.AddHours(1));
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkFailed(_testDate.AddHours(2)));
         Assert.That(ex.Message, Does.Contain("Cannot fail quest in state Completed"));
     }
@@ -270,7 +270,7 @@ public class CodexQuestEntryTests
     public void MarkFailed_FromFailedState_ThrowsInvalidOperationException()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_013"),
             Title = "Test Quest",
@@ -280,7 +280,7 @@ public class CodexQuestEntryTests
         quest.MarkFailed(_testDate.AddHours(1));
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkFailed(_testDate.AddHours(2)));
         Assert.That(ex.Message, Does.Contain("Cannot fail quest in state Failed"));
     }
@@ -289,7 +289,7 @@ public class CodexQuestEntryTests
     public void MarkFailed_FromAbandonedState_ThrowsInvalidOperationException()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_014"),
             Title = "Test Quest",
@@ -299,7 +299,7 @@ public class CodexQuestEntryTests
         quest.MarkAbandoned(_testDate.AddHours(1));
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkFailed(_testDate.AddHours(2)));
         Assert.That(ex.Message, Does.Contain("Cannot fail quest in state Abandoned"));
     }
@@ -312,14 +312,14 @@ public class CodexQuestEntryTests
     public void MarkAbandoned_FromDiscoveredState_SetsStateAndDate()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_015"),
             Title = "Test Quest",
             Description = "Test",
             DateStarted = _testDate
         };
-        var abandonedDate = _testDate.AddHours(1);
+        DateTime abandonedDate = _testDate.AddHours(1);
 
         // Act
         quest.MarkAbandoned(abandonedDate);
@@ -333,7 +333,7 @@ public class CodexQuestEntryTests
     public void MarkAbandoned_FromInProgressState_SetsStateAndDate()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_016"),
             Title = "Test Quest",
@@ -341,7 +341,7 @@ public class CodexQuestEntryTests
             DateStarted = _testDate
         };
         // Note: Quest starts in Discovered state by default, which is valid for abandoning
-        var abandonedDate = _testDate.AddHours(2);
+        DateTime abandonedDate = _testDate.AddHours(2);
 
         // Act
         quest.MarkAbandoned(abandonedDate);
@@ -355,7 +355,7 @@ public class CodexQuestEntryTests
     public void MarkAbandoned_FromCompletedState_ThrowsInvalidOperationException()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_017"),
             Title = "Test Quest",
@@ -365,7 +365,7 @@ public class CodexQuestEntryTests
         quest.MarkCompleted(_testDate.AddHours(1));
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkAbandoned(_testDate.AddHours(2)));
         Assert.That(ex.Message, Does.Contain("Cannot abandon quest in state Completed"));
     }
@@ -374,7 +374,7 @@ public class CodexQuestEntryTests
     public void MarkAbandoned_FromFailedState_ThrowsInvalidOperationException()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_018"),
             Title = "Test Quest",
@@ -384,7 +384,7 @@ public class CodexQuestEntryTests
         quest.MarkFailed(_testDate.AddHours(1));
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkAbandoned(_testDate.AddHours(2)));
         Assert.That(ex.Message, Does.Contain("Cannot abandon quest in state Failed"));
     }
@@ -393,7 +393,7 @@ public class CodexQuestEntryTests
     public void MarkAbandoned_FromAbandonedState_ThrowsInvalidOperationException()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_019"),
             Title = "Test Quest",
@@ -403,7 +403,7 @@ public class CodexQuestEntryTests
         quest.MarkAbandoned(_testDate.AddHours(1));
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        InvalidOperationException? ex = Assert.Throws<InvalidOperationException>(() =>
             quest.MarkAbandoned(_testDate.AddHours(2)));
         Assert.That(ex.Message, Does.Contain("Cannot abandon quest in state Abandoned"));
     }
@@ -416,7 +416,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_WithTitleMatch_ReturnsTrue()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_020"),
             Title = "The Dragon's Hoard",
@@ -434,7 +434,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_WithDescriptionMatch_ReturnsTrue()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_021"),
             Title = "Simple Quest",
@@ -452,7 +452,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_WithQuestGiverMatch_ReturnsTrue()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_022"),
             Title = "Help Request",
@@ -470,7 +470,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_WithLocationMatch_ReturnsTrue()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_023"),
             Title = "Local Quest",
@@ -488,7 +488,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_WithKeywordMatch_ReturnsTrue()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_024"),
             Title = "Test Quest",
@@ -506,7 +506,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_WithNoMatch_ReturnsFalse()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_025"),
             Title = "Simple Quest",
@@ -523,7 +523,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_WithNullQuestGiver_StillMatchesOtherFields()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_026"),
             Title = "Test Quest",
@@ -542,7 +542,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_WithNullLocation_StillMatchesOtherFields()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_027"),
             Title = "Test Quest",
@@ -561,7 +561,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_WithEmptySearchTerm_ReturnsFalse()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_028"),
             Title = "Test Quest",
@@ -578,7 +578,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_WithNullSearchTerm_ReturnsFalse()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_029"),
             Title = "Test Quest",
@@ -594,7 +594,7 @@ public class CodexQuestEntryTests
     public void MatchesSearch_IsCaseInsensitive()
     {
         // Arrange
-        var quest = new CodexQuestEntry
+        CodexQuestEntry quest = new CodexQuestEntry
         {
             QuestId = new QuestId("quest_030"),
             Title = "The Dragon's Hoard",

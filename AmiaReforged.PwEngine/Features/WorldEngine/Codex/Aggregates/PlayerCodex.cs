@@ -80,7 +80,7 @@ public class PlayerCodex
     /// </summary>
     public void RecordQuestCompleted(QuestId questId, DateTime occurredAt)
     {
-        if (!_quests.TryGetValue(questId, out var quest))
+        if (!_quests.TryGetValue(questId, out CodexQuestEntry? quest))
             throw new InvalidOperationException($"Quest {questId.Value} not found in codex");
 
         quest.MarkCompleted(occurredAt);
@@ -92,7 +92,7 @@ public class PlayerCodex
     /// </summary>
     public void RecordQuestFailed(QuestId questId, DateTime occurredAt)
     {
-        if (!_quests.TryGetValue(questId, out var quest))
+        if (!_quests.TryGetValue(questId, out CodexQuestEntry? quest))
             throw new InvalidOperationException($"Quest {questId.Value} not found in codex");
 
         quest.MarkFailed(occurredAt);
@@ -104,7 +104,7 @@ public class PlayerCodex
     /// </summary>
     public void RecordQuestAbandoned(QuestId questId, DateTime occurredAt)
     {
-        if (!_quests.TryGetValue(questId, out var quest))
+        if (!_quests.TryGetValue(questId, out CodexQuestEntry? quest))
             throw new InvalidOperationException($"Quest {questId.Value} not found in codex");
 
         quest.MarkAbandoned(occurredAt);
@@ -172,7 +172,7 @@ public class PlayerCodex
     /// </summary>
     public void EditNote(Guid noteId, string newContent, DateTime occurredAt)
     {
-        if (!_notes.TryGetValue(noteId, out var note))
+        if (!_notes.TryGetValue(noteId, out CodexNoteEntry? note))
             throw new InvalidOperationException($"Note {noteId} not found in codex");
 
         note.UpdateContent(newContent, occurredAt);
@@ -209,7 +209,7 @@ public class PlayerCodex
     /// </summary>
     public void RecordReputationChange(FactionId factionId, string factionName, int delta, string reason, DateTime occurredAt)
     {
-        if (!_reputations.TryGetValue(factionId, out var reputation))
+        if (!_reputations.TryGetValue(factionId, out FactionReputation? reputation))
         {
             // First interaction with this faction
             reputation = new FactionReputation(ReputationScore.CreateNeutral(), occurredAt)
