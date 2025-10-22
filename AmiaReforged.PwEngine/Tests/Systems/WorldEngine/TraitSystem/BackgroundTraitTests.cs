@@ -89,25 +89,87 @@ public class BackgroundTraitTests
     [Test]
     public void CanSelectTrait_WhenWithinBudget_AndEligible()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        Trait braveTrait = new Trait
+        {
+            Tag = "brave",
+            Name = "Brave",
+            Description = "Fearless in combat",
+            PointCost = 1
+        };
+
+        ICharacterInfo character = new TestCharacterInfo
+        {
+            Race = "Human",
+            Classes = new List<string> { "Fighter" }
+        };
+
+        TraitBudget budget = TraitBudget.CreateDefault();
+        List<CharacterTrait> selectedTraits = new();
+
+        // Act
+        bool canSelect = TraitSelectionValidator.CanSelect(braveTrait, character, selectedTraits, budget);
+
+        // Assert
+        Assert.That(canSelect, Is.True);
     }
 
     [Test]
     public void CanDeselectUnconfirmedTrait_AndRecoverPoints()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        CharacterTrait unconfirmedTrait = new CharacterTrait
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = Guid.NewGuid(),
+            TraitTag = "brave",
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = false
+        };
+
+        // Act
+        bool canDeselect = TraitSelectionValidator.CanDeselect(unconfirmedTrait);
+
+        // Assert
+        Assert.That(canDeselect, Is.True);
     }
 
     [Test]
     public void CannotDeselectConfirmedTrait()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        CharacterTrait confirmedTrait = new CharacterTrait
+        {
+            Id = Guid.NewGuid(),
+            CharacterId = Guid.NewGuid(),
+            TraitTag = "brave",
+            DateAcquired = DateTime.UtcNow,
+            IsConfirmed = true
+        };
+
+        // Act
+        bool canDeselect = TraitSelectionValidator.CanDeselect(confirmedTrait);
+
+        // Assert
+        Assert.That(canDeselect, Is.False);
     }
 
     [Test]
     public void SelectingMultipleTraits_ShouldAccumulate_PointCosts()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        Trait trait1 = new Trait { Tag = "brave", Name = "Brave", Description = "Brave", PointCost = 1 };
+        Trait trait2 = new Trait { Tag = "strong", Name = "Strong", Description = "Strong", PointCost = 1 };
+
+        TraitBudget budget = TraitBudget.CreateDefault();
+
+        // Act
+        TraitBudget afterFirst = budget.AfterSpending(trait1.PointCost);
+        TraitBudget afterSecond = afterFirst.AfterSpending(trait2.PointCost);
+
+        // Assert
+        Assert.That(afterSecond.SpentPoints, Is.EqualTo(2));
+        Assert.That(afterSecond.AvailablePoints, Is.EqualTo(0));
     }
 
     #endregion
