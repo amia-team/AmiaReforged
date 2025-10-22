@@ -51,6 +51,11 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
     public readonly NuiBind<string> TransformZString = new("plc_trans_z_str");
 
     public NuiButton SelectPlcButton = null!;
+    public string Title => "PLC Editor";
+    public bool ListInDmTools => true;
+
+    public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
+
 
     public PlcEditorView(NwPlayer player)
     {
@@ -482,9 +487,4 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
             ]
         };
     }
-
-    public string Title => "PLC Editor";
-    public bool ListInDmTools => true;
-
-    public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 }
