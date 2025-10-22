@@ -189,7 +189,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                                 Tooltip = "X Value. Must be a valid decimal number",
                                                 Enabled = ValidObjectSelected
                                             },
-                                            new NuiSliderFloat(PositionX, -200, 200)
+                                            new NuiSliderFloat(PositionX, -100, 100)
                                             {
                                                 Width = 190f,
                                                 Tooltip =
@@ -219,7 +219,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                                 Tooltip = "Y Value. Must be a valid decimal number",
                                                 Enabled = ValidObjectSelected
                                             },
-                                            new NuiSliderFloat(PositionY, -200, 200)
+                                            new NuiSliderFloat(PositionY, -100, 100)
                                             {
                                                 Width = 190f,
                                                 Tooltip =
@@ -249,7 +249,7 @@ public sealed class PlcEditorView : ScryView<PlcEditorPresenter>, IDmWindow
                                                 Tooltip = "Z Value. Must be a valid decimal number",
                                                 Enabled = ValidObjectSelected
                                             },
-                                            new NuiSliderFloat(PositionZ, -200, 200)
+                                            new NuiSliderFloat(PositionZ, -100, 100)
                                             {
                                                 Width = 190f,
                                                 Tooltip =
