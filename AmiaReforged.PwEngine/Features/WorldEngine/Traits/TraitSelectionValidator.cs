@@ -24,6 +24,8 @@ public static class TraitSelectionValidator
 
     /// <summary>
     /// Validates if a trait can be selected (without unlock tracking)
+    /// Note: Budget is NOT checked here - players can go into debt with unconfirmed traits.
+    /// Budget is enforced at confirmation time via ConfirmTraits().
     /// </summary>
     public static bool CanSelect(
         Trait trait,
@@ -31,10 +33,6 @@ public static class TraitSelectionValidator
         List<CharacterTrait> currentSelections,
         TraitBudget budget)
     {
-        // Check budget
-        if (!budget.CanAfford(trait.PointCost))
-            return false;
-
         // Check if already selected
         if (currentSelections.Any(ct => ct.TraitTag == trait.Tag))
             return false;
@@ -70,7 +68,9 @@ public static class TraitSelectionValidator
 
     public static bool CanDeselect(CharacterTrait characterTrait)
     {
-        return !characterTrait.IsConfirmed;
+        // Traits can always be deselected - confirmation just means the initial selection is finalized,
+        // but players can change their traits later
+        return true;
     }
 
     private static bool IsRaceEligible(Trait trait, string characterRace)
