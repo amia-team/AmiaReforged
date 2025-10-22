@@ -24,6 +24,8 @@ public class PwEngineContext : DbContext
 
     public DbSet<PersistentIndustryMembership> IndustryMemberships { get; set; } = null!;
 
+    public DbSet<PersistentCharacterTrait> CharacterTraits { get; set; } = null!;
+
 
     public PwEngineContext()
     {

@@ -179,7 +179,36 @@ public class BackgroundTraitTests
     [Test]
     public void UnconfirmedTraits_CanBeChanged_BeforeFinalization()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        ITraitRepository traitRepo = InMemoryTraitRepository.Create();
+        traitRepo.Add(new Trait
+        {
+            Tag = "brave",
+            Name = "Brave",
+            Description = "Fearless",
+            PointCost = 1
+        });
+
+        ICharacterTraitRepository charTraitRepo = PersistentCharacterTraitRepository.Create();
+        TraitSelectionService service = TraitSelectionService.Create(charTraitRepo, traitRepo);
+
+        Guid characterId = Guid.NewGuid();
+        ICharacterInfo character = new TestCharacterInfo
+        {
+            Race = "Human",
+            Classes = ["Fighter"]
+        };
+        Dictionary<string, bool> unlockedTraits = new();
+
+        // Act - Select, then deselect before confirming
+        bool selected = service.SelectTrait(characterId, "brave", character, unlockedTraits);
+        bool deselected = service.DeselectTrait(characterId, "brave");
+        List<CharacterTrait> traits = service.GetCharacterTraits(characterId);
+
+        // Assert
+        Assert.That(selected, Is.True);
+        Assert.That(deselected, Is.True);
+        Assert.That(traits, Is.Empty);
     }
 
     [Test]
@@ -207,32 +236,177 @@ public class BackgroundTraitTests
     [Test]
     public void BaseTraits_ShouldAlwaysBeAvailable()
     {
-        Assert.Fail("Not implemented");
+        // Arrange - Base trait that doesn't require unlock
+        Trait baseTrait = new Trait
+        {
+            Tag = "brave",
+            Name = "Brave",
+            Description = "Fearless",
+            PointCost = 1,
+            RequiresUnlock = false
+        };
+
+        ICharacterInfo character = new TestCharacterInfo
+        {
+            Race = "Human",
+            Classes = ["Fighter"]
+        };
+
+        TraitBudget budget = TraitBudget.CreateDefault();
+        List<CharacterTrait> selectedTraits = [];
+        Dictionary<string, bool> unlockedTraits = new();
+
+        // Act
+        bool canSelect = TraitSelectionValidator.CanSelect(
+            baseTrait, character, selectedTraits, budget, unlockedTraits);
+
+        // Assert
+        Assert.That(canSelect, Is.True);
     }
 
     [Test]
     public void EarnedTraits_RequireUnlock_BeforeSelection()
     {
-        Assert.Fail("Not implemented");
+        // Arrange - Trait that requires unlock
+        Trait earnedTrait = new Trait
+        {
+            Tag = "hero",
+            Name = "Hero",
+            Description = "Heroic deed",
+            PointCost = 2,
+            RequiresUnlock = true
+        };
+
+        ICharacterInfo character = new TestCharacterInfo
+        {
+            Race = "Human",
+            Classes = ["Fighter"]
+        };
+
+        TraitBudget budget = TraitBudget.CreateDefault();
+        List<CharacterTrait> selectedTraits = [];
+        Dictionary<string, bool> unlockedTraits = new(); // Not unlocked
+
+        // Act
+        bool canSelect = TraitSelectionValidator.CanSelect(
+            earnedTrait, character, selectedTraits, budget, unlockedTraits);
+
+        // Assert
+        Assert.That(canSelect, Is.False);
     }
 
     [Test]
     public void CannotSelectTrait_WithoutMeetingPrerequisites()
     {
-        Assert.Fail("Not implemented");
+        // Arrange - Trait with prerequisites
+        Trait advancedTrait = new Trait
+        {
+            Tag = "expert_drinker",
+            Name = "Expert Drinker",
+            Description = "Can hold liquor",
+            PointCost = 1,
+            PrerequisiteTraits = ["alcoholic"]
+        };
+
+        ICharacterInfo character = new TestCharacterInfo
+        {
+            Race = "Human",
+            Classes = ["Fighter"]
+        };
+
+        TraitBudget budget = TraitBudget.CreateDefault();
+        List<CharacterTrait> selectedTraits = []; // No prerequisites selected
+        Dictionary<string, bool> unlockedTraits = new();
+
+        // Act
+        bool canSelect = TraitSelectionValidator.CanSelect(
+            advancedTrait, character, selectedTraits, budget, unlockedTraits);
+
+        // Assert
+        Assert.That(canSelect, Is.False);
     }
 
     [Test]
     public void UnlockingTrait_MakesItAvailableForSelection()
     {
-        Assert.Fail("Not implemented");
+        // Arrange - Trait that requires unlock, but is now unlocked
+        Trait earnedTrait = new Trait
+        {
+            Tag = "hero",
+            Name = "Hero",
+            Description = "Heroic deed",
+            PointCost = 2,
+            RequiresUnlock = true
+        };
+
+        ICharacterInfo character = new TestCharacterInfo
+        {
+            Race = "Human",
+            Classes = ["Fighter"]
+        };
+
+        TraitBudget budget = TraitBudget.CreateDefault();
+        List<CharacterTrait> selectedTraits = [];
+        Dictionary<string, bool> unlockedTraits = new() { { "hero", true } }; // Unlocked!
+
+        // Act
+        bool canSelect = TraitSelectionValidator.CanSelect(
+            earnedTrait, character, selectedTraits, budget, unlockedTraits);
+
+        // Assert
+        Assert.That(canSelect, Is.True);
     }
 
     [Test]
     public void PrerequisiteCheck_ShouldValidate_OtherSelectedTraits()
     {
-        // Example: "Expert Drinker" requires "Alcoholic" trait
-        Assert.Fail("Not implemented");
+        // Arrange - Chain: Alcoholic -> Expert Drinker
+        Trait prerequisiteTrait = new Trait
+        {
+            Tag = "alcoholic",
+            Name = "Alcoholic",
+            Description = "Addicted to drink",
+            PointCost = -1
+        };
+
+        Trait advancedTrait = new Trait
+        {
+            Tag = "expert_drinker",
+            Name = "Expert Drinker",
+            Description = "Can hold liquor",
+            PointCost = 1,
+            PrerequisiteTraits = ["alcoholic"]
+        };
+
+        ICharacterInfo character = new TestCharacterInfo
+        {
+            Race = "Human",
+            Classes = ["Fighter"]
+        };
+
+        TraitBudget budget = TraitBudget.CreateDefault();
+
+        // Character has selected the prerequisite
+        List<CharacterTrait> selectedTraits =
+        [
+            new CharacterTrait
+            {
+                Id = Guid.NewGuid(),
+                CharacterId = Guid.NewGuid(),
+                TraitTag = "alcoholic",
+                DateAcquired = DateTime.UtcNow,
+                IsConfirmed = false
+            }
+        ];
+
+        Dictionary<string, bool> unlockedTraits = new();
+
+        // Act
+        bool canSelect = TraitSelectionValidator.CanSelect(
+            advancedTrait, character, selectedTraits, budget, unlockedTraits);
+
+        // Assert
+        Assert.That(canSelect, Is.True);
     }
 
     #endregion

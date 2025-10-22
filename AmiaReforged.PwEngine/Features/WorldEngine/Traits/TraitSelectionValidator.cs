@@ -5,6 +5,26 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 /// </summary>
 public static class TraitSelectionValidator
 {
+    /// <summary>
+    /// Validates if a trait can be selected (with unlock tracking)
+    /// </summary>
+    public static bool CanSelect(
+        Trait trait,
+        ICharacterInfo character,
+        List<CharacterTrait> currentSelections,
+        TraitBudget budget,
+        Dictionary<string, bool> unlockedTraits)
+    {
+        // Check if trait requires unlock
+        if (!IsUnlocked(trait, unlockedTraits))
+            return false;
+
+        return CanSelect(trait, character, currentSelections, budget);
+    }
+
+    /// <summary>
+    /// Validates if a trait can be selected (without unlock tracking)
+    /// </summary>
     public static bool CanSelect(
         Trait trait,
         ICharacterInfo character,
@@ -36,6 +56,16 @@ public static class TraitSelectionValidator
             return false;
 
         return true;
+    }
+
+    private static bool IsUnlocked(Trait trait, Dictionary<string, bool> unlockedTraits)
+    {
+        // If trait doesn't require unlock, it's always available
+        if (!trait.RequiresUnlock)
+            return true;
+
+        // Check if unlocked in dictionary
+        return unlockedTraits.TryGetValue(trait.Tag, out bool unlocked) && unlocked;
     }
 
     public static bool CanDeselect(CharacterTrait characterTrait)
