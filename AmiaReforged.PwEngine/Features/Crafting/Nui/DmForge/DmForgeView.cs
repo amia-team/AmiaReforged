@@ -34,6 +34,13 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
 
     public NuiBind<string> PowerTotal { get; } = new("power_total");
 
+    /// <summary>
+    /// Gets the root layout for the DmForgeView.
+    /// This defines the main layout structure for the view in the UI system.
+    /// </summary>
+    /// <returns>
+    /// A NuiLayout object representing the root layout of the DmForgeView.
+    /// </returns>
     public override NuiLayout RootLayout()
     {
         // Current props list
@@ -86,63 +93,65 @@ public sealed class DmForgeView : ScryView<DmForgePresenter>
                                 HorizontalAlign = NuiHAlign.Center
                             }
                         },
-                        new NuiButton("Close") { Id = CloseId, Height = 40f, Width = 120f
+                        new NuiButton("Close")
+                        {
+                            Id = CloseId, Height = 40f, Width = 120f
+                        }
                     }
-                }
-            },
-            new NuiRow
-            {
-                Children =
+                },
+                new NuiRow
                 {
-                    new NuiGroup
+                    Children =
                     {
-                        Element = new NuiColumn
+                        new NuiGroup
                         {
-                            Children =
+                            Element = new NuiColumn
                             {
-                                new NuiLabel("Current Properties")
+                                Children =
                                 {
-                                    Height = 15f
-                                },
-                                new NuiList(currentCells, CurrentCount) { RowHeight = 28f }
-                            }
-                        },
-                        Width = 520f,
-                        Height = 500f,
-                        Border = true
-                    },
-                    new NuiGroup
-                    {
-                        Element = new NuiColumn
-                        {
-                            Children =
-                            {
-                                new NuiRow
-                                {
-                                    Height = 30f,
-                                    Children =
+                                    new NuiLabel("Current Properties")
                                     {
-                                        new NuiLabel("Search:"),
-                                        new NuiTextEdit("type to filter...", SearchBind, 64, false)
-                                        {
-                                            Width = 260f
-                                        }
-                                    }
-                                },
-                                new NuiLabel("Available Properties")
-                                {
-                                    Height = 15f
-                                },
-                                new NuiList(availableCells, AvailableCount) { RowHeight = 28f }
-                            }
+                                        Height = 15f
+                                    },
+                                    new NuiList(currentCells, CurrentCount) { RowHeight = 28f }
+                                }
+                            },
+                            Width = 520f,
+                            Height = 500f,
+                            Border = true
                         },
-                        Width = 520f,
-                        Height = 500f,
-                        Border = true
+                        new NuiGroup
+                        {
+                            Element = new NuiColumn
+                            {
+                                Children =
+                                {
+                                    new NuiRow
+                                    {
+                                        Height = 30f,
+                                        Children =
+                                        {
+                                            new NuiLabel("Search:"),
+                                            new NuiTextEdit("type to filter...", SearchBind, 64, false)
+                                            {
+                                                Width = 260f
+                                            }
+                                        }
+                                    },
+                                    new NuiLabel("Available Properties")
+                                    {
+                                        Height = 15f
+                                    },
+                                    new NuiList(availableCells, AvailableCount) { RowHeight = 28f }
+                                }
+                            },
+                            Width = 520f,
+                            Height = 500f,
+                            Border = true
+                        }
                     }
                 }
             }
-        }
         };
     }
 }
