@@ -66,7 +66,7 @@ public sealed class MythalCategoryView : ScryView<MythalForgePresenter>
                 {
                     CraftingTier.Minor => ColorConstants.White,
                     CraftingTier.Lesser => ColorConstants.Lime,
-                    CraftingTier.Intermediate => ColorConstants.Blue,
+                    CraftingTier.Intermediate => ColorConstants.Teal,
                     CraftingTier.Greater => ColorConstants.Magenta,
                     CraftingTier.Perfect => ColorConstants.Orange,
                     CraftingTier.Divine => ColorConstants.Yellow,
