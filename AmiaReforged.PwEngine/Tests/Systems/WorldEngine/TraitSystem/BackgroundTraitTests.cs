@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.TraitSystem;
@@ -14,33 +15,71 @@ public class BackgroundTraitTests
     [Test]
     public void NewCharacter_ShouldHave_TwoFreeTraitPoints()
     {
-        Assert.Fail("Not implemented");
+        // Arrange & Act
+        TraitBudget budget = TraitBudget.CreateDefault();
+
+        // Assert
+        Assert.That(budget.BasePoints, Is.EqualTo(2));
+        Assert.That(budget.TotalPoints, Is.EqualTo(2));
+        Assert.That(budget.AvailablePoints, Is.EqualTo(2));
+        Assert.That(budget.EarnedPoints, Is.EqualTo(0));
+        Assert.That(budget.SpentPoints, Is.EqualTo(0));
     }
 
     [Test]
     public void SelectingPositiveTrait_ShouldConsume_TraitPoints()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        TraitBudget budget = TraitBudget.CreateDefault();
+        const int positiveTraitCost = 1;
+
+        // Act
+        TraitBudget afterSpending = budget.AfterSpending(positiveTraitCost);
+
+        // Assert
+        Assert.That(afterSpending.SpentPoints, Is.EqualTo(1));
+        Assert.That(afterSpending.AvailablePoints, Is.EqualTo(1));
     }
 
     [Test]
     public void SelectingNegativeTrait_ShouldIncrease_AvailableTraitPoints()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        TraitBudget budget = TraitBudget.CreateDefault();
+        const int negativeTraitCost = -1; // Negative cost grants points
+
+        // Act
+        TraitBudget afterSpending = budget.AfterSpending(negativeTraitCost);
+
+        // Assert
+        Assert.That(afterSpending.SpentPoints, Is.EqualTo(-1));
+        Assert.That(afterSpending.AvailablePoints, Is.EqualTo(3)); // 2 base + 1 from negative trait
     }
 
     [Test]
     public void CannotSelectTrait_WhenInsufficientPoints()
     {
-        Assert.Fail("Not implemented");
+        // Arrange
+        TraitBudget budget = TraitBudget.CreateDefault();
+        const int expensiveTraitCost = 3; // Costs more than available
+
+        // Act & Assert
+        Assert.That(budget.CanAfford(expensiveTraitCost), Is.False);
     }
 
     [Test]
     public void TraitBudget_ShouldCalculate_CorrectAvailablePoints()
     {
-        // Given: 2 base points, selected 1 negative trait (+1), spent 2 points
-        // Expected: 1 point remaining
-        Assert.Fail("Not implemented");
+        // Arrange: 2 base points, 1 earned point, spent 2 points
+        TraitBudget budget = new TraitBudget
+        {
+            EarnedPoints = 1,
+            SpentPoints = 2
+        };
+
+        // Assert
+        Assert.That(budget.TotalPoints, Is.EqualTo(3)); // 2 base + 1 earned
+        Assert.That(budget.AvailablePoints, Is.EqualTo(1)); // 3 total - 2 spent
     }
 
     #endregion
