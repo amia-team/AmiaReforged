@@ -6,8 +6,14 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 public static class TraitSelectionValidator
 {
     /// <summary>
-    /// Validates if a trait can be selected (with unlock tracking)
+    /// Validates if a trait can be selected by a character (with unlock tracking).
     /// </summary>
+    /// <param name="trait">The trait to validate</param>
+    /// <param name="character">Character information (race, classes)</param>
+    /// <param name="currentSelections">Currently selected traits</param>
+    /// <param name="budget">Current trait budget (not enforced during selection)</param>
+    /// <param name="unlockedTraits">Dictionary of unlocked trait tags</param>
+    /// <returns>True if trait can be selected, false otherwise</returns>
     public static bool CanSelect(
         Trait trait,
         ICharacterInfo character,
@@ -23,10 +29,19 @@ public static class TraitSelectionValidator
     }
 
     /// <summary>
-    /// Validates if a trait can be selected (without unlock tracking)
-    /// Note: Budget is NOT checked here - players can go into debt with unconfirmed traits.
-    /// Budget is enforced at confirmation time via ConfirmTraits().
+    /// Validates if a trait can be selected by a character (without unlock tracking).
+    /// Note: Budget is NOT enforced here - players can go into debt with unconfirmed traits.
+    /// Budget validation happens at confirmation time via ConfirmTraits().
     /// </summary>
+    /// <param name="trait">The trait to validate</param>
+    /// <param name="character">Character information (race, classes)</param>
+    /// <param name="currentSelections">Currently selected traits</param>
+    /// <param name="budget">Current trait budget (provided but not enforced)</param>
+    /// <returns>True if trait can be selected, false otherwise</returns>
+    /// <remarks>
+    /// Validates: duplicate selection, race/class eligibility, conflicts, and prerequisites.
+    /// Does NOT validate budget - that happens at confirmation.
+    /// </remarks>
     public static bool CanSelect(
         Trait trait,
         ICharacterInfo character,
@@ -66,6 +81,15 @@ public static class TraitSelectionValidator
         return unlockedTraits.TryGetValue(trait.Tag, out bool unlocked) && unlocked;
     }
 
+    /// <summary>
+    /// Validates if a character trait can be deselected.
+    /// </summary>
+    /// <param name="characterTrait">The character trait to check</param>
+    /// <returns>Always true - traits can be changed at any time</returns>
+    /// <remarks>
+    /// Confirmation marks the end of initial selection but does not permanently lock traits.
+    /// Players can modify their traits post-creation.
+    /// </remarks>
     public static bool CanDeselect(CharacterTrait characterTrait)
     {
         // Traits can always be deselected - confirmation just means the initial selection is finalized,

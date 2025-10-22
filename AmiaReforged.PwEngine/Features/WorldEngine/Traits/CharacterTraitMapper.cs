@@ -4,11 +4,16 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Traits;
 
 /// <summary>
-/// Maps between domain CharacterTrait and persistent PersistentCharacterTrait
+/// Bidirectional mapper between domain model (CharacterTrait) and persistence model (PersistentCharacterTrait).
 /// </summary>
 [ServiceBinding(typeof(CharacterTraitMapper))]
 public class CharacterTraitMapper
 {
+    /// <summary>
+    /// Converts domain model to persistence model.
+    /// </summary>
+    /// <param name="characterTrait">Domain character trait</param>
+    /// <returns>Persistence entity</returns>
     public PersistentCharacterTrait ToPersistent(CharacterTrait characterTrait)
     {
         return new PersistentCharacterTrait
@@ -24,6 +29,11 @@ public class CharacterTraitMapper
         };
     }
 
+    /// <summary>
+    /// Converts persistence model to domain model.
+    /// </summary>
+    /// <param name="persistentTrait">Persistence entity</param>
+    /// <returns>Domain character trait</returns>
     public CharacterTrait ToDomain(PersistentCharacterTrait persistentTrait)
     {
         return new CharacterTrait

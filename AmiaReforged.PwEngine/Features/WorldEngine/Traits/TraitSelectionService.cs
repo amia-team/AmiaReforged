@@ -22,6 +22,15 @@ public class TraitSelectionService
     /// <summary>
     /// Attempts to select a trait for a character.
     /// </summary>
+    /// <param name="characterId">ID of the character selecting the trait</param>
+    /// <param name="traitTag">Tag of the trait to select</param>
+    /// <param name="character">Character information for eligibility validation</param>
+    /// <param name="unlockedTraits">Dictionary of unlocked trait tags</param>
+    /// <returns>True if selection succeeded, false if trait doesn't exist or validation failed</returns>
+    /// <remarks>
+    /// Creates an unconfirmed trait selection. Players can go into debt during selection.
+    /// Budget is validated at confirmation time.
+    /// </remarks>
     public bool SelectTrait(
         Guid characterId,
         string traitTag,
@@ -56,6 +65,9 @@ public class TraitSelectionService
     /// <summary>
     /// Attempts to deselect a trait for a character.
     /// </summary>
+    /// <param name="characterId">ID of the character</param>
+    /// <param name="traitTag">Tag of the trait to deselect</param>
+    /// <returns>True if deselection succeeded, false if trait not found or cannot be deselected</returns>
     public bool DeselectTrait(Guid characterId, string traitTag)
     {
         List<CharacterTrait> currentSelections = _characterTraitRepository.GetByCharacterId(characterId);
@@ -73,8 +85,14 @@ public class TraitSelectionService
 
     /// <summary>
     /// Confirms all unconfirmed traits for a character, finalizing the initial selection.
-    /// Note: Confirmed traits can still be changed later - this just marks the end of the initial selection phase.
     /// </summary>
+    /// <param name="characterId">ID of the character</param>
+    /// <returns>True if confirmation succeeded, false if budget is negative</returns>
+    /// <remarks>
+    /// Validates that the character's budget is non-negative before confirming.
+    /// Confirmation marks the end of initial trait selection but does not permanently lock traits.
+    /// Players can still modify traits after confirmation.
+    /// </remarks>
     public bool ConfirmTraits(Guid characterId)
     {
         List<CharacterTrait> currentSelections = _characterTraitRepository.GetByCharacterId(characterId);
@@ -98,14 +116,22 @@ public class TraitSelectionService
     /// <summary>
     /// Gets all traits selected by a character.
     /// </summary>
+    /// <param name="characterId">ID of the character</param>
+    /// <returns>List of all character traits (confirmed and unconfirmed)</returns>
     public List<CharacterTrait> GetCharacterTraits(Guid characterId)
     {
         return _characterTraitRepository.GetByCharacterId(characterId);
     }
 
     /// <summary>
-    /// Calculates the current budget for a character based on their selections.
+    /// Calculates the current budget for a character based on their trait selections.
     /// </summary>
+    /// <param name="currentSelections">List of character's current trait selections</param>
+    /// <returns>Budget showing total, spent, and available points</returns>
+    /// <remarks>
+    /// Only counts points from active traits. Negative cost traits (drawbacks) reduce spent points.
+    /// Currently does not track earned points - that will be added in Phase 4.
+    /// </remarks>
     public TraitBudget CalculateBudget(List<CharacterTrait> currentSelections)
     {
         int spentPoints = 0;
