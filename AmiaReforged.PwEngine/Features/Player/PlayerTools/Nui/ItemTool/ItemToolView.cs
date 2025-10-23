@@ -79,6 +79,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
 
         return new NuiColumn
         {
+            Width = 400f,
             Children =
             {
                 new NuiRow
