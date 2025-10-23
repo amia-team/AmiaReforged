@@ -1,6 +1,7 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NWN.Core; // for NWScript interop
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEditor;
 
@@ -108,7 +109,6 @@ internal sealed class ItemEditorModel
         return variables;
     }
 
-
     private void SetVariable(string name, LocalVariableData data)
     {
         if (SelectedItem is null) return;
@@ -161,5 +161,92 @@ internal sealed class ItemEditorModel
         {
             _player.SendServerMessage("Please target a valid item.", ColorConstants.Orange);
         }
+    }
+
+    // === Icon / Simple Model support (mirrors Player Item Tool) ===
+    public bool IsIconAllowed(out int current, out int max)
+    {
+        current = 0; max = 0;
+        if (SelectedItem is null) return false;
+
+        uint baseId = SelectedItem.BaseItem.Id; // numeric fallback for oddball entries (119, 120, 121)
+        if (!TryGetMaxForBaseType(SelectedItem, baseId, out max))
+            return false;
+
+        current = NWScript.GetItemAppearance(SelectedItem, (int)ItemAppearanceType.SimpleModel, 0);
+        return true;
+    }
+
+    public IconAdjustResult TryAdjustIcon(int delta, out int newValue, out int maxValue)
+    {
+        newValue = 0; maxValue = 0;
+        if (SelectedItem is null) return IconAdjustResult.NoSelection;
+
+        uint baseId = SelectedItem.BaseItem.Id;
+        if (!TryGetMaxForBaseType(SelectedItem, baseId, out maxValue))
+            return IconAdjustResult.NotAllowedType;
+
+        int current = NWScript.GetItemAppearance(SelectedItem, (int)ItemAppearanceType.SimpleModel, 0);
+        int target  = current + delta;
+
+        if (target < 1) target = 1;
+        if (target > maxValue) target = maxValue;
+
+        // Clone-and-replace so the appearance change persists (locals copy across)
+        var copy = NWScript.CopyItemAndModify(SelectedItem, (int)ItemAppearanceType.SimpleModel, 0, target, 1);
+        if (NWScript.GetIsObjectValid(copy) == 1)
+        {
+            NWScript.DestroyObject(SelectedItem);
+            SelectedItem = copy.ToNwObject<NwItem>();
+        }
+
+        newValue = target;
+        return IconAdjustResult.Success;
+    }
+
+    public enum IconAdjustResult { Success, NotAllowedType, NoSelection }
+
+    private static bool TryGetMaxForBaseType(NwItem item, uint baseId, out int max)
+    {
+        // Allowed (same as player tool’s set):
+        //  - Misc Large -> 31
+        //  - Misc Medium -> 254
+        //  - Misc Medium 2 (id 121) -> 66
+        //  - Misc Small -> 254
+        //  - Misc Small 2 (id 119) -> 254
+        //  - Misc Small 3 (id 120) -> 100
+        //  - Misc Thin -> 101
+        // Plus ALSO allow: AMULET, BELT, BOOK, BRACER, GEM, GLOVES, LARGEBOX, RING, SHIELDS (use 254 as safe cap)
+
+        max = 0;
+
+        var bi = item.BaseItem.ItemType;
+        switch (bi)
+        {
+            case BaseItemType.MiscLarge:  max = 31;  return true;
+            case BaseItemType.MiscMedium: max = 254; return true;
+            case BaseItemType.MiscSmall:  max = 254; return true;
+            case BaseItemType.MiscThin:   max = 101; return true;
+
+            case BaseItemType.Amulet:
+            case BaseItemType.Belt:
+            case BaseItemType.Book:
+            case BaseItemType.Bracer:
+            case BaseItemType.Gem:
+            case BaseItemType.Gloves:
+            case BaseItemType.LargeBox:
+            case BaseItemType.Ring:
+            case BaseItemType.SmallShield:
+            case BaseItemType.TowerShield:
+            case BaseItemType.LargeShield:
+                max = 254; return true;
+        }
+
+        // Fallback for oddball variants present in legacy script (by numeric id)
+        if (baseId == 121) { max = 66;  return true; }  // Misc Medium 2
+        if (baseId == 119) { max = 254; return true; }  // Misc Small 2
+        if (baseId == 120) { max = 100; return true; }  // Misc Small 3
+
+        return false;
     }
 }

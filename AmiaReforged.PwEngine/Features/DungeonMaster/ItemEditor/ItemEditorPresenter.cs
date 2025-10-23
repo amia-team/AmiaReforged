@@ -35,7 +35,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(300f, 200f, 800f, 700f)
+            Geometry = new NuiRect(300f, 200f, 800f, 720f)
         };
     }
 
@@ -56,8 +56,10 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         Token().SetBindValue(View.ValidObjectSelected, _model.SelectedItem != null);
 
+        // ❶ Populate the UI from the model first.
         UpdateFromModel();
 
+        // ❷ Only then start watching for edits.
         Token().SetBindWatch(View.Name, true);
         Token().SetBindWatch(View.Description, true);
         Token().SetBindWatch(View.Tag, true);
@@ -90,10 +92,17 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         {
             AddNewVariable();
         }
-        else if (eventData.ElementId == View.DeleteVariableButton.Id
-                 && eventData.ArrayIndex >= 0)
+        else if (eventData.ElementId == View.DeleteVariableButton.Id && eventData.ArrayIndex >= 0)
         {
             DeleteVariable(eventData.ArrayIndex);
+        }
+        else if (_model.SelectedItem != null)
+        {
+            // Icon clicks
+            if (eventData.ElementId == View.IconPlus1.Id)       TryAdjustIcon(+1);
+            else if (eventData.ElementId == View.IconMinus1.Id) TryAdjustIcon(-1);
+            else if (eventData.ElementId == View.IconPlus10.Id) TryAdjustIcon(+10);
+            else if (eventData.ElementId == View.IconMinus10.Id)TryAdjustIcon(-10);
         }
     }
 
@@ -105,7 +114,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             return;
         }
 
-        if (_isInitializing) return; // ← prevent the first populate from auto-saving
+        if (_isInitializing) return; // prevent first populate from auto-saving
 
         // Auto-apply changes as they're made
         ApplyChanges(false);
@@ -125,6 +134,23 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         if (showSuccessMessage)
             _player.SendServerMessage("Item updated successfully.", ColorConstants.Green);
+    }
+
+    private void TryAdjustIcon(int delta)
+    {
+        var result = _model.TryAdjustIcon(delta, out int newValue, out int maxValue);
+        switch (result)
+        {
+            case ItemEditorModel.IconAdjustResult.NotAllowedType:
+                _player.SendServerMessage("This item type can't change icons in this tool.", ColorConstants.Orange);
+                break;
+            case ItemEditorModel.IconAdjustResult.Success:
+                Token().SetBindValue(View.IconInfo, $"Icon: {newValue} / {maxValue}");
+                _player.SendServerMessage("Icon updated.", ColorConstants.Green);
+                break;
+            case ItemEditorModel.IconAdjustResult.NoSelection:
+                break;
+        }
     }
 
     private void AddNewVariable()
@@ -235,6 +261,11 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                 _trackedVariables[kvp.Key] = kvp.Value;
 
             UpdateVariableList();
+
+            // Icon controls
+            bool iconAllowed = _model.IsIconAllowed(out int currentIcon, out int maxIcon);
+            Token().SetBindValue(View.IconControlsVisible, iconAllowed);
+            Token().SetBindValue(View.IconInfo, iconAllowed ? $"Icon: {currentIcon} / {maxIcon}" : "Icon: —");
         }
         finally
         {

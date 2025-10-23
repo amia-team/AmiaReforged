@@ -16,6 +16,10 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public readonly NuiBind<string> Tag = new("item_tag");
     public readonly NuiBind<bool> ValidObjectSelected = new("valid_obj");
 
+    // Icon/edit binds
+    public readonly NuiBind<bool> IconControlsVisible = new("ie_icon_visible");
+    public readonly NuiBind<string> IconInfo = new("ie_icon_info");
+
     // Variables
     public readonly NuiBind<int> VariableCount = new("var_count");
     public readonly NuiBind<string> VariableNames = new("var_names");
@@ -32,6 +36,12 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public NuiButton SaveButton = null!;
     public NuiButton AddVariableButton = null!;
     public NuiButtonImage DeleteVariableButton = null!;
+
+    // Icon buttons
+    public NuiButton IconPlus1 = null!;
+    public NuiButton IconMinus1 = null!;
+    public NuiButton IconPlus10 = null!;
+    public NuiButton IconMinus10 = null!;
 
     public string Title => "Item Editor";
     public bool ListInDmTools => true;
@@ -85,6 +95,40 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
             }
         ];
 
+        // Icon control row (constraint-safe)
+        NuiRow iconRow = new()
+        {
+            Children =
+            [
+                new NuiLabel(IconInfo) { VerticalAlign = NuiVAlign.Middle },
+                new NuiSpacer(),
+                new NuiButton("+1")
+                {
+                    Id = "ie_icon_p1",
+                    Enabled = IconControlsVisible,
+                    Width = 50f
+                }.Assign(out IconPlus1),
+                new NuiButton("-1")
+                {
+                    Id = "ie_icon_m1",
+                    Enabled = IconControlsVisible,
+                    Width = 50f
+                }.Assign(out IconMinus1),
+                new NuiButton("+10")
+                {
+                    Id = "ie_icon_p10",
+                    Enabled = IconControlsVisible,
+                    Width = 60f
+                }.Assign(out IconPlus10),
+                new NuiButton("-10")
+                {
+                    Id = "ie_icon_m10",
+                    Enabled = IconControlsVisible,
+                    Width = 60f
+                }.Assign(out IconMinus10),
+            ]
+        };
+
         return new NuiColumn
         {
             Width = 700f,
@@ -102,13 +146,12 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                     ]
                 },
 
-
                 new NuiSpacer { Height = 10f },
 
                 new NuiRow()
                 {
                     Width = 400f,
-                    Height = 200f,
+                    Height = 220f,
                     Children =
                     [
                         new NuiGroup
@@ -167,6 +210,26 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                             }
                         },
                     ]
+                },
+
+                new NuiSpacer { Height = 8f },
+
+                // Icon controls (always visible; buttons disabled when not allowed)
+                new NuiGroup
+                {
+                    Border = true,
+                    Element = new NuiColumn
+                    {
+                        Children =
+                        {
+                            new NuiLabel("Icon / Simple Model")
+                            {
+                                Height = 20f,
+                                HorizontalAlign = NuiHAlign.Center
+                            },
+                            iconRow
+                        }
+                    }
                 },
 
                 new NuiSpacer { Height = 10f },
@@ -238,8 +301,6 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                         },
                     ]
                 },
-                // Variables group
-
 
                 new NuiSpacer { Height = 10f },
 
