@@ -1,5 +1,4 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using Anvil.API;
 
@@ -34,7 +33,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
     public string Id => "playertools.itemtool";
     public bool ListInPlayerTools => true;
     public bool RequiresPersistedCharacter => false;
-    public string Title => "Item Tool – Name & Description";
+    public string Title => "Item Modifier";
     public string CategoryTag { get; }
 
     public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
@@ -48,31 +47,31 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
             [
                 new NuiLabel(IconInfo)
                 {
-                    Width = 220f,
                     VerticalAlign = NuiVAlign.Middle
                 },
+                new NuiSpacer(), // flex so buttons don't overflow
                 new NuiButton("+1")
                 {
                     Id = "ind_icon_p1",
-                    Width = 45f,
+                    Height = 32f,
                     Enabled = IconControlsVisible
                 }.Assign(out IconPlus1),
                 new NuiButton("-1")
                 {
                     Id = "ind_icon_m1",
-                    Width = 45f,
+                    Height = 32f,
                     Enabled = IconControlsVisible
                 }.Assign(out IconMinus1),
                 new NuiButton("+10")
                 {
                     Id = "ind_icon_p10",
-                    Width = 55f,
+                    Height = 32f,
                     Enabled = IconControlsVisible
                 }.Assign(out IconPlus10),
                 new NuiButton("-10")
                 {
                     Id = "ind_icon_m10",
-                    Width = 55f,
+                    Height = 32f,
                     Enabled = IconControlsVisible
                 }.Assign(out IconMinus10),
             ]
@@ -80,7 +79,6 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
 
         return new NuiColumn
         {
-            Width = 520f,
             Children =
             {
                 new NuiRow
@@ -115,8 +113,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
                                     },
                                     new NuiTextEdit("Item Name", Name, 100, false)
                                     {
-                                        Enabled = ValidObjectSelected,
-                                        Width = 380f
+                                        Enabled = ValidObjectSelected
                                     }
                                 ]
                             },
