@@ -1,19 +1,16 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Core; // for NWScript interop
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ItemTool;
 
 public enum IconAdjustResult { Success, NotAllowedType, NoSelection }
 
-internal sealed class ItemToolModel
+internal sealed class ItemToolModel(NwPlayer player)
 {
-    private readonly NwPlayer _player;
     public NwItem? Selected { get; private set; }
     public bool HasSelected => Selected != null;
-
-    public ItemToolModel(NwPlayer player) { _player = player; }
 
     public delegate void NewSelectionHandler();
     public event NewSelectionHandler? OnNewSelection;
@@ -21,23 +18,45 @@ internal sealed class ItemToolModel
     // --- Selection ---
     public void EnterTargetingMode()
     {
-        _player.EnterTargetMode(OnTargetItem, new TargetModeSettings { ValidTargets = ObjectTypes.Item });
+        player.EnterTargetMode(OnTargetItem, new TargetModeSettings { ValidTargets = ObjectTypes.Item });
     }
+    private static readonly HashSet<string> BarredResrefs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ds_pckey",
+        "mythal1",
+        "mythal2",
+        "mythal3",
+        "mythal4",
+        "mythal5",
+        "mythal6",
+        "mythal7",
+        "char_template",
+        "ass_customizer",
+        "dd_grandfather",
+        "goodboi",
+        "platinum_token",
+        "jobjournal",
+        "cust_summon"
+    };
 
     private void OnTargetItem(ModuleEvents.OnPlayerTarget ev)
     {
-        if (ev.TargetObject is NwItem item)
+        if (ev.TargetObject is not NwItem item)
         {
-            Selected = item;
-            OnNewSelection?.Invoke();
+            player.SendServerMessage("Please target a valid item.", ColorConstants.Orange);
+            return;
         }
-        else
+
+        if (BarredResrefs.Contains(item.ResRef))
         {
-            _player.SendServerMessage("Please target a valid item.", ColorConstants.Orange);
+            player.SendServerMessage("You cannot modify this item. Please select a different item.", ColorConstants.Red);
+            return;
         }
+
+        Selected = item;
+        OnNewSelection?.Invoke();
     }
 
-    // --- Edits ---
     public void UpdateBasic(string name, string description)
     {
         if (Selected is null) return;
@@ -45,13 +64,12 @@ internal sealed class ItemToolModel
         Selected.Description = description;
     }
 
-    // --- Icon logic (Simple Model index 0), mirroring i_ds_item_portrt rules + your extra types ---
     public bool IsIconAllowed(out int current, out int max)
     {
         current = 0; max = 0;
         if (Selected is null) return false;
 
-        uint baseId = Selected.BaseItem.Id; // numeric fallback for oddball entries (119, 120, 121)
+        uint baseId = Selected.BaseItem.Id;
         if (!TryGetMaxForBaseType(Selected, baseId, out max))
             return false;
 
@@ -103,7 +121,6 @@ internal sealed class ItemToolModel
         var bi = item.BaseItem.ItemType;
         switch (bi)
         {
-            // Original allowed buckets
             case BaseItemType.MiscLarge:
                 max = 31; return true;
             case BaseItemType.MiscMedium:
@@ -113,7 +130,6 @@ internal sealed class ItemToolModel
             case BaseItemType.MiscThin:
                 max = 101; return true;
 
-            // Extras requested
             case BaseItemType.Amulet:
             case BaseItemType.Belt:
             case BaseItemType.Book:
