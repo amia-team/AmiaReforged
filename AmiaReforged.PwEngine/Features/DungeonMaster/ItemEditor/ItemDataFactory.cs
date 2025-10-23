@@ -8,8 +8,7 @@ internal static class ItemDataFactory
     {
         Dictionary<string, LocalVariableData> vars = new();
 
-        // Enumerate all locals on the item and map them to our DTO
-        foreach (ObjectVariable local in item.LocalVariables)
+        foreach (var local in item.LocalVariables)
         {
             switch (local)
             {
@@ -62,5 +61,4 @@ internal static class ItemDataFactory
             vars
         );
     }
-
 }

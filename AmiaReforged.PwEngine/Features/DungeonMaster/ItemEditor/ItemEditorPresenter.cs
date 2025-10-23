@@ -146,18 +146,17 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         LocalVariableType type = (LocalVariableType)varTypeIndex;
         LocalVariableData data = CreateVariableData(type, varValue ?? string.Empty);
 
-        // UPSERT behavior: overwrite if it already exists
         bool existed = _trackedVariables.ContainsKey(varName);
-        _trackedVariables[varName] = data;
+        _trackedVariables[varName] = data; // UPSERT
 
         UpdateVariableList();
         ApplyChanges();
 
-        _player.SendServerMessage(existed
-            ? $"Variable '{varName}' updated."
-            : $"Variable '{varName}' added.", ColorConstants.Green);
+        _player.SendServerMessage(
+            existed ? $"Variable '{varName}' updated." : $"Variable '{varName}' added.",
+            ColorConstants.Green);
 
-        // Clear input fields
+        // Clear inputs
         Token().SetBindValue(View.NewVariableName, string.Empty);
         Token().SetBindValue(View.NewVariableValue, string.Empty);
     }
@@ -230,13 +229,11 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         Token().SetBindValue(View.Description, _model.SelectedItem.Description);
         Token().SetBindValue(View.Tag, _model.SelectedItem.Tag);
 
-        // NEW: pull the item's existing locals and display them
+        // NEW: read current locals from the item and populate the list
         ItemData current = ItemDataFactory.From(_model.SelectedItem);
         _trackedVariables.Clear();
-        foreach (KeyValuePair<string, LocalVariableData> kvp in current.Variables)
-        {
+        foreach (var kvp in current.Variables)
             _trackedVariables[kvp.Key] = kvp.Value;
-        }
 
         UpdateVariableList();
     }
