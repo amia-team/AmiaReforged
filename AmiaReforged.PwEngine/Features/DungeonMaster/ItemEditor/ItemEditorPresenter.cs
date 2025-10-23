@@ -233,7 +233,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         // NEW: pull the item's existing locals and display them
         ItemData current = ItemDataFactory.From(_model.SelectedItem);
         _trackedVariables.Clear();
-        foreach (var kvp in current.Variables)
+        foreach (KeyValuePair<string, LocalVariableData> kvp in current.Variables)
         {
             _trackedVariables[kvp.Key] = kvp.Value;
         }

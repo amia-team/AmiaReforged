@@ -48,7 +48,7 @@ internal sealed class ItemEditorModel
         }
 
         // Add or update variables
-        foreach (var kvp in newVariables)
+        foreach (KeyValuePair<string, LocalVariableData> kvp in newVariables)
         {
             SetVariable(kvp.Key, kvp.Value);
         }
@@ -59,7 +59,7 @@ internal sealed class ItemEditorModel
         Dictionary<string, LocalVariableData> variables = new();
         if (SelectedItem is null) return variables;
 
-        foreach (var local in SelectedItem.LocalVariables)
+        foreach (ObjectVariable local in SelectedItem.LocalVariables)
         {
             switch (local)
             {
