@@ -122,6 +122,9 @@ internal sealed class ItemToolModel
             case BaseItemType.Gloves:
             case BaseItemType.LargeBox:
             case BaseItemType.Ring:
+            case BaseItemType.LargeShield:
+            case BaseItemType.TowerShield:
+            case BaseItemType.SmallShield:
                 max = 254; return true;
         }
 
