@@ -11,6 +11,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private bool _isInitializing;
 
     public override NuiWindowToken Token() => _token;
 
@@ -46,7 +47,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         if (_window == null)
         {
             _player.SendServerMessage(
-                message: "The window could not be created. Screenshot this message and report it to a DM.",
+                "The window could not be created. Screenshot this message and report it to a DM.",
                 ColorConstants.Orange);
             return;
         }
@@ -55,12 +56,13 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         Token().SetBindValue(View.ValidObjectSelected, _model.SelectedItem != null);
 
-        // Enable bind watching for real-time updates
+        // ❶ Populate the UI from the model first.
+        UpdateFromModel();
+
+        // ❷ Only then start watching for edits.
         Token().SetBindWatch(View.Name, true);
         Token().SetBindWatch(View.Description, true);
         Token().SetBindWatch(View.Tag, true);
-
-        UpdateFromModel();
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -104,6 +106,8 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             UpdateFromModel();
             return;
         }
+
+        if (_isInitializing) return; // ← prevent the first populate from auto-saving
 
         // Auto-apply changes as they're made
         ApplyChanges();
@@ -219,23 +223,31 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
     private void UpdateFromModel()
     {
-        bool selectionAvailable = _model.SelectedItem != null;
-        Token().SetBindValue(View.ValidObjectSelected, selectionAvailable);
+        _isInitializing = true;
+        try
+        {
+            bool selectionAvailable = _model.SelectedItem != null;
+            Token().SetBindValue(View.ValidObjectSelected, selectionAvailable);
 
-        if (_model.SelectedItem is null) return;
+            if (_model.SelectedItem is null) return;
 
-        // Basic fields
-        Token().SetBindValue(View.Name, _model.SelectedItem.Name);
-        Token().SetBindValue(View.Description, _model.SelectedItem.Description);
-        Token().SetBindValue(View.Tag, _model.SelectedItem.Tag);
+            // Basic fields
+            Token().SetBindValue(View.Name, _model.SelectedItem.Name);
+            Token().SetBindValue(View.Description, _model.SelectedItem.Description);
+            Token().SetBindValue(View.Tag, _model.SelectedItem.Tag);
 
-        // NEW: read current locals from the item and populate the list
-        ItemData current = ItemDataFactory.From(_model.SelectedItem);
-        _trackedVariables.Clear();
-        foreach (var kvp in current.Variables)
-            _trackedVariables[kvp.Key] = kvp.Value;
+            // Seed the tracked variables from the item BEFORE any watch can apply changes
+            ItemData current = ItemDataFactory.From(_model.SelectedItem);
+            _trackedVariables.Clear();
+            foreach (var kvp in current.Variables)
+                _trackedVariables[kvp.Key] = kvp.Value;
 
-        UpdateVariableList();
+            UpdateVariableList();
+        }
+        finally
+        {
+            _isInitializing = false;
+        }
     }
 
     public override void Close()
