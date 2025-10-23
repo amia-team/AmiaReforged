@@ -100,7 +100,11 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                 Id = "btn_delete_var",
                 Aspect = 1f,
                 Tooltip = "Delete this instance"
-            }),
+            })
+            {
+                Width = 30f,
+                VariableSize = false
+            },
             new(new NuiButtonImage("dm_goto")
             {
                 Id = "btn_load_var",

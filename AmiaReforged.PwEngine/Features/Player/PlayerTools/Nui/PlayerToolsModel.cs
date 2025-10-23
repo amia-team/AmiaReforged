@@ -28,7 +28,6 @@ public class PlayerToolsModel
 
     private List<IToolWindow> GetAvailableWindows()
     {
-        // Get all types of type IToolWindow
         List<IToolWindow> windows = new();
         Assembly assembly = Assembly.GetExecutingAssembly();
         Type interfaceType = typeof(IToolWindow);
@@ -44,7 +43,9 @@ public class PlayerToolsModel
             }
         }
 
-        return windows;
+        return windows
+            .OrderBy<IToolWindow, string>(w => w.Title ?? string.Empty)
+            .ToList();
     }
 
 

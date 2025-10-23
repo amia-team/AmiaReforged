@@ -1,5 +1,6 @@
 using AmiaReforged.Core.Models.DmModels;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.Core.Services;
@@ -8,20 +9,39 @@ namespace AmiaReforged.Core.Services;
 public class DmAreaService(DatabaseContextFactory factory)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private AmiaDbContext _ctx = factory.CreateDbContext();
 
     public void SaveArea(DmArea area)
     {
+        AmiaDbContext ctx = new AmiaDbContext();
+        try
+        {
+            // Attach the untracked entity to the context
+            ctx.DmAreas.Attach(area);
+
+            // Mark the entity as modified
+            ctx.Entry(area).State = EntityState.Modified;
+
+            // Save changes
+            ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to save area {AreaName}", area.NewName);
+        }
     }
 
     public List<DmArea> All()
     {
-        return _ctx.DmAreas.ToList();
+        AmiaDbContext ctx = new AmiaDbContext();
+
+        return ctx.DmAreas.ToList();
     }
 
     public DmArea? InstanceFromKey(string playerCdKey, string selectedAreaResRef, string newInstanceName)
     {
-        DmArea? area = _ctx.DmAreas.FirstOrDefault(a =>
+        AmiaDbContext ctx = new AmiaDbContext();
+
+        DmArea? area = ctx.DmAreas.AsNoTracking().FirstOrDefault(a =>
             a.CdKey == playerCdKey && a.OriginalResRef == selectedAreaResRef && a.NewName == newInstanceName);
 
         return area;
@@ -29,14 +49,21 @@ public class DmAreaService(DatabaseContextFactory factory)
 
     public void SaveNew(DmArea newInstance)
     {
+        AmiaDbContext ctx = new AmiaDbContext();
+
         try
         {
-            _ctx.DmAreas.Add(newInstance);
-            _ctx.SaveChanges();
+            ctx.DmAreas.Add(newInstance);
+            ctx.SaveChanges();
         }
         catch (Exception e)
         {
             Log.Error(e);
         }
+    }
+
+    public List<DmArea> AllFromResRef(string playerCdKey, string selectedAreaResRef)
+    {
+        return All().Where(a => a.CdKey == playerCdKey && a.OriginalResRef == selectedAreaResRef).ToList();
     }
 }

@@ -23,6 +23,8 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
 
     private List<string> _visibleAreas = [];
 
+    private List<DmArea> _savedAreas = [];
+
     [Inject] private Lazy<DmAreaService>? AreaService { get; init; }
 
     public AreaEditorPresenter(AreaEditorView view, NwPlayer player)
@@ -124,10 +126,11 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
     private void HandleButtonClick(ModuleEvents.OnNuiEvent evt)
     {
         if (AreaService is null) return;
-        if (_selectedArea is null) return;
 
         if (evt.ElementId == View.SaveNewInstanceButton.Id)
         {
+            if (_selectedArea is null) return;
+
             string? newInstanceName = Token().GetBindValue(View.NewAreaName);
 
             if (newInstanceName.IsNullOrEmpty())
@@ -164,9 +167,30 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
                 };
 
                 AreaService.Value.SaveNew(newInstance);
-                return;
+            }
+            else
+            {
+                byte[]? serializedAre = _selectedArea.SerializeARE();
+                if (serializedAre is null)
+                {
+                    _player.SendServerMessage("Failed to serialize ARE");
+                    return;
+                }
+
+                byte[]? serializedGit = _selectedArea.SerializeGIT();
+                if (serializedGit is null)
+                {
+                    _player.SendServerMessage("Failed to serialize GIT");
+                    return;
+                }
+
+                existing.SerializedGIT = serializedGit;
+                existing.SerializedGIT = serializedAre;
+
+                AreaService.Value.SaveArea(existing);
             }
 
+            UpdateInstanceList();
             return;
         }
 
@@ -179,6 +203,8 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         if (evt.ElementId == View.PickCurrentAreaButton.Id)
         {
             HandlePickCurrent();
+            UpdateInstanceList();
+
             return;
         }
 
@@ -192,7 +218,21 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         if (evt.ElementId == "btn_pick_row")
         {
             HandlePickNew(evt);
+            UpdateInstanceList();
         }
+    }
+
+    private void UpdateInstanceList()
+    {
+        if (AreaService is null) return;
+        if (_selectedArea is null) return;
+
+        _savedAreas = AreaService.Value.AllFromResRef(_player.CDKey, _selectedArea.ResRef);
+
+        List<string> names = _savedAreas.Select(a => a.NewName).ToList();
+
+        Token().SetBindValues(View.SavedVariantNames, names);
+        Token().SetBindValue(View.SavedVariantCounts, names.Count);
     }
 
     private void HandleReload()
@@ -240,7 +280,7 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
 
     private void HandlePickNew(ModuleEvents.OnNuiEvent evt)
     {
-        string areaShindig = _visibleAreas[evt.ArrayIndex].Split("-")[1];
+        string areaShindig = _visibleAreas[evt.ArrayIndex].Split("|")[1];
 
         NwArea? area = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == areaShindig);
         if (area != null)
@@ -385,7 +425,7 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
     private List<string> GetVisible()
     {
         if (string.IsNullOrWhiteSpace(_search))
-            return NwModule.Instance.Areas.Select(a => $"{a.Name}-{a.ResRef}").ToList();
+            return NwModule.Instance.Areas.Select(a => $"{a.Name}|{a.ResRef}").ToList();
         string s = _search.ToLowerInvariant();
 
         return NwModule.Instance.Areas.Where(a =>
@@ -393,7 +433,7 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
             bool resRefHit = a.ResRef.Contains(s.ToLower(), StringComparison.InvariantCultureIgnoreCase);
             bool nameHit = a.Name.Contains(s.ToLower(), StringComparison.InvariantCultureIgnoreCase);
             return resRefHit || nameHit;
-        }).Select(ar => $"{ar.Name} - ({ar.ResRef})").ToList();
+        }).Select(ar => $"{ar.Name}|({ar.ResRef})").ToList();
     }
 
 
