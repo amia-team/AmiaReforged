@@ -42,36 +42,31 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
     {
         var iconRow = new NuiRow
         {
-            Height = 36f,
             Children =
             [
                 new NuiLabel(IconInfo)
                 {
                     VerticalAlign = NuiVAlign.Middle
                 },
-                new NuiSpacer(), // flex so buttons don't overflow
+                new NuiSpacer(),
                 new NuiButton("+1")
                 {
                     Id = "ind_icon_p1",
-                    Height = 32f,
                     Enabled = IconControlsVisible
                 }.Assign(out IconPlus1),
                 new NuiButton("-1")
                 {
                     Id = "ind_icon_m1",
-                    Height = 32f,
                     Enabled = IconControlsVisible
                 }.Assign(out IconMinus1),
                 new NuiButton("+10")
                 {
                     Id = "ind_icon_p10",
-                    Height = 32f,
                     Enabled = IconControlsVisible
                 }.Assign(out IconPlus10),
                 new NuiButton("-10")
                 {
                     Id = "ind_icon_m10",
-                    Height = 32f,
                     Enabled = IconControlsVisible
                 }.Assign(out IconMinus10),
             ]
@@ -79,18 +74,15 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
 
         return new NuiColumn
         {
-            Width = 400f,
             Children =
             {
                 new NuiRow
                 {
-                    Height = 35f,
                     Children =
                     [
                         new NuiButton("Select Item")
                         {
-                            Id = "ind_select",
-                            Height = 35f
+                            Id = "ind_select"
                         }.Assign(out SelectItemButton),
                     ]
                 },
@@ -104,7 +96,6 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
                         {
                             new NuiRow
                             {
-                                Height = 36f,
                                 Children =
                                 [
                                     new NuiLabel("Name:")
@@ -114,13 +105,13 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
                                     },
                                     new NuiTextEdit("Item Name", Name, 100, false)
                                     {
-                                        Enabled = ValidObjectSelected
+                                        Enabled = ValidObjectSelected,
+                                        Width = 420f
                                     }
                                 ]
                             },
                             new NuiLabel("Description:")
                             {
-                                Height = 18f,
                                 VerticalAlign = NuiVAlign.Middle
                             },
                             new NuiTextEdit("Item Description", Description, 5000, true)
@@ -134,18 +125,16 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
 
                 new NuiSpacer { Height = 6f },
 
-                // Icon controls (shown only for allowed base types)
+                // Icon controls (always present; buttons disabled when not allowed)
                 new NuiGroup
                 {
                     Border = true,
-                    Enabled = IconControlsVisible,
                     Element = new NuiColumn
                     {
                         Children =
                         {
                             new NuiLabel("Icon / Simple Model")
                             {
-                                Height = 18f,
                                 HorizontalAlign = NuiHAlign.Center
                             },
                             iconRow
@@ -157,7 +146,6 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
 
                 new NuiRow
                 {
-                    Height = 36f,
                     Children =
                     [
                         new NuiButton("Save")
