@@ -86,7 +86,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         }
         else if (eventData.ElementId == View.SaveButton.Id)
         {
-            ApplyChanges();
+            ApplyChanges(true);
         }
         else if (eventData.ElementId == View.AddVariableButton.Id)
         {
@@ -110,29 +110,23 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         if (_isInitializing) return; // ← prevent the first populate from auto-saving
 
         // Auto-apply changes as they're made
-        ApplyChanges();
+        ApplyChanges(false);
     }
 
-    private void ApplyChanges()
+    private void ApplyChanges(bool showSuccessMessage)
     {
         if (_model.SelectedItem == null) return;
 
         string? newName = Token().GetBindValue(View.Name);
         string? newDescription = Token().GetBindValue(View.Description);
         string? newTag = Token().GetBindValue(View.Tag);
+        if (newName is null || newDescription is null || newTag is null) return;
 
-        if (newName is null || newDescription is null || newTag is null)
-            return;
-
-        ItemData newData = new(
-            newName,
-            newDescription,
-            newTag,
-            _trackedVariables
-        );
-
+        ItemData newData = new(newName, newDescription, newTag, _trackedVariables);
         _model.Update(newData);
-        _player.SendServerMessage("Item updated successfully.", ColorConstants.Green);
+
+        if (showSuccessMessage)
+            _player.SendServerMessage("Item updated successfully.", ColorConstants.Green);
     }
 
     private void AddNewVariable()
@@ -154,7 +148,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         _trackedVariables[varName] = data; // UPSERT
 
         UpdateVariableList();
-        ApplyChanges();
+        ApplyChanges(true);
 
         _player.SendServerMessage(
             existed ? $"Variable '{varName}' updated." : $"Variable '{varName}' added.",
@@ -196,7 +190,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         string keyToRemove = keys[index];
         _trackedVariables.Remove(keyToRemove);
         UpdateVariableList();
-        ApplyChanges();
+        ApplyChanges(true);
     }
 
     private void UpdateVariableList()
