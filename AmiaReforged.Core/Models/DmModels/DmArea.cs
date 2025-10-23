@@ -15,5 +15,7 @@ public class DmArea
 
     public required string NewName { get; set; }
 
-    public required byte[] SerializedCopy { get; set; }
+    public required byte[] SerializedARE { get; set; }
+    public required byte[] SerializedGIT { get; set; }
+
 }

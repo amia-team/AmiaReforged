@@ -64,6 +64,8 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
 
     public readonly NuiBind<string> NightFogDensity = new("night_fog_color");
 
+    public readonly NuiBind<string> NewAreaName =  new("new_area_name");
+
     public AreaEditorView(NwPlayer player)
     {
         Presenter = new AreaEditorPresenter(this, player);
@@ -93,11 +95,17 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
         List<NuiListTemplateCell> savedInstances =
         [
             new(new NuiLabel(SavedVariantNames)),
+            new(new NuiButtonImage("ir_abort")
+            {
+                Id = "btn_delete_var",
+                Aspect = 1f,
+                Tooltip = "Delete this instance"
+            }),
             new(new NuiButtonImage("dm_goto")
             {
                 Id = "btn_load_var",
                 Aspect = 1f,
-                Tooltip = "Load this area"
+                Tooltip = "Load this instance (spawns new area)"
             })
             {
                 Width = 30f,
@@ -119,7 +127,8 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                             [
                                 new NuiLabel("Search:")
                                 {
-                                    Height = 15f
+                                    Height = 15f,
+                                    VerticalAlign = NuiVAlign.Middle,
                                 },
                                 new NuiTextEdit("type to filter...", SearchBind, 64, false)
                                 {
@@ -143,14 +152,15 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                             {
                                                 Children =
                                                 [
-                                                    new NuiLabel("Saved Instances")
+                                                    new NuiTextEdit("Type a name...", NewAreaName, 255, false)
                                                     {
-                                                        Height = 15f
+                                                        Height = 30f
                                                     },
                                                     new NuiSpacer(),
                                                     new NuiButton("Save New Instance")
                                                     {
                                                         Id = "btn_save_instance",
+                                                        Height = 30f,
                                                     }.Assign(out SaveNewInstanceButton)
                                                 ]
                                             },
@@ -162,7 +172,8 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                             },
                                             new NuiLabel("Sound Settings")
                                             {
-                                                Height = 15f
+                                                Height = 15f,
+                                                VerticalAlign = NuiVAlign.Middle,
                                             },
 
                                             // Music
@@ -180,7 +191,8 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 new NuiLabel("Day Music:")
                                                                 {
                                                                     Height = 15f,
-                                                                    Width = 90f
+                                                                    Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", DayMusicStr, 5, false)
                                                                 {
@@ -196,7 +208,8 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 new NuiLabel("Night Music:")
                                                                 {
                                                                     Height = 15f,
-                                                                    Width = 90f
+                                                                    Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", NightMusicStr, 5, false)
                                                                 {
@@ -212,7 +225,8 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 new NuiLabel("Battle Music:")
                                                                 {
                                                                     Height = 15f,
-                                                                    Width = 90f
+                                                                    Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", BattleMusicStr, 5, false)
                                                                 {
@@ -238,7 +252,8 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 new NuiLabel("Fog Distance:")
                                                                 {
                                                                     Height = 15f,
-                                                                    Width = 90f
+                                                                    Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", FogClipDistance, 5, false)
                                                                 {
@@ -255,6 +270,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", DayFogR, 3, false)
                                                                 {
@@ -270,6 +286,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", DayFogG, 3, false)
                                                                 {
@@ -285,6 +302,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", DayFogB, 3, false)
                                                                 {
@@ -300,6 +318,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", DayFogA, 3, false)
                                                                 {
@@ -316,6 +335,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", DayDiffuseR, 3, false)
                                                                 {
@@ -331,6 +351,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", DayDiffuseG, 3, false)
                                                                 {
@@ -346,6 +367,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", DayDiffuseB, 3, false)
                                                                 {
@@ -361,6 +383,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", DayDiffuseA, 3, false)
                                                                 {
@@ -376,6 +399,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", DayFogDensity, 3, false)
                                                                 {
@@ -393,6 +417,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", NightFogR, 3, false)
                                                                 {
@@ -408,6 +433,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", NightFogG, 3, false)
                                                                 {
@@ -423,6 +449,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", NightFogB, 3, false)
                                                                 {
@@ -438,6 +465,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", NightFogA, 3, false)
                                                                 {
@@ -454,6 +482,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", NightDiffuseR, 3, false)
                                                                 {
@@ -469,6 +498,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", NightDiffuseG, 3, false)
                                                                 {
@@ -484,6 +514,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", NightDiffuseB, 3, false)
                                                                 {
@@ -499,6 +530,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", NightDiffuseA, 3, false)
                                                                 {
@@ -514,6 +546,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Height = 15f,
                                                                     Width = 90f,
+                                                                    VerticalAlign = NuiVAlign.Middle,
                                                                 },
                                                                 new NuiTextEdit("0", NightFogDensity, 3, false)
                                                                 {
@@ -531,9 +564,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                     {
                                         Children =
                                         [
-                                            new NuiLabel("Mom's spaghetti"),
-                                            new NuiLabel("Vomit in your piss"),
-                                            new NuiLabel("It's ready"),
+
                                         ]
                                     }
                                 ]

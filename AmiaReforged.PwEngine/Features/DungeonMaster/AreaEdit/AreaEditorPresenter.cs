@@ -1,7 +1,11 @@
 using System.Globalization;
+using AmiaReforged.Core.Models.DmModels;
+using AmiaReforged.Core.Services;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
+using Microsoft.IdentityModel.Tokens;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
@@ -18,6 +22,8 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
     private NwArea? _selectedArea;
 
     private List<string> _visibleAreas = [];
+
+    [Inject] private Lazy<DmAreaService>? AreaService { get; init; }
 
     public AreaEditorPresenter(AreaEditorView view, NwPlayer player)
     {
@@ -117,50 +123,59 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent evt)
     {
-        if (evt.ElementId == View.ReloadCurrentAreaButton.Id)
+        if (AreaService is null) return;
+        if (_selectedArea is null) return;
+
+        if (evt.ElementId == View.SaveNewInstanceButton.Id)
         {
-            if (_selectedArea is null) return;
-            if (_player.LoginCreature is null) return;
-            if (_player.LoginCreature.Location is null) return;
+            string? newInstanceName = Token().GetBindValue(View.NewAreaName);
 
-            List<(NwCreature c, Location l)> allCurrent = [];
-
-            allCurrent.Add((_player.LoginCreature, _player.LoginCreature.Location));
-            _player.LoginCreature.Location = NwModule.Instance.StartingLocation;
-
-            foreach (NwCreature creature in _selectedArea.FindObjectsOfTypeInArea<NwCreature>())
+            if (newInstanceName.IsNullOrEmpty())
             {
-                if (creature is { IsLoginPlayerCharacter: false }) continue;
-
-                if (creature.Location == null) continue;
-
-                allCurrent.Add((creature, creature.Location));
-
-                _player.SendServerMessage($"Jumping {creature.Name}");
-                creature.ActionJumpToLocation(NwModule.Instance.StartingLocation);
+                _player.SendServerMessage("Name Input Cannot Be Empty");
+                return;
             }
 
-            NWScript.DelayCommand(5.0f, () =>
+            DmArea? existing = AreaService.Value.InstanceFromKey(_player.CDKey, _selectedArea.ResRef, newInstanceName!);
+
+            if (existing is null)
             {
-                foreach ((NwCreature c, Location l) cl in allCurrent)
+                byte[]? serializedAre = _selectedArea.SerializeARE();
+                if (serializedAre is null)
                 {
-                    cl.c.Location = cl.l;
+                    _player.SendServerMessage("Failed to serialize ARE");
+                    return;
                 }
-            });
 
+                byte[]? serializedGit = _selectedArea.SerializeGIT();
+                if (serializedGit is null)
+                {
+                    _player.SendServerMessage("Failed to serialize GIT");
+                    return;
+                }
 
+                DmArea newInstance = new DmArea
+                {
+                    CdKey = _player.CDKey,
+                    OriginalResRef = _selectedArea.ResRef,
+                    NewName = newInstanceName!,
+                    SerializedARE = serializedAre,
+                    SerializedGIT = serializedGit
+                };
+            }
+
+            return;
+        }
+
+        if (evt.ElementId == View.ReloadCurrentAreaButton.Id)
+        {
+            HandleReload();
             return;
         }
 
         if (evt.ElementId == View.PickCurrentAreaButton.Id)
         {
-            NwCreature? c = _player.LoginCreature;
-            if (c == null) return;
-
-            if (c.Area == null) return;
-
-            _selectedArea = c.Area;
-            LoadFromSelection();
+            HandlePickCurrent();
             return;
         }
 
@@ -173,14 +188,62 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
 
         if (evt.ElementId == "btn_pick_row")
         {
-            string areaShindig = _visibleAreas[evt.ArrayIndex].Split("-")[1];
+            HandlePickNew(evt);
+        }
+    }
 
-            NwArea? area = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == areaShindig);
-            if (area != null)
+    private void HandleReload()
+    {
+        if (_selectedArea is null) return;
+        if (_player.LoginCreature is null) return;
+        if (_player.LoginCreature.Location is null) return;
+
+        List<(NwCreature c, Location l)> allCurrent = [];
+
+        allCurrent.Add((_player.LoginCreature, _player.LoginCreature.Location));
+        _player.LoginCreature.Location = NwModule.Instance.StartingLocation;
+
+        foreach (NwCreature creature in _selectedArea.FindObjectsOfTypeInArea<NwCreature>())
+        {
+            if (creature is { IsLoginPlayerCharacter: false }) continue;
+
+            if (creature.Location == null) continue;
+
+            allCurrent.Add((creature, creature.Location));
+
+            _player.SendServerMessage($"Jumping {creature.Name}");
+            creature.ActionJumpToLocation(NwModule.Instance.StartingLocation);
+        }
+
+        NWScript.DelayCommand(5.0f, () =>
+        {
+            foreach ((NwCreature c, Location l) cl in allCurrent)
             {
-                _selectedArea = area;
-                LoadFromSelection();
+                cl.c.Location = cl.l;
             }
+        });
+    }
+
+    private void HandlePickCurrent()
+    {
+        NwCreature? c = _player.LoginCreature;
+        if (c == null) return;
+
+        if (c.Area == null) return;
+
+        _selectedArea = c.Area;
+        LoadFromSelection();
+    }
+
+    private void HandlePickNew(ModuleEvents.OnNuiEvent evt)
+    {
+        string areaShindig = _visibleAreas[evt.ArrayIndex].Split("-")[1];
+
+        NwArea? area = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == areaShindig);
+        if (area != null)
+        {
+            _selectedArea = area;
+            LoadFromSelection();
         }
     }
 
