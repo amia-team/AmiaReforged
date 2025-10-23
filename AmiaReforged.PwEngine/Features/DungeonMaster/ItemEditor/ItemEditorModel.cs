@@ -59,10 +59,55 @@ internal sealed class ItemEditorModel
         Dictionary<string, LocalVariableData> variables = new();
         if (SelectedItem is null) return variables;
 
-        // NWN doesn't provide a direct way to enumerate all local variables
-        // So we'll track them through our data structure
+        foreach (var local in SelectedItem.LocalVariables)
+        {
+            switch (local)
+            {
+                case LocalVariableInt li:
+                    variables[li.Name] = new LocalVariableData
+                    {
+                        Type = LocalVariableType.Int,
+                        IntValue = li.Value
+                    };
+                    break;
+
+                case LocalVariableFloat lf:
+                    variables[lf.Name] = new LocalVariableData
+                    {
+                        Type = LocalVariableType.Float,
+                        FloatValue = lf.Value
+                    };
+                    break;
+
+                case LocalVariableString ls:
+                    variables[ls.Name] = new LocalVariableData
+                    {
+                        Type = LocalVariableType.String,
+                        StringValue = ls.Value ?? string.Empty
+                    };
+                    break;
+
+                case LocalVariableLocation lloc:
+                    variables[lloc.Name] = new LocalVariableData
+                    {
+                        Type = LocalVariableType.Location,
+                        LocationValue = lloc.Value
+                    };
+                    break;
+
+                case LocalVariableObject<NwObject> lo:
+                    variables[lo.Name] = new LocalVariableData
+                    {
+                        Type = LocalVariableType.Object,
+                        ObjectValue = lo.Value
+                    };
+                    break;
+            }
+        }
+
         return variables;
     }
+
 
     private void SetVariable(string name, LocalVariableData data)
     {
