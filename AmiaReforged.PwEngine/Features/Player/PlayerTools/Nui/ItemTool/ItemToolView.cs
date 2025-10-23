@@ -46,7 +46,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
             [
                 new NuiLabel(IconInfo)
                 {
-                    Width = 120f,
+                    Width = 250f,
                     HorizontalAlign = NuiHAlign.Center,
                     VerticalAlign = NuiVAlign.Middle
                 },

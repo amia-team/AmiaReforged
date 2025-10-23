@@ -100,7 +100,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         {
             Children =
             [
-                new NuiLabel(IconInfo) { VerticalAlign = NuiVAlign.Middle },
+                new NuiLabel(IconInfo) { VerticalAlign = NuiVAlign.Middle, Width = 250f },
                 new NuiSpacer(),
                 new NuiButton("+1")
                 {
@@ -217,6 +217,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                 // Icon controls (always visible; buttons disabled when not allowed)
                 new NuiGroup
                 {
+                    Height = 100f,
                     Border = true,
                     Element = new NuiColumn
                     {
