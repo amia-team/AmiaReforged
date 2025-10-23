@@ -55,7 +55,6 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
     public readonly NuiBind<string> NightFogB = new("night_fog_b");
     public readonly NuiBind<string> NightFogA = new("night_fog_a");
 
-
     public readonly NuiBind<string> NightDiffuseR = new("night_diffuse_r");
     public readonly NuiBind<string> NightDiffuseG = new("night_diffuse_g");
     public readonly NuiBind<string> NightDiffuseB = new("night_diffuse_b");
@@ -170,7 +169,8 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                     {
                                                         Id = "btn_save_instance",
                                                         Height = 30f,
-                                                        Enabled = CanSaveArea
+                                                        Enabled = CanSaveArea,
+                                                        DisabledTooltip = "You cannot create copies of a copy."
                                                     }.Assign(out SaveNewInstanceButton)
                                                 ]
                                             },

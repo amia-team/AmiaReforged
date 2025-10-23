@@ -94,7 +94,9 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
     {
         if (_selectedArea is null) return;
 
-        bool canSave = NWScript.GetLocalInt(_selectedArea, IsInstanceLocalInt) == NWScript.TRUE;
+        bool canSave = NWScript.GetLocalInt(_selectedArea, IsInstanceLocalInt) != NWScript.TRUE;
+        Token().SetBindValue(View.CanSaveArea, canSave);
+
         // Audio
         Token().SetBindValue(View.NightMusicStr, _selectedArea.MusicBackgroundNightTrack.ToString());
         Token().SetBindValue(View.DayMusicStr, _selectedArea.MusicBackgroundDayTrack.ToString());
@@ -492,7 +494,7 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
             bool resRefHit = a.ResRef.Contains(s.ToLower(), StringComparison.InvariantCultureIgnoreCase);
             bool nameHit = a.Name.Contains(s.ToLower(), StringComparison.InvariantCultureIgnoreCase);
             return resRefHit || nameHit;
-        }).Select(ar => $"{ar.Name}|({ar.ResRef})").ToList();
+        }).Select(ar => $"{ar.Name}|{ar.ResRef}").ToList();
     }
 
 
