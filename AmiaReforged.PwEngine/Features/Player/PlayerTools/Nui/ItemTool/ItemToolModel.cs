@@ -93,7 +93,7 @@ internal sealed class ItemToolModel(NwPlayer player)
         if (target > maxValue) target = maxValue;
 
         // Use CopyItemAndModify like your NWScript did; replace the old item if copy succeeds
-        var copy = NWScript.CopyItemAndModify(Selected, (int)ItemAppearanceType.SimpleModel, 0, target, 1);
+        uint copy = NWScript.CopyItemAndModify(Selected, (int)ItemAppearanceType.SimpleModel, 0, target, 1);
         if (NWScript.GetIsObjectValid(copy) == 1)
         {
             // Replace references and destroy the original one
@@ -118,7 +118,7 @@ internal sealed class ItemToolModel(NwPlayer player)
         // Plus ALSO allow: AMULET, BELT, BOOK, BRACER, GEM, GLOVES, LARGEBOX, RING (use 254 as safe cap)
         max = 0;
 
-        var bi = item.BaseItem.ItemType;
+        BaseItemType bi = item.BaseItem.ItemType;
         switch (bi)
         {
             case BaseItemType.MiscLarge:

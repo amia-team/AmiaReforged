@@ -2,6 +2,7 @@ using System.Globalization;
 using AmiaReforged.Core.Models.DmModels;
 using AmiaReforged.Core.Services;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -12,6 +13,7 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
 
 public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
 {
+    private const string IsInstanceLocalInt = "is_instance";
     public override AreaEditorView View { get; }
     private NuiWindowToken _token;
     private NuiWindow? _window;
@@ -26,6 +28,7 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
     private List<DmArea> _savedAreas = [];
 
     [Inject] private Lazy<DmAreaService>? AreaService { get; init; }
+    [Inject] private Lazy<WindowDirector>? WindowDirector { get; init; }
 
     public AreaEditorPresenter(AreaEditorView view, NwPlayer player)
     {
@@ -90,6 +93,8 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
     private void LoadFromSelection()
     {
         if (_selectedArea is null) return;
+
+        bool canSave = NWScript.GetLocalInt(_selectedArea, IsInstanceLocalInt) == NWScript.TRUE;
         // Audio
         Token().SetBindValue(View.NightMusicStr, _selectedArea.MusicBackgroundNightTrack.ToString());
         Token().SetBindValue(View.DayMusicStr, _selectedArea.MusicBackgroundDayTrack.ToString());
@@ -131,66 +136,8 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         {
             if (_selectedArea is null) return;
 
-            string? newInstanceName = Token().GetBindValue(View.NewAreaName);
+            SaveInstance();
 
-            if (newInstanceName.IsNullOrEmpty())
-            {
-                _player.SendServerMessage("Name Input Cannot Be Empty");
-                return;
-            }
-
-            DmArea? existing = AreaService.Value.InstanceFromKey(_player.CDKey, _selectedArea.ResRef, newInstanceName!);
-
-            if (existing is null)
-            {
-                byte[]? serializedAre = _selectedArea.SerializeARE();
-                if (serializedAre is null)
-                {
-                    _player.SendServerMessage("Failed to serialize ARE");
-                    return;
-                }
-
-                byte[]? serializedGit = _selectedArea.SerializeGIT();
-                if (serializedGit is null)
-                {
-                    _player.SendServerMessage("Failed to serialize GIT");
-                    return;
-                }
-
-                DmArea newInstance = new DmArea
-                {
-                    CdKey = _player.CDKey,
-                    OriginalResRef = _selectedArea.ResRef,
-                    NewName = newInstanceName!,
-                    SerializedARE = serializedAre,
-                    SerializedGIT = serializedGit
-                };
-
-                AreaService.Value.SaveNew(newInstance);
-            }
-            else
-            {
-                byte[]? serializedAre = _selectedArea.SerializeARE();
-                if (serializedAre is null)
-                {
-                    _player.SendServerMessage("Failed to serialize ARE");
-                    return;
-                }
-
-                byte[]? serializedGit = _selectedArea.SerializeGIT();
-                if (serializedGit is null)
-                {
-                    _player.SendServerMessage("Failed to serialize GIT");
-                    return;
-                }
-
-                existing.SerializedGIT = serializedGit;
-                existing.SerializedGIT = serializedAre;
-
-                AreaService.Value.SaveArea(existing);
-            }
-
-            UpdateInstanceList();
             return;
         }
 
@@ -219,7 +166,120 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         {
             HandlePickNew(evt);
             UpdateInstanceList();
+            return;
         }
+
+
+        if (evt.ElementId == "btn_delete_var")
+        {
+            HandleDelete(evt);
+            UpdateInstanceList();
+        }
+
+        if (evt.ElementId == "btn_load_var")
+        {
+            HandleClone(evt);
+            UpdateInstanceList();
+        }
+    }
+
+    private void HandleClone(ModuleEvents.OnNuiEvent evt)
+    {
+        DmArea cloneMe = _savedAreas[evt.ArrayIndex];
+
+        NwArea? area = NwArea.Deserialize(cloneMe.SerializedARE, cloneMe.SerializedGIT, $"{_player.CDKey}_{cloneMe.OriginalResRef}_{cloneMe.Id}", cloneMe.NewName);
+
+        if (area is null)
+        {
+            _player.SendServerMessage("Failed to make the area.");
+            return;
+        }
+
+        NWScript.SetLocalInt(area, IsInstanceLocalInt, NWScript.TRUE);
+        _player.SendServerMessage($"{area.Name} created");
+    }
+
+    private void HandleDelete(ModuleEvents.OnNuiEvent evt)
+    {
+        if (WindowDirector is null) return;
+
+        DmArea area = _savedAreas[evt.ArrayIndex];
+
+        WindowDirector.Value.OpenPopupWithReaction(_player,
+            "Are you sure you want to delete this Instance?",
+            "This action is permanent!",
+            () =>
+            {
+                AreaService!.Value.Delete(area);
+                UpdateInstanceList();
+            },
+            false,
+            Token()
+        );
+    }
+
+    private void SaveInstance()
+    {
+        string? newInstanceName = Token().GetBindValue(View.NewAreaName);
+
+        if (newInstanceName.IsNullOrEmpty())
+        {
+            _player.SendServerMessage("Name Input Cannot Be Empty");
+            return;
+        }
+
+        DmArea? existing = AreaService.Value.InstanceFromKey(_player.CDKey, _selectedArea.ResRef, newInstanceName!);
+
+        if (existing is null)
+        {
+            byte[]? serializedAre = _selectedArea.SerializeARE();
+            if (serializedAre is null)
+            {
+                _player.SendServerMessage("Failed to serialize ARE");
+                return;
+            }
+
+            byte[]? serializedGit = _selectedArea.SerializeGIT();
+            if (serializedGit is null)
+            {
+                _player.SendServerMessage("Failed to serialize GIT");
+                return;
+            }
+
+            DmArea newInstance = new DmArea
+            {
+                CdKey = _player.CDKey,
+                OriginalResRef = _selectedArea.ResRef,
+                NewName = newInstanceName!,
+                SerializedARE = serializedAre,
+                SerializedGIT = serializedGit
+            };
+
+            AreaService.Value.SaveNew(newInstance);
+        }
+        else
+        {
+            byte[]? serializedAre = _selectedArea.SerializeARE();
+            if (serializedAre is null)
+            {
+                _player.SendServerMessage("Failed to serialize ARE");
+                return;
+            }
+
+            byte[]? serializedGit = _selectedArea.SerializeGIT();
+            if (serializedGit is null)
+            {
+                _player.SendServerMessage("Failed to serialize GIT");
+                return;
+            }
+
+            existing.SerializedGIT = serializedGit;
+            existing.SerializedGIT = serializedAre;
+
+            AreaService.Value.SaveArea(existing);
+        }
+
+        UpdateInstanceList();
     }
 
     private void UpdateInstanceList()
@@ -283,11 +343,10 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         string areaShindig = _visibleAreas[evt.ArrayIndex].Split("|")[1];
 
         NwArea? area = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == areaShindig);
-        if (area != null)
-        {
-            _selectedArea = area;
-            LoadFromSelection();
-        }
+        if (area == null) return;
+
+        _selectedArea = area;
+        LoadFromSelection();
     }
 
     private void SaveSettingsToArea()

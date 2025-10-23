@@ -28,7 +28,6 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
     public NuiButton SaveNewInstanceButton = null!;
 
 
-
     // sound binds
     public readonly NuiBind<string> DayMusicStr = new("day_music_str");
 
@@ -62,9 +61,11 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
     public readonly NuiBind<string> NightDiffuseB = new("night_diffuse_b");
     public readonly NuiBind<string> NightDiffuseA = new("night_diffuse_a");
 
+    public readonly NuiBind<bool> CanSaveArea = new("can_save_area");
+
     public readonly NuiBind<string> NightFogDensity = new("night_fog_color");
 
-    public readonly NuiBind<string> NewAreaName =  new("new_area_name");
+    public readonly NuiBind<string> NewAreaName = new("new_area_name");
 
     public AreaEditorView(NwPlayer player)
     {
@@ -81,7 +82,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
         [
             new(new NuiLabel(AreaNames)
             {
-                Tooltip = AreaNames
+                Tooltip = AreaNames,
             }),
             new(new NuiButtonImage("dm_examine")
             {
@@ -161,13 +162,15 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                 [
                                                     new NuiTextEdit("Type a name...", NewAreaName, 255, false)
                                                     {
-                                                        Height = 30f
+                                                        Height = 30f,
+                                                        Enabled = CanSaveArea
                                                     },
                                                     new NuiSpacer(),
                                                     new NuiButton("Save New Instance")
                                                     {
                                                         Id = "btn_save_instance",
                                                         Height = 30f,
+                                                        Enabled = CanSaveArea
                                                     }.Assign(out SaveNewInstanceButton)
                                                 ]
                                             },
@@ -571,7 +574,6 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                     {
                                         Children =
                                         [
-
                                         ]
                                     }
                                 ]

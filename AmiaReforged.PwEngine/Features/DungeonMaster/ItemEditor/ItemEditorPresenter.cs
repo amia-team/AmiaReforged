@@ -231,7 +231,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             // Seed the tracked variables from the item BEFORE any watch can apply changes
             ItemData current = ItemDataFactory.From(_model.SelectedItem);
             _trackedVariables.Clear();
-            foreach (var kvp in current.Variables)
+            foreach (KeyValuePair<string, LocalVariableData> kvp in current.Variables)
                 _trackedVariables[kvp.Key] = kvp.Value;
 
             UpdateVariableList();

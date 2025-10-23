@@ -181,8 +181,14 @@ public sealed class WindowDirector : IDisposable
         OpenWindow(presenter);
     }
 
-    public void OpenPopupWithReaction(NwPlayer nwPlayer, string title, string message, Action outcome, bool ignoreButton = false)
+    public void OpenPopupWithReaction(NwPlayer nwPlayer, string title, string message, Action outcome, bool ignoreButton = false,  NuiWindowToken linkedToken = default)
     {
+        if (linkedToken != default)
+        {
+            _linkedTokens.TryGetValue(linkedToken, out List<NuiWindowToken>? linkedTokens);
+            linkedTokens?.Add(linkedToken);
+        }
+
         SimplePopupView view = new(nwPlayer, outcome, message, title, ignoreButton);
         SimplePopupPresenter presenter = view.Presenter;
         OpenWindow(presenter);

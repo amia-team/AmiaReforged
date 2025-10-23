@@ -59,7 +59,7 @@ internal sealed class ItemEditorModel
         Dictionary<string, LocalVariableData> variables = new();
         if (SelectedItem is null) return variables;
 
-        foreach (var local in SelectedItem.LocalVariables)
+        foreach (ObjectVariable local in SelectedItem.LocalVariables)
         {
             switch (local)
             {

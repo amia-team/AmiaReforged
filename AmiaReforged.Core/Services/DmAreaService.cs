@@ -66,4 +66,32 @@ public class DmAreaService(DatabaseContextFactory factory)
     {
         return All().Where(a => a.CdKey == playerCdKey && a.OriginalResRef == selectedAreaResRef).ToList();
     }
+
+    public void Delete(DmArea area)
+    {
+        using AmiaDbContext ctx = new AmiaDbContext();
+        try
+        {
+            // Check if the entity is already being tracked
+            DmArea? tracked = ctx.DmAreas.Local.FirstOrDefault(a => a.Id == area.Id);
+
+            if (tracked != null)
+            {
+                // The entity is already tracked
+                ctx.DmAreas.Remove(tracked);
+            }
+            else
+            {
+                // Attach if untracked
+                ctx.DmAreas.Attach(area);
+                ctx.DmAreas.Remove(area);
+            }
+
+            ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to delete area {AreaName}", area.NewName);
+        }
+    }
 }

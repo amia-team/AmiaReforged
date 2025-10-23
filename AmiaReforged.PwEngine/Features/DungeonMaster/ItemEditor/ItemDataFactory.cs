@@ -8,7 +8,7 @@ internal static class ItemDataFactory
     {
         Dictionary<string, LocalVariableData> vars = new();
 
-        foreach (var local in item.LocalVariables)
+        foreach (ObjectVariable local in item.LocalVariables)
         {
             switch (local)
             {

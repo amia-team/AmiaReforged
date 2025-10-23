@@ -123,7 +123,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
     private void TryAdjustIcon(int delta)
     {
-        var result = _model.TryAdjustIcon(delta, out int newValue, out int maxValue);
+        IconAdjustResult result = _model.TryAdjustIcon(delta, out int newValue, out int maxValue);
         switch (result)
         {
             case IconAdjustResult.NotAllowedType:
