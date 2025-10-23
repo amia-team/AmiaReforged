@@ -2,6 +2,7 @@
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NWN.Core.NWNX;
 
 namespace AmiaReforged.Core.Services.PlaySessionLogging;
 
@@ -24,6 +25,10 @@ public class DmLoginSessionService
     {
         if (!obj.Player.IsDM) return;
 
+        string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
+
+        if (environment != "live") return;
+
         if (DidBootUnauthorizedUser(obj.Player)) return;
 
         _playSession.StartSessionFor(obj.Player);
@@ -31,14 +36,15 @@ public class DmLoginSessionService
 
     private bool DidBootUnauthorizedUser(NwPlayer Player)
     {
+
         AmiaDbContext context = _dbFactory.CreateDbContext();
 
         List<Dm> allDms = context.Dms.ToList();
-        
+
         if (allDms.Any(dm => dm.CdKey == Player.CDKey)) return false;
 
         Player.BootPlayer("Unauthorized DM Access");
-        
+
         return true;
     }
 
