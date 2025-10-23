@@ -1,4 +1,4 @@
-﻿namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEdit;
+﻿namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEditor;
 
 internal record ItemData(
     string Name,

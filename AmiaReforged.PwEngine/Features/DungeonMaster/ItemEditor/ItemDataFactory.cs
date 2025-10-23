@@ -1,6 +1,6 @@
 ﻿using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEditor;
 
 internal static class ItemDataFactory
 {

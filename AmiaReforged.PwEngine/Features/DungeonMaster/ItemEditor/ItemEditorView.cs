@@ -4,7 +4,7 @@ using Anvil;
 using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEditor;
 
 public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
 {
@@ -49,8 +49,8 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public override NuiLayout RootLayout()
     {
         // Variable list template
-        List<NuiListTemplateCell> variableCells = new()
-        {
+        List<NuiListTemplateCell> variableCells =
+        [
             new(new NuiLabel(VariableNames)
             {
                 VerticalAlign = NuiVAlign.Middle,
@@ -59,6 +59,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
             {
                 Width = 150f
             },
+
             new(new NuiLabel(VariableTypes)
             {
                 VerticalAlign = NuiVAlign.Middle,
@@ -67,10 +68,12 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
             {
                 Width = 80f
             },
+
             new(new NuiLabel(VariableValues)
             {
                 VerticalAlign = NuiVAlign.Middle
             }),
+
             new(new NuiButtonImage("ir_abort")
             {
                 Id = "btn_delete_var",
@@ -80,140 +83,163 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                 Width = 35f,
                 VariableSize = false
             }
-        };
+        ];
 
         return new NuiColumn
         {
+            Width = 700f,
             Children =
             {
-                // Selection button
-                new NuiButton("Select Item")
+                new NuiRow()
                 {
-                    Id = "btn_select_item",
-                    Height = 35f
-                }.Assign(out SelectItemButton),
-
-                new NuiSpacer { Height = 10f },
-
-                // Basic properties group
-                new NuiGroup
-                {
-                    Border = true,
-                    Element = new NuiColumn
-                    {
-                        Children =
+                    Children =
+                    [
+                        new NuiButton("Select Item")
                         {
-                            new NuiLabel("Basic Properties")
-                            {
-                                Height = 20f,
-                                HorizontalAlign = NuiHAlign.Center
-                            },
-                            new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel("Name:")
-                                    {
-                                        Width = 80f,
-                                        VerticalAlign = NuiVAlign.Middle
-                                    },
-                                    new NuiTextEdit("Item Name", Name, 100, false)
-                                    {
-                                        Enabled = ValidObjectSelected
-                                    }
-                                }
-                            },
-                            new NuiRow
-                            {
-                                Children =
-                                {
-                                    new NuiLabel("Tag:")
-                                    {
-                                        Width = 80f,
-                                        VerticalAlign = NuiVAlign.Middle
-                                    },
-                                    new NuiTextEdit("Item Tag", Tag, 32, false)
-                                    {
-                                        Enabled = ValidObjectSelected
-                                    }
-                                }
-                            },
-                            new NuiLabel("Description:")
-                            {
-                                Height = 20f,
-                                VerticalAlign = NuiVAlign.Middle
-                            },
-                            new NuiTextEdit("Item Description", Description, 5000, true)
-                            {
-                                Height = 100f,
-                                Enabled = ValidObjectSelected
-                            }
-                        }
-                    }
+                            Id = "btn_select_item",
+                            Height = 35f
+                        }.Assign(out SelectItemButton),
+                    ]
                 },
 
+
                 new NuiSpacer { Height = 10f },
 
-                // Variables group
-                new NuiGroup
+                new NuiRow()
                 {
-                    Border = true,
-                    Element = new NuiColumn
-                    {
-                        Children =
+                    Width = 400f,
+                    Height = 200f,
+                    Children =
+                    [
+                        new NuiGroup
                         {
-                            new NuiLabel("Local Variables")
-                            {
-                                Height = 20f,
-                                HorizontalAlign = NuiHAlign.Center
-                            },
-                            
-                            // Add new variable section
-                            new NuiRow
+                            Border = true,
+                            Element = new NuiColumn
                             {
                                 Children =
                                 {
-                                    new NuiTextEdit("Variable Name", NewVariableName, 32, false)
+                                    new NuiLabel("Basic Properties")
                                     {
-                                        Width = 150f,
-                                        Enabled = ValidObjectSelected
+                                        Height = 20f,
+                                        HorizontalAlign = NuiHAlign.Center
                                     },
-                                    new NuiCombo
+                                    new NuiRow
                                     {
-                                        Entries = new NuiValue<List<NuiComboEntry>>(new List<NuiComboEntry>
+                                        Children =
                                         {
-                                            new("Int", 0),
-                                            new("Float", 1),
-                                            new("String", 2)
-                                        }),
-                                        Selected = NewVariableType,
-                                        Width = 100f,
-                                        Enabled = ValidObjectSelected
+                                            new NuiLabel("Name:")
+                                            {
+                                                Width = 80f,
+                                                VerticalAlign = NuiVAlign.Middle
+                                            },
+                                            new NuiTextEdit("Item Name", Name, 100, false)
+                                            {
+                                                Enabled = ValidObjectSelected
+                                            }
+                                        }
                                     },
-                                    new NuiTextEdit("Value", NewVariableValue, 100, false)
+                                    new NuiRow
                                     {
-                                        Enabled = ValidObjectSelected
+                                        Children =
+                                        {
+                                            new NuiLabel("Tag:")
+                                            {
+                                                Width = 80f,
+                                                VerticalAlign = NuiVAlign.Middle
+                                            },
+                                            new NuiTextEdit("Item Tag", Tag, 32, false)
+                                            {
+                                                Enabled = ValidObjectSelected
+                                            }
+                                        }
                                     },
-                                    new NuiButton("Add")
+                                    new NuiLabel("Description:")
                                     {
-                                        Id = "btn_add_var",
-                                        Width = 60f,
+                                        Height = 20f,
+                                        VerticalAlign = NuiVAlign.Middle
+                                    },
+                                    new NuiTextEdit("Item Description", Description, 5000, true)
+                                    {
+                                        Height = 100f,
                                         Enabled = ValidObjectSelected
-                                    }.Assign(out AddVariableButton)
+                                    }
                                 }
-                            },
-
-                            new NuiSpacer { Height = 5f },
-
-                            // Variables list
-                            new NuiList(variableCells, VariableCount)
-                            {
-                                RowHeight = 30f,
-                                Height = 250f
                             }
-                        }
-                    }
+                        },
+                    ]
                 },
+
+                new NuiSpacer { Height = 10f },
+
+                new NuiRow
+                {
+                    Width = 700f,
+                    Height = 400f,
+                    Children =
+                    [
+                        new NuiGroup
+                        {
+                            Border = true,
+                            Element = new NuiColumn
+                            {
+                                Children =
+                                {
+                                    new NuiLabel("Local Variables")
+                                    {
+                                        Height = 20f,
+                                        HorizontalAlign = NuiHAlign.Center
+                                    },
+
+                                    // Add new variable section
+                                    new NuiRow
+                                    {
+                                        Children =
+                                        {
+                                            new NuiTextEdit("Variable Name", NewVariableName, 32, false)
+                                            {
+                                                Width = 150f,
+                                                Enabled = ValidObjectSelected
+                                            },
+                                            new NuiCombo
+                                            {
+                                                Entries = new NuiValue<List<NuiComboEntry>>(new List<NuiComboEntry>
+                                                {
+                                                    new("Int", 0),
+                                                    new("Float", 1),
+                                                    new("String", 2)
+                                                }),
+                                                Selected = NewVariableType,
+                                                Width = 100f,
+                                                Enabled = ValidObjectSelected
+                                            },
+                                            new NuiTextEdit("Value", NewVariableValue, 100, false)
+                                            {
+                                                Enabled = ValidObjectSelected
+                                            },
+                                            new NuiButton("Add")
+                                            {
+                                                Id = "btn_add_var",
+                                                Width = 60f,
+                                                Enabled = ValidObjectSelected
+                                            }.Assign(out AddVariableButton)
+                                        }
+                                    },
+
+                                    new NuiSpacer { Height = 5f },
+
+                                    // Variables list
+                                    new NuiList(variableCells, VariableCount)
+                                    {
+                                        RowHeight = 30f,
+                                        Height = 250f
+                                    }
+                                }
+                            }
+                        },
+                    ]
+                },
+                // Variables group
+
 
                 new NuiSpacer { Height = 10f },
 

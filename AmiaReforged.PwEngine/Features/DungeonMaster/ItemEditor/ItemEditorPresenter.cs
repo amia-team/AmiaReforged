@@ -2,7 +2,7 @@
 using Anvil.API;
 using Anvil.API.Events;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEditor;
 
 public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 {
@@ -34,7 +34,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(300f, 200f, 600f, 700f)
+            Geometry = new NuiRect(300f, 200f, 800f, 700f)
         };
     }
 

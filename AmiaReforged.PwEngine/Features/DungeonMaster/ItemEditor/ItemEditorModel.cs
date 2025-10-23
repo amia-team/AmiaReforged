@@ -2,7 +2,7 @@
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEditor;
 
 internal sealed class ItemEditorModel
 {
