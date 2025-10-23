@@ -79,7 +79,10 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
     {
         List<NuiListTemplateCell> moduleAreas =
         [
-            new(new NuiLabel(AreaNames)),
+            new(new NuiLabel(AreaNames)
+            {
+                Tooltip = AreaNames
+            }),
             new(new NuiButtonImage("dm_examine")
             {
                 Id = "btn_pick_row",
