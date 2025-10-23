@@ -2,6 +2,7 @@ using System.Globalization;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
 
@@ -87,22 +88,67 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         Token().SetBindValue(View.BattleMusicStr, _selectedArea.MusicBattleTrack.ToString());
 
         // Fog
-        Token().SetBindValue(View.FogClipDistance, _selectedArea.FogClipDistance.ToString(CultureInfo.InvariantCulture));
-        Token().SetBindValue(View.DayFogColor, _selectedArea.SunFogColor.ToString());
-        Token().SetBindValue(View.DayDiffuse, _selectedArea.SunDiffuseColor.ToString());
-        Token().SetBindValue(View.DayFogDensity, _selectedArea.SunFogAmount.ToString());
+        Token().SetBindValue(View.FogClipDistance,
+            _selectedArea.FogClipDistance.ToString(CultureInfo.InvariantCulture));
 
-        Token().SetBindValue(View.NightFogColor, _selectedArea.MoonFogColor.ToString());
-        Token().SetBindValue(View.NightDiffuse, _selectedArea.MoonDiffuseColor.ToString());
+        Token().SetBindValue(View.DayFogDensity, _selectedArea.SunFogAmount.ToString());
         Token().SetBindValue(View.NightFogDensity, _selectedArea.MoonFogAmount.ToString());
 
+        Token().SetBindValue(View.DayFogR, _selectedArea.SunFogColor.Red.ToString());
+        Token().SetBindValue(View.DayFogB, _selectedArea.SunFogColor.Blue.ToString());
+        Token().SetBindValue(View.DayFogG, _selectedArea.SunFogColor.Green.ToString());
+        Token().SetBindValue(View.DayFogA, _selectedArea.SunFogColor.Alpha.ToString());
+
+        Token().SetBindValue(View.NightFogR, _selectedArea.MoonFogColor.Red.ToString());
+        Token().SetBindValue(View.NightFogB, _selectedArea.MoonFogColor.Blue.ToString());
+        Token().SetBindValue(View.NightFogG, _selectedArea.MoonFogColor.Green.ToString());
+        Token().SetBindValue(View.NightFogA, _selectedArea.MoonFogColor.Alpha.ToString());
+
+        Token().SetBindValue(View.DayDiffuseR, _selectedArea.SunDiffuseColor.Red.ToString());
+        Token().SetBindValue(View.DayDiffuseB, _selectedArea.SunDiffuseColor.Blue.ToString());
+        Token().SetBindValue(View.DayDiffuseG, _selectedArea.SunDiffuseColor.Green.ToString());
+        Token().SetBindValue(View.DayDiffuseA, _selectedArea.SunDiffuseColor.Alpha.ToString());
+
+        Token().SetBindValue(View.NightDiffuseR, _selectedArea.MoonDiffuseColor.Red.ToString());
+        Token().SetBindValue(View.NightDiffuseB, _selectedArea.MoonDiffuseColor.Blue.ToString());
+        Token().SetBindValue(View.NightDiffuseG, _selectedArea.MoonDiffuseColor.Green.ToString());
+        Token().SetBindValue(View.NightDiffuseA, _selectedArea.MoonDiffuseColor.Alpha.ToString());
     }
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent evt)
     {
-        if (evt.ElementId == View.SaveSettingsButton.Id)
+        if (evt.ElementId == View.ReloadCurrentAreaButton.Id)
         {
-            SaveSettingsToArea();
+            if (_selectedArea is null) return;
+            if (_player.LoginCreature is null) return;
+            if (_player.LoginCreature.Location is null) return;
+
+            List<(NwCreature c, Location l)> allCurrent = [];
+
+            allCurrent.Add((_player.LoginCreature, _player.LoginCreature.Location));
+            _player.LoginCreature.Location = NwModule.Instance.StartingLocation;
+
+            foreach (NwCreature creature in _selectedArea.FindObjectsOfTypeInArea<NwCreature>())
+            {
+                if (creature is { IsLoginPlayerCharacter: false }) continue;
+
+                if (creature.Location == null) continue;
+
+                allCurrent.Add((creature, creature.Location));
+
+                _player.SendServerMessage($"Jumping {creature.Name}");
+                creature.ActionJumpToLocation(NwModule.Instance.StartingLocation);
+            }
+
+            NWScript.DelayCommand(5.0f, () =>
+            {
+                foreach ((NwCreature c, Location l) cl in allCurrent)
+                {
+                    cl.c.Location = cl.l;
+                }
+            });
+
+
             return;
         }
 
@@ -117,6 +163,13 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
             LoadFromSelection();
             return;
         }
+
+        if (evt.ElementId == View.SaveSettingsButton.Id)
+        {
+            SaveSettingsToArea();
+            return;
+        }
+
 
         if (evt.ElementId == "btn_pick_row")
         {
@@ -139,14 +192,24 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         string? nightMusicStr = Token().GetBindValue(View.NightMusicStr);
         string? battleMusicStr = Token().GetBindValue(View.BattleMusicStr);
         string? fogClipStr = Token().GetBindValue(View.FogClipDistance);
-
-        string? dayFogAmountStr = Token().GetBindValue(View.DayFogDensity);
-        string? dayFogColorStr = Token().GetBindValue(View.DayFogColor);
-        string? dayDiffuseStr = Token().GetBindValue(View.DayDiffuse);
-
-        string? moonFogAmountStr = Token().GetBindValue(View.NightFogDensity);
-        string? moonFogColorStr = Token().GetBindValue(View.NightFogColor);
-        string? moonDiffuseStr = Token().GetBindValue(View.NightDiffuse);
+        string? dayFogDensityStr = Token().GetBindValue(View.DayFogDensity);
+        string? nightFogDensityStr = Token().GetBindValue(View.NightFogDensity);
+        string? dayFogRStr = Token().GetBindValue(View.DayFogR);
+        string? dayFogGStr = Token().GetBindValue(View.DayFogG);
+        string? dayFogBStr = Token().GetBindValue(View.DayFogB);
+        string? dayFogAStr = Token().GetBindValue(View.DayFogA);
+        string? nightFogRStr = Token().GetBindValue(View.NightFogR);
+        string? nightFogGStr = Token().GetBindValue(View.NightFogG);
+        string? nightFogBStr = Token().GetBindValue(View.NightFogB);
+        string? nightFogAStr = Token().GetBindValue(View.NightFogA);
+        string? dayDiffuseRStr = Token().GetBindValue(View.DayDiffuseR);
+        string? dayDiffuseGStr = Token().GetBindValue(View.DayDiffuseG);
+        string? dayDiffuseBStr = Token().GetBindValue(View.DayDiffuseB);
+        string? dayDiffuseAStr = Token().GetBindValue(View.DayDiffuseA);
+        string? nightDiffuseRStr = Token().GetBindValue(View.NightDiffuseR);
+        string? nightDiffuseGStr = Token().GetBindValue(View.NightDiffuseG);
+        string? nightDiffuseBStr = Token().GetBindValue(View.NightDiffuseB);
+        string? nightDiffuseAStr = Token().GetBindValue(View.NightDiffuseA);
 
         if (dayMusicStr is not null)
         {
@@ -172,38 +235,78 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
             _selectedArea.FogClipDistance = fogClip;
         }
 
-        if (dayFogAmountStr is not null)
+        if (dayFogDensityStr is not null)
         {
-            int dayFogAmount = int.Parse(dayFogAmountStr);
-            _selectedArea.FogClipDistance = dayFogAmount;
+            int dayFogAmount = int.Parse(dayFogDensityStr);
+
+            _selectedArea.SetFogAmount(FogType.Sun, dayFogAmount);
         }
 
-        if (dayFogColorStr is not null)
+        if (nightFogDensityStr is not null)
         {
-            _selectedArea.SunFogColor = Color.FromRGBA(dayFogColorStr);
+            int nightFogAmount = int.Parse(nightFogDensityStr);
+
+            _selectedArea.SetFogAmount(FogType.Moon, nightFogAmount);
         }
 
-        if (dayDiffuseStr is not null)
+        if (dayFogRStr is not null && dayFogGStr is not null && dayFogBStr is not null && dayFogAStr is not null)
         {
-            _selectedArea.MoonFogColor = Color.FromRGBA(dayDiffuseStr);
+            byte r = byte.Parse(dayFogRStr);
+            byte g = byte.Parse(dayFogGStr);
+            byte b = byte.Parse(dayFogBStr);
+            byte a = byte.Parse(dayFogAStr);
+
+            int rgba = (r << 24) | (g << 16) | (b << 8) | a;
+
+            Color newColor = Color.FromRGBA(rgba);
+
+            _selectedArea.SunFogColor = newColor;
         }
 
-        if (moonFogColorStr is not null)
+        if (dayDiffuseRStr is not null && dayDiffuseBStr is not null && dayDiffuseGStr is not null &&
+            dayDiffuseAStr is not null)
         {
-            _selectedArea.MoonFogColor = Color.FromRGBA(moonFogColorStr);
+            byte r = byte.Parse(dayDiffuseRStr);
+            byte g = byte.Parse(dayDiffuseBStr);
+            byte b = byte.Parse(dayDiffuseGStr);
+            byte a = byte.Parse(dayDiffuseAStr);
+
+            int rgba = (r << 24) | (g << 16) | (b << 8) | a;
+
+            Color newColor = Color.FromRGBA(rgba);
+            _selectedArea.SunFogColor = newColor;
         }
 
-        if (moonDiffuseStr is not null)
+        if (nightFogRStr is not null && nightFogGStr is not null && nightFogBStr is not null &&
+            nightFogAStr is not null)
         {
-            _selectedArea.MoonDiffuseColor = Color.FromRGBA(moonDiffuseStr);
+            byte r = byte.Parse(nightFogRStr);
+            byte g = byte.Parse(nightFogGStr);
+            byte b = byte.Parse(nightFogBStr);
+            byte a = byte.Parse(nightFogAStr);
+
+            int rgba = (r << 24) | (g << 16) | (b << 8) | a;
+
+            Color newColor = Color.FromRGBA(rgba);
+
+            _selectedArea.MoonFogColor = newColor;
         }
-        if (moonFogAmountStr is not null)
+
+        if (nightDiffuseRStr is not null && nightDiffuseBStr is not null && nightDiffuseGStr is not null &&
+            nightDiffuseAStr is not null)
         {
-            int moonFogAmount = int.Parse(moonFogAmountStr);
-            _selectedArea.MoonFogAmount = moonFogAmount;
+            byte r = byte.Parse(nightDiffuseRStr);
+            byte g = byte.Parse(nightDiffuseBStr);
+            byte b = byte.Parse(nightDiffuseGStr);
+            byte a = byte.Parse(nightDiffuseAStr);
+
+            int rgba = (r << 24) | (g << 16) | (b << 8) | a;
+            Color newColor = Color.FromRGBA(rgba);
+            _selectedArea.MoonDiffuseColor = newColor;
         }
 
         _selectedArea?.PlayBackgroundMusic();
+        _selectedArea?.RecomputeStaticLighting();
     }
 
     private void UpdateAvailableList()

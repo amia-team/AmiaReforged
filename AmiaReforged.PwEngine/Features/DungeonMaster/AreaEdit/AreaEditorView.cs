@@ -24,6 +24,10 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
 
     public NuiButton SaveSettingsButton = null!;
     public NuiButton PickCurrentAreaButton = null!;
+    public NuiButton ReloadCurrentAreaButton = null!;
+    public NuiButton SaveNewInstanceButton = null!;
+
+
 
     // sound binds
     public readonly NuiBind<string> DayMusicStr = new("day_music_str");
@@ -34,12 +38,30 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
 
     // fog binds
     public readonly NuiBind<string> FogClipDistance = new("fog_clip_distance");
-    public readonly NuiBind<string> DayFogColor = new("day_fog_color");
-    public readonly NuiBind<string> DayDiffuse = new("day_diffuse");
+
+    public readonly NuiBind<string> DayFogR = new("day_fog_r");
+    public readonly NuiBind<string> DayFogG = new("day_fog_g");
+    public readonly NuiBind<string> DayFogB = new("day_fog_b");
+    public readonly NuiBind<string> DayFogA = new("day_fog_a");
+
+    public readonly NuiBind<string> DayDiffuseR = new("day_diffuse_r");
+    public readonly NuiBind<string> DayDiffuseG = new("day_diffuse_g");
+    public readonly NuiBind<string> DayDiffuseB = new("day_diffuse_b");
+    public readonly NuiBind<string> DayDiffuseA = new("day_diffuse_a");
+
     public readonly NuiBind<string> DayFogDensity = new("day_fog_density");
 
-    public readonly NuiBind<string> NightFogColor = new("night_fog_color");
-    public readonly NuiBind<string> NightDiffuse = new("night_diffuse");
+    public readonly NuiBind<string> NightFogR = new("night_fog_r");
+    public readonly NuiBind<string> NightFogG = new("night_fog_g");
+    public readonly NuiBind<string> NightFogB = new("night_fog_b");
+    public readonly NuiBind<string> NightFogA = new("night_fog_a");
+
+
+    public readonly NuiBind<string> NightDiffuseR = new("night_diffuse_r");
+    public readonly NuiBind<string> NightDiffuseG = new("night_diffuse_g");
+    public readonly NuiBind<string> NightDiffuseB = new("night_diffuse_b");
+    public readonly NuiBind<string> NightDiffuseA = new("night_diffuse_a");
+
     public readonly NuiBind<string> NightFogDensity = new("night_fog_color");
 
     public AreaEditorView(NwPlayer player)
@@ -83,7 +105,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
             }
         ];
 
-        return new NuiColumn()
+        return new NuiColumn
         {
             Children =
             [
@@ -91,7 +113,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                 {
                     Children =
                     [
-                        new NuiColumn()
+                        new NuiColumn
                         {
                             Children =
                             [
@@ -108,207 +130,426 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                         },
                         new NuiGroup
                         {
-                            Element = new NuiColumn
+                            Element = new NuiRow
                             {
                                 Children =
                                 [
-                                    new NuiLabel("Saved Instances")
+                                    // Column 1
+                                    new NuiColumn()
                                     {
-                                        Height = 15f
-                                    },
-                                    new NuiList(savedInstances, SavedVariantCounts)
-                                    {
-                                        Width = 300f,
-                                        Height = 200f
-                                    },
-                                    new NuiLabel("Sound Settings")
-                                    {
-                                        Height = 15f
-                                    },
-                                    new NuiGroup()
-                                    {
-                                        Height = 200f,
-                                        Element = new NuiColumn()
-                                        {
-                                            Children =
-                                            [
-                                                new NuiRow
-                                                {
-                                                    Children =
-                                                    [
-                                                        new NuiLabel("Day Music:")
-                                                        {
-                                                            Height = 15f,
-                                                            Width = 90f
-                                                        },
-                                                        new NuiTextEdit("0", DayMusicStr, 5, false)
-                                                        {
-                                                            Width = 40f,
-                                                            Tooltip = "Int value from ambientmusic.2da"
-                                                        },
-                                                    ]
-                                                },
-                                                new NuiRow()
-                                                {
-                                                    Children =
-                                                    [
-                                                        new NuiLabel("Night Music:")
-                                                        {
-                                                            Height = 15f,
-                                                            Width = 90f
-                                                        },
-                                                        new NuiTextEdit("0", NightMusicStr, 5, false)
-                                                        {
-                                                            Width = 40f,
-                                                            Tooltip = "Int value from ambientmusic.2da"
-                                                        },
-                                                    ]
-                                                },
-                                                new NuiRow()
-                                                {
-                                                    Children =
-                                                    [
-                                                        new NuiLabel("Battle Music:")
-                                                        {
-                                                            Height = 15f,
-                                                            Width = 90f
-                                                        },
-                                                        new NuiTextEdit("0", BattleMusicStr, 5, false)
-                                                        {
-                                                            Width = 40f,
-                                                            Tooltip = "Int value from ambientmusic.2da"
-                                                        },
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    },
-                                    new NuiGroup()
-                                    {
-                                        Height = 200f,
-                                        Element = new NuiColumn()
-                                        {
-                                            Children =
-                                            [
-                                                new NuiRow
-                                                {
-                                                    Children =
-                                                    [
-                                                        new NuiLabel("Fog Distance:")
-                                                        {
-                                                            Height = 15f,
-                                                            Width = 90f
-                                                        },
-                                                        new NuiTextEdit("0", FogClipDistance, 5, false)
-                                                        {
-                                                            Width = 40f,
-                                                        },
-                                                    ]
-                                                },
-                                                new NuiRow()
-                                                {
-                                                    Children =
-                                                    [
-                                                        new NuiLabel("Day Color:")
-                                                        {
-                                                            Height = 15f,
-                                                            Width = 90f,
-                                                        },
-                                                        new NuiTextEdit("0", DayFogColor, 7, false)
-                                                        {
-                                                            Width = 80f,
-                                                        },
-                                                    ]
-                                                },
-                                                new NuiRow()
-                                                {
-                                                    Children =
-                                                    [
-                                                        new NuiLabel("Day Diffuse:")
-                                                        {
-                                                            Height = 15f,
-                                                            Width = 90f,
-                                                        },
-                                                        new NuiTextEdit("0", DayDiffuse, 7, false)
-                                                        {
-                                                            Width = 80f,
-                                                        },
-                                                    ]
-                                                },
-                                                new NuiRow()
-                                                {
-                                                    Children =
-                                                    [
-                                                        new NuiLabel("Day Density:")
-                                                        {
-                                                            Height = 15f,
-                                                            Width = 90f,
-                                                        },
-                                                        new NuiTextEdit("0", DayFogDensity, 3, false)
-                                                        {
-                                                            Width = 80f,
-                                                        },
-                                                    ]
-                                                },
+                                        Children =
+                                        [
+                                            new NuiRow()
+                                            {
+                                                Children =
+                                                [
+                                                    new NuiLabel("Saved Instances")
+                                                    {
+                                                        Height = 15f
+                                                    },
+                                                    new NuiSpacer(),
+                                                    new NuiButton("Save New Instance")
+                                                    {
+                                                        Id = "btn_save_instance",
+                                                    }.Assign(out SaveNewInstanceButton)
+                                                ]
+                                            },
 
-                                                new NuiRow()
+                                            new NuiList(savedInstances, SavedVariantCounts)
+                                            {
+                                                Width = 300f,
+                                                Height = 200f
+                                            },
+                                            new NuiLabel("Sound Settings")
+                                            {
+                                                Height = 15f
+                                            },
+
+                                            // Music
+                                            new NuiGroup
+                                            {
+                                                Height = 200f,
+                                                Element = new NuiColumn
                                                 {
                                                     Children =
                                                     [
-                                                        new NuiLabel("Night Color:")
+                                                        new NuiRow
                                                         {
-                                                            Height = 15f,
-                                                            Width = 90f,
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Day Music:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f
+                                                                },
+                                                                new NuiTextEdit("0", DayMusicStr, 5, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                    Tooltip = "Int value from ambientmusic.2da"
+                                                                },
+                                                            ]
                                                         },
-                                                        new NuiTextEdit("0", NightFogColor, 7, false)
+                                                        new NuiRow
                                                         {
-                                                            Width = 80f,
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Night Music:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f
+                                                                },
+                                                                new NuiTextEdit("0", NightMusicStr, 5, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                    Tooltip = "Int value from ambientmusic.2da"
+                                                                },
+                                                            ]
                                                         },
-                                                    ]
-                                                },
-                                                new NuiRow()
-                                                {
-                                                    Children =
-                                                    [
-                                                        new NuiLabel("Night Diffuse:")
+                                                        new NuiRow
                                                         {
-                                                            Height = 15f,
-                                                            Width = 90f,
-                                                        },
-                                                        new NuiTextEdit("0", NightDiffuse, 7, false)
-                                                        {
-                                                            Width = 80f,
-                                                        },
-                                                    ]
-                                                },
-                                                new NuiRow()
-                                                {
-                                                    Children =
-                                                    [
-                                                        new NuiLabel("Night Density:")
-                                                        {
-                                                            Height = 15f,
-                                                            Width = 90f,
-                                                        },
-                                                        new NuiTextEdit("0", NightFogDensity, 3, false)
-                                                        {
-                                                            Width = 80f,
-                                                        },
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Battle Music:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f
+                                                                },
+                                                                new NuiTextEdit("0", BattleMusicStr, 5, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                    Tooltip = "Int value from ambientmusic.2da"
+                                                                },
+                                                            ]
+                                                        }
                                                     ]
                                                 }
-                                            ]
-                                        }
+                                            },
+                                            new NuiGroup
+                                            {
+                                                Height = 200f,
+                                                Element = new NuiColumn
+                                                {
+                                                    Children =
+                                                    [
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Fog Distance:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f
+                                                                },
+                                                                new NuiTextEdit("0", FogClipDistance, 5, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Day Color R:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", DayFogR, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Day Color G:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", DayFogG, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Day Color G:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", DayFogB, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Day Color A:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", DayFogA, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Day Diffuse R:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", DayDiffuseR, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Day Diffuse G:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", DayDiffuseG, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Day Diffuse B:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", DayDiffuseB, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Day Diffuse A:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", DayDiffuseA, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Day Density:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", DayFogDensity, 3, false)
+                                                                {
+                                                                    Width = 80f,
+                                                                },
+                                                            ]
+                                                        },
+
+                                                        // ewe
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Night Color R:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", NightFogR, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Night Color G:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", NightFogG, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Night Color G:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", NightFogB, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Night Color A:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", NightFogA, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Night Diffuse R:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", NightDiffuseR, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Night Diffuse G:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", NightDiffuseG, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Night Diffuse B:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", NightDiffuseB, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Night Diffuse A:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", NightDiffuseA, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                },
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Night Density:")
+                                                                {
+                                                                    Height = 15f,
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("0", NightFogDensity, 3, false)
+                                                                {
+                                                                    Width = 80f,
+                                                                },
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                        ]
+                                    },
+                                    // Column 2
+                                    new NuiColumn
+                                    {
+                                        Children =
+                                        [
+                                            new NuiLabel("Mom's spaghetti"),
+                                            new NuiLabel("Vomit in your piss"),
+                                            new NuiLabel("It's ready"),
+                                        ]
                                     }
                                 ]
                             }
                         }
                     ]
                 },
-                new NuiRow()
+                new NuiRow
                 {
                     Children =
                     [
                         new NuiSpacer(),
+                        new NuiButton("Reload Current Area")
+                        {
+                            Id = "btn_reload_are"
+                        }.Assign(out ReloadCurrentAreaButton),
                         new NuiButton("Pick Current Area")
                         {
                             Id = "btn_pick_curr"
