@@ -27,6 +27,16 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
     public NuiButton ReloadCurrentAreaButton = null!;
     public NuiButton SaveNewInstanceButton = null!;
 
+    public NuiButton PickATileButton = null!;
+    public NuiButton SaveTileButton = null!;
+    public NuiButton PickUpTile = null!;
+    public NuiButton PickRightTile = null!;
+    public NuiButton PickLeftTile = null!;
+    public NuiButton PickDownTile = null!;
+
+    public NuiButton RotateOrientationCounter = null!;
+    public NuiButton RotateOrientationClockwise = null!;
+
 
     // sound binds
     public readonly NuiBind<string> DayMusicStr = new("day_music_str");
@@ -65,6 +75,18 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
     public readonly NuiBind<string> NightFogDensity = new("night_fog_color");
 
     public readonly NuiBind<string> NewAreaName = new("new_area_name");
+
+    // Tile IDs
+    public readonly NuiBind<string> TileId = new("tile_id");
+    public readonly NuiBind<string> TileRotation = new("tile_rotation");
+    public readonly NuiBind<string> TileHeight = new("tile_height");
+    public readonly NuiBind<string> TileLoop1 = new("tile_loop1");
+    public readonly NuiBind<string> TileLoop2 = new("tile_loop2");
+    public readonly NuiBind<string> TileLoop3 = new("tile_loop3");
+    public readonly NuiBind<string> TileIndex = new("tile_index");
+
+    public readonly NuiBind<bool> TileIsSelected = new("tile_is_selected");
+
 
     public AreaEditorView(NwPlayer player)
     {
@@ -574,6 +596,146 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                     {
                                         Children =
                                         [
+                                            new NuiRow()
+                                            {
+                                                Height = 30f,
+                                                Children =
+                                                [
+                                                    new NuiLabel("Tile Data")
+                                                    {
+                                                        VerticalAlign = NuiVAlign.Middle,
+                                                        HorizontalAlign = NuiHAlign.Center,
+                                                        Height = 15f,
+                                                        Width = 60f
+                                                    },
+                                                    new NuiSpacer()
+                                                    {
+                                                        Width = 5f,
+                                                    },
+                                                    new NuiButton("Pick a Tile")
+                                                    {
+                                                        Id = "pick_tile_button"
+                                                    }.Assign(out PickATileButton)
+                                                ]
+                                            },
+                                            new NuiGroup
+                                            {
+                                                Height = 500f,
+                                                Width = 400f,
+                                                Element = new NuiColumn()
+                                                {
+                                                    Children =
+                                                    [
+                                                        new NuiLabel("Pick Adjacent Tile")
+                                                        {
+                                                            Height = 15f
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiSpacer()
+                                                                {
+                                                                    Width = 50f,
+                                                                },
+                                                                new NuiButton("Up")
+                                                                {
+                                                                    Id = "up_button",
+                                                                    Width = 50f,
+                                                                    Height = 50f,
+                                                                }.Assign(out PickUpTile)
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+
+                                                                new NuiButton("Left")
+                                                                {
+                                                                    Id = "left_button",
+                                                                    Width = 50f,
+                                                                    Height = 50f,
+                                                                }.Assign(out PickLeftTile),
+                                                                new NuiSpacer()
+                                                                {
+                                                                    Width = 50f,
+                                                                },
+                                                                new NuiButton("Right")
+                                                                {
+                                                                    Id = "right_button",
+                                                                    Width = 50f,
+                                                                    Height = 50f,
+                                                                }.Assign(out PickRightTile),
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiSpacer()
+                                                                {
+                                                                    Width = 50f,
+                                                                },
+                                                                new NuiButton("Down")
+                                                                {
+                                                                    Id = "up_button",
+                                                                    Width = 50f,
+                                                                    Height = 50f,
+                                                                }.Assign(out PickDownTile)
+                                                            ]
+                                                        },
+                                                        new NuiRow
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Tile ID")
+                                                                {
+                                                                    Width = 90f,
+                                                                },
+                                                                new NuiTextEdit("", TileId, 3, false)
+                                                                {
+                                                                    Width = 40f,
+                                                                    Enabled = TileIsSelected
+                                                                }
+                                                            ]
+                                                        },
+                                                        new NuiRow()
+                                                        {
+                                                            Children =
+                                                            [
+                                                                new NuiLabel("Tile Rotation"),
+                                                                new NuiButton("<")
+                                                                {
+                                                                    Id = "rotate_counter",
+                                                                    Enabled = TileIsSelected
+                                                                }.Assign(out RotateOrientationCounter),
+                                                                new NuiGroup
+                                                                {
+                                                                    Width = 100,
+                                                                    Height = 30,
+                                                                    Element = new NuiLabel(TileRotation)
+                                                                    {
+                                                                        VerticalAlign = NuiVAlign.Middle,
+                                                                        HorizontalAlign = NuiHAlign.Center
+                                                                    }
+                                                                },
+                                                                new NuiButton(">")
+                                                                {
+                                                                    Id = "rotate_counter",
+                                                                    Enabled = TileIsSelected
+                                                                }.Assign(out RotateOrientationClockwise),
+                                                            ]
+                                                        },
+                                                        new NuiButton("Save Tile")
+                                                        {
+                                                            Id = "save_tile_button",
+                                                            Tooltip = "I hope you know what you're doing...",
+                                                            Enabled = TileIsSelected
+                                                        }.Assign(out SaveTileButton)
+                                                    ]
+                                                }
+                                            }
                                         ]
                                     }
                                 ]
