@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Core.Models;
+using AmiaReforged.Core.Models.DmModels;
 using AmiaReforged.Core.Models.Faction;
 using AmiaReforged.Core.Models.World;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +30,8 @@ public class AmiaDbContext : DbContext
     public DbSet<EncounterEntry> EncounterEntries { get; set; } = null!;
     public DbSet<Npc> Npcs { get; set; } = null!;
     public DbSet<WorldConfiguration> WorldEngineConfig { get; set; }
+
+    public DbSet<DmArea> DmAreas { get; set; } = null!;
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
