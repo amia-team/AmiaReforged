@@ -17,7 +17,7 @@ public sealed class AreaSettingsManager
         _view = view;
     }
 
-    public void LoadToUI(NwArea area)
+    public void LoadToUi(NwArea area)
     {
         var settings = AreaSettings.FromArea(area);
 
@@ -37,7 +37,7 @@ public sealed class AreaSettingsManager
         SetColorBinds(settings.NightDiffuseColor, _view.NightDiffuseR, _view.NightDiffuseG, _view.NightDiffuseB, _view.NightDiffuseA);
     }
 
-    public AreaSettings LoadFromUI()
+    public AreaSettings LoadFromUi()
     {
         return new AreaSettings
         {

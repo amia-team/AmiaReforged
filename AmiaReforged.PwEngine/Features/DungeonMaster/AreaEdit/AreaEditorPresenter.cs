@@ -109,7 +109,7 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         if (evt.ElementId == View.PickCurrentAreaButton.Id)
         {
             _areaHandler?.SelectCurrentArea();
-            LoadSelectedAreaToUI();
+            LoadSelectedAreaToUi();
             _instanceHandler?.RefreshInstanceList();
             return;
         }
@@ -117,7 +117,7 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         if (evt.ElementId == "btn_pick_row")
         {
             _areaHandler?.SelectAreaByIndex(evt.ArrayIndex);
-            LoadSelectedAreaToUI();
+            LoadSelectedAreaToUi();
             _instanceHandler?.RefreshInstanceList();
             return;
         }
@@ -131,7 +131,7 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
         // Area Settings
         if (evt.ElementId == View.SaveSettingsButton.Id)
         {
-            SaveSettingsFromUI();
+            SaveSettingsFromUi();
             return;
         }
 
@@ -203,17 +203,17 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
 
     }
 
-    private void LoadSelectedAreaToUI()
+    private void LoadSelectedAreaToUi()
     {
         if (_state.SelectedArea is null || _settingsManager is null) return;
-        _settingsManager.LoadToUI(_state.SelectedArea);
+        _settingsManager.LoadToUi(_state.SelectedArea);
     }
 
-    private void SaveSettingsFromUI()
+    private void SaveSettingsFromUi()
     {
         if (_state.SelectedArea is null || _settingsManager is null) return;
 
-        var settings = _settingsManager.LoadFromUI();
+        var settings = _settingsManager.LoadFromUi();
         settings.ApplyToArea(_state.SelectedArea);
     }
 

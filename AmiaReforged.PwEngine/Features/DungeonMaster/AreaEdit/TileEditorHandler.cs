@@ -35,13 +35,13 @@ public sealed class TileEditorHandler
     public void RotateClockwise()
     {
         _selection.RotateClockwise();
-        UpdateUIRotation();
+        UpdateUiRotation();
     }
 
     public void RotateCounterClockwise()
     {
         _selection.RotateCounterClockwise();
-        UpdateUIRotation();
+        UpdateUiRotation();
     }
 
     public void ApplyCurrentChanges()
@@ -68,11 +68,11 @@ public sealed class TileEditorHandler
         if (loc.TileInfo is not null)
         {
             _selection.Location = loc;
-            UpdateUIFromSelection();
+            UpdateUiFromSelection();
         }
     }
 
-    private void UpdateUIFromSelection()
+    private void UpdateUiFromSelection()
     {
         _token.SetBindValue(_view.TileId, _selection.TileId.ToString());
         _token.SetBindValue(_view.TileRotation, _selection.Rotation.ToString());
@@ -80,7 +80,7 @@ public sealed class TileEditorHandler
         _token.SetBindValue(_view.TileIsSelected, _selection.IsSelected);
     }
 
-    private void UpdateUIRotation()
+    private void UpdateUiRotation()
     {
         _token.SetBindValue(_view.TileRotation, _selection.Rotation.ToString());
     }
