@@ -28,7 +28,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(520f, 140f, 560f, 430f),
+            Geometry = new NuiRect(520f, 140f, 520f, 535f),
             Resizable = false
         };
     }

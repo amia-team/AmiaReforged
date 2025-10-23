@@ -56,10 +56,8 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         Token().SetBindValue(View.ValidObjectSelected, _model.SelectedItem != null);
 
-        // ❶ Populate the UI from the model first.
         UpdateFromModel();
 
-        // ❷ Only then start watching for edits.
         Token().SetBindWatch(View.Name, true);
         Token().SetBindWatch(View.Description, true);
         Token().SetBindWatch(View.Tag, true);
