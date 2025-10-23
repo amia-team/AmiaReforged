@@ -162,6 +162,9 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
                     SerializedARE = serializedAre,
                     SerializedGIT = serializedGit
                 };
+
+                AreaService.Value.SaveNew(newInstance);
+                return;
             }
 
             return;

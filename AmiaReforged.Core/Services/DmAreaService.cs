@@ -26,4 +26,17 @@ public class DmAreaService(DatabaseContextFactory factory)
 
         return area;
     }
+
+    public void SaveNew(DmArea newInstance)
+    {
+        try
+        {
+            _ctx.DmAreas.Add(newInstance);
+            _ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+    }
 }
