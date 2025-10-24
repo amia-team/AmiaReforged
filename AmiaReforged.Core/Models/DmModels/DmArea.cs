@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System;
 
 namespace AmiaReforged.Core.Models.DmModels;
 
@@ -17,5 +18,8 @@ public class DmArea
 
     public required byte[] SerializedARE { get; set; }
     public required byte[] SerializedGIT { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 
 }

@@ -15,6 +15,7 @@ public class DmAreaService(DatabaseContextFactory factory)
         AmiaDbContext ctx = new AmiaDbContext();
         try
         {
+            area.UpdatedAt = DateTime.UtcNow;
             // Attach the untracked entity to the context
             ctx.DmAreas.Attach(area);
 
@@ -53,6 +54,9 @@ public class DmAreaService(DatabaseContextFactory factory)
 
         try
         {
+            var now = DateTime.UtcNow;
+            newInstance.CreatedAt = now;
+            newInstance.UpdatedAt = now;
             ctx.DmAreas.Add(newInstance);
             ctx.SaveChanges();
         }

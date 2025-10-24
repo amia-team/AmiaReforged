@@ -1,6 +1,6 @@
-using AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.DungeonMaster.PlcEdit;
+using AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
@@ -16,18 +16,21 @@ public sealed class LevelEditView : ScryView<LevelEditPresenter>, IDmWindow
 {
     public override LevelEditPresenter Presenter { get; protected set; }
 
-    public string Title => "Area Settings & Selection";
+    public string Title => "Level Editor";
     public bool ListInDmTools => true;
     public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 
     // Buttons exposed for the presenter to wire up
-    public NuiButton AreaSelectorButton = null!;
+    public NuiButton InstanceSelectionButton = null!;
     public NuiButton AreaSettingsButton = null!;
     // Tools dropdown and open button
     public readonly NuiBind<int> ToolsSelected = new("tools_selected");
     public NuiCombo ToolsCombo = null!;
     public NuiButton OpenToolButton = null!;
     public NuiButton HelpButton = null!;
+
+    // Bind to display current area name
+    public readonly NuiBind<string> CurrentAreaName = new("current_area_name");
 
     public LevelEditView(NwPlayer player)
     {
@@ -39,11 +42,11 @@ public sealed class LevelEditView : ScryView<LevelEditPresenter>, IDmWindow
 
     public override NuiLayout RootLayout()
     {
-        // Simple horizontal toolbar with four buttons. The actual NUI layout and sizes can be tweaked later.
+        // Simple horizontal toolbar showing current area and providing access to tools
 
         // Create elements explicitly to avoid ambiguous extension method resolution for Assign()
-        NuiButton areaSelectorButton = new NuiButton("Area Selector") { Id = "btn_area_selector", Height = 30f };
-        AreaSelectorButton = areaSelectorButton;
+        NuiButton instanceSelectionButton = new NuiButton("Instances") { Id = "btn_instance_selection", Height = 30f };
+        InstanceSelectionButton = instanceSelectionButton;
 
         NuiButton areaSettingsButton = new NuiButton("Area Settings") { Id = "btn_area_settings", Height = 30f };
         AreaSettingsButton = areaSettingsButton;
@@ -61,36 +64,53 @@ public sealed class LevelEditView : ScryView<LevelEditPresenter>, IDmWindow
 
         return new NuiGroup
         {
-            Element = new NuiRow
+            Element = new NuiColumn
             {
-                Height = 40f,
                 Children =
                 [
-                    areaSelectorButton,
-
-                    new NuiSpacer { Width = 10f },
-
-                    areaSettingsButton,
-
-                    new NuiSpacer { Width = 10f },
-
-                    // Tools dropdown + open button
-                    new NuiGroup
+                    // Current area display
+                    new NuiRow
                     {
-                        Element = new NuiRow
-                        {
-                            Children =
-                            [
-                                toolsCombo,
-                                new NuiSpacer { Width = 6f },
-                                openToolButton
-                            ]
-                        }
+                        Height = 25f,
+                        Children =
+                        [
+                            new NuiLabel("Area: ") { Width = 50f, VerticalAlign = NuiVAlign.Middle },
+                            new NuiLabel(CurrentAreaName) { VerticalAlign = NuiVAlign.Middle }
+                        ]
                     },
+                    // Main toolbar
+                    new NuiRow
+                    {
+                        Height = 80f,
+                        Children =
+                        [
+                            instanceSelectionButton,
 
-                    new NuiSpacer { Width = 10f },
+                            new NuiSpacer { Width = 10f },
 
-                    helpButton
+                            areaSettingsButton,
+
+                            new NuiSpacer { Width = 10f },
+
+                            // Tools dropdown + open button
+                            new NuiGroup
+                            {
+                                Element = new NuiRow
+                                {
+                                    Children =
+                                    [
+                                        toolsCombo,
+                                        new NuiSpacer { Width = 6f },
+                                        openToolButton
+                                    ]
+                                }
+                            },
+
+                            new NuiSpacer { Width = 10f },
+
+                            helpButton
+                        ]
+                    }
                 ]
             }
         };
@@ -104,8 +124,10 @@ public sealed class LevelEditPresenter : ScryPresenter<LevelEditView>
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private NwArea? _currentArea;
 
     [Inject] private Lazy<WindowDirector>? WindowDirector { get; init; }
+    [Inject] private Lazy<LevelEditorService>? LevelEditorService { get; init; }
 
     public LevelEditPresenter(LevelEditView view, NwPlayer player)
     {
@@ -119,7 +141,7 @@ public sealed class LevelEditPresenter : ScryPresenter<LevelEditView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0f, 100f, 420f, 60f)
+            Geometry = new NuiRect(0f, 100f, 780f, 200f),
         };
     }
 
@@ -133,6 +155,41 @@ public sealed class LevelEditPresenter : ScryPresenter<LevelEditView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+
+        // Track current area and set initial display
+        _currentArea = _player.LoginCreature?.Area;
+        UpdateCurrentAreaDisplay();
+
+        // Subscribe to area exit event to detect when DM leaves the area
+        if (_currentArea is not null)
+        {
+            _currentArea.OnExit += OnAreaExit;
+        }
+
+    }
+
+    private void OnAreaExit(AreaEvents.OnExit obj)
+    {
+        // Check if it's our player leaving
+        if (obj.ExitingObject != _player.LoginCreature) return;
+
+        // Player left the area - close this window instance
+        // The session persists, so unsaved work is safe
+        Close();
+    }
+
+    private void UpdateCurrentAreaDisplay()
+    {
+        if (_currentArea is not null)
+        {
+            Token().SetBindValue(View.CurrentAreaName, $"{_currentArea.Name} ({_currentArea.ResRef})");
+            // Defaults to the first entry to avoid null pointers in tool selection
+            Token().SetBindValue(View.ToolsSelected, 0);
+        }
+        else
+        {
+            Token().SetBindValue(View.CurrentAreaName, "No Area");
+        }
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
@@ -141,66 +198,70 @@ public sealed class LevelEditPresenter : ScryPresenter<LevelEditView>
 
         switch (obj.ElementId)
         {
-            case var id when id == View.AreaSelectorButton.Id:
-                OpenAreaEditor(LevelEditorMode.Selector);
+            case var id when id == View.InstanceSelectionButton.Id:
+                // Open saved instances manager for current area
+                var instancesView = new SavedInstancesView(_player);
+                WindowDirector?.Value.OpenWindow(instancesView.Presenter);
                 break;
             case var id when id == View.AreaSettingsButton.Id:
-                OpenAreaEditor(LevelEditorMode.Settings);
+                OpenAreaSettings();
                 break;
             case var id when id == View.OpenToolButton.Id:
                 HandleOpenTool();
                 break;
              case var id when id == View.HelpButton.Id:
-                 WindowDirector?.Value.OpenPopup(_player, "Level Editor Help", "Use Area Selector to pick an area, Area Settings to modify fog/music and save instances. Tile editing has been moved to a separate tool.", false);
+                 WindowDirector?.Value.OpenPopup(_player, "Level Editor Help", "This toolbar works with your current area. Use Instances to manage saved area instances, Area Settings to modify fog/music, and Tools to access editors.", false);
                  break;
          }
      }
 
-    private void OpenAreaEditor(LevelEditorMode mode)
-     {
-         // Open the appropriate editor view based on mode
-         switch (mode)
-         {
-             case LevelEditorMode.Selector:
-                 // Open the full Area Editor for area selection
-                 var areaEditorView = new AreaEditorView(_player);
-                 WindowDirector?.Value.OpenWindow(areaEditorView.Presenter);
-                 break;
+    private void OpenInstanceManager()
+    {
+        if (_currentArea is null)
+        {
+            return;
+        }
 
-             case LevelEditorMode.Settings:
-                 // Open the dedicated Area Settings view
-                 var settingsView = new AreaSettingsView(_player);
-                 WindowDirector?.Value.OpenWindow(settingsView.Presenter);
-                 break;
+        // Open the AreaEditorView which has the instance management UI
+        AreaEditorView areaEditorView = new AreaEditorView(_player);
+        WindowDirector?.Value.OpenWindow(areaEditorView.Presenter);
+    }
 
-             case LevelEditorMode.TileEditor:
-                 // Open the tile editor (fallback if called directly)
-                 var tileView = new TileEditorView(_player);
-                 WindowDirector?.Value.OpenWindow(tileView.Presenter);
-                 break;
+    private void OpenAreaSettings()
+    {
+        if (_currentArea is null)
+        {
+            return;
+        }
 
-             default:
-                 WindowDirector?.Value.OpenPopup(_player, "Error", "Unknown editor mode.", false);
-                 break;
-         }
-     }
+        // Open the dedicated Area Settings view
+        AreaSettingsView settingsView = new AreaSettingsView(_player);
+        WindowDirector?.Value.OpenWindow(settingsView.Presenter);
+    }
 
      private void HandleOpenTool()
      {
+         if (_currentArea is null)
+         {
+             return;
+         }
+
          // Read selection from bind
          int selected = Token().GetBindValue(View.ToolsSelected);
+
          LevelTool tool = (LevelTool)selected;
+
 
          switch (tool)
          {
              case LevelTool.TileEditor:
                  // Open the dedicated TileEditorView
-                 var tileView = new TileEditorView(_player);
+                 TileEditorView tileView = new TileEditorView(_player);
                  WindowDirector?.Value.OpenWindow(tileView.Presenter);
                  break;
              case LevelTool.PlcEditor:
                  // Open the existing PLC editor view
-                 var plcView = new PlcEditorView(_player);
+                 PlcEditorView plcView = new PlcEditorView(_player);
                  WindowDirector?.Value.OpenWindow(plcView.Presenter);
                  break;
              default:
@@ -216,6 +277,12 @@ public sealed class LevelEditPresenter : ScryPresenter<LevelEditView>
 
      public override void Close()
      {
+         // Unsubscribe from area exit event
+         if (_currentArea is not null)
+         {
+             _currentArea.OnExit -= OnAreaExit;
+         }
+
          // Close the Nui window if still open
          try
          {

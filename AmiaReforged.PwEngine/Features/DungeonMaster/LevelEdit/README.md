@@ -1,7 +1,7 @@
 # Level Editor Refactoring
 
 ## Overview
-The Level Editor has been refactored into a modular system with shared state management across multiple specialized windows.
+The Level Editor has been refactored into a modular system with shared state management across multiple specialized windows. **The editor works on the DM's current area** - if the DM changes areas, the window closes but the session persists to preserve unsaved work.
 
 ## Architecture
 
@@ -11,35 +11,42 @@ The Level Editor has been refactored into a modular system with shared state man
   - Sessions hold shared `AreaEditorState`
   - Tracks all open presenters for a session
   - Enables state sharing across multiple windows editing the same area
+  - **Sessions persist when windows close** - unsaved work is safe
 
 ### Main Toolbar
 - **LevelEditView / LevelEditPresenter**: The entry point toolbar
-  - **Area Selector** button → Opens `AreaEditorView` (full area selection UI)
+  - Displays current area name
+  - **Instances** button → Opens `AreaEditorView` (instance management UI)
   - **Area Settings** button → Opens `AreaSettingsView` (focused settings editor)
   - **Tools** dropdown → Select between:
     - Tile Editor → Opens `TileEditorView`
     - PLC Editor → Opens existing `PlcEditorView`
   - **Help** button → Shows help popup
+  - **Auto-closes when DM leaves area** (subscribes to area's `OnExit` event)
+  - All buttons validate that DM is in an area before opening sub-windows
 
 ### Specialized Views
 1. **AreaEditorView** (existing, now session-aware)
-   - Full area selection and management
-   - Instance creation/loading
+   - Instance creation/loading/deletion
+   - Area reload functionality
    - Now uses shared session state
+   - **ListInDmTools = false** (accessed via toolbar only)
 
 2. **AreaSettingsView** (new)
    - Dedicated settings editor
    - Music (Day/Night/Battle)
    - Fog settings (Clip distance, Day/Night density)
    - Shares session state with other windows
+   - **ListInDmTools = false** (accessed via toolbar only)
 
 3. **TileEditorView** (new, skeleton)
    - Tile selection and editing
    - Placeholder for tile editing UI
    - Ready to integrate `TileEditorHandler` logic
+   - **ListInDmTools = false** (accessed via toolbar only)
 
 ## Enums
-- **LevelEditorMode**: Selector, Settings, TileEditor
+- **LevelEditorMode**: Settings, TileEditor, InstanceManager
 - **LevelTool**: TileEditor, PlcEditor
 
 ## State Sharing
@@ -53,9 +60,22 @@ When a presenter opens, it:
 3. Accesses shared state
 4. Unregisters on close
 
+**Sessions persist** even when all windows close, so unsaved work is preserved.
+
+## Workflow
+1. DM opens "Level Editor" from DM Tools menu
+2. Toolbar shows current area name
+3. DM can:
+   - Manage instances (save/load/delete area variants)
+   - Edit area settings (music, fog, lighting)
+   - Open tile editor or PLC editor tools
+4. If DM changes area, toolbar auto-closes
+5. Session for previous area persists with any unsaved changes
+6. DM can reopen Level Editor in new area
+
 ## Next Steps
 - Move tile editing UI from `AreaEditorView` to `TileEditorView`
 - Extract `TileEditorHandler` to work with `TileEditorView`
 - Add more tools to the dropdown (e.g., Encounter Builder)
-- Implement mode-specific behavior in `OpenAreaEditor`
+- Consider adding visual indicator when session has unsaved changes
 

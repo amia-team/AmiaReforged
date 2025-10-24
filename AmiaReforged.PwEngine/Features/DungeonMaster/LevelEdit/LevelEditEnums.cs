@@ -2,9 +2,9 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit;
 
 public enum LevelEditorMode
 {
-    Selector = 0,
-    Settings = 1,
-    TileEditor = 2
+    Settings = 0,
+    TileEditor = 1,
+    InstanceManager = 2
 }
 
 public enum LevelTool
