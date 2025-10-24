@@ -158,7 +158,8 @@ public sealed class SavedInstancesPresenter : ScryPresenter<SavedInstancesView>
         if (_window is null) InitBefore();
         if (_window is null)
         {
-            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.", ColorConstants.Orange);
+            _player.SendServerMessage("The window could not be created. Screenshot this message and report it to a DM.",
+                ColorConstants.Orange);
             return;
         }
 
@@ -237,7 +238,11 @@ public sealed class SavedInstancesPresenter : ScryPresenter<SavedInstancesView>
                 // Confirm overwrite
                 WindowDirector?.Value.OpenPopupWithReaction(_player, "Overwrite Instance?",
                     $"This area is an instance. Overwrite the record named '{newInstanceName}' with current area state?",
-                    outcome: () => { SaveOverExistingInstance(newInstanceName); RefreshInstanceList(); },
+                    outcome: () =>
+                    {
+                        SaveOverExistingInstance(newInstanceName);
+                        RefreshInstanceList();
+                    },
                     ignoreButton: false, linkedToken: Token());
                 return;
             }
@@ -250,7 +255,8 @@ public sealed class SavedInstancesPresenter : ScryPresenter<SavedInstancesView>
                 return;
             }
 
-            WindowDirector?.Value.OpenPopup(_player, "Duplicate Name", "An instance with that name already exists.", false);
+            WindowDirector?.Value.OpenPopup(_player, "Duplicate Name", "An instance with that name already exists.",
+                false);
             return;
         }
 
@@ -288,7 +294,11 @@ public sealed class SavedInstancesPresenter : ScryPresenter<SavedInstancesView>
             int idx = evt.ArrayIndex;
             WindowDirector?.Value.OpenPopupWithReaction(_player, "Delete Instance?",
                 $"Delete saved instance? This cannot be undone.",
-                outcome: () => { DeleteInstance(idx); RefreshInstanceList(); }, ignoreButton: false, linkedToken: Token());
+                outcome: () =>
+                {
+                    DeleteInstance(idx);
+                    RefreshInstanceList();
+                }, ignoreButton: false, linkedToken: Token());
             return;
         }
     }
@@ -314,7 +324,8 @@ public sealed class SavedInstancesPresenter : ScryPresenter<SavedInstancesView>
         DmArea? existing = AreaService!.Value.InstanceFromKey(_player.CDKey, _session.Area.ResRef, name);
         if (existing is null)
         {
-            WindowDirector?.Value.OpenPopup(_player, "Not Found", "No existing instance with that name to overwrite.", false);
+            WindowDirector?.Value.OpenPopup(_player, "Not Found", "No existing instance with that name to overwrite.",
+                false);
             return;
         }
 
@@ -361,7 +372,8 @@ public sealed class SavedInstancesPresenter : ScryPresenter<SavedInstancesView>
         // Prevent duplicate names for same cdkey/resref
         if (AreaService!.Value.InstanceFromKey(_player.CDKey, _session.Area!.ResRef, newName) is not null)
         {
-            WindowDirector?.Value.OpenPopup(_player, "Duplicate Name", "Another instance already has that name.", false);
+            WindowDirector?.Value.OpenPopup(_player, "Duplicate Name", "Another instance already has that name.",
+                false);
             return;
         }
 
@@ -381,7 +393,13 @@ public sealed class SavedInstancesPresenter : ScryPresenter<SavedInstancesView>
 
         DmArea dmArea = _session.State.SavedInstances[index];
         // Spawn a new area from serialized data
-        NwArea? spawned = NwArea.Deserialize(dmArea.SerializedARE, dmArea.SerializedGIT);
+        NwArea? spawned = NwArea.Deserialize(
+            dmArea.SerializedARE,
+            dmArea.SerializedGIT,
+            $"{_player.CDKey}_{dmArea.OriginalResRef}_{dmArea.Id}",
+            $"{dmArea.NewName}"
+        );
+
         if (spawned is null)
         {
             _player.SendServerMessage("Failed to load instance.");
@@ -404,6 +422,7 @@ public sealed class SavedInstancesPresenter : ScryPresenter<SavedInstancesView>
             {
                 _player.LoginCreature.ActionJumpToLocation(loc);
             }
+
             _player.SendServerMessage("Teleported to spawned instance.");
         }
     }
