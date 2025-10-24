@@ -22,6 +22,8 @@ public sealed class TileEditorView : ScryView<TileEditorPresenter>, IDmWindow
     public readonly NuiBind<bool> TileIsSelected = new("tile_is_selected");
     public readonly NuiBind<string> TileId = new("tile_id");
     public readonly NuiBind<string> TileRotation = new("tile_rotation");
+    public readonly NuiBind<bool> LiveUpdateEnabled = new("tile_live_update");
+    public readonly NuiBind<string> LiveUpdateText = new("tile_live_update_text");
 
     public NuiButton PickATileButton = null!;
     public NuiButton SaveTileButton = null!;
@@ -31,6 +33,9 @@ public sealed class TileEditorView : ScryView<TileEditorPresenter>, IDmWindow
     public NuiButton PickSouthTile = null!;
     public NuiButton RotateOrientationCounter = null!;
     public NuiButton RotateOrientationClockwise = null!;
+    public NuiButton TileIdDecButton = null!;
+    public NuiButton TileIdIncButton = null!;
+    public NuiButton ToggleLiveButton = null!;
 
     public TileEditorView(NwPlayer player)
     {
@@ -54,7 +59,9 @@ public sealed class TileEditorView : ScryView<TileEditorPresenter>, IDmWindow
                         Children =
                         [
                             new NuiLabel("Tile ID") { Width = 80f, VerticalAlign = NuiVAlign.Middle },
-                            new NuiTextEdit("", TileId, 5, false) { Enabled = TileIsSelected, Width = 50f }
+                            new NuiButton("<") { Id = "tileid_dec", Enabled = TileIsSelected, Width = 26f, Height = 26f }.Assign(out TileIdDecButton),
+                            new NuiTextEdit("", TileId, 5, false) { Enabled = TileIsSelected, Width = 50f },
+                            new NuiButton(">") { Id = "tileid_inc", Enabled = TileIsSelected, Width = 26f, Height = 26f }.Assign(out TileIdIncButton)
                         ]
                     },
                     new NuiRow
@@ -74,6 +81,15 @@ public sealed class TileEditorView : ScryView<TileEditorPresenter>, IDmWindow
                             new NuiButton(">")
                                     { Id = "rotate_clockwise", Enabled = TileIsSelected, Width = 26f, Height = 26f }
                                 .Assign(out RotateOrientationClockwise)
+                        ]
+                    },
+                    new NuiRow
+                    {
+                        Children =
+                        [
+                            new NuiLabel("Live Update") { Width = 80f, VerticalAlign = NuiVAlign.Middle },
+                            new NuiLabel(LiveUpdateText) { Width = 60f, VerticalAlign = NuiVAlign.Middle },
+                            new NuiButton("Toggle") { Id = "btn_toggle_live", Height = 24f, Width = 60f }.Assign(out ToggleLiveButton)
                         ]
                     },
 
@@ -194,6 +210,9 @@ public sealed class TileEditorPresenter : ScryPresenter<TileEditorView>
 
         // default not selected
         Token().SetBindValue(View.TileIsSelected, false);
+        // Live update on by default
+        Token().SetBindValue(View.LiveUpdateEnabled, true);
+        Token().SetBindValue(View.LiveUpdateText, "On");
 
         // Watch tile id input for sanitization and set a default value
         Token().SetBindWatch(View.TileId, true);
@@ -226,10 +245,32 @@ public sealed class TileEditorPresenter : ScryPresenter<TileEditorView>
             return;
         }
 
+        if (obj.ElementId == View.TileIdDecButton.Id)
+        {
+            AdjustTileId(-1);
+            return;
+        }
+
+        if (obj.ElementId == View.TileIdIncButton.Id)
+        {
+            AdjustTileId(+1);
+            return;
+        }
+
+        if (obj.ElementId == View.ToggleLiveButton.Id)
+        {
+            bool current = Token().GetBindValue(View.LiveUpdateEnabled);
+            bool next = !current;
+            Token().SetBindValue(View.LiveUpdateEnabled, next);
+            Token().SetBindValue(View.LiveUpdateText, next ? "On" : "Off");
+            return;
+        }
+
         if (obj.ElementId == View.RotateOrientationCounter.Id)
         {
             _selectedRotation = PreviousRotation(_selectedRotation);
             Token().SetBindValue(View.TileRotation, _selectedRotation.ToString());
+            MaybeLiveApply();
             return;
         }
 
@@ -237,6 +278,7 @@ public sealed class TileEditorPresenter : ScryPresenter<TileEditorView>
         {
             _selectedRotation = NextRotation(_selectedRotation);
             Token().SetBindValue(View.TileRotation, _selectedRotation.ToString());
+            MaybeLiveApply();
             return;
         }
 
@@ -269,6 +311,32 @@ public sealed class TileEditorPresenter : ScryPresenter<TileEditorView>
             ApplyChanges();
             return;
         }
+    }
+
+    private void AdjustTileId(int delta)
+    {
+        if (_selectedLocation is null) return;
+        string raw = Token().GetBindValue(View.TileId) ?? string.Empty;
+        string digits = new string(raw.Where(char.IsDigit).ToArray());
+        int value = _selectedLocation.TileId;
+        if (digits.Length > 0 && int.TryParse(digits, out int parsed)) value = parsed;
+        int cap = GetMaxTileCap();
+        value += delta;
+        if (value < 0) value = 0;
+        if (cap > 0 && value > cap) value = cap;
+        _updatingUi = true;
+        Token().SetBindValue(View.TileId, value.ToString());
+        _updatingUi = false;
+        _tileIdDirty = true; // user intent
+        MaybeLiveApply();
+    }
+
+    private void MaybeLiveApply()
+    {
+        if (_selectedLocation is null) return;
+        bool live = Token().GetBindValue(View.LiveUpdateEnabled);
+        if (!live) return;
+        ApplyChanges();
     }
 
     private void StartTilePicker()
@@ -429,6 +497,7 @@ public sealed class TileEditorPresenter : ScryPresenter<TileEditorView>
                 Token().SetBindValue(View.TileId, digits);
                 _updatingUi = false;
             }
+            // Don't attempt live apply on empty field
             return;
         }
 
@@ -437,12 +506,16 @@ public sealed class TileEditorPresenter : ScryPresenter<TileEditorView>
         if (value < 0) value = 0;
 
         int maxTile = GetMaxTileCap();
+
         if (maxTile > 0 && value > maxTile) value = maxTile;
 
         // Write sanitized value back to the bind
         _updatingUi = true;
         Token().SetBindValue(View.TileId, value.ToString());
         _updatingUi = false;
+
+        // Apply live after user typed a valid numeric value
+        MaybeLiveApply();
     }
 
     private void LoadFromSession()
