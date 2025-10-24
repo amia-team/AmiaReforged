@@ -1,14 +1,11 @@
 using AmiaReforged.Core.Services;
+using AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
-using AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit;
-using AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Native.API;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 
 /// <summary>
 /// Refactored presenter - delegates responsibilities to specialized handlers
@@ -21,9 +18,8 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
     private NuiWindow? _window;
     private readonly NwPlayer _player;
 
-    // Shared session / state
-    private LevelEditSession? _session;
-    private AreaEditorState? _state;
+    // State
+    private readonly AreaEditorState _state = new();
     private readonly TileSelection _tileSelection = new();
 
     // Handlers - lazy initialized after token is available
@@ -34,7 +30,6 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
 
     [Inject] private Lazy<DmAreaService>? AreaService { get; init; }
     [Inject] private Lazy<WindowDirector>? WindowDirector { get; init; }
-    [Inject] private Lazy<LevelEditorService>? LevelEditorService { get; init; }
 
     public AreaEditorPresenter(AreaEditorView view, NwPlayer player)
     {
@@ -66,33 +61,20 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
 
         _player.TryCreateNuiWindow(_window, out _token);
         Token().SetBindWatch(View.SearchBind, true);
-
-        // Acquire or create a shared session for the player's current area
-        NwArea? area = _player.LoginCreature?.Area;
-        if (area is not null && LevelEditorService is not null)
-        {
-            _session = LevelEditorService.Value.GetOrCreateSessionForArea(area);
-            _state = _session.State;
-            _session.RegisterPresenter(this);
-        }
-
         InitializeHandlers();
         _areaHandler!.RefreshAreaList();
     }
 
     private void InitializeHandlers()
     {
-        // Use the session-backed state if available, otherwise fall back to a fresh state
-        AreaEditorState stateToUse = _state ?? new AreaEditorState();
-
-        _areaHandler = new AreaSelectionHandler(_player, _token, View, stateToUse);
+        _areaHandler = new AreaSelectionHandler(_player, _token, View, _state);
         _settingsManager = new AreaSettingsManager(_token, View);
         _tileHandler = new TileEditorHandler(_player, _token, View, _tileSelection);
         _instanceHandler = new InstanceManagerHandler(
             _player,
             _token,
             View,
-            stateToUse,
+            _state,
             AreaService!.Value,
             WindowDirector?.Value);
     }
@@ -224,13 +206,13 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
 
     private void LoadSelectedAreaToUi()
     {
-        if (_state is null || _state.SelectedArea is null || _settingsManager is null) return;
+        if (_state.SelectedArea is null || _settingsManager is null) return;
         _settingsManager.LoadToUi(_state.SelectedArea);
     }
 
     private void SaveSettingsFromUi()
     {
-        if (_state is null || _state.SelectedArea is null || _settingsManager is null) return;
+        if (_state.SelectedArea is null || _settingsManager is null) return;
 
         var settings = _settingsManager.LoadFromUi();
         settings.ApplyToArea(_state.SelectedArea);
@@ -238,18 +220,6 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
 
     public override void Close()
     {
-        // Unregister from the shared session
-        try
-        {
-            if (_session is not null)
-            {
-                _session.UnregisterPresenter(this);
-                _session = null;
-            }
-        }
-        catch
-        {
-            // ignore
-        }
+        // Cleanup if needed
     }
 }

@@ -4,14 +4,14 @@ using Anvil;
 using Anvil.API;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 
 public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
 {
     public override AreaEditorPresenter Presenter { get; protected set; }
 
     public string Title => "Area Editor";
-    public bool ListInDmTools => true;
+    public bool ListInDmTools => false;
     public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 
     // Binds
@@ -693,11 +693,21 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Width = 90f,
                                                                 },
+                                                                new NuiButton("<")
+                                                                {
+                                                                    Id = "rotate_counter",
+                                                                    Enabled = TileIsSelected
+                                                                }.Assign(out RotateOrientationCounter),
                                                                 new NuiTextEdit("", TileId, 3, false)
                                                                 {
                                                                     Width = 40f,
                                                                     Enabled = TileIsSelected
-                                                                }
+                                                                },
+                                                                new NuiButton("<")
+                                                                {
+                                                                    Id = "rotate_counter",
+                                                                    Enabled = TileIsSelected
+                                                                }.Assign(out RotateOrientationCounter)
                                                             ]
                                                         },
                                                         new NuiRow()

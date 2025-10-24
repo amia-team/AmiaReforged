@@ -1,7 +1,7 @@
 using System.Globalization;
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 
 /// <summary>
 /// Handles loading and saving area settings

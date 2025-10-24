@@ -1,6 +1,6 @@
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 
 /// <summary>
 /// Represents all editable settings for an area

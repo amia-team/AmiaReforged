@@ -1,7 +1,7 @@
 using Anvil.API;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 
 /// <summary>
 /// Handles area selection and filtering

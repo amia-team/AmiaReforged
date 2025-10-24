@@ -1,7 +1,7 @@
 using AmiaReforged.Core.Models.DmModels;
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 
 /// <summary>
 /// Maintains the current state of the area editor

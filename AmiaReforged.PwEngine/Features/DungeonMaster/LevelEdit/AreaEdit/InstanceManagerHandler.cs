@@ -5,7 +5,7 @@ using Anvil.API;
 using Microsoft.IdentityModel.Tokens;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 
 /// <summary>
 /// Manages saving, loading, and deleting area instances
