@@ -29,10 +29,10 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
 
     public NuiButton PickATileButton = null!;
     public NuiButton SaveTileButton = null!;
-    public NuiButton PickUpTile = null!;
+    public NuiButton PickNorthTile = null!;
     public NuiButton PickRightTile = null!;
     public NuiButton PickLeftTile = null!;
-    public NuiButton PickDownTile = null!;
+    public NuiButton PickSouthTile = null!;
 
     public NuiButton RotateOrientationCounter = null!;
     public NuiButton RotateOrientationClockwise = null!;
@@ -638,12 +638,12 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Width = 50f,
                                                                 },
-                                                                new NuiButton("Up")
+                                                                new NuiButton("North")
                                                                 {
                                                                     Id = "up_button",
                                                                     Width = 50f,
                                                                     Height = 50f,
-                                                                }.Assign(out PickUpTile)
+                                                                }.Assign(out PickNorthTile)
                                                             ]
                                                         },
                                                         new NuiRow
@@ -651,7 +651,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                             Children =
                                                             [
 
-                                                                new NuiButton("Left")
+                                                                new NuiButton("West")
                                                                 {
                                                                     Id = "left_button",
                                                                     Width = 50f,
@@ -661,7 +661,7 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Width = 50f,
                                                                 },
-                                                                new NuiButton("Right")
+                                                                new NuiButton("East")
                                                                 {
                                                                     Id = "right_button",
                                                                     Width = 50f,
@@ -677,12 +677,12 @@ public sealed class AreaEditorView : ScryView<AreaEditorPresenter>, IDmWindow
                                                                 {
                                                                     Width = 50f,
                                                                 },
-                                                                new NuiButton("Down")
+                                                                new NuiButton("South")
                                                                 {
-                                                                    Id = "up_button",
+                                                                    Id = "down_button",
                                                                     Width = 50f,
                                                                     Height = 50f,
-                                                                }.Assign(out PickDownTile)
+                                                                }.Assign(out PickSouthTile)
                                                             ]
                                                         },
                                                         new NuiRow

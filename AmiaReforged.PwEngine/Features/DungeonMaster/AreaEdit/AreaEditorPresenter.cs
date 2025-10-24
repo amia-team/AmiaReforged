@@ -180,27 +180,29 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
             return;
         }
 
-        if (evt.ElementId == View.PickUpTile.Id)
+        if (evt.ElementId == View.PickNorthTile.Id)
         {
+            _tileHandler?.PickNeighbor(TileEditorHandler.Direction.North);
             return;
         }
 
         if (evt.ElementId == View.PickLeftTile.Id)
         {
-
+            _tileHandler?.PickNeighbor(TileEditorHandler.Direction.West);
+            return;
         }
 
         if (evt.ElementId == View.PickRightTile.Id)
         {
-
+            _tileHandler?.PickNeighbor(TileEditorHandler.Direction.East);
+            return;
         }
 
-        if (evt.ElementId == View.PickDownTile.Id)
+        if (evt.ElementId == View.PickSouthTile.Id)
         {
-
-
+            _tileHandler?.PickNeighbor(TileEditorHandler.Direction.South);
+            return;
         }
-
     }
 
     private void LoadSelectedAreaToUi()
