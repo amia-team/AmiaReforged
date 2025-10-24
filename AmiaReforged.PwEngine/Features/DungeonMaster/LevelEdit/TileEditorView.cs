@@ -208,13 +208,10 @@ public sealed class TileEditorPresenter : ScryPresenter<TileEditorView>
             _session.State.SelectedArea = area;
         }
 
-        // default not selected
         Token().SetBindValue(View.TileIsSelected, false);
-        // Live update on by default
         Token().SetBindValue(View.LiveUpdateEnabled, true);
         Token().SetBindValue(View.LiveUpdateText, "On");
 
-        // Watch tile id input for sanitization and set a default value
         Token().SetBindWatch(View.TileId, true);
         Token().SetBindValue(View.TileId, Token().GetBindValue(View.TileId) ?? "0");
 
