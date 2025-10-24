@@ -99,7 +99,10 @@ public class TestFeatSorter
         foreach (NwFeat feat in correctFeats.Where(feat => !monk.KnowsFeat(feat)))
         {
             monk.AddFeat(feat, monk.Level);
-            player.SendServerMessage($"Feat {feat.Name} was added.");
+            if (!monk.KnowsFeat(feat))
+                player.SendServerMessage($"Something went wrong! {feat.Name} wasn't added properly.");
+            else
+                player.SendServerMessage($"Feat {feat.Name} was added.");
         }
 
         // Upon taking monk 6, remove KD/IKD for Fighting Style selection
