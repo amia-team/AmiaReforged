@@ -98,13 +98,13 @@ public class TestFeatSorter
         // Add new feats that monk qualifies for but doesn't yet have
         foreach (NwFeat feat in correctFeats.Where(feat => !monk.KnowsFeat(feat)))
         {
-            monk.AddFeat(feat);
+            monk.AddFeat(feat, monk.Level);
             player.SendServerMessage($"Feat {feat.Name} was added.");
         }
 
         // Upon taking monk 6, remove KD/IKD for Fighting Style selection
         if (monkLevel != 6) return;
-        
+
         foreach (NwFeat feat in monk.Feats)
         {
             if (feat.FeatType is Feat.Knockdown or Feat.ImprovedKnockdown)
