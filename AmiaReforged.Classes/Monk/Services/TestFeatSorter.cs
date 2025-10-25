@@ -19,9 +19,10 @@ public class TestFeatSorter
         [4] = [NwFeat.FromFeatId(MonkFeat.MonkSpeedNew), NwFeat.FromFeatId(MonkFeat.EagleStrike)],
         [6] = [NwFeat.FromFeatId(MonkFeat.MonkFightingStyle)],
         [7] = [NwFeat.FromFeatId(MonkFeat.WholenessOfBodyNew), NwFeat.FromFeatId(MonkFeat.BodyKiPoint1)],
+        [10] = [NwFeat.FromFeatId(MonkFeat.KiBarrier)],
         [11] = [NwFeat.FromFeatId(MonkFeat.AxiomaticStrike), NwFeat.FromFeatId(MonkFeat.BodyKiPoint2)],
         [12] = [NwFeat.FromFeatId(MonkFeat.PoeBase)],
-        [14] = [NwFeat.FromFeatId(MonkFeat.KiBarrier)],
+        [13] = [NwFeat.FromFeatType(Feat.DiamondSoul)],
         [15] = [NwFeat.FromFeatId(MonkFeat.EmptyBodyNew), NwFeat.FromFeatId(MonkFeat.BodyKiPoint3)],
         [17] = [NwFeat.FromFeatId(MonkFeat.QuiveringPalmNew), NwFeat.FromFeatId(MonkFeat.SpiritKiPoint1)],
         [18] = [NwFeat.FromFeatId(MonkFeat.KiStrike)],
@@ -99,19 +100,38 @@ public class TestFeatSorter
         foreach (NwFeat feat in correctFeats.Where(feat => !monk.KnowsFeat(feat)))
         {
             monk.AddFeat(feat, monk.Level);
-            if (!monk.KnowsFeat(feat))
-                player.SendServerMessage($"Something went wrong! {feat.Name} wasn't added properly.");
-            else
-                player.SendServerMessage($"Feat {feat.Name} was added.");
+            player.SendServerMessage($"Feat {feat.Name} was added.");
         }
 
-        // Upon taking monk 6, remove KD/IKD for Fighting Style selection
-        if (monkLevel != 6) return;
-
-        foreach (NwFeat feat in monk.Feats)
+        switch (monkLevel)
         {
-            if (feat.FeatType is Feat.Knockdown or Feat.ImprovedKnockdown)
-                monk.RemoveFeat(feat, true);
+            // remove KD/IKD for Fighting Style selection
+            case 6:
+            {
+                foreach (NwFeat feat in monk.Feats)
+                {
+                    if (feat.FeatType is not (Feat.Knockdown or Feat.ImprovedKnockdown)) continue;
+                    monk.RemoveFeat(feat, true);
+                    player.SendServerMessage($"Feat {feat.Name} was removed.");
+                }
+
+                break;
+            }
+            case 12:
+            {
+                foreach (NwFeat feat in monk.Feats)
+                {
+                    if (feat.FeatType is not Feat.DiamondSoul) continue;
+                    monk.RemoveFeat(feat, true);
+                    player.SendServerMessage($"Feat {feat.Name} was removed.");
+                }
+
+                break;
+            }
         }
+
+
+
+
     }
 }
