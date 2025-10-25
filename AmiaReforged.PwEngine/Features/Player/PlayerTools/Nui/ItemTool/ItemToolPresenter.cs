@@ -114,6 +114,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
             if (_player.TryCreateNuiWindow(w, out var modalToken))
             {
                 _nameModalToken = modalToken;
+                modalToken.SetBindValue(View.EditNameBuffer, _model.Selected!.Name);
                 _nameModalToken.Value.OnNuiEvent += HandleNameModalEvent;
             }
             return;
@@ -129,6 +130,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
             if (_player.TryCreateNuiWindow(w, out var modalToken))
             {
                 _descModalToken = modalToken;
+                modalToken.SetBindValue(View.EditDescBuffer, _model.Selected!.Description);
                 _descModalToken.Value.OnNuiEvent += HandleDescModalEvent;
             }
             return;
@@ -142,7 +144,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == "ind_modal_ok_name")
         {
-            var newName = Token().GetBindValue(View.EditNameBuffer) ?? string.Empty;
+            var newName = _nameModalToken!.Value.GetBindValue(View.EditNameBuffer) ?? string.Empty;
             Token().SetBindValue(View.Name, newName);
             ApplyChanges(true);
             if (_nameModalToken.HasValue)
@@ -176,7 +178,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == "ind_modal_ok_desc")
         {
-            var newDesc = Token().GetBindValue(View.EditDescBuffer) ?? string.Empty;
+            var newDesc = _descModalToken!.Value.GetBindValue(View.EditDescBuffer) ?? string.Empty;
             Token().SetBindValue(View.Description, newDesc);
             ApplyChanges(true);
             if (_descModalToken.HasValue)
