@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
+using AmiaReforged.PwEngine.Database.Entities.PlayerHousing;
 using AmiaReforged.PwEngine.Database.EntityConfig;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
 using Anvil.Services;
@@ -25,6 +26,8 @@ public class PwEngineContext : DbContext
     public DbSet<PersistentIndustryMembership> IndustryMemberships { get; set; } = null!;
 
     public DbSet<PersistentCharacterTrait> CharacterTraits { get; set; } = null!;
+
+    public DbSet<House> Houses { get; set; } = null!;
 
 
     public PwEngineContext()
