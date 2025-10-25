@@ -14,4 +14,5 @@ public class PersistedCharacter
     public string FullName => $"{FirstName} {LastName}";
     public CharacterStatistics? Statistics { get; set; }
     public IEnumerable<PersistentIndustryMembership>? Memberships { get; set; }
+    [MaxLength(8)] public required string CdKey { get; set; }
 }
