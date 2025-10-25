@@ -48,7 +48,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
-        _token.OnNuiEvent += ProcessEvent;
 
         // Initial bind state
         Token().SetBindValue(View.ValidObjectSelected, false);
@@ -115,25 +114,8 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
             if (_player.TryCreateNuiWindow(w, out var modalToken))
             {
                 _nameModalToken = modalToken;
+                _nameModalToken.Value.OnNuiEvent += HandleNameModalEvent;
             }
-            return;
-        }
-        if (ev.ElementId == "ind_modal_ok_name")
-        {
-            var newName = Token().GetBindValue(View.EditNameBuffer) ?? string.Empty;
-            Token().SetBindValue(View.Name, newName);
-            ApplyChanges(true);
-            _nameModalToken?.Close();
-            _nameModalToken = null;
-            return;
-        }
-        if (ev.ElementId == "ind_modal_discard_name")
-        {
-            _model.RevertNameToInitial();
-            Token().SetBindValue(View.Name, _model.GetInitialNameOrCurrent());
-            ApplyChanges(false);
-            _nameModalToken?.Close();
-            _nameModalToken = null;
             return;
         }
 
@@ -147,25 +129,77 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
             if (_player.TryCreateNuiWindow(w, out var modalToken))
             {
                 _descModalToken = modalToken;
+                _descModalToken.Value.OnNuiEvent += HandleDescModalEvent;
             }
             return;
         }
+    }
+
+    private void HandleNameModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click)
+            return;
+
+        if (ev.ElementId == "ind_modal_ok_name")
+        {
+            var newName = Token().GetBindValue(View.EditNameBuffer) ?? string.Empty;
+            Token().SetBindValue(View.Name, newName);
+            ApplyChanges(true);
+            if (_nameModalToken.HasValue)
+            {
+                _nameModalToken.Value.OnNuiEvent -= HandleNameModalEvent;
+                _nameModalToken?.Close();
+                _nameModalToken = null;
+            }
+            return;
+        }
+
+        if (ev.ElementId == "ind_modal_discard_name")
+        {
+            _model.RevertNameToInitial();
+            Token().SetBindValue(View.Name, _model.GetInitialNameOrCurrent());
+            ApplyChanges(false);
+            if (_nameModalToken.HasValue)
+            {
+                _nameModalToken.Value.OnNuiEvent -= HandleNameModalEvent;
+                _nameModalToken?.Close();
+                _nameModalToken = null;
+            }
+            return;
+        }
+    }
+
+    private void HandleDescModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click)
+            return;
+
         if (ev.ElementId == "ind_modal_ok_desc")
         {
             var newDesc = Token().GetBindValue(View.EditDescBuffer) ?? string.Empty;
             Token().SetBindValue(View.Description, newDesc);
             ApplyChanges(true);
-            _descModalToken?.Close();
-            _descModalToken = null;
+            if (_descModalToken.HasValue)
+            {
+                _descModalToken.Value.OnNuiEvent -= HandleDescModalEvent;
+                _descModalToken?.Close();
+                _descModalToken = null;
+            }
             return;
         }
+
         if (ev.ElementId == "ind_modal_discard_desc")
         {
             _model.RevertDescToInitial();
             Token().SetBindValue(View.Description, _model.GetInitialDescOrCurrent());
             ApplyChanges(false);
-            _descModalToken?.Close();
-            _descModalToken = null;
+            if (_descModalToken.HasValue)
+            {
+                _descModalToken.Value.OnNuiEvent -= HandleDescModalEvent;
+                _descModalToken?.Close();
+                _descModalToken = null;
+            }
+            return;
         }
     }
 
@@ -239,10 +273,20 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
     public override void Close()
     {
-        _nameModalToken?.Close();
-        _nameModalToken = null;
-        _descModalToken?.Close();
-        _descModalToken = null;
+        if (_nameModalToken.HasValue)
+        {
+            _nameModalToken.Value.OnNuiEvent -= HandleNameModalEvent;
+            _nameModalToken?.Close();
+            _nameModalToken = null;
+        }
+
+        if (_descModalToken.HasValue)
+        {
+            _descModalToken.Value.OnNuiEvent -= HandleDescModalEvent;
+            _descModalToken?.Close();
+            _descModalToken = null;
+        }
+
         Token().Close();
     }
 }
