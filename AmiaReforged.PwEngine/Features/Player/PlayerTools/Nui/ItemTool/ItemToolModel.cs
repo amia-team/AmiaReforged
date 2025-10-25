@@ -5,7 +5,7 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ItemTool;
 
-public enum IconAdjustResult { Success, NotAllowedType, NoSelection }
+public enum IconAdjustResult { Success, NotAllowedType, NoSelection, NoValidModel }
 
 internal sealed class ItemToolModel(NwPlayer player)
 {
@@ -14,6 +14,10 @@ internal sealed class ItemToolModel(NwPlayer player)
 
     public delegate void NewSelectionHandler();
     public event NewSelectionHandler? OnNewSelection;
+
+    // Local variable keys for initial values (persist across CopyItemAndModify)
+    private const string InitialNameKey = "item_tool_initial_name";
+    private const string InitialDescKey = "item_tool_initial_desc";
 
     // --- Selection ---
     public void EnterTargetingMode()
@@ -57,6 +61,52 @@ internal sealed class ItemToolModel(NwPlayer player)
         OnNewSelection?.Invoke();
     }
 
+    // --- Initial value helpers ---
+    public void EnsureInitialNameCaptured()
+    {
+        if (Selected is null) return;
+        var v = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        if (!v.HasValue) v.Value = Selected.Name; // Name is non-null per annotations
+    }
+    public void EnsureInitialDescCaptured()
+    {
+        if (Selected is null) return;
+        var v = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        if (!v.HasValue) v.Value = Selected.Description; // Description is non-null per annotations
+    }
+    public string GetInitialNameOrCurrent()
+    {
+        if (Selected is null) return string.Empty;
+        var v = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        return v.HasValue ? (v.Value ?? string.Empty) : Selected.Name;
+    }
+    public string GetInitialDescOrCurrent()
+    {
+        if (Selected is null) return string.Empty;
+        var v = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        return v.HasValue ? (v.Value ?? string.Empty) : Selected.Description;
+    }
+    public void RevertNameToInitial()
+    {
+        if (Selected is null) return;
+        var v = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        if (v.HasValue) Selected.Name = v.Value ?? Selected.Name;
+    }
+    public void RevertDescToInitial()
+    {
+        if (Selected is null) return;
+        var v = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        if (v.HasValue) Selected.Description = v.Value ?? Selected.Description;
+    }
+    public void ClearInitials()
+    {
+        if (Selected is null) return;
+        var n = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        if (n.HasValue) n.Delete();
+        var d = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        if (d.HasValue) d.Delete();
+    }
+
     public void UpdateBasic(string name, string description)
     {
         if (Selected is null) return;
@@ -87,22 +137,49 @@ internal sealed class ItemToolModel(NwPlayer player)
             return IconAdjustResult.NotAllowedType;
 
         int current = NWScript.GetItemAppearance(Selected, (int)ItemAppearanceType.SimpleModel, 0);
-        int target  = current + delta;
-
-        if (target < 1) target = 1;
-        if (target > maxValue) target = maxValue;
-
-        // Use CopyItemAndModify like your NWScript did; replace the old item if copy succeeds
-        uint copy = NWScript.CopyItemAndModify(Selected, (int)ItemAppearanceType.SimpleModel, 0, target, 1);
-        if (NWScript.GetIsObjectValid(copy) == 1)
+        if (delta == 0)
         {
-            // Replace references and destroy the original one
-            NWScript.DestroyObject(Selected);
-            Selected = copy.ToNwObject<NwItem>();
+            newValue = current;
+            return IconAdjustResult.Success;
         }
 
-        newValue = target;
-        return IconAdjustResult.Success;
+        int dir = delta > 0 ? 1 : -1;
+
+        // Try the requested delta first, then continue stepping (+/-1) wrapping within [1, maxValue]
+        // This both wraps around and skips invalid targets (when CopyItemAndModify fails).
+        int candidate = WrapToRange(current + delta, maxValue);
+
+        // Attempt up to maxValue distinct candidates to find a valid model index
+        int attempts = 0;
+        while (attempts < maxValue)
+        {
+            uint copy = NWScript.CopyItemAndModify(Selected, (int)ItemAppearanceType.SimpleModel, 0, candidate, 1);
+            if (NWScript.GetIsObjectValid(copy) == 1)
+            {
+                // Replace and return
+                NWScript.DestroyObject(Selected);
+                Selected = copy.ToNwObject<NwItem>();
+                newValue = candidate;
+                return IconAdjustResult.Success;
+            }
+
+            // Move candidate by 1 in the same direction of travel, wrapping
+            candidate = WrapToRange(candidate + dir, maxValue);
+            attempts++;
+        }
+
+        // No valid model found after scanning full space
+        newValue = current;
+        return IconAdjustResult.NoValidModel;
+    }
+
+    private static int WrapToRange(int value, int maxInclusive)
+    {
+        if (maxInclusive <= 0) return 1;
+        // Wrap in 1..maxInclusive
+        int n = (value - 1) % maxInclusive;
+        if (n < 0) n += maxInclusive;
+        return n + 1;
     }
 
     private static bool TryGetMaxForBaseType(NwItem item, uint baseId, out int max)

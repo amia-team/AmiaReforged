@@ -9,138 +9,443 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     public override ItemEditorView View { get; }
 
     private readonly NwPlayer _player;
+    private readonly ItemEditorModel _model;
+
     private NuiWindowToken _token;
     private NuiWindow? _window;
-    private bool _isInitializing;
+
+    // Local working copy of variables (we keep this in the presenter to render the manual column)
+    private readonly List<(string Key, LocalVariableData Data)> _vars = new();
+
+    // Modal references (optional – only needed if you want to programmatically close them)
+    private NuiWindow? _editNameModal;
+    private NuiWindow? _editDescModal;
+    private NuiWindowToken _editNameToken;
+    private NuiWindowToken _editDescToken;
+    private bool _editNameOpen;
+    private bool _editDescOpen;
+    private NuiWindow? _editTagModal;
+    private NuiWindowToken _editTagToken;
+
+    private bool _initializing;
 
     public override NuiWindowToken Token() => _token;
 
-    private readonly ItemEditorModel _model;
-    private readonly Dictionary<string, LocalVariableData> _trackedVariables = new();
-
-    public ItemEditorPresenter(ItemEditorView itemEditorView, NwPlayer player)
+    public ItemEditorPresenter(ItemEditorView view, NwPlayer player)
     {
-        View = itemEditorView;
+        View = view;
         _player = player;
         _model = new ItemEditorModel(player);
-        _model.OnNewSelection += UpdateFromSelection;
-    }
 
-    private void UpdateFromSelection()
-    {
-        UpdateFromModel();
+        // When the model reports a new selection (after targeting), refresh UI
+        _model.OnNewSelection += OnNewSelection;
     }
-
-    public override void InitBefore()
+    public override void Create()
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(300f, 200f, 800f, 720f)
+            Geometry = new NuiRect(400f, 120f, 800f, 720f),
+            Resizable = true,
+        };
+
+        if (!_player.TryCreateNuiWindow(_window, out _token))
+            return;
+
+        _token.OnNuiEvent += ProcessEvent;
+
+        // Initial bind state and UI setup
+        _initializing = true;
+        try
+        {
+            Token().SetBindValue(View.ValidObjectSelected, _model.SelectedItem != null);
+
+            // We don't watch text fields for live-saves anymore
+            Token().SetBindWatch(View.Name, false);
+            Token().SetBindWatch(View.Description, false);
+            Token().SetBindWatch(View.Tag, false);
+
+            UpdateFromModel();
+            RefreshIconInfo();
+        }
+        finally { _initializing = false; }
+    }
+
+
+    // ------------------------------------------------------------
+    // Lifecycle
+    // ------------------------------------------------------------
+    public override void InitBefore()
+    {
+
+    }
+
+    public override void Close()
+    {
+        Token().Close();
+    }
+
+    // ------------------------------------------------------------
+    // Events
+    // ------------------------------------------------------------
+    public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click && ev.EventType != NuiEventType.Open)
+            return;
+
+        // SELECT (target an item)
+        if (ev.ElementId == View.SelectItemButton.Id)
+        {
+            _model.EnterTargetingMode();
+            return;
+        }
+
+        // SAVE
+        if (ev.ElementId == View.SaveButton.Id)
+        {
+            ApplyChanges(showMessage: true);
+            return;
+        }
+
+        // ADD VARIABLE
+        if (ev.ElementId == View.AddVariableButton.Id)
+        {
+            AddNewVariable();
+            return;
+        }
+
+        // DELETE VARIABLE by encoded index: btn_del_var_{i}
+        if (ev.ElementId.StartsWith("btn_del_var_", StringComparison.Ordinal))
+        {
+            if (int.TryParse(ev.ElementId.AsSpan("btn_del_var_".Length), out int idx))
+            {
+                DeleteVariableAt(idx);
+                RebuildLayout(); // refresh the manual column
+            }
+            return;
+        }
+
+        // ICON bumps
+        if (ev.ElementId == View.IconPlus1.Id)   { TryAdjustIcon(+1); return; }
+        if (ev.ElementId == View.IconMinus1.Id)  { TryAdjustIcon(-1); return; }
+        if (ev.ElementId == View.IconPlus10.Id)  { TryAdjustIcon(+10); return; }
+        if (ev.ElementId == View.IconMinus10.Id) { TryAdjustIcon(-10); return; }
+
+        // Open edit modals
+        if (ev.ElementId == "btn_edit_name")
+        {
+            var snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
+            Token().SetBindValue(View.EditNameBuffer, snap?.Name ?? "");
+            _editNameModal = View.BuildEditNameModal();
+            _player.TryCreateNuiWindow(_editNameModal, out _editNameToken);
+            return;
+        }
+
+        if (ev.ElementId == "btn_edit_desc")
+        {
+            var snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
+            Token().SetBindValue(View.EditDescBuffer, snap?.Description ?? "");
+            _editDescModal = View.BuildEditDescModal();
+            _player.TryCreateNuiWindow(_editDescModal, out _editDescToken);
+            return;
+        }
+
+        // Modal OK / Cancel
+        if (ev.ElementId == "btn_modal_ok_name")
+        {
+            var newName = Token().GetBindValue(View.EditNameBuffer) ?? string.Empty;
+            Token().SetBindValue(View.Name, newName);
+            ApplyChanges(showMessage: true);
+            if (_editNameOpen) { _editNameToken.Close(); _editNameOpen = false; }
+            return;
+        }
+
+        if (ev.ElementId == "btn_modal_cancel_name")
+        {
+            if (_editNameOpen) { _editNameToken.Close(); _editNameOpen = false; }
+            return;
+        }
+
+        if (ev.ElementId == "btn_modal_ok_desc")
+        {
+            var newDesc = Token().GetBindValue(View.EditDescBuffer) ?? string.Empty;
+            Token().SetBindValue(View.Description, newDesc);
+            ApplyChanges(showMessage: true);
+            if (_editDescOpen) { _editDescToken.Close(); _editDescOpen = false; }
+            return;
+        }
+
+        if (ev.ElementId == "btn_modal_cancel_desc")
+        {
+            if (_editDescOpen) { _editDescToken.Close(); _editDescOpen = false; }
+        }
+        if (ev.ElementId == "btn_edit_tag")
+        {
+            var snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
+            Token().SetBindValue(View.EditTagBuffer, snap?.Tag ?? "");
+            _editTagModal = View.BuildEditTagModal();
+            _player.TryCreateNuiWindow(_editTagModal, out _editTagToken);
+            return;
+        }
+        if (ev.ElementId == "btn_modal_ok_tag")
+        {
+            var newTag = Token().GetBindValue(View.EditTagBuffer);
+            Token().SetBindValue(View.Tag!, newTag);
+            ApplyChanges(showMessage: true);
+            _editTagToken.Close();
+            return;
+        }
+        if (ev.ElementId == "btn_modal_cancel_tag")
+        {
+            _editTagToken.Close();
+        }
+    }
+
+    private void OnNewSelection()
+    {
+        UpdateFromModel();
+        RefreshIconInfo();
+    }
+
+    // ------------------------------------------------------------
+    // Model/UI sync
+    // ------------------------------------------------------------
+    private void UpdateFromModel()
+    {
+        var item = _model.SelectedItem;
+        Token().SetBindValue(View.ValidObjectSelected, item != null);
+        // Always show the same placeholder for Description in the main window
+        Token().SetBindValue(View.DescPlaceholder, item != null ? "Edit to View" : "");
+
+        // Reset local vars list
+        _vars.Clear();
+
+        if (item == null)
+        {
+            Token().SetBindValue(View.Name, "");
+            Token().SetBindValue(View.Description, "");
+            Token().SetBindValue(View.Tag, "");
+            RebuildLayout();
+            return;
+        }
+
+        // Snapshot from the live item
+        var snapshot = ItemDataFactory.From(item);
+
+        Token().SetBindValue(View.Name, snapshot.Name);
+        Token().SetBindValue(View.Description, snapshot.Description);
+        Token().SetBindValue(View.Tag, snapshot.Tag);
+
+        foreach (var kv in snapshot.Variables)
+            _vars.Add((kv.Key, kv.Value));
+
+        // Keep a stable, user-friendly order
+        _vars.Sort((a, b) => string.Compare(a.Key, b.Key, StringComparison.OrdinalIgnoreCase));
+
+        RebuildLayout();
+        UpdateVariableList();
+    }
+    // Sync _vars -> view binds so any NuiList/Repeater bound to these updates in-place.
+    private void UpdateVariableList()
+    {
+        // old parallel-bind updates can stay (harmless) — or remove if you’re fully on the fixed-rows UI
+        var names  = new List<string>(_vars.Count);
+        var types  = new List<string>(_vars.Count);
+        var values = new List<string>(_vars.Count);
+
+        foreach (var (key, data) in _vars)
+        {
+            names.Add(key);
+            types.Add(data.Type.ToString());
+            values.Add(ToDisplay(data));
+        }
+
+        Token().SetBindValue(View.VariableCount, _vars.Count);
+        Token().SetBindValues(View.VariableNames,  names);
+        Token().SetBindValues(View.VariableTypes,  types);
+        Token().SetBindValues(View.VariableValues, values);
+
+        // fixed-row pool updates (used by the transparent UI)
+        int count = _vars.Count;
+        int pool  = View.VarVisible.Length;
+
+        for (int i = 0; i < pool; i++)
+        {
+            bool show = i < count;
+            Token().SetBindValue(View.VarVisible[i], show);
+
+            if (show)
+            {
+                var (key, data) = _vars[i];
+                Token().SetBindValue(View.VarKey[i],   key);
+                Token().SetBindValue(View.VarType[i],  data.Type.ToString());
+                Token().SetBindValue(View.VarValue[i], ToDisplay(data));
+            }
+            else
+            {
+                // optional: clear hidden rows to avoid any ghost text when toggling
+                Token().SetBindValue(View.VarKey[i],   "");
+                Token().SetBindValue(View.VarType[i],  "");
+                Token().SetBindValue(View.VarValue[i], "");
+            }
+        }
+    }
+
+
+    private void RebuildLayout()
+    {
+        // The variables section in the view rebuilds itself from binds? We’re using our _vars list.
+        // So we need to push the display rows by calling the view’s builder with our current data.
+        var rows = _vars.Select(v => (Name: v.Key,
+                                      Type: v.Data.Type.ToString(),
+                                      Value: ToDisplay(v.Data)))
+                        .ToList();
+
+        // We can’t “inject” the built group post-hoc without a subtree API,
+        // but since RootLayout has just been set, the next paint uses current binds and our click IDs.
+        // If you want true partial replacement, we can assign an ID to the variables group and swap that node.
+        // For now the simple full-layout refresh keeps everything in sync.
+        // (Nothing else to do here; RootLayout contains an empty variables section at build time.)
+        // If you prefer, you can store rows somewhere the view reads; here we rely on IDs & click handlers.
+        // No-op on purpose.
+        _ = rows;
+    }
+
+    private static string ToDisplay(LocalVariableData data)
+    {
+        return data.Type switch
+        {
+            LocalVariableType.Int      => data.IntValue.ToString(),
+            LocalVariableType.Float    => data.FloatValue.ToString("0.###"),
+            LocalVariableType.String   => data.StringValue,
+            LocalVariableType.Location => data.LocationValue?.ToString() ?? "(location)",
+            LocalVariableType.Object   => data.ObjectValue?.ToString() ?? "(object)",
+            _                          => ""
         };
     }
 
-    public override void Create()
+    // ------------------------------------------------------------
+    // Apply / Variables manipulation
+    // ------------------------------------------------------------
+    private void ApplyChanges(bool showMessage)
     {
-        if (_window == null)
-            InitBefore();
+        if (_initializing) return;
 
-        if (_window == null)
+        var item = _model.SelectedItem;
+        if (item == null)
         {
-            _player.SendServerMessage(
-                "The window could not be created. Screenshot this message and report it to a DM.",
-                ColorConstants.Orange);
+            if (showMessage)
+                _player.SendServerMessage("No item selected.", ColorConstants.Orange);
             return;
         }
 
-        _player.TryCreateNuiWindow(_window, out _token);
+        // Build ItemData payload for the model.Update(...)
+        string name = Token().GetBindValue(View.Name) ?? string.Empty;
+        string desc = Token().GetBindValue(View.Description) ?? string.Empty;
+        string tag  = Token().GetBindValue(View.Tag) ?? string.Empty;
 
-        Token().SetBindValue(View.ValidObjectSelected, _model.SelectedItem != null);
+        var varsDict = new Dictionary<string, LocalVariableData>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, data) in _vars)
+            varsDict[key] = data;
 
-        // ❶ Populate the UI from the model first.
+        var dataPacket = new ItemData(name, desc, tag, varsDict);
+
+        _model.Update(dataPacket);
+
+        if (showMessage)
+            _player.SendServerMessage("Item updated successfully.", ColorConstants.Green);
+
+        // Refresh from live item (in case the engine normalized anything)
         UpdateFromModel();
-
-        // ❷ Only then start watching for edits.
-        Token().SetBindWatch(View.Name, true);
-        Token().SetBindWatch(View.Description, true);
-        Token().SetBindWatch(View.Tag, true);
     }
 
-    public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
-    {
-        switch (eventData.EventType)
-        {
-            case NuiEventType.Click:
-                HandleButtonClick(eventData);
-                break;
-            case NuiEventType.Watch:
-                HandleWatchUpdate(eventData.ElementId);
-                break;
-        }
-    }
-
-    private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
-    {
-        if (eventData.ElementId == View.SelectItemButton.Id)
-        {
-            _model.EnterTargetingMode();
-        }
-        else if (eventData.ElementId == View.SaveButton.Id)
-        {
-            ApplyChanges(true);
-        }
-        else if (eventData.ElementId == View.AddVariableButton.Id)
-        {
-            AddNewVariable();
-        }
-        else if (eventData.ElementId == View.DeleteVariableButton.Id && eventData.ArrayIndex >= 0)
-        {
-            DeleteVariable(eventData.ArrayIndex);
-        }
-        else if (_model.SelectedItem != null)
-        {
-            // Icon clicks
-            if (eventData.ElementId == View.IconPlus1.Id)       TryAdjustIcon(+1);
-            else if (eventData.ElementId == View.IconMinus1.Id) TryAdjustIcon(-1);
-            else if (eventData.ElementId == View.IconPlus10.Id) TryAdjustIcon(+10);
-            else if (eventData.ElementId == View.IconMinus10.Id)TryAdjustIcon(-10);
-        }
-    }
-
-    private void HandleWatchUpdate(string? elementId)
+    private void AddNewVariable()
     {
         if (_model.SelectedItem == null)
         {
-            UpdateFromModel();
+            _player.SendServerMessage("Select an item first.", ColorConstants.Orange);
             return;
         }
 
-        if (_isInitializing) return; // prevent first populate from auto-saving
+        string name = Token().GetBindValue(View.NewVariableName) ?? string.Empty;
+        string val  = Token().GetBindValue(View.NewVariableValue) ?? string.Empty;
+        int    type = Token().GetBindValue(View.NewVariableType);
 
-        // Auto-apply changes as they're made
-        ApplyChanges(false);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            _player.SendServerMessage("Variable name cannot be empty.", ColorConstants.Orange);
+            return;
+        }
+
+        // Convert the textual input to LocalVariableData
+        var data = ParseLocalVarInput((LocalVariableType)type, val, out string? error);
+        if (error != null)
+        {
+            _player.SendServerMessage(error, ColorConstants.Orange);
+            return;
+        }
+
+        // Upsert into local list (case-insensitive on key)
+        int existingIdx = _vars.FindIndex(v => v.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (existingIdx >= 0) _vars[existingIdx] = (name, data);
+        else _vars.Add((name, data));
+
+        // Keep order consistent
+        _vars.Sort((a, b) => string.Compare(a.Key, b.Key, StringComparison.OrdinalIgnoreCase));
+
+        // Clear entry fields (optional)
+        Token().SetBindValue(View.NewVariableName, "");
+        Token().SetBindValue(View.NewVariableValue, "");
+
+        RebuildLayout();
+        UpdateVariableList();
     }
 
-    private void ApplyChanges(bool showSuccessMessage)
+    private void DeleteVariableAt(int index)
     {
-        if (_model.SelectedItem == null) return;
-
-        string? newName = Token().GetBindValue(View.Name);
-        string? newDescription = Token().GetBindValue(View.Description);
-        string? newTag = Token().GetBindValue(View.Tag);
-        if (newName is null || newDescription is null || newTag is null) return;
-
-        ItemData newData = new(newName, newDescription, newTag, _trackedVariables);
-        _model.Update(newData);
-
-        if (showSuccessMessage)
-            _player.SendServerMessage("Item updated successfully.", ColorConstants.Green);
+        if (index < 0 || index >= _vars.Count) return;
+        _vars.RemoveAt(index);
+        UpdateVariableList();
     }
 
+    private static LocalVariableData ParseLocalVarInput(LocalVariableType type, string raw, out string? error)
+    {
+        error = null;
+        switch (type)
+        {
+            case LocalVariableType.Int:
+                if (!int.TryParse(raw, out int i)) { error = "Value must be an integer."; return default!; }
+                return new LocalVariableData { Type = type, IntValue = i };
+
+            case LocalVariableType.Float:
+                if (!float.TryParse(raw, out float f)) { error = "Value must be a number."; return default!; }
+                return new LocalVariableData { Type = type, FloatValue = f };
+
+            case LocalVariableType.String:
+                return new LocalVariableData { Type = type, StringValue = raw };
+
+            case LocalVariableType.Location:
+                return new LocalVariableData { Type = type, LocationValue = null };
+
+            case LocalVariableType.Object:
+                return new LocalVariableData { Type = type, ObjectValue = null };
+
+            default:
+                error = "Unsupported variable type.";
+                return default!;
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Icon helpers
+    // ------------------------------------------------------------
     private void TryAdjustIcon(int delta)
     {
         var result = _model.TryAdjustIcon(delta, out int newValue, out int maxValue);
         switch (result)
         {
+            case ItemEditorModel.IconAdjustResult.NoSelection:
+                _player.SendServerMessage("Select an item first.", ColorConstants.Orange);
+                break;
             case ItemEditorModel.IconAdjustResult.NotAllowedType:
                 _player.SendServerMessage("This item type can't change icons in this tool.", ColorConstants.Orange);
                 break;
@@ -148,133 +453,13 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                 Token().SetBindValue(View.IconInfo, $"Icon: {newValue} / {maxValue}");
                 _player.SendServerMessage("Icon updated.", ColorConstants.Green);
                 break;
-            case ItemEditorModel.IconAdjustResult.NoSelection:
-                break;
         }
     }
 
-    private void AddNewVariable()
+    private void RefreshIconInfo()
     {
-        string? varName = Token().GetBindValue(View.NewVariableName);
-        int varTypeIndex = Token().GetBindValue(View.NewVariableType);
-        string? varValue = Token().GetBindValue(View.NewVariableValue);
-
-        if (string.IsNullOrWhiteSpace(varName))
-        {
-            _player.SendServerMessage("Variable name cannot be empty.", ColorConstants.Red);
-            return;
-        }
-
-        LocalVariableType type = (LocalVariableType)varTypeIndex;
-        LocalVariableData data = CreateVariableData(type, varValue ?? string.Empty);
-
-        bool existed = _trackedVariables.ContainsKey(varName);
-        _trackedVariables[varName] = data; // UPSERT
-
-        UpdateVariableList();
-        ApplyChanges(true);
-
-        _player.SendServerMessage(
-            existed ? $"Variable '{varName}' updated." : $"Variable '{varName}' added.",
-            ColorConstants.Green);
-
-        // Clear inputs
-        Token().SetBindValue(View.NewVariableName, string.Empty);
-        Token().SetBindValue(View.NewVariableValue, string.Empty);
-    }
-
-    private LocalVariableData CreateVariableData(LocalVariableType type, string value)
-    {
-        return type switch
-        {
-            LocalVariableType.Int => new LocalVariableData
-            {
-                Type = LocalVariableType.Int,
-                IntValue = int.TryParse(value, out int i) ? i : 0
-            },
-            LocalVariableType.Float => new LocalVariableData
-            {
-                Type = LocalVariableType.Float,
-                FloatValue = float.TryParse(value, out float f) ? f : 0f
-            },
-            LocalVariableType.String => new LocalVariableData
-            {
-                Type = LocalVariableType.String,
-                StringValue = value
-            },
-            _ => new LocalVariableData { Type = LocalVariableType.String, StringValue = value }
-        };
-    }
-
-    private void DeleteVariable(int index)
-    {
-        List<string> keys = _trackedVariables.Keys.ToList();
-        if (index < 0 || index >= keys.Count) return;
-
-        string keyToRemove = keys[index];
-        _trackedVariables.Remove(keyToRemove);
-        UpdateVariableList();
-        ApplyChanges(true);
-    }
-
-    private void UpdateVariableList()
-    {
-        List<string> varNames = _trackedVariables.Keys.ToList();
-        List<string> varValues = _trackedVariables.Values
-            .Select(v => v.Type switch
-            {
-                LocalVariableType.Int => v.IntValue.ToString(),
-                LocalVariableType.Float => v.FloatValue.ToString("F2"),
-                LocalVariableType.String => v.StringValue,
-                _ => string.Empty
-            })
-            .ToList();
-        List<string> varTypes = _trackedVariables.Values
-            .Select(v => v.Type.ToString())
-            .ToList();
-
-        Token().SetBindValue(View.VariableCount, _trackedVariables.Count);
-        Token().SetBindValues(View.VariableNames, varNames);
-        Token().SetBindValues(View.VariableValues, varValues);
-        Token().SetBindValues(View.VariableTypes, varTypes);
-    }
-
-    private void UpdateFromModel()
-    {
-        _isInitializing = true;
-        try
-        {
-            bool selectionAvailable = _model.SelectedItem != null;
-            Token().SetBindValue(View.ValidObjectSelected, selectionAvailable);
-
-            if (_model.SelectedItem is null) return;
-
-            // Basic fields
-            Token().SetBindValue(View.Name, _model.SelectedItem.Name);
-            Token().SetBindValue(View.Description, _model.SelectedItem.Description);
-            Token().SetBindValue(View.Tag, _model.SelectedItem.Tag);
-
-            // Seed the tracked variables from the item BEFORE any watch can apply changes
-            ItemData current = ItemDataFactory.From(_model.SelectedItem);
-            _trackedVariables.Clear();
-            foreach (KeyValuePair<string, LocalVariableData> kvp in current.Variables)
-                _trackedVariables[kvp.Key] = kvp.Value;
-
-            UpdateVariableList();
-
-            // Icon controls
-            bool iconAllowed = _model.IsIconAllowed(out int currentIcon, out int maxIcon);
-            Token().SetBindValue(View.IconControlsVisible, iconAllowed);
-            Token().SetBindValue(View.IconInfo, iconAllowed ? $"Icon: {currentIcon} / {maxIcon}" : "Icon: —");
-        }
-        finally
-        {
-            _isInitializing = false;
-        }
-    }
-
-    public override void Close()
-    {
-        Token().Close();
+        bool allowed = _model.IsIconAllowed(out int current, out int max);
+        Token().SetBindValue(View.IconControlsVisible, allowed);
+        Token().SetBindValue(View.IconInfo, allowed ? $"Icon: {current} / {max}" : "Icon: —");
     }
 }

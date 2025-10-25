@@ -223,10 +223,10 @@ internal sealed class ItemEditorModel
         var bi = item.BaseItem.ItemType;
         switch (bi)
         {
-            case BaseItemType.MiscLarge:  max = 31;  return true;
+            case BaseItemType.MiscLarge:  max = 254;  return true;
             case BaseItemType.MiscMedium: max = 254; return true;
             case BaseItemType.MiscSmall:  max = 254; return true;
-            case BaseItemType.MiscThin:   max = 101; return true;
+            case BaseItemType.MiscThin:   max = 254; return true;
 
             case BaseItemType.Amulet:
             case BaseItemType.Belt:
@@ -243,9 +243,9 @@ internal sealed class ItemEditorModel
         }
 
         // Fallback for oddball variants present in legacy script (by numeric id)
-        if (baseId == 121) { max = 66;  return true; }  // Misc Medium 2
+        if (baseId == 121) { max = 254;  return true; }  // Misc Medium 2
         if (baseId == 119) { max = 254; return true; }  // Misc Small 2
-        if (baseId == 120) { max = 100; return true; }  // Misc Small 3
+        if (baseId == 120) { max = 254; return true; }  // Misc Small 3
 
         return false;
     }

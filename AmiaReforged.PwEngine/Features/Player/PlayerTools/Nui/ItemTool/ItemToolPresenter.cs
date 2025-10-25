@@ -11,7 +11,9 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
     private NuiWindow? _window;
     private readonly ItemToolModel _model;
 
-    private bool _initializing;
+    // Modal tokens so we can close them programmatically
+    private NuiWindowToken? _nameModalToken;
+    private NuiWindowToken? _descModalToken;
 
     public ItemToolPresenter(ItemToolView view, NwPlayer player)
     {
@@ -28,7 +30,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(520f, 140f, 520f, 535f),
+            Geometry = new NuiRect(520f, 140f, 615f, 500f),
             Resizable = false
         };
     }
@@ -46,24 +48,27 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
         }
 
         _player.TryCreateNuiWindow(_window, out _token);
+        _token.OnNuiEvent += ProcessEvent;
 
-        // Seed UI from model and then start watches
+        // Initial bind state
+        Token().SetBindValue(View.ValidObjectSelected, false);
+        Token().SetBindValue(View.Name, "");
+        Token().SetBindValue(View.Description, "");
+        Token().SetBindValue(View.DescPlaceholder, "");
+
+        // Don't watch main window binds - we don't do live updates in main window
+        Token().SetBindWatch(View.Name, false);
+        Token().SetBindWatch(View.Description, false);
+
         UpdateFromModel();
-        Token().SetBindWatch(View.Name, true);
-        Token().SetBindWatch(View.Description, true);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
     {
-        switch (ev.EventType)
-        {
-            case NuiEventType.Click:
-                HandleClick(ev);
-                break;
-            case NuiEventType.Watch:
-                HandleWatch(ev.ElementId);
-                break;
-        }
+        if (ev.EventType != NuiEventType.Click)
+            return;
+
+        HandleClick(ev);
     }
 
     private void HandleClick(ModuleEvents.OnNuiEvent ev)
@@ -76,35 +81,92 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == View.SaveButton.Id)
         {
+            // Save and clear any initial value locals
             ApplyChanges(true);
+            _model.ClearInitials();
+            Close();
             return;
         }
 
-        if (ev.ElementId == View.DiscardButton.Id)
+        if (ev.ElementId == View.CancelButton.Id)
         {
+            // Revert if any and clear, then close
+            _model.RevertNameToInitial();
+            _model.RevertDescToInitial();
+            _model.ClearInitials();
             Close();
             return;
         }
 
         if (!_model.HasSelected) return;
 
-        if (ev.ElementId == View.IconPlus1.Id)   TryAdjustIcon(+1);
-        else if (ev.ElementId == View.IconMinus1.Id)  TryAdjustIcon(-1);
-        else if (ev.ElementId == View.IconPlus10.Id)  TryAdjustIcon(+10);
-        else if (ev.ElementId == View.IconMinus10.Id) TryAdjustIcon(-10);
-    }
+        if (ev.ElementId == View.IconPlus1.Id)   { TryAdjustIcon(+1); return; }
+        if (ev.ElementId == View.IconMinus1.Id)  { TryAdjustIcon(-1); return; }
+        if (ev.ElementId == View.IconPlus10.Id)  { TryAdjustIcon(+10); return; }
+        if (ev.ElementId == View.IconMinus10.Id) { TryAdjustIcon(-10); return; }
 
-    private void HandleWatch(string? elementId)
-    {
-        if (_initializing) return;
-        if (!_model.HasSelected)
+        if (ev.ElementId == "ind_edit_name")
         {
-            UpdateFromModel();
+            // Capture initial name and set buffer BEFORE creating modal
+            _model.EnsureInitialNameCaptured();
+            Token().SetBindValue(View.EditNameBuffer, _model.GetInitialNameOrCurrent());
+
+            var w = View.BuildEditNameModal();
+            if (_player.TryCreateNuiWindow(w, out var modalToken))
+            {
+                _nameModalToken = modalToken;
+            }
+            return;
+        }
+        if (ev.ElementId == "ind_modal_ok_name")
+        {
+            var newName = Token().GetBindValue(View.EditNameBuffer) ?? string.Empty;
+            Token().SetBindValue(View.Name, newName);
+            ApplyChanges(true);
+            _nameModalToken?.Close();
+            _nameModalToken = null;
+            return;
+        }
+        if (ev.ElementId == "ind_modal_discard_name")
+        {
+            _model.RevertNameToInitial();
+            Token().SetBindValue(View.Name, _model.GetInitialNameOrCurrent());
+            ApplyChanges(false);
+            _nameModalToken?.Close();
+            _nameModalToken = null;
             return;
         }
 
-        // We only watch Name and Description, so any watch event means text changed.
-        ApplyChanges(false);
+        if (ev.ElementId == "ind_edit_desc")
+        {
+            // Capture initial desc and set buffer BEFORE creating modal
+            _model.EnsureInitialDescCaptured();
+            Token().SetBindValue(View.EditDescBuffer, _model.GetInitialDescOrCurrent());
+
+            var w = View.BuildEditDescModal();
+            if (_player.TryCreateNuiWindow(w, out var modalToken))
+            {
+                _descModalToken = modalToken;
+            }
+            return;
+        }
+        if (ev.ElementId == "ind_modal_ok_desc")
+        {
+            var newDesc = Token().GetBindValue(View.EditDescBuffer) ?? string.Empty;
+            Token().SetBindValue(View.Description, newDesc);
+            ApplyChanges(true);
+            _descModalToken?.Close();
+            _descModalToken = null;
+            return;
+        }
+        if (ev.ElementId == "ind_modal_discard_desc")
+        {
+            _model.RevertDescToInitial();
+            Token().SetBindValue(View.Description, _model.GetInitialDescOrCurrent());
+            ApplyChanges(false);
+            _descModalToken?.Close();
+            _descModalToken = null;
+        }
     }
 
     private void ApplyChanges(bool showMessage)
@@ -113,9 +175,8 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         string? name = Token().GetBindValue(View.Name);
         string? desc = Token().GetBindValue(View.Description);
-        if (name is null || desc is null) return;
 
-        _model.UpdateBasic(name, desc);
+        _model.UpdateBasic(name ?? string.Empty, desc ?? string.Empty);
 
         if (showMessage)
             _player.SendServerMessage("Item updated.", ColorConstants.Green);
@@ -135,41 +196,53 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
                 break;
             case IconAdjustResult.NoSelection:
                 break;
+            case IconAdjustResult.NoValidModel:
+                _player.SendServerMessage("No valid icon found to switch to.", ColorConstants.Orange);
+                break;
         }
     }
 
     private void OnNewSelection()
     {
+        // Capture initial values immediately on selection so Discard/Cancel can always revert.
+        _model.EnsureInitialNameCaptured();
+        _model.EnsureInitialDescCaptured();
         UpdateFromModel();
     }
 
     private void UpdateFromModel()
     {
-        _initializing = true;
-        try
+        var item = _model.Selected;
+        Token().SetBindValue(View.ValidObjectSelected, item != null);
+        // Always show the same placeholder for Description in the main window
+        Token().SetBindValue(View.DescPlaceholder, item != null ? "Edit to View" : "");
+
+        Token().SetBindValue(View.ValidObjectSelected, _model.HasSelected);
+
+        if (!_model.HasSelected)
         {
-            Token().SetBindValue(View.ValidObjectSelected, _model.HasSelected);
-
-            if (!_model.HasSelected)
-            {
-                Token().SetBindValue(View.IconControlsVisible, false);
-                Token().SetBindValue(View.IconInfo, "Icon: —");
-                return;
-            }
-
-            Token().SetBindValue(View.Name, _model.Selected!.Name);
-            Token().SetBindValue(View.Description, _model.Selected!.Description);
-
-            // Icon controls: only visible when allowed by base type
-            bool iconAllowed = _model.IsIconAllowed(out int current, out int max);
-            Token().SetBindValue(View.IconControlsVisible, iconAllowed);
-            Token().SetBindValue(View.IconInfo, iconAllowed ? $"Icon: {current} / {max}" : "Icon: —");
+            Token().SetBindValue(View.IconControlsVisible, false);
+            Token().SetBindValue(View.IconInfo, "Icon: —");
+            Token().SetBindValue(View.Name, "");
+            Token().SetBindValue(View.Description, "");
+            return;
         }
-        finally { _initializing = false; }
+
+        Token().SetBindValue(View.Name, _model.Selected!.Name);
+        Token().SetBindValue(View.Description, _model.Selected!.Description);
+
+        // Icon controls: only visible when allowed by base type
+        bool iconAllowed = _model.IsIconAllowed(out int current, out int max);
+        Token().SetBindValue(View.IconControlsVisible, iconAllowed);
+        Token().SetBindValue(View.IconInfo, iconAllowed ? $"Icon: {current} / {max}" : "Icon: —");
     }
 
     public override void Close()
     {
+        _nameModalToken?.Close();
+        _nameModalToken = null;
+        _descModalToken?.Close();
+        _descModalToken = null;
         Token().Close();
     }
 }

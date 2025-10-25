@@ -11,9 +11,11 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     private const float HeaderW = 600f;
     private const float HeaderH = 100f;
     private const float HeaderTopPad = 8f;
+    private const float HeaderLeftPad = (WindowW - HeaderW) * 0.5f;
 
     public override ItemEditorPresenter Presenter { get; protected set; }
 
+    // Core binds (unchanged)
     public readonly NuiBind<string> Name = new("item_name");
     public readonly NuiBind<string> Description = new("item_desc");
     public readonly NuiBind<string> Tag = new("item_tag");
@@ -21,30 +23,55 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public readonly NuiBind<bool> ValidObjectSelected = new("item_valid");
     public readonly NuiBind<bool> IconControlsVisible = new("item_icon_visible");
     public readonly NuiBind<string> IconInfo = new("item_icon_info");
+    public readonly NuiBind<string> DescPlaceholder = new("item_desc_placeholder");
 
+    private const int VarRows = 8;
+
+    public readonly NuiBind<bool>[] VarVisible =
+        Enumerable.Range(0, VarRows).Select(i => new NuiBind<bool>($"var_vis_{i}")).ToArray();
+
+    public readonly NuiBind<string>[] VarKey =
+        Enumerable.Range(0, VarRows).Select(i => new NuiBind<string>($"var_key_{i}")).ToArray();
+
+    public readonly NuiBind<string>[] VarType =
+        Enumerable.Range(0, VarRows).Select(i => new NuiBind<string>($"var_type_{i}")).ToArray();
+
+    public readonly NuiBind<string>[] VarValue =
+        Enumerable.Range(0, VarRows).Select(i => new NuiBind<string>($"var_val_{i}")).ToArray();
+
+
+    // Add-variable inputs (unchanged)
     public readonly NuiBind<string> VariableName = new("item_var_name");
     public readonly NuiBind<int> VariableType = new("item_var_type");
     public readonly NuiBind<string> VariableValue = new("item_var_value");
 
-    public NuiButton SelectItemButton = null!;
-    public NuiButton SaveButton = null!;
-    public NuiButton AddVariableButton = null!;
-    public NuiButton DeleteVariableButton = null!;
+    // Manual variables column content (view drives by presenter data -> SetLayout)
+    // We keep these for compatibility if your presenter still sets arrays; the view won't rely on them directly.
+    public readonly NuiBind<int> VariableCount = new("var_row_count");
+    public readonly NuiBind<string> VariableNames = new("var_key");
+    public readonly NuiBind<string> VariableValues = new("var_value");
+    public readonly NuiBind<string> VariableTypes = new("var_type");
 
-    public NuiButton IconPlus1 = null!;
-    public NuiButton IconMinus1 = null!;
-    public NuiButton IconPlus10 = null!;
-    public NuiButton IconMinus10 = null!;
+    // Clickables (now NuiButtonImage, but we preserve the same IDs where applicable)
+    public NuiButtonImage SelectItemButton = null!;
+    public NuiButtonImage SaveButton = null!;
+    public NuiButtonImage AddVariableButton = null!;
+    public NuiButtonImage DeleteVariableButton = null!; // used only for id name; actual rows will carry btn_del_var_{i}
 
-    // Presenter expects these aliases
+    public NuiButtonImage IconPlus1 = null!;
+    public NuiButtonImage IconMinus1 = null!;
+    public NuiButtonImage IconPlus10 = null!;
+    public NuiButtonImage IconMinus10 = null!;
+
+    // Edit modals (Name / Description)
+    // We’ll open these as separate small windows from the presenter; these binds hold the working buffer.
+    public readonly NuiBind<string> EditNameBuffer = new("edit_name_buf");
+    public readonly NuiBind<string> EditDescBuffer = new("edit_desc_buf");
+
+    // Presenter aliases (unchanged)
     public NuiBind<string> NewVariableName => VariableName;
     public NuiBind<string> NewVariableValue => VariableValue;
     public NuiBind<int> NewVariableType => VariableType;
-
-    public NuiBind<int> VariableCount { get; } = new("var_row_count");
-    public NuiBind<string> VariableNames { get; } = new("var_key");
-    public NuiBind<string> VariableValues { get; } = new("var_value");
-    public NuiBind<string> VariableTypes { get; } = new("var_type");
 
     public string Title => "Item Editor";
     public bool ListInDmTools => true;
@@ -55,159 +82,240 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         Presenter = new ItemEditorPresenter(this, player);
     }
 
-    public override NuiLayout RootLayout()
+    // ——————————————————————————————————————————
+    // Helpers
+    // ——————————————————————————————————————————
+
+    private NuiElement Divider(float thickness = 1f, byte alpha = 48)
     {
-        // --- Draw-only layers ---
-        var bgLayer = new NuiRow
+        // Transparent row with a faint horizontal line
+        return new NuiRow
         {
-            Width = 0f,
-            Height = 0f,
-            Children = new List<NuiElement>(),
+            Height = thickness + 4f, // a bit of breathing room
             DrawList = new()
             {
-                new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))
-            }
+                // line across the full window width (tweak as desired)
+                new NuiDrawListLine(new Color(0,0,0, alpha), false, thickness + 2f, new NuiVector(0.0f, 100.0f),
+                    new NuiVector(0.0f, 400.0f))
+            },
         };
+    }
 
-        var headerOverlay = new NuiRow
+
+    private static NuiElement ImageButton(string id, string tooltip, out NuiButtonImage logicalButton,
+        float width, float height, string plateResRef)
+    {
+        var btn = new NuiButtonImage(plateResRef)
         {
-            Width = 0f,
-            Height = 0f,
-            Children = new List<NuiElement>(),
-            DrawList = new()
-            {
-                new NuiDrawListImage(
-                    "ui_header",
-                    new NuiRect((WindowW - HeaderW) * 0.5f, HeaderTopPad, HeaderW, HeaderH))
-            }
-        };
+            Id = id,
+            Width = width,
+            Height = height,
+            Tooltip = tooltip
+        }.Assign(out logicalButton);
 
-        var headerSpacer = new NuiSpacer { Height = HeaderH + HeaderTopPad + 6f };
-        var spacer8 = new NuiSpacer { Height = 8f };
-        var spacer10 = new NuiSpacer { Height = 10f };
+        return btn;
+    }
 
-        // --- Image-plated button helper ---
-        NuiElement ImagePlatedButton(string id, string label, out NuiButton logicalButton, float width = 256f, float height = 64f, bool enabled = true)
+    private static NuiElement ImagePlatedLabeledButton(string id, string label, out NuiButtonImage logicalButton, string plateResRef,
+        float width = 150f, float height = 38f)
+    {
+        var btn = new NuiButtonImage(plateResRef)
         {
-            var textButton = new NuiButton(label)
-            {
-                Id = id,
-                Height = 35f,
-                Width = width - 56f,
-                Enabled = enabled
-            }.Assign(out logicalButton);
+            Id = id,
+            Width = width,
+            Height = height,
+            Tooltip = ""
+        }.Assign(out logicalButton);
 
-            return new NuiGroup
-            {
-                Width = width,
-                Height = height,
-                Border = false,
-                Element = new NuiColumn
-                {
-                    DrawList = new() { new NuiDrawListImage("ui_button_round", new NuiRect(0f, 0f, width, height)) },
-                    Children =
-                    {
-                        new NuiRow
-                        {
-                            Children = { new NuiSpacer(), textButton, new NuiSpacer() }
-                        }
-                    }
-                }
-            };
-        }
-
-        // --- Controls ---
-        var selectRow = new NuiRow { Children = { ImagePlatedButton("btn_select_item", "Select Item", out SelectItemButton) } };
-
-        var iconRow = new NuiRow
+        // We show the text BELOW the button (transparent label), instead of draw-list overlay
+        return new NuiColumn
         {
             Children =
             {
-                new NuiLabel(IconInfo){Width =260f,HorizontalAlign=NuiHAlign.Center,VerticalAlign=NuiVAlign.Middle},
-                new NuiButton("+1"){Id="btn_icon_p1",Width=50f,Height=50f,Enabled=IconControlsVisible}.Assign(out IconPlus1),
-                new NuiButton("-1"){Id="btn_icon_m1",Width=50f,Height=50f,Enabled=IconControlsVisible}.Assign(out IconMinus1),
-                new NuiButton("+10"){Id="btn_icon_p10",Width=50f,Height=50f,Enabled=IconControlsVisible}.Assign(out IconPlus10),
-                new NuiButton("-10"){Id="btn_icon_m10",Width=50f,Height=50f,Enabled=IconControlsVisible}.Assign(out IconMinus10)
-            }
-        };
-
-        var basicProps = new NuiGroup
-        {
-            Width = 760f,
-            Height = 220f,
-            Border = true,
-            Element = new NuiColumn
-            {
-                Children =
+                btn,
+                new NuiLabel(label)
                 {
-                    new NuiLabel("Basic Properties"){Height=20f,HorizontalAlign=NuiHAlign.Center},
-                    new NuiRow
-                    {
-                        Children =
-                        {
-                            new NuiLabel("Name:"){Width=60f,Height=20f,VerticalAlign=NuiVAlign.Middle},
-                            new NuiTextEdit("Item Name", Name,100,false){Width=660f,Enabled=ValidObjectSelected}
-                        }
-                    },
-                    new NuiLabel("Description:"){Height=20f},
-                    new NuiTextEdit("Item Description",Description,5000,true){Height=120f,Enabled=ValidObjectSelected},
-                    new NuiRow
-                    {
-                        Children =
-                        {
-                            new NuiLabel("Tag:"){Width=60f,Height=20f,VerticalAlign=NuiVAlign.Middle},
-                            new NuiTextEdit("Item Tag",Tag,64,false){Width=660f,Enabled=ValidObjectSelected}
-                        }
-                    }
+                    Height = 18f,
+                    HorizontalAlign = NuiHAlign.Center
                 }
             }
         };
+    }
 
+
+    private NuiElement BuildIconRow()
+    {
+        return new NuiRow
+        {
+            Children =
+            {
+                new NuiLabel(IconInfo)
+                    { Width = 260f, HorizontalAlign = NuiHAlign.Center, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                ImageButton("btn_icon_p1", "+1", out IconPlus1, 35f, 35f, "ui_btn_sm_plus1"),
+                ImageButton("btn_icon_m1", "-1", out IconMinus1, 35f, 35f, "ui_btn_sm_min1"),
+                ImageButton("btn_icon_p10", "+10", out IconPlus10, 35f, 35f, "ui_btn_sm_plus10"),
+                ImageButton("btn_icon_m10", "-10", out IconMinus10, 35f, 35f, "ui_btn_sm_min10"),
+            }
+        };
+    }
+
+    private NuiElement BuildHeaderOverlay()
+    {
+        return new NuiRow
+        {
+            Width = 0f, Height = 0f, Children = new List<NuiElement>(),
+            DrawList = new()
+            {
+                new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))
+            }
+        };
+    }
+
+    public NuiElement BuildVariablesSection()
+    {
+        var rows = new List<NuiElement>(VarRows);
+        for (int i = 0; i < VarRows; i++)
+        {
+            rows.Add(new NuiRow
+            {
+                Visible = VarVisible[i],
+                Children =
+                {
+                    new NuiLabel(VarKey[i]) { Width = 240f, ForegroundColor = new Color(30, 20, 12) },
+                    new NuiLabel(VarType[i]) { Width = 120f, ForegroundColor = new Color(30, 20, 12) },
+                    new NuiLabel(VarValue[i]) { Width = 318f, ForegroundColor = new Color(30, 20, 12) },
+                    new NuiButtonImage("ui_btn_sm_x")
+                        { Id = $"btn_del_var_{i}", Width = 35f, Height = 35f, Tooltip = "Delete Variable" },
+                }
+            });
+        }
+
+        var addVarRow = BuildAddVariableRow();
+
+        return new NuiColumn
+        {
+            Children =
+            {
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiLabel("Local Variables")
+                            { Height = 20f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) }
+                    }
+                },
+                addVarRow,
+                new NuiColumn { Children = rows },
+                new NuiSpacer { Height = 4f }
+            }
+        };
+    }
+
+    private NuiElement BuildAddVariableRow()
+    {
         var varTypeOptions = new List<NuiComboEntry>
         {
             new NuiComboEntry("Int", 0),
             new NuiComboEntry("Float", 1),
             new NuiComboEntry("String", 2),
             new NuiComboEntry("Location", 3),
-            new NuiComboEntry("Object", 4)
+            new NuiComboEntry("Object", 4),
         };
 
-        var variablesGroup = new NuiGroup
+        return new NuiRow
         {
-            Width = 760f,
-            Height = 340f,
-            Border = true,
-            Element = new NuiColumn
+            Children =
             {
-                Children =
-                {
-                    new NuiLabel("Local Variables"){Height=20f,HorizontalAlign=NuiHAlign.Center},
-                    new NuiRow
-                    {
-                        Children =
-                        {
-                            new NuiTextEdit("Variable Name",VariableName,64,false){Width=220f,Enabled=ValidObjectSelected},
-                            new NuiCombo{Entries=varTypeOptions,Selected=VariableType,Width=140f,Enabled=ValidObjectSelected},
-                            new NuiTextEdit("Value",VariableValue,1024,false){Width=320f,Enabled=ValidObjectSelected},
-                            new NuiButton("Add"){Id="btn_add_var",Width=60f,Enabled=ValidObjectSelected}.Assign(out AddVariableButton)
-                        }
-                    },
-                    new NuiList(
-                        new List<NuiListTemplateCell>
-                        {
-                            new(new NuiLabel(VariableNames)){Width=240f},
-                            new(new NuiLabel(VariableTypes)){Width=120f},
-                            new(new NuiLabel(VariableValues)){Width=320f},
-                            new(new NuiButton("Delete"){Id="btn_del_var"}.Assign(out DeleteVariableButton)){Width=70f}
-                        },
-                        VariableCount
-                    ){RowHeight=28f,Height=250f}
-                }
+                new NuiTextEdit("Variable Name", VariableName, 64, false)
+                    { Width = 220f, Enabled = ValidObjectSelected },
+                new NuiCombo
+                    { Entries = varTypeOptions, Selected = VariableType, Width = 140f, Enabled = ValidObjectSelected },
+                new NuiTextEdit("Value", VariableValue, 1024, false)
+                    { Width = 320, Enabled = ValidObjectSelected },
+                ImageButton("btn_add_var", "Add", out AddVariableButton, 35f, 35f, "ui_btn_sm_plus")
+            }
+        };
+    }
+
+    private NuiElement BuildBasicProps()
+    {
+        const float labelW = 100f;
+        const float valueW = 260f;
+
+        var nameRow = new NuiRow
+        {
+            Children =
+            {
+                new NuiLabel("Name:") { Width = labelW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                new NuiLabel(Name) { Width = valueW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                ImageButton("btn_edit_name", "Edit Name", out _, 35f, 35f, "ui_btn_sm_edit")
             }
         };
 
-        var saveRow = new NuiRow { Children = { ImagePlatedButton("btn_save", "Save Changes", out SaveButton) } };
+        var descRow = new NuiRow
+        {
+            Children =
+            {
+                new NuiLabel("Description:") { Width = labelW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                // #2 placeholder (wired below)
+                new NuiLabel(DescPlaceholder) { Width = valueW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                ImageButton("btn_edit_desc", "Edit Description", out _, 35f, 35f, "ui_btn_sm_edit")
+            }
+        };
+
+        var tagRow = new NuiRow
+        {
+            Children =
+            {
+                new NuiLabel("Tag:") { Width = labelW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                new NuiLabel(Tag) { Width = valueW, Height = 20f, VerticalAlign = NuiVAlign.Middle, ForegroundColor = new Color(30, 20, 12) },
+                ImageButton("btn_edit_tag", "Edit Tag", out _, 35f, 35f, "ui_btn_sm_edit")
+            }
+        };
+
+        return new NuiColumn { Children = { nameRow, descRow, tagRow } };
+    }
+
+
+    private NuiElement BuildIconGroup()
+    {
+        return new NuiColumn
+        {
+            Children =
+            {
+                new NuiLabel("Icon / Simple Model") { Height = 20f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) },
+                BuildIconRow()
+            }
+        };
+    }
+
+    public override NuiLayout RootLayout()
+    {
+        // Background parchment (draw-only)
+        var bgLayer = new NuiRow
+        {
+            Width = 0f, Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = new() { new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH)) }
+        };
+
+        var headerOverlay = BuildHeaderOverlay();
+        var headerSpacer = new NuiSpacer { Height = HeaderH + HeaderTopPad + 6f };
+
+        var selectRow = new NuiRow
+        {
+            Children = { ImagePlatedLabeledButton("btn_select_item", "", out SelectItemButton, "ui_btn_item") }
+        };
+
+        var saveRow = new NuiRow
+        {
+            Children = { ImagePlatedLabeledButton("btn_save", "", out SaveButton, "ui_btn_save") }
+        };
         SaveButton.Enabled = ValidObjectSelected;
+
+        // Variables section starts empty; presenter will rebuild the layout with rows populated
+        var variablesEmpty = BuildVariablesSection(); // no args now
+
 
         return new NuiColumn
         {
@@ -219,22 +327,135 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                 headerOverlay,
                 headerSpacer,
                 selectRow,
-                spacer8,
-                basicProps,
-                spacer8,
-                new NuiGroup
-                {
-                    Width=760f,Height=100f,Border=true,
-                    Element=new NuiColumn
-                    {
-                        Children={ new NuiLabel("Icon / Simple Model"){Height=20f,HorizontalAlign=NuiHAlign.Center}, iconRow }
-                    }
-                },
-                spacer8,
-                variablesGroup,
-                spacer10,
+                new NuiSpacer { Height = 4f },
+                Divider(),
+                new NuiSpacer { Height = 4f },
+                BuildBasicProps(),
+                new NuiSpacer { Height = 4f },
+                Divider(),
+                new NuiSpacer { Height = 4f },
+                BuildIconGroup(),
+                new NuiSpacer { Height = 8f },
+                variablesEmpty,
+                new NuiSpacer { Height = 5f },
+                Divider(),
+                new NuiSpacer { Height = 5f },
                 saveRow
             }
+        };
+    }
+
+    // ——————————————————————————————
+    // Small modal builders (presenter opens/handles)
+    // ——————————————————————————————
+    public NuiWindow BuildEditNameModal()
+    {
+        var layout = new NuiColumn
+        {
+            Width = 380f,
+            Height = 180f,
+            Children =
+            {
+                new NuiRow
+                {
+                    Width = 0f, Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))
+                    }
+                },
+                new NuiLabel("Edit Name") { Height = 18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12)},
+                new NuiTextEdit("Name", EditNameBuffer, 100, false) { Height = 32f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        ImagePlatedLabeledButton("btn_modal_ok_name", "", out _, "ui_btn_save"),
+                        new NuiSpacer { Width = 20f },
+                        ImagePlatedLabeledButton("btn_modal_cancel_name", "", out _, "ui_btn_cancel"),
+                    }
+                }
+            }
+        };
+
+        return new NuiWindow(layout, "Edit Name")
+        {
+            Geometry = new NuiRect(400f, 300f, 380f, 180f),
+            Resizable = false
+        };
+    }
+
+    public NuiWindow BuildEditDescModal()
+    {
+        var layout = new NuiColumn
+        {
+            Width = 380f, Height = 350f,
+            Children =
+            {
+                new NuiRow
+                {
+                    Width = 0f, Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))
+                    }
+                },
+                new NuiLabel("Edit Description") { Height = 18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12)},
+                new NuiTextEdit("Description", EditDescBuffer, 5000, true) { Height = 160f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        ImagePlatedLabeledButton("btn_modal_ok_desc", "", out _, "ui_btn_save"),
+                        new NuiSpacer { Width = 20f },
+                        ImagePlatedLabeledButton("btn_modal_cancel_desc", "", out _, "ui_btn_cancel"),
+                    }
+                }
+            }
+        };
+
+        return new NuiWindow(layout, "Edit Description")
+        {
+            Geometry = new NuiRect(360f, 260f, 380f, 350f),
+            Resizable = true
+        };
+    }
+
+    public readonly NuiBind<string> EditTagBuffer = new("edit_tag_buf");
+
+    public NuiWindow BuildEditTagModal()
+    {
+        var layout = new NuiColumn
+        {
+            Width = 380f, Height = 180f,
+            Children =
+            {
+                new NuiRow
+                {
+                    Width = 0f, Height = 0f,
+                    DrawList = new()
+                    {
+                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))
+                    }
+                },
+                new NuiLabel("Edit Tag") { Height = 18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) },
+                new NuiTextEdit("Tag", EditTagBuffer, 64, false) { Height = 32f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        ImagePlatedLabeledButton("btn_modal_ok_tag", "", out _, "ui_btn_save"),
+                        new NuiSpacer { Width = 20f },
+                        ImagePlatedLabeledButton("btn_modal_cancel_tag", "", out _, "ui_btn_cancel"),
+                    }
+                }
+            }
+        };
+
+        return new NuiWindow(layout, "Edit Tag")
+        {
+            Geometry = new NuiRect(420f, 320f, 380f, 180f),
+            Resizable = false
         };
     }
 }
