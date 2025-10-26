@@ -12,7 +12,7 @@ public readonly struct SpellSongData(byte requiredLevel, byte requiredBaseCharis
     public static readonly Dictionary<NwSpell, SpellSongData> SongSpells = new()
     {
         {
-            NwSpell.FromSpellType(SongConstants.BardSong)!,
+            NwSpell.FromSpellType(BardSong)!,
             new SpellSongData(1, 11, SfxBardSong)
         },
         {
