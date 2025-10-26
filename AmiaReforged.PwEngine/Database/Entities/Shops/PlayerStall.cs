@@ -14,6 +14,9 @@ public class PlayerStall
 
     public int StoredGold { get; set; }
     public int GrossProfit { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? LastPaidRentAt { get; set; }
+
     public List<StallProduct>? Products { get; set; }
     public List<StallTransaction>? Transactions { get; set; }
 }

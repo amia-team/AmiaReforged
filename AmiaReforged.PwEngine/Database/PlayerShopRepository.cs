@@ -173,6 +173,21 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
             .Where(t => t.StallId == shopId && t.StallOwnerId == ownerId)
             .ToList();
     }
+
+    public void SaveTransaction(StallTransaction transaction)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        try
+        {
+            ctx.StallTransactions.Add(transaction);
+            ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+    }
 }
 
 public interface IPlayerShopRepository
@@ -202,4 +217,5 @@ public interface IPlayerShopRepository
 
     List<StallTransaction>? TransactionsForShop(long shopId);
     List<StallTransaction>? TransactionsForStallWhenOwnedBy(long shopId, Guid ownerId);
+    void SaveTransaction(StallTransaction transaction);
 }

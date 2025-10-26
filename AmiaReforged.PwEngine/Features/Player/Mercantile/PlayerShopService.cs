@@ -1,8 +1,10 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Shops;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
+using Anvil.API.Events;
 using Anvil.Services;
-using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Player.Mercantile;
 
@@ -10,13 +12,14 @@ namespace AmiaReforged.PwEngine.Features.Player.Mercantile;
 public class PlayerShopService
 {
     private const string ShopResRef = "player_shop";
-
+    private const int StallDailyFee = 10000;
     private readonly IPlayerShopRepository _shopRepository;
-    private readonly Dictionary<(string Tag, string AreaResRef), PlayerShopInstance> _loadedShops = new();
+    private readonly WindowDirector _director;
 
-    public PlayerShopService(IPlayerShopRepository shopRepository)
+    public PlayerShopService(IPlayerShopRepository shopRepository, WindowDirector director)
     {
         _shopRepository = shopRepository;
+        _director = director;
         List<NwPlaceable> playerShops =
             NwObject.FindObjectsOfType<NwPlaceable>().Where(p => p.ResRef == ShopResRef).ToList();
 
@@ -34,7 +37,83 @@ public class PlayerShopService
                 CharacterId = null // No owner yet
             };
             shopRepository.AddStall(newStall);
+
+            shop.OnUsed += HandlePlayerUse;
         }
+    }
+
+    private void HandlePlayerUse(PlaceableEvents.OnUsed obj)
+    {
+        if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player)) return;
+
+        bool stallExists = _shopRepository.StallExists((obj.Placeable.Tag, obj.Placeable.Area!.ResRef));
+        if (!stallExists)
+        {
+            player.SendServerMessage("This shop is not properly configured. Screenshot this and send it to the staff",
+                ColorConstants.Red);
+            return;
+        }
+
+
+        PlayerShopInstance? shop = GetShop(obj.Placeable.Tag, obj.Placeable.Area!.ResRef);
+
+        if (shop == null && stallExists)
+        {
+            PromptRental(obj.Placeable, player);
+            return;
+        }
+        else
+        {
+            PresentStore(shop, player);
+        }
+    }
+
+    private void PromptRental(NwPlaceable objPlaceable, NwPlayer player)
+    {
+        // Don't let them rent more than one stall per area
+        List<PlayerStall> playerStalls = _shopRepository.StallsForPlayer(player.LoginCreature!.ObjectId);
+        bool alreadyRentedInArea = playerStalls.Any(s => s.AreaResRef == objPlaceable.Area!.ResRef);
+
+        if (alreadyRentedInArea)
+        {
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("You already own a stall in this area.")
+                .WithMessage(
+                    $"Save some room for the other merchants! You can only rent one stall per area.")
+                .Open();
+        }
+
+        if (player.LoginCreature!.Gold < StallDailyFee)
+        {
+            GenericWindow
+                .Builder()
+                .For()
+                .SimplePopup()
+                .WithPlayer(player)
+                .WithTitle("You cannot afford to rent this stall.")
+                .WithMessage(
+                    $"You need at least {StallDailyFee} gold to rent a player stall. This shop costs {StallDailyFee} gold per real life day to rent.")
+                .Open();
+
+            return;
+        }
+        else
+        {
+            _director.OpenPopupWithReaction(player,
+                "Rent Player Stall",
+                $"Do you wish to rent this player stall for {StallDailyFee} gold per real life day? Press `X` to cancel, `OK` to confirm.",
+                () => { }
+            );
+        }
+    }
+
+    private void PresentStore(PlayerShopInstance? shop, NwPlayer player)
+    {
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -42,11 +121,6 @@ public class PlayerShopService
     /// </summary>
     public PlayerShopInstance? GetShop(string tag, string areaResRef)
     {
-        (string tag, string areaResRef) key = (tag, areaResRef);
-
-        if (_loadedShops.TryGetValue(key, out PlayerShopInstance? cachedShop))
-            return cachedShop;
-
         // Load from database
         List<PlayerStall> stalls = _shopRepository.ShopsByTag(tag);
         PlayerStall? stall = stalls.FirstOrDefault(s => s.AreaResRef == areaResRef);
@@ -55,7 +129,6 @@ public class PlayerShopService
             return null;
 
         PlayerShopInstance shopInstance = new(stall);
-        _loadedShops[key] = shopInstance;
 
         return shopInstance;
     }
@@ -123,19 +196,18 @@ public class PlayerShopService
             {
                 case ItemPurchasedEvent purchased:
                     // Remove from database
-                    _shopRepository.RemoveProductFromShop(purchased.ShopId, purchased.ItemId.Value);
-
+                    NwItem? gameItem = NwItem.Deserialize(purchased.ItemData);
                     // Deduct gold from buyer
-                    if (buyer != null)
+                    if (buyer != null && gameItem != null)
                     {
                         buyer.Gold -= (uint)purchased.Cost;
+                        buyer.AcquireItem(gameItem);
 
-                        // TODO: Deserialize item from purchased.ItemData and create it on buyer
-                        // TODO: Send server message to buyer about purchase
+                        // N.B: Make sure to only remove the item if the purchase actually succeeded
+                        _shopRepository.RemoveProductFromShop(purchased.ShopId, purchased.ItemId.Value);
                     }
 
                     break;
-
                 case ItemAddedToShopEvent added:
                     StallProduct product = new()
                     {
@@ -155,190 +227,4 @@ public class PlayerShopService
 
         shop.ClearDomainEvents();
     }
-}
-
-/// <summary>
-/// Aggregate root for runtime player shop operations.
-/// Manages shop inventory and purchase transactions, raising domain events for persistence.
-/// </summary>
-public class PlayerShopInstance
-{
-    public long ShopId { get; }
-    public string Tag { get; }
-    public string AreaResRef { get; }
-
-    private readonly List<ShopItem> _itemsForSale = new();
-    public IReadOnlyList<ShopItem> ItemsForSale => _itemsForSale.AsReadOnly();
-
-    // Domain events queue
-    private readonly List<object> _domainEvents = new();
-    public IReadOnlyList<object> DomainEvents => _domainEvents.AsReadOnly();
-
-    public PlayerShopInstance(PlayerStall stall)
-    {
-        ShopId = stall.Id;
-        Tag = stall.Tag;
-        AreaResRef = stall.AreaResRef;
-
-        // Load items from the stall
-        if (stall.Products != null)
-        {
-            foreach (StallProduct product in stall.Products)
-            {
-                _itemsForSale.Add(new ShopItem(
-                    new ItemId(product.Id),
-                    product.Name,
-                    product.Description,
-                    product.Price,
-                    product.ItemData
-                ));
-            }
-        }
-    }
-
-    /// <summary>
-    /// Attempts to purchase an item from the shop.
-    /// </summary>
-    /// <returns>Result indicating success or failure with error message.</returns>
-    public PurchaseResult PurchaseItem(NwCreature buyer, ItemId itemId)
-    {
-        ShopItem? item = _itemsForSale.FirstOrDefault(i => i.ItemId == itemId);
-        if (item is null)
-            return PurchaseResult.Failure("Item not found in shop.");
-
-        if (!CanAfford(buyer, item.Cost))
-            return PurchaseResult.Failure($"Cannot afford item. Cost: {item.Cost} gold.");
-
-        // Remove item from runtime inventory
-        _itemsForSale.Remove(item);
-
-        // TODO: Get player name from buyer.ControllingPlayer
-        string buyerName = "Unknown"; // Placeholder
-
-        // Raise domain event for persistence and item creation
-        _domainEvents.Add(new ItemPurchasedEvent(
-            ShopId,
-            Tag,
-            AreaResRef,
-            itemId,
-            buyerName,
-            item.ItemData,
-            item.Cost
-        ));
-
-        return PurchaseResult.Success(item);
-    }
-
-    /// <summary>
-    /// Adds an item to the shop inventory.
-    /// </summary>
-    public void AddItem(NwItem item, int price)
-    {
-        byte[]? itemData = item.Serialize();
-
-        if (itemData is null)
-        {
-            if (item.Possessor is not null)
-            {
-                NWScript.FloatingTextStringOnCreature("Failed to add item to shop.", item.Possessor, NWScript.FALSE);
-            }
-
-            return;
-        }
-
-        ShopItem shopItem = new(
-            new ItemId(0), // Will be set by database
-            item.Name,
-            item.Description,
-            price,
-            itemData
-        );
-
-        _itemsForSale.Add(shopItem);
-
-        // Raise domain event for persistence
-        _domainEvents.Add(new ItemAddedToShopEvent(
-            ShopId,
-            item.Name,
-            item.Description,
-            price,
-            itemData
-        ));
-    }
-
-    /// <summary>
-    /// Removes an item from the shop without purchasing (e.g., owner removing).
-    /// </summary>
-    public OperationResult RemoveItem(ItemId itemId)
-    {
-        ShopItem? item = _itemsForSale.FirstOrDefault(i => i.ItemId == itemId);
-        if (item is null)
-            return OperationResult.Failure("Item not found in shop.");
-
-        _itemsForSale.Remove(item);
-
-        _domainEvents.Add(new ItemRemovedFromShopEvent(ShopId, itemId));
-
-        return OperationResult.Success();
-    }
-
-    public void ClearDomainEvents() => _domainEvents.Clear();
-
-    private bool CanAfford(NwCreature creature, int amount)
-    {
-        return creature.Gold >= amount;
-    }
-}
-
-// Domain Events
-public record ItemPurchasedEvent(
-    long ShopId,
-    string ShopTag,
-    string AreaResRef,
-    ItemId ItemId,
-    string BuyerName,
-    byte[] ItemData,
-    int Cost
-);
-
-public record ItemAddedToShopEvent(
-    long ShopId,
-    string ItemName,
-    string ItemDescription,
-    int Price,
-    byte[] ItemData
-);
-
-public record ItemRemovedFromShopEvent(long ShopId, ItemId ItemId);
-
-// Value Objects and DTOs
-public record ItemId(long Value);
-
-public record ShopItem(
-    ItemId ItemId,
-    string Name,
-    string Description,
-    int Cost,
-    byte[] ItemData
-);
-
-public record TransactionReceipt(
-    ItemId ItemId,
-    string ItemName,
-    string BuyerName,
-    int Cost,
-    DateTime PurchaseDate
-);
-
-// Results
-public record PurchaseResult(bool IsSuccess, string? ErrorMessage, ShopItem? Item)
-{
-    public static PurchaseResult Success(ShopItem item) => new(true, null, item);
-    public static PurchaseResult Failure(string error) => new(false, error, null);
-}
-
-public record OperationResult(bool IsSuccess, string? ErrorMessage)
-{
-    public static OperationResult Success() => new(true, null);
-    public static OperationResult Failure(string error) => new(false, error);
 }

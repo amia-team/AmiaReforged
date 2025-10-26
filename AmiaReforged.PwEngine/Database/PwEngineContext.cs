@@ -37,6 +37,18 @@ public class PwEngineContext : DbContext
 
     public DbSet<StallTransaction> StallTransactions { get; set; } = null!;
 
+    public DbSet<CoinHouse> CoinHouses { get; set; } = null!;
+
+    /// <summary>
+    /// Generic catch all for any physical item that must be kept track of in storage.
+    /// </summary>
+    public DbSet<Storage> Warehouses { get; set; } = null!;
+
+    /// <summary>
+    ///  All items stored within warehouses.
+    /// </summary>
+    public DbSet<StoredItem> WarehouseItems { get; set; } = null!;
+
 
     public PwEngineContext()
     {
