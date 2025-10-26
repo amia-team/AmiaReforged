@@ -12,5 +12,8 @@ public class PlayerStall
     public Guid? CharacterId { get; set; }
     [ForeignKey(nameof(CharacterId))] public PersistedCharacter? Character { get; set; }
 
+    public int StoredGold { get; set; }
+    public int GrossProfit { get; set; }
     public List<StallProduct>? Products { get; set; }
+    public List<StallTransaction>? Transactions { get; set; }
 }

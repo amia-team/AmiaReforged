@@ -9,6 +9,22 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
+    public void AddStall(PlayerStall newStall)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        try
+        {
+            ctx.PlayerStalls.Add(newStall);
+            ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+        }
+    }
+
+
     public List<StallProduct>? ProductsForShop(long shopId)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
@@ -114,18 +130,48 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
         return ctx.PlayerStalls.Find(shopId);
     }
 
-    public List<PlayerStall> GetAllShops()
+    public List<PlayerStall> AllShops()
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
         return ctx.PlayerStalls.ToList();
     }
 
-    public List<PlayerStall> GetPlayerStalls(long shopId)
+    public List<PlayerStall> StallsForPlayer(long shopId)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
         return ctx.PlayerStalls.Where(s => s.Id == shopId).ToList();
+    }
+
+    public List<PlayerStall> ShopsByTag(string tag)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        return ctx.PlayerStalls.Where(s => s.Tag == tag).ToList();
+    }
+
+    public bool StallExists((string tag, string resRef) identifier)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        return ctx.PlayerStalls.Any(s => s.Tag == identifier.tag && s.AreaResRef == identifier.resRef);
+    }
+
+    public List<StallTransaction>? TransactionsForShop(long shopId)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        return ctx.StallTransactions.Where(t => t.StallId == shopId).ToList();
+    }
+
+    public List<StallTransaction>? TransactionsForStallWhenOwnedBy(long shopId, Guid ownerId)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        return ctx.StallTransactions
+            .Where(t => t.StallId == shopId && t.StallOwnerId == ownerId)
+            .ToList();
     }
 }
 
@@ -143,9 +189,17 @@ public interface IPlayerShopRepository
     void DeleteShop(long shopId);
 
     PlayerStall? GetShopById(long shopId);
-    List<PlayerStall> GetAllShops();
+    List<PlayerStall> AllShops();
 
-    List<PlayerStall> GetPlayerStalls(long shopId);
+    List<PlayerStall> StallsForPlayer(long shopId);
+
+    List<PlayerStall> ShopsByTag(string tag);
+
+    bool StallExists((string tag, string resRef) identifier);
 
     void UnownShop(long shopId);
+    void AddStall(PlayerStall newStall);
+
+    List<StallTransaction>? TransactionsForShop(long shopId);
+    List<StallTransaction>? TransactionsForStallWhenOwnedBy(long shopId, Guid ownerId);
 }

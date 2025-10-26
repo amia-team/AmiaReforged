@@ -25,5 +25,7 @@ public class StallProduct
     public required byte[] ItemData { get; set; }
 
     public long? ShopId { get; set; }
+
+    public DateTime AddedAt { get; set; } = DateTime.UtcNow;
     [ForeignKey(nameof(ShopId))] public PlayerStall? Shop { get; set; }
 }

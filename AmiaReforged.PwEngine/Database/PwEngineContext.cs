@@ -35,6 +35,8 @@ public class PwEngineContext : DbContext
     public DbSet<PlayerStall> PlayerStalls { get; set; } = null!;
     public DbSet<StallProduct> StallProducts { get; set; } = null!;
 
+    public DbSet<StallTransaction> StallTransactions { get; set; } = null!;
+
 
     public PwEngineContext()
     {
