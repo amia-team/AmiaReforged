@@ -164,26 +164,67 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
 
     public void CharmMonster(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.Combust);
+        if (spell is null) return;
 
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 3, monkLevel))
+            return;
+
+        SavingThrowResult savingThrowResult =
+            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.None, monk);
+
+        if (savingThrowResult == SavingThrowResult.Success)
+        {
+            target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+            return;
+        }
+
+        target.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.CharmMonsterEffect(monk), WildMagicUtils.ShortDuration);
+        target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpCharm));
     }
 
     public void InflictLightWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.InflictLightWounds);
+        if (spell is null) return;
 
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Necromancy, 1, monkLevel))
+            return;
+
+        target.ApplyEffect(EffectDuration.Instant, wildMagicUtils.InflictLightWoundsEffect(monk, monkLevel));
     }
 
     public void CureLightWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        int bonusHeal = monkLevel > 5 ? 5 : monkLevel;
+        int healRoll = Random.Shared.Roll(8);
 
+        monk.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHealingS));
+        monk.ApplyEffect(EffectDuration.Instant, Effect.Heal(healRoll + bonusHeal));
     }
 
     public void LesserRestoration(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        monk.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpRestorationLesser));
 
+        foreach (Effect effect in monk.ActiveEffects)
+        {
+            if (effect.EffectType is EffectType.AbilityDecrease or EffectType.AcDecrease or EffectType.DamageDecrease
+                    or EffectType.DamageImmunityDecrease or EffectType.SavingThrowDecrease or EffectType.SkillDecrease
+                    or EffectType.AttackDecrease
+                && effect.SubType != EffectSubType.Unyielding)
+
+                monk.RemoveEffect(effect);
+        }
     }
 
     public void ShelgarnsPersistentBlade(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        Effect summonBlade = Effect.SummonCreature("shelgarns_blade", VfxType.DurDeathArmor!);
+        summonBlade.SubType = EffectSubType.Magical;
 
+        _ = wildMagicUtils.GetObjectContext(monk, summonBlade);
+
+        monk.ApplyEffect(EffectDuration.Temporary, summonBlade, WildMagicUtils.LongDuration);
     }
 }
