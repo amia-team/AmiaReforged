@@ -25,32 +25,16 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public readonly NuiBind<string> IconInfo = new("item_icon_info");
     public readonly NuiBind<string> DescPlaceholder = new("item_desc_placeholder");
 
-    private const int VarRows = 8;
-
-    public readonly NuiBind<bool>[] VarVisible =
-        Enumerable.Range(0, VarRows).Select(i => new NuiBind<bool>($"var_vis_{i}")).ToArray();
-
-    public readonly NuiBind<string>[] VarKey =
-        Enumerable.Range(0, VarRows).Select(i => new NuiBind<string>($"var_key_{i}")).ToArray();
-
-    public readonly NuiBind<string>[] VarType =
-        Enumerable.Range(0, VarRows).Select(i => new NuiBind<string>($"var_type_{i}")).ToArray();
-
-    public readonly NuiBind<string>[] VarValue =
-        Enumerable.Range(0, VarRows).Select(i => new NuiBind<string>($"var_val_{i}")).ToArray();
-
-
-    // Add-variable inputs (unchanged)
-    public readonly NuiBind<string> VariableName = new("item_var_name");
-    public readonly NuiBind<int> VariableType = new("item_var_type");
-    public readonly NuiBind<string> VariableValue = new("item_var_value");
-
-    // Manual variables column content (view drives by presenter data -> SetLayout)
-    // We keep these for compatibility if your presenter still sets arrays; the view won't rely on them directly.
+    // Variables list binds for scrollable NuiList
     public readonly NuiBind<int> VariableCount = new("var_row_count");
     public readonly NuiBind<string> VariableNames = new("var_key");
     public readonly NuiBind<string> VariableValues = new("var_value");
     public readonly NuiBind<string> VariableTypes = new("var_type");
+
+    // Add-variable inputs
+    public readonly NuiBind<string> VariableName = new("item_var_name");
+    public readonly NuiBind<int> VariableType = new("item_var_type");
+    public readonly NuiBind<string> VariableValue = new("item_var_value");
 
     // Clickables (now NuiButtonImage, but we preserve the same IDs where applicable)
     public NuiButtonImage SelectItemButton = null!;
@@ -174,24 +158,34 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
 
     public NuiElement BuildVariablesSection()
     {
-        var rows = new List<NuiElement>(VarRows);
-        for (int i = 0; i < VarRows; i++)
-        {
-            rows.Add(new NuiRow
-            {
-                Visible = VarVisible[i],
-                Children =
-                {
-                    new NuiLabel(VarKey[i]) { Width = 240f, ForegroundColor = new Color(30, 20, 12) },
-                    new NuiLabel(VarType[i]) { Width = 120f, ForegroundColor = new Color(30, 20, 12) },
-                    new NuiLabel(VarValue[i]) { Width = 318f, ForegroundColor = new Color(30, 20, 12) },
-                    new NuiButtonImage("ui_btn_sm_x")
-                        { Id = $"btn_del_var_{i}", Width = 35f, Height = 35f, Tooltip = "Delete Variable" },
-                }
-            });
-        }
-
         var addVarRow = BuildAddVariableRow();
+
+        // Build the list row template for each variable - NuiList automatically indexes the bind arrays
+        var nameCell = new NuiListTemplateCell(new NuiLabel(VariableNames)
+            { Width = 220f }) { Width = 220f };
+
+        var typeCell = new NuiListTemplateCell(new NuiLabel(VariableTypes)
+            { Width = 150f }) { Width = 150f };
+
+        var valueCell = new NuiListTemplateCell(new NuiLabel(VariableValues)
+            { Width = 285f }) { Width = 285f };
+
+        var deleteCell = new NuiListTemplateCell(new NuiButtonImage("ui_btn_sm_x")
+        {
+            Id = "btn_del_var",
+            Width = 25f,
+            Height = 25f,
+            Tooltip = "Delete Variable"
+        }) { Width = 25f };
+
+        // Scrollable list with max height to contain variables
+        var variableList = new NuiList(new[] { nameCell, typeCell, valueCell, deleteCell }, VariableCount)
+        {
+            RowHeight = 27f,
+            Width = 725f,
+            Height = 280f,
+            Scrollbars = NuiScrollbars.Y,
+        };
 
         return new NuiColumn
         {
@@ -202,11 +196,19 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
                     Children =
                     {
                         new NuiLabel("Local Variables")
-                            { Height = 20f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) }
+                            { Height = 20f, Width = 680, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) }
                     }
                 },
                 addVarRow,
-                new NuiColumn { Children = rows },
+                new NuiSpacer { Height = 4f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 1f },
+                        variableList
+                    }
+                },
                 new NuiSpacer { Height = 4f }
             }
         };

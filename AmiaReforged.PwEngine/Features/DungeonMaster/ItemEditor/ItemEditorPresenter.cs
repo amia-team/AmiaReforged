@@ -122,14 +122,10 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                 return;
             }
 
-            // DELETE VARIABLE by encoded index: btn_del_var_{i}
-            if (ev.ElementId.StartsWith("btn_del_var_", StringComparison.Ordinal))
+            // DELETE VARIABLE - NuiList provides the index automatically
+            if (ev.ElementId == "btn_del_var")
             {
-                if (int.TryParse(ev.ElementId.AsSpan("btn_del_var_".Length), out int idx))
-                {
-                    DeleteVariableAt(idx);
-                    RebuildLayout(); // refresh the manual column
-                }
+                DeleteVariableAt(ev.ArrayIndex);
                 return;
             }
 
@@ -347,10 +343,9 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         RebuildLayout();
         UpdateVariableList();
     }
-    // Sync _vars -> view binds so any NuiList/Repeater bound to these updates in-place.
+    // Sync _vars -> view binds for the NuiList
     private void UpdateVariableList()
     {
-        // old parallel-bind updates can stay (harmless) — or remove if you’re fully on the fixed-rows UI
         var names  = new List<string>(_vars.Count);
         var types  = new List<string>(_vars.Count);
         var values = new List<string>(_vars.Count);
@@ -366,31 +361,6 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         Token().SetBindValues(View.VariableNames,  names);
         Token().SetBindValues(View.VariableTypes,  types);
         Token().SetBindValues(View.VariableValues, values);
-
-        // fixed-row pool updates (used by the transparent UI)
-        int count = _vars.Count;
-        int pool  = View.VarVisible.Length;
-
-        for (int i = 0; i < pool; i++)
-        {
-            bool show = i < count;
-            Token().SetBindValue(View.VarVisible[i], show);
-
-            if (show)
-            {
-                var (key, data) = _vars[i];
-                Token().SetBindValue(View.VarKey[i],   key);
-                Token().SetBindValue(View.VarType[i],  data.Type.ToString());
-                Token().SetBindValue(View.VarValue[i], ToDisplay(data));
-            }
-            else
-            {
-                // optional: clear hidden rows to avoid any ghost text when toggling
-                Token().SetBindValue(View.VarKey[i],   "");
-                Token().SetBindValue(View.VarType[i],  "");
-                Token().SetBindValue(View.VarValue[i], "");
-            }
-        }
     }
 
 
