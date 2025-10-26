@@ -2,8 +2,11 @@
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core; // for NWScript interop
+using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ItemTool;
 
 namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEditor;
+
+public enum IconAdjustResult { Success, NotAllowedType, NoSelection, NoValidModel }
 
 internal sealed class ItemEditorModel
 {
@@ -15,9 +18,66 @@ internal sealed class ItemEditorModel
     }
 
     public NwItem? SelectedItem { get; private set; }
+    public bool HasSelected => SelectedItem != null;
 
     public delegate void OnNewSelectionHandler();
     public event OnNewSelectionHandler? OnNewSelection;
+
+    // Local variable keys for initial values (persist across CopyItemAndModify)
+    private const string InitialNameKey = "item_editor_initial_name";
+    private const string InitialDescKey = "item_editor_initial_desc";
+
+    // --- Initial value helpers ---
+    public void EnsureInitialNameCaptured()
+    {
+        if (SelectedItem is null) return;
+        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        if (!v.HasValue) v.Value = SelectedItem.Name;
+    }
+
+    public void EnsureInitialDescCaptured()
+    {
+        if (SelectedItem is null) return;
+        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        if (!v.HasValue) v.Value = SelectedItem.Description;
+    }
+
+    public string GetInitialNameOrCurrent()
+    {
+        if (SelectedItem is null) return string.Empty;
+        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        return v.HasValue ? (v.Value ?? string.Empty) : SelectedItem.Name;
+    }
+
+    public string GetInitialDescOrCurrent()
+    {
+        if (SelectedItem is null) return string.Empty;
+        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        return v.HasValue ? (v.Value ?? string.Empty) : SelectedItem.Description;
+    }
+
+    public void RevertNameToInitial()
+    {
+        if (SelectedItem is null) return;
+        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        if (v.HasValue) SelectedItem.Name = v.Value ?? SelectedItem.Name;
+    }
+
+    public void RevertDescToInitial()
+    {
+        if (SelectedItem is null) return;
+        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        if (v.HasValue) SelectedItem.Description = v.Value ?? SelectedItem.Description;
+    }
+
+    public void ClearInitials()
+    {
+        if (SelectedItem is null) return;
+        var n = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        if (n.HasValue) n.Delete();
+        var d = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        if (d.HasValue) d.Delete();
+    }
 
     public void Update(ItemData data)
     {
@@ -155,6 +215,9 @@ internal sealed class ItemEditorModel
         if (obj.TargetObject is NwItem item)
         {
             SelectedItem = item;
+            // Capture initial values immediately on selection
+            EnsureInitialNameCaptured();
+            EnsureInitialDescCaptured();
             OnNewSelection?.Invoke();
         }
         else
@@ -163,15 +226,17 @@ internal sealed class ItemEditorModel
         }
     }
 
-    // === Icon / Simple Model support (mirrors Player Item Tool) ===
+    // === Icon / Simple Model support (uses ItemModelValidation) ===
     public bool IsIconAllowed(out int current, out int max)
     {
         current = 0; max = 0;
         if (SelectedItem is null) return false;
 
-        uint baseId = SelectedItem.BaseItem.Id; // numeric fallback for oddball entries (119, 120, 121)
-        if (!TryGetMaxForBaseType(SelectedItem, baseId, out max))
+        if (!ItemModelValidation.SupportsModelChanges(SelectedItem))
             return false;
+
+        max = ItemModelValidation.GetMaxModelIndex(SelectedItem);
+        if (max == 0) return false;
 
         current = NWScript.GetItemAppearance(SelectedItem, (int)ItemAppearanceType.SimpleModel, 0);
         return true;
@@ -182,71 +247,58 @@ internal sealed class ItemEditorModel
         newValue = 0; maxValue = 0;
         if (SelectedItem is null) return IconAdjustResult.NoSelection;
 
-        uint baseId = SelectedItem.BaseItem.Id;
-        if (!TryGetMaxForBaseType(SelectedItem, baseId, out maxValue))
+        // Check if this item type supports model changes
+        if (!ItemModelValidation.SupportsModelChanges(SelectedItem))
+            return IconAdjustResult.NotAllowedType;
+
+        maxValue = ItemModelValidation.GetMaxModelIndex(SelectedItem);
+        if (maxValue == 0)
             return IconAdjustResult.NotAllowedType;
 
         int current = NWScript.GetItemAppearance(SelectedItem, (int)ItemAppearanceType.SimpleModel, 0);
-        int target  = current + delta;
+        if (delta == 0)
+        {
+            newValue = current;
+            return IconAdjustResult.Success;
+        }
 
-        if (target < 1) target = 1;
-        if (target > maxValue) target = maxValue;
+        // Get all valid indices for this item type
+        var validIndices = ItemModelValidation.GetValidIndices(SelectedItem).ToList();
+        if (validIndices.Count == 0)
+            return IconAdjustResult.NotAllowedType;
 
-        // Clone-and-replace so the appearance change persists (locals copy across)
-        var copy = NWScript.CopyItemAndModify(SelectedItem, (int)ItemAppearanceType.SimpleModel, 0, target, 1);
+        // Find current index in the valid list (or closest)
+        int currentIndex = validIndices.IndexOf(current);
+        if (currentIndex == -1)
+        {
+            // Current model isn't in valid list; find closest
+            currentIndex = validIndices.FindIndex(x => x >= current);
+            if (currentIndex == -1) currentIndex = validIndices.Count - 1;
+        }
+
+        // Calculate new index with wrapping
+        int newIndex = currentIndex + delta;
+        while (newIndex < 0) newIndex += validIndices.Count;
+        while (newIndex >= validIndices.Count) newIndex -= validIndices.Count;
+
+        int candidate = validIndices[newIndex];
+
+        // Verify the candidate is valid according to our dictionary
+        if (!ItemModelValidation.IsValidModelIndex(SelectedItem, candidate))
+            return IconAdjustResult.NoValidModel;
+
+        // Apply the model change
+        uint copy = NWScript.CopyItemAndModify(SelectedItem, (int)ItemAppearanceType.SimpleModel, 0, candidate, 1);
         if (NWScript.GetIsObjectValid(copy) == 1)
         {
             NWScript.DestroyObject(SelectedItem);
             SelectedItem = copy.ToNwObject<NwItem>();
+            newValue = candidate;
+            return IconAdjustResult.Success;
         }
 
-        newValue = target;
-        return IconAdjustResult.Success;
-    }
-
-    public enum IconAdjustResult { Success, NotAllowedType, NoSelection }
-
-    private static bool TryGetMaxForBaseType(NwItem item, uint baseId, out int max)
-    {
-        // Allowed (same as player tool’s set):
-        //  - Misc Large -> 31
-        //  - Misc Medium -> 254
-        //  - Misc Medium 2 (id 121) -> 66
-        //  - Misc Small -> 254
-        //  - Misc Small 2 (id 119) -> 254
-        //  - Misc Small 3 (id 120) -> 100
-        //  - Misc Thin -> 101
-        // Plus ALSO allow: AMULET, BELT, BOOK, BRACER, GEM, GLOVES, LARGEBOX, RING, SHIELDS (use 254 as safe cap)
-
-        max = 0;
-
-        var bi = item.BaseItem.ItemType;
-        switch (bi)
-        {
-            case BaseItemType.MiscLarge:  max = 254;  return true;
-            case BaseItemType.MiscMedium: max = 254; return true;
-            case BaseItemType.MiscSmall:  max = 254; return true;
-            case BaseItemType.MiscThin:   max = 254; return true;
-
-            case BaseItemType.Amulet:
-            case BaseItemType.Belt:
-            case BaseItemType.Book:
-            case BaseItemType.Bracer:
-            case BaseItemType.Gem:
-            case BaseItemType.Gloves:
-            case BaseItemType.LargeBox:
-            case BaseItemType.Ring:
-            case BaseItemType.SmallShield:
-            case BaseItemType.TowerShield:
-            case BaseItemType.LargeShield:
-                max = 254; return true;
-        }
-
-        // Fallback for oddball variants present in legacy script (by numeric id)
-        if (baseId == 121) { max = 254;  return true; }  // Misc Medium 2
-        if (baseId == 119) { max = 254; return true; }  // Misc Small 2
-        if (baseId == 120) { max = 254; return true; }  // Misc Small 3
-
-        return false;
+        // Copy failed for some reason
+        newValue = current;
+        return IconAdjustResult.NoValidModel;
     }
 }

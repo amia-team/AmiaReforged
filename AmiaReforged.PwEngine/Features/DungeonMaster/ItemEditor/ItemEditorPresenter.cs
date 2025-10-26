@@ -17,17 +17,15 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     // Local working copy of variables (we keep this in the presenter to render the manual column)
     private readonly List<(string Key, LocalVariableData Data)> _vars = new();
 
-    // Modal references (optional – only needed if you want to programmatically close them)
-    private NuiWindow? _editNameModal;
-    private NuiWindow? _editDescModal;
-    private NuiWindowToken _editNameToken;
-    private NuiWindowToken _editDescToken;
-    private bool _editNameOpen;
-    private bool _editDescOpen;
-    private NuiWindow? _editTagModal;
-    private NuiWindowToken _editTagToken;
+    // Modal window tokens
+    private NuiWindowToken? _nameModalToken;
+    private NuiWindowToken? _descModalToken;
+    private NuiWindowToken? _tagModalToken;
 
     private bool _initializing;
+    private bool _addingVariable;
+    private bool _applyingChanges;
+    private bool _processingEvent;
 
     public override NuiWindowToken Token() => _token;
 
@@ -89,114 +87,118 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     // ------------------------------------------------------------
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
     {
-        if (ev.EventType != NuiEventType.Click && ev.EventType != NuiEventType.Open)
-            return;
-
-        // SELECT (target an item)
-        if (ev.ElementId == View.SelectItemButton.Id)
+        // Global re-entry guard for all events
+        if (_processingEvent)
         {
-            _model.EnterTargetingMode();
+            _player.SendServerMessage($"DEBUG: ProcessEvent blocked re-entry for {ev.ElementId}", ColorConstants.Red);
             return;
         }
+        _processingEvent = true;
 
-        // SAVE
-        if (ev.ElementId == View.SaveButton.Id)
+        try
         {
-            ApplyChanges(showMessage: true);
-            return;
-        }
+            if (ev.EventType != NuiEventType.Click && ev.EventType != NuiEventType.Open)
+                return;
 
-        // ADD VARIABLE
-        if (ev.ElementId == View.AddVariableButton.Id)
-        {
-            AddNewVariable();
-            return;
-        }
-
-        // DELETE VARIABLE by encoded index: btn_del_var_{i}
-        if (ev.ElementId.StartsWith("btn_del_var_", StringComparison.Ordinal))
-        {
-            if (int.TryParse(ev.ElementId.AsSpan("btn_del_var_".Length), out int idx))
+            // SELECT (target an item)
+            if (ev.ElementId == View.SelectItemButton.Id)
             {
-                DeleteVariableAt(idx);
-                RebuildLayout(); // refresh the manual column
+                _model.EnterTargetingMode();
+                return;
             }
-            return;
-        }
 
-        // ICON bumps
-        if (ev.ElementId == View.IconPlus1.Id)   { TryAdjustIcon(+1); return; }
-        if (ev.ElementId == View.IconMinus1.Id)  { TryAdjustIcon(-1); return; }
-        if (ev.ElementId == View.IconPlus10.Id)  { TryAdjustIcon(+10); return; }
-        if (ev.ElementId == View.IconMinus10.Id) { TryAdjustIcon(-10); return; }
+            // SAVE
+            if (ev.ElementId == View.SaveButton.Id)
+            {
+                ApplyChanges(showMessage: true);
+                return;
+            }
 
-        // Open edit modals
-        if (ev.ElementId == "btn_edit_name")
-        {
-            var snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
-            Token().SetBindValue(View.EditNameBuffer, snap?.Name ?? "");
-            _editNameModal = View.BuildEditNameModal();
-            _player.TryCreateNuiWindow(_editNameModal, out _editNameToken);
-            return;
-        }
+            // ADD VARIABLE
+            if (ev.ElementId == View.AddVariableButton.Id)
+            {
+                AddNewVariable();
+                return;
+            }
 
-        if (ev.ElementId == "btn_edit_desc")
-        {
-            var snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
-            Token().SetBindValue(View.EditDescBuffer, snap?.Description ?? "");
-            _editDescModal = View.BuildEditDescModal();
-            _player.TryCreateNuiWindow(_editDescModal, out _editDescToken);
-            return;
-        }
+            // DELETE VARIABLE by encoded index: btn_del_var_{i}
+            if (ev.ElementId.StartsWith("btn_del_var_", StringComparison.Ordinal))
+            {
+                if (int.TryParse(ev.ElementId.AsSpan("btn_del_var_".Length), out int idx))
+                {
+                    DeleteVariableAt(idx);
+                    RebuildLayout(); // refresh the manual column
+                }
+                return;
+            }
 
-        // Modal OK / Cancel
-        if (ev.ElementId == "btn_modal_ok_name")
-        {
-            var newName = Token().GetBindValue(View.EditNameBuffer) ?? string.Empty;
-            Token().SetBindValue(View.Name, newName);
-            ApplyChanges(showMessage: true);
-            if (_editNameOpen) { _editNameToken.Close(); _editNameOpen = false; }
-            return;
-        }
+            // ICON bumps
+            if (ev.ElementId == View.IconPlus1.Id)   { TryAdjustIcon(+1); return; }
+            if (ev.ElementId == View.IconMinus1.Id)  { TryAdjustIcon(-1); return; }
+            if (ev.ElementId == View.IconPlus10.Id)  { TryAdjustIcon(+10); return; }
+            if (ev.ElementId == View.IconMinus10.Id) { TryAdjustIcon(-10); return; }
 
-        if (ev.ElementId == "btn_modal_cancel_name")
-        {
-            if (_editNameOpen) { _editNameToken.Close(); _editNameOpen = false; }
-            return;
-        }
+            // Open edit modals
+            if (ev.ElementId == "btn_edit_name")
+            {
+                // Prevent opening if modal already exists
+                if (_nameModalToken.HasValue)
+                    return;
 
-        if (ev.ElementId == "btn_modal_ok_desc")
-        {
-            var newDesc = Token().GetBindValue(View.EditDescBuffer) ?? string.Empty;
-            Token().SetBindValue(View.Description, newDesc);
-            ApplyChanges(showMessage: true);
-            if (_editDescOpen) { _editDescToken.Close(); _editDescOpen = false; }
-            return;
-        }
+                // Capture initial name and set buffer BEFORE creating modal
+                _model.EnsureInitialNameCaptured();
+                Token().SetBindValue(View.EditNameBuffer, _model.GetInitialNameOrCurrent());
 
-        if (ev.ElementId == "btn_modal_cancel_desc")
-        {
-            if (_editDescOpen) { _editDescToken.Close(); _editDescOpen = false; }
+                var w = View.BuildEditNameModal();
+                if (_player.TryCreateNuiWindow(w, out var modalToken))
+                {
+                    _nameModalToken = modalToken;
+                    modalToken.SetBindValue(View.EditNameBuffer, _model.SelectedItem!.Name);
+                    _nameModalToken.Value.OnNuiEvent += HandleNameModalEvent;
+                }
+                return;
+            }
+
+            if (ev.ElementId == "btn_edit_desc")
+            {
+                // Prevent opening if modal already exists
+                if (_descModalToken.HasValue)
+                    return;
+
+                // Capture initial desc and set buffer BEFORE creating modal
+                _model.EnsureInitialDescCaptured();
+                Token().SetBindValue(View.EditDescBuffer, _model.GetInitialDescOrCurrent());
+
+                var w = View.BuildEditDescModal();
+                if (_player.TryCreateNuiWindow(w, out var modalToken))
+                {
+                    _descModalToken = modalToken;
+                    modalToken.SetBindValue(View.EditDescBuffer, _model.SelectedItem!.Description);
+                    _descModalToken.Value.OnNuiEvent += HandleDescModalEvent;
+                }
+                return;
+            }
+
+            if (ev.ElementId == "btn_edit_tag")
+            {
+                // Prevent opening if modal already exists
+                if (_tagModalToken.HasValue)
+                    return;
+
+                var snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
+                Token().SetBindValue(View.EditTagBuffer, snap?.Tag ?? "");
+                var w = View.BuildEditTagModal();
+                if (_player.TryCreateNuiWindow(w, out var modalToken))
+                {
+                    _tagModalToken = modalToken;
+                    modalToken.SetBindValue(View.EditTagBuffer, snap?.Tag ?? "");
+                    _tagModalToken.Value.OnNuiEvent += HandleTagModalEvent;
+                }
+            }
         }
-        if (ev.ElementId == "btn_edit_tag")
+        finally
         {
-            var snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
-            Token().SetBindValue(View.EditTagBuffer, snap?.Tag ?? "");
-            _editTagModal = View.BuildEditTagModal();
-            _player.TryCreateNuiWindow(_editTagModal, out _editTagToken);
-            return;
-        }
-        if (ev.ElementId == "btn_modal_ok_tag")
-        {
-            var newTag = Token().GetBindValue(View.EditTagBuffer);
-            Token().SetBindValue(View.Tag!, newTag);
-            ApplyChanges(showMessage: true);
-            _editTagToken.Close();
-            return;
-        }
-        if (ev.ElementId == "btn_modal_cancel_tag")
-        {
-            _editTagToken.Close();
+            _processingEvent = false;
         }
     }
 
@@ -204,6 +206,106 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         UpdateFromModel();
         RefreshIconInfo();
+    }
+
+    // ------------------------------------------------------------
+    // Modal Event Handlers
+    // ------------------------------------------------------------
+    private void HandleNameModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click)
+            return;
+
+        if (ev.ElementId == "btn_modal_ok_name")
+        {
+            var newName = _nameModalToken!.Value.GetBindValue(View.EditNameBuffer) ?? string.Empty;
+            _model.SelectedItem!.Name = newName;
+            Token().SetBindValue(View.Name, newName);
+            _player.SendServerMessage("Name saved.", ColorConstants.Green);
+            if (_nameModalToken.HasValue)
+            {
+                _nameModalToken.Value.OnNuiEvent -= HandleNameModalEvent;
+                _nameModalToken?.Close();
+                _nameModalToken = null;
+            }
+            return;
+        }
+
+        if (ev.ElementId == "btn_modal_cancel_name")
+        {
+            _model.RevertNameToInitial();
+            Token().SetBindValue(View.Name, _model.GetInitialNameOrCurrent());
+            if (_nameModalToken.HasValue)
+            {
+                _nameModalToken.Value.OnNuiEvent -= HandleNameModalEvent;
+                _nameModalToken?.Close();
+                _nameModalToken = null;
+            }
+        }
+    }
+
+    private void HandleDescModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click)
+            return;
+
+        if (ev.ElementId == "btn_modal_ok_desc")
+        {
+            var newDesc = _descModalToken!.Value.GetBindValue(View.EditDescBuffer) ?? string.Empty;
+            _model.SelectedItem!.Description = newDesc;
+            Token().SetBindValue(View.Description, newDesc);
+            _player.SendServerMessage("Description saved.", ColorConstants.Green);
+            if (_descModalToken.HasValue)
+            {
+                _descModalToken.Value.OnNuiEvent -= HandleDescModalEvent;
+                _descModalToken?.Close();
+                _descModalToken = null;
+            }
+            return;
+        }
+
+        if (ev.ElementId == "btn_modal_cancel_desc")
+        {
+            _model.RevertDescToInitial();
+            Token().SetBindValue(View.Description, _model.GetInitialDescOrCurrent());
+            if (_descModalToken.HasValue)
+            {
+                _descModalToken.Value.OnNuiEvent -= HandleDescModalEvent;
+                _descModalToken?.Close();
+                _descModalToken = null;
+            }
+        }
+    }
+
+    private void HandleTagModalEvent(ModuleEvents.OnNuiEvent ev)
+    {
+        if (ev.EventType != NuiEventType.Click)
+            return;
+
+        if (ev.ElementId == "btn_modal_ok_tag")
+        {
+            var newTag = _tagModalToken!.Value.GetBindValue(View.EditTagBuffer) ?? string.Empty;
+            _model.SelectedItem!.Tag = newTag;
+            Token().SetBindValue(View.Tag!, newTag);
+            _player.SendServerMessage("Tag saved.", ColorConstants.Green);
+            if (_tagModalToken.HasValue)
+            {
+                _tagModalToken.Value.OnNuiEvent -= HandleTagModalEvent;
+                _tagModalToken?.Close();
+                _tagModalToken = null;
+            }
+            return;
+        }
+
+        if (ev.ElementId == "btn_modal_cancel_tag")
+        {
+            if (_tagModalToken.HasValue)
+            {
+                _tagModalToken.Value.OnNuiEvent -= HandleTagModalEvent;
+                _tagModalToken?.Close();
+                _tagModalToken = null;
+            }
+        }
     }
 
     // ------------------------------------------------------------
@@ -330,80 +432,141 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         if (_initializing) return;
 
-        var item = _model.SelectedItem;
-        if (item == null)
+        // Prevent re-entry
+        if (_applyingChanges)
         {
-            if (showMessage)
-                _player.SendServerMessage("No item selected.", ColorConstants.Orange);
+            _player.SendServerMessage("DEBUG: ApplyChanges blocked by re-entry guard", ColorConstants.Yellow);
             return;
         }
+        _applyingChanges = true;
 
-        // Build ItemData payload for the model.Update(...)
-        string name = Token().GetBindValue(View.Name) ?? string.Empty;
-        string desc = Token().GetBindValue(View.Description) ?? string.Empty;
-        string tag  = Token().GetBindValue(View.Tag) ?? string.Empty;
+        try
+        {
+            _player.SendServerMessage("DEBUG: ApplyChanges executing", ColorConstants.Yellow);
 
-        var varsDict = new Dictionary<string, LocalVariableData>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (key, data) in _vars)
-            varsDict[key] = data;
+            var item = _model.SelectedItem;
+            if (item == null)
+            {
+                if (showMessage)
+                    _player.SendServerMessage("No item selected.", ColorConstants.Orange);
+                return;
+            }
 
-        var dataPacket = new ItemData(name, desc, tag, varsDict);
+            // Build ItemData payload for the model.Update(...)
+            string name = Token().GetBindValue(View.Name) ?? string.Empty;
+            string desc = Token().GetBindValue(View.Description) ?? string.Empty;
+            string tag  = Token().GetBindValue(View.Tag) ?? string.Empty;
 
-        _model.Update(dataPacket);
+            var varsDict = new Dictionary<string, LocalVariableData>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (key, data) in _vars)
+                varsDict[key] = data;
 
-        if (showMessage)
-            _player.SendServerMessage("Item updated successfully.", ColorConstants.Green);
+            var dataPacket = new ItemData(name, desc, tag, varsDict);
 
-        // Refresh from live item (in case the engine normalized anything)
-        UpdateFromModel();
+            _model.Update(dataPacket);
+
+            // Clear initial values after successful save
+            _model.ClearInitials();
+
+            if (showMessage)
+                _player.SendServerMessage("Item updated successfully.", ColorConstants.Green);
+
+            // Refresh from live item (in case the engine normalized anything)
+            UpdateFromModel();
+        }
+        finally
+        {
+            _applyingChanges = false;
+        }
     }
 
     private void AddNewVariable()
     {
-        if (_model.SelectedItem == null)
+        // Prevent re-entry (button click might trigger multiple times)
+        if (_addingVariable)
         {
-            _player.SendServerMessage("Select an item first.", ColorConstants.Orange);
+            _player.SendServerMessage("DEBUG: AddNewVariable blocked by re-entry guard", ColorConstants.Yellow);
             return;
         }
+        _addingVariable = true;
 
-        string name = Token().GetBindValue(View.NewVariableName) ?? string.Empty;
-        string val  = Token().GetBindValue(View.NewVariableValue) ?? string.Empty;
-        int    type = Token().GetBindValue(View.NewVariableType);
-
-        if (string.IsNullOrWhiteSpace(name))
+        try
         {
-            _player.SendServerMessage("Variable name cannot be empty.", ColorConstants.Orange);
-            return;
-        }
+            _player.SendServerMessage("DEBUG: AddNewVariable executing", ColorConstants.Yellow);
 
-        // Convert the textual input to LocalVariableData
-        var data = ParseLocalVarInput((LocalVariableType)type, val, out string? error);
-        if (error != null)
+            if (_model.SelectedItem == null)
+            {
+                _player.SendServerMessage("Select an item first.", ColorConstants.Orange);
+                return;
+            }
+
+            string name = Token().GetBindValue(View.NewVariableName) ?? string.Empty;
+            string val  = Token().GetBindValue(View.NewVariableValue) ?? string.Empty;
+            int    type = Token().GetBindValue(View.NewVariableType);
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                _player.SendServerMessage("Variable name cannot be empty.", ColorConstants.Orange);
+                return;
+            }
+
+            // Convert the textual input to LocalVariableData
+            var data = ParseLocalVarInput((LocalVariableType)type, val, out string? error);
+            if (error != null)
+            {
+                _player.SendServerMessage(error, ColorConstants.Orange);
+                return;
+            }
+
+            // Upsert into local list (case-insensitive on key)
+            int existingIdx = _vars.FindIndex(v => v.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (existingIdx >= 0)
+            {
+                _vars[existingIdx] = (name, data);
+                _player.SendServerMessage($"Variable '{name}' updated.", ColorConstants.Green);
+            }
+            else
+            {
+                _vars.Add((name, data));
+                _player.SendServerMessage($"Variable '{name}' added.", ColorConstants.Green);
+            }
+
+            // Keep order consistent
+            _vars.Sort((a, b) => string.Compare(a.Key, b.Key, StringComparison.OrdinalIgnoreCase));
+
+            // Clear entry fields
+            Token().SetBindValue(View.NewVariableName, "");
+            Token().SetBindValue(View.NewVariableValue, "");
+
+            RebuildLayout();
+            UpdateVariableList();
+        }
+        finally
         {
-            _player.SendServerMessage(error, ColorConstants.Orange);
-            return;
+            _addingVariable = false;
         }
-
-        // Upsert into local list (case-insensitive on key)
-        int existingIdx = _vars.FindIndex(v => v.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (existingIdx >= 0) _vars[existingIdx] = (name, data);
-        else _vars.Add((name, data));
-
-        // Keep order consistent
-        _vars.Sort((a, b) => string.Compare(a.Key, b.Key, StringComparison.OrdinalIgnoreCase));
-
-        // Clear entry fields (optional)
-        Token().SetBindValue(View.NewVariableName, "");
-        Token().SetBindValue(View.NewVariableValue, "");
-
-        RebuildLayout();
-        UpdateVariableList();
     }
 
     private void DeleteVariableAt(int index)
     {
         if (index < 0 || index >= _vars.Count) return;
+
+        // Get the variable key before removing from list
+        string keyToDelete = _vars[index].Key;
+
+        // Remove from local list
         _vars.RemoveAt(index);
+
+        // Actually delete from the item
+        if (_model.SelectedItem != null)
+        {
+            _model.SelectedItem.GetObjectVariable<LocalVariableInt>(keyToDelete).Delete();
+            _model.SelectedItem.GetObjectVariable<LocalVariableFloat>(keyToDelete).Delete();
+            _model.SelectedItem.GetObjectVariable<LocalVariableString>(keyToDelete).Delete();
+            _model.SelectedItem.GetObjectVariable<LocalVariableLocation>(keyToDelete).Delete();
+            _model.SelectedItem.GetObjectVariable<LocalVariableObject<NwObject>>(keyToDelete).Delete();
+        }
+
         UpdateVariableList();
     }
 
@@ -443,13 +606,16 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         var result = _model.TryAdjustIcon(delta, out int newValue, out int maxValue);
         switch (result)
         {
-            case ItemEditorModel.IconAdjustResult.NoSelection:
+            case IconAdjustResult.NoSelection:
                 _player.SendServerMessage("Select an item first.", ColorConstants.Orange);
                 break;
-            case ItemEditorModel.IconAdjustResult.NotAllowedType:
+            case IconAdjustResult.NotAllowedType:
                 _player.SendServerMessage("This item type can't change icons in this tool.", ColorConstants.Orange);
                 break;
-            case ItemEditorModel.IconAdjustResult.Success:
+            case IconAdjustResult.NoValidModel:
+                _player.SendServerMessage("No valid model found for this item.", ColorConstants.Orange);
+                break;
+            case IconAdjustResult.Success:
                 Token().SetBindValue(View.IconInfo, $"Icon: {newValue} / {maxValue}");
                 _player.SendServerMessage("Icon updated.", ColorConstants.Green);
                 break;
