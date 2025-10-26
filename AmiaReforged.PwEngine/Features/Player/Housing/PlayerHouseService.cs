@@ -115,6 +115,4 @@ public class PlayerHouseService
         // House belongs to someone else...Right now, we don't have the settlement system, so we just tell them it's not theirs.
         player.FloatingTextString("This house does not belong to you.", false);
     }
-
-    private record HouseSummary(long Id, string Tag, Guid Owner);
 }
