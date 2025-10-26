@@ -250,6 +250,37 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.ToTable("SavedLocation");
                 });
 
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Shops.CoinHouse", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid?>("AccountHolderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EngineId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Settlement")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StoredGold")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Tag")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountHolderId");
+
+                    b.ToTable("CoinHouses");
+                });
+
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Shops.PlayerStall", b =>
                 {
                     b.Property<long>("Id")
@@ -266,8 +297,14 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Property<Guid?>("CharacterId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("GrossProfit")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LastPaidRentAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("StoredGold")
                         .HasColumnType("integer");
@@ -350,6 +387,53 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.HasIndex("StallOwnerId");
 
                     b.ToTable("StallTransactions");
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Storage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("EngineId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Warehouses");
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.StoredItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<byte[]>("ItemData")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<Guid>("Owner")
+                        .HasColumnType("uuid");
+
+                    b.Property<long?>("WarehouseId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("WarehouseItems");
                 });
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.WorldConfiguration", b =>
@@ -458,6 +542,15 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Navigation("Character");
                 });
 
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Shops.CoinHouse", b =>
+                {
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.PersistedCharacter", "AccountHolder")
+                        .WithMany()
+                        .HasForeignKey("AccountHolderId");
+
+                    b.Navigation("AccountHolder");
+                });
+
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Shops.PlayerStall", b =>
                 {
                     b.HasOne("AmiaReforged.PwEngine.Database.Entities.PersistedCharacter", "Character")
@@ -493,6 +586,15 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Navigation("StallOwner");
                 });
 
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.StoredItem", b =>
+                {
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Storage", "Warehouse")
+                        .WithMany("Items")
+                        .HasForeignKey("WarehouseId");
+
+                    b.Navigation("Warehouse");
+                });
+
             modelBuilder.Entity("AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData.CharacterStatistics", b =>
                 {
                     b.HasOne("AmiaReforged.PwEngine.Database.Entities.PersistedCharacter", null)
@@ -519,6 +621,11 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Navigation("Products");
 
                     b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Storage", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }
