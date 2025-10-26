@@ -47,7 +47,6 @@ public class PlayerHouseService
             LocalVariableInt isHouse = house.GetObjectVariable<LocalVariableInt>("is_house");
 
             if (isHouse.Value == 0) continue;
-
             House? savedHouse = _houses.GetHouseByTag(house.Tag);
 
             if (savedHouse is not null) continue;
@@ -66,7 +65,7 @@ public class PlayerHouseService
     private void HandlePlayerInteraction(DoorEvents.OnFailToOpen obj)
     {
         if (!obj.WhoFailed.IsPlayerControlled(out NwPlayer? player)) return;
-
+        Log.Info($"{obj.WhoFailed.Name} is attempting to open door {obj.Door.Tag}");
         Guid key = _characters.GetPlayerKey(player);
 
         // Get the house area tag from the door's local variable
