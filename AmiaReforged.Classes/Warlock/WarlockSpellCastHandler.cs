@@ -33,13 +33,18 @@ public class WarlockSpellCastHandler
 
         if (eventData.Caster is not NwCreature warlock)
             return;
+        if(player.LoginCreature is null) return;
         if (eventData.Spell is not { } spell) return;
         if (spell.Id != EldritchBlastId && warlock.Classes[eventData.ClassIndex].Class != WarlockConstants.WarlockClass)
             return;
 
-        // First disable action modes
-        foreach (ActionMode actionMode in Enum.GetValues(typeof(ActionMode)))
-            warlock.SetActionMode(actionMode, false);
+        // First disable forbidden action modes
+        if (player.LoginCreature!.GetActionMode(ActionMode.Expertise) ||
+            player.LoginCreature.GetActionMode(ActionMode.ImprovedExpertise))
+        {
+            player.LoginCreature.SetActionMode(ActionMode.Expertise, false);
+            player.LoginCreature.SetActionMode(ActionMode.ImprovedExpertise, false);
+        }
 
         WarlockSpells.ResetWarlockInvocations(eventData.Caster);
 
