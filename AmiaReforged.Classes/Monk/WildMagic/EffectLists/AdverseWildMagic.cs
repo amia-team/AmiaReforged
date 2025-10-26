@@ -43,7 +43,8 @@ public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (effect.EffectType is EffectType.AbilityDecrease or EffectType.AcDecrease or EffectType.DamageDecrease
                 or EffectType.DamageImmunityDecrease or EffectType.SavingThrowDecrease or EffectType.SkillDecrease
-                or EffectType.Blindness or EffectType.Deaf or EffectType.Paralyze or EffectType.NegativeLevel
+                or EffectType.Blindness or EffectType.Deaf or EffectType.Paralyze or EffectType.NegativeLevel or
+                EffectType.AttackDecrease
                 && effect.SubType != EffectSubType.Unyielding)
 
                 target.RemoveEffect(effect);
