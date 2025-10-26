@@ -11,28 +11,22 @@ namespace AmiaReforged.Classes.Bard;
 public class SpellSongHandler
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly NwFeat? _bardSongFeat = NwFeat.FromFeatType(Feat.BardSongs);
 
     public SpellSongHandler()
     {
-        NwModule.Instance.OnUseFeat += HandleSpellSong;
-        NwModule.Instance.OnSpellCast += PlaySoundOnCast;
+        NwModule.Instance.OnUseFeat += HandleSpellSongFeat;
+        NwModule.Instance.OnSpellCast += HandleSpellSongCast;
 
         Log.Info("Spell Song Handler initialized.");
     }
 
-    private void HandleSpellSong(OnUseFeat eventData)
+    private void HandleSpellSongFeat(OnUseFeat eventData)
     {
         if (eventData.Feat.Spell is not { } spell || !SongSpells.TryGetValue(spell, out SpellSongData songData)) return;
 
         NwCreature bard = eventData.Creature;
         NwPlayer? player = bard.ControllingPlayer;
-
-        if (bard.GetAbilityScore(Ability.Charisma, true) < songData.RequiredBaseCharisma)
-        {
-            player?.SendServerMessage($"Casting {spell.Name} requires base charisma {songData.RequiredBaseCharisma}.");
-            eventData.PreventFeatUse = true;
-            return;
-        }
 
         if (bard.ActiveEffects.Any(e => e.EffectType == EffectType.Polymorph))
         {
@@ -60,30 +54,36 @@ public class SpellSongHandler
             return;
         }
 
-        NwFeat? bardSongFeat = NwFeat.FromFeatType(Feat.BardSongs);
-
-        if (bardSongFeat == null || !bard.KnowsFeat(bardSongFeat))
+        if (_bardSongFeat == null || !bard.KnowsFeat(_bardSongFeat))
         {
             player?.SendServerMessage("You need to know Bard Song to cast spell songs.");
             eventData.PreventFeatUse = true;
-            return;
         }
-
-        if (NWScript.GetFeatRemainingUses(bardSongFeat.Id, bard) == 0)
-        {
-            player?.SendServerMessage("You're out of Bard Songs to cast spell songs.");
-            eventData.PreventFeatUse = true;
-            return;
-        }
-
-        bard.DecrementRemainingFeatUses(bardSongFeat);
     }
 
-    private void PlaySoundOnCast(OnSpellCast eventData)
+    private void HandleSpellSongCast(OnSpellCast eventData)
     {
         if (eventData.Spell == null || !SongSpells.TryGetValue(eventData.Spell, out SpellSongData songData)) return;
 
         NwCreature bard = (NwCreature)eventData.Caster;
         bard.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(songData.SongSound));
+
+        if (bard.GetAbilityScore(Ability.Charisma, true) < songData.RequiredBaseCharisma)
+        {
+            bard.ControllingPlayer?.SendServerMessage($"Casting {eventData.Spell.Name} requires base charisma {songData.RequiredBaseCharisma}.");
+            eventData.PreventSpellCast = true;
+            return;
+        }
+
+        if (_bardSongFeat == null) return;
+
+        if (NWScript.GetFeatRemainingUses(_bardSongFeat.Id, bard) == 0)
+        {
+            bard.ControllingPlayer?.SendServerMessage("You're out of Bard Songs to cast spell songs.");
+            eventData.PreventSpellCast = true;
+            return;
+        }
+
+        bard.DecrementRemainingFeatUses(_bardSongFeat);
     }
 }
