@@ -87,7 +87,7 @@ public class CoinhouseLoader(ICoinhouseRepository coinhouses) : IDefinitionLoade
 
     public List<FileLoadResult> Failures()
     {
-        throw new NotImplementedException();
+        return _failures;
     }
 }
 
