@@ -44,6 +44,7 @@ public class ScreamingEssenceEffects : EssenceEffectApplier
                 EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE),
                 sonicVuln,
             });
+
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
             ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_SILENCE), Target);
         }
