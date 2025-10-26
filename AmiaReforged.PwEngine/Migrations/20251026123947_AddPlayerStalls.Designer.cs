@@ -3,6 +3,7 @@ using System;
 using AmiaReforged.PwEngine.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AmiaReforged.PwEngine.Migrations
 {
     [DbContext(typeof(PwEngineContext))]
-    partial class PwEngineContextModelSnapshot : ModelSnapshot
+    [Migration("20251026123947_AddPlayerStalls")]
+    partial class AddPlayerStalls
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -260,16 +263,14 @@ namespace AmiaReforged.PwEngine.Migrations
 
                     b.Property<string>("AreaResRef")
                         .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("CharacterId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Tag")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

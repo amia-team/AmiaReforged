@@ -1,6 +1,7 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Database.Entities.PlayerHousing;
+using AmiaReforged.PwEngine.Database.Entities.Shops;
 using AmiaReforged.PwEngine.Database.EntityConfig;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
 using Anvil.Services;
@@ -30,6 +31,9 @@ public class PwEngineContext : DbContext
     public DbSet<House> Houses { get; set; } = null!;
 
     public DbSet<PersistentObject> PersistentObjects { get; set; } = null!;
+
+    public DbSet<PlayerStall> PlayerStalls { get; set; } = null!;
+    public DbSet<StallProduct> StallProducts { get; set; } = null!;
 
 
     public PwEngineContext()
