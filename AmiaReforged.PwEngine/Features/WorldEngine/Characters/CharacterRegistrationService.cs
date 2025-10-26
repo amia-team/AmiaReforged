@@ -18,7 +18,7 @@ public class CharacterRegistrationService
     {
         _characterRepository = characterRepository;
         _runtimeCharacterService = runtimeCharacterService;
-        NwArea travelAgency = NwModule.Instance.Areas.First(a => a.ResRef == "travel_agency");
+        NwArea travelAgency = NwModule.Instance.Areas.First(a => a.ResRef == "core_travelroom");
 
         travelAgency.OnEnter += RegisterNewCharacter;
     }
