@@ -2,6 +2,7 @@ using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
 using AmiaReforged.Classes.Monk.Techniques.Spirit;
 using AmiaReforged.Classes.Monk.Types;
+using AmiaReforged.Classes.Monk.WildMagic;
 using AmiaReforged.Classes.Spells;
 using Anvil.API;
 using Anvil.API.Events;
@@ -10,7 +11,7 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.Augmentations;
 
 [ServiceBinding(typeof(IAugmentation))]
-public class FickleStrand : IAugmentation
+public class FickleStrand(WildMagicService wildMagicService) : IAugmentation
 {
     public PathType PathType => PathType.FickleStrand;
     public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
@@ -62,7 +63,7 @@ public class FickleStrand : IAugmentation
         if (attackData.Target is not NwCreature targetCreature || !monk.IsReactionTypeHostile(targetCreature)) return;
 
         if (Random.Shared.Roll(100) <= 30)
-            WildMagicEffects.DoWildMagic(monk, targetCreature);
+            wildMagicService.DoWildMagic(monk, targetCreature);
     }
 
     /// <summary>
