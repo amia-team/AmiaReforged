@@ -91,7 +91,11 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         int bonusDamage = monkLevel / 2 > 5 ? 5 : monkLevel / 2;
         int damageRoll = Random.Shared.Roll(4);
 
-        Effect deathArmor = Effect.DamageShield(damageRoll + bonusDamage, 0, DamageType.Magical);
+        Effect deathArmor = Effect.LinkEffects
+        (
+            Effect.VisualEffect(VfxType.DurDeathArmor),
+            Effect.DamageShield(damageRoll + bonusDamage, 0, DamageType.Magical)
+        );
         deathArmor.SubType = EffectSubType.Magical;
 
         return deathArmor;
