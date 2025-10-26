@@ -29,6 +29,8 @@ public class PwEngineContext : DbContext
 
     public DbSet<House> Houses { get; set; } = null!;
 
+    public DbSet<PersistentObject> PersistentObjects { get; set; } = null!;
+
 
     public PwEngineContext()
     {
