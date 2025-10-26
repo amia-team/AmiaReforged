@@ -55,7 +55,6 @@ public class PlayerHouseService
             {
                 Tag = house.Tag,
                 Settlement = NWScript.GetLocalInt(house, "settlement"),
-                CharacterId = Guid.Empty
             };
 
             _houses.AddHouse(newHouse);
