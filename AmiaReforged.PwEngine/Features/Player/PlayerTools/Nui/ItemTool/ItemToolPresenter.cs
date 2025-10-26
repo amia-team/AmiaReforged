@@ -83,7 +83,8 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
             // Save and clear any initial value locals
             ApplyChanges(true);
             _model.ClearInitials();
-            Close();
+            _descModalToken?.Close();
+            _nameModalToken?.Close();
             return;
         }
 
@@ -133,7 +134,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
                 modalToken.SetBindValue(View.EditDescBuffer, _model.Selected!.Description);
                 _descModalToken.Value.OnNuiEvent += HandleDescModalEvent;
             }
-            return;
         }
     }
 
@@ -167,7 +167,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
                 _nameModalToken?.Close();
                 _nameModalToken = null;
             }
-            return;
         }
     }
 
@@ -201,7 +200,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
                 _descModalToken?.Close();
                 _descModalToken = null;
             }
-            return;
         }
     }
 
@@ -244,6 +242,8 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
         _model.EnsureInitialNameCaptured();
         _model.EnsureInitialDescCaptured();
         UpdateFromModel();
+        _descModalToken?.Close();
+        _nameModalToken?.Close();
     }
 
     private void UpdateFromModel()
