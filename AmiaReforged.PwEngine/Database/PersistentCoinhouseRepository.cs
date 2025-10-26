@@ -65,13 +65,3 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
         return ctx.CoinHouses.Any(x => x.Settlement == settlementId);
     }
 }
-
-public interface ICoinhouseRepository
-{
-    void AddNewCoinhouse(CoinHouse newCoinhouse);
-    CoinHouse? GetAccountFor(Guid id);
-    CoinHouse? GetSettlementCoinhouse(int settlementId);
-    CoinHouse? GetByTag(string tag);
-    bool TagExists(string tag);
-    bool SettlementHasCoinhouse(int settlementId);
-}
