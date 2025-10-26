@@ -49,8 +49,6 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         if (!_player.TryCreateNuiWindow(_window, out _token))
             return;
 
-        _token.OnNuiEvent += ProcessEvent;
-
         // Initial bind state and UI setup
         _initializing = true;
         try
@@ -89,10 +87,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         // Global re-entry guard for all events
         if (_processingEvent)
-        {
-            _player.SendServerMessage($"DEBUG: ProcessEvent blocked re-entry for {ev.ElementId}", ColorConstants.Red);
             return;
-        }
         _processingEvent = true;
 
         try
@@ -111,6 +106,12 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             if (ev.ElementId == View.SaveButton.Id)
             {
                 ApplyChanges(showMessage: true);
+                return;
+            }
+
+            if (ev.ElementId == View.CancelButton.Id)
+            {
+                Close();
                 return;
             }
 
@@ -286,7 +287,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         {
             var newTag = _tagModalToken!.Value.GetBindValue(View.EditTagBuffer) ?? string.Empty;
             _model.SelectedItem!.Tag = newTag;
-            Token().SetBindValue(View.Tag!, newTag);
+            Token().SetBindValue(View.Tag, newTag);
             _player.SendServerMessage("Tag saved.", ColorConstants.Green);
             if (_tagModalToken.HasValue)
             {
@@ -434,15 +435,11 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         // Prevent re-entry
         if (_applyingChanges)
-        {
-            _player.SendServerMessage("DEBUG: ApplyChanges blocked by re-entry guard", ColorConstants.Yellow);
             return;
-        }
         _applyingChanges = true;
 
         try
         {
-            _player.SendServerMessage("DEBUG: ApplyChanges executing", ColorConstants.Yellow);
 
             var item = _model.SelectedItem;
             if (item == null)
@@ -484,15 +481,11 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         // Prevent re-entry (button click might trigger multiple times)
         if (_addingVariable)
-        {
-            _player.SendServerMessage("DEBUG: AddNewVariable blocked by re-entry guard", ColorConstants.Yellow);
             return;
-        }
         _addingVariable = true;
 
         try
         {
-            _player.SendServerMessage("DEBUG: AddNewVariable executing", ColorConstants.Yellow);
 
             if (_model.SelectedItem == null)
             {

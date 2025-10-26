@@ -55,6 +55,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     // Clickables (now NuiButtonImage, but we preserve the same IDs where applicable)
     public NuiButtonImage SelectItemButton = null!;
     public NuiButtonImage SaveButton = null!;
+    public NuiButtonImage CancelButton = null!;
     public NuiButtonImage AddVariableButton = null!;
     public NuiButtonImage DeleteVariableButton = null!; // used only for id name; actual rows will carry btn_del_var_{i}
 
@@ -309,7 +310,11 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
 
         var saveRow = new NuiRow
         {
-            Children = { ImagePlatedLabeledButton("btn_save", "", out SaveButton, "ui_btn_save") }
+            Children =
+            {
+                ImagePlatedLabeledButton("btn_save", "", out SaveButton, "ui_btn_save"),
+                ImagePlatedLabeledButton("btn_cancel", "", out CancelButton, "ui_btn_cancel")
+            }
         };
         SaveButton.Enabled = ValidObjectSelected;
 
