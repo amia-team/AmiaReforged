@@ -47,7 +47,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
 
     public static TimeSpan LongDuration => NwTimeSpan.FromRounds(5);
 
-    public Effect CombustEffect(NwCreature target, byte monkLevel)
+    public Effect CombustEffect(NwCreature monk, NwCreature target, byte monkLevel)
     {
         ScriptCallbackHandle applyCombust
             = scriptHandleFactory.CreateUniqueHandler(_ => ApplyCombust(target, monkLevel));
@@ -60,9 +60,9 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
             Effect.RunAction(applyCombust, onIntervalHandle: doCombust, interval: NwTimeSpan.FromRounds(1)),
             Effect.VisualEffect(VfxType.DurInfernoChest)
         );
-
-
         combustEffect.SubType = EffectSubType.Magical;
+
+        _ = GetObjectContext(monk, combustEffect);
 
         return combustEffect;
     }
@@ -86,7 +86,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         return ScriptHandleResult.True;
     }
 
-    public Effect DeathArmorEffect(byte monkLevel)
+    public Effect DeathArmorEffect(NwCreature monk, byte monkLevel)
     {
         int bonusDamage = monkLevel / 2 > 5 ? 5 : monkLevel / 2;
         int damageRoll = Random.Shared.Roll(4);
@@ -98,10 +98,12 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         );
         deathArmor.SubType = EffectSubType.Magical;
 
+        _ = GetObjectContext(monk, deathArmor);
+
         return deathArmor;
     }
 
-    public Effect InflictLightWoundsEffect(byte monkLevel)
+    public Effect InflictLightWoundsEffect(NwCreature monk, byte monkLevel)
     {
         int bonusDamage = monkLevel > 5 ? 5 : monkLevel;
         int damageRoll = Random.Shared.Roll(8);
@@ -111,8 +113,9 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
             Effect.Damage(damageRoll + bonusDamage, DamageType.Negative),
             Effect.VisualEffect(VfxType.ComHitNegative)
         );
-
         inflictLightWounds.SubType = EffectSubType.Magical;
+
+        _ = GetObjectContext(monk, inflictLightWounds);
 
         return inflictLightWounds;
     }

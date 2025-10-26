@@ -93,7 +93,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
     }
 
     public void DeathArmor(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
-        monk.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.DeathArmorEffect(monkLevel), WildMagicUtils.LongDuration);
+        monk.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.DeathArmorEffect(monk, monkLevel), WildMagicUtils.LongDuration);
 
     public void ElectricJolt(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
@@ -159,7 +159,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Illusion, 2, monkLevel))
             return;
 
-        target.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.CombustEffect(target, monkLevel), WildMagicUtils.LongDuration);
+        target.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.CombustEffect(monk, target, monkLevel), WildMagicUtils.LongDuration);
     }
 
     public void CharmMonster(NwCreature monk, NwCreature target, int dc, byte monkLevel)

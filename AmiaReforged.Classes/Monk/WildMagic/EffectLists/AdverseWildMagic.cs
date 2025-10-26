@@ -51,14 +51,14 @@ public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
     }
 
     public void SelfImmolation(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
-        monk.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.CombustEffect(monk, monkLevel), WildMagicUtils.LongDuration);
+        monk.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.CombustEffect(monk, monk, monkLevel), WildMagicUtils.LongDuration);
 
 
     public void DeathArmorNotThatOne(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
-        target.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.DeathArmorEffect(monkLevel),  WildMagicUtils.LongDuration);
+        target.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.DeathArmorEffect(monk, monkLevel),  WildMagicUtils.LongDuration);
 
     public void SelfInflictWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
-        monk.ApplyEffect(EffectDuration.Instant, wildMagicUtils.InflictLightWoundsEffect(monkLevel));
+        monk.ApplyEffect(EffectDuration.Instant, wildMagicUtils.InflictLightWoundsEffect(monk, monkLevel));
 
     public void Stasis(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Temporary, Effect.CutsceneParalyze(), WildMagicUtils.ShortDuration);
