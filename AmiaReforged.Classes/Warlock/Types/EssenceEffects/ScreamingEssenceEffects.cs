@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Classes.EffectUtils;
+using Anvil.API;
 using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 
@@ -36,10 +37,12 @@ public class ScreamingEssenceEffects : EssenceEffectApplier
         {
             int warlockLevels = GetLevelByClass(57, Caster);
             float essenceDuration = warlockLevels < 5 ? RoundsToSeconds(1) : RoundsToSeconds(warlockLevels / 5);
+            Effect sonicVuln = Effect.DamageImmunityDecrease(DamageType.Sonic, 15);
+
             IntPtr essenceEffect = NwEffects.LinkEffectList(new List<IntPtr>
             {
-                EffectDeaf(),
-                EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE)
+                EffectVisualEffect(VFX_DUR_CESSATE_NEGATIVE),
+                sonicVuln,
             });
             ApplyEffectToObject(DURATION_TYPE_TEMPORARY, essenceEffect, Target, essenceDuration);
             ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_SILENCE), Target);
