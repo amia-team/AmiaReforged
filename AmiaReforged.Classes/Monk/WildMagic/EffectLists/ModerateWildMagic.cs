@@ -25,7 +25,6 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.HealingSting);
         if (spell == null) return;
-        if (target.Location == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Necromancy, 3, monkLevel))
             return;
@@ -71,9 +70,24 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
 
     }
 
-    public void PolymorphFoe(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public void BalefulPolymorph(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.Feeblemind);
+        if (spell == null) return;
 
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Transmutation, 5, monkLevel))
+            return;
+
+        SavingThrowResult savingThrowResult =
+            target.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.None, monk);
+
+        if (savingThrowResult == SavingThrowResult.Success)
+        {
+            target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+            return;
+        }
+
+        target.ApplyEffect(EffectDuration.Instant, wildMagicUtils.RandomPolymorphEffect(), WildMagicUtils.LongDuration);
     }
 
     public void SoundBurst(NwCreature monk, NwCreature target, int dc, byte monkLevel)

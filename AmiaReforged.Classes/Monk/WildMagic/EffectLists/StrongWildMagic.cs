@@ -78,6 +78,29 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
 
     public void MassPolymorph(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.Feeblemind);
+        if (spell == null) return;
+        if (target.Location == null) return;
 
+        target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfSummonMonster1, fScale: 1.5f));
+
+        foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large, true))
+        {
+            if (!monk.IsReactionTypeHostile(enemy)) return;
+
+            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Transmutation, 8, monkLevel))
+                continue;
+            
+            SavingThrowResult savingThrowResult =
+                enemy.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.None, monk);
+
+            if (savingThrowResult == SavingThrowResult.Success)
+            {
+                enemy.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+                continue;
+            }
+
+            enemy.ApplyEffect(EffectDuration.Instant, wildMagicUtils.RandomPolymorphEffect(), WildMagicUtils.LongDuration);
+        }
     }
 }

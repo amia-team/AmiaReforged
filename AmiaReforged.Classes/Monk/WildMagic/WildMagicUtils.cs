@@ -18,7 +18,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         Effect awaitedEffect = effect;
     }
 
-    public Effect GetRandomPolymorph()
+    public Effect RandomPolymorphEffect()
     {
         int randomRoll = Random.Shared.Roll(6);
 
@@ -36,7 +36,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         Effect randomPolymorph = Effect.LinkEffects
         (
             Effect.Polymorph(polymorphType!, false, VfxType.FnfSummonMonster1),
-            Effect.TemporaryHitpoints(50)
+            Effect.TemporaryHitpoints(100)
         );
 
         randomPolymorph.SubType = EffectSubType.Magical;

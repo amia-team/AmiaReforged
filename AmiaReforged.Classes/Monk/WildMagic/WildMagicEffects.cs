@@ -59,7 +59,7 @@ public class WildMagicEffects(
         new("Circle of Death", moderateWildMagic.CircleOfDeath),
         new("Cure Critical Wounds", moderateWildMagic.CureCriticalWounds),
         new("Restoration", moderateWildMagic.Restoration),
-        new("Polymorph Foe", moderateWildMagic.PolymorphFoe),
+        new("Baleful Polymorph", moderateWildMagic.BalefulPolymorph),
         new("Sound Burst", moderateWildMagic.SoundBurst),
         new("Morndenkainen's Sword", moderateWildMagic.MordenkainensSword),
         new("Gedlee's Electric Loop", moderateWildMagic.GedleesElectricLoop),

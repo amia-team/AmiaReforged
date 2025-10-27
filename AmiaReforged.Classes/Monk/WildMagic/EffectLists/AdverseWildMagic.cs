@@ -7,7 +7,7 @@ namespace AmiaReforged.Classes.Monk.WildMagic.EffectLists;
 public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
 {
     public void Polymorph(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
-        monk.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.GetRandomPolymorph(), WildMagicUtils.LongDuration);
+        monk.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.RandomPolymorphEffect(), WildMagicUtils.LongDuration);
 
     public void HermiticConfusion(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
