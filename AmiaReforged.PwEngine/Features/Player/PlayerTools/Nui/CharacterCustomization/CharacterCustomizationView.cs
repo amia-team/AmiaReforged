@@ -25,6 +25,9 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public readonly NuiBind<bool> EquipmentModeActive = new("cc_equip_active");
     public readonly NuiBind<bool> AppearanceModeActive = new("cc_appear_active");
 
+    // Armor part overlay visibility binds (one for each of the 19 parts)
+    public readonly NuiBind<bool>[] ArmorPartVisible = new NuiBind<bool>[19];
+
     // Buttons
     public NuiButtonImage ArmorButton = null!;
     public NuiButtonImage EquipmentButton = null!;
@@ -36,6 +39,17 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public NuiButtonImage SaveButton = null!;
     public NuiButtonImage CancelButton = null!;
     public NuiButtonImage ConfirmButton = null!;
+
+    // Armor part clickable buttons
+    public NuiButton[] ArmorPartButtons = new NuiButton[19];
+
+    // Material selector buttons
+    public NuiButtonImage Cloth1Button = null!;
+    public NuiButtonImage Cloth2Button = null!;
+    public NuiButtonImage Leather1Button = null!;
+    public NuiButtonImage Leather2Button = null!;
+    public NuiButtonImage Metal1Button = null!;
+    public NuiButtonImage Metal2Button = null!;
 
     // Color buttons (176 colors, 0-175)
     public List<NuiButtonImage> ColorButtons = new();
@@ -50,6 +64,12 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
 
     public CharacterCustomizationView(NwPlayer player)
     {
+        // Initialize armor part visibility binds
+        for (int i = 0; i < 19; i++)
+        {
+            ArmorPartVisible[i] = new NuiBind<bool>($"cc_armor_part_visible_{i}");
+        }
+
         Presenter = new CharacterCustomizationPresenter(this, player);
     }
 
@@ -136,7 +156,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                         new NuiSpacer { Width = 10f },
                         ImagePlatedLabeledButton("btn_mode_equipment", "Equipment", out EquipmentButton, "app_misc", 100f, 100f),
                         new NuiSpacer { Width = 10f },
-                        ImagePlatedLabeledButton("btn_mode_appearance", "Appearance", out AppearanceButton, "app_cloth_body", 100f, 100f)
+                        ImagePlatedLabeledButton("btn_mode_appearance", "Appearance", out AppearanceButton, "cc_head_btn", 100f, 100f)
                     }
                 }
             }
@@ -168,6 +188,41 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                     }
                 }
             }
+        };
+    }
+
+    private NuiElement BuildArmorBodyVisualization()
+    {
+        const float bodyWidth = 120f;
+        const float bodyHeight = 120f;
+        const float leftPad = 180f; // Adjusted for better centering
+
+        // Create the base layer with background image and overlays
+        var drawList = new List<NuiDrawListItem>
+        {
+            new NuiDrawListImage("app_armor_body", new NuiRect(leftPad, 0f, bodyWidth, bodyHeight))
+        };
+
+        // Mapping of armor part index to ARMOR_PART image number
+        int[] partImageMap = { 16, 17, 14, 15, 12, 13, 7, 4, 10, 1, 6, 8, 3, 5, 0, 2, 9, 11, 18 };
+
+        // Add all 19 overlay images (they'll be toggled visible/invisible)
+        for (int i = 0; i < 19; i++)
+        {
+            drawList.Add(new NuiDrawListImage($"ARMOR_PART_{partImageMap[i]}",
+                new NuiRect(leftPad, 0f, bodyWidth, bodyHeight))
+            {
+                Enabled = ArmorPartVisible[i]
+            });
+        }
+
+        return new NuiRow
+        {
+            Visible = ArmorModeActive,
+            Width = 0f,
+            Height = bodyHeight,
+            Children = new List<NuiElement>(),
+            DrawList = drawList
         };
     }
 
@@ -206,6 +261,37 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
         };
     }
 
+    private NuiElement BuildMaterialSelector()
+    {
+        // Total width: 6 buttons (35px each) + 5 spacers (5px each) = 235px
+        const float leftPad = 185f; // Center: (700 - 235) / 2 = 232.5
+
+        return new NuiColumn
+        {
+            Children =
+            {
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = leftPad },
+                        ImageButton("btn_cloth1", "Cloth 1", out Cloth1Button, 35f, 35f, "ui_btn_c1"),
+                        new NuiSpacer { Width = 5f },
+                        ImageButton("btn_cloth2", "Cloth 2", out Cloth2Button, 35f, 35f, "ui_btn_c2"),
+                        new NuiSpacer { Width = 5f },
+                        ImageButton("btn_leather1", "Leather 1", out Leather1Button, 35f, 35f, "ui_btn_l1"),
+                        new NuiSpacer { Width = 5f },
+                        ImageButton("btn_leather2", "Leather 2", out Leather2Button, 35f, 35f, "ui_btn_l2"),
+                        new NuiSpacer { Width = 5f },
+                        ImageButton("btn_metal1", "Metal 1", out Metal1Button, 35f, 35f, "ui_btn_m1"),
+                        new NuiSpacer { Width = 5f },
+                        ImageButton("btn_metal2", "Metal 2", out Metal2Button, 35f, 35f, "ui_btn_m2")
+                    }
+                }
+            }
+        };
+    }
+
     private NuiElement BuildColorPalette()
     {
         var colorGrid = new List<NuiElement>();
@@ -216,7 +302,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
             var rowElement = new NuiRow { Children = new List<NuiElement>() };
 
             // Add left spacer to center: (700 - 480) / 2 = 110px
-            rowElement.Children.Add(new NuiSpacer { Width = 60f });
+            rowElement.Children.Add(new NuiSpacer { Width = 40f });
 
             for (int col = 0; col < 16; col++)
             {
@@ -300,11 +386,17 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 bgLayer,
                 headerOverlay,
                 headerSpacer,
-                new NuiLabel("Character Customization")
+                new NuiRow
                 {
-                    Height = 20f,
-                    HorizontalAlign = NuiHAlign.Center,
-                    ForegroundColor = new Color(30, 20, 12)
+                    Children =
+                    {
+                        new NuiSpacer { Width = 220f }, // Center the title
+                        new NuiLabel("Character Customization")
+                        {
+                            Height = 20f,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    }
                 },
                 new NuiSpacer { Height = 10f },
                 BuildModeButtons(),
@@ -313,14 +405,24 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 new NuiSpacer { Height = 10f },
                 BuildPartSelector(),
                 new NuiSpacer { Height = 10f },
+                BuildArmorBodyVisualization(),
+                new NuiSpacer { Height = 270f },
                 BuildModelSelector(),
-                new NuiSpacer { Height = 10f },
-                new NuiLabel("Color Palette")
+                new NuiSpacer { Height = 20f },
+                new NuiRow
                 {
-                    Height = 20f,
-                    HorizontalAlign = NuiHAlign.Center,
-                    ForegroundColor = new Color(30, 20, 12)
+                    Children =
+                    {
+                        new NuiSpacer { Width = 260f }, // Center the label
+                        new NuiLabel("Color Palette")
+                        {
+                            Height = 20f,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    }
                 },
+                BuildMaterialSelector(),
+                new NuiSpacer { Height = 5f },
                 BuildColorPalette(),
                 new NuiSpacer { Height = 10f },
                 Divider(),

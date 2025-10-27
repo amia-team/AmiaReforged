@@ -36,7 +36,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         var window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(50f, 50f, 700f, 720f),
-            Resizable = false
+            Resizable = true
         };
 
         if (!_player.TryCreateNuiWindow(window, out _token))
@@ -183,6 +183,13 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         if (_model.CurrentMode != CustomizationMode.Armor) return;
 
         var partIndex = _model.CurrentArmorPart;
+
+        // Update all armor part overlay visibilities - only show the current part
+        for (int i = 0; i < 19; i++)
+        {
+            Token().SetBindValue(View.ArmorPartVisible[i], i == partIndex);
+        }
+
         if (partIndex >= 0 && partIndex < ArmorPartNames.Length)
         {
             Token().SetBindValue(View.PartName, ArmorPartNames[partIndex]);
