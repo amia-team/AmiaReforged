@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -35,32 +36,34 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
         return account;
     }
 
-    public CoinHouse? GetSettlementCoinhouse(int settlementId)
+    public CoinHouse? GetSettlementCoinhouse(SettlementId settlementId)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
+        // Implicit conversion from SettlementId to int
         CoinHouse? coinhouse = ctx.CoinHouses.FirstOrDefault(x => x.Settlement == settlementId);
 
         return coinhouse;
     }
 
-    public CoinHouse? GetByTag(string tag)
+    public CoinHouse? GetByTag(CoinhouseTag tag)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
+        // Implicit conversion from CoinhouseTag to string
         CoinHouse? coinhouse = ctx.CoinHouses.FirstOrDefault(x => x.Tag == tag);
 
         return coinhouse;
     }
 
-    public bool TagExists(string tag)
+    public bool TagExists(CoinhouseTag tag)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
         return ctx.CoinHouses.Any(x => x.Tag == tag);
     }
 
-    public bool SettlementHasCoinhouse(int settlementId)
+    public bool SettlementHasCoinhouse(SettlementId settlementId)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 

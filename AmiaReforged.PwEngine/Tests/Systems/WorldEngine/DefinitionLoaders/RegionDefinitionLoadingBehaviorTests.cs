@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders;
@@ -160,7 +161,7 @@ public class RegionDefinitionLoadingBehaviorTests
 
             loader.Load();
             Assert.That(repo.All().Count, Is.EqualTo(1));
-            Assert.That(repo.TryGetRegionBySettlement(900, out RegionDefinition? _), Is.True);
+            Assert.That(repo.TryGetRegionBySettlement(SettlementId.Parse(900), out RegionDefinition? _), Is.True);
 
             // Change file to different settlement and reload
             File.WriteAllText(file, """
@@ -169,8 +170,8 @@ public class RegionDefinitionLoadingBehaviorTests
 
             loader.Load();
             Assert.That(repo.All().Count, Is.EqualTo(1));
-            Assert.That(repo.TryGetRegionBySettlement(900, out RegionDefinition? _), Is.False);
-            Assert.That(repo.TryGetRegionBySettlement(901, out RegionDefinition? _), Is.True);
+            Assert.That(repo.TryGetRegionBySettlement(SettlementId.Parse(900), out RegionDefinition? _), Is.False);
+            Assert.That(repo.TryGetRegionBySettlement(SettlementId.Parse(901), out RegionDefinition? _), Is.True);
         }
         finally
         {
@@ -197,11 +198,11 @@ public class RegionDefinitionLoadingBehaviorTests
 
             loader.Load();
             RegionDefinition first = repo.All().Single();
-            CollectionAssert.AreEquivalent(new[]{1000,1001}, first.Settlements);
+            CollectionAssert.AreEquivalent(new[]{1000,1001}, first.Settlements.Select(s => s.Value).ToArray());
 
             loader.Load();
             RegionDefinition second = repo.All().Single();
-            CollectionAssert.AreEquivalent(new[]{1000,1001}, second.Settlements);
+            CollectionAssert.AreEquivalent(new[]{1000,1001}, second.Settlements.Select(s => s.Value).ToArray());
         }
         finally
         {
@@ -213,7 +214,7 @@ public class RegionDefinitionLoadingBehaviorTests
     public void Unknown_Region_Tag_Query_Returns_Empty()
     {
         InMemoryRegionRepository repo = new();
-        IReadOnlyCollection<int> result = repo.GetSettlements("missing-tag");
+        IReadOnlyCollection<SettlementId> result = repo.GetSettlements(new RegionTag("missing-tag"));
         Assert.That(result, Is.Not.Null);
         Assert.That(result, Is.Empty);
     }

@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks;
@@ -52,11 +53,14 @@ public class CoinhouseLoader(ICoinhouseRepository coinhouses, IRegionRepository 
                     continue;
                 }
 
+                // Strong types are created from JSON primitives and validated
+                var coinhouseTag = new CoinhouseTag(definition.Tag);
+                var settlementId = SettlementId.Parse(definition.Settlement);
 
                 coinhouses.AddNewCoinhouse(new CoinHouse
                 {
-                    Tag = definition.Tag,
-                    Settlement = definition.Settlement,
+                    Tag = coinhouseTag,  // Implicit conversion to string
+                    Settlement = settlementId,  // Implicit conversion to int
                     EngineId = Guid.NewGuid()
                 });
             }
@@ -69,19 +73,34 @@ public class CoinhouseLoader(ICoinhouseRepository coinhouses, IRegionRepository 
 
     private bool TryValidate(CoinhouseDefinition definition, out string? error)
     {
-        if (coinhouses.SettlementHasCoinhouse(definition.Settlement))
+        // Validate and create strong types
+        SettlementId settlementId;
+        CoinhouseTag coinhouseTag;
+
+        try
+        {
+            settlementId = SettlementId.Parse(definition.Settlement);
+            coinhouseTag = new CoinhouseTag(definition.Tag);
+        }
+        catch (ArgumentException ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+
+        if (coinhouses.SettlementHasCoinhouse(settlementId))
         {
             error = "Settlement already has a coinhouse.";
             return false;
         }
 
-        if (coinhouses.TagExists(definition.Tag))
+        if (coinhouses.TagExists(coinhouseTag))
         {
             error = "Tag already associated with a coinhouse.";
             return false;
         }
 
-        if (!regions.TryGetRegionBySettlement(definition.Settlement, out _))
+        if (!regions.TryGetRegionBySettlement(settlementId, out _))
         {
             error = "Settlement is not defined in any region.";
             return false;

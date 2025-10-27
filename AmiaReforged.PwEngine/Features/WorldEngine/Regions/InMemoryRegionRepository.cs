@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Regions;
@@ -10,6 +11,7 @@ public class InMemoryRegionRepository : IRegionRepository
 
     public void Add(RegionDefinition definition)
     {
+        // Implicit conversion from RegionTag to string
         bool added = _regions.TryAdd(definition.Tag, definition);
 
         if (!added)
@@ -32,8 +34,9 @@ public class InMemoryRegionRepository : IRegionRepository
         IndexSettlements(definition);
     }
 
-    public bool Exists(string tag)
+    public bool Exists(RegionTag tag)
     {
+        // Implicit conversion from RegionTag to string
         return _regions.ContainsKey(tag);
     }
 
@@ -42,9 +45,10 @@ public class InMemoryRegionRepository : IRegionRepository
         return _regions.Values.ToList();
     }
 
-    public bool TryGetRegionBySettlement(int settlementId, out RegionDefinition? region)
+    public bool TryGetRegionBySettlement(SettlementId settlementId, out RegionDefinition? region)
     {
         region = null;
+        // Implicit conversion from SettlementId to int
         if (_settlementToRegionTag.TryGetValue(settlementId, out string? tag) && _regions.TryGetValue(tag, out RegionDefinition? reg))
         {
             region = reg;
@@ -53,11 +57,12 @@ public class InMemoryRegionRepository : IRegionRepository
         return false;
     }
 
-    public IReadOnlyCollection<int> GetSettlements(string regionTag)
+    public IReadOnlyCollection<SettlementId> GetSettlements(RegionTag regionTag)
     {
+        // Implicit conversion from RegionTag to string
         return _regions.TryGetValue(regionTag, out RegionDefinition? region)
             ? region.Settlements
-            : Array.Empty<int>();
+            : Array.Empty<SettlementId>();
     }
 
     public void Clear()
@@ -71,8 +76,9 @@ public class InMemoryRegionRepository : IRegionRepository
         if (definition.Settlements.Count == 0)
             return;
 
-        foreach (int sid in definition.Settlements)
+        foreach (SettlementId sid in definition.Settlements)
         {
+            // Implicit conversion from SettlementId to int and RegionTag to string
             _settlementToRegionTag[sid] = definition.Tag;
         }
     }

@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Taxation;
@@ -18,12 +19,16 @@ public class RegionPolicyResolver(ICoinhouseRepository coinhouses, RegionIndex r
 
         try
         {
-            CoinHouse? ch = coinhouses.GetByTag(coinhouseTag);
+            var tag = new CoinhouseTag(coinhouseTag);
+            CoinHouse? ch = coinhouses.GetByTag(tag);
             if (ch is null) return false;
 
             try
             {
-                return regionIndex.TryGetRegionTagForSettlement(ch.Settlement, out regionTag);
+                // ch.SettlementId returns SettlementId from the NotMapped property
+                bool result = regionIndex.TryGetRegionTagForSettlement(ch.SettlementId, out RegionTag? regionTagValue);
+                regionTag = regionTagValue?.Value;  // Extract string value
+                return result;
             }
             catch
             {
@@ -43,7 +48,10 @@ public class RegionPolicyResolver(ICoinhouseRepository coinhouses, RegionIndex r
         regionTag = null;
         try
         {
-            return regionIndex.TryGetRegionTagForSettlement(settlementId, out regionTag);
+            var settlementIdValue = SettlementId.Parse(settlementId);
+            bool result = regionIndex.TryGetRegionTagForSettlement(settlementIdValue, out RegionTag? regionTagValue);
+            regionTag = regionTagValue?.Value;  // Extract string value
+            return result;
         }
         catch
         {

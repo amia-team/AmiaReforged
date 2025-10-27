@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Moq;
 using NUnit.Framework;
 
@@ -32,12 +33,12 @@ public class CoinhouseLoaderBehaviorTests
             Environment.SetEnvironmentVariable("RESOURCE_PATH", tmp.FullName);
 
             Mock<ICoinhouseRepository> coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
-            coinhouses.Setup(c => c.SettlementHasCoinhouse(777)).Returns(false);
-            coinhouses.Setup(c => c.TagExists("ch-1")).Returns(false);
+            coinhouses.Setup(c => c.SettlementHasCoinhouse(SettlementId.Parse(777))).Returns(false);
+            coinhouses.Setup(c => c.TagExists(new CoinhouseTag("ch-1"))).Returns(false);
 
             Mock<IRegionRepository> regions = new Mock<IRegionRepository>(MockBehavior.Strict);
             RegionDefinition? notUsed;
-            regions.Setup(r => r.TryGetRegionBySettlement(777, out notUsed)).Returns(false);
+            regions.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(777), out notUsed)).Returns(false);
 
             CoinhouseLoader loader = new(coinhouses.Object, regions.Object);
             loader.Load();
@@ -65,13 +66,13 @@ public class CoinhouseLoaderBehaviorTests
             Environment.SetEnvironmentVariable("RESOURCE_PATH", tmp.FullName);
 
             Mock<ICoinhouseRepository> coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
-            coinhouses.Setup(c => c.SettlementHasCoinhouse(101)).Returns(false);
-            coinhouses.Setup(c => c.TagExists("ch-2")).Returns(false);
+            coinhouses.Setup(c => c.SettlementHasCoinhouse(SettlementId.Parse(101))).Returns(false);
+            coinhouses.Setup(c => c.TagExists(new CoinhouseTag("ch-2"))).Returns(false);
             coinhouses.Setup(c => c.AddNewCoinhouse(It.Is<CoinHouse>(x => x.Tag == "ch-2" && x.Settlement == 101)));
 
             Mock<IRegionRepository> regions = new Mock<IRegionRepository>(MockBehavior.Strict);
-            RegionDefinition existing = new() { Tag = "r1", Name = "Region", Areas = new(), Settlements = new(){101} };
-            regions.Setup(r => r.TryGetRegionBySettlement(101, out existing)).Returns(true);
+            RegionDefinition existing = new() { Tag = new RegionTag("r1"), Name = "Region", Areas = new(), Settlements = new(){SettlementId.Parse(101)} };
+            regions.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(101), out existing)).Returns(true);
 
             CoinhouseLoader loader = new(coinhouses.Object, regions.Object);
             loader.Load();
@@ -98,14 +99,14 @@ public class CoinhouseLoaderBehaviorTests
             Environment.SetEnvironmentVariable("RESOURCE_PATH", tmp.FullName);
 
             Mock<ICoinhouseRepository> coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
-            coinhouses.Setup(c => c.SettlementHasCoinhouse(202)).Returns(false);
-            coinhouses.Setup(c => c.TagExists("ch-3")).Returns(false);
+            coinhouses.Setup(c => c.SettlementHasCoinhouse(SettlementId.Parse(202))).Returns(false);
+            coinhouses.Setup(c => c.TagExists(new CoinhouseTag("ch-3"))).Returns(false);
             coinhouses.Setup(c => c.AddNewCoinhouse(It.IsAny<CoinHouse>()));
 
             // First pass: region known
             Mock<IRegionRepository> regions = new Mock<IRegionRepository>(MockBehavior.Strict);
-            RegionDefinition existing = new() { Tag = "r1", Name = "Region", Areas = new(), Settlements = new(){202} };
-            regions.Setup(r => r.TryGetRegionBySettlement(202, out existing)).Returns(true);
+            RegionDefinition existing = new() { Tag = new RegionTag("r1"), Name = "Region", Areas = new(), Settlements = new(){SettlementId.Parse(202)} };
+            regions.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(202), out existing)).Returns(true);
 
             CoinhouseLoader loader = new(coinhouses.Object, regions.Object);
             loader.Load();
@@ -114,7 +115,7 @@ public class CoinhouseLoaderBehaviorTests
             // Simulate regions reload where settlement becomes unknown
             Mock<IRegionRepository> regions2 = new Mock<IRegionRepository>(MockBehavior.Strict);
             RegionDefinition? notUsed;
-            regions2.Setup(r => r.TryGetRegionBySettlement(202, out notUsed)).Returns(false);
+            regions2.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(202), out notUsed)).Returns(false);
 
             CoinhouseLoader loader2 = new(coinhouses.Object, regions2.Object);
             loader2.Load();

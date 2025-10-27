@@ -1,8 +1,9 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 
-public record AreaDefinition(string ResRef, List<string> DefinitionTags, EnvironmentData Environment, SiteData? PlaceOfInterest = null);
+public record AreaDefinition(AreaTag ResRef, List<string> DefinitionTags, EnvironmentData Environment, SiteData? PlaceOfInterest = null);
 
 public record SiteData(string Tag, string Name);
 

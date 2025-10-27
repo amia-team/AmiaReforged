@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Regions;
@@ -8,7 +9,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 [ServiceBinding(typeof(RegionIndex))]
 public class RegionIndex(IRegionRepository regions)
 {
-    public bool TryGetRegionTagForSettlement(int settlementId, out string? regionTag)
+    public bool TryGetRegionTagForSettlement(SettlementId settlementId, out RegionTag? regionTag)
     {
         regionTag = null;
         if (regions.TryGetRegionBySettlement(settlementId, out RegionDefinition? region) && region is not null)
@@ -19,15 +20,16 @@ public class RegionIndex(IRegionRepository regions)
         return false;
     }
 
-    public IReadOnlyCollection<int> GetSettlementsForRegion(string regionTag)
+    public IReadOnlyCollection<SettlementId> GetSettlementsForRegion(RegionTag regionTag)
     {
         // Return a distinct, stable-order copy so callers don't observe internal mutations
-        IReadOnlyCollection<int> items = regions.GetSettlements(regionTag);
-        List<int> result = new();
+        IReadOnlyCollection<SettlementId> items = regions.GetSettlements(regionTag);
+        List<SettlementId> result = new();
         HashSet<int> seen = new();
-        foreach (int s in items)
+        foreach (SettlementId s in items)
         {
-            if (seen.Add(s)) result.Add(s);
+            // Use underlying int value for deduplication
+            if (seen.Add(s.Value)) result.Add(s);
         }
         return result;
     }
@@ -44,7 +46,7 @@ public class RegionIndex(IRegionRepository regions)
                 Tag = r.Tag,
                 Name = r.Name,
                 Areas = new List<AreaDefinition>(r.Areas),
-                Settlements = new List<int>(r.Settlements)
+                Settlements = new List<SettlementId>(r.Settlements)
             });
         }
         return snapshot;
