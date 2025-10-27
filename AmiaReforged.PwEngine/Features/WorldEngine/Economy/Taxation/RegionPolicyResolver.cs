@@ -14,11 +14,41 @@ public class RegionPolicyResolver(ICoinhouseRepository coinhouses, RegionIndex r
     public bool TryGetRegionTagForCoinhouseTag(string coinhouseTag, out string? regionTag)
     {
         regionTag = null;
-        CoinHouse? ch = coinhouses.GetByTag(coinhouseTag);
-        if (ch is null) return false;
-        return regionIndex.TryGetRegionTagForSettlement(ch.Settlement, out regionTag);
+        if (string.IsNullOrWhiteSpace(coinhouseTag)) return false;
+
+        try
+        {
+            CoinHouse? ch = coinhouses.GetByTag(coinhouseTag);
+            if (ch is null) return false;
+
+            try
+            {
+                return regionIndex.TryGetRegionTagForSettlement(ch.Settlement, out regionTag);
+            }
+            catch
+            {
+                regionTag = null;
+                return false;
+            }
+        }
+        catch
+        {
+            regionTag = null;
+            return false;
+        }
     }
 
     public bool TryGetRegionTagForSettlement(int settlementId, out string? regionTag)
-        => regionIndex.TryGetRegionTagForSettlement(settlementId, out regionTag);
+    {
+        regionTag = null;
+        try
+        {
+            return regionIndex.TryGetRegionTagForSettlement(settlementId, out regionTag);
+        }
+        catch
+        {
+            regionTag = null;
+            return false;
+        }
+    }
 }

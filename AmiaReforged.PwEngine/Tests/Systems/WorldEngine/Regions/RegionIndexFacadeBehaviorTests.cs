@@ -23,13 +23,13 @@ public class RegionIndexFacadeBehaviorTests
         repo.Add(new RegionDefinition { Tag = "r1", Name = "Region One", Areas = new(), Settlements = new(){5,5,6,5,7}});
         RegionIndex index = new(repo);
 
-        var first = index.GetSettlementsForRegion("r1").ToList();
+        List<int> first = index.GetSettlementsForRegion("r1").ToList();
         CollectionAssert.AreEqual(new[]{5,6,7}, first);
 
         // Mutate the underlying repo after snapshot
         repo.Update(new RegionDefinition { Tag = "r1", Name = "Region One", Areas = new(), Settlements = new(){7,6,5,4} });
 
-        var second = index.GetSettlementsForRegion("r1").ToList();
+        List<int> second = index.GetSettlementsForRegion("r1").ToList();
         CollectionAssert.AreEqual(new[]{7,6,5,4}.Distinct().ToArray(), second);
         // Ensure 'first' remains unchanged
         CollectionAssert.AreEqual(new[]{5,6,7}, first);
@@ -43,7 +43,7 @@ public class RegionIndexFacadeBehaviorTests
         repo.Add(new RegionDefinition { Tag = "r2", Name = "Region Two", Areas = new(), Settlements = new(){2} });
 
         RegionIndex index = new(repo);
-        var snapshot = index.All();
+        IReadOnlyList<RegionDefinition> snapshot = index.All();
         Assert.That(snapshot.Count, Is.EqualTo(2));
         Assert.That(snapshot.Any(r => r.Tag == "r1" && r.Settlements.SequenceEqual(new[]{1})), Is.True);
         Assert.That(snapshot.Any(r => r.Tag == "r2" && r.Settlements.SequenceEqual(new[]{2})), Is.True);

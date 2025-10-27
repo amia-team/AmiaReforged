@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using NUnit.Framework;
 
@@ -35,7 +36,7 @@ public class RegionDefinitionLoadingBehaviorTests
             RegionDefinitionLoadingService loader = new(repo);
 
             loader.Load();
-            var failures = loader.Failures();
+            List<FileLoadResult> failures = loader.Failures();
 
             Assert.That(failures, Is.Not.Empty);
             Assert.That(failures.Any(f => f.FileName == "r2.json" && (f.Message?.Contains("Duplicate settlement IDs across regions", StringComparison.OrdinalIgnoreCase) ?? false)), Is.True);
@@ -65,7 +66,7 @@ public class RegionDefinitionLoadingBehaviorTests
             RegionDefinitionLoadingService loader = new(repo);
 
             loader.Load();
-            var failures = loader.Failures();
+            List<FileLoadResult> failures = loader.Failures();
 
             Assert.That(failures, Is.Not.Empty);
             Assert.That(failures[0].Message, Does.Contain("Duplicate settlement IDs within the same region definition"));
@@ -128,7 +129,7 @@ public class RegionDefinitionLoadingBehaviorTests
 
             loader.Load();
 
-            var failures = loader.Failures();
+            List<FileLoadResult> failures = loader.Failures();
             Assert.That(failures, Is.Not.Empty);
             Assert.That(failures.Any(f => f.Message?.Contains("Duplicate region tag", StringComparison.OrdinalIgnoreCase) ?? false), Is.True);
             Assert.That(repo.All().Count, Is.EqualTo(1));
@@ -159,7 +160,7 @@ public class RegionDefinitionLoadingBehaviorTests
 
             loader.Load();
             Assert.That(repo.All().Count, Is.EqualTo(1));
-            Assert.That(repo.TryGetRegionBySettlement(900, out var _), Is.True);
+            Assert.That(repo.TryGetRegionBySettlement(900, out RegionDefinition? _), Is.True);
 
             // Change file to different settlement and reload
             File.WriteAllText(file, """
@@ -168,8 +169,8 @@ public class RegionDefinitionLoadingBehaviorTests
 
             loader.Load();
             Assert.That(repo.All().Count, Is.EqualTo(1));
-            Assert.That(repo.TryGetRegionBySettlement(900, out var _), Is.False);
-            Assert.That(repo.TryGetRegionBySettlement(901, out var _), Is.True);
+            Assert.That(repo.TryGetRegionBySettlement(900, out RegionDefinition? _), Is.False);
+            Assert.That(repo.TryGetRegionBySettlement(901, out RegionDefinition? _), Is.True);
         }
         finally
         {
@@ -195,11 +196,11 @@ public class RegionDefinitionLoadingBehaviorTests
             RegionDefinitionLoadingService loader = new(repo);
 
             loader.Load();
-            var first = repo.All().Single();
+            RegionDefinition first = repo.All().Single();
             CollectionAssert.AreEquivalent(new[]{1000,1001}, first.Settlements);
 
             loader.Load();
-            var second = repo.All().Single();
+            RegionDefinition second = repo.All().Single();
             CollectionAssert.AreEquivalent(new[]{1000,1001}, second.Settlements);
         }
         finally
@@ -212,7 +213,7 @@ public class RegionDefinitionLoadingBehaviorTests
     public void Unknown_Region_Tag_Query_Returns_Empty()
     {
         InMemoryRegionRepository repo = new();
-        var result = repo.GetSettlements("missing-tag");
+        IReadOnlyCollection<int> result = repo.GetSettlements("missing-tag");
         Assert.That(result, Is.Not.Null);
         Assert.That(result, Is.Empty);
     }
