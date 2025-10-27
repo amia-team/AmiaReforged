@@ -21,14 +21,14 @@ public class WildMagicEffects(
     public readonly WildMagicEffect[] AdverseEffects =
     [
         new("Polymorph", adverseWildMagic.Polymorph),
-        new("Internal Confusion", adverseWildMagic.InternalConfusion),
+        new("Hermitic Confusion", adverseWildMagic.HermiticConfusion),
         new("Trade Places", adverseWildMagic.TradePlaces),
         new("Heal (Not That One!)", adverseWildMagic.HealNotThatOne),
         new("Restoration (Not That One!)", adverseWildMagic.RestorationNotThatOne),
         new("Self-Immolation", adverseWildMagic.SelfImmolation),
         new("Death Armor (Not That One!)", adverseWildMagic.DeathArmorNotThatOne),
         new("Self-Inflict Wounds", adverseWildMagic.SelfInflictWounds),
-        new("Stasis", adverseWildMagic.Stasis)
+        new("Nirvana", adverseWildMagic.Nirvana)
     ];
 
     public readonly WildMagicEffect[] WeakEffects =

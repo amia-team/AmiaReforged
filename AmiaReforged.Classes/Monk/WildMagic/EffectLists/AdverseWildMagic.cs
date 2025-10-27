@@ -9,7 +9,7 @@ public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
     public void Polymorph(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.GetRandomPolymorph(), WildMagicUtils.LongDuration);
 
-    public void InternalConfusion(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public void HermiticConfusion(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         Effect confused = Effect.Confused();
         confused.SubType = EffectSubType.Magical;
@@ -61,6 +61,6 @@ public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
     public void SelfInflictWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Instant, wildMagicUtils.InflictLightWoundsEffect(monk, monkLevel));
 
-    public void Stasis(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
+    public void Nirvana(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Temporary, Effect.CutsceneParalyze(), WildMagicUtils.ShortDuration);
 }
