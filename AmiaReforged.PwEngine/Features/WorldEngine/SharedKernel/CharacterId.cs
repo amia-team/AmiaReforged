@@ -32,5 +32,10 @@ public readonly record struct CharacterId(Guid Value)
     /// </summary>
     public static explicit operator CharacterId(Guid id) => From(id);
 
+    /// <summary>
+    /// Converts this CharacterId to a PersonaId for cross-subsystem references.
+    /// </summary>
+    public Personas.PersonaId ToPersonaId() => Personas.PersonaId.FromCharacter(this);
+
     public override string ToString() => Value.ToString();
 }
