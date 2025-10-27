@@ -5,7 +5,7 @@ using NLog;
 
 namespace AmiaReforged.PwEngine.Database;
 
-[ServiceBinding(typeof(PersistentCoinhouseRepository))]
+[ServiceBinding(typeof(ICoinhouseRepository))]
 public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhouseRepository
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
