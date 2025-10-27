@@ -15,7 +15,5 @@ public class CoinHouse
 
     public int StoredGold { get; set; }
 
-    public Guid? AccountHolderId { get; set; }
-    [ForeignKey(nameof(AccountHolderId))] public PersistedCharacter? AccountHolder { get; set; }
-
+    public List<CoinHouseAccount>? Accounts { get; set; }
 }

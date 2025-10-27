@@ -3,6 +3,7 @@ using System;
 using AmiaReforged.PwEngine.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AmiaReforged.PwEngine.Migrations
 {
     [DbContext(typeof(PwEngineContext))]
-    partial class PwEngineContextModelSnapshot : ModelSnapshot
+    [Migration("20251027131228_AddRentPayingFromProfits")]
+    partial class AddRentPayingFromProfits
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -82,13 +85,13 @@ namespace AmiaReforged.PwEngine.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<Guid?>("AccountId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("AreaResRef")
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
+
+                    b.Property<Guid?>("CharacterId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -98,6 +101,9 @@ namespace AmiaReforged.PwEngine.Migrations
 
                     b.Property<DateTime?>("LastPaidRentAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("PayRentFromHeldProfits")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("StoredGold")
                         .HasColumnType("integer");
@@ -109,7 +115,7 @@ namespace AmiaReforged.PwEngine.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId");
+                    b.HasIndex("CharacterId");
 
                     b.ToTable("PlayerStalls");
                 });
@@ -190,6 +196,9 @@ namespace AmiaReforged.PwEngine.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<Guid?>("AccountHolderId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("EngineId")
                         .HasColumnType("uuid");
 
@@ -205,105 +214,9 @@ namespace AmiaReforged.PwEngine.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AccountHolderId");
+
                     b.ToTable("CoinHouses");
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<long>("CoinHouseId")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("Credit")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Debit")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("LastAccessedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("OpenedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CoinHouseId");
-
-                    b.ToTable("CoinHouseAccounts");
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccountHolder", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<Guid>("HolderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AccountId");
-
-                    b.ToTable("CoinHouseAccountHolders");
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseTransaction", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("Amount")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("CoinHouseAccountId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("IssuedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("IssuerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("IssuerType")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("ProcessedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CoinHouseAccountId");
-
-                    b.ToTable("CoinHouseTransactions");
                 });
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.PersistedCharacter", b =>
@@ -606,11 +519,11 @@ namespace AmiaReforged.PwEngine.Migrations
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.PlayerStall", b =>
                 {
-                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", "Account")
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.PersistedCharacter", "Character")
                         .WithMany()
-                        .HasForeignKey("AccountId");
+                        .HasForeignKey("CharacterId");
 
-                    b.Navigation("Account");
+                    b.Navigation("Character");
                 });
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.StallProduct", b =>
@@ -630,7 +543,7 @@ namespace AmiaReforged.PwEngine.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", "StallOwner")
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.PersistedCharacter", "StallOwner")
                         .WithMany()
                         .HasForeignKey("StallOwnerId");
 
@@ -639,37 +552,13 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Navigation("StallOwner");
                 });
 
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", b =>
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouse", b =>
                 {
-                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouse", "CoinHouse")
-                        .WithMany("Accounts")
-                        .HasForeignKey("CoinHouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.PersistedCharacter", "AccountHolder")
+                        .WithMany()
+                        .HasForeignKey("AccountHolderId");
 
-                    b.Navigation("CoinHouse");
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccountHolder", b =>
-                {
-                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", "Account")
-                        .WithMany("AccountHolders")
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Account");
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseTransaction", b =>
-                {
-                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", "CoinHouseAccount")
-                        .WithMany("Receipts")
-                        .HasForeignKey("CoinHouseAccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CoinHouseAccount");
+                    b.Navigation("AccountHolder");
                 });
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.PersistentCharacterTrait", b =>
@@ -731,18 +620,6 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Navigation("Products");
 
                     b.Navigation("Transactions");
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouse", b =>
-                {
-                    b.Navigation("Accounts");
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", b =>
-                {
-                    b.Navigation("AccountHolders");
-
-                    b.Navigation("Receipts");
                 });
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.PersistedCharacter", b =>

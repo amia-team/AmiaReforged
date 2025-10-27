@@ -1,9 +1,8 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
-using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks;
 
 [ServiceBinding(typeof(CoinhouseLoader))]
 public class CoinhouseLoader(ICoinhouseRepository coinhouses) : IDefinitionLoader

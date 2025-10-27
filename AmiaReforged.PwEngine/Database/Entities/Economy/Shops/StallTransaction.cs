@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 
 namespace AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 
@@ -14,5 +15,5 @@ public class StallTransaction
     [ForeignKey(nameof(StallId))] public PlayerStall? Stall { get; set; }
 
     public Guid? StallOwnerId { get; set; }
-    [ForeignKey(nameof(StallOwnerId))] public PersistedCharacter? StallOwner { get; set; }
+    [ForeignKey(nameof(StallOwnerId))] public CoinHouseAccount? StallOwner { get; set; }
 }

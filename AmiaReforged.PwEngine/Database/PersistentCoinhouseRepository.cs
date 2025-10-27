@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Database;
@@ -24,11 +25,12 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
         }
     }
 
-    public CoinHouse? GetAccountFor(Guid id)
+    public CoinHouseAccount? GetAccountFor(Guid id)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
-        CoinHouse? account = ctx.CoinHouses.FirstOrDefault(x => x.AccountHolderId == id);
+        CoinHouseAccount? account = ctx.CoinHouseAccounts.Include(x => x.AccountHolders)
+            .FirstOrDefault(a => a.AccountHolders != null && a.AccountHolders.Any(x => x.HolderId == id));
 
         return account;
     }

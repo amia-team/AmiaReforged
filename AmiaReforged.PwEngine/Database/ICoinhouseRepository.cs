@@ -5,7 +5,7 @@ namespace AmiaReforged.PwEngine.Database;
 public interface ICoinhouseRepository
 {
     void AddNewCoinhouse(CoinHouse newCoinhouse);
-    CoinHouse? GetAccountFor(Guid id);
+    CoinHouseAccount? GetAccountFor(Guid id);
     CoinHouse? GetSettlementCoinhouse(int settlementId);
     CoinHouse? GetByTag(string tag);
     bool TagExists(string tag);

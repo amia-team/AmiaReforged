@@ -50,6 +50,10 @@ public class PwEngineContext : DbContext
     /// </summary>
     public DbSet<StoredItem> WarehouseItems { get; set; } = null!;
 
+    public DbSet<CoinHouseAccount> CoinHouseAccounts { get; set; } = null!;
+    public DbSet<CoinHouseAccountHolder> CoinHouseAccountHolders { get; set; } = null!;
+    public DbSet<CoinHouseTransaction> CoinHouseTransactions { get; set; } = null!;
+
 
     public PwEngineContext()
     {

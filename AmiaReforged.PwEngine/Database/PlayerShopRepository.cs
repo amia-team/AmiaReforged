@@ -71,7 +71,7 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
         PlayerStall? shop = ctx.PlayerStalls.Find(shopId);
         if (shop == null) return false;
 
-        return shop.CharacterId == characterId;
+        return shop.AccountId == characterId;
     }
 
     public void CreateShop(PlayerStall shop)
@@ -114,7 +114,7 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
         {
             PlayerStall? shop = ctx.PlayerStalls.Find(shopId);
             if (shop == null) return;
-            shop.CharacterId = null;
+            shop.AccountId = null;
             ctx.SaveChanges();
         }
         catch (Exception e)

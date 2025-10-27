@@ -31,7 +31,6 @@
 
     <ItemGroup>
         <Folder Include="Features\Codex\" />
-        <Folder Include="Features\Player\Mercantile\Nui\" />
         <Folder Include="Migrations\" />
         <Folder Include="Resources\WorldEngine\Industries\" />
         <Folder Include="Features\MiniGame\LiarsDice\Nui\" />
