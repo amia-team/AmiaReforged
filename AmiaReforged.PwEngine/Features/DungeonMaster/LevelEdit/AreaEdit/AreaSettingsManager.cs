@@ -19,7 +19,7 @@ public sealed class AreaSettingsManager
 
     public void LoadToUi(NwArea area)
     {
-        var settings = AreaSettings.FromArea(area);
+        AreaSettings settings = AreaSettings.FromArea(area);
 
         // Audio
         _token.SetBindValue(_view.DayMusicStr, settings.DayMusic.ToString());

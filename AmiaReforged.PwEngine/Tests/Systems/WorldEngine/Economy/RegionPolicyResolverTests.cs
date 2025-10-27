@@ -13,7 +13,7 @@ public class RegionPolicyResolverTests
     [Test]
     public void TryGetRegionTagForCoinhouseTag_Returns_RegionTag_When_Found()
     {
-        var coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
+        Mock<ICoinhouseRepository> coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
         CoinHouse ch = new() { Tag = "ch1", Settlement = 42, EngineId = Guid.NewGuid() };
         coinhouses.Setup(c => c.GetByTag("ch1")).Returns(ch);
 
@@ -30,7 +30,7 @@ public class RegionPolicyResolverTests
     [Test]
     public void TryGetRegionTagForCoinhouseTag_Fails_When_Coinhouse_NotFound()
     {
-        var coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
+        Mock<ICoinhouseRepository> coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
         coinhouses.Setup(c => c.GetByTag("missing")).Returns((CoinHouse?)null);
 
         InMemoryRegionRepository repo = new();

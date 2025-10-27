@@ -195,7 +195,7 @@ public sealed class SavedInstancesPresenter : ScryPresenter<SavedInstancesView>
         List<string> names = rows.Select(a => a.NewName).ToList();
         _createdStrings.Clear();
         _updatedStrings.Clear();
-        foreach (var r in rows)
+        foreach (DmArea r in rows)
         {
             _createdStrings.Add(r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"));
             _updatedStrings.Add(r.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"));

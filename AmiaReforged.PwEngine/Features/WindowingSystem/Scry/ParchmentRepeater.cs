@@ -30,15 +30,15 @@ internal static class ParchmentRepeater
     {
         // Compose a transparent list template: column of your row elements.
         // We purposely do not add any background panels or borders—only your widgets and optional draw items.
-        var rowCells = new List<NuiListTemplateCell>();
-        var rowElems = makeRow(0); // preview instance to learn widths; actual values come from binds
-        foreach (var e in rowElems)
+        List<NuiListTemplateCell> rowCells = new List<NuiListTemplateCell>();
+        List<NuiElement> rowElems = makeRow(0); // preview instance to learn widths; actual values come from binds
+        foreach (NuiElement e in rowElems)
         {
             // Each child becomes a cell; widths must be provided by caller’s row elements.
             rowCells.Add(new NuiListTemplateCell(e));
         }
 
-        var repeater = new NuiList(rowCells, rowCountBind)
+        NuiList repeater = new NuiList(rowCells, rowCountBind)
         {
             RowHeight = rowHeight,
             Height    = height,
@@ -48,7 +48,7 @@ internal static class ParchmentRepeater
         if (drawPerRow != null)
         {
             // Overlay-only group that paints on parchment; no chrome.
-            var overlay = new NuiRow
+            NuiRow overlay = new NuiRow
             {
                 Width=0f, Height=0f,
                 Children = new List<NuiElement>(),
@@ -74,12 +74,12 @@ internal static class ParchmentRepeater
         Func<int, float, float, float, List<NuiDrawListItem>>? drawPerRow = null)
     {
         // Build a single preview row
-        var rowCells = new List<NuiListTemplateCell>();
-        var rowElems = makeRow();
-        foreach (var e in rowElems)
+        List<NuiListTemplateCell> rowCells = new List<NuiListTemplateCell>();
+        List<NuiElement> rowElems = makeRow();
+        foreach (NuiElement e in rowElems)
             rowCells.Add(new NuiListTemplateCell(e));
 
-        var repeater = new NuiList(rowCells, rowCountBind)
+        NuiList repeater = new NuiList(rowCells, rowCountBind)
         {
             RowHeight = rowHeight,
             Height    = height,
@@ -87,7 +87,7 @@ internal static class ParchmentRepeater
 
         if (drawPerRow != null)
         {
-            var overlay = new NuiRow
+            NuiRow overlay = new NuiRow
             {
                 Width = 0f, Height = 0f,
                 Children = new List<NuiElement>(),

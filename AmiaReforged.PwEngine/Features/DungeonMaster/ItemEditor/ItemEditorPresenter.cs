@@ -146,8 +146,8 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                 _model.EnsureInitialNameCaptured();
                 Token().SetBindValue(View.EditNameBuffer, _model.GetInitialNameOrCurrent());
 
-                var w = View.BuildEditNameModal();
-                if (_player.TryCreateNuiWindow(w, out var modalToken))
+                NuiWindow w = View.BuildEditNameModal();
+                if (_player.TryCreateNuiWindow(w, out NuiWindowToken modalToken))
                 {
                     _nameModalToken = modalToken;
                     modalToken.SetBindValue(View.EditNameBuffer, _model.SelectedItem!.Name);
@@ -166,8 +166,8 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                 _model.EnsureInitialDescCaptured();
                 Token().SetBindValue(View.EditDescBuffer, _model.GetInitialDescOrCurrent());
 
-                var w = View.BuildEditDescModal();
-                if (_player.TryCreateNuiWindow(w, out var modalToken))
+                NuiWindow w = View.BuildEditDescModal();
+                if (_player.TryCreateNuiWindow(w, out NuiWindowToken modalToken))
                 {
                     _descModalToken = modalToken;
                     modalToken.SetBindValue(View.EditDescBuffer, _model.SelectedItem!.Description);
@@ -182,10 +182,10 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                 if (_tagModalToken.HasValue)
                     return;
 
-                var snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
+                ItemData? snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
                 Token().SetBindValue(View.EditTagBuffer, snap?.Tag ?? "");
-                var w = View.BuildEditTagModal();
-                if (_player.TryCreateNuiWindow(w, out var modalToken))
+                NuiWindow w = View.BuildEditTagModal();
+                if (_player.TryCreateNuiWindow(w, out NuiWindowToken modalToken))
                 {
                     _tagModalToken = modalToken;
                     modalToken.SetBindValue(View.EditTagBuffer, snap?.Tag ?? "");
@@ -215,7 +215,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         if (ev.ElementId == "btn_modal_ok_name")
         {
-            var newName = _nameModalToken!.Value.GetBindValue(View.EditNameBuffer) ?? string.Empty;
+            string newName = _nameModalToken!.Value.GetBindValue(View.EditNameBuffer) ?? string.Empty;
             _model.SelectedItem!.Name = newName;
             Token().SetBindValue(View.Name, newName);
             _player.SendServerMessage("Name saved.", ColorConstants.Green);
@@ -248,7 +248,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         if (ev.ElementId == "btn_modal_ok_desc")
         {
-            var newDesc = _descModalToken!.Value.GetBindValue(View.EditDescBuffer) ?? string.Empty;
+            string newDesc = _descModalToken!.Value.GetBindValue(View.EditDescBuffer) ?? string.Empty;
             _model.SelectedItem!.Description = newDesc;
             Token().SetBindValue(View.Description, newDesc);
             _player.SendServerMessage("Description saved.", ColorConstants.Green);
@@ -281,7 +281,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
 
         if (ev.ElementId == "btn_modal_ok_tag")
         {
-            var newTag = _tagModalToken!.Value.GetBindValue(View.EditTagBuffer) ?? string.Empty;
+            string newTag = _tagModalToken!.Value.GetBindValue(View.EditTagBuffer) ?? string.Empty;
             _model.SelectedItem!.Tag = newTag;
             Token().SetBindValue(View.Tag, newTag);
             _player.SendServerMessage("Tag saved.", ColorConstants.Green);
@@ -310,7 +310,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     // ------------------------------------------------------------
     private void UpdateFromModel()
     {
-        var item = _model.SelectedItem;
+        NwItem? item = _model.SelectedItem;
         Token().SetBindValue(View.ValidObjectSelected, item != null);
         // Always show the same placeholder for Description in the main window
         Token().SetBindValue(View.DescPlaceholder, item != null ? "Edit to View" : "");
@@ -328,13 +328,13 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         }
 
         // Snapshot from the live item
-        var snapshot = ItemDataFactory.From(item);
+        ItemData snapshot = ItemDataFactory.From(item);
 
         Token().SetBindValue(View.Name, snapshot.Name);
         Token().SetBindValue(View.Description, snapshot.Description);
         Token().SetBindValue(View.Tag, snapshot.Tag);
 
-        foreach (var kv in snapshot.Variables)
+        foreach (KeyValuePair<string, LocalVariableData> kv in snapshot.Variables)
             _vars.Add((kv.Key, kv.Value));
 
         // Keep a stable, user-friendly order
@@ -346,11 +346,11 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     // Sync _vars -> view binds for the NuiList
     private void UpdateVariableList()
     {
-        var names  = new List<string>(_vars.Count);
-        var types  = new List<string>(_vars.Count);
-        var values = new List<string>(_vars.Count);
+        List<string> names  = new List<string>(_vars.Count);
+        List<string> types  = new List<string>(_vars.Count);
+        List<string> values = new List<string>(_vars.Count);
 
-        foreach (var (key, data) in _vars)
+        foreach ((string key, LocalVariableData data) in _vars)
         {
             names.Add(key);
             types.Add(data.Type.ToString());
@@ -368,7 +368,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     {
         // The variables section in the view rebuilds itself from binds? We’re using our _vars list.
         // So we need to push the display rows by calling the view’s builder with our current data.
-        var rows = _vars.Select(v => (Name: v.Key,
+        List<(string Name, string Type, string Value)> rows = _vars.Select(v => (Name: v.Key,
                                       Type: v.Data.Type.ToString(),
                                       Value: ToDisplay(v.Data)))
                         .ToList();
@@ -411,7 +411,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         try
         {
 
-            var item = _model.SelectedItem;
+            NwItem? item = _model.SelectedItem;
             if (item == null)
             {
                 if (showMessage)
@@ -424,11 +424,11 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             string desc = Token().GetBindValue(View.Description) ?? string.Empty;
             string tag  = Token().GetBindValue(View.Tag) ?? string.Empty;
 
-            var varsDict = new Dictionary<string, LocalVariableData>(StringComparer.OrdinalIgnoreCase);
-            foreach (var (key, data) in _vars)
+            Dictionary<string, LocalVariableData> varsDict = new Dictionary<string, LocalVariableData>(StringComparer.OrdinalIgnoreCase);
+            foreach ((string key, LocalVariableData data) in _vars)
                 varsDict[key] = data;
 
-            var dataPacket = new ItemData(name, desc, tag, varsDict);
+            ItemData dataPacket = new ItemData(name, desc, tag, varsDict);
 
             _model.Update(dataPacket);
 
@@ -474,7 +474,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             }
 
             // Convert the textual input to LocalVariableData
-            var data = ParseLocalVarInput((LocalVariableType)type, val, out string? error);
+            LocalVariableData data = ParseLocalVarInput((LocalVariableType)type, val, out string? error);
             if (error != null)
             {
                 _player.SendServerMessage(error, ColorConstants.Orange);
@@ -566,7 +566,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
     // ------------------------------------------------------------
     private void TryAdjustIcon(int delta)
     {
-        var result = _model.TryAdjustIcon(delta, out int newValue, out int maxValue);
+        IconAdjustResult result = _model.TryAdjustIcon(delta, out int newValue, out int maxValue);
         switch (result)
         {
             case IconAdjustResult.NoSelection:

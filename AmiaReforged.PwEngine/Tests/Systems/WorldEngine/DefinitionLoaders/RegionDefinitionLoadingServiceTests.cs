@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using NUnit.Framework;
 
@@ -55,7 +56,7 @@ public class RegionDefinitionLoadingServiceTests
             Assert.That(reg, Is.Not.Null);
             Assert.That(reg!.Tag, Is.EqualTo("region-a"));
 
-            var settlements = repo.GetSettlements("region-a");
+            IReadOnlyCollection<int> settlements = repo.GetSettlements("region-a");
             CollectionAssert.AreEquivalent(new[] {10, 11}, settlements);
         }
         finally
@@ -93,7 +94,7 @@ public class RegionDefinitionLoadingServiceTests
             loader.Load();
 
             // Assert
-            var failures = loader.Failures();
+            List<FileLoadResult> failures = loader.Failures();
             Assert.That(failures, Is.Not.Empty);
             Assert.That(failures.Any(f => f.FileName == "bad_region.json" && (f.Message?.Contains("Settlement IDs", StringComparison.OrdinalIgnoreCase) ?? false)), Is.True);
 

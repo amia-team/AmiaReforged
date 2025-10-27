@@ -232,7 +232,7 @@ public sealed class AreaEditorPresenter : ScryPresenter<AreaEditorView>
     {
         if (_state is null || _state.SelectedArea is null || _settingsManager is null) return;
 
-        var settings = _settingsManager.LoadFromUi();
+        AreaSettings settings = _settingsManager.LoadFromUi();
         settings.ApplyToArea(_state.SelectedArea);
     }
 

@@ -102,14 +102,14 @@ public static class ItemModelValidation
     {
         // First check by numeric base ID (for special cases)
         uint baseId = item.BaseItem.Id;
-        if (ValidModelsByNumericId.TryGetValue(baseId, out var numericSet))
+        if (ValidModelsByNumericId.TryGetValue(baseId, out HashSet<int>? numericSet))
         {
             return numericSet.Contains(modelIndex);
         }
 
         // Then check by BaseItemType
         BaseItemType itemType = item.BaseItem.ItemType;
-        if (ValidModels.TryGetValue(itemType, out var modelSet))
+        if (ValidModels.TryGetValue(itemType, out HashSet<int>? modelSet))
         {
             return modelSet.Contains(modelIndex);
         }
@@ -123,13 +123,13 @@ public static class ItemModelValidation
     public static int GetMaxModelIndex(NwItem item)
     {
         uint baseId = item.BaseItem.Id;
-        if (ValidModelsByNumericId.TryGetValue(baseId, out var numericSet))
+        if (ValidModelsByNumericId.TryGetValue(baseId, out HashSet<int>? numericSet))
         {
             return numericSet.Max();
         }
 
         BaseItemType itemType = item.BaseItem.ItemType;
-        if (ValidModels.TryGetValue(itemType, out var modelSet))
+        if (ValidModels.TryGetValue(itemType, out HashSet<int>? modelSet))
         {
             return modelSet.Max();
         }
@@ -143,13 +143,13 @@ public static class ItemModelValidation
     public static IEnumerable<int> GetValidIndices(NwItem item)
     {
         uint baseId = item.BaseItem.Id;
-        if (ValidModelsByNumericId.TryGetValue(baseId, out var numericSet))
+        if (ValidModelsByNumericId.TryGetValue(baseId, out HashSet<int>? numericSet))
         {
             return numericSet.OrderBy(x => x);
         }
 
         BaseItemType itemType = item.BaseItem.ItemType;
-        if (ValidModels.TryGetValue(itemType, out var modelSet))
+        if (ValidModels.TryGetValue(itemType, out HashSet<int>? modelSet))
         {
             return modelSet.OrderBy(x => x);
         }

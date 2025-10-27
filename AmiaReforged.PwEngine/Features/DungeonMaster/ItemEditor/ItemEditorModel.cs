@@ -31,51 +31,51 @@ internal sealed class ItemEditorModel
     public void EnsureInitialNameCaptured()
     {
         if (SelectedItem is null) return;
-        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        LocalVariableString v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
         if (!v.HasValue) v.Value = SelectedItem.Name;
     }
 
     public void EnsureInitialDescCaptured()
     {
         if (SelectedItem is null) return;
-        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        LocalVariableString v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
         if (!v.HasValue) v.Value = SelectedItem.Description;
     }
 
     public string GetInitialNameOrCurrent()
     {
         if (SelectedItem is null) return string.Empty;
-        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        LocalVariableString v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
         return v.HasValue ? (v.Value ?? string.Empty) : SelectedItem.Name;
     }
 
     public string GetInitialDescOrCurrent()
     {
         if (SelectedItem is null) return string.Empty;
-        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        LocalVariableString v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
         return v.HasValue ? (v.Value ?? string.Empty) : SelectedItem.Description;
     }
 
     public void RevertNameToInitial()
     {
         if (SelectedItem is null) return;
-        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        LocalVariableString v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
         if (v.HasValue) SelectedItem.Name = v.Value ?? SelectedItem.Name;
     }
 
     public void RevertDescToInitial()
     {
         if (SelectedItem is null) return;
-        var v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        LocalVariableString v = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
         if (v.HasValue) SelectedItem.Description = v.Value ?? SelectedItem.Description;
     }
 
     public void ClearInitials()
     {
         if (SelectedItem is null) return;
-        var n = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        LocalVariableString n = SelectedItem.GetObjectVariable<LocalVariableString>(InitialNameKey);
         if (n.HasValue) n.Delete();
-        var d = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        LocalVariableString d = SelectedItem.GetObjectVariable<LocalVariableString>(InitialDescKey);
         if (d.HasValue) d.Delete();
     }
 
@@ -263,7 +263,7 @@ internal sealed class ItemEditorModel
         }
 
         // Get all valid indices for this item type
-        var validIndices = ItemModelValidation.GetValidIndices(SelectedItem).ToList();
+        List<int> validIndices = ItemModelValidation.GetValidIndices(SelectedItem).ToList();
         if (validIndices.Count == 0)
             return IconAdjustResult.NotAllowedType;
 

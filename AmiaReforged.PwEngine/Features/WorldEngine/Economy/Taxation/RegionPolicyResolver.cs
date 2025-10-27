@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using Anvil.Services;
 
@@ -13,7 +14,7 @@ public class RegionPolicyResolver(ICoinhouseRepository coinhouses, RegionIndex r
     public bool TryGetRegionTagForCoinhouseTag(string coinhouseTag, out string? regionTag)
     {
         regionTag = null;
-        var ch = coinhouses.GetByTag(coinhouseTag);
+        CoinHouse? ch = coinhouses.GetByTag(coinhouseTag);
         if (ch is null) return false;
         return regionIndex.TryGetRegionTagForSettlement(ch.Settlement, out regionTag);
     }

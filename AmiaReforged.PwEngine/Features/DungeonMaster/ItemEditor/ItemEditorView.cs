@@ -90,7 +90,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     private static NuiElement ImageButton(string id, string tooltip, out NuiButtonImage logicalButton,
         float width, float height, string plateResRef)
     {
-        var btn = new NuiButtonImage(plateResRef)
+        NuiButtonImage btn = new NuiButtonImage(plateResRef)
         {
             Id = id,
             Width = width,
@@ -104,7 +104,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     private static NuiElement ImagePlatedLabeledButton(string id, string label, out NuiButtonImage logicalButton, string plateResRef,
         float width = 150f, float height = 38f)
     {
-        var btn = new NuiButtonImage(plateResRef)
+        NuiButtonImage btn = new NuiButtonImage(plateResRef)
         {
             Id = id,
             Width = width,
@@ -158,19 +158,19 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
 
     public NuiElement BuildVariablesSection()
     {
-        var addVarRow = BuildAddVariableRow();
+        NuiElement addVarRow = BuildAddVariableRow();
 
         // Build the list row template for each variable - NuiList automatically indexes the bind arrays
-        var nameCell = new NuiListTemplateCell(new NuiLabel(VariableNames)
+        NuiListTemplateCell nameCell = new NuiListTemplateCell(new NuiLabel(VariableNames)
             { Width = 220f }) { Width = 220f };
 
-        var typeCell = new NuiListTemplateCell(new NuiLabel(VariableTypes)
+        NuiListTemplateCell typeCell = new NuiListTemplateCell(new NuiLabel(VariableTypes)
             { Width = 150f }) { Width = 150f };
 
-        var valueCell = new NuiListTemplateCell(new NuiLabel(VariableValues)
+        NuiListTemplateCell valueCell = new NuiListTemplateCell(new NuiLabel(VariableValues)
             { Width = 285f }) { Width = 285f };
 
-        var deleteCell = new NuiListTemplateCell(new NuiButtonImage("ui_btn_sm_x")
+        NuiListTemplateCell deleteCell = new NuiListTemplateCell(new NuiButtonImage("ui_btn_sm_x")
         {
             Id = "btn_del_var",
             Width = 25f,
@@ -179,7 +179,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         }) { Width = 25f };
 
         // Scrollable list with max height to contain variables
-        var variableList = new NuiList(new[] { nameCell, typeCell, valueCell, deleteCell }, VariableCount)
+        NuiList variableList = new NuiList(new[] { nameCell, typeCell, valueCell, deleteCell }, VariableCount)
         {
             RowHeight = 27f,
             Width = 725f,
@@ -216,7 +216,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
 
     private NuiElement BuildAddVariableRow()
     {
-        var varTypeOptions = new List<NuiComboEntry>
+        List<NuiComboEntry> varTypeOptions = new List<NuiComboEntry>
         {
             new NuiComboEntry("Int", 0),
             new NuiComboEntry("Float", 1),
@@ -245,7 +245,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         const float labelW = 100f;
         const float valueW = 260f;
 
-        var nameRow = new NuiRow
+        NuiRow nameRow = new NuiRow
         {
             Children =
             {
@@ -255,7 +255,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
             }
         };
 
-        var descRow = new NuiRow
+        NuiRow descRow = new NuiRow
         {
             Children =
             {
@@ -266,7 +266,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
             }
         };
 
-        var tagRow = new NuiRow
+        NuiRow tagRow = new NuiRow
         {
             Children =
             {
@@ -295,22 +295,22 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     public override NuiLayout RootLayout()
     {
         // Background parchment (draw-only)
-        var bgLayer = new NuiRow
+        NuiRow bgLayer = new NuiRow
         {
             Width = 0f, Height = 0f,
             Children = new List<NuiElement>(),
             DrawList = new() { new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH)) }
         };
 
-        var headerOverlay = BuildHeaderOverlay();
-        var headerSpacer = new NuiSpacer { Height = HeaderH + HeaderTopPad + 6f };
+        NuiElement headerOverlay = BuildHeaderOverlay();
+        NuiSpacer headerSpacer = new NuiSpacer { Height = HeaderH + HeaderTopPad + 6f };
 
-        var selectRow = new NuiRow
+        NuiRow selectRow = new NuiRow
         {
             Children = { ImagePlatedLabeledButton("btn_select_item", "", out SelectItemButton, "ui_btn_item") }
         };
 
-        var saveRow = new NuiRow
+        NuiRow saveRow = new NuiRow
         {
             Children =
             {
@@ -321,7 +321,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
         SaveButton.Enabled = ValidObjectSelected;
 
         // Variables section starts empty; presenter will rebuild the layout with rows populated
-        var variablesEmpty = BuildVariablesSection(); // no args now
+        NuiElement variablesEmpty = BuildVariablesSection(); // no args now
 
 
         return new NuiColumn
@@ -357,7 +357,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
     // ——————————————————————————————
     public NuiWindow BuildEditNameModal()
     {
-        var layout = new NuiColumn
+        NuiColumn layout = new NuiColumn
         {
             Width = 380f,
             Height = 180f,
@@ -394,7 +394,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
 
     public NuiWindow BuildEditDescModal()
     {
-        var layout = new NuiColumn
+        NuiColumn layout = new NuiColumn
         {
             Width = 380f, Height = 350f,
             Children =
@@ -432,7 +432,7 @@ public sealed class ItemEditorView : ScryView<ItemEditorPresenter>, IDmWindow
 
     public NuiWindow BuildEditTagModal()
     {
-        var layout = new NuiColumn
+        NuiColumn layout = new NuiColumn
         {
             Width = 380f, Height = 180f,
             Children =

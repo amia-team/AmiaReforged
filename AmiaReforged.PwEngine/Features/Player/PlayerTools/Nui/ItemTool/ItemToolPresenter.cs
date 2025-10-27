@@ -111,8 +111,8 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
             _model.EnsureInitialNameCaptured();
             Token().SetBindValue(View.EditNameBuffer, _model.GetInitialNameOrCurrent());
 
-            var w = View.BuildEditNameModal();
-            if (_player.TryCreateNuiWindow(w, out var modalToken))
+            NuiWindow w = View.BuildEditNameModal();
+            if (_player.TryCreateNuiWindow(w, out NuiWindowToken modalToken))
             {
                 _nameModalToken = modalToken;
                 modalToken.SetBindValue(View.EditNameBuffer, _model.Selected!.Name);
@@ -127,8 +127,8 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
             _model.EnsureInitialDescCaptured();
             Token().SetBindValue(View.EditDescBuffer, _model.GetInitialDescOrCurrent());
 
-            var w = View.BuildEditDescModal();
-            if (_player.TryCreateNuiWindow(w, out var modalToken))
+            NuiWindow w = View.BuildEditDescModal();
+            if (_player.TryCreateNuiWindow(w, out NuiWindowToken modalToken))
             {
                 _descModalToken = modalToken;
                 modalToken.SetBindValue(View.EditDescBuffer, _model.Selected!.Description);
@@ -144,7 +144,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == "ind_modal_ok_name")
         {
-            var newName = _nameModalToken!.Value.GetBindValue(View.EditNameBuffer) ?? string.Empty;
+            string newName = _nameModalToken!.Value.GetBindValue(View.EditNameBuffer) ?? string.Empty;
             Token().SetBindValue(View.Name, newName);
             ApplyChanges(true);
             if (_nameModalToken.HasValue)
@@ -177,7 +177,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == "ind_modal_ok_desc")
         {
-            var newDesc = _descModalToken!.Value.GetBindValue(View.EditDescBuffer) ?? string.Empty;
+            string newDesc = _descModalToken!.Value.GetBindValue(View.EditDescBuffer) ?? string.Empty;
             Token().SetBindValue(View.Description, newDesc);
             ApplyChanges(true);
             if (_descModalToken.HasValue)
@@ -248,7 +248,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
     private void UpdateFromModel()
     {
-        var item = _model.Selected;
+        NwItem? item = _model.Selected;
         Token().SetBindValue(View.ValidObjectSelected, item != null);
         // Always show the same placeholder for Description in the main window
         Token().SetBindValue(View.DescPlaceholder, item != null ? "Edit to View" : "");

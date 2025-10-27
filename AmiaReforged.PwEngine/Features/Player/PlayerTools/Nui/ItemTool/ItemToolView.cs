@@ -50,7 +50,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
     private static NuiElement ImageButton(string id, string tooltip, out NuiButtonImage logicalButton,
         float width, float height, string plateResRef)
     {
-        var btn = new NuiButtonImage(plateResRef)
+        NuiButtonImage btn = new NuiButtonImage(plateResRef)
         {
             Id = id,
             Width = width,
@@ -64,7 +64,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
     private static NuiElement ImagePlatedLabeledButton(string id, string label, out NuiButtonImage logicalButton, string plateResRef,
         float width = 150f, float height = 38f)
     {
-        var btn = new NuiButtonImage(plateResRef)
+        NuiButtonImage btn = new NuiButtonImage(plateResRef)
         {
             Id = id,
             Width = width,
@@ -117,7 +117,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
 
     private NuiElement BuildBasicProps()
     {
-        var nameRow = new NuiRow
+        NuiRow nameRow = new NuiRow
         {
             Children =
             {
@@ -127,7 +127,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
             }
         };
 
-        var descRow = new NuiRow
+        NuiRow descRow = new NuiRow
         {
             Children =
             {
@@ -155,7 +155,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
 
     public override NuiLayout RootLayout()
     {
-        var bgLayer = new NuiRow
+        NuiRow bgLayer = new NuiRow
         {
             Width = 0f, Height = 0f,
             Children = new List<NuiElement>(),
@@ -165,17 +165,17 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
             }
         };
 
-        var headerOverlay = BuildHeaderOverlay();
-        var headerSpacer = new NuiSpacer { Height = HeaderH + HeaderTopPad + 6f };
-        var spacer8 = new NuiSpacer { Height = 8f };
+        NuiElement headerOverlay = BuildHeaderOverlay();
+        NuiSpacer headerSpacer = new NuiSpacer { Height = HeaderH + HeaderTopPad + 6f };
+        NuiSpacer spacer8 = new NuiSpacer { Height = 8f };
 
-        var selectRow = new NuiRow
+        NuiRow selectRow = new NuiRow
         {
             Width = 500f,
             Children = { ImagePlatedLabeledButton("ind_select", "", out SelectItemButton, "ui_btn_item") }
         };
 
-        var bottomRow = new NuiRow
+        NuiRow bottomRow = new NuiRow
         {
             Children =
             {
@@ -207,7 +207,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
     // Optional: provide small modal layouts if you want to open them from the presenter
     public NuiWindow BuildEditNameModal()
     {
-        var layout = new NuiColumn
+        NuiColumn layout = new NuiColumn
         {
             Width = 380f, Height = 180f,
             Children =
@@ -243,7 +243,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
 
     public NuiWindow BuildEditDescModal()
     {
-        var layout = new NuiColumn
+        NuiColumn layout = new NuiColumn
         {
             Width = 380, Height = 350f,
             Children =

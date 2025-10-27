@@ -200,7 +200,7 @@ public sealed class LevelEditPresenter : ScryPresenter<LevelEditView>
         {
             case var id when id == View.InstanceSelectionButton.Id:
                 // Open saved instances manager for current area
-                var instancesView = new SavedInstancesView(_player);
+                SavedInstancesView instancesView = new SavedInstancesView(_player);
                 WindowDirector?.Value.OpenWindow(instancesView.Presenter);
                 break;
             case var id when id == View.AreaSettingsButton.Id:

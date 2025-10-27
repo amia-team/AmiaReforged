@@ -72,45 +72,45 @@ internal sealed class ItemToolModel(NwPlayer player)
     public void EnsureInitialNameCaptured()
     {
         if (Selected is null) return;
-        var v = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        LocalVariableString v = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
         if (!v.HasValue) v.Value = Selected.Name; // Name is non-null per annotations
     }
     public void EnsureInitialDescCaptured()
     {
         if (Selected is null) return;
-        var v = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        LocalVariableString v = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
         if (!v.HasValue) v.Value = Selected.Description; // Description is non-null per annotations
     }
     public string GetInitialNameOrCurrent()
     {
         if (Selected is null) return string.Empty;
-        var v = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        LocalVariableString v = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
         return v.HasValue ? (v.Value ?? string.Empty) : Selected.Name;
     }
     public string GetInitialDescOrCurrent()
     {
         if (Selected is null) return string.Empty;
-        var v = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        LocalVariableString v = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
         return v.HasValue ? (v.Value ?? string.Empty) : Selected.Description;
     }
     public void RevertNameToInitial()
     {
         if (Selected is null) return;
-        var v = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        LocalVariableString v = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
         if (v.HasValue) Selected.Name = v.Value ?? Selected.Name;
     }
     public void RevertDescToInitial()
     {
         if (Selected is null) return;
-        var v = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        LocalVariableString v = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
         if (v.HasValue) Selected.Description = v.Value ?? Selected.Description;
     }
     public void ClearInitials()
     {
         if (Selected is null) return;
-        var n = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
+        LocalVariableString n = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
         if (n.HasValue) n.Delete();
-        var d = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
+        LocalVariableString d = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
         if (d.HasValue) d.Delete();
     }
 
@@ -157,7 +157,7 @@ internal sealed class ItemToolModel(NwPlayer player)
         }
 
         // Get all valid indices for this item type
-        var validIndices = ItemModelValidation.GetValidIndices(Selected).ToList();
+        List<int> validIndices = ItemModelValidation.GetValidIndices(Selected).ToList();
         if (validIndices.Count == 0)
             return IconAdjustResult.NotAllowedType;
 
