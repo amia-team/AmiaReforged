@@ -8,10 +8,13 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
 {
     private readonly List<FileLoadResult> _failures = new();
     private readonly HashSet<int> _seenSettlements = new();
+    private readonly HashSet<string> _seenRegionTags = new(StringComparer.OrdinalIgnoreCase);
 
     public void Load()
     {
         _seenSettlements.Clear();
+        _seenRegionTags.Clear();
+        repository.Clear();
 
         string? resourcePath = Environment.GetEnvironmentVariable("RESOURCE_PATH");
         if (string.IsNullOrEmpty(resourcePath))
@@ -29,7 +32,7 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
         }
 
         string[] jsonFiles = Directory.GetFiles(regionDir, "*.json", SearchOption.AllDirectories);
-
+        Array.Sort(jsonFiles, StringComparer.OrdinalIgnoreCase);
 
         foreach (string file in jsonFiles)
         {
@@ -44,6 +47,12 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
                 if (definition == null)
                 {
                     _failures.Add(new FileLoadResult(ResultType.Fail, "Failed to deserialize definition", fileName));
+                    continue;
+                }
+
+                if (!_seenRegionTags.Add(definition.Tag))
+                {
+                    _failures.Add(new FileLoadResult(ResultType.Fail, $"Duplicate region tag '{definition.Tag}' detected.", fileName));
                     continue;
                 }
 
@@ -101,9 +110,10 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
             return false;
         }
 
-        if (definition.Settlements is { Count: > 0 } && definition.Settlements.Any(s => s < 0))
+        // Treat 0 and negatives as invalid
+        if (definition.Settlements is { Count: > 0 } && definition.Settlements.Any(s => s <= 0))
         {
-            error = "Settlement IDs must be non-negative integers.";
+            error = "Settlement IDs must be positive integers.";
             return false;
         }
 
@@ -122,9 +132,9 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
             string details = string.Empty;
             if (repository.TryGetRegionBySettlement(duplicates[0], out RegionDefinition? existing) && existing is not null)
             {
-                details = $" (already assigned to region '{existing.Tag}')";
+                details = $" (also defined in region '{existing.Tag}')";
             }
-            error = $"Settlement ID(s) [{dupList}] already assigned to another region{details}.";
+            error = $"Duplicate settlement IDs across regions: [{dupList}]{details}.";
             return false;
         }
 

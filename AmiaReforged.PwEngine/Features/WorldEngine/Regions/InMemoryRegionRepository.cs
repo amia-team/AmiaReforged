@@ -55,9 +55,15 @@ public class InMemoryRegionRepository : IRegionRepository
 
     public IReadOnlyCollection<int> GetSettlements(string regionTag)
     {
-        return _regions.TryGetValue(regionTag, out RegionDefinition? region)
+        return _regions.TryGetValue(regionTag, out var region)
             ? region.Settlements
             : Array.Empty<int>();
+    }
+
+    public void Clear()
+    {
+        _regions.Clear();
+        _settlementToRegionTag.Clear();
     }
 
     private void IndexSettlements(RegionDefinition definition)

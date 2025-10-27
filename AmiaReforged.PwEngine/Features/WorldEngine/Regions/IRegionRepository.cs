@@ -10,4 +10,7 @@ public interface IRegionRepository
     // New queries to support settlement-region mapping
     bool TryGetRegionBySettlement(int settlementId, out RegionDefinition? region);
     IReadOnlyCollection<int> GetSettlements(string regionTag);
+
+    // Clear all regions and indexes (used on reload)
+    void Clear();
 }
