@@ -26,7 +26,7 @@ public sealed record GovernmentPersona : Persona
         if (string.IsNullOrWhiteSpace(displayName))
             throw new ArgumentException("Display name cannot be empty", nameof(displayName));
 
-        var persona = new GovernmentPersona
+        GovernmentPersona persona = new GovernmentPersona
         {
             Id = PersonaId.FromGovernment(governmentId),
             Type = PersonaType.Government,

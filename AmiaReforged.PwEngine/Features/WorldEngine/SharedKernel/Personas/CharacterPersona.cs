@@ -18,7 +18,7 @@ public sealed record CharacterPersona : Persona
         if (string.IsNullOrWhiteSpace(displayName))
             throw new ArgumentException("Display name cannot be empty", nameof(displayName));
 
-        var persona = new CharacterPersona
+        CharacterPersona persona = new CharacterPersona
         {
             Id = PersonaId.FromCharacter(characterId),
             Type = PersonaType.Character,

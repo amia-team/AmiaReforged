@@ -76,7 +76,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     private static NuiElement ImageButton(string id, string tooltip, out NuiButtonImage logicalButton,
         float width, float height, string resRef)
     {
-        var btn = new NuiButtonImage(resRef)
+        NuiButtonImage btn = new NuiButtonImage(resRef)
         {
             Id = id,
             Width = width,
@@ -89,7 +89,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     private static NuiElement ImagePlatedLabeledButton(string id, string label, out NuiButtonImage logicalButton,
         string resRef, float width = 150f, float height = 38f)
     {
-        var btn = new NuiButtonImage(resRef)
+        NuiButtonImage btn = new NuiButtonImage(resRef)
         {
             Id = id,
             Width = width,
@@ -198,7 +198,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
         const float leftPad = 180f; // Adjusted for better centering
 
         // Create the base layer with background image and overlays
-        var drawList = new List<NuiDrawListItem>
+        List<NuiDrawListItem> drawList = new List<NuiDrawListItem>
         {
             new NuiDrawListImage("app_armor_body", new NuiRect(leftPad, 0f, bodyWidth, bodyHeight))
         };
@@ -294,12 +294,12 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
 
     private NuiElement BuildColorPalette()
     {
-        var colorGrid = new List<NuiElement>();
+        List<NuiElement> colorGrid = new List<NuiElement>();
 
         // Create 176 color buttons in a grid (16 columns × 11 rows)
         for (int row = 0; row < 11; row++)
         {
-            var rowElement = new NuiRow { Children = new List<NuiElement>() };
+            NuiRow rowElement = new NuiRow { Children = new List<NuiElement>() };
 
             // Add left spacer to center: (700 - 480) / 2 = 110px
             rowElement.Children.Add(new NuiSpacer { Width = 40f });
@@ -309,13 +309,13 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 int colorIndex = row * 16 + col;
                 if (colorIndex >= 176) break;
 
-                var colorBtn = new NuiButtonImage($"cc_color_{colorIndex}")
+                NuiButtonImage colorBtn = new NuiButtonImage($"cc_color_{colorIndex}")
                 {
                     Id = $"btn_color_{colorIndex}",
                     Width = 30f,
                     Height = 30f,
                     Tooltip = $"Color {colorIndex}"
-                }.Assign(out var btnRef);
+                }.Assign(out NuiButtonImage btnRef);
 
                 ColorButtons.Add(btnRef);
                 rowElement.Children.Add(colorBtn);
@@ -366,7 +366,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public override NuiLayout RootLayout()
     {
         // Background
-        var bgLayer = new NuiRow
+        NuiRow bgLayer = new NuiRow
         {
             Width = 0f,
             Height = 0f,
@@ -374,8 +374,8 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
             DrawList = new() { new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH)) }
         };
 
-        var headerOverlay = BuildHeaderOverlay();
-        var headerSpacer = new NuiSpacer { Height = HeaderH + HeaderTopPad + 6f };
+        NuiElement headerOverlay = BuildHeaderOverlay();
+        NuiSpacer headerSpacer = new NuiSpacer { Height = HeaderH + HeaderTopPad + 6f };
 
         return new NuiColumn
         {

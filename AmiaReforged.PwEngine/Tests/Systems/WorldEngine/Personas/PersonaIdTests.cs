@@ -12,10 +12,10 @@ public class PersonaIdTests
     public void FromCharacter_CreatesCorrectPersonaId()
     {
         // Arrange
-        var characterId = CharacterId.New();
+        CharacterId characterId = CharacterId.New();
 
         // Act
-        var personaId = PersonaId.FromCharacter(characterId);
+        PersonaId personaId = PersonaId.FromCharacter(characterId);
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Character));
@@ -27,10 +27,10 @@ public class PersonaIdTests
     public void FromOrganization_CreatesCorrectPersonaId()
     {
         // Arrange
-        var orgId = OrganizationId.New();
+        OrganizationId orgId = OrganizationId.New();
 
         // Act
-        var personaId = PersonaId.FromOrganization(orgId);
+        PersonaId personaId = PersonaId.FromOrganization(orgId);
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Organization));
@@ -42,10 +42,10 @@ public class PersonaIdTests
     public void FromCoinhouse_CreatesCorrectPersonaId()
     {
         // Arrange
-        var tag = new CoinhouseTag("cordor-bank");
+        CoinhouseTag tag = new CoinhouseTag("cordor-bank");
 
         // Act
-        var personaId = PersonaId.FromCoinhouse(tag);
+        PersonaId personaId = PersonaId.FromCoinhouse(tag);
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Coinhouse));
@@ -57,10 +57,10 @@ public class PersonaIdTests
     public void FromGovernment_CreatesCorrectPersonaId()
     {
         // Arrange
-        var govId = GovernmentId.New();
+        GovernmentId govId = GovernmentId.New();
 
         // Act
-        var personaId = PersonaId.FromGovernment(govId);
+        PersonaId personaId = PersonaId.FromGovernment(govId);
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Government));
@@ -72,7 +72,7 @@ public class PersonaIdTests
     public void FromSystem_CreatesCorrectPersonaId()
     {
         // Act
-        var personaId = PersonaId.FromSystem("TaxCollector");
+        PersonaId personaId = PersonaId.FromSystem("TaxCollector");
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.SystemProcess));
@@ -84,11 +84,11 @@ public class PersonaIdTests
     public void Parse_ValidString_ReturnsCorrectPersonaId()
     {
         // Arrange
-        var characterId = CharacterId.New();
-        var expected = $"Character:{characterId.Value}";
+        CharacterId characterId = CharacterId.New();
+        string expected = $"Character:{characterId.Value}";
 
         // Act
-        var personaId = PersonaId.Parse(expected);
+        PersonaId personaId = PersonaId.Parse(expected);
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Character));
@@ -108,7 +108,7 @@ public class PersonaIdTests
     public void Parse_InvalidType_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => PersonaId.Parse("InvalidType:12345"));
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() => PersonaId.Parse("InvalidType:12345"));
         Assert.That(ex!.Message, Does.Contain("InvalidType"));
     }
 
@@ -124,7 +124,7 @@ public class PersonaIdTests
     public void ImplicitConversion_ToString_Works()
     {
         // Arrange
-        var personaId = PersonaId.FromSystem("TestProcess");
+        PersonaId personaId = PersonaId.FromSystem("TestProcess");
 
         // Act
         string stringValue = personaId;
@@ -137,8 +137,8 @@ public class PersonaIdTests
     public void Equality_SameValues_AreEqual()
     {
         // Arrange
-        var id1 = PersonaId.FromSystem("Process1");
-        var id2 = PersonaId.FromSystem("Process1");
+        PersonaId id1 = PersonaId.FromSystem("Process1");
+        PersonaId id2 = PersonaId.FromSystem("Process1");
 
         // Act & Assert
         Assert.That(id1, Is.EqualTo(id2));
@@ -149,8 +149,8 @@ public class PersonaIdTests
     public void Equality_DifferentValues_AreNotEqual()
     {
         // Arrange
-        var id1 = PersonaId.FromSystem("Process1");
-        var id2 = PersonaId.FromSystem("Process2");
+        PersonaId id1 = PersonaId.FromSystem("Process1");
+        PersonaId id2 = PersonaId.FromSystem("Process2");
 
         // Act & Assert
         Assert.That(id1, Is.Not.EqualTo(id2));
@@ -160,9 +160,9 @@ public class PersonaIdTests
     public void Equality_DifferentTypes_AreNotEqual()
     {
         // Arrange
-        var guid = Guid.NewGuid().ToString();
-        var id1 = new PersonaId(PersonaType.Character, guid);
-        var id2 = new PersonaId(PersonaType.Organization, guid);
+        string guid = Guid.NewGuid().ToString();
+        PersonaId id1 = new PersonaId(PersonaType.Character, guid);
+        PersonaId id2 = new PersonaId(PersonaType.Organization, guid);
 
         // Act & Assert
         Assert.That(id1, Is.Not.EqualTo(id2));

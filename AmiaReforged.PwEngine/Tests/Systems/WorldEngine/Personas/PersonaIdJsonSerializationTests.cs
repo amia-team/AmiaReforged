@@ -13,12 +13,12 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_SerializesToString()
     {
         // Arrange
-        var characterId = CharacterId.New();
-        var personaId = characterId.ToPersonaId();
-        var expected = $"\"Character:{characterId.Value}\"";
+        CharacterId characterId = CharacterId.New();
+        PersonaId personaId = characterId.ToPersonaId();
+        string expected = $"\"Character:{characterId.Value}\"";
 
         // Act
-        var json = JsonSerializer.Serialize(personaId);
+        string json = JsonSerializer.Serialize(personaId);
 
         // Assert
         Assert.That(json, Is.EqualTo(expected));
@@ -28,11 +28,11 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_DeserializesFromString()
     {
         // Arrange
-        var characterId = CharacterId.New();
-        var json = $"\"Character:{characterId.Value}\"";
+        CharacterId characterId = CharacterId.New();
+        string json = $"\"Character:{characterId.Value}\"";
 
         // Act
-        var personaId = JsonSerializer.Deserialize<PersonaId>(json);
+        PersonaId personaId = JsonSerializer.Deserialize<PersonaId>(json);
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Character));
@@ -43,11 +43,11 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_RoundTrip_Character()
     {
         // Arrange
-        var original = CharacterId.New().ToPersonaId();
+        PersonaId original = CharacterId.New().ToPersonaId();
 
         // Act
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersonaId>(json);
+        string json = JsonSerializer.Serialize(original);
+        PersonaId deserialized = JsonSerializer.Deserialize<PersonaId>(json);
 
         // Assert
         Assert.That(deserialized, Is.EqualTo(original));
@@ -57,11 +57,11 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_RoundTrip_Organization()
     {
         // Arrange
-        var original = OrganizationId.New().ToPersonaId();
+        PersonaId original = OrganizationId.New().ToPersonaId();
 
         // Act
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersonaId>(json);
+        string json = JsonSerializer.Serialize(original);
+        PersonaId deserialized = JsonSerializer.Deserialize<PersonaId>(json);
 
         // Assert
         Assert.That(deserialized, Is.EqualTo(original));
@@ -71,11 +71,11 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_RoundTrip_Coinhouse()
     {
         // Arrange
-        var original = PersonaId.FromCoinhouse(new CoinhouseTag("test-bank"));
+        PersonaId original = PersonaId.FromCoinhouse(new CoinhouseTag("test-bank"));
 
         // Act
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersonaId>(json);
+        string json = JsonSerializer.Serialize(original);
+        PersonaId deserialized = JsonSerializer.Deserialize<PersonaId>(json);
 
         // Assert
         Assert.That(deserialized, Is.EqualTo(original));
@@ -85,11 +85,11 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_RoundTrip_Government()
     {
         // Arrange
-        var original = GovernmentId.New().ToPersonaId();
+        PersonaId original = GovernmentId.New().ToPersonaId();
 
         // Act
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersonaId>(json);
+        string json = JsonSerializer.Serialize(original);
+        PersonaId deserialized = JsonSerializer.Deserialize<PersonaId>(json);
 
         // Assert
         Assert.That(deserialized, Is.EqualTo(original));
@@ -99,11 +99,11 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_RoundTrip_SystemProcess()
     {
         // Arrange
-        var original = PersonaId.FromSystem("TaxCollector");
+        PersonaId original = PersonaId.FromSystem("TaxCollector");
 
         // Act
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersonaId>(json);
+        string json = JsonSerializer.Serialize(original);
+        PersonaId deserialized = JsonSerializer.Deserialize<PersonaId>(json);
 
         // Assert
         Assert.That(deserialized, Is.EqualTo(original));
@@ -113,7 +113,7 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_DeserializeInvalidFormat_ThrowsJsonException()
     {
         // Arrange
-        var invalidJson = "\"InvalidFormat\"";
+        string invalidJson = "\"InvalidFormat\"";
 
         // Act & Assert
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PersonaId>(invalidJson));
@@ -123,7 +123,7 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_DeserializeInvalidType_ThrowsJsonException()
     {
         // Arrange
-        var invalidJson = "\"InvalidType:12345\"";
+        string invalidJson = "\"InvalidType:12345\"";
 
         // Act & Assert
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PersonaId>(invalidJson));
@@ -133,7 +133,7 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_DeserializeNull_ThrowsJsonException()
     {
         // Arrange
-        var nullJson = "null";
+        string nullJson = "null";
 
         // Act & Assert
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PersonaId>(nullJson));
@@ -143,7 +143,7 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_InObject_SerializesCorrectly()
     {
         // Arrange
-        var testObject = new TestClassWithPersonaId
+        TestClassWithPersonaId testObject = new TestClassWithPersonaId
         {
             Id = 123,
             PersonaId = CharacterId.New().ToPersonaId(),
@@ -151,8 +151,8 @@ public class PersonaIdJsonSerializationTests
         };
 
         // Act
-        var json = JsonSerializer.Serialize(testObject);
-        var deserialized = JsonSerializer.Deserialize<TestClassWithPersonaId>(json);
+        string json = JsonSerializer.Serialize(testObject);
+        TestClassWithPersonaId? deserialized = JsonSerializer.Deserialize<TestClassWithPersonaId>(json);
 
         // Assert
         Assert.That(deserialized, Is.Not.Null);
@@ -165,7 +165,7 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_InCollection_SerializesCorrectly()
     {
         // Arrange
-        var personaIds = new List<PersonaId>
+        List<PersonaId> personaIds = new List<PersonaId>
         {
             CharacterId.New().ToPersonaId(),
             OrganizationId.New().ToPersonaId(),
@@ -174,8 +174,8 @@ public class PersonaIdJsonSerializationTests
         };
 
         // Act
-        var json = JsonSerializer.Serialize(personaIds);
-        var deserialized = JsonSerializer.Deserialize<List<PersonaId>>(json);
+        string json = JsonSerializer.Serialize(personaIds);
+        List<PersonaId>? deserialized = JsonSerializer.Deserialize<List<PersonaId>>(json);
 
         // Assert
         Assert.That(deserialized, Is.Not.Null);
@@ -190,7 +190,7 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_InDictionary_SerializesCorrectly()
     {
         // Arrange
-        var dict = new Dictionary<string, PersonaId>
+        Dictionary<string, PersonaId> dict = new Dictionary<string, PersonaId>
         {
             ["character"] = CharacterId.New().ToPersonaId(),
             ["organization"] = OrganizationId.New().ToPersonaId(),
@@ -198,8 +198,8 @@ public class PersonaIdJsonSerializationTests
         };
 
         // Act
-        var json = JsonSerializer.Serialize(dict);
-        var deserialized = JsonSerializer.Deserialize<Dictionary<string, PersonaId>>(json);
+        string json = JsonSerializer.Serialize(dict);
+        Dictionary<string, PersonaId>? deserialized = JsonSerializer.Deserialize<Dictionary<string, PersonaId>>(json);
 
         // Assert
         Assert.That(deserialized, Is.Not.Null);
@@ -213,15 +213,15 @@ public class PersonaIdJsonSerializationTests
     public void PersonaId_WithOptions_SerializesCorrectly()
     {
         // Arrange
-        var personaId = CharacterId.New().ToPersonaId();
-        var options = new JsonSerializerOptions
+        PersonaId personaId = CharacterId.New().ToPersonaId();
+        JsonSerializerOptions options = new JsonSerializerOptions
         {
             WriteIndented = true
         };
 
         // Act
-        var json = JsonSerializer.Serialize(personaId, options);
-        var deserialized = JsonSerializer.Deserialize<PersonaId>(json, options);
+        string json = JsonSerializer.Serialize(personaId, options);
+        PersonaId deserialized = JsonSerializer.Deserialize<PersonaId>(json, options);
 
         // Assert
         Assert.That(deserialized, Is.EqualTo(personaId));

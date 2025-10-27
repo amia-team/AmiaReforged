@@ -21,7 +21,7 @@ public class RegionIndexFacadeBehaviorTests
     {
         InMemoryRegionRepository repo = new();
         // Intentionally include duplicates in input; repository doesn't dedupe
-        var settlements = new List<SettlementId>
+        List<SettlementId> settlements = new List<SettlementId>
         {
             SettlementId.Parse(5),
             SettlementId.Parse(5),
@@ -36,7 +36,7 @@ public class RegionIndexFacadeBehaviorTests
         CollectionAssert.AreEqual(new[]{5,6,7}, first);
 
         // Mutate the underlying repo after snapshot
-        var newSettlements = new List<SettlementId>
+        List<SettlementId> newSettlements = new List<SettlementId>
         {
             SettlementId.Parse(7),
             SettlementId.Parse(6),

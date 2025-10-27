@@ -18,7 +18,7 @@ public sealed record OrganizationPersona : Persona
         if (string.IsNullOrWhiteSpace(displayName))
             throw new ArgumentException("Display name cannot be empty", nameof(displayName));
 
-        var persona = new OrganizationPersona
+        OrganizationPersona persona = new OrganizationPersona
         {
             Id = PersonaId.FromOrganization(organizationId),
             Type = PersonaType.Organization,

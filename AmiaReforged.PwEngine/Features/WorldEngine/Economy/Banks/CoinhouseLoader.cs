@@ -54,8 +54,8 @@ public class CoinhouseLoader(ICoinhouseRepository coinhouses, IRegionRepository 
                 }
 
                 // Strong types are created from JSON primitives and validated
-                var coinhouseTag = new CoinhouseTag(definition.Tag);
-                var settlementId = SettlementId.Parse(definition.Settlement);
+                CoinhouseTag coinhouseTag = new CoinhouseTag(definition.Tag);
+                SettlementId settlementId = SettlementId.Parse(definition.Settlement);
 
                 coinhouses.AddNewCoinhouse(new CoinHouse
                 {

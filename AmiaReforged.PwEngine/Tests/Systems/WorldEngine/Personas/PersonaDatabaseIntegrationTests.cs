@@ -14,8 +14,8 @@ public class PersonaDatabaseIntegrationTests
     public void PersistedCharacter_PersonaId_AutoGenerates_When_PersonaIdString_IsNull()
     {
         // Arrange
-        var characterId = Guid.NewGuid();
-        var character = new PersistedCharacter
+        Guid characterId = Guid.NewGuid();
+        PersistedCharacter character = new PersistedCharacter
         {
             Id = characterId,
             FirstName = "Aldric",
@@ -25,7 +25,7 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var personaId = character.PersonaId;
+        PersonaId personaId = character.PersonaId;
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Character));
@@ -37,9 +37,9 @@ public class PersonaDatabaseIntegrationTests
     public void PersistedCharacter_PersonaId_ParsesFromString_When_PersonaIdString_IsPopulated()
     {
         // Arrange
-        var characterId = Guid.NewGuid();
-        var expectedPersonaIdString = $"Character:{characterId}";
-        var character = new PersistedCharacter
+        Guid characterId = Guid.NewGuid();
+        string expectedPersonaIdString = $"Character:{characterId}";
+        PersistedCharacter character = new PersistedCharacter
         {
             Id = characterId,
             FirstName = "Aldric",
@@ -49,7 +49,7 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var personaId = character.PersonaId;
+        PersonaId personaId = character.PersonaId;
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Character));
@@ -61,8 +61,8 @@ public class PersonaDatabaseIntegrationTests
     public void PersistedCharacter_CharacterId_ReturnsStronglyTypedId()
     {
         // Arrange
-        var characterId = Guid.NewGuid();
-        var character = new PersistedCharacter
+        Guid characterId = Guid.NewGuid();
+        PersistedCharacter character = new PersistedCharacter
         {
             Id = characterId,
             FirstName = "Aldric",
@@ -71,7 +71,7 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var strongCharacterId = character.CharacterId;
+        CharacterId strongCharacterId = character.CharacterId;
 
         // Assert
         Assert.That(strongCharacterId.Value, Is.EqualTo(characterId));
@@ -81,8 +81,8 @@ public class PersonaDatabaseIntegrationTests
     public void Organization_PersonaId_AutoGenerates_When_PersonaIdString_IsNull()
     {
         // Arrange
-        var orgId = Guid.NewGuid();
-        var organization = new Organization
+        Guid orgId = Guid.NewGuid();
+        Organization organization = new Organization
         {
             Id = orgId,
             Name = "Merchants Guild",
@@ -91,7 +91,7 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var personaId = organization.PersonaId;
+        PersonaId personaId = organization.PersonaId;
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Organization));
@@ -103,9 +103,9 @@ public class PersonaDatabaseIntegrationTests
     public void Organization_PersonaId_ParsesFromString_When_PersonaIdString_IsPopulated()
     {
         // Arrange
-        var orgId = Guid.NewGuid();
-        var expectedPersonaIdString = $"Organization:{orgId}";
-        var organization = new Organization
+        Guid orgId = Guid.NewGuid();
+        string expectedPersonaIdString = $"Organization:{orgId}";
+        Organization organization = new Organization
         {
             Id = orgId,
             Name = "Merchants Guild",
@@ -114,7 +114,7 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var personaId = organization.PersonaId;
+        PersonaId personaId = organization.PersonaId;
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Organization));
@@ -126,8 +126,8 @@ public class PersonaDatabaseIntegrationTests
     public void Organization_OrganizationId_ReturnsStronglyTypedId()
     {
         // Arrange
-        var orgId = Guid.NewGuid();
-        var organization = new Organization
+        Guid orgId = Guid.NewGuid();
+        Organization organization = new Organization
         {
             Id = orgId,
             Name = "Merchants Guild",
@@ -135,7 +135,7 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var strongOrgId = organization.OrganizationId;
+        OrganizationId strongOrgId = organization.OrganizationId;
 
         // Assert
         Assert.That(strongOrgId.Value, Is.EqualTo(orgId));
@@ -145,7 +145,7 @@ public class PersonaDatabaseIntegrationTests
     public void CoinHouse_PersonaId_AutoGenerates_When_PersonaIdString_IsNull()
     {
         // Arrange
-        var coinhouse = new CoinHouse
+        CoinHouse coinhouse = new CoinHouse
         {
             Tag = "cordor-bank",
             Settlement = 1,
@@ -155,7 +155,7 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var personaId = coinhouse.PersonaId;
+        PersonaId personaId = coinhouse.PersonaId;
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Coinhouse));
@@ -167,8 +167,8 @@ public class PersonaDatabaseIntegrationTests
     public void CoinHouse_PersonaId_ParsesFromString_When_PersonaIdString_IsPopulated()
     {
         // Arrange
-        var expectedPersonaIdString = "Coinhouse:cordor-bank";
-        var coinhouse = new CoinHouse
+        string expectedPersonaIdString = "Coinhouse:cordor-bank";
+        CoinHouse coinhouse = new CoinHouse
         {
             Tag = "cordor-bank",
             Settlement = 1,
@@ -178,7 +178,7 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var personaId = coinhouse.PersonaId;
+        PersonaId personaId = coinhouse.PersonaId;
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Coinhouse));
@@ -190,7 +190,7 @@ public class PersonaDatabaseIntegrationTests
     public void CoinHouse_StrongTypedProperties_WorkCorrectly()
     {
         // Arrange
-        var coinhouse = new CoinHouse
+        CoinHouse coinhouse = new CoinHouse
         {
             Tag = "cordor-bank",
             Settlement = 1,
@@ -208,8 +208,8 @@ public class PersonaDatabaseIntegrationTests
     public void PersonaId_RoundTrip_Character_ToStringAndParse()
     {
         // Arrange
-        var characterId = Guid.NewGuid();
-        var character = new PersistedCharacter
+        Guid characterId = Guid.NewGuid();
+        PersistedCharacter character = new PersistedCharacter
         {
             Id = characterId,
             FirstName = "Test",
@@ -219,9 +219,9 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var personaId = character.PersonaId;
-        var personaIdString = personaId.ToString();
-        var parsedPersonaId = PersonaId.Parse(personaIdString);
+        PersonaId personaId = character.PersonaId;
+        string personaIdString = personaId.ToString();
+        PersonaId parsedPersonaId = PersonaId.Parse(personaIdString);
 
         // Assert
         Assert.That(parsedPersonaId, Is.EqualTo(personaId));
@@ -233,8 +233,8 @@ public class PersonaDatabaseIntegrationTests
     public void PersonaId_RoundTrip_Organization_ToStringAndParse()
     {
         // Arrange
-        var orgId = Guid.NewGuid();
-        var organization = new Organization
+        Guid orgId = Guid.NewGuid();
+        Organization organization = new Organization
         {
             Id = orgId,
             Name = "Test Guild",
@@ -242,9 +242,9 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var personaId = organization.PersonaId;
-        var personaIdString = personaId.ToString();
-        var parsedPersonaId = PersonaId.Parse(personaIdString);
+        PersonaId personaId = organization.PersonaId;
+        string personaIdString = personaId.ToString();
+        PersonaId parsedPersonaId = PersonaId.Parse(personaIdString);
 
         // Assert
         Assert.That(parsedPersonaId, Is.EqualTo(personaId));
@@ -256,7 +256,7 @@ public class PersonaDatabaseIntegrationTests
     public void PersonaId_RoundTrip_Coinhouse_ToStringAndParse()
     {
         // Arrange
-        var coinhouse = new CoinHouse
+        CoinHouse coinhouse = new CoinHouse
         {
             Tag = "test-bank",
             Settlement = 1,
@@ -265,9 +265,9 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var personaId = coinhouse.PersonaId;
-        var personaIdString = personaId.ToString();
-        var parsedPersonaId = PersonaId.Parse(personaIdString);
+        PersonaId personaId = coinhouse.PersonaId;
+        string personaIdString = personaId.ToString();
+        PersonaId parsedPersonaId = PersonaId.Parse(personaIdString);
 
         // Assert
         Assert.That(parsedPersonaId, Is.EqualTo(personaId));
@@ -279,8 +279,8 @@ public class PersonaDatabaseIntegrationTests
     public void DifferentEntityTypes_HaveDifferentPersonaIds()
     {
         // Arrange
-        var characterId = Guid.NewGuid();
-        var character = new PersistedCharacter
+        Guid characterId = Guid.NewGuid();
+        PersistedCharacter character = new PersistedCharacter
         {
             Id = characterId,
             FirstName = "Test",
@@ -288,13 +288,13 @@ public class PersonaDatabaseIntegrationTests
             CdKey = "TESTKEY1"
         };
 
-        var organization = new Organization
+        Organization organization = new Organization
         {
             Id = Guid.NewGuid(),
             Name = "Test Guild"
         };
 
-        var coinhouse = new CoinHouse
+        CoinHouse coinhouse = new CoinHouse
         {
             Tag = "test-bank",
             Settlement = 1,
@@ -302,9 +302,9 @@ public class PersonaDatabaseIntegrationTests
         };
 
         // Act
-        var charPersonaId = character.PersonaId;
-        var orgPersonaId = organization.PersonaId;
-        var coinhousePersonaId = coinhouse.PersonaId;
+        PersonaId charPersonaId = character.PersonaId;
+        PersonaId orgPersonaId = organization.PersonaId;
+        PersonaId coinhousePersonaId = coinhouse.PersonaId;
 
         // Assert
         Assert.That(charPersonaId.Type, Is.Not.EqualTo(orgPersonaId.Type));

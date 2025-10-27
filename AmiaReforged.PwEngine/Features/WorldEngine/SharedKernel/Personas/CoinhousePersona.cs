@@ -25,7 +25,7 @@ public sealed record CoinhousePersona : Persona
         if (string.IsNullOrWhiteSpace(displayName))
             throw new ArgumentException("Display name cannot be empty", nameof(displayName));
 
-        var persona = new CoinhousePersona
+        CoinhousePersona persona = new CoinhousePersona
         {
             Id = PersonaId.FromCoinhouse(tag),
             Type = PersonaType.Coinhouse,

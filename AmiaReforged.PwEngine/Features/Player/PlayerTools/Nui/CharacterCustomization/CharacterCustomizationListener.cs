@@ -25,7 +25,7 @@ public class CharacterCustomizationListener
 
         // Get the PC who is speaking in the conversation
         uint pcObject = NWScript.GetLastSpeaker();
-        var creature = pcObject.ToNwObject<NwCreature>();
+        NwCreature? creature = pcObject.ToNwObject<NwCreature>();
 
         if (creature == null || !creature.IsValid)
         {
@@ -33,7 +33,7 @@ public class CharacterCustomizationListener
             return;
         }
 
-        var player = creature.ControllingPlayer;
+        NwPlayer? player = creature.ControllingPlayer;
         if (player == null)
         {
             Log.Warn("Player is null");
@@ -43,7 +43,7 @@ public class CharacterCustomizationListener
         Log.Info($"Opening Character Customization for player: {player.PlayerName}");
 
         // Open the Character Customization window
-        var view = new CharacterCustomizationView(player);
+        CharacterCustomizationView view = new CharacterCustomizationView(player);
         view.Presenter.Create();
 
         player.SendServerMessage("Opening Character Customization...", ColorConstants.Cyan);

@@ -19,7 +19,7 @@ public sealed record SystemPersona : Persona
         if (string.IsNullOrWhiteSpace(processName))
             throw new ArgumentException("Process name cannot be empty", nameof(processName));
 
-        var persona = new SystemPersona
+        SystemPersona persona = new SystemPersona
         {
             Id = PersonaId.FromSystem(processName),
             Type = PersonaType.SystemProcess,

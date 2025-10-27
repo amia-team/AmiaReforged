@@ -13,11 +13,11 @@ public class PersonaTests
     public void CharacterPersona_Create_ValidInput_CreatesPersona()
     {
         // Arrange
-        var characterId = CharacterId.New();
-        var name = "Aldric the Brave";
+        CharacterId characterId = CharacterId.New();
+        string name = "Aldric the Brave";
 
         // Act
-        var persona = CharacterPersona.Create(characterId, name);
+        CharacterPersona persona = CharacterPersona.Create(characterId, name);
 
         // Assert
         Assert.That(persona.CharacterId, Is.EqualTo(characterId));
@@ -31,7 +31,7 @@ public class PersonaTests
     public void CharacterPersona_Create_EmptyName_ThrowsArgumentException()
     {
         // Arrange
-        var characterId = CharacterId.New();
+        CharacterId characterId = CharacterId.New();
 
         // Act & Assert
         Assert.Throws<ArgumentException>(() => CharacterPersona.Create(characterId, ""));
@@ -42,11 +42,11 @@ public class PersonaTests
     public void OrganizationPersona_Create_ValidInput_CreatesPersona()
     {
         // Arrange
-        var orgId = OrganizationId.New();
-        var name = "Merchants Guild";
+        OrganizationId orgId = OrganizationId.New();
+        string name = "Merchants Guild";
 
         // Act
-        var persona = OrganizationPersona.Create(orgId, name);
+        OrganizationPersona persona = OrganizationPersona.Create(orgId, name);
 
         // Assert
         Assert.That(persona.OrganizationId, Is.EqualTo(orgId));
@@ -59,12 +59,12 @@ public class PersonaTests
     public void CoinhousePersona_Create_ValidInput_CreatesPersona()
     {
         // Arrange
-        var tag = new CoinhouseTag("cordor-bank");
-        var settlement = SettlementId.Parse(1);
-        var name = "Cordor Central Bank";
+        CoinhouseTag tag = new CoinhouseTag("cordor-bank");
+        SettlementId settlement = SettlementId.Parse(1);
+        string name = "Cordor Central Bank";
 
         // Act
-        var persona = CoinhousePersona.Create(tag, settlement, name);
+        CoinhousePersona persona = CoinhousePersona.Create(tag, settlement, name);
 
         // Assert
         Assert.That(persona.Tag, Is.EqualTo(tag));
@@ -78,12 +78,12 @@ public class PersonaTests
     public void GovernmentPersona_Create_ValidInput_CreatesPersona()
     {
         // Arrange
-        var govId = GovernmentId.New();
-        var settlement = SettlementId.Parse(1);
-        var name = "City of Cordor";
+        GovernmentId govId = GovernmentId.New();
+        SettlementId settlement = SettlementId.Parse(1);
+        string name = "City of Cordor";
 
         // Act
-        var persona = GovernmentPersona.Create(govId, settlement, name);
+        GovernmentPersona persona = GovernmentPersona.Create(govId, settlement, name);
 
         // Assert
         Assert.That(persona.GovernmentId, Is.EqualTo(govId));
@@ -97,11 +97,11 @@ public class PersonaTests
     public void SystemPersona_Create_ValidInput_CreatesPersona()
     {
         // Arrange
-        var processName = "TaxCollector";
-        var displayName = "Automated Tax Collection";
+        string processName = "TaxCollector";
+        string displayName = "Automated Tax Collection";
 
         // Act
-        var persona = SystemPersona.Create(processName, displayName);
+        SystemPersona persona = SystemPersona.Create(processName, displayName);
 
         // Assert
         Assert.That(persona.ProcessName, Is.EqualTo(processName));
@@ -114,7 +114,7 @@ public class PersonaTests
     public void SystemPersona_Create_NoDisplayName_UsesDefault()
     {
         // Act
-        var persona = SystemPersona.Create("TaxCollector");
+        SystemPersona persona = SystemPersona.Create("TaxCollector");
 
         // Assert
         Assert.That(persona.DisplayName, Is.EqualTo("System: TaxCollector"));
@@ -124,7 +124,7 @@ public class PersonaTests
     public void TestHelpers_CreateCharacterPersona_Works()
     {
         // Act
-        var persona = PersonaTestHelpers.CreateCharacterPersona("TestName");
+        CharacterPersona persona = PersonaTestHelpers.CreateCharacterPersona("TestName");
 
         // Assert
         Assert.That(persona.DisplayName, Is.EqualTo("TestName"));
@@ -135,7 +135,7 @@ public class PersonaTests
     public void TestHelpers_CreateOrganizationPersona_Works()
     {
         // Act
-        var persona = PersonaTestHelpers.CreateOrganizationPersona("TestOrg");
+        OrganizationPersona persona = PersonaTestHelpers.CreateOrganizationPersona("TestOrg");
 
         // Assert
         Assert.That(persona.DisplayName, Is.EqualTo("TestOrg"));
@@ -146,7 +146,7 @@ public class PersonaTests
     public void TestHelpers_CreateCoinhousePersona_Works()
     {
         // Act
-        var persona = PersonaTestHelpers.CreateCoinhousePersona("test-bank", 5, "Test Bank");
+        CoinhousePersona persona = PersonaTestHelpers.CreateCoinhousePersona("test-bank", 5, "Test Bank");
 
         // Assert
         Assert.That(persona.DisplayName, Is.EqualTo("Test Bank"));

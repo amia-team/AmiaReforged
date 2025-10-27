@@ -19,7 +19,7 @@ public class RegionPolicyResolver(ICoinhouseRepository coinhouses, RegionIndex r
 
         try
         {
-            var tag = new CoinhouseTag(coinhouseTag);
+            CoinhouseTag tag = new CoinhouseTag(coinhouseTag);
             CoinHouse? ch = coinhouses.GetByTag(tag);
             if (ch is null) return false;
 
@@ -48,7 +48,7 @@ public class RegionPolicyResolver(ICoinhouseRepository coinhouses, RegionIndex r
         regionTag = null;
         try
         {
-            var settlementIdValue = SettlementId.Parse(settlementId);
+            SettlementId settlementIdValue = SettlementId.Parse(settlementId);
             bool result = regionIndex.TryGetRegionTagForSettlement(settlementIdValue, out RegionTag? regionTagValue);
             regionTag = regionTagValue?.Value;  // Extract string value
             return result;

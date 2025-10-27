@@ -12,10 +12,10 @@ public class PersonaIdConversionTests
     public void CharacterId_ToPersonaId_CreatesCorrectPersonaId()
     {
         // Arrange
-        var characterId = CharacterId.New();
+        CharacterId characterId = CharacterId.New();
 
         // Act
-        var personaId = characterId.ToPersonaId();
+        PersonaId personaId = characterId.ToPersonaId();
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Character));
@@ -27,10 +27,10 @@ public class PersonaIdConversionTests
     public void OrganizationId_ToPersonaId_CreatesCorrectPersonaId()
     {
         // Arrange
-        var orgId = OrganizationId.New();
+        OrganizationId orgId = OrganizationId.New();
 
         // Act
-        var personaId = orgId.ToPersonaId();
+        PersonaId personaId = orgId.ToPersonaId();
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Organization));
@@ -42,10 +42,10 @@ public class PersonaIdConversionTests
     public void GovernmentId_ToPersonaId_CreatesCorrectPersonaId()
     {
         // Arrange
-        var govId = GovernmentId.New();
+        GovernmentId govId = GovernmentId.New();
 
         // Act
-        var personaId = govId.ToPersonaId();
+        PersonaId personaId = govId.ToPersonaId();
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Government));
@@ -57,10 +57,10 @@ public class PersonaIdConversionTests
     public void CoinhouseTag_ToPersonaId_CreatesCorrectPersonaId()
     {
         // Arrange
-        var tag = new CoinhouseTag("cordor-bank");
+        CoinhouseTag tag = new CoinhouseTag("cordor-bank");
 
         // Act
-        var personaId = PersonaId.FromCoinhouse(tag);
+        PersonaId personaId = PersonaId.FromCoinhouse(tag);
 
         // Assert
         Assert.That(personaId.Type, Is.EqualTo(PersonaType.Coinhouse));
@@ -72,11 +72,11 @@ public class PersonaIdConversionTests
     public void MultipleConversions_FromSameCharacterId_ProduceSamePersonaId()
     {
         // Arrange
-        var characterId = CharacterId.New();
+        CharacterId characterId = CharacterId.New();
 
         // Act
-        var personaId1 = characterId.ToPersonaId();
-        var personaId2 = characterId.ToPersonaId();
+        PersonaId personaId1 = characterId.ToPersonaId();
+        PersonaId personaId2 = characterId.ToPersonaId();
 
         // Assert
         Assert.That(personaId1, Is.EqualTo(personaId2));
@@ -87,15 +87,15 @@ public class PersonaIdConversionTests
     public void DifferentIdTypes_WithSameGuid_ProduceDifferentPersonaIds()
     {
         // Arrange
-        var guid = Guid.NewGuid();
-        var characterId = CharacterId.From(guid);
-        var orgId = OrganizationId.From(guid);
-        var govId = GovernmentId.From(guid);
+        Guid guid = Guid.NewGuid();
+        CharacterId characterId = CharacterId.From(guid);
+        OrganizationId orgId = OrganizationId.From(guid);
+        GovernmentId govId = GovernmentId.From(guid);
 
         // Act
-        var charPersonaId = characterId.ToPersonaId();
-        var orgPersonaId = orgId.ToPersonaId();
-        var govPersonaId = govId.ToPersonaId();
+        PersonaId charPersonaId = characterId.ToPersonaId();
+        PersonaId orgPersonaId = orgId.ToPersonaId();
+        PersonaId govPersonaId = govId.ToPersonaId();
 
         // Assert - Same underlying value but different types
         Assert.That(charPersonaId.Value, Is.EqualTo(orgPersonaId.Value));
@@ -116,8 +116,8 @@ public class PersonaIdConversionTests
     public void PersonaId_ImplicitConversionToString_Works()
     {
         // Arrange
-        var characterId = CharacterId.New();
-        var personaId = characterId.ToPersonaId();
+        CharacterId characterId = CharacterId.New();
+        PersonaId personaId = characterId.ToPersonaId();
 
         // Act - Implicit conversion
         string personaIdString = personaId;
@@ -130,9 +130,9 @@ public class PersonaIdConversionTests
     public void PersonaId_CanBeUsedInDictionary()
     {
         // Arrange
-        var charId = CharacterId.New();
-        var orgId = OrganizationId.New();
-        var dict = new Dictionary<PersonaId, string>();
+        CharacterId charId = CharacterId.New();
+        OrganizationId orgId = OrganizationId.New();
+        Dictionary<PersonaId, string> dict = new Dictionary<PersonaId, string>();
 
         // Act
         dict[charId.ToPersonaId()] = "Character Data";
@@ -148,10 +148,10 @@ public class PersonaIdConversionTests
     public void PersonaId_CanBeUsedInHashSet()
     {
         // Arrange
-        var charId1 = CharacterId.New();
-        var charId2 = CharacterId.New();
-        var orgId = OrganizationId.New();
-        var set = new HashSet<PersonaId>();
+        CharacterId charId1 = CharacterId.New();
+        CharacterId charId2 = CharacterId.New();
+        OrganizationId orgId = OrganizationId.New();
+        HashSet<PersonaId> set = new HashSet<PersonaId>();
 
         // Act
         set.Add(charId1.ToPersonaId());
@@ -170,14 +170,14 @@ public class PersonaIdConversionTests
     public void ConvertedPersonaIds_CanBeStored_AndRetrieved()
     {
         // Arrange
-        var characterId = CharacterId.New();
-        var personaId = characterId.ToPersonaId();
+        CharacterId characterId = CharacterId.New();
+        PersonaId personaId = characterId.ToPersonaId();
 
         // Act - Store as string
         string storedValue = personaId.ToString();
 
         // Parse back
-        var retrievedPersonaId = PersonaId.Parse(storedValue);
+        PersonaId retrievedPersonaId = PersonaId.Parse(storedValue);
 
         // Assert
         Assert.That(retrievedPersonaId, Is.EqualTo(personaId));
@@ -189,14 +189,14 @@ public class PersonaIdConversionTests
     public void AllIdTypes_ConvertToDistinctPersonaTypes()
     {
         // Arrange & Act
-        var charPersonaId = CharacterId.New().ToPersonaId();
-        var orgPersonaId = OrganizationId.New().ToPersonaId();
-        var govPersonaId = GovernmentId.New().ToPersonaId();
-        var coinhousePersonaId = PersonaId.FromCoinhouse(new CoinhouseTag("test"));
-        var systemPersonaId = PersonaId.FromSystem("TestProcess");
+        PersonaId charPersonaId = CharacterId.New().ToPersonaId();
+        PersonaId orgPersonaId = OrganizationId.New().ToPersonaId();
+        PersonaId govPersonaId = GovernmentId.New().ToPersonaId();
+        PersonaId coinhousePersonaId = PersonaId.FromCoinhouse(new CoinhouseTag("test"));
+        PersonaId systemPersonaId = PersonaId.FromSystem("TestProcess");
 
         // Assert - All have different types
-        var types = new[]
+        PersonaType[] types = new[]
         {
             charPersonaId.Type,
             orgPersonaId.Type,

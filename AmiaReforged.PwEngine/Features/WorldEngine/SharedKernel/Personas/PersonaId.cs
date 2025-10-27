@@ -66,11 +66,11 @@ public readonly record struct PersonaId
         if (string.IsNullOrWhiteSpace(value))
             throw new ArgumentException("PersonaId string cannot be empty", nameof(value));
 
-        var parts = value.Split(':', 2);
+        string[] parts = value.Split(':', 2);
         if (parts.Length != 2)
             throw new ArgumentException($"Invalid PersonaId format: {value}. Expected 'Type:Value'", nameof(value));
 
-        if (!Enum.TryParse<PersonaType>(parts[0], true, out var type))
+        if (!Enum.TryParse<PersonaType>(parts[0], true, out PersonaType type))
             throw new ArgumentException($"Invalid PersonaType: {parts[0]}", nameof(value));
 
         return new PersonaId(type, parts[1]);

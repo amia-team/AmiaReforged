@@ -14,7 +14,7 @@ public static class PersonaTestHelpers
     /// </summary>
     public static CharacterPersona CreateCharacterPersona(string? name = null)
     {
-        var characterId = CharacterId.New();
+        CharacterId characterId = CharacterId.New();
         return CharacterPersona.Create(characterId, name ?? $"TestCharacter-{characterId.Value:N}");
     }
 
@@ -31,7 +31,7 @@ public static class PersonaTestHelpers
     /// </summary>
     public static OrganizationPersona CreateOrganizationPersona(string? name = null)
     {
-        var orgId = OrganizationId.New();
+        OrganizationId orgId = OrganizationId.New();
         return OrganizationPersona.Create(orgId, name ?? $"TestOrg-{orgId.Value:N}");
     }
 
@@ -48,8 +48,8 @@ public static class PersonaTestHelpers
     /// </summary>
     public static CoinhousePersona CreateCoinhousePersona(string? tag = null, int settlementId = 1, string? name = null)
     {
-        var coinhouseTag = new CoinhouseTag(tag ?? "test-coinhouse");
-        var settlement = SettlementId.Parse(settlementId);
+        CoinhouseTag coinhouseTag = new CoinhouseTag(tag ?? "test-coinhouse");
+        SettlementId settlement = SettlementId.Parse(settlementId);
         return CoinhousePersona.Create(coinhouseTag, settlement, name ?? $"Test Coinhouse {tag ?? "default"}");
     }
 
@@ -58,8 +58,8 @@ public static class PersonaTestHelpers
     /// </summary>
     public static GovernmentPersona CreateGovernmentPersona(int settlementId = 1, string? name = null)
     {
-        var govId = GovernmentId.New();
-        var settlement = SettlementId.Parse(settlementId);
+        GovernmentId govId = GovernmentId.New();
+        SettlementId settlement = SettlementId.Parse(settlementId);
         return GovernmentPersona.Create(govId, settlement, name ?? $"Test Government {settlementId}");
     }
 
@@ -68,7 +68,7 @@ public static class PersonaTestHelpers
     /// </summary>
     public static GovernmentPersona CreateGovernmentPersona(GovernmentId govId, int settlementId = 1, string? name = null)
     {
-        var settlement = SettlementId.Parse(settlementId);
+        SettlementId settlement = SettlementId.Parse(settlementId);
         return GovernmentPersona.Create(govId, settlement, name ?? $"Test Government {settlementId}");
     }
 

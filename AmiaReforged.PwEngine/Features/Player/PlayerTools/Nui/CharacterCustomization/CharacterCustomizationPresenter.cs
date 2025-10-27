@@ -33,7 +33,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
 
     public override void Create()
     {
-        var window = new NuiWindow(View.RootLayout(), View.Title)
+        NuiWindow window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(50f, 50f, 700f, 720f),
             Resizable = true
@@ -94,7 +94,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         // Part navigation (armor mode)
         if (ev.ElementId == View.PartLeftButton.Id)
         {
-            var newPart = Math.Max(0, _model.CurrentArmorPart - 1);
+            int newPart = Math.Max(0, _model.CurrentArmorPart - 1);
             _model.SetArmorPart(newPart);
             UpdatePartDisplay();
             return;
@@ -102,7 +102,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
 
         if (ev.ElementId == View.PartRightButton.Id)
         {
-            var newPart = Math.Min(18, _model.CurrentArmorPart + 1);
+            int newPart = Math.Min(18, _model.CurrentArmorPart + 1);
             _model.SetArmorPart(newPart);
             UpdatePartDisplay();
             return;
@@ -112,7 +112,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         if (ev.ElementId == View.ModelLeftButton.Id)
         {
             _model.AdjustArmorPartModel(-1);
-            var modelNum = _model.GetCurrentArmorPartModel();
+            int modelNum = _model.GetCurrentArmorPartModel();
             Token().SetBindValue(View.CurrentPartModel, modelNum);
             Token().SetBindValue(View.CurrentPartModelText, modelNum.ToString());
             return;
@@ -121,7 +121,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         if (ev.ElementId == View.ModelRightButton.Id)
         {
             _model.AdjustArmorPartModel(1);
-            var modelNum = _model.GetCurrentArmorPartModel();
+            int modelNum = _model.GetCurrentArmorPartModel();
             Token().SetBindValue(View.CurrentPartModel, modelNum);
             Token().SetBindValue(View.CurrentPartModelText, modelNum.ToString());
             return;
@@ -182,7 +182,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
     {
         if (_model.CurrentMode != CustomizationMode.Armor) return;
 
-        var partIndex = _model.CurrentArmorPart;
+        int partIndex = _model.CurrentArmorPart;
 
         // Update all armor part overlay visibilities - only show the current part
         for (int i = 0; i < 19; i++)
@@ -195,7 +195,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
             Token().SetBindValue(View.PartName, ArmorPartNames[partIndex]);
         }
 
-        var modelNum = _model.GetCurrentArmorPartModel();
+        int modelNum = _model.GetCurrentArmorPartModel();
         Token().SetBindValue(View.CurrentPartModel, modelNum);
         Token().SetBindValue(View.CurrentPartModelText, modelNum.ToString());
         Token().SetBindValue(View.CurrentColor, _model.GetCurrentArmorPartColor());

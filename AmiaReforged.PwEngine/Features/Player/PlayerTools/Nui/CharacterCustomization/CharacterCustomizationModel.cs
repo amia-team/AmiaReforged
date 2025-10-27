@@ -42,11 +42,11 @@ public sealed class CharacterCustomizationModel
     /// </summary>
     private void LoadCurrentAppearance()
     {
-        var creature = _player.ControlledCreature;
+        NwCreature? creature = _player.ControlledCreature;
         if (creature == null) return;
 
         // Load current armor appearance
-        var armor = creature.GetItemInSlot(InventorySlot.Chest);
+        NwItem? armor = creature.GetItemInSlot(InventorySlot.Chest);
         if (armor != null)
         {
             foreach (CreaturePart part in Enum.GetValues<CreaturePart>())
@@ -105,8 +105,8 @@ public sealed class CharacterCustomizationModel
     {
         if (CurrentMode != CustomizationMode.Armor) return;
 
-        var currentModel = _tempArmorPartModels.GetValueOrDefault(CurrentArmorPart, 0);
-        var newModel = Math.Max(0, currentModel + delta);
+        int currentModel = _tempArmorPartModels.GetValueOrDefault(CurrentArmorPart, 0);
+        int newModel = Math.Max(0, currentModel + delta);
         _tempArmorPartModels[CurrentArmorPart] = newModel;
     }
 
@@ -152,14 +152,14 @@ public sealed class CharacterCustomizationModel
     /// </summary>
     public void ApplyChanges()
     {
-        var creature = _player.ControlledCreature;
+        NwCreature? creature = _player.ControlledCreature;
         if (creature == null) return;
 
         // Apply armor appearance changes
-        var armor = creature.GetItemInSlot(InventorySlot.Chest);
+        NwItem? armor = creature.GetItemInSlot(InventorySlot.Chest);
         if (armor != null)
         {
-            foreach (var (partIndex, model) in _tempArmorPartModels)
+            foreach ((int partIndex, int model) in _tempArmorPartModels)
             {
                 if (Enum.IsDefined(typeof(CreaturePart), partIndex))
                 {
@@ -167,7 +167,7 @@ public sealed class CharacterCustomizationModel
                 }
             }
 
-            foreach (var (colorIndex, color) in _tempArmorPartColors)
+            foreach ((int colorIndex, int color) in _tempArmorPartColors)
             {
                 if (Enum.IsDefined(typeof(ItemAppearanceArmorColor), colorIndex))
                 {

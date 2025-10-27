@@ -60,7 +60,7 @@ public class GovernmentIdJsonConverter : JsonConverter<GovernmentId>
         if (reader.TokenType == System.Text.Json.JsonTokenType.String)
         {
             string? value = reader.GetString();
-            if (value != null && Guid.TryParse(value, out var guid))
+            if (value != null && Guid.TryParse(value, out Guid guid))
             {
                 return GovernmentId.From(guid);
             }
