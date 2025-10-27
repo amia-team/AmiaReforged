@@ -4,8 +4,8 @@ using NLog;
 
 namespace AmiaReforged.PwEngine.Database;
 
-[ServiceBinding(typeof(IStorageRepository))]
-public class StorageRepository(PwContextFactory factory) : IStorageRepository
+[ServiceBinding(typeof(IStoredItemRepository))]
+public class StoredItemRepository(PwContextFactory factory) : IStoredItemRepository
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -92,7 +92,7 @@ public class StorageRepository(PwContextFactory factory) : IStorageRepository
     }
 }
 
-public interface IStorageRepository
+public interface IStoredItemRepository
 {
     void AddItem(StoredItem item);
     void BulkAddItems(List<StoredItem> items);
