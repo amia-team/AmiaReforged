@@ -6,6 +6,21 @@ namespace AmiaReforged.Classes.Monk.WildMagic.EffectLists;
 [ServiceBinding(typeof(WeakWildMagic))]
 public class WeakWildMagic(WildMagicUtils wildMagicUtils)
 {
+    public void MagicMissile(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.MagicMissile);
+        if (spell == null) return;
+        if (target.Location == null) return;
+
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 1, monkLevel))
+            return;
+
+        Effect? magicMissileEffect = wildMagicUtils.MagicMissileEffect(monk, target.Location);
+        if (magicMissileEffect == null) return;
+
+        target.ApplyEffect(EffectDuration.Temporary, magicMissileEffect, TimeSpan.FromSeconds(0.4));
+    }
+
     public void Flare(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Flare);
@@ -42,6 +57,8 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
             Effect.VisualEffect(VfxType.DurCessateNegative)
         );
         bane.SubType = EffectSubType.Magical;
+
+        monk.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosEvil30));
 
         foreach (NwCreature enemy in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, true))
         {

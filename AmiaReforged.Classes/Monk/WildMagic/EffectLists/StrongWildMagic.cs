@@ -4,8 +4,23 @@ using Anvil.Services;
 namespace AmiaReforged.Classes.Monk.WildMagic.EffectLists;
 
 [ServiceBinding(typeof(StrongWildMagic))]
-public class StrongWildMagic
+public class StrongWildMagic(WildMagicUtils wildMagicUtils)
 {
+    public void IsaacsGreaterMissileStorm(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.IsaacsGreaterMissileStorm);
+        if (spell == null) return;
+        if (target.Location == null) return;
+
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 6, monkLevel))
+            return;
+
+        Effect? magicMissileEffect = wildMagicUtils.MagicMissileEffect(monk, target.Location);
+        if (magicMissileEffect == null) return;
+
+        target.ApplyEffect(EffectDuration.Temporary, magicMissileEffect, TimeSpan.FromSeconds(0.18));
+    }
+
     public void Web(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
 
@@ -62,11 +77,6 @@ public class StrongWildMagic
     }
 
     public void MassPolymorph(NwCreature monk, NwCreature target, int dc, byte monkLevel)
-    {
-
-    }
-
-    public void IsaacsLesserMissileStorm(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
 
     }

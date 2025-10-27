@@ -33,6 +33,7 @@ public class WildMagicEffects(
 
     public readonly WildMagicEffect[] WeakEffects =
     [
+        new("Magic Missile", weakWildMagic.MagicMissile),
         new("Flare", weakWildMagic.Flare),
         new("Bane", weakWildMagic.Bane),
         new("Doom", weakWildMagic.Doom),
@@ -51,7 +52,7 @@ public class WildMagicEffects(
 
     public readonly WildMagicEffect[] ModerateEffects =
     [
-        new("Magic Missile", moderateWildMagic.MagicMissile),
+        new("Isaac's Lesser Missile Storm", moderateWildMagic.IsaacsLesserMissileStorm),
         new("Healing Sting", moderateWildMagic.HealingSting),
         new("Inflict Critical Wounds", moderateWildMagic.InflictCriticalWounds),
         new("Invisibility Sphere", moderateWildMagic.InvisibilitySphere),
@@ -81,7 +82,7 @@ public class WildMagicEffects(
         new("Bigby's Interposing Hand", strongWildMagic.BigbysInterposingHand),
         new("Mass Blindness/Deafness", strongWildMagic.MassBlindnessDeafness),
         new("Mass Polymorph", strongWildMagic.MassPolymorph),
-        new("Isaac's Lesser Missile Storm", strongWildMagic.IsaacsLesserMissileStorm)
+        new("Isaac's Greater Missile Storm", strongWildMagic.IsaacsGreaterMissileStorm)
     ];
 
     public readonly WildMagicEffect[] EpicEffects =
@@ -93,7 +94,6 @@ public class WildMagicEffects(
         new("Earthquake", epicWildMagic.Earthquake),
         new("Sunburst", epicWildMagic.Sunburst),
         new("Meteor Storm", epicWildMagic.MeteorStorm),
-        new("Black Blade of Disaster", epicWildMagic.BlackBladeOfDisaster),
-        new("Isaac's Greater Missile Storm", epicWildMagic.IsaacsGreaterMissileStorm)
+        new("Black Blade of Disaster", epicWildMagic.BlackBladeOfDisaster)
     ];
 }

@@ -1,5 +1,6 @@
 ﻿using Anvil.API;
 using Anvil.Services;
+using Npgsql.Internal;
 
 namespace AmiaReforged.Classes.Monk.WildMagic;
 
@@ -132,6 +133,56 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         _ = GetObjectContext(monk, charmMonster);
 
         return charmMonster;
+    }
+
+    public Effect? MagicMissileEffect(NwCreature monk, Location targetLocation)
+    {
+        NwCreature[] enemies = targetLocation
+            .GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Gargantuan, true)
+            .Where(monk.IsReactionTypeHostile)
+            .ToArray();
+
+        if (enemies.Length == 0) return null;
+
+        ScriptCallbackHandle shootMissile
+            = scriptHandleFactory.CreateUniqueHandler(_ => ShootMissile(monk,enemies));
+
+        Effect magicMissileEffect = Effect.RunAction(shootMissile,
+            shootMissile, shootMissile, TimeSpan.FromSeconds(0.1f));
+
+        return magicMissileEffect;
+    }
+
+    private ScriptHandleResult ShootMissile(NwCreature monk, NwCreature[] enemies)
+    {
+        Random random = new();
+
+        enemies = enemies.Where(c => !c.IsDead).ToArray();
+
+        if (enemies.Length == 0) return ScriptHandleResult.False;
+
+        NwCreature randomEnemy = enemies[random.Next(enemies.Length)];
+
+        float distanceToTarget = monk.Distance(randomEnemy);
+        float missileTravelDelay = distanceToTarget / (3f * float.Log(distanceToTarget) + 2f);
+
+        randomEnemy.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpMirv));
+        _ = ApplyMissileDamage(monk, randomEnemy,  missileTravelDelay);
+
+        return ScriptHandleResult.True;
+    }
+
+    private async Task ApplyMissileDamage(NwCreature monk, NwCreature target, float missileTravelDelay)
+    {
+        await NwTask.Delay(TimeSpan.FromSeconds(missileTravelDelay));
+
+        int damageRoll = Random.Shared.Roll(6);
+
+        await monk.WaitForObjectContext();
+        Effect missileDamage = Effect.Damage(damageRoll);
+
+        target.ApplyEffect(EffectDuration.Instant, missileDamage);
+        target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpMagblue, fScale: 0.7f));
     }
 
 }

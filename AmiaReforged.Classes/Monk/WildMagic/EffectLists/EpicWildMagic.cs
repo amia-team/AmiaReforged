@@ -45,9 +45,4 @@ public class EpicWildMagic
     {
 
     }
-
-    public void IsaacsGreaterMissileStorm(NwCreature monk, NwCreature target, int dc, byte monkLevel)
-    {
-
-    }
 }
