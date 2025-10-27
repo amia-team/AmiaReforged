@@ -1,10 +1,9 @@
 using System.Numerics;
-using AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Features.DungeonMaster.AreaEdit;
+namespace AmiaReforged.PwEngine.Features.DungeonMaster.LevelEdit.AreaEdit;
 
 /// <summary>
 /// Handles tile selection and editing operations

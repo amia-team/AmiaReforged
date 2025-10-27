@@ -5,7 +5,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge;
+namespace AmiaReforged.PwEngine.Features.Crafting.Nui.DmForge;
 
 /// <summary>
 /// Represents the presenter for the DM Forge user interface, managing the interaction between the underlying

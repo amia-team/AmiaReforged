@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Shops;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using Anvil.Services;
 

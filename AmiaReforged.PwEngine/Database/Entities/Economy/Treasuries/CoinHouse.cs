@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy;
 
-namespace AmiaReforged.PwEngine.Database.Entities.Shops;
+namespace AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 
 public class CoinHouse
 {

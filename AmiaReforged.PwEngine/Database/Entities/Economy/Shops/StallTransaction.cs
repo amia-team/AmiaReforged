@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace AmiaReforged.PwEngine.Database.Entities.Shops;
+namespace AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 
 public class StallTransaction
 {

@@ -1,7 +1,8 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Database.Entities.PlayerHousing;
-using AmiaReforged.PwEngine.Database.Entities.Shops;
 using AmiaReforged.PwEngine.Database.EntityConfig;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
 using Anvil.Services;

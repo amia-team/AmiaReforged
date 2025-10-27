@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Shops;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;

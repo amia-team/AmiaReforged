@@ -1,7 +1,7 @@
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 
-namespace AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge;
+namespace AmiaReforged.PwEngine.Features.Crafting.Nui.DmForge;
 
 public sealed class DmForgeView : ScryView<DmForgePresenter>
 {
