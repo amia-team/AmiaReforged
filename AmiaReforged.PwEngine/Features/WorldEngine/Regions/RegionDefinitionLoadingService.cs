@@ -92,6 +92,12 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
             return false;
         }
 
+        if (definition.Settlements is { Count: > 0 } && definition.Settlements.Any(s => s < 0))
+        {
+            error = "Settlement IDs must be non-negative integers.";
+            return false;
+        }
+
         error = null;
         return true;
     }

@@ -1,11 +1,12 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks;
 
 [ServiceBinding(typeof(CoinhouseLoader))]
-public class CoinhouseLoader(ICoinhouseRepository coinhouses) : IDefinitionLoader
+public class CoinhouseLoader(ICoinhouseRepository coinhouses, IRegionRepository regions) : IDefinitionLoader
 {
     private readonly List<FileLoadResult> _failures = new();
 
@@ -77,6 +78,12 @@ public class CoinhouseLoader(ICoinhouseRepository coinhouses) : IDefinitionLoade
         if (coinhouses.TagExists(definition.Tag))
         {
             error = "Tag already associated with a coinhouse.";
+            return false;
+        }
+
+        if (!regions.TryGetRegionBySettlement(definition.Settlement, out _))
+        {
+            error = "Settlement is not defined in any region.";
             return false;
         }
 

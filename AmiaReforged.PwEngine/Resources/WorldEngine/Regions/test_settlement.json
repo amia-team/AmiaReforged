@@ -1,6 +1,7 @@
 {
   "Tag": "test_settlement",
   "Name": "Test Settlement Region",
+  "Settlements": [ 101, 205 ],
   "Areas": [
     {
       "ResRef": "zworldttemprate",
