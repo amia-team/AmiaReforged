@@ -23,7 +23,27 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
 
     public void HealingSting(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.HealingSting);
+        if (spell == null) return;
+        if (target.Location == null) return;
 
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Necromancy, 3, monkLevel))
+            return;
+
+        SavingThrowResult savingThrowResult =
+            target.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Negative, monk);
+
+        int damage = Random.Shared.Roll(6) + monkLevel;
+        if (savingThrowResult == SavingThrowResult.Success)
+        {
+            target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+            damage /= 2;
+        }
+
+        target.ApplyEffect(EffectDuration.Instant, Effect.Damage(damage, DamageType.Negative));
+        target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpNegativeEnergy));
+        monk.ApplyEffect(EffectDuration.Instant, Effect.Heal(damage));
+        monk.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHealingM));
     }
 
     public void InflictCriticalWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel)
