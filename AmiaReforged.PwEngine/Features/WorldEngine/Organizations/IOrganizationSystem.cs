@@ -19,6 +19,7 @@ public interface IOrganization
     public OrganizationType Type { get; init; }
     public OrganizationId Id { get; init; }
     public OrganizationId? ParentOrganization { get; init; }
+    public List<CharacterId> BanList { get; init; }
 
     public delegate OrganizationRequest RequestMade();
 

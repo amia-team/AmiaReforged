@@ -41,6 +41,12 @@ public class AddMemberHandler : ICommandHandler<AddMemberCommand>
             return Task.FromResult(CommandResult.Fail($"Organization not found: {command.OrganizationId}"));
         }
 
+        // Check if banned from organization
+        if (organization.BanList.Contains(command.CharacterId))
+        {
+            return Task.FromResult(CommandResult.Fail("Character is banned from this organization"));
+        }
+
         // Check if already a member
         var existingMembership = _memberRepository.GetByCharacterAndOrganization(
             command.CharacterId,
@@ -51,7 +57,7 @@ public class AddMemberHandler : ICommandHandler<AddMemberCommand>
             return Task.FromResult(CommandResult.Fail("Character is already an active member of this organization"));
         }
 
-        // Check if banned
+        // Check if has banned status
         if (existingMembership?.Status == MembershipStatus.Banned)
         {
             return Task.FromResult(CommandResult.Fail("Character is banned from this organization"));

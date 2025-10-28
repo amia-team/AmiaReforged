@@ -71,7 +71,23 @@ public class RemoveMemberHandler : ICommandHandler<RemoveMemberCommand>
         }
 
         // Update membership status
-        membership.Status = command.IsBan ? MembershipStatus.Banned : MembershipStatus.Expelled;
+        MembershipStatus newStatus;
+        if (command.IsBan)
+        {
+            newStatus = MembershipStatus.Banned;
+        }
+        else if (command.CharacterId == command.RemovedBy)
+        {
+            // Self-removal is voluntary departure
+            newStatus = MembershipStatus.Departed;
+        }
+        else
+        {
+            // Removed by someone else is expulsion
+            newStatus = MembershipStatus.Expelled;
+        }
+
+        membership.Status = newStatus;
         membership.DepartedDate = DateTime.UtcNow;
         if (!string.IsNullOrWhiteSpace(command.Reason))
         {
