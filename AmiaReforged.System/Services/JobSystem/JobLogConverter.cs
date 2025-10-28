@@ -16,7 +16,7 @@ public class JobLogConverter
 
     public JobLogConverter()
     {
-        NwArea? entry = NwModule.Instance.Areas.ToList().Find(a => a.Tag == "welcometotheeete");
+        NwArea? entry = NwModule.Instance.Areas.ToList().Find(a => a.Tag == "amia_welcome");
         if (entry is null)
         {
             Log.Error(message: "Could not find the entry area for the job log converter.");

@@ -10,7 +10,7 @@ namespace AmiaReforged.Classes.Spells;
 [ServiceBinding(typeof(SpellCastingService))]
 public class SpellCastingService
 {
-    private const string WelcomeAreaResRef = "welcometotheeete";
+    private const string WelcomeAreaResRef = "amia_welcome";
     private const string UniquePowerScriptName = "NW_S3_ActItem01";
     private const string RecallResRef = "recall";
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
