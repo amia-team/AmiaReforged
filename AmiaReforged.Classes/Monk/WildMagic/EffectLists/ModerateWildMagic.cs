@@ -47,13 +47,26 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
 
     public void InflictCriticalWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        int damage = Math.Min((int)monkLevel, 20) + Random.Shared.Roll(8, 4);
 
+        SavingThrowResult savingThrowResult =
+            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.None, monk);
+
+        if (savingThrowResult == SavingThrowResult.Success)
+        {
+            target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+            damage /= 2;
+        }
+
+        Effect inflict = Effect.Damage(damage, DamageType.Negative);
+        _ = wildMagicUtils.GetObjectContext(monk, inflict);
+
+        target.ApplyEffect(EffectDuration.Instant, inflict);
+        target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHarm));
     }
 
-    public void InvisibilitySphere(NwCreature monk, NwCreature target, int dc, byte monkLevel)
-    {
-
-    }
+    public void Concealment(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
+        monk.ApplyEffect(EffectDuration.Temporary, Effect.Concealment(50), WildMagicUtils.LongDuration);
 
     public void CircleOfDeath(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
@@ -87,12 +100,44 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
             return;
         }
 
-        target.ApplyEffect(EffectDuration.Instant, wildMagicUtils.RandomPolymorphEffect(), WildMagicUtils.LongDuration);
+        target.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.RandomPolymorphEffect(), WildMagicUtils.LongDuration);
     }
 
     public void SoundBurst(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.SoundBurst);
+        if (spell == null) return;
+        if (target.Location == null) return;
 
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 2, monkLevel))
+            return;
+
+        Effect stun = Effect.Stunned();
+        stun.SubType = EffectSubType.Magical;
+
+        target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfSoundBurst));
+
+        foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
+                     RadiusSize.Medium, true))
+        {
+            if (!monk.IsReactionTypeHostile(enemy)) continue;
+
+            Effect damage = Effect.Damage(Random.Shared.Roll(8), DamageType.Sonic);
+            _ = wildMagicUtils.GetObjectContext(monk, damage);
+
+            enemy.ApplyEffect(EffectDuration.Instant, damage);
+
+            SavingThrowResult savingThrowResult =
+                enemy.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
+
+            if (savingThrowResult == SavingThrowResult.Success)
+            {
+                enemy.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+                continue;
+            }
+
+            enemy.ApplyEffect(EffectDuration.Temporary, stun, WildMagicUtils.ShortDuration);
+        }
     }
 
     public void MordenkainensSword(NwCreature monk, NwCreature target, int dc, byte monkLevel)
