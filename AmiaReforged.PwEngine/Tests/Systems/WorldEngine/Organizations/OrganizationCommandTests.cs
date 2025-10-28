@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using NUnit.Framework;
@@ -42,7 +43,7 @@ public class OrganizationCommandTests
         _testCharacterId = new CharacterId(Guid.NewGuid());
         _bannedCharacterId = new CharacterId(Guid.NewGuid());
 
-        var testOrg = OrgEntity.Create(_testOrgId, "Test Guild", "A test guild", OrganizationType.Guild);
+        OrgEntity testOrg = OrgEntity.Create(_testOrgId, "Test Guild", "A test guild", OrganizationType.Guild);
         testOrg.BanList.Add(_bannedCharacterId);
         _orgRepository.Add(testOrg);
     }
@@ -53,7 +54,7 @@ public class OrganizationCommandTests
     public async Task AddMember_Success_CreatesActiveMembership()
     {
         // Arrange
-        var command = new AddMemberCommand
+        AddMemberCommand command = new AddMemberCommand
         {
             OrganizationId = _testOrgId,
             CharacterId = _testCharacterId,
@@ -62,12 +63,12 @@ public class OrganizationCommandTests
         };
 
         // Act
-        var result = await _addMemberHandler.HandleAsync(command);
+        CommandResult result = await _addMemberHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.True, "Command should succeed");
 
-        var member = _memberRepository.GetByCharacterAndOrganization(_testCharacterId, _testOrgId);
+        OrganizationMember? member = _memberRepository.GetByCharacterAndOrganization(_testCharacterId, _testOrgId);
         Assert.That(member, Is.Not.Null, "Member should be created");
         Assert.That(member!.Rank, Is.EqualTo(OrganizationRank.Recruit));
         Assert.That(member.Status, Is.EqualTo(MembershipStatus.Active));
@@ -77,7 +78,7 @@ public class OrganizationCommandTests
     public async Task AddMember_AlreadyMember_Fails()
     {
         // Arrange - Add member first time
-        var member = new OrganizationMember
+        OrganizationMember member = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -89,7 +90,7 @@ public class OrganizationCommandTests
         };
         _memberRepository.Add(member);
 
-        var command = new AddMemberCommand
+        AddMemberCommand command = new AddMemberCommand
         {
             OrganizationId = _testOrgId,
             CharacterId = _testCharacterId,
@@ -97,7 +98,7 @@ public class OrganizationCommandTests
         };
 
         // Act
-        var result = await _addMemberHandler.HandleAsync(command);
+        CommandResult result = await _addMemberHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.False, "Should fail - already a member");
@@ -108,7 +109,7 @@ public class OrganizationCommandTests
     public async Task AddMember_BannedCharacter_Fails()
     {
         // Arrange
-        var command = new AddMemberCommand
+        AddMemberCommand command = new AddMemberCommand
         {
             OrganizationId = _testOrgId,
             CharacterId = _bannedCharacterId,
@@ -116,7 +117,7 @@ public class OrganizationCommandTests
         };
 
         // Act
-        var result = await _addMemberHandler.HandleAsync(command);
+        CommandResult result = await _addMemberHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.False, "Should fail - character is banned");
@@ -127,8 +128,8 @@ public class OrganizationCommandTests
     public async Task AddMember_OrganizationNotFound_Fails()
     {
         // Arrange
-        var nonExistentOrgId = OrganizationId.New();
-        var command = new AddMemberCommand
+        OrganizationId nonExistentOrgId = OrganizationId.New();
+        AddMemberCommand command = new AddMemberCommand
         {
             OrganizationId = nonExistentOrgId,
             CharacterId = _testCharacterId,
@@ -136,7 +137,7 @@ public class OrganizationCommandTests
         };
 
         // Act
-        var result = await _addMemberHandler.HandleAsync(command);
+        CommandResult result = await _addMemberHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.False, "Should fail - organization doesn't exist");
@@ -151,7 +152,7 @@ public class OrganizationCommandTests
     public async Task RemoveMember_Success_SetsDepartedStatus()
     {
         // Arrange - Create member first
-        var member = new OrganizationMember
+        OrganizationMember member = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -163,7 +164,7 @@ public class OrganizationCommandTests
         };
         _memberRepository.Add(member);
 
-        var command = new RemoveMemberCommand
+        RemoveMemberCommand command = new RemoveMemberCommand
         {
             OrganizationId = _testOrgId,
             CharacterId = _testCharacterId,
@@ -171,12 +172,12 @@ public class OrganizationCommandTests
         };
 
         // Act
-        var result = await _removeMemberHandler.HandleAsync(command);
+        CommandResult result = await _removeMemberHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.True, "Command should succeed");
 
-        var updatedMember = _memberRepository.GetByCharacterAndOrganization(_testCharacterId, _testOrgId);
+        OrganizationMember? updatedMember = _memberRepository.GetByCharacterAndOrganization(_testCharacterId, _testOrgId);
         Assert.That(updatedMember, Is.Not.Null);
         Assert.That(updatedMember!.Status, Is.EqualTo(MembershipStatus.Departed));
         Assert.That(updatedMember.DepartedDate, Is.Not.Null);
@@ -186,7 +187,7 @@ public class OrganizationCommandTests
     public async Task RemoveMember_NotAMember_Fails()
     {
         // Arrange
-        var command = new RemoveMemberCommand
+        RemoveMemberCommand command = new RemoveMemberCommand
         {
             OrganizationId = _testOrgId,
             CharacterId = _testCharacterId,
@@ -194,7 +195,7 @@ public class OrganizationCommandTests
         };
 
         // Act
-        var result = await _removeMemberHandler.HandleAsync(command);
+        CommandResult result = await _removeMemberHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.False, "Should fail - not a member");
@@ -209,7 +210,7 @@ public class OrganizationCommandTests
     public async Task AssignRole_Success_AddsRoleToMember()
     {
         // Arrange - Create member
-        var member = new OrganizationMember
+        OrganizationMember member = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -221,7 +222,7 @@ public class OrganizationCommandTests
         };
         _memberRepository.Add(member);
 
-        var command = new AssignRoleCommand
+        AssignRoleCommand command = new AssignRoleCommand
         {
             OrganizationId = _testOrgId,
             CharacterId = _testCharacterId,
@@ -230,12 +231,12 @@ public class OrganizationCommandTests
         };
 
         // Act
-        var result = await _assignRoleHandler.HandleAsync(command);
+        CommandResult result = await _assignRoleHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.True, "Command should succeed");
 
-        var updatedMember = _memberRepository.GetByCharacterAndOrganization(_testCharacterId, _testOrgId);
+        OrganizationMember? updatedMember = _memberRepository.GetByCharacterAndOrganization(_testCharacterId, _testOrgId);
         Assert.That(updatedMember!.HasRole(MemberRole.Treasurer), Is.True);
     }
 
@@ -243,7 +244,7 @@ public class OrganizationCommandTests
     public async Task AssignRole_AlreadyHasRole_Fails()
     {
         // Arrange - Create member with role
-        var member = new OrganizationMember
+        OrganizationMember member = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -255,7 +256,7 @@ public class OrganizationCommandTests
         };
         _memberRepository.Add(member);
 
-        var command = new AssignRoleCommand
+        AssignRoleCommand command = new AssignRoleCommand
         {
             OrganizationId = _testOrgId,
             CharacterId = _testCharacterId,
@@ -264,7 +265,7 @@ public class OrganizationCommandTests
         };
 
         // Act
-        var result = await _assignRoleHandler.HandleAsync(command);
+        CommandResult result = await _assignRoleHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.False, "Should fail - already has role");
@@ -279,7 +280,7 @@ public class OrganizationCommandTests
     public async Task RevokeRole_Success_RemovesRoleFromMember()
     {
         // Arrange - Create member with role
-        var member = new OrganizationMember
+        OrganizationMember member = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -291,7 +292,7 @@ public class OrganizationCommandTests
         };
         _memberRepository.Add(member);
 
-        var command = new RevokeRoleCommand
+        RevokeRoleCommand command = new RevokeRoleCommand
         {
             OrganizationId = _testOrgId,
             CharacterId = _testCharacterId,
@@ -300,12 +301,12 @@ public class OrganizationCommandTests
         };
 
         // Act
-        var result = await _revokeRoleHandler.HandleAsync(command);
+        CommandResult result = await _revokeRoleHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.True, "Command should succeed");
 
-        var updatedMember = _memberRepository.GetByCharacterAndOrganization(_testCharacterId, _testOrgId);
+        OrganizationMember? updatedMember = _memberRepository.GetByCharacterAndOrganization(_testCharacterId, _testOrgId);
         Assert.That(updatedMember!.HasRole(MemberRole.Treasurer), Is.False);
         Assert.That(updatedMember.HasRole(MemberRole.Recruiter), Is.True, "Other roles should remain");
     }
@@ -314,7 +315,7 @@ public class OrganizationCommandTests
     public async Task RevokeRole_DoesNotHaveRole_Fails()
     {
         // Arrange - Create member without the role
-        var member = new OrganizationMember
+        OrganizationMember member = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -326,7 +327,7 @@ public class OrganizationCommandTests
         };
         _memberRepository.Add(member);
 
-        var command = new RevokeRoleCommand
+        RevokeRoleCommand command = new RevokeRoleCommand
         {
             OrganizationId = _testOrgId,
             CharacterId = _testCharacterId,
@@ -335,7 +336,7 @@ public class OrganizationCommandTests
         };
 
         // Act
-        var result = await _revokeRoleHandler.HandleAsync(command);
+        CommandResult result = await _revokeRoleHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.False, "Should fail - doesn't have role");

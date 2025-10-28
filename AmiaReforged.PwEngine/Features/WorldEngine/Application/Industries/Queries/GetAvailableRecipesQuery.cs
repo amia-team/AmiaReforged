@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 
@@ -34,23 +35,23 @@ public class GetAvailableRecipesHandler : IQueryHandler<GetAvailableRecipesQuery
 
     public Task<List<Recipe>> HandleAsync(GetAvailableRecipesQuery query, CancellationToken cancellationToken = default)
     {
-        var industry = _industryRepository.GetByTag(query.IndustryTag);
+        Industry? industry = _industryRepository.GetByTag(query.IndustryTag);
         if (industry == null)
         {
             return Task.FromResult(new List<Recipe>());
         }
 
-        var memberships = _membershipRepository.All(query.CharacterId.Value);
-        var membership = memberships.FirstOrDefault(m => m.IndustryTag.Value == query.IndustryTag.Value);
+        List<IndustryMembership> memberships = _membershipRepository.All(query.CharacterId.Value);
+        IndustryMembership? membership = memberships.FirstOrDefault(m => m.IndustryTag.Value == query.IndustryTag.Value);
         if (membership == null)
         {
             return Task.FromResult(new List<Recipe>());
         }
 
-        var characterKnowledge = _knowledgeRepository.GetAllKnowledge(query.CharacterId.Value);
-        var knownTags = characterKnowledge.Select(ck => ck.Tag).ToHashSet();
+        List<Knowledge> characterKnowledge = _knowledgeRepository.GetAllKnowledge(query.CharacterId.Value);
+        HashSet<string> knownTags = characterKnowledge.Select(ck => ck.Tag).ToHashSet();
 
-        var availableRecipes = industry.Recipes
+        List<Recipe> availableRecipes = industry.Recipes
             .Where(recipe =>
                 // Character has sufficient proficiency
                 membership.Level >= recipe.RequiredProficiency &&

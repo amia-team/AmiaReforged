@@ -50,7 +50,7 @@ public class TransferGoldCommandHandler : ICommandHandler<TransferGoldCommand>
             Transaction recorded = await _repository.RecordTransactionAsync(transaction, cancellationToken);
 
             // Publish event
-            var evt = new GoldTransferredEvent(
+            GoldTransferredEvent evt = new GoldTransferredEvent(
                 command.From,
                 command.To,
                 command.Amount,

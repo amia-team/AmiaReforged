@@ -32,7 +32,7 @@ public class RemoveMemberHandler : ICommandHandler<RemoveMemberCommand>
     public Task<CommandResult> HandleAsync(RemoveMemberCommand command, CancellationToken cancellationToken = default)
     {
         // Get the membership to remove
-        var membership = _memberRepository.GetByCharacterAndOrganization(
+        OrganizationMember? membership = _memberRepository.GetByCharacterAndOrganization(
             command.CharacterId,
             command.OrganizationId);
 
@@ -47,7 +47,7 @@ public class RemoveMemberHandler : ICommandHandler<RemoveMemberCommand>
         }
 
         // Check permissions - get the remover's membership
-        var removerMembership = _memberRepository.GetByCharacterAndOrganization(
+        OrganizationMember? removerMembership = _memberRepository.GetByCharacterAndOrganization(
             command.RemovedBy,
             command.OrganizationId);
 

@@ -31,7 +31,7 @@ public class AssignRoleHandler : ICommandHandler<AssignRoleCommand>
     public Task<CommandResult> HandleAsync(AssignRoleCommand command, CancellationToken cancellationToken = default)
     {
         // Get the member to assign role to
-        var member = _memberRepository.GetByCharacterAndOrganization(
+        OrganizationMember? member = _memberRepository.GetByCharacterAndOrganization(
             command.CharacterId,
             command.OrganizationId);
 
@@ -41,7 +41,7 @@ public class AssignRoleHandler : ICommandHandler<AssignRoleCommand>
         }
 
         // Check permissions
-        var assigner = _memberRepository.GetByCharacterAndOrganization(
+        OrganizationMember? assigner = _memberRepository.GetByCharacterAndOrganization(
             command.AssignedBy,
             command.OrganizationId);
 
@@ -91,7 +91,7 @@ public class RevokeRoleHandler : ICommandHandler<RevokeRoleCommand>
     public Task<CommandResult> HandleAsync(RevokeRoleCommand command, CancellationToken cancellationToken = default)
     {
         // Get the member
-        var member = _memberRepository.GetByCharacterAndOrganization(
+        OrganizationMember? member = _memberRepository.GetByCharacterAndOrganization(
             command.CharacterId,
             command.OrganizationId);
 
@@ -101,7 +101,7 @@ public class RevokeRoleHandler : ICommandHandler<RevokeRoleCommand>
         }
 
         // Check permissions
-        var revoker = _memberRepository.GetByCharacterAndOrganization(
+        OrganizationMember? revoker = _memberRepository.GetByCharacterAndOrganization(
             command.RevokedBy,
             command.OrganizationId);
 

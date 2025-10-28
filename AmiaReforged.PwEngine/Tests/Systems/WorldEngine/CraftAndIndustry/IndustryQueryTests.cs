@@ -129,13 +129,13 @@ public class IndustryQueryTests
     public async Task GetIndustryRecipes_ReturnsAllRecipes()
     {
         // Arrange
-        var query = new GetIndustryRecipesQuery
+        GetIndustryRecipesQuery query = new GetIndustryRecipesQuery
         {
             IndustryTag = new IndustryTag("blacksmithing")
         };
 
         // Act
-        var recipes = await _getRecipesHandler.HandleAsync(query);
+        List<Recipe> recipes = await _getRecipesHandler.HandleAsync(query);
 
         // Assert
         Assert.That(recipes, Has.Count.EqualTo(2));
@@ -147,13 +147,13 @@ public class IndustryQueryTests
     public async Task GetIndustryRecipes_IndustryNotFound_ReturnsEmpty()
     {
         // Arrange
-        var query = new GetIndustryRecipesQuery
+        GetIndustryRecipesQuery query = new GetIndustryRecipesQuery
         {
             IndustryTag = new IndustryTag("nonexistent")
         };
 
         // Act
-        var recipes = await _getRecipesHandler.HandleAsync(query);
+        List<Recipe> recipes = await _getRecipesHandler.HandleAsync(query);
 
         // Assert
         Assert.That(recipes, Is.Empty);
@@ -163,14 +163,14 @@ public class IndustryQueryTests
     public async Task GetAvailableRecipes_CharacterNotMember_ReturnsEmpty()
     {
         // Arrange
-        var query = new GetAvailableRecipesQuery
+        GetAvailableRecipesQuery query = new GetAvailableRecipesQuery
         {
             CharacterId = _testCharacterId,
             IndustryTag = new IndustryTag("blacksmithing")
         };
 
         // Act
-        var recipes = await _getAvailableRecipesHandler.HandleAsync(query);
+        List<Recipe> recipes = await _getAvailableRecipesHandler.HandleAsync(query);
 
         // Assert
         Assert.That(recipes, Is.Empty);
@@ -180,7 +180,7 @@ public class IndustryQueryTests
     public async Task GetAvailableRecipes_NoviceWithKnowledge_ReturnsNoviceRecipes()
     {
         // Arrange - create membership
-        var membership = new IndustryMembership
+        IndustryMembership membership = new IndustryMembership
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -193,14 +193,14 @@ public class IndustryQueryTests
         // Add knowledge
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _basicForgingKnowledge);
 
-        var query = new GetAvailableRecipesQuery
+        GetAvailableRecipesQuery query = new GetAvailableRecipesQuery
         {
             CharacterId = _testCharacterId,
             IndustryTag = new IndustryTag("blacksmithing")
         };
 
         // Act
-        var recipes = await _getAvailableRecipesHandler.HandleAsync(query);
+        List<Recipe> recipes = await _getAvailableRecipesHandler.HandleAsync(query);
 
         // Assert
         Assert.That(recipes, Has.Count.EqualTo(1));
@@ -211,7 +211,7 @@ public class IndustryQueryTests
     public async Task GetAvailableRecipes_ApprenticeWithAllKnowledge_ReturnsBothRecipes()
     {
         // Arrange - create membership
-        var membership = new IndustryMembership
+        IndustryMembership membership = new IndustryMembership
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -225,14 +225,14 @@ public class IndustryQueryTests
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _basicForgingKnowledge);
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _advancedForgingKnowledge);
 
-        var query = new GetAvailableRecipesQuery
+        GetAvailableRecipesQuery query = new GetAvailableRecipesQuery
         {
             CharacterId = _testCharacterId,
             IndustryTag = new IndustryTag("blacksmithing")
         };
 
         // Act
-        var recipes = await _getAvailableRecipesHandler.HandleAsync(query);
+        List<Recipe> recipes = await _getAvailableRecipesHandler.HandleAsync(query);
 
         // Assert
         Assert.That(recipes, Has.Count.EqualTo(2));
@@ -242,7 +242,7 @@ public class IndustryQueryTests
     public async Task GetAvailableRecipes_MissingKnowledge_ExcludesRecipe()
     {
         // Arrange - apprentice level but missing knowledge
-        var membership = new IndustryMembership
+        IndustryMembership membership = new IndustryMembership
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -255,14 +255,14 @@ public class IndustryQueryTests
         // Add only basic knowledge, not advanced
         _knowledgeRepository.AddKnowledge(_testCharacterId.Value, _basicForgingKnowledge);
 
-        var query = new GetAvailableRecipesQuery
+        GetAvailableRecipesQuery query = new GetAvailableRecipesQuery
         {
             CharacterId = _testCharacterId,
             IndustryTag = new IndustryTag("blacksmithing")
         };
 
         // Act
-        var recipes = await _getAvailableRecipesHandler.HandleAsync(query);
+        List<Recipe> recipes = await _getAvailableRecipesHandler.HandleAsync(query);
 
         // Assert - should only get novice recipe
         Assert.That(recipes, Has.Count.EqualTo(1));
@@ -287,7 +287,7 @@ internal class TestIndustryMembershipRepository : IIndustryMembershipRepository
 
     public void Update(IndustryMembership membership)
     {
-        var existing = _memberships.FirstOrDefault(m => m.Id == membership.Id);
+        IndustryMembership? existing = _memberships.FirstOrDefault(m => m.Id == membership.Id);
         if (existing != null)
         {
             _memberships.Remove(existing);

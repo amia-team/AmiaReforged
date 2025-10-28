@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -57,21 +58,21 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
     public async Task<CommandResult> HandleAsync(CraftItemCommand command, CancellationToken cancellationToken = default)
     {
         // Get industry and recipe
-        var industry = _industryRepository.GetByTag(command.IndustryTag);
+        Industry? industry = _industryRepository.GetByTag(command.IndustryTag);
         if (industry == null)
         {
             return CommandResult.Fail($"Industry '{command.IndustryTag.Value}' not found");
         }
 
-        var recipe = industry.Recipes.FirstOrDefault(r => r.RecipeId == command.RecipeId);
+        Recipe? recipe = industry.Recipes.FirstOrDefault(r => r.RecipeId == command.RecipeId);
         if (recipe == null)
         {
             return CommandResult.Fail($"Recipe '{command.RecipeId.Value}' not found in industry '{command.IndustryTag.Value}'");
         }
 
         // Check character membership
-        var memberships = _membershipRepository.All(command.CharacterId.Value);
-        var membership = memberships.FirstOrDefault(m => m.IndustryTag.Value == command.IndustryTag.Value);
+        List<IndustryMembership> memberships = _membershipRepository.All(command.CharacterId.Value);
+        IndustryMembership? membership = memberships.FirstOrDefault(m => m.IndustryTag.Value == command.IndustryTag.Value);
         if (membership == null)
         {
             return CommandResult.Fail($"Character is not a member of industry '{industry.Name}'");
@@ -84,8 +85,8 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
         }
 
         // Check required knowledge
-        var characterKnowledge = _knowledgeRepository.GetAllKnowledge(command.CharacterId.Value);
-        var missingKnowledge = recipe.RequiredKnowledge
+        List<Knowledge> characterKnowledge = _knowledgeRepository.GetAllKnowledge(command.CharacterId.Value);
+        List<string> missingKnowledge = recipe.RequiredKnowledge
             .Where(req => !characterKnowledge.Any(ck => ck.Tag == req))
             .ToList();
 
@@ -95,7 +96,7 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
         }
 
         // Execute crafting process (industry-specific logic via processor)
-        var craftingResult = await _craftingProcessor.ProcessCraftingAsync(command.CharacterId, recipe, command.Context);
+        CraftingResult craftingResult = await _craftingProcessor.ProcessCraftingAsync(command.CharacterId, recipe, command.Context);
 
         if (!craftingResult.Success)
         {
@@ -137,7 +138,7 @@ public class DefaultCraftingProcessor : ICraftingProcessor
         // Default implementation - assumes ingredients are available and consumes them
         // Real implementation would check inventory, consume ingredients, create products, etc.
 
-        var result = new CraftingResult
+        CraftingResult result = new CraftingResult
         {
             Success = true,
             Message = "Crafting completed successfully",

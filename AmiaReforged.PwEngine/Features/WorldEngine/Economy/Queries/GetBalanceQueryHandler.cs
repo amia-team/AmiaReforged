@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using Anvil.Services;
@@ -18,15 +19,15 @@ public class GetBalanceQueryHandler : IQueryHandler<GetBalanceQuery, int?>
     public Task<int?> HandleAsync(GetBalanceQuery query, CancellationToken cancellationToken = default)
     {
         // Validate coinhouse exists
-        var coinhouse = _coinhouses.GetByTag(query.Coinhouse);
+        CoinHouse? coinhouse = _coinhouses.GetByTag(query.Coinhouse);
         if (coinhouse == null)
         {
             return Task.FromResult<int?>(null);
         }
         // Extract account ID from PersonaId
-        var accountId = ExtractAccountId(query.PersonaId);
+        Guid accountId = ExtractAccountId(query.PersonaId);
         // Get account
-        var account = _coinhouses.GetAccountFor(accountId);
+        CoinHouseAccount? account = _coinhouses.GetAccountFor(accountId);
         if (account == null)
         {
             return Task.FromResult<int?>(null);
@@ -37,12 +38,12 @@ public class GetBalanceQueryHandler : IQueryHandler<GetBalanceQuery, int?>
     private static Guid ExtractAccountId(PersonaId personaId)
     {
         // PersonaId format: "Type:Value"
-        var parts = personaId.ToString().Split(':');
+        string[] parts = personaId.ToString().Split(':');
         if (parts.Length != 2)
         {
             throw new ArgumentException($"Invalid PersonaId format: {personaId}");
         }
-        if (Guid.TryParse(parts[1], out var guid))
+        if (Guid.TryParse(parts[1], out Guid guid))
         {
             return guid;
         }

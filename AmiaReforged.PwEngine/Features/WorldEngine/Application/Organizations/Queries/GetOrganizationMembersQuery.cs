@@ -30,7 +30,7 @@ public class GetOrganizationMembersHandler : IQueryHandler<GetOrganizationMember
         GetOrganizationMembersQuery query,
         CancellationToken cancellationToken = default)
     {
-        var members = _memberRepository.GetByOrganization(query.OrganizationId);
+        List<OrganizationMember> members = _memberRepository.GetByOrganization(query.OrganizationId);
 
         if (query.ActiveOnly)
         {

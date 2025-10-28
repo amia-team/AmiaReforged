@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.DTOs;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
@@ -24,8 +25,8 @@ public class GetCoinhouseBalancesQueryHandler : IQueryHandler<GetCoinhouseBalanc
         GetCoinhouseBalancesQuery query,
         CancellationToken cancellationToken = default)
     {
-        var accountId = ExtractAccountId(query.PersonaId);
-        var account = _coinhouses.GetAccountFor(accountId);
+        Guid accountId = ExtractAccountId(query.PersonaId);
+        CoinHouseAccount? account = _coinhouses.GetAccountFor(accountId);
 
         if (account == null)
         {
@@ -33,7 +34,7 @@ public class GetCoinhouseBalancesQueryHandler : IQueryHandler<GetCoinhouseBalanc
         }
 
         // For now, return single balance (will be enhanced when we have multi-coinhouse support)
-        var balance = BalanceDto.Create(
+        BalanceDto balance = BalanceDto.Create(
             query.PersonaId,
             account.CoinHouse!.CoinhouseTag,
             account.Balance,
@@ -44,13 +45,13 @@ public class GetCoinhouseBalancesQueryHandler : IQueryHandler<GetCoinhouseBalanc
 
     private static Guid ExtractAccountId(PersonaId personaId)
     {
-        var parts = personaId.ToString().Split(':');
+        string[] parts = personaId.ToString().Split(':');
         if (parts.Length != 2)
         {
             throw new ArgumentException($"Invalid PersonaId format: {personaId}");
         }
 
-        if (Guid.TryParse(parts[1], out var guid))
+        if (Guid.TryParse(parts[1], out Guid guid))
         {
             return guid;
         }

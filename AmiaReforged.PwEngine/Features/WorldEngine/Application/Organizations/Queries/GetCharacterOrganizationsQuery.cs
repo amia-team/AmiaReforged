@@ -34,7 +34,7 @@ public class GetCharacterOrganizationsHandler : IQueryHandler<GetCharacterOrgani
         GetCharacterOrganizationsQuery query,
         CancellationToken cancellationToken = default)
     {
-        var memberships = _memberRepository.GetByCharacter(query.CharacterId);
+        List<OrganizationMember> memberships = _memberRepository.GetByCharacter(query.CharacterId);
 
         if (query.ActiveOnly)
         {

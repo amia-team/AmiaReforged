@@ -80,13 +80,13 @@ public class RecipeManagementTests
         // Assert
         Assert.That(_testRecipe.Ingredients, Has.Count.EqualTo(2));
 
-        var ironIngot = _testRecipe.Ingredients[0];
+        Ingredient ironIngot = _testRecipe.Ingredients[0];
         Assert.That(ironIngot.ItemResRef, Is.EqualTo("iron_ingot"));
         Assert.That(ironIngot.Quantity.Value, Is.EqualTo(3));
         Assert.That(ironIngot.MinQuality, Is.EqualTo(1));
         Assert.That(ironIngot.IsConsumed, Is.True);
 
-        var leatherStrip = _testRecipe.Ingredients[1];
+        Ingredient leatherStrip = _testRecipe.Ingredients[1];
         Assert.That(leatherStrip.ItemResRef, Is.EqualTo("leather_strip"));
         Assert.That(leatherStrip.Quantity.Value, Is.EqualTo(1));
         Assert.That(leatherStrip.MinQuality, Is.Null);
@@ -98,7 +98,7 @@ public class RecipeManagementTests
         // Assert
         Assert.That(_testRecipe.Products, Has.Count.EqualTo(1));
 
-        var sword = _testRecipe.Products[0];
+        Product sword = _testRecipe.Products[0];
         Assert.That(sword.ItemResRef, Is.EqualTo("iron_sword"));
         Assert.That(sword.Quantity.Value, Is.EqualTo(1));
         Assert.That(sword.Quality, Is.EqualTo(2));
@@ -132,10 +132,10 @@ public class RecipeManagementTests
     {
         // Arrange
         _testIndustry.Recipes.Add(_testRecipe);
-        var searchId = new RecipeId("iron_sword");
+        RecipeId searchId = new RecipeId("iron_sword");
 
         // Act
-        var found = _testIndustry.Recipes.FirstOrDefault(r => r.RecipeId == searchId);
+        Recipe? found = _testIndustry.Recipes.FirstOrDefault(r => r.RecipeId == searchId);
 
         // Assert
         Assert.That(found, Is.Not.Null);

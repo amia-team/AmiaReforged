@@ -28,7 +28,7 @@ public class GetOrganizationDetailsHandler : IQueryHandler<GetOrganizationDetail
         GetOrganizationDetailsQuery query,
         CancellationToken cancellationToken = default)
     {
-        var organization = _organizationRepository.GetById(query.OrganizationId);
+        IOrganization? organization = _organizationRepository.GetById(query.OrganizationId);
         return Task.FromResult(organization);
     }
 }

@@ -65,13 +65,13 @@ public class GetBalanceQueryHandlerTests
         // Given
         _testAccount.Debit = 1500;
         _testAccount.Credit = 0;
-        var query = new GetBalanceQuery(_persona, _coinhouse);
+        GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
-        var balance = await _handler.HandleAsync(query);
+        int? balance = await _handler.HandleAsync(query);
 
         // Then
         Assert.That(balance, Is.Not.Null);
@@ -84,13 +84,13 @@ public class GetBalanceQueryHandlerTests
         // Given
         _testAccount.Debit = 1000;
         _testAccount.Credit = 300; // Has some debt
-        var query = new GetBalanceQuery(_persona, _coinhouse);
+        GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
-        var balance = await _handler.HandleAsync(query);
+        int? balance = await _handler.HandleAsync(query);
 
         // Then
         Assert.That(balance, Is.EqualTo(700)); // 1000 - 300
@@ -102,13 +102,13 @@ public class GetBalanceQueryHandlerTests
         // Given
         _testAccount.Debit = 0;
         _testAccount.Credit = 0;
-        var query = new GetBalanceQuery(_persona, _coinhouse);
+        GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
-        var balance = await _handler.HandleAsync(query);
+        int? balance = await _handler.HandleAsync(query);
 
         // Then
         Assert.That(balance, Is.EqualTo(0));
@@ -122,12 +122,12 @@ public class GetBalanceQueryHandlerTests
     public async Task Given_NonexistentCoinhouse_When_QueryingBalance_Then_ReturnsNull()
     {
         // Given
-        var query = new GetBalanceQuery(_persona, _coinhouse);
+        GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns((CoinHouse?)null);
 
         // When
-        var balance = await _handler.HandleAsync(query);
+        int? balance = await _handler.HandleAsync(query);
 
         // Then
         Assert.That(balance, Is.Null);
@@ -137,13 +137,13 @@ public class GetBalanceQueryHandlerTests
     public async Task Given_NoAccount_When_QueryingBalance_Then_ReturnsNull()
     {
         // Given
-        var query = new GetBalanceQuery(_persona, _coinhouse);
+        GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns((CoinHouseAccount?)null);
 
         // When
-        var balance = await _handler.HandleAsync(query);
+        int? balance = await _handler.HandleAsync(query);
 
         // Then
         Assert.That(balance, Is.Null);
@@ -159,13 +159,13 @@ public class GetBalanceQueryHandlerTests
         // Given - Account is in debt (credit > debit)
         _testAccount.Debit = 500;
         _testAccount.Credit = 800;
-        var query = new GetBalanceQuery(_persona, _coinhouse);
+        GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
-        var balance = await _handler.HandleAsync(query);
+        int? balance = await _handler.HandleAsync(query);
 
         // Then
         Assert.That(balance, Is.EqualTo(-300)); // 500 - 800
@@ -177,13 +177,13 @@ public class GetBalanceQueryHandlerTests
         // Given
         _testAccount.Debit = 999999999;
         _testAccount.Credit = 0;
-        var query = new GetBalanceQuery(_persona, _coinhouse);
+        GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
-        var balance = await _handler.HandleAsync(query);
+        int? balance = await _handler.HandleAsync(query);
 
         // Then
         Assert.That(balance, Is.EqualTo(999999999));
@@ -198,15 +198,15 @@ public class GetBalanceQueryHandlerTests
     {
         // Given
         _testAccount.Debit = 1000;
-        var query = new GetBalanceQuery(_persona, _coinhouse);
+        GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
-        var balance1 = await _handler.HandleAsync(query);
-        var balance2 = await _handler.HandleAsync(query);
-        var balance3 = await _handler.HandleAsync(query);
+        int? balance1 = await _handler.HandleAsync(query);
+        int? balance2 = await _handler.HandleAsync(query);
+        int? balance3 = await _handler.HandleAsync(query);
 
         // Then
         Assert.That(balance1, Is.EqualTo(1000));

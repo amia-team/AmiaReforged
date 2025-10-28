@@ -50,7 +50,7 @@ public class InMemoryEventBus : IEventBus
         {
             _publishedEvents.Add(@event);
 
-            if (!_subscribers.TryGetValue(typeof(TEvent), out var subscriberList))
+            if (!_subscribers.TryGetValue(typeof(TEvent), out List<Delegate>? subscriberList))
             {
                 return; // No subscribers
             }
@@ -59,7 +59,7 @@ public class InMemoryEventBus : IEventBus
         }
 
         // Execute handlers outside the lock (synchronously for Phase 3.3)
-        foreach (var handler in handlers)
+        foreach (Func<TEvent, CancellationToken, Task> handler in handlers)
         {
             await handler(@event, cancellationToken);
         }
@@ -72,7 +72,7 @@ public class InMemoryEventBus : IEventBus
 
         lock (_lock)
         {
-            if (!_subscribers.TryGetValue(typeof(TEvent), out var subscriberList))
+            if (!_subscribers.TryGetValue(typeof(TEvent), out List<Delegate>? subscriberList))
             {
                 subscriberList = new List<Delegate>();
                 _subscribers[typeof(TEvent)] = subscriberList;

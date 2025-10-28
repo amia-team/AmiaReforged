@@ -35,7 +35,7 @@ public class InMemoryOrganizationMemberRepository : IOrganizationMemberRepositor
 
     public void Update(OrganizationMember member)
     {
-        var existing = _members.FirstOrDefault(m => m.Id == member.Id);
+        OrganizationMember? existing = _members.FirstOrDefault(m => m.Id == member.Id);
         if (existing != null)
         {
             _members.Remove(existing);

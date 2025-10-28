@@ -38,7 +38,7 @@ public class OrganizationQueryTests
         _testOrgId = OrganizationId.New();
         _testCharacterId = new CharacterId(Guid.NewGuid());
 
-        var testOrg = OrgEntity.Create(_testOrgId, "Test Guild", "A test organization", OrganizationType.Guild);
+        OrgEntity testOrg = OrgEntity.Create(_testOrgId, "Test Guild", "A test organization", OrganizationType.Guild);
         _orgRepository.Add(testOrg);
     }
 
@@ -48,13 +48,13 @@ public class OrganizationQueryTests
     public async Task GetOrganizationDetails_Found_ReturnsOrganization()
     {
         // Arrange
-        var query = new GetOrganizationDetailsQuery
+        GetOrganizationDetailsQuery query = new GetOrganizationDetailsQuery
         {
             OrganizationId = _testOrgId
         };
 
         // Act
-        var result = await _getDetailsHandler.HandleAsync(query);
+        IOrganization? result = await _getDetailsHandler.HandleAsync(query);
 
         // Assert
         Assert.That(result, Is.Not.Null, "Query should return organization");
@@ -66,14 +66,14 @@ public class OrganizationQueryTests
     public async Task GetOrganizationDetails_NotFound_ReturnsNull()
     {
         // Arrange
-        var nonExistentId = OrganizationId.New();
-        var query = new GetOrganizationDetailsQuery
+        OrganizationId nonExistentId = OrganizationId.New();
+        GetOrganizationDetailsQuery query = new GetOrganizationDetailsQuery
         {
             OrganizationId = nonExistentId
         };
 
         // Act
-        var result = await _getDetailsHandler.HandleAsync(query);
+        IOrganization? result = await _getDetailsHandler.HandleAsync(query);
 
         // Assert
         Assert.That(result, Is.Null, "Query should return null for non-existent org");
@@ -87,7 +87,7 @@ public class OrganizationQueryTests
     public async Task GetOrganizationMembers_ReturnsAllActiveMembers()
     {
         // Arrange - Create multiple members
-        var member1 = new OrganizationMember
+        OrganizationMember member1 = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -98,7 +98,7 @@ public class OrganizationQueryTests
             Roles = []
         };
 
-        var member2 = new OrganizationMember
+        OrganizationMember member2 = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = new CharacterId(Guid.NewGuid()),
@@ -109,7 +109,7 @@ public class OrganizationQueryTests
             Roles = []
         };
 
-        var member3 = new OrganizationMember
+        OrganizationMember member3 = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = new CharacterId(Guid.NewGuid()),
@@ -125,14 +125,14 @@ public class OrganizationQueryTests
         _memberRepository.Add(member2);
         _memberRepository.Add(member3);
 
-        var query = new GetOrganizationMembersQuery
+        GetOrganizationMembersQuery query = new GetOrganizationMembersQuery
         {
             OrganizationId = _testOrgId,
             ActiveOnly = true
         };
 
         // Act
-        var result = await _getMembersHandler.HandleAsync(query);
+        List<OrganizationMember> result = await _getMembersHandler.HandleAsync(query);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -144,7 +144,7 @@ public class OrganizationQueryTests
     public async Task GetOrganizationMembers_IncludesInactive_ReturnsAll()
     {
         // Arrange - Create members with different statuses
-        var member1 = new OrganizationMember
+        OrganizationMember member1 = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -155,7 +155,7 @@ public class OrganizationQueryTests
             Roles = []
         };
 
-        var member2 = new OrganizationMember
+        OrganizationMember member2 = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = new CharacterId(Guid.NewGuid()),
@@ -170,14 +170,14 @@ public class OrganizationQueryTests
         _memberRepository.Add(member1);
         _memberRepository.Add(member2);
 
-        var query = new GetOrganizationMembersQuery
+        GetOrganizationMembersQuery query = new GetOrganizationMembersQuery
         {
             OrganizationId = _testOrgId,
             ActiveOnly = false
         };
 
         // Act
-        var result = await _getMembersHandler.HandleAsync(query);
+        List<OrganizationMember> result = await _getMembersHandler.HandleAsync(query);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -188,14 +188,14 @@ public class OrganizationQueryTests
     public async Task GetOrganizationMembers_EmptyOrganization_ReturnsEmptyList()
     {
         // Arrange
-        var query = new GetOrganizationMembersQuery
+        GetOrganizationMembersQuery query = new GetOrganizationMembersQuery
         {
             OrganizationId = _testOrgId,
             ActiveOnly = true
         };
 
         // Act
-        var result = await _getMembersHandler.HandleAsync(query);
+        List<OrganizationMember> result = await _getMembersHandler.HandleAsync(query);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -210,11 +210,11 @@ public class OrganizationQueryTests
     public async Task GetCharacterOrganizations_ReturnsMemberships()
     {
         // Arrange - Create memberships in multiple organizations
-        var org2Id = OrganizationId.New();
-        var org2 = OrgEntity.Create(org2Id, "Second Guild", "Another guild", OrganizationType.Guild);
+        OrganizationId org2Id = OrganizationId.New();
+        OrgEntity org2 = OrgEntity.Create(org2Id, "Second Guild", "Another guild", OrganizationType.Guild);
         _orgRepository.Add(org2);
 
-        var member1 = new OrganizationMember
+        OrganizationMember member1 = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -225,7 +225,7 @@ public class OrganizationQueryTests
             Roles = []
         };
 
-        var member2 = new OrganizationMember
+        OrganizationMember member2 = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -239,14 +239,14 @@ public class OrganizationQueryTests
         _memberRepository.Add(member1);
         _memberRepository.Add(member2);
 
-        var query = new GetCharacterOrganizationsQuery
+        GetCharacterOrganizationsQuery query = new GetCharacterOrganizationsQuery
         {
             CharacterId = _testCharacterId,
             ActiveOnly = true
         };
 
         // Act
-        var result = await _getCharacterOrgsHandler.HandleAsync(query);
+        List<OrganizationMember> result = await _getCharacterOrgsHandler.HandleAsync(query);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -257,7 +257,7 @@ public class OrganizationQueryTests
     public async Task GetCharacterOrganizations_ActiveOnly_ExcludesDeparted()
     {
         // Arrange
-        var member1 = new OrganizationMember
+        OrganizationMember member1 = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -268,11 +268,11 @@ public class OrganizationQueryTests
             Roles = []
         };
 
-        var org2Id = OrganizationId.New();
-        var org2 = OrgEntity.Create(org2Id, "Old Guild", "Former guild", OrganizationType.Guild);
+        OrganizationId org2Id = OrganizationId.New();
+        OrgEntity org2 = OrgEntity.Create(org2Id, "Old Guild", "Former guild", OrganizationType.Guild);
         _orgRepository.Add(org2);
 
-        var member2 = new OrganizationMember
+        OrganizationMember member2 = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = _testCharacterId,
@@ -287,14 +287,14 @@ public class OrganizationQueryTests
         _memberRepository.Add(member1);
         _memberRepository.Add(member2);
 
-        var query = new GetCharacterOrganizationsQuery
+        GetCharacterOrganizationsQuery query = new GetCharacterOrganizationsQuery
         {
             CharacterId = _testCharacterId,
             ActiveOnly = true
         };
 
         // Act
-        var result = await _getCharacterOrgsHandler.HandleAsync(query);
+        List<OrganizationMember> result = await _getCharacterOrgsHandler.HandleAsync(query);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -306,14 +306,14 @@ public class OrganizationQueryTests
     public async Task GetCharacterOrganizations_NoMemberships_ReturnsEmptyList()
     {
         // Arrange
-        var query = new GetCharacterOrganizationsQuery
+        GetCharacterOrganizationsQuery query = new GetCharacterOrganizationsQuery
         {
             CharacterId = new CharacterId(Guid.NewGuid()),
             ActiveOnly = true
         };
 
         // Act
-        var result = await _getCharacterOrgsHandler.HandleAsync(query);
+        List<OrganizationMember> result = await _getCharacterOrgsHandler.HandleAsync(query);
 
         // Assert
         Assert.That(result, Is.Not.Null);

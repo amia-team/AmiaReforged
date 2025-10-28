@@ -39,15 +39,15 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
         try
         {
             // Validate coinhouse exists
-            var coinhouse = _coinhouses.GetByTag(command.Coinhouse);
+            CoinHouse? coinhouse = _coinhouses.GetByTag(command.Coinhouse);
             if (coinhouse == null)
             {
                 return CommandResult.Fail($"Coinhouse '{command.Coinhouse.Value}' not found");
             }
 
             // Get or create account
-            var accountId = ExtractAccountId(command.PersonaId);
-            var account = _coinhouses.GetAccountFor(accountId);
+            Guid accountId = ExtractAccountId(command.PersonaId);
+            CoinHouseAccount? account = _coinhouses.GetAccountFor(accountId);
 
             if (account == null)
             {
@@ -64,7 +64,7 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
             account.LastAccessedAt = DateTime.UtcNow;
 
             // Record transaction
-            var transaction = new Transaction
+            Transaction transaction = new Transaction
             {
                 FromPersonaId = command.PersonaId.ToString(),
                 ToPersonaId = coinhouse.PersonaId.ToString(),
@@ -73,12 +73,12 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
                 Timestamp = DateTime.UtcNow
             };
 
-            var recordedTransaction = await _transactions.RecordTransactionAsync(
+            Transaction recordedTransaction = await _transactions.RecordTransactionAsync(
                 transaction,
                 cancellationToken);
 
             // Publish event
-            var evt = new GoldDepositedEvent(
+            GoldDepositedEvent evt = new GoldDepositedEvent(
                 command.PersonaId,
                 command.Coinhouse,
                 command.Amount,
@@ -104,13 +104,13 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
         // PersonaId format: "Type:Value"
         // For Character personas, Value is the CharacterId Guid
         // For Organization personas, Value is the OrganizationId Guid
-        var parts = personaId.ToString().Split(':');
+        string[] parts = personaId.ToString().Split(':');
         if (parts.Length != 2)
         {
             throw new ArgumentException($"Invalid PersonaId format: {personaId}");
         }
 
-        if (Guid.TryParse(parts[1], out var guid))
+        if (Guid.TryParse(parts[1], out Guid guid))
         {
             return guid;
         }

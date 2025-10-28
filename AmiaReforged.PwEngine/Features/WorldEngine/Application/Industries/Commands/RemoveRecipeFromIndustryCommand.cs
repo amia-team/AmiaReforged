@@ -28,14 +28,14 @@ public class RemoveRecipeFromIndustryHandler : ICommandHandler<RemoveRecipeFromI
 
     public Task<CommandResult> HandleAsync(RemoveRecipeFromIndustryCommand command, CancellationToken cancellationToken = default)
     {
-        var industry = _industryRepository.GetByTag(command.IndustryTag);
+        Industry? industry = _industryRepository.GetByTag(command.IndustryTag);
 
         if (industry == null)
         {
             return Task.FromResult(CommandResult.Fail($"Industry '{command.IndustryTag.Value}' not found"));
         }
 
-        var recipe = industry.Recipes.FirstOrDefault(r => r.RecipeId == command.RecipeId);
+        Recipe? recipe = industry.Recipes.FirstOrDefault(r => r.RecipeId == command.RecipeId);
 
         if (recipe == null)
         {
