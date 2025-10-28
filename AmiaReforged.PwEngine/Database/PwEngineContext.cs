@@ -40,6 +40,8 @@ public class PwEngineContext : DbContext
 
     public DbSet<CoinHouse> CoinHouses { get; set; } = null!;
 
+    public DbSet<Organization> Organizations { get; set; } = null!;
+
     /// <summary>
     /// Generic catch all for any physical item that must be kept track of in storage.
     /// </summary>
