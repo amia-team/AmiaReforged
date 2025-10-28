@@ -62,6 +62,24 @@ public class PlayerCodex
     #region Quest Commands
 
     /// <summary>
+    /// Records a quest as discovered (known but not started) in the codex.
+    /// Used for quest hints, rumors, or quests offered but not accepted.
+    /// </summary>
+    public void RecordQuestDiscovered(CodexQuestEntry quest, DateTime occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(quest);
+
+        if (_quests.ContainsKey(quest.QuestId))
+            throw new InvalidOperationException($"Quest {quest.QuestId.Value} already exists in codex");
+
+        // Ensure quest is in Discovered state when discovered
+        quest.State = QuestState.Discovered;
+
+        _quests[quest.QuestId] = quest;
+        LastUpdated = occurredAt;
+    }
+
+    /// <summary>
     /// Records a quest as started in the codex
     /// </summary>
     public void RecordQuestStarted(CodexQuestEntry quest, DateTime occurredAt)

@@ -614,7 +614,7 @@ public class PlayerCodexTests
         PlayerCodex codex = new PlayerCodex(_testCharacterId, _testDate);
         CodexQuestEntry quest1 = CreateTestQuest("quest_001", "Discovered Quest");
         CodexQuestEntry quest2 = CreateTestQuest("quest_002", "Completed Quest");
-        codex.RecordQuestStarted(quest1, _testDate);
+        codex.RecordQuestDiscovered(quest1, _testDate); // Discovered but not started
         codex.RecordQuestStarted(quest2, _testDate);
         codex.RecordQuestCompleted(quest2.QuestId, _testDate.AddHours(1));
 

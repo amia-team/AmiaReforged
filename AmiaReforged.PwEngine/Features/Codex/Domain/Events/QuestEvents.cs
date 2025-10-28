@@ -3,6 +3,14 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 namespace AmiaReforged.PwEngine.Features.Codex.Domain.Events;
 
+public sealed record QuestDiscoveredEvent(
+    CharacterId CharacterId,
+    DateTime OccurredAt,
+    QuestId QuestId,
+    string QuestName,
+    string Description
+) : CodexDomainEvent(CharacterId, OccurredAt);
+
 public sealed record QuestStartedEvent(
     CharacterId CharacterId,
     DateTime OccurredAt,

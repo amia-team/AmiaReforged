@@ -25,6 +25,9 @@ public readonly record struct CoinhouseTag
         return tag.Trim().ToLowerInvariant();
     }
 
+    public static CoinhouseTag Parse(string value) => new(value);
+
+
     /// <summary>
     /// Implicit conversion from CoinhouseTag to string for backward compatibility.
     /// </summary>

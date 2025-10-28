@@ -113,6 +113,11 @@ public class CodexEventProcessor
     {
         switch (domainEvent)
         {
+            case QuestDiscoveredEvent qde:
+                CodexQuestEntry discoveredQuest = CreateQuestEntry(qde.QuestId, qde.QuestName, qde.Description, qde.OccurredAt);
+                codex.RecordQuestDiscovered(discoveredQuest, qde.OccurredAt);
+                break;
+
             case QuestStartedEvent qse:
                 CodexQuestEntry questEntry = CreateQuestEntry(qse);
                 codex.RecordQuestStarted(questEntry, qse.OccurredAt);
@@ -156,6 +161,21 @@ public class CodexEventProcessor
             default:
                 throw new NotSupportedException($"Event type {domainEvent.GetType().Name} is not supported");
         }
+    }
+
+    /// <summary>
+    /// Creates a CodexQuestEntry with common parameters
+    /// </summary>
+    private CodexQuestEntry CreateQuestEntry(QuestId questId, string questName, string description, DateTime occurredAt)
+    {
+        return new CodexQuestEntry
+        {
+            QuestId = questId,
+            Title = questName,
+            Description = description,
+            DateStarted = occurredAt,
+            Keywords = new List<Keyword>()
+        };
     }
 
     /// <summary>
