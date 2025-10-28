@@ -300,23 +300,25 @@ public sealed class CharacterCustomizationModel
         NwCreature? creature = _player.ControlledCreature;
         if (creature == null) return;
 
+        // Get the current armor part being edited
+        CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
+
         // Map color channel to ItemAppearanceArmorColor enum
         ItemAppearanceArmorColor colorChannel = GetArmorColorChannel(CurrentColorChannel);
 
         string[] channelNames = new[] { "Leather 1", "Leather 2", "Cloth 1", "Cloth 2", "Metal 1", "Metal 2" };
         string channelName = CurrentColorChannel < channelNames.Length ? channelNames[CurrentColorChannel] : "Unknown";
 
-
         // Store reference to old armor
         NwItem oldArmor = _currentArmor;
 
-        // Use Anvil's native method to directly modify the armor color
-        oldArmor.Appearance.SetArmorColor(colorChannel, (byte)colorIndex);
+        // Use Anvil's native per-part color method
+        oldArmor.Appearance.SetArmorPieceColor(creaturePart, colorChannel, (byte)colorIndex);
 
-        // Unequip the armor
+        // Unequip and re-equip to refresh the visual
         creature.RunUnequip(oldArmor);
 
-        // Create a copy to refresh the inventory icon
+        // Clone the armor to refresh the inventory icon
         NwItem? newArmor = oldArmor.Clone(creature);
 
         if (newArmor == null || !newArmor.IsValid)
@@ -336,7 +338,13 @@ public sealed class CharacterCustomizationModel
         // Destroy the old armor
         oldArmor.Destroy();
 
-        _player.SendServerMessage($"{channelName} color updated to {colorIndex}.", ColorConstants.Green);
+        string[] partNames = new[] { "Right Foot", "Left Foot", "Right Shin", "Left Shin",
+            "Right Thigh", "Left Thigh", "Pelvis", "Torso", "Belt", "Neck",
+            "Right Forearm", "Left Forearm", "Right Bicep", "Left Bicep",
+            "Right Shoulder", "Left Shoulder", "Right Hand", "Left Hand", "Robe" };
+        string partName = CurrentArmorPart < partNames.Length ? partNames[CurrentArmorPart] : "Unknown";
+
+        _player.SendServerMessage($"{partName} {channelName} color updated to {colorIndex}.", ColorConstants.Green);
     }
 
     public void SetHairColor(int colorIndex)
@@ -369,8 +377,11 @@ public sealed class CharacterCustomizationModel
     {
         if (_currentArmor == null || !_currentArmor.IsValid) return 0;
 
+        CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
         ItemAppearanceArmorColor colorChannel = GetArmorColorChannel(CurrentColorChannel);
-        return _currentArmor.Appearance.GetArmorColor(colorChannel);
+
+        // Use Anvil's native per-part color method
+        return _currentArmor.Appearance.GetArmorPieceColor(creaturePart, colorChannel);
     }
 
     /// <summary>
@@ -417,6 +428,37 @@ public sealed class CharacterCustomizationModel
             4 => ItemAppearanceArmorColor.Metal1,
             5 => ItemAppearanceArmorColor.Metal2,
             _ => ItemAppearanceArmorColor.Leather1
+        };
+    }
+
+    /// <summary>
+    /// Map CreaturePart to NWScript armor piece index for CopyItemAndModify
+    /// These correspond to ITEM_APPR_ARMOR_NUM_* constants in NWScript
+    /// </summary>
+    private int GetArmorPieceIndex(CreaturePart part)
+    {
+        return part switch
+        {
+            CreaturePart.RightFoot => 0,
+            CreaturePart.LeftFoot => 1,
+            CreaturePart.RightShin => 2,
+            CreaturePart.LeftShin => 3,
+            CreaturePart.RightThigh => 4,
+            CreaturePart.LeftThigh => 5,
+            CreaturePart.Pelvis => 6,
+            CreaturePart.Torso => 7,
+            CreaturePart.Belt => 8,
+            CreaturePart.Neck => 9,
+            CreaturePart.RightForearm => 10,
+            CreaturePart.LeftForearm => 11,
+            CreaturePart.RightBicep => 12,
+            CreaturePart.LeftBicep => 13,
+            CreaturePart.RightShoulder => 14,
+            CreaturePart.LeftShoulder => 15,
+            CreaturePart.RightHand => 16,
+            CreaturePart.LeftHand => 17,
+            CreaturePart.Robe => 18,
+            _ => 7 // Default to Torso
         };
     }
 
