@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Transactions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Moq;
@@ -17,6 +18,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Economy;
 public class TransferGoldCommandHandlerTests
 {
     private Mock<ITransactionRepository> _mockRepository = null!;
+    private Mock<IEventBus> _mockEventBus = null!;
     private TransferGoldCommandHandler _handler = null!;
     private PersonaId _fromPersona;
     private PersonaId _toPersona;
@@ -25,7 +27,8 @@ public class TransferGoldCommandHandlerTests
     public void Setup()
     {
         _mockRepository = new Mock<ITransactionRepository>();
-        _handler = new TransferGoldCommandHandler(_mockRepository.Object);
+        _mockEventBus = new Mock<IEventBus>();
+        _handler = new TransferGoldCommandHandler(_mockRepository.Object, _mockEventBus.Object);
         _fromPersona = PersonaId.FromCharacter(CharacterId.New());
         _toPersona = PersonaId.FromOrganization(OrganizationId.New());
     }

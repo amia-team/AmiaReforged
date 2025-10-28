@@ -1,12 +1,15 @@
 using AmiaReforged.PwEngine.Database.Entities.Economy;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Transactions;
 
 /// <summary>
 /// Handles the execution of TransferGoldCommand.
-/// Validates the transfer, records the transaction, and returns the result.
+/// Validates the transfer, records the transaction, publishes event, and returns the result.
 /// Note: This handler does NOT manage actual gold/wallet balances - it only logs transfers.
 /// Balance management is handled by wallet/coinhouse services.
 /// </summary>
@@ -14,10 +17,12 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Transactions;
 public class TransferGoldCommandHandler : ICommandHandler<TransferGoldCommand>
 {
     private readonly ITransactionRepository _repository;
+    private readonly IEventBus _eventBus;
 
-    public TransferGoldCommandHandler(ITransactionRepository repository)
+    public TransferGoldCommandHandler(ITransactionRepository repository, IEventBus eventBus)
     {
         _repository = repository;
+        _eventBus = eventBus;
     }
 
     public async Task<CommandResult> HandleAsync(TransferGoldCommand command, CancellationToken cancellationToken = default)
@@ -43,6 +48,16 @@ public class TransferGoldCommandHandler : ICommandHandler<TransferGoldCommand>
 
             // Record transaction
             Transaction recorded = await _repository.RecordTransactionAsync(transaction, cancellationToken);
+
+            // Publish event
+            var evt = new GoldTransferredEvent(
+                command.From,
+                command.To,
+                command.Amount,
+                TransactionId.NewId(), // TODO: Use DB transaction ID once we switch to Guid
+                command.Memo,
+                recorded.Timestamp);
+            await _eventBus.PublishAsync(evt, cancellationToken);
 
             // Return success with transaction ID
             return CommandResult.OkWith("transactionId", recorded.Id);
