@@ -7,12 +7,13 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Harvesting.Commands;
 /// Command to register a new resource node instance
 /// </summary>
 public sealed record RegisterNodeCommand(
-    string AreaResRef,
+    Guid? NodeInstanceId,
     string ResourceTag,
+    string AreaResRef,
     float X,
     float Y,
     float Z,
     float Rotation,
-    int Uses,
-    IPQuality Quality) : ICommand;
+    IPQuality Quality,
+    int Uses) : ICommand;
 

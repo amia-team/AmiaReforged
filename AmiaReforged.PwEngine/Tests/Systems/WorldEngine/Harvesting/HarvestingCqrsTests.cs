@@ -86,14 +86,15 @@ public class HarvestingCqrsTests
     {
         // Given
         RegisterNodeCommand command = new RegisterNodeCommand(
-            TestArea,
+            null,
             TestResourceTag,
+            TestArea,
             10.0f,
             20.0f,
             0.0f,
             0.0f,
-            5,
-            IPQuality.Average);
+            IPQuality.Average,
+            5);
 
         // When
         CommandResult result = await _registerNodeHandler.HandleAsync(command, CancellationToken.None);
@@ -121,14 +122,15 @@ public class HarvestingCqrsTests
     {
         // Given
         RegisterNodeCommand command = new RegisterNodeCommand(
-            TestArea,
+            null,
             "nonexistent_resource",
+            TestArea,
             10.0f,
             20.0f,
             0.0f,
             0.0f,
-            5,
-            IPQuality.Average);
+            IPQuality.Average,
+            5);
 
         // When
         CommandResult result = await _registerNodeHandler.HandleAsync(command, CancellationToken.None);
@@ -148,13 +150,13 @@ public class HarvestingCqrsTests
     {
         // Given - register three nodes in same area
         await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 1, 1, 0, 0, 5, IPQuality.Average),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 1, 1, 0, 0, IPQuality.Average, 5),
             CancellationToken.None);
         await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 2, 2, 0, 0, 5, IPQuality.BelowAverage),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 2, 2, 0, 0, IPQuality.BelowAverage, 5),
             CancellationToken.None);
         await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 3, 3, 0, 0, 5, IPQuality.AboveAverage),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 3, 3, 0, 0, IPQuality.AboveAverage, 5),
             CancellationToken.None);
 
         // When
@@ -170,7 +172,7 @@ public class HarvestingCqrsTests
     {
         // Given
         CommandResult registerResult = await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 1, 1, 0, 0, 5, IPQuality.Average),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 1, 1, 0, 0, IPQuality.Average, 5),
             CancellationToken.None);
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
@@ -188,7 +190,7 @@ public class HarvestingCqrsTests
     {
         // Given
         CommandResult registerResult = await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 1, 1, 0, 0, 5, IPQuality.Average),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 1, 1, 0, 0, IPQuality.Average, 5),
             CancellationToken.None);
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
@@ -213,7 +215,7 @@ public class HarvestingCqrsTests
     {
         // Given - a registered node
         CommandResult registerResult = await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 1, 1, 0, 0, 5, IPQuality.Average),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 1, 1, 0, 0, IPQuality.Average, 5),
             CancellationToken.None);
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
@@ -249,7 +251,7 @@ public class HarvestingCqrsTests
     {
         // Given - a node that requires a pick
         CommandResult registerResult = await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 1, 1, 0, 0, 5, IPQuality.Average),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 1, 1, 0, 0, IPQuality.Average, 5),
             CancellationToken.None);
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
@@ -286,7 +288,7 @@ public class HarvestingCqrsTests
         ((InMemoryResourceNodeDefinitionRepository)_definitionRepository).Create(definition);
 
         CommandResult registerResult = await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, "slow_ore", 1, 1, 0, 0, 5, IPQuality.Average),
+            new RegisterNodeCommand(null, "slow_ore", TestArea, 1, 1, 0, 0, IPQuality.Average, 5),
             CancellationToken.None);
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
@@ -325,7 +327,7 @@ public class HarvestingCqrsTests
     {
         // Given - a node with only 1 use
         CommandResult registerResult = await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 1, 1, 0, 0, 1, IPQuality.Average),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 1, 1, 0, 0, IPQuality.Average, 1),
             CancellationToken.None);
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
@@ -362,7 +364,7 @@ public class HarvestingCqrsTests
     {
         // Given
         CommandResult registerResult = await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 1, 1, 0, 0, 5, IPQuality.Average),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 1, 1, 0, 0, IPQuality.Average, 5),
             CancellationToken.None);
         Guid nodeInstanceId = (Guid)registerResult.Data!["nodeInstanceId"];
 
@@ -409,13 +411,13 @@ public class HarvestingCqrsTests
     {
         // Given - three nodes in the same area
         await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 1, 1, 0, 0, 5, IPQuality.Average),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 1, 1, 0, 0, IPQuality.Average, 5),
             CancellationToken.None);
         await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 2, 2, 0, 0, 5, IPQuality.Average),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 2, 2, 0, 0, IPQuality.Average, 5),
             CancellationToken.None);
         await _registerNodeHandler.HandleAsync(
-            new RegisterNodeCommand(TestArea, TestResourceTag, 3, 3, 0, 0, 5, IPQuality.Average),
+            new RegisterNodeCommand(null, TestResourceTag, TestArea, 3, 3, 0, 0, IPQuality.Average, 5),
             CancellationToken.None);
 
         _publishedEvents.Clear();

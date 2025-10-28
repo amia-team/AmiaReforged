@@ -1,6 +1,9 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Harvesting;
+using AmiaReforged.PwEngine.Features.WorldEngine.Harvesting.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Harvesting.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -11,7 +14,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.Services;
 [ServiceBinding(typeof(ResourceNodeInstanceSetupService))]
 public class ResourceNodeInstanceSetupService(
     IResourceNodeDefinitionRepository resourceRepository,
-    IHarvestProcessor harvestProcessor,
+    ICommandHandler<ClearAreaNodesCommand> clearNodesCommandHandler,
+    IQueryHandler<GetNodesForAreaQuery, List<ResourceNodeInstance>> getNodesQueryHandler,
     IRegionRepository regionRepository,
     ResourceNodeService nodeService)
 {
@@ -35,13 +39,17 @@ public class ResourceNodeInstanceSetupService(
     {
         foreach (NwArea area in NwModule.Instance.Areas)
         {
-            List<ResourceNodeInstance> instancesInArea = harvestProcessor.GetInstancesForArea(area.ResRef);
+            // Query for nodes in this area
+            var query = new GetNodesForAreaQuery(area.ResRef);
+            List<ResourceNodeInstance> nodes = getNodesQueryHandler.HandleAsync(query).GetAwaiter().GetResult();
 
-            if (instancesInArea.Count == 0) continue;
+            if (nodes.Count == 0) continue;
 
             NwModule.Instance.SendMessageToAllDMs($"PURGING NODES IN {area.Name} . . .");
 
-            harvestProcessor.ClearNodes(area.ResRef);
+            // Execute clear command
+            var command = new ClearAreaNodesCommand(area.ResRef);
+            _ = clearNodesCommandHandler.HandleAsync(command).GetAwaiter().GetResult();
         }
     }
 

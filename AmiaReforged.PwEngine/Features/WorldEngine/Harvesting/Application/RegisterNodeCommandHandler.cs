@@ -23,22 +23,36 @@ public class RegisterNodeCommandHandler(
             return CommandResult.Fail($"Resource definition '{command.ResourceTag}' not found");
         }
 
-        // Create the instance
-        ResourceNodeInstance instance = new ResourceNodeInstance
+        // Check if this is registering an existing instance or creating a new one
+        ResourceNodeInstance instance;
+        if (command.NodeInstanceId.HasValue)
         {
-            Area = command.AreaResRef,
-            Definition = definition,
-            X = command.X,
-            Y = command.Y,
-            Z = command.Z,
-            Rotation = command.Rotation,
-            Quality = command.Quality,
-            Uses = command.Uses
-        };
+            // Look up existing instance
+            instance = nodeRepository.GetInstances().FirstOrDefault(n => n.Id == command.NodeInstanceId.Value)!;
+            if (instance == null)
+            {
+                return CommandResult.Fail($"Node instance '{command.NodeInstanceId}' not found");
+            }
+        }
+        else
+        {
+            // Create a new instance
+            instance = new ResourceNodeInstance
+            {
+                Area = command.AreaResRef,
+                Definition = definition,
+                X = command.X,
+                Y = command.Y,
+                Z = command.Z,
+                Rotation = command.Rotation,
+                Quality = command.Quality,
+                Uses = command.Uses
+            };
 
-        // Save to repository
-        nodeRepository.AddNodeInstance(instance);
-        nodeRepository.SaveChanges();
+            // Save to repository
+            nodeRepository.AddNodeInstance(instance);
+            nodeRepository.SaveChanges();
+        }
 
         // Publish event
         await eventBus.PublishAsync(new NodeRegisteredEvent(
