@@ -16,7 +16,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
     private static readonly string[] ArmorPartNames = new[]
     {
         "Right Foot", "Left Foot", "Right Shin", "Left Shin",
-        "Left Thigh", "Right Thigh", "Pelvis", "Torso",
+        "Right Thigh", "Left Thigh", "Pelvis", "Torso",
         "Belt", "Neck", "Right Forearm", "Left Forearm",
         "Right Bicep", "Left Bicep", "Right Shoulder", "Left Shoulder",
         "Right Hand", "Left Hand", "Robe"
@@ -45,6 +45,9 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         _initializing = true;
         try
         {
+            // Initialize color palette resource binds (default to regular colors)
+            InitializeColorPalette(false);
+
             UpdateModeDisplay();
             UpdatePartDisplay();
         }
@@ -56,6 +59,19 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
 
     public override void InitBefore()
     {
+    }
+
+    private void InitializeColorPalette(bool useMetal)
+    {
+        // Set all 176 color button resources
+        string prefix = useMetal ? "cc_color_m_" : "cc_color_";
+
+        for (int i = 0; i < 176; i++)
+        {
+            Token().SetBindValue(View.ColorResRef[i], $"{prefix}{i}");
+        }
+
+        Token().SetBindValue(View.UseMetalPalette, useMetal);
     }
 
     public override void Close()
@@ -71,7 +87,15 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         // Mode selection
         if (ev.ElementId == View.ArmorButton.Id)
         {
+            // Always reload armor when clicking the Armor button
+            // This allows players to switch to a different equipped armor without closing the window
             _model.SetMode(CustomizationMode.Armor);
+
+            // Set default color channel to Cloth 1 (channel 2)
+            _model.SetColorChannel(2);
+            InitializeColorPalette(false); // Start with regular palette
+            _player.SendServerMessage("Cloth 1 color channel selected.", ColorConstants.Cyan);
+
             UpdateModeDisplay();
             UpdatePartDisplay();
             return;
@@ -94,7 +118,9 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         // Part navigation (armor mode)
         if (ev.ElementId == View.PartLeftButton.Id)
         {
-            int newPart = Math.Max(0, _model.CurrentArmorPart - 1);
+            int newPart = _model.CurrentArmorPart - 1;
+            if (newPart < 0)
+                newPart = 18; // Wrap to last part (Robe)
             _model.SetArmorPart(newPart);
             UpdatePartDisplay();
             return;
@@ -102,13 +128,24 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
 
         if (ev.ElementId == View.PartRightButton.Id)
         {
-            int newPart = Math.Min(18, _model.CurrentArmorPart + 1);
+            int newPart = _model.CurrentArmorPart + 1;
+            if (newPart > 18)
+                newPart = 0; // Wrap to first part (Right Foot)
             _model.SetArmorPart(newPart);
             UpdatePartDisplay();
             return;
         }
 
         // Model navigation (armor mode)
+        if (ev.ElementId == View.ModelLeft10Button.Id)
+        {
+            _model.AdjustArmorPartModel(-10);
+            int modelNum = _model.GetCurrentArmorPartModel();
+            Token().SetBindValue(View.CurrentPartModel, modelNum);
+            Token().SetBindValue(View.CurrentPartModelText, modelNum.ToString());
+            return;
+        }
+
         if (ev.ElementId == View.ModelLeftButton.Id)
         {
             _model.AdjustArmorPartModel(-1);
@@ -127,6 +164,15 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
             return;
         }
 
+        if (ev.ElementId == View.ModelRight10Button.Id)
+        {
+            _model.AdjustArmorPartModel(10);
+            int modelNum = _model.GetCurrentArmorPartModel();
+            Token().SetBindValue(View.CurrentPartModel, modelNum);
+            Token().SetBindValue(View.CurrentPartModelText, modelNum.ToString());
+            return;
+        }
+
         // Color selection
         if (ev.ElementId.StartsWith("btn_color_"))
         {
@@ -134,6 +180,50 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
             {
                 HandleColorSelection(colorIndex);
             }
+            return;
+        }
+
+        // Material type selection (Leather1=0, Leather2=1, Cloth1=2, Cloth2=3, Metal1=4, Metal2=5)
+        if (ev.ElementId == View.Leather1Button.Id)
+        {
+            _model.SetColorChannel(0); // Leather 1
+            InitializeColorPalette(false); // Use regular palette
+            _player.SendServerMessage("Leather 1 color channel selected.", ColorConstants.Cyan);
+            return;
+        }
+        if (ev.ElementId == View.Leather2Button.Id)
+        {
+            _model.SetColorChannel(1); // Leather 2
+            InitializeColorPalette(false); // Use regular palette
+            _player.SendServerMessage("Leather 2 color channel selected.", ColorConstants.Cyan);
+            return;
+        }
+        if (ev.ElementId == View.Cloth1Button.Id)
+        {
+            _model.SetColorChannel(2); // Cloth 1
+            InitializeColorPalette(false); // Use regular palette
+            _player.SendServerMessage("Cloth 1 color channel selected.", ColorConstants.Cyan);
+            return;
+        }
+        if (ev.ElementId == View.Cloth2Button.Id)
+        {
+            _model.SetColorChannel(3); // Cloth 2
+            InitializeColorPalette(false); // Use regular palette
+            _player.SendServerMessage("Cloth 2 color channel selected.", ColorConstants.Cyan);
+            return;
+        }
+        if (ev.ElementId == View.Metal1Button.Id)
+        {
+            _model.SetColorChannel(4); // Metal 1
+            InitializeColorPalette(true); // Use metal palette
+            _player.SendServerMessage("Metal 1 color channel selected.", ColorConstants.Cyan);
+            return;
+        }
+        if (ev.ElementId == View.Metal2Button.Id)
+        {
+            _model.SetColorChannel(5); // Metal 2
+            InitializeColorPalette(true); // Use metal palette
+            _player.SendServerMessage("Metal 2 color channel selected.", ColorConstants.Cyan);
             return;
         }
 
@@ -157,7 +247,6 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         {
             _model.ApplyChanges();
             Close();
-            return;
         }
     }
 

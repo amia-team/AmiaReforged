@@ -24,9 +24,13 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public readonly NuiBind<bool> ArmorModeActive = new("cc_armor_active");
     public readonly NuiBind<bool> EquipmentModeActive = new("cc_equip_active");
     public readonly NuiBind<bool> AppearanceModeActive = new("cc_appear_active");
+    public readonly NuiBind<bool> UseMetalPalette = new("cc_use_metal_palette");
 
     // Armor part overlay visibility binds (one for each of the 19 parts)
     public readonly NuiBind<bool>[] ArmorPartVisible = new NuiBind<bool>[19];
+
+    // Color palette resource binds (one for each of the 176 colors)
+    public readonly NuiBind<string>[] ColorResRef = new NuiBind<string>[176];
 
     // Buttons
     public NuiButtonImage ArmorButton = null!;
@@ -34,8 +38,10 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public NuiButtonImage AppearanceButton = null!;
     public NuiButtonImage PartLeftButton = null!;
     public NuiButtonImage PartRightButton = null!;
+    public NuiButtonImage ModelLeft10Button = null!;
     public NuiButtonImage ModelLeftButton = null!;
     public NuiButtonImage ModelRightButton = null!;
+    public NuiButtonImage ModelRight10Button = null!;
     public NuiButtonImage SaveButton = null!;
     public NuiButtonImage CancelButton = null!;
     public NuiButtonImage ConfirmButton = null!;
@@ -68,6 +74,12 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
         for (int i = 0; i < 19; i++)
         {
             ArmorPartVisible[i] = new NuiBind<bool>($"cc_armor_part_visible_{i}");
+        }
+
+        // Initialize color palette resource binds
+        for (int i = 0; i < 176; i++)
+        {
+            ColorResRef[i] = new NuiBind<string>($"color_resref_{i}");
         }
 
         Presenter = new CharacterCustomizationPresenter(this, player);
@@ -237,7 +249,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 150f }, // Center: (700 - 210) / 2
+                        new NuiSpacer { Width = 120f }, // Adjusted for extra buttons
                         new NuiLabel("Model:")
                         {
                             Width = 80f,
@@ -245,6 +257,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
+                        ImageButton("btn_model_left_10", "-10", out ModelLeft10Button, 35f, 35f, "cc_arrow_l_btn"),
                         ImageButton("btn_model_left", "-1", out ModelLeftButton, 35f, 35f, "cc_arrow_l_btn"),
                         new NuiLabel(CurrentPartModelText)
                         {
@@ -254,7 +267,8 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
-                        ImageButton("btn_model_right", "+1", out ModelRightButton, 35f, 35f, "cc_arrow_r_btn")
+                        ImageButton("btn_model_right", "+1", out ModelRightButton, 35f, 35f, "cc_arrow_r_btn"),
+                        ImageButton("btn_model_right_10", "+10", out ModelRight10Button, 35f, 35f, "cc_arrow_r_btn")
                     }
                 }
             }
@@ -309,7 +323,8 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 int colorIndex = row * 16 + col;
                 if (colorIndex >= 176) break;
 
-                NuiButtonImage colorBtn = new NuiButtonImage($"cc_color_{colorIndex}")
+                // Use the pre-created bind for this color index
+                NuiButtonImage colorBtn = new NuiButtonImage(ColorResRef[colorIndex])
                 {
                     Id = $"btn_color_{colorIndex}",
                     Width = 30f,
@@ -341,9 +356,9 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                     Children =
                     {
                         new NuiSpacer { Width = 140f }, // Center: (700 - 320) / 2
-                        ImagePlatedLabeledButton("btn_save", "Save", out SaveButton, "ui_btn_save"),
+                        ImagePlatedLabeledButton("btn_save", "", out SaveButton, "ui_btn_save"),
                         new NuiSpacer { Width = 20f },
-                        ImagePlatedLabeledButton("btn_cancel", "Cancel", out CancelButton, "ui_btn_cancel"),
+                        ImagePlatedLabeledButton("btn_cancel", "", out CancelButton, "ui_btn_cancel"),
                     }
                 }
             }

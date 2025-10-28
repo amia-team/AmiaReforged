@@ -2,6 +2,7 @@
 using Anvil.Services;
 using NLog;
 using NWN.Core;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.CharacterCustomization;
 
@@ -12,9 +13,11 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.CharacterCustomi
 public class CharacterCustomizationListener
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private readonly WindowDirector _windowDirector;
 
-    public CharacterCustomizationListener()
+    public CharacterCustomizationListener(WindowDirector windowDirector)
     {
+        _windowDirector = windowDirector;
         Log.Info(message: "CharacterCustomizationListener initialized.");
     }
 
@@ -42,9 +45,9 @@ public class CharacterCustomizationListener
 
         Log.Info($"Opening Character Customization for player: {player.PlayerName}");
 
-        // Open the Character Customization window
+        // Open the Character Customization window through WindowDirector
         CharacterCustomizationView view = new CharacterCustomizationView(player);
-        view.Presenter.Create();
+        _windowDirector.OpenWindow(view.Presenter);
 
         player.SendServerMessage("Opening Character Customization...", ColorConstants.Cyan);
     }
