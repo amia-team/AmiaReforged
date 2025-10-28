@@ -45,7 +45,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Bane);
         if (spell == null) return;
-        if (monk.Location == null) return;
+        if (target.Location == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 1, monkLevel))
             return;
@@ -58,9 +58,9 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         );
         bane.SubType = EffectSubType.Magical;
 
-        monk.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosEvil30));
+        target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosEvil30));
 
-        foreach (NwCreature enemy in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, true))
+        foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, true))
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
@@ -132,9 +132,6 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpLightningS));
     }
 
-    public void Sanctuary(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
-        monk.ApplyEffect(EffectDuration.Temporary, Effect.Sanctuary(dc), WildMagicUtils.LongDuration);
-
     public void Silence(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Silence);
@@ -165,9 +162,6 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpSilence));
     }
 
-    public void Invisibility(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
-        monk.ApplyEffect(EffectDuration.Temporary, Effect.Invisibility(InvisibilityType.Normal), WildMagicUtils.LongDuration);
-
     public void Combust(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Combust);
@@ -196,7 +190,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
             return;
         }
 
-        target.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.CharmMonsterEffect(monk), WildMagicUtils.ShortDuration);
+        target.ApplyEffect(EffectDuration.Temporary, Effect.Dazed(), WildMagicUtils.ShortDuration);
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpCharm));
     }
 
