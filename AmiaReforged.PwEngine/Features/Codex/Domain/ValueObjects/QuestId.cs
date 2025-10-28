@@ -20,6 +20,11 @@ public readonly record struct QuestId
     }
 
     /// <summary>
+    /// Creates a new QuestId with a unique GUID-based identifier.
+    /// </summary>
+    public static QuestId NewId() => new(Guid.NewGuid().ToString());
+
+    /// <summary>
     /// Implicit conversion from QuestId to string for backward compatibility.
     /// </summary>
     public static implicit operator string(QuestId questId) => questId.Value;

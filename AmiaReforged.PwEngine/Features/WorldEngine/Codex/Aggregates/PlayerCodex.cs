@@ -62,7 +62,7 @@ public class PlayerCodex
     #region Quest Commands
 
     /// <summary>
-    /// Records a new quest or updates existing quest to InProgress
+    /// Records a quest as started in the codex
     /// </summary>
     public void RecordQuestStarted(CodexQuestEntry quest, DateTime occurredAt)
     {
@@ -70,6 +70,9 @@ public class PlayerCodex
 
         if (_quests.ContainsKey(quest.QuestId))
             throw new InvalidOperationException($"Quest {quest.QuestId.Value} already exists in codex");
+
+        // Ensure quest is in InProgress state when started
+        quest.State = QuestState.InProgress;
 
         _quests[quest.QuestId] = quest;
         LastUpdated = occurredAt;
@@ -250,6 +253,12 @@ public class PlayerCodex
     /// </summary>
     public IEnumerable<CodexLoreEntry> GetLoreByTier(LoreTier tier) =>
         _lore.Values.Where(l => l.Tier == tier);
+
+    /// <summary>
+    /// Gets all lore in a specific category
+    /// </summary>
+    public IEnumerable<CodexLoreEntry> GetLoreByCategory(string category) =>
+        _lore.Values.Where(l => l.MatchesCategory(category));
 
     /// <summary>
     /// Gets all notes in a specific category

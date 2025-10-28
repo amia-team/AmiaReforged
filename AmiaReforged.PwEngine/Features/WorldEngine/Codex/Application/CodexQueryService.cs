@@ -80,6 +80,18 @@ public class CodexQueryService
     }
 
     /// <summary>
+    /// Gets lore by category
+    /// </summary>
+    public async Task<IReadOnlyList<CodexLoreEntry>> GetLoreByCategoryAsync(
+        CharacterId characterId,
+        string category,
+        CancellationToken cancellationToken = default)
+    {
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
+        return codex?.GetLoreByCategory(category).ToList() ?? new List<CodexLoreEntry>();
+    }
+
+    /// <summary>
     /// Searches lore by text
     /// </summary>
     public async Task<IReadOnlyList<CodexLoreEntry>> SearchLoreAsync(
@@ -117,6 +129,17 @@ public class CodexQueryService
     }
 
     /// <summary>
+    /// Gets DM notes for a character
+    /// </summary>
+    public async Task<IReadOnlyList<CodexNoteEntry>> GetDmNotesAsync(
+        CharacterId characterId,
+        CancellationToken cancellationToken = default)
+    {
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
+        return codex?.GetNotesByCategory(NoteCategory.DmNote).ToList() ?? new List<CodexNoteEntry>();
+    }
+
+    /// <summary>
     /// Searches notes by text
     /// </summary>
     public async Task<IReadOnlyList<CodexNoteEntry>> SearchNotesAsync(
@@ -151,6 +174,28 @@ public class CodexQueryService
     {
         PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
         return codex?.GetReputation(factionId);
+    }
+
+    /// <summary>
+    /// Gets all positive faction reputations for a character
+    /// </summary>
+    public async Task<IReadOnlyList<FactionReputation>> GetPositiveReputationsAsync(
+        CharacterId characterId,
+        CancellationToken cancellationToken = default)
+    {
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
+        return codex?.Reputations.Where(r => r.CurrentScore.Value > 0).ToList() ?? new List<FactionReputation>();
+    }
+
+    /// <summary>
+    /// Gets all negative faction reputations for a character
+    /// </summary>
+    public async Task<IReadOnlyList<FactionReputation>> GetNegativeReputationsAsync(
+        CharacterId characterId,
+        CancellationToken cancellationToken = default)
+    {
+        PlayerCodex? codex = await _repository.LoadAsync(characterId, cancellationToken);
+        return codex?.Reputations.Where(r => r.CurrentScore.Value < 0).ToList() ?? new List<FactionReputation>();
     }
 
     #endregion

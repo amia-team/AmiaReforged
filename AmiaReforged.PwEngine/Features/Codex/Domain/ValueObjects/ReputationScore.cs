@@ -28,6 +28,11 @@ public readonly record struct ReputationScore
     public static ReputationScore CreateNeutral() => new(Neutral);
 
     /// <summary>
+    /// Creates a reputation score from an integer value with validation.
+    /// </summary>
+    public static ReputationScore Parse(int value) => new(value);
+
+    /// <summary>
     /// Adds a delta to this reputation score, clamping to valid range.
     /// </summary>
     public ReputationScore Add(int delta)

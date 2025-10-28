@@ -20,6 +20,11 @@ public readonly record struct LoreId
     }
 
     /// <summary>
+    /// Creates a new LoreId with a unique GUID-based identifier.
+    /// </summary>
+    public static LoreId NewId() => new(Guid.NewGuid().ToString());
+
+    /// <summary>
     /// Implicit conversion from LoreId to string for backward compatibility.
     /// </summary>
     public static implicit operator string(LoreId loreId) => loreId.Value;

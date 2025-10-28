@@ -27,7 +27,7 @@ public class CodexQuestEntry
     /// <summary>
     /// Current state of the quest
     /// </summary>
-    public QuestState State { get; private set; }
+    public QuestState State { get; internal set; } = QuestState.Discovered;
 
     /// <summary>
     /// List of objectives for this quest (can be empty)

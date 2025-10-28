@@ -1,6 +1,9 @@
 using System.Threading.Channels;
+using AmiaReforged.PwEngine.Features.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.Codex.Domain.Events;
+using AmiaReforged.PwEngine.Features.Codex.Domain.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Codex.Aggregates;
+using AmiaReforged.PwEngine.Features.WorldEngine.Codex.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Codex.Application;
@@ -108,13 +111,11 @@ public class CodexEventProcessor
     /// </summary>
     private void ApplyEvent(PlayerCodex codex, CodexDomainEvent domainEvent)
     {
-        // TODO: Implement event application logic
-        // Use pattern matching on event types to call appropriate aggregate methods
-
         switch (domainEvent)
         {
             case QuestStartedEvent qse:
-                // TODO: Create CodexQuestEntry from event and call codex.RecordQuestStarted()
+                CodexQuestEntry questEntry = CreateQuestEntry(qse);
+                codex.RecordQuestStarted(questEntry, qse.OccurredAt);
                 break;
 
             case QuestCompletedEvent qce:
@@ -130,17 +131,18 @@ public class CodexEventProcessor
                 break;
 
             case LoreDiscoveredEvent lde:
-                // TODO: Create CodexLoreEntry from event and call codex.RecordLoreDiscovered()
+                CodexLoreEntry loreEntry = CreateLoreEntry(lde);
+                codex.RecordLoreDiscovered(loreEntry, lde.OccurredAt);
                 break;
 
             case ReputationChangedEvent rce:
-                // TODO: FactionName should be added to ReputationChangedEvent
-                // For now, use FactionId as name
+                // Note: Using FactionId.Value as faction name until event is updated
                 codex.RecordReputationChange(rce.FactionId, rce.FactionId.Value, rce.Delta, rce.Reason, rce.OccurredAt);
                 break;
 
             case NoteAddedEvent nae:
-                // TODO: Create CodexNoteEntry from event and call codex.AddNote()
+                CodexNoteEntry noteEntry = CreateNoteEntry(nae);
+                codex.AddNote(noteEntry, nae.OccurredAt);
                 break;
 
             case NoteEditedEvent nee:
@@ -154,6 +156,56 @@ public class CodexEventProcessor
             default:
                 throw new NotSupportedException($"Event type {domainEvent.GetType().Name} is not supported");
         }
+    }
+
+    /// <summary>
+    /// Creates a CodexQuestEntry from a QuestStartedEvent
+    /// </summary>
+    private CodexQuestEntry CreateQuestEntry(QuestStartedEvent evt)
+    {
+        return new CodexQuestEntry
+        {
+            QuestId = evt.QuestId,
+            Title = evt.QuestName,
+            Description = evt.Description,
+            State = QuestState.InProgress,
+            DateStarted = evt.OccurredAt,
+            Keywords = new List<Keyword>()
+        };
+    }
+
+    /// <summary>
+    /// Creates a CodexLoreEntry from a LoreDiscoveredEvent
+    /// </summary>
+    private CodexLoreEntry CreateLoreEntry(LoreDiscoveredEvent evt)
+    {
+        return new CodexLoreEntry
+        {
+            LoreId = evt.LoreId,
+            Title = evt.Title,
+            Content = evt.Summary,
+            Category = evt.Source,
+            Tier = evt.Tier,
+            DateDiscovered = evt.OccurredAt,
+            DiscoverySource = evt.Source,
+            Keywords = evt.Keywords.ToList()
+        };
+    }
+
+    /// <summary>
+    /// Creates a CodexNoteEntry from a NoteAddedEvent
+    /// </summary>
+    private CodexNoteEntry CreateNoteEntry(NoteAddedEvent evt)
+    {
+        return new CodexNoteEntry(
+            id: evt.NoteId,
+            content: evt.Content,
+            category: evt.Category,
+            dateCreated: evt.OccurredAt,
+            isDmNote: evt.IsDmNote,
+            isPrivate: evt.IsPrivate,
+            title: null
+        );
     }
 }
 

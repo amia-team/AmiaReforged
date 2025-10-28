@@ -20,6 +20,11 @@ public readonly record struct FactionId
     }
 
     /// <summary>
+    /// Creates a new FactionId with a unique GUID-based identifier.
+    /// </summary>
+    public static FactionId NewId() => new(Guid.NewGuid().ToString());
+
+    /// <summary>
     /// Implicit conversion from FactionId to string for backward compatibility.
     /// </summary>
     public static implicit operator string(FactionId factionId) => factionId.Value;
