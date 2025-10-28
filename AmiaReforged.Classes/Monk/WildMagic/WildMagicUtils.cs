@@ -121,20 +121,6 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         return inflictLightWounds;
     }
 
-    public Effect CharmMonsterEffect(NwCreature monk)
-    {
-        Effect charmMonster = Effect.LinkEffects
-        (
-            Effect.Charmed(),
-            Effect.VisualEffect(VfxType.DurMindAffectingNegative)
-        );
-        charmMonster.SubType = EffectSubType.Magical;
-
-        _ = GetObjectContext(monk, charmMonster);
-
-        return charmMonster;
-    }
-
     public Effect? MagicMissileEffect(NwCreature monk, Location targetLocation)
     {
         NwCreature[] enemies = targetLocation
