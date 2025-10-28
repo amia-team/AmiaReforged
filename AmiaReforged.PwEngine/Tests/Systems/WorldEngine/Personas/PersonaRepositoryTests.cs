@@ -23,18 +23,18 @@ public class PersonaRepositoryTests
     public void TryGetPersona_Character_Found_ReturnsTrue()
     {
         // Arrange
-        var characterId = CharacterId.New();
-        var personaId = characterId.ToPersonaId();
+        CharacterId characterId = CharacterId.New();
+        PersonaId personaId = characterId.ToPersonaId();
         _repository.AddCharacter(characterId, "Aldric Stormblade");
 
         // Act
-        var found = _repository.TryGetPersona(personaId, out var persona);
+        bool found = _repository.TryGetPersona(personaId, out Persona? persona);
 
         // Assert
         Assert.That(found, Is.True);
         Assert.That(persona, Is.Not.Null);
         Assert.That(persona, Is.InstanceOf<CharacterPersona>());
-        var charPersona = (CharacterPersona)persona!;
+        CharacterPersona charPersona = (CharacterPersona)persona!;
         Assert.That(charPersona.CharacterId, Is.EqualTo(characterId));
         Assert.That(charPersona.DisplayName, Is.EqualTo("Aldric Stormblade"));
     }
@@ -43,10 +43,10 @@ public class PersonaRepositoryTests
     public void TryGetPersona_Character_NotFound_ReturnsFalse()
     {
         // Arrange
-        var personaId = CharacterId.New().ToPersonaId();
+        PersonaId personaId = CharacterId.New().ToPersonaId();
 
         // Act
-        var found = _repository.TryGetPersona(personaId, out var persona);
+        bool found = _repository.TryGetPersona(personaId, out Persona? persona);
 
         // Assert
         Assert.That(found, Is.False);
@@ -57,18 +57,18 @@ public class PersonaRepositoryTests
     public void TryGetPersona_Organization_Found_ReturnsTrue()
     {
         // Arrange
-        var orgId = OrganizationId.New();
-        var personaId = orgId.ToPersonaId();
+        OrganizationId orgId = OrganizationId.New();
+        PersonaId personaId = orgId.ToPersonaId();
         _repository.AddOrganization(orgId, "Merchants Guild");
 
         // Act
-        var found = _repository.TryGetPersona(personaId, out var persona);
+        bool found = _repository.TryGetPersona(personaId, out Persona? persona);
 
         // Assert
         Assert.That(found, Is.True);
         Assert.That(persona, Is.Not.Null);
         Assert.That(persona, Is.InstanceOf<OrganizationPersona>());
-        var orgPersona = (OrganizationPersona)persona!;
+        OrganizationPersona orgPersona = (OrganizationPersona)persona!;
         Assert.That(orgPersona.OrganizationId, Is.EqualTo(orgId));
         Assert.That(orgPersona.DisplayName, Is.EqualTo("Merchants Guild"));
     }
@@ -77,19 +77,19 @@ public class PersonaRepositoryTests
     public void TryGetPersona_Coinhouse_Found_ReturnsTrue()
     {
         // Arrange
-        var tag = new CoinhouseTag("cordor-bank");
-        var settlement = SettlementId.Parse(1);
-        var personaId = PersonaId.FromCoinhouse(tag);
+        CoinhouseTag tag = new CoinhouseTag("cordor-bank");
+        SettlementId settlement = SettlementId.Parse(1);
+        PersonaId personaId = PersonaId.FromCoinhouse(tag);
         _repository.AddCoinhouse(tag, settlement, "Cordor Central Bank");
 
         // Act
-        var found = _repository.TryGetPersona(personaId, out var persona);
+        bool found = _repository.TryGetPersona(personaId, out Persona? persona);
 
         // Assert
         Assert.That(found, Is.True);
         Assert.That(persona, Is.Not.Null);
         Assert.That(persona, Is.InstanceOf<CoinhousePersona>());
-        var coinhousePersona = (CoinhousePersona)persona!;
+        CoinhousePersona coinhousePersona = (CoinhousePersona)persona!;
         Assert.That(coinhousePersona.Tag, Is.EqualTo(tag));
         Assert.That(coinhousePersona.Settlement, Is.EqualTo(settlement));
     }
@@ -98,16 +98,16 @@ public class PersonaRepositoryTests
     public void TryGetPersona_SystemProcess_AlwaysReturns()
     {
         // Arrange
-        var personaId = PersonaId.FromSystem("TaxCollector");
+        PersonaId personaId = PersonaId.FromSystem("TaxCollector");
 
         // Act
-        var found = _repository.TryGetPersona(personaId, out var persona);
+        bool found = _repository.TryGetPersona(personaId, out Persona? persona);
 
         // Assert
         Assert.That(found, Is.True);
         Assert.That(persona, Is.Not.Null);
         Assert.That(persona, Is.InstanceOf<SystemPersona>());
-        var systemPersona = (SystemPersona)persona!;
+        SystemPersona systemPersona = (SystemPersona)persona!;
         Assert.That(systemPersona.ProcessName, Is.EqualTo("TaxCollector"));
     }
 
@@ -115,12 +115,12 @@ public class PersonaRepositoryTests
     public void GetPersona_Found_ReturnsPersona()
     {
         // Arrange
-        var characterId = CharacterId.New();
-        var personaId = characterId.ToPersonaId();
+        CharacterId characterId = CharacterId.New();
+        PersonaId personaId = characterId.ToPersonaId();
         _repository.AddCharacter(characterId, "Test Character");
 
         // Act
-        var persona = _repository.GetPersona(personaId);
+        Persona persona = _repository.GetPersona(personaId);
 
         // Assert
         Assert.That(persona, Is.Not.Null);
@@ -131,7 +131,7 @@ public class PersonaRepositoryTests
     public void GetPersona_NotFound_ThrowsException()
     {
         // Arrange
-        var personaId = CharacterId.New().ToPersonaId();
+        PersonaId personaId = CharacterId.New().ToPersonaId();
 
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() => _repository.GetPersona(personaId));
@@ -141,12 +141,12 @@ public class PersonaRepositoryTests
     public void Exists_Character_Found_ReturnsTrue()
     {
         // Arrange
-        var characterId = CharacterId.New();
-        var personaId = characterId.ToPersonaId();
+        CharacterId characterId = CharacterId.New();
+        PersonaId personaId = characterId.ToPersonaId();
         _repository.AddCharacter(characterId, "Test");
 
         // Act
-        var exists = _repository.Exists(personaId);
+        bool exists = _repository.Exists(personaId);
 
         // Assert
         Assert.That(exists, Is.True);
@@ -156,10 +156,10 @@ public class PersonaRepositoryTests
     public void Exists_Character_NotFound_ReturnsFalse()
     {
         // Arrange
-        var personaId = CharacterId.New().ToPersonaId();
+        PersonaId personaId = CharacterId.New().ToPersonaId();
 
         // Act
-        var exists = _repository.Exists(personaId);
+        bool exists = _repository.Exists(personaId);
 
         // Assert
         Assert.That(exists, Is.False);
@@ -169,10 +169,10 @@ public class PersonaRepositoryTests
     public void Exists_SystemProcess_AlwaysReturnsTrue()
     {
         // Arrange
-        var personaId = PersonaId.FromSystem("AnyProcess");
+        PersonaId personaId = PersonaId.FromSystem("AnyProcess");
 
         // Act
-        var exists = _repository.Exists(personaId);
+        bool exists = _repository.Exists(personaId);
 
         // Assert
         Assert.That(exists, Is.True);
@@ -182,12 +182,12 @@ public class PersonaRepositoryTests
     public void GetDisplayName_Character_ReturnsName()
     {
         // Arrange
-        var characterId = CharacterId.New();
-        var personaId = characterId.ToPersonaId();
+        CharacterId characterId = CharacterId.New();
+        PersonaId personaId = characterId.ToPersonaId();
         _repository.AddCharacter(characterId, "Aldric Stormblade");
 
         // Act
-        var displayName = _repository.GetDisplayName(personaId);
+        string? displayName = _repository.GetDisplayName(personaId);
 
         // Assert
         Assert.That(displayName, Is.EqualTo("Aldric Stormblade"));
@@ -197,10 +197,10 @@ public class PersonaRepositoryTests
     public void GetDisplayName_NotFound_ReturnsNull()
     {
         // Arrange
-        var personaId = CharacterId.New().ToPersonaId();
+        PersonaId personaId = CharacterId.New().ToPersonaId();
 
         // Act
-        var displayName = _repository.GetDisplayName(personaId);
+        string? displayName = _repository.GetDisplayName(personaId);
 
         // Assert
         Assert.That(displayName, Is.Null);
@@ -210,17 +210,17 @@ public class PersonaRepositoryTests
     public void GetPersonas_MultipleTypes_ReturnsAll()
     {
         // Arrange
-        var char1 = CharacterId.New();
-        var char2 = CharacterId.New();
-        var org1 = OrganizationId.New();
-        var tag1 = new CoinhouseTag("bank1");
+        CharacterId char1 = CharacterId.New();
+        CharacterId char2 = CharacterId.New();
+        OrganizationId org1 = OrganizationId.New();
+        CoinhouseTag tag1 = new CoinhouseTag("bank1");
 
         _repository.AddCharacter(char1, "Character 1");
         _repository.AddCharacter(char2, "Character 2");
         _repository.AddOrganization(org1, "Organization 1");
         _repository.AddCoinhouse(tag1, SettlementId.Parse(1), "Bank 1");
 
-        var personaIds = new List<PersonaId>
+        List<PersonaId> personaIds = new List<PersonaId>
         {
             char1.ToPersonaId(),
             char2.ToPersonaId(),
@@ -230,7 +230,7 @@ public class PersonaRepositoryTests
         };
 
         // Act
-        var personas = _repository.GetPersonas(personaIds);
+        Dictionary<PersonaId, Persona> personas = _repository.GetPersonas(personaIds);
 
         // Assert
         Assert.That(personas.Count, Is.EqualTo(5));
@@ -245,18 +245,18 @@ public class PersonaRepositoryTests
     public void GetPersonas_SomeNotFound_ReturnsOnlyFound()
     {
         // Arrange
-        var char1 = CharacterId.New();
-        var char2 = CharacterId.New(); // Not added
+        CharacterId char1 = CharacterId.New();
+        CharacterId char2 = CharacterId.New(); // Not added
         _repository.AddCharacter(char1, "Character 1");
 
-        var personaIds = new List<PersonaId>
+        List<PersonaId> personaIds = new List<PersonaId>
         {
             char1.ToPersonaId(),
             char2.ToPersonaId()
         };
 
         // Act
-        var personas = _repository.GetPersonas(personaIds);
+        Dictionary<PersonaId, Persona> personas = _repository.GetPersonas(personaIds);
 
         // Assert
         Assert.That(personas.Count, Is.EqualTo(1));
@@ -268,7 +268,7 @@ public class PersonaRepositoryTests
     public void GetPersonas_EmptyList_ReturnsEmpty()
     {
         // Act
-        var personas = _repository.GetPersonas(new List<PersonaId>());
+        Dictionary<PersonaId, Persona> personas = _repository.GetPersonas(new List<PersonaId>());
 
         // Assert
         Assert.That(personas.Count, Is.EqualTo(0));
@@ -306,7 +306,7 @@ public class InMemoryPersonaRepository : IPersonaRepository
         switch (personaId.Type)
         {
             case PersonaType.Character:
-                if (Guid.TryParse(personaId.Value, out var charGuid) && _characters.TryGetValue(charGuid, out var charData))
+                if (Guid.TryParse(personaId.Value, out Guid charGuid) && _characters.TryGetValue(charGuid, out (CharacterId Id, string Name) charData))
                 {
                     persona = CharacterPersona.Create(charData.Id, charData.Name);
                     return true;
@@ -314,7 +314,7 @@ public class InMemoryPersonaRepository : IPersonaRepository
                 break;
 
             case PersonaType.Organization:
-                if (Guid.TryParse(personaId.Value, out var orgGuid) && _organizations.TryGetValue(orgGuid, out var orgData))
+                if (Guid.TryParse(personaId.Value, out Guid orgGuid) && _organizations.TryGetValue(orgGuid, out (OrganizationId Id, string Name) orgData))
                 {
                     persona = OrganizationPersona.Create(orgData.Id, orgData.Name);
                     return true;
@@ -322,7 +322,7 @@ public class InMemoryPersonaRepository : IPersonaRepository
                 break;
 
             case PersonaType.Coinhouse:
-                if (_coinhouses.TryGetValue(personaId.Value, out var coinhouseData))
+                if (_coinhouses.TryGetValue(personaId.Value, out (CoinhouseTag Tag, SettlementId Settlement, string Name) coinhouseData))
                 {
                     persona = CoinhousePersona.Create(coinhouseData.Tag, coinhouseData.Settlement, coinhouseData.Name);
                     return true;
@@ -339,7 +339,7 @@ public class InMemoryPersonaRepository : IPersonaRepository
 
     public Persona GetPersona(PersonaId personaId)
     {
-        if (!TryGetPersona(personaId, out var persona) || persona == null)
+        if (!TryGetPersona(personaId, out Persona? persona) || persona == null)
         {
             throw new InvalidOperationException($"Persona not found: {personaId}");
         }
@@ -350,8 +350,8 @@ public class InMemoryPersonaRepository : IPersonaRepository
     {
         return personaId.Type switch
         {
-            PersonaType.Character => Guid.TryParse(personaId.Value, out var charGuid) && _characters.ContainsKey(charGuid),
-            PersonaType.Organization => Guid.TryParse(personaId.Value, out var orgGuid) && _organizations.ContainsKey(orgGuid),
+            PersonaType.Character => Guid.TryParse(personaId.Value, out Guid charGuid) && _characters.ContainsKey(charGuid),
+            PersonaType.Organization => Guid.TryParse(personaId.Value, out Guid orgGuid) && _organizations.ContainsKey(orgGuid),
             PersonaType.Coinhouse => _coinhouses.ContainsKey(personaId.Value),
             PersonaType.SystemProcess => true,
             _ => false
@@ -362,11 +362,11 @@ public class InMemoryPersonaRepository : IPersonaRepository
     {
         return personaId.Type switch
         {
-            PersonaType.Character when Guid.TryParse(personaId.Value, out var charGuid) && _characters.TryGetValue(charGuid, out var charData)
+            PersonaType.Character when Guid.TryParse(personaId.Value, out Guid charGuid) && _characters.TryGetValue(charGuid, out (CharacterId Id, string Name) charData)
                 => charData.Name,
-            PersonaType.Organization when Guid.TryParse(personaId.Value, out var orgGuid) && _organizations.TryGetValue(orgGuid, out var orgData)
+            PersonaType.Organization when Guid.TryParse(personaId.Value, out Guid orgGuid) && _organizations.TryGetValue(orgGuid, out (OrganizationId Id, string Name) orgData)
                 => orgData.Name,
-            PersonaType.Coinhouse when _coinhouses.TryGetValue(personaId.Value, out var coinhouseData)
+            PersonaType.Coinhouse when _coinhouses.TryGetValue(personaId.Value, out (CoinhouseTag Tag, SettlementId Settlement, string Name) coinhouseData)
                 => coinhouseData.Name,
             PersonaType.SystemProcess => $"System: {personaId.Value}",
             _ => null
@@ -375,11 +375,11 @@ public class InMemoryPersonaRepository : IPersonaRepository
 
     public Dictionary<PersonaId, Persona> GetPersonas(IEnumerable<PersonaId> personaIds)
     {
-        var result = new Dictionary<PersonaId, Persona>();
+        Dictionary<PersonaId, Persona> result = new Dictionary<PersonaId, Persona>();
 
-        foreach (var personaId in personaIds)
+        foreach (PersonaId personaId in personaIds)
         {
-            if (TryGetPersona(personaId, out var persona) && persona != null)
+            if (TryGetPersona(personaId, out Persona? persona) && persona != null)
             {
                 result[personaId] = persona;
             }

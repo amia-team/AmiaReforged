@@ -24,7 +24,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
         try
         {
-            using var ctx = factory.CreateDbContext();
+            using PwEngineContext ctx = factory.CreateDbContext();
 
             persona = personaId.Type switch
             {
@@ -48,7 +48,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     public Persona GetPersona(PersonaId personaId)
     {
-        if (!TryGetPersona(personaId, out var persona) || persona == null)
+        if (!TryGetPersona(personaId, out Persona? persona) || persona == null)
         {
             throw new InvalidOperationException($"Persona not found: {personaId}");
         }
@@ -60,7 +60,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
     {
         try
         {
-            using var ctx = factory.CreateDbContext();
+            using PwEngineContext ctx = factory.CreateDbContext();
 
             return personaId.Type switch
             {
@@ -84,7 +84,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
     {
         try
         {
-            using var ctx = factory.CreateDbContext();
+            using PwEngineContext ctx = factory.CreateDbContext();
 
             return personaId.Type switch
             {
@@ -106,20 +106,20 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     public Dictionary<PersonaId, Persona> GetPersonas(IEnumerable<PersonaId> personaIds)
     {
-        var result = new Dictionary<PersonaId, Persona>();
-        var personaIdList = personaIds.ToList();
+        Dictionary<PersonaId, Persona> result = new Dictionary<PersonaId, Persona>();
+        List<PersonaId> personaIdList = personaIds.ToList();
 
         if (personaIdList.Count == 0)
             return result;
 
         try
         {
-            using var ctx = factory.CreateDbContext();
+            using PwEngineContext ctx = factory.CreateDbContext();
 
             // Group by type for efficient querying
-            var groupedByType = personaIdList.GroupBy(p => p.Type);
+            IEnumerable<IGrouping<PersonaType, PersonaId>> groupedByType = personaIdList.GroupBy(p => p.Type);
 
-            foreach (var group in groupedByType)
+            foreach (IGrouping<PersonaType, PersonaId> group in groupedByType)
             {
                 switch (group.Key)
                 {
@@ -151,10 +151,10 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private CharacterPersona? ResolveCharacter(PwEngineContext ctx, PersonaId personaId)
     {
-        if (!Guid.TryParse(personaId.Value, out var guid))
+        if (!Guid.TryParse(personaId.Value, out Guid guid))
             return null;
 
-        var character = ctx.Characters.FirstOrDefault(c => c.Id == guid);
+        PersistedCharacter? character = ctx.Characters.FirstOrDefault(c => c.Id == guid);
         if (character == null)
             return null;
 
@@ -166,7 +166,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private bool ExistsCharacter(PwEngineContext ctx, PersonaId personaId)
     {
-        if (!Guid.TryParse(personaId.Value, out var guid))
+        if (!Guid.TryParse(personaId.Value, out Guid guid))
             return false;
 
         return ctx.Characters.Any(c => c.Id == guid);
@@ -174,7 +174,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private string? GetCharacterDisplayName(PwEngineContext ctx, PersonaId personaId)
     {
-        if (!Guid.TryParse(personaId.Value, out var guid))
+        if (!Guid.TryParse(personaId.Value, out Guid guid))
             return null;
 
         return ctx.Characters
@@ -185,8 +185,8 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private void ResolveCharacters(PwEngineContext ctx, List<PersonaId> personaIds, Dictionary<PersonaId, Persona> result)
     {
-        var guids = personaIds
-            .Select(p => Guid.TryParse(p.Value, out var g) ? (Guid?)g : null)
+        List<Guid> guids = personaIds
+            .Select(p => Guid.TryParse(p.Value, out Guid g) ? (Guid?)g : null)
             .Where(g => g.HasValue)
             .Select(g => g!.Value)
             .ToList();
@@ -194,14 +194,14 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
         if (guids.Count == 0)
             return;
 
-        var characters = ctx.Characters
+        List<PersistedCharacter> characters = ctx.Characters
             .Where(c => guids.Contains(c.Id))
             .ToList();
 
-        foreach (var character in characters)
+        foreach (PersistedCharacter character in characters)
         {
-            var personaId = PersonaId.FromCharacter(CharacterId.From(character.Id));
-            var persona = CharacterPersona.Create(
+            PersonaId personaId = PersonaId.FromCharacter(CharacterId.From(character.Id));
+            CharacterPersona persona = CharacterPersona.Create(
                 CharacterId.From(character.Id),
                 character.FullName
             );
@@ -215,10 +215,10 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private OrganizationPersona? ResolveOrganization(PwEngineContext ctx, PersonaId personaId)
     {
-        if (!Guid.TryParse(personaId.Value, out var guid))
+        if (!Guid.TryParse(personaId.Value, out Guid guid))
             return null;
 
-        var org = ctx.Organizations.FirstOrDefault(o => o.Id == guid);
+        Organization? org = ctx.Organizations.FirstOrDefault(o => o.Id == guid);
         if (org == null)
             return null;
 
@@ -230,7 +230,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private bool ExistsOrganization(PwEngineContext ctx, PersonaId personaId)
     {
-        if (!Guid.TryParse(personaId.Value, out var guid))
+        if (!Guid.TryParse(personaId.Value, out Guid guid))
             return false;
 
         return ctx.Organizations.Any(o => o.Id == guid);
@@ -238,7 +238,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private string? GetOrganizationDisplayName(PwEngineContext ctx, PersonaId personaId)
     {
-        if (!Guid.TryParse(personaId.Value, out var guid))
+        if (!Guid.TryParse(personaId.Value, out Guid guid))
             return null;
 
         return ctx.Organizations
@@ -249,8 +249,8 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private void ResolveOrganizations(PwEngineContext ctx, List<PersonaId> personaIds, Dictionary<PersonaId, Persona> result)
     {
-        var guids = personaIds
-            .Select(p => Guid.TryParse(p.Value, out var g) ? (Guid?)g : null)
+        List<Guid> guids = personaIds
+            .Select(p => Guid.TryParse(p.Value, out Guid g) ? (Guid?)g : null)
             .Where(g => g.HasValue)
             .Select(g => g!.Value)
             .ToList();
@@ -258,14 +258,14 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
         if (guids.Count == 0)
             return;
 
-        var orgs = ctx.Organizations
+        List<Organization> orgs = ctx.Organizations
             .Where(o => guids.Contains(o.Id))
             .ToList();
 
-        foreach (var org in orgs)
+        foreach (Organization org in orgs)
         {
-            var personaId = PersonaId.FromOrganization(OrganizationId.From(org.Id));
-            var persona = OrganizationPersona.Create(
+            PersonaId personaId = PersonaId.FromOrganization(OrganizationId.From(org.Id));
+            OrganizationPersona persona = OrganizationPersona.Create(
                 OrganizationId.From(org.Id),
                 org.Name
             );
@@ -279,8 +279,8 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private CoinhousePersona? ResolveCoinhouse(PwEngineContext ctx, PersonaId personaId)
     {
-        var tag = personaId.Value;
-        var coinhouse = ctx.CoinHouses.FirstOrDefault(c => c.Tag == tag);
+        string tag = personaId.Value;
+        CoinHouse? coinhouse = ctx.CoinHouses.FirstOrDefault(c => c.Tag == tag);
         if (coinhouse == null)
             return null;
 
@@ -293,13 +293,13 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private bool ExistsCoinhouse(PwEngineContext ctx, PersonaId personaId)
     {
-        var tag = personaId.Value;
+        string tag = personaId.Value;
         return ctx.CoinHouses.Any(c => c.Tag == tag);
     }
 
     private string? GetCoinhouseDisplayName(PwEngineContext ctx, PersonaId personaId)
     {
-        var tag = personaId.Value;
+        string tag = personaId.Value;
         return ctx.CoinHouses
             .Where(c => c.Tag == tag)
             .Select(c => "Coinhouse: " + c.Tag)
@@ -308,18 +308,18 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private void ResolveCoinhouses(PwEngineContext ctx, List<PersonaId> personaIds, Dictionary<PersonaId, Persona> result)
     {
-        var tags = personaIds.Select(p => p.Value).ToList();
+        List<string> tags = personaIds.Select(p => p.Value).ToList();
         if (tags.Count == 0)
             return;
 
-        var coinhouses = ctx.CoinHouses
+        List<CoinHouse> coinhouses = ctx.CoinHouses
             .Where(c => tags.Contains(c.Tag))
             .ToList();
 
-        foreach (var coinhouse in coinhouses)
+        foreach (CoinHouse coinhouse in coinhouses)
         {
-            var personaId = PersonaId.FromCoinhouse(new CoinhouseTag(coinhouse.Tag));
-            var persona = CoinhousePersona.Create(
+            PersonaId personaId = PersonaId.FromCoinhouse(new CoinhouseTag(coinhouse.Tag));
+            CoinhousePersona persona = CoinhousePersona.Create(
                 new CoinhouseTag(coinhouse.Tag),
                 SettlementId.Parse(coinhouse.Settlement),
                 $"Coinhouse: {coinhouse.Tag}"
@@ -339,9 +339,9 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
     private void ResolveSystemProcesses(List<PersonaId> personaIds, Dictionary<PersonaId, Persona> result)
     {
-        foreach (var personaId in personaIds)
+        foreach (PersonaId personaId in personaIds)
         {
-            var persona = SystemPersona.Create(personaId.Value);
+            SystemPersona persona = SystemPersona.Create(personaId.Value);
             result[personaId] = persona;
         }
     }
