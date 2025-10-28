@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Industries;
@@ -31,6 +32,11 @@ public class InMemoryIndustryRepository : IIndustryRepository
     public Industry? Get(string membershipIndustryTag)
     {
         return _industries.FirstOrDefault(i => i.Tag == membershipIndustryTag);
+    }
+
+    public Industry? GetByTag(IndustryTag industryTag)
+    {
+        return _industries.FirstOrDefault(i => i.Tag == industryTag.Value);
     }
 
     public static IIndustryRepository Create()
