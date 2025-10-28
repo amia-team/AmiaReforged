@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 
@@ -40,10 +41,8 @@ public class Organization : IOrganization
     {
         return new Organization(test, description, type)
         {
-            Id = new OrganizationId(Guid.NewGuid()),
+            Id = OrganizationId.New(),
             ParentOrganization = parent
         };
     }
 }
-
-public record OrganizationId(Guid Value);

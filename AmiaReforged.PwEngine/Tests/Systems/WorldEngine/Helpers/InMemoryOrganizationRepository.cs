@@ -1,4 +1,8 @@
+using System.Collections.Generic;
+using System.Linq;
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 
@@ -6,9 +10,24 @@ public class InMemoryOrganizationRepository : IOrganizationRepository
 {
     private readonly Dictionary<OrganizationId, IOrganization> _organizations = new();
 
-    public void Create(IOrganization organization)
+    public void Add(IOrganization organization)
     {
-        _organizations.TryAdd(organization.Id, organization);
+        _organizations[organization.Id] = organization;
+    }
+
+    public IOrganization? GetById(OrganizationId organizationId)
+    {
+        return _organizations.GetValueOrDefault(organizationId);
+    }
+
+    public List<IOrganization> GetAll()
+    {
+        return _organizations.Values.ToList();
+    }
+
+    public List<IOrganization> GetByType(OrganizationType type)
+    {
+        return _organizations.Values.Where(o => o.Type == type).ToList();
     }
 
     public void Update(IOrganization organization)
@@ -17,21 +36,6 @@ public class InMemoryOrganizationRepository : IOrganizationRepository
         {
             _organizations[organization.Id] = organization;
         }
-    }
-
-    public void Delete(IOrganization organization)
-    {
-        _organizations.Remove(organization.Id);
-    }
-
-    public IOrganization? GetById(OrganizationId organizationId)
-    {
-        return _organizations.GetValueOrDefault(organizationId);
-    }
-
-    public List<IOrganization> All()
-    {
-        return _organizations.Values.ToList();
     }
 
     public void SaveChanges()

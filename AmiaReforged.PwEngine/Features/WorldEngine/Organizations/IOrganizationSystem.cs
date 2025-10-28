@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 

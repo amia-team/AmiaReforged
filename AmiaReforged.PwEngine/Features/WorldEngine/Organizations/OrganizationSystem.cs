@@ -1,12 +1,21 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 
 public class OrganizationSystem(IOrganizationRepository organizations) : IOrganizationSystem
 {
     public SystemResponse Register(IOrganization organization)
     {
-        bool exists = organizations.All().Any(o => o.Id == organization.Id || o.Name == organization.Name);
-        if (exists) return new SystemResponse(SystemResult.DuplicateEntry, "Organization already exists");
-        organizations.Create(organization);
+        bool exists = organizations.GetAll().Any(o => o.Id == organization.Id || o.Name == organization.Name);
+        if (exists)
+        {
+            return new SystemResponse(SystemResult.DuplicateEntry, "Organization already exists");
+        }
+
+        organizations.Add(organization);
 
         return new SystemResponse(SystemResult.Success);
     }
@@ -24,12 +33,16 @@ public class OrganizationSystem(IOrganizationRepository organizations) : IOrgani
     {
         List<IOrganization> children = [];
 
-        IOrganization? current = organizations.All().FirstOrDefault(o => o.ParentOrganization == org.Id);
+        IOrganization? current = organizations
+            .GetAll()
+            .FirstOrDefault(o => o.ParentOrganization == org.Id);
         while (current is not null)
         {
             children.Add(current);
 
-            current = organizations.All().FirstOrDefault(o => o.ParentOrganization == current.Id);
+            current = organizations
+                .GetAll()
+                .FirstOrDefault(o => o.ParentOrganization == current.Id);
         }
 
         return children;
@@ -41,20 +54,8 @@ public class OrganizationSystem(IOrganizationRepository organizations) : IOrgani
 
     public IOrganization? ParentFor(IOrganization organization)
     {
-        return organizations.All().FirstOrDefault(p => p.Id == organization.ParentOrganization);
+        return organizations
+            .GetAll()
+            .FirstOrDefault(p => p.Id == organization.ParentOrganization);
     }
-
-}
-
-
-
-public interface IOrganizationRepository
-{
-    void Create(IOrganization organization);
-    void Update(IOrganization organization);
-    void Delete(IOrganization organization);
-    IOrganization? GetById(OrganizationId organizationId);
-    List<IOrganization> All();
-
-    void SaveChanges();
 }
