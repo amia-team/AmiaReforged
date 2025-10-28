@@ -1,4 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Tests.Helpers.WorldEngine;
 using NUnit.Framework;
 
@@ -17,13 +19,13 @@ public class DepositGoldCommandTests
     public void Given_ValidInputs_When_CreatingCommand_Then_CommandIsCreatedSuccessfully()
     {
         // Given
-        var personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
-        var coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
-        var amount = 500;
-        var reason = "Depositing earnings";
+        PersonaId personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
+        CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
+        int amount = 500;
+        string reason = "Depositing earnings";
 
         // When
-        var command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
+        DepositGoldCommand command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
 
         // Then
         Assert.That(command, Is.Not.Null);
@@ -37,13 +39,13 @@ public class DepositGoldCommandTests
     public void Given_ZeroAmount_When_CreatingCommand_Then_CommandIsCreatedSuccessfully()
     {
         // Given
-        var personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
-        var coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
-        var amount = 0;
-        var reason = "Zero deposit test";
+        PersonaId personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
+        CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
+        int amount = 0;
+        string reason = "Zero deposit test";
 
         // When
-        var command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
+        DepositGoldCommand command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
 
         // Then
         Assert.That(command, Is.Not.Null);
@@ -54,13 +56,13 @@ public class DepositGoldCommandTests
     public void Given_LargeAmount_When_CreatingCommand_Then_CommandIsCreatedSuccessfully()
     {
         // Given
-        var personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
-        var coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
-        var amount = 1_000_000;
-        var reason = "Large deposit";
+        PersonaId personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
+        CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
+        int amount = 1_000_000;
+        string reason = "Large deposit";
 
         // When
-        var command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
+        DepositGoldCommand command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
 
         // Then
         Assert.That(command, Is.Not.Null);
@@ -75,13 +77,13 @@ public class DepositGoldCommandTests
     public void Given_NegativeAmount_When_CreatingCommand_Then_ThrowsArgumentException()
     {
         // Given
-        var personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
-        var coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
-        var amount = -100;
-        var reason = "Invalid deposit";
+        PersonaId personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
+        CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
+        int amount = -100;
+        string reason = "Invalid deposit";
 
         // When & Then
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositGoldCommand.Create(personaId, coinhouse, amount, reason));
         Assert.That(ex!.Message, Does.Contain("cannot be negative"));
     }
@@ -90,13 +92,13 @@ public class DepositGoldCommandTests
     public void Given_EmptyReason_When_CreatingCommand_Then_ThrowsArgumentException()
     {
         // Given
-        var personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
-        var coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
-        var amount = 100;
-        var reason = "";
+        PersonaId personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
+        CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
+        int amount = 100;
+        string reason = "";
 
         // When & Then
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositGoldCommand.Create(personaId, coinhouse, amount, reason));
         Assert.That(ex!.Message, Does.Contain("cannot be empty"));
     }
@@ -105,13 +107,13 @@ public class DepositGoldCommandTests
     public void Given_TooShortReason_When_CreatingCommand_Then_ThrowsArgumentException()
     {
         // Given
-        var personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
-        var coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
-        var amount = 100;
-        var reason = "Ab"; // Less than 3 characters
+        PersonaId personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
+        CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
+        int amount = 100;
+        string reason = "Ab"; // Less than 3 characters
 
         // When & Then
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositGoldCommand.Create(personaId, coinhouse, amount, reason));
         Assert.That(ex!.Message, Does.Contain("at least 3 characters"));
     }
@@ -120,13 +122,13 @@ public class DepositGoldCommandTests
     public void Given_TooLongReason_When_CreatingCommand_Then_ThrowsArgumentException()
     {
         // Given
-        var personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
-        var coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
-        var amount = 100;
-        var reason = new string('A', 201); // More than 200 characters
+        PersonaId personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
+        CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
+        int amount = 100;
+        string reason = new string('A', 201); // More than 200 characters
 
         // When & Then
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositGoldCommand.Create(personaId, coinhouse, amount, reason));
         Assert.That(ex!.Message, Does.Contain("cannot exceed 200 characters"));
     }
@@ -139,13 +141,13 @@ public class DepositGoldCommandTests
     public void Given_ReasonWithLeadingAndTrailingSpaces_When_CreatingCommand_Then_ReasonIsTrimmed()
     {
         // Given
-        var personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
-        var coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
-        var amount = 100;
-        var reason = "  Deposit with spaces  ";
+        PersonaId personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
+        CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
+        int amount = 100;
+        string reason = "  Deposit with spaces  ";
 
         // When
-        var command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
+        DepositGoldCommand command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
 
         // Then
         Assert.That(command.Reason.Value, Is.EqualTo("Deposit with spaces"));
@@ -155,13 +157,13 @@ public class DepositGoldCommandTests
     public void Given_MinimumValidReason_When_CreatingCommand_Then_CommandIsCreated()
     {
         // Given
-        var personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
-        var coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
-        var amount = 100;
-        var reason = "ABC"; // Exactly 3 characters
+        PersonaId personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
+        CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
+        int amount = 100;
+        string reason = "ABC"; // Exactly 3 characters
 
         // When
-        var command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
+        DepositGoldCommand command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
 
         // Then
         Assert.That(command, Is.Not.Null);
@@ -172,13 +174,13 @@ public class DepositGoldCommandTests
     public void Given_MaximumValidReason_When_CreatingCommand_Then_CommandIsCreated()
     {
         // Given
-        var personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
-        var coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
-        var amount = 100;
-        var reason = new string('A', 200); // Exactly 200 characters
+        PersonaId personaId = PersonaTestHelpers.CreateCharacterPersona().Id;
+        CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag();
+        int amount = 100;
+        string reason = new string('A', 200); // Exactly 200 characters
 
         // When
-        var command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
+        DepositGoldCommand command = DepositGoldCommand.Create(personaId, coinhouse, amount, reason);
 
         // Then
         Assert.That(command, Is.Not.Null);

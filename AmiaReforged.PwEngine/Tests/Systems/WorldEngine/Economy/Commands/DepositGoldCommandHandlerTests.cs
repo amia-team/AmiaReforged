@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Transactions;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -72,7 +73,7 @@ public class DepositGoldCommandHandlerTests
     public async Task Given_ValidDeposit_When_HandlingCommand_Then_ReturnsSuccess()
     {
         // Given
-        var command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
+        DepositGoldCommand command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
 
         _mockCoinhouseRepo
             .Setup(r => r.GetByTag(_coinhouse))
@@ -91,7 +92,7 @@ public class DepositGoldCommandHandlerTests
             });
 
         // When
-        var result = await _handler.HandleAsync(command);
+        CommandResult result = await _handler.HandleAsync(command);
 
         // Then
         Assert.That(result.Success, Is.True);
@@ -102,9 +103,9 @@ public class DepositGoldCommandHandlerTests
     public async Task Given_ValidDeposit_When_HandlingCommand_Then_UpdatesAccountBalance()
     {
         // Given
-        var initialBalance = _testAccount.Debit;
-        var depositAmount = 500;
-        var command = DepositGoldCommand.Create(_depositor, _coinhouse, depositAmount, "Test deposit");
+        int initialBalance = _testAccount.Debit;
+        int depositAmount = 500;
+        DepositGoldCommand command = DepositGoldCommand.Create(_depositor, _coinhouse, depositAmount, "Test deposit");
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
@@ -127,7 +128,7 @@ public class DepositGoldCommandHandlerTests
     public async Task Given_ValidDeposit_When_HandlingCommand_Then_PublishesGoldDepositedEvent()
     {
         // Given
-        var command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
+        DepositGoldCommand command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
@@ -157,7 +158,7 @@ public class DepositGoldCommandHandlerTests
     public async Task Given_ValidDeposit_When_HandlingCommand_Then_RecordsTransaction()
     {
         // Given
-        var command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
+        DepositGoldCommand command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
@@ -192,14 +193,14 @@ public class DepositGoldCommandHandlerTests
     public async Task Given_NonexistentCoinhouse_When_HandlingCommand_Then_ReturnsFailure()
     {
         // Given
-        var command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
+        DepositGoldCommand command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
 
         _mockCoinhouseRepo
             .Setup(r => r.GetByTag(_coinhouse))
             .Returns((CoinHouse?)null);
 
         // When
-        var result = await _handler.HandleAsync(command);
+        CommandResult result = await _handler.HandleAsync(command);
 
         // Then
         Assert.That(result.Success, Is.False);
@@ -211,7 +212,7 @@ public class DepositGoldCommandHandlerTests
     public async Task Given_NoAccountExists_When_HandlingCommand_Then_CreatesNewAccount()
     {
         // Given
-        var command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
+        DepositGoldCommand command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo
@@ -227,7 +228,7 @@ public class DepositGoldCommandHandlerTests
             });
 
         // When
-        var result = await _handler.HandleAsync(command);
+        CommandResult result = await _handler.HandleAsync(command);
 
         // Then
         Assert.That(result.Success, Is.True);
@@ -239,14 +240,14 @@ public class DepositGoldCommandHandlerTests
     public async Task Given_RepositoryThrowsException_When_HandlingCommand_Then_ReturnsFailure()
     {
         // Given
-        var command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
+        DepositGoldCommand command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
 
         _mockCoinhouseRepo
             .Setup(r => r.GetByTag(_coinhouse))
             .Throws(new InvalidOperationException("Database error"));
 
         // When
-        var result = await _handler.HandleAsync(command);
+        CommandResult result = await _handler.HandleAsync(command);
 
         // Then
         Assert.That(result.Success, Is.False);
@@ -261,8 +262,8 @@ public class DepositGoldCommandHandlerTests
     public async Task Given_MultipleDeposits_When_HandlingCommands_Then_AccumulatesBalance()
     {
         // Given
-        var command1 = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "First deposit");
-        var command2 = DepositGoldCommand.Create(_depositor, _coinhouse, 300, "Second deposit");
+        DepositGoldCommand command1 = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "First deposit");
+        DepositGoldCommand command2 = DepositGoldCommand.Create(_depositor, _coinhouse, 300, "Second deposit");
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
@@ -286,7 +287,7 @@ public class DepositGoldCommandHandlerTests
     public async Task Given_ZeroAmountDeposit_When_HandlingCommand_Then_ReturnsSuccess()
     {
         // Given - DepositGoldCommand factory allows zero (valid for some business cases)
-        var command = DepositGoldCommand.Create(_depositor, _coinhouse, 0, "Zero deposit test");
+        DepositGoldCommand command = DepositGoldCommand.Create(_depositor, _coinhouse, 0, "Zero deposit test");
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
@@ -299,7 +300,7 @@ public class DepositGoldCommandHandlerTests
             });
 
         // When
-        var result = await _handler.HandleAsync(command);
+        CommandResult result = await _handler.HandleAsync(command);
 
         // Then
         Assert.That(result.Success, Is.True);
@@ -314,8 +315,8 @@ public class DepositGoldCommandHandlerTests
     public void Given_CancellationRequested_When_HandlingCommand_Then_PropagatesCancellation()
     {
         // Given
-        var command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
-        var cts = new CancellationTokenSource();
+        DepositGoldCommand command = DepositGoldCommand.Create(_depositor, _coinhouse, 500, "Test deposit");
+        CancellationTokenSource cts = new CancellationTokenSource();
         cts.Cancel();
 
         _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);

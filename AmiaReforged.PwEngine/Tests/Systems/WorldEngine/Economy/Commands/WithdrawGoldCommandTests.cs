@@ -29,11 +29,11 @@ public class WithdrawGoldCommandTests
     public void Given_ValidInputs_When_CreatingCommand_Then_CommandIsCreatedSuccessfully()
     {
         // Given
-        var amount = 500;
-        var reason = "Withdrawing earnings";
+        int amount = 500;
+        string reason = "Withdrawing earnings";
 
         // When
-        var command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
 
         // Then
         Assert.That(command, Is.Not.Null);
@@ -47,11 +47,11 @@ public class WithdrawGoldCommandTests
     public void Given_ZeroAmount_When_CreatingCommand_Then_CommandIsCreatedSuccessfully()
     {
         // Given
-        var amount = 0;
-        var reason = "Zero withdrawal test";
+        int amount = 0;
+        string reason = "Zero withdrawal test";
 
         // When
-        var command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
 
         // Then
         Assert.That(command, Is.Not.Null);
@@ -62,11 +62,11 @@ public class WithdrawGoldCommandTests
     public void Given_LargeAmount_When_CreatingCommand_Then_CommandIsCreatedSuccessfully()
     {
         // Given
-        var amount = 999999;
-        var reason = "Large withdrawal";
+        int amount = 999999;
+        string reason = "Large withdrawal";
 
         // When
-        var command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
 
         // Then
         Assert.That(command, Is.Not.Null);
@@ -81,8 +81,8 @@ public class WithdrawGoldCommandTests
     public void Given_NegativeAmount_When_CreatingCommand_Then_ThrowsArgumentException()
     {
         // Given
-        var amount = -100;
-        var reason = "Invalid withdrawal";
+        int amount = -100;
+        string reason = "Invalid withdrawal";
 
         // When/Then
         Assert.Throws<ArgumentException>(() =>
@@ -93,8 +93,8 @@ public class WithdrawGoldCommandTests
     public void Given_EmptyReason_When_CreatingCommand_Then_ThrowsArgumentException()
     {
         // Given
-        var amount = 100;
-        var reason = "";
+        int amount = 100;
+        string reason = "";
 
         // When/Then
         Assert.Throws<ArgumentException>(() =>
@@ -105,8 +105,8 @@ public class WithdrawGoldCommandTests
     public void Given_TooShortReason_When_CreatingCommand_Then_ThrowsArgumentException()
     {
         // Given
-        var amount = 100;
-        var reason = "ab"; // Too short (< 3 chars)
+        int amount = 100;
+        string reason = "ab"; // Too short (< 3 chars)
 
         // When/Then
         Assert.Throws<ArgumentException>(() =>
@@ -117,8 +117,8 @@ public class WithdrawGoldCommandTests
     public void Given_TooLongReason_When_CreatingCommand_Then_ThrowsArgumentException()
     {
         // Given
-        var amount = 100;
-        var reason = new string('x', 201); // Too long (> 200 chars)
+        int amount = 100;
+        string reason = new string('x', 201); // Too long (> 200 chars)
 
         // When/Then
         Assert.Throws<ArgumentException>(() =>
@@ -133,11 +133,11 @@ public class WithdrawGoldCommandTests
     public void Given_ReasonWithLeadingAndTrailingSpaces_When_CreatingCommand_Then_ReasonIsTrimmed()
     {
         // Given
-        var amount = 100;
-        var reason = "  Valid reason  ";
+        int amount = 100;
+        string reason = "  Valid reason  ";
 
         // When
-        var command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
 
         // Then
         Assert.That(command.Reason.Value, Is.EqualTo("Valid reason"));
@@ -147,11 +147,11 @@ public class WithdrawGoldCommandTests
     public void Given_MinimumValidReason_When_CreatingCommand_Then_CommandIsCreated()
     {
         // Given
-        var amount = 100;
-        var reason = "abc"; // Exactly 3 characters
+        int amount = 100;
+        string reason = "abc"; // Exactly 3 characters
 
         // When
-        var command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
 
         // Then
         Assert.That(command.Reason.Value, Is.EqualTo(reason));
@@ -161,11 +161,11 @@ public class WithdrawGoldCommandTests
     public void Given_MaximumValidReason_When_CreatingCommand_Then_CommandIsCreated()
     {
         // Given
-        var amount = 100;
-        var reason = new string('x', 200); // Exactly 200 characters
+        int amount = 100;
+        string reason = new string('x', 200); // Exactly 200 characters
 
         // When
-        var command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_persona, _coinhouse, amount, reason);
 
         // Then
         Assert.That(command.Reason.Value.Length, Is.EqualTo(200));
