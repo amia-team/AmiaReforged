@@ -18,10 +18,10 @@ public class CharacterCustomizationListener
         Log.Info(message: "CharacterCustomizationListener initialized.");
     }
 
-    [ScriptHandler("tlr_onconv")]
+    [ScriptHandler("nui_craft")]
     public void OnConversation(CallInfo callInfo)
     {
-        Log.Info("tlr_onconv script handler triggered");
+        Log.Info("Player crafting script handler triggered");
 
         // Get the PC who is speaking in the conversation
         uint pcObject = NWScript.GetLastSpeaker();
