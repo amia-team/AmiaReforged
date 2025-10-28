@@ -51,6 +51,10 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
+    
+    <ItemGroup>
+      <None Remove="Features\WorldEngine\PHASE2_COMPLETE.md" />
+    </ItemGroup>
 
 
 </Project>
