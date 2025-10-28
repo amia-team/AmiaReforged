@@ -8,7 +8,7 @@
 | **Phase 2: Persona Abstraction** | ✅ Complete | Oct 2025 | `PERSONA_QUICK_REFERENCE.md` |
 | **Phase 3.1: CQRS Infrastructure** | ✅ Complete | Oct 2025 | `PHASE3_PART1_COMPLETE.md` |
 | **Phase 3.2: Codex Application Layer** | ✅ Complete<br/>All Tests Passing | Oct 28, 2025 | `PHASE3_PART2_COMPLETE.md`<br/>`PHASE3_PART2_ALL_FIXES_COMPLETE.md`<br/>`QUEST_STATE_FIX.md`<br/>`QUEST_STATE_CONSISTENCY_FIX.md` |
-| **Phase 3.3: Economy Expansion** | ⏳ Not Started | - | - |
+| **Phase 3.3: Economy Expansion** | 🟢 In Progress<br/>~30% Complete | - | `PHASE3_PART3_STATUS.md`<br/>`PHASE3_PART3_PLAN.md`<br/>`PHASE3_PART3_DAY1_COMPLETE.md`<br/>`PHASE3_PART3_DAY2_PROGRESS.md`<br/>`PHASE3_PART3_DEPOSITGOLD_COMPLETE.md` |
 | **Phase 3.4: Other Subsystems** | ⏳ Not Started | - | - |
 | **Phase 4: Event Bus** | ⏳ Not Started | - | - |
 | **Phase 5: Public API** | ⏳ Not Started | - | - |

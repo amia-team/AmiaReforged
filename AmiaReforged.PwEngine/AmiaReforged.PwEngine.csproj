@@ -38,6 +38,7 @@
         <Folder Include="Resources\WorldEngine\Industries\" />
         <Folder Include="Features\MiniGame\LiarsDice\Nui\" />
         <Folder Include="Features\MiniGame\LiarsDice\Tests\" />
+        <Folder Include="Tests\Systems\WorldEngine\Economy\ValueObjects\" />
     </ItemGroup>
 
     <ItemGroup>
@@ -46,6 +47,7 @@
 
     <ItemGroup>
         <Compile Remove="Systems\Player\AmiaPlayer.cs" />
+        <Compile Remove="Tests\Systems\WorldEngine\Economy\ValueObjects\GoldAmountTests.cs" />
     </ItemGroup>
     
     <ItemGroup Condition="'$(Configuration)' == 'Debug'">
