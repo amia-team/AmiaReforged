@@ -56,6 +56,12 @@ public class PwEngineContext : DbContext
     public DbSet<CoinHouseAccountHolder> CoinHouseAccountHolders { get; set; } = null!;
     public DbSet<CoinHouseTransaction> CoinHouseTransactions { get; set; } = null!;
 
+    /// <summary>
+    /// Persona-based transaction log for gold transfers between any persona types.
+    /// Supports Character, Organization, Coinhouse, Government, System transfers.
+    /// </summary>
+    public DbSet<Transaction> Transactions { get; set; } = null!;
+
 
     public PwEngineContext()
     {
@@ -67,6 +73,14 @@ public class PwEngineContext : DbContext
         _connectionString = connectionString;
     }
 
+    /// <summary>
+    /// Constructor for testing with DbContextOptions (e.g., InMemory database).
+    /// </summary>
+    public PwEngineContext(DbContextOptions<PwEngineContext> options) : base(options)
+    {
+        _connectionString = string.Empty; // Not used when options are provided
+    }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -75,6 +89,7 @@ public class PwEngineContext : DbContext
             optionsBuilder.EnableSensitiveDataLogging();
         }
     }
+
 
     private static string ConnectionString()
     {
