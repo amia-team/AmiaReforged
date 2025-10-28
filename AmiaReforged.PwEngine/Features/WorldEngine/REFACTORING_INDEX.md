@@ -8,7 +8,7 @@
 | **Phase 2: Persona Abstraction** | ✅ Complete | Oct 2025 | [PHASE2_PERSONA_ABSTRACTION.md](PHASE2_PERSONA_ABSTRACTION.md) |
 | **Phase 3.1: CQRS Infrastructure** | ✅ Complete | Oct 2025 | [PHASE3_1_CQRS_INFRASTRUCTURE.md](PHASE3_1_CQRS_INFRASTRUCTURE.md) |
 | **Phase 3.2: Codex Application Layer** | ✅ Complete | Oct 28, 2025 | [PHASE3_2_CODEX_APPLICATION.md](PHASE3_2_CODEX_APPLICATION.md) |
-| **Phase 3.3: Economy Expansion** | 🟢 In Progress<br/>~55% | - | [PHASE3_3_ECONOMY_EXPANSION.md](PHASE3_3_ECONOMY_EXPANSION.md) |
+| **Phase 3.3: Economy Expansion** | ✅ Complete | Oct 28, 2025 | [PHASE3_3_COMPLETE.md](PHASE3_3_COMPLETE.md) |
 | **Phase 3.4: Other Subsystems** | ⏳ Not Started | - | [PHASE3_4_OTHER_SUBSYSTEMS.md](PHASE3_4_OTHER_SUBSYSTEMS.md) |
 | **Phase 4: Event Bus** | ⏳ Not Started | - | [PHASE4_EVENT_BUS.md](PHASE4_EVENT_BUS.md) |
 | **Phase 5: Public API** | ⏳ Not Started | - | [PHASE5_PUBLIC_API.md](PHASE5_PUBLIC_API.md) |
@@ -18,16 +18,15 @@ Transform WorldEngine from a primitive-obsessed codebase into a strongly-typed, 
 ---
 ## Current Progress
 ### ✅ Completed Phases (62.5%)
-**Phase 1 - Strong Types**: Value objects for all domain concepts  
-**Phase 2 - Persona Abstraction**: Unified actor system  
-**Phase 3.1 - CQRS Infrastructure**: Command/query pattern established  
-**Phase 3.2 - Codex Application**: Reference CQRS implementation  
+**Phase 1 - Strong Types**: Value objects for all domain concepts
+**Phase 2 - Persona Abstraction**: Unified actor system
+**Phase 3.1 - CQRS Infrastructure**: Command/query pattern established
+**Phase 3.2 - Codex Application**: Reference CQRS implementation
 **Phase 3.3 - Economy Expansion**: 55% complete (commands done, queries in progress)
-### 🟢 In Progress (Phase 3.3)
-- Commands: 100% (Transfer, Deposit, Withdraw)
-- Queries: 67% (TransactionHistory, Balance)
-- Tests: 136 passing
-- Remaining: GetCoinhouseBalances query, integration tests
+### 🟢 Next Up (Phase 3.4)
+Apply CQRS to remaining subsystems:
+- Industries, Organizations, Harvesting, Regions, Traits
+- Estimated: 2-3 weeks
 ---
 ## Success Criteria
 - [x] No raw primitives in public APIs
