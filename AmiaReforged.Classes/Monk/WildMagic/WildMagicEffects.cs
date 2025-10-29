@@ -69,8 +69,8 @@ public class WildMagicEffects(
     public readonly WildMagicEffect[] StrongEffects =
     [
         new("Isaac's Greater Missile Storm", strongWildMagic.IsaacsGreaterMissileStorm),
-        new("Web", strongWildMagic.Web),
-        new("Gust of Wind", strongWildMagic.GustOfWind),
+        new("Web", StrongWildMagic.Web),
+        new("Gust of Wind", StrongWildMagic.GustOfWind),
         new("Confusion", strongWildMagic.Confusion),
         new("Negative Energy Burst", strongWildMagic.NegativeEnergyBurst),
         new("Call Lightning", strongWildMagic.CallLightning),

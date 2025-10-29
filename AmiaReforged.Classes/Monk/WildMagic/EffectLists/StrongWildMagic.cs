@@ -20,7 +20,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         target.ApplyEffect(EffectDuration.Temporary, magicMissileEffect, TimeSpan.FromSeconds(0.18));
     }
 
-    public void Web(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public static void Web(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Web);
         if (spell == null || target.Location == null) return;
@@ -48,7 +48,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         }
     }
 
-    public void GustOfWind(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public static void GustOfWind(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.GustOfWind);
         if (spell == null || target.Location == null) return;
@@ -260,17 +260,92 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
 
     public void GreaterPlanarBinding(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.GreaterPlanarBinding);
+        if (spell == null) return;
 
+        string prefix = "planar_3_";
+
+        int outcome = Random.Shared.Roll(3);
+
+        string suffix = outcome switch
+        {
+            1 => "g",
+            2 => "n",
+            3 => "e",
+            _ => "g"
+        };
+
+        VfxType summonVfx = suffix switch
+        {
+            "g" => VfxType.FnfSummonCelestial,
+            "n" => VfxType.FnfSummonMonster3,
+            "e" => VfxType.FnfSummonGate,
+            _ => VfxType.FnfSummonCelestial
+        };
+
+        if (suffix == "e")
+        {
+            int evilOutcome = Random.Shared.Roll(3);
+
+            suffix = evilOutcome switch
+            {
+                1 => "le",
+                2 => "ne",
+                3 => "ce",
+                _ => "le"
+            };
+        }
+
+        string planarResRef = prefix + suffix;
+
+        Effect summonPlanar = Effect.SummonCreature(planarResRef, summonVfx!, TimeSpan.FromSeconds(1));
+        _ = wildMagicUtils.GetObjectContext(monk, summonPlanar);
+
+        monk.ApplyEffect(EffectDuration.Temporary, summonPlanar, WildMagicUtils.LongDuration);
     }
 
     public void BigbysInterposingHand(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.BigbysInterposingHand);
+        if (spell == null) return;
 
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 5, monkLevel))
+            return;
+
+        Effect interposingHand = Effect.LinkEffects(Effect.VisualEffect(VfxType.DurBigbysInterposingHand), Effect.AttackDecrease(10));
+        interposingHand.SubType = EffectSubType.Magical;
+
+        target.ApplyEffect(EffectDuration.Temporary, interposingHand, WildMagicUtils.LongDuration);
     }
 
     public void MassBlindnessDeafness(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.MassBlindnessAndDeafness);
+        if (spell == null || target.Location == null) return;
 
+        Effect blindDeafVfx = Effect.VisualEffect(VfxType.ImpBlindDeafM);
+
+        target.Location.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.FnfLosNormal30));
+
+        foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal,
+                     true))
+        {
+            if (!monk.IsReactionTypeHostile(enemy)) continue;
+
+            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Illusion, 8, monkLevel))
+                continue;
+
+            SavingThrowResult fortSaveResult = enemy.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Spell, monk);
+
+            if (fortSaveResult == SavingThrowResult.Success)
+            {
+                enemy.ApplyEffect(EffectDuration.Instant, WildMagicUtils.FortUseVfx);
+                continue;
+            }
+
+            enemy.ApplyEffect(EffectDuration.Temporary, WildMagicUtils.BlindnessDeafnessEffect, WildMagicUtils.ShortDuration);
+            enemy.ApplyEffect(EffectDuration.Instant, blindDeafVfx);
+        }
     }
 
     public void MassPolymorph(NwCreature monk, NwCreature target, int dc, byte monkLevel)
