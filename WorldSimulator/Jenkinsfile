@@ -118,14 +118,7 @@ pipeline {
                         testSummary = "\n\n⚠️ Test results unavailable"
                     }
 
-                    discordSend(
-                        description: "WorldSimulator build #${BUILD_NUMBER} finished.${testSummary}",
-                        footer: "Build results for WorldSimulator",
-                        link: env.BUILD_URL,
-                        result: currentBuild.currentResult,
-                        title: "${JOB_NAME}",
-                        webhookUrl: params.webhookURL
-                    )
+                    discordSend description: "WorldSimulator build #${BUILD_NUMBER} finished.${testSummary}", footer: "Build results for WorldSimulator", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: params.webhookURL
                 } else {
                     echo 'Build skipped - no changes in WorldSimulator projects'
                 }
