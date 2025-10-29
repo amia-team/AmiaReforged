@@ -9,16 +9,16 @@ public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
     public void Polymorph(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.RandomPolymorphEffect(), WildMagicUtils.LongDuration);
 
-    public void HermiticConfusion(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public static void HermiticConfusion(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         Effect confused = Effect.Confused();
-        confused.SubType = EffectSubType.Magical;
         confused.IgnoreImmunity = true;
 
         monk.ApplyEffect(EffectDuration.Temporary, confused, WildMagicUtils.ShortDuration);
+        monk.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpConfusionS));
     }
 
-    public void TradePlaces(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public static void TradePlaces(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         if (monk.Location == null || target.Location == null) return;
 
@@ -35,7 +35,7 @@ public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHealingG));
     }
 
-    public void RestorationNotThatOne(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public static void RestorationNotThatOne(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpRestoration));
 
@@ -61,6 +61,13 @@ public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
     public void SelfInflictWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Instant, wildMagicUtils.InflictLightWoundsEffect(monk, monkLevel));
 
-    public void SpontaneousMeditation(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
+    public static void SpontaneousMeditation(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Temporary, Effect.CutsceneParalyze(), WildMagicUtils.ShortDuration);
+
+    public static void LightningRod(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    {
+        monk.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpLightningM));
+        int damage = Random.Shared.Roll(2, monkLevel);
+        monk.ApplyEffect(EffectDuration.Instant, Effect.Damage(damage, DamageType.Electrical));
+    }
 }
