@@ -62,7 +62,6 @@ public class WildMagicEffects(
         new("Morndenkainen's Sword", moderateWildMagic.MordenkainensSword),
         new("Gedlee's Electric Loop", moderateWildMagic.GedleesElectricLoop),
         new("Blindness/Deafness", moderateWildMagic.BlindnessDeafness),
-        new("Scare", moderateWildMagic.Scare),
         new("Hold Monster", moderateWildMagic.HoldMonster)
     ];
 
