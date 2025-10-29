@@ -17,7 +17,8 @@ public class ResourceNodeInstanceSetupService(
     ICommandHandler<ClearAreaNodesCommand> clearNodesCommandHandler,
     IQueryHandler<GetNodesForAreaQuery, List<ResourceNodeInstance>> getNodesQueryHandler,
     IRegionRepository regionRepository,
-    ResourceNodeService nodeService)
+    ResourceNodeService nodeService,
+    TriggerBasedSpawnService triggerSpawnService)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -40,7 +41,7 @@ public class ResourceNodeInstanceSetupService(
         foreach (NwArea area in NwModule.Instance.Areas)
         {
             // Query for nodes in this area
-            var query = new GetNodesForAreaQuery(area.ResRef);
+            GetNodesForAreaQuery query = new GetNodesForAreaQuery(area.ResRef);
             List<ResourceNodeInstance> nodes = getNodesQueryHandler.HandleAsync(query).GetAwaiter().GetResult();
 
             if (nodes.Count == 0) continue;
@@ -48,7 +49,7 @@ public class ResourceNodeInstanceSetupService(
             NwModule.Instance.SendMessageToAllDMs($"PURGING NODES IN {area.Name} . . .");
 
             // Execute clear command
-            var command = new ClearAreaNodesCommand(area.ResRef);
+            ClearAreaNodesCommand command = new ClearAreaNodesCommand(area.ResRef);
             _ = clearNodesCommandHandler.HandleAsync(command).GetAwaiter().GetResult();
         }
     }
@@ -65,174 +66,145 @@ public class ResourceNodeInstanceSetupService(
 
         NwModule.Instance.SendMessageToAllDMs($"Processing {nwArea.Name} . . .");
 
+        // Find all resource zone triggers in this area
+        List<NwTrigger> nodeSpawnRegions = triggerSpawnService.GetResourceTriggers(nwArea);
 
-        List<NwTrigger> nodeSpawnRegions =
-            nwArea
-                .FindObjectsOfTypeInArea<NwTrigger>()
-                .Where(t => t.Tag == WorldConstants.ResourceNodeZoneTag)
-                .ToList();
+        if (!nodeSpawnRegions.Any())
+        {
+            Log.Warn($"No resource zone triggers found in {nwArea.Name}");
+            return;
+        }
 
-        GenerateNodesInTriggers(nodeSpawnRegions, area.DefinitionTags, area);
+        NwModule.Instance.SendMessageToAllDMs($"Found {nodeSpawnRegions.Count} resource trigger(s) in {nwArea.Name}");
+
+        GenerateNodesInTriggers(nodeSpawnRegions, area);
     }
 
-    private void GenerateNodesInTriggers(List<NwTrigger> nodeSpawnRegions, List<string> definitionTags,
-        AreaDefinition area)
+    private void GenerateNodesInTriggers(List<NwTrigger> nodeSpawnRegions, AreaDefinition area)
     {
         foreach (NwTrigger trigger in nodeSpawnRegions)
         {
-            ProcessNodesToSpawn(trigger, definitionTags, area);
+            ProcessTriggerNodes(trigger, area);
         }
     }
 
-    private void ProcessNodesToSpawn(NwTrigger trigger, List<string> definitionTags, AreaDefinition area)
+    private void ProcessTriggerNodes(NwTrigger trigger, AreaDefinition area)
     {
-        if (definitionTags.Count == 0) return;
+        // Get TYPE filters from trigger local variable (e.g., "ore,geode,tree")
+        // Note: Variable is named "node_tags" but actually contains TYPE filters
+        var nodeTypesStr = NWScript.GetLocalString(trigger, WorldConstants.LvarNodeTags);
 
-        Random rng = Random.Shared;
-
-        ResourceType[] tags = GetTags(trigger);
-        NwModule.Instance.SendMessageToAllDMs($"Number of tags for trigger: {tags.Length} . . .");
-
-        foreach (ResourceType tag in tags)
+        // Defensive parsing: handle null, empty, or whitespace
+        if (string.IsNullOrWhiteSpace(nodeTypesStr))
         {
-            NwModule.Instance.SendMessageToAllDMs($"trigger has tag: {tag} . . .");
+            Log.Warn($"Trigger {trigger.Tag} has no '{WorldConstants.LvarNodeTags}' local variable");
+            return;
         }
 
+        // Remove surrounding quotes if present (defensive against toolset variations)
+        nodeTypesStr = nodeTypesStr.Trim().Trim('"', '\'');
 
-        List<NwWaypoint> waypoints = GetWaypoints(trigger);
+        var allowedTypes = nodeTypesStr.Split(',')
+            .Select(t => t.Trim().ToLower())
+            .Where(t => !string.IsNullOrWhiteSpace(t))  // Skip empty entries
+            .ToHashSet();
 
-        if (waypoints.Count == 0) return;
-
-        List<ResourceNodeDefinition> definitions = GetDefinitions(definitionTags);
-        NwModule.Instance.SendMessageToAllDMs($"Found {definitions.Count} definitions for {trigger.Area?.Name} . . .");
-
-        foreach (ResourceNodeDefinition df in definitions)
+        if (!allowedTypes.Any())
         {
-            NwModule.Instance.SendMessageToAllDMs($"Definition tag: {df.Type} . . .");
+            Log.Warn($"Trigger {trigger.Tag} has empty node_tags after parsing");
+            return;
         }
 
-        // Only keep resource types that have at least one matching definition
-        List<ResourceType> typeOrder = GetTypeOrder(tags, definitions);
-        NwModule.Instance.SendMessageToAllDMs($"Number of node types: {typeOrder.Count} . . .");
-
-        if (typeOrder.Count == 0) return;
-
-        NwModule.Instance.SendMessageToAllDMs($"Distributing nodes for trigger in {trigger.Area?.Name} . . .");
-
-        DistributeNodes(typeOrder, rng, waypoints, definitions, area);
-    }
-
-    private void DistributeNodes(List<ResourceType> typeOrder, Random rng, List<NwWaypoint> waypoints,
-        List<ResourceNodeDefinition> definitions, AreaDefinition area)
-    {
-        // Shuffle types and waypoints to spread things out fairly
-        Shuffle(typeOrder, rng);
-
-        List<NwWaypoint> available = new(waypoints);
-        Shuffle(available, rng);
-
-        // Cap at most 2 per resource type
-        Dictionary<ResourceType, int> remainingPerType = typeOrder.ToDictionary(t => t, _ => 2);
-
-        HashSet<NwWaypoint> visited = new HashSet<NwWaypoint>();
-        int wpIndex = 0;
-
-        for (int round = 0; round < 2 && wpIndex < available.Count; round++)
+        // Get the actual node definition tags from the area JSON (e.g., "ore_vein_copper_native", "tree_oak")
+        if (!area.DefinitionTags.Any())
         {
-            foreach (ResourceType type in typeOrder)
+            Log.Warn($"Area {area.ResRef} has no DefinitionTags defined");
+            return;
+        }
+
+        // Filter area's DefinitionTags by matching their Type to trigger's type filters
+        var matchingDefinitionTags = new List<string>();
+        Log.Info($"Checking {area.DefinitionTags.Count} definitions in area {area.ResRef} against type filters: [{string.Join(", ", allowedTypes)}]");
+
+        foreach (var definitionTag in area.DefinitionTags)
+        {
+            Log.Info($" Checking definition tag: {definitionTag}");
+            // Load the definition to check its Type field
+            var definition = resourceRepository.Get(definitionTag);
+            if (definition == null)
             {
-                if (wpIndex >= available.Count) break;
-                if (remainingPerType[type] == 0) continue;
+                Log.Warn($"  ✗ {definitionTag}: Definition not found in repository");
+                continue;
+            }
 
-                List<ResourceNodeDefinition> matching = definitions.Where(d => d.Type == type).ToList();
-                if (matching.Count == 0)
-                {
-                    remainingPerType[type] = 0;
-                    continue;
-                }
+            // Compare the definition's Type field to the trigger's type filters
+            var defType = definition.Type.ToString().ToLower();
+            if (allowedTypes.Contains(defType))
+            {
+                matchingDefinitionTags.Add(definitionTag);
+                Log.Info($"  ✓ {definitionTag}: Type '{definition.Type}' matches filter");
+            }
+            else
+            {
+                Log.Debug($"  ✗ {definitionTag}: Type '{definition.Type}' does not match filters");
+            }
+        }
 
-                NwWaypoint wp = available[wpIndex];
+        if (!matchingDefinitionTags.Any())
+        {
+            Log.Info($"Trigger {trigger.Tag} type filters [{string.Join(", ", allowedTypes)}] don't match any area definition Types");
+            return;
+        }
 
-                // Ignore already-visited waypoints within this trigger pass
-                if (visited.Contains(wp))
-                {
-                    wpIndex++;
-                    continue;
-                }
+        // Get max nodes (default 5)
+        var maxNodes = NWScript.GetLocalInt(trigger, WorldConstants.LvarMaxNodesTotal);
+        if (maxNodes <= 0)
+            maxNodes = WorldConstants.DefaultMaxNodesPerTrigger;
 
-                ResourceNodeDefinition definition = matching[rng.Next(matching.Count)];
+        NwModule.Instance.SendMessageToAllDMs($"Trigger '{trigger.Tag}': type filters=[{string.Join(", ", allowedTypes)}], matched {matchingDefinitionTags.Count} definition(s), max={maxNodes}");
 
-                NwModule.Instance.SendMessageToAllDMs($"Attempting to spawn a {definition.Tag} . . .");
+        // Generate spawn locations using the matching definition tags
+        var spawnLocations = triggerSpawnService.GenerateSpawnLocations(
+            trigger,
+            matchingDefinitionTags,
+            maxNodes
+        );
 
-                ResourceNodeInstance node = nodeService.CreateNewNode(area, definition, wp.Position, wp.Rotation);
+        NwModule.Instance.SendMessageToAllDMs($"Generated {spawnLocations.Count} spawn location(s)");
+
+        // Create and spawn nodes at each location
+        int spawned = 0;
+        foreach (var location in spawnLocations)
+        {
+            var nodeDefinition = resourceRepository.Get(location.NodeTag);
+
+            if (nodeDefinition == null)
+            {
+                Log.Warn($"Node definition not found for tag: {location.NodeTag}");
+                continue;
+            }
+
+            try
+            {
+                var node = nodeService.CreateNewNode(
+                    area,
+                    nodeDefinition,
+                    location.Position,
+                    location.Rotation
+                );
 
                 nodeService.SpawnInstance(node);
+                spawned++;
 
-                visited.Add(wp);
-                wpIndex++;
-                remainingPerType[type]--;
+                Log.Debug($"Spawned {nodeDefinition.Name} (Type: {nodeDefinition.Type}) at ({location.Position.X:F1}, {location.Position.Y:F1})");
             }
-        }
-
-        return;
-
-        // Local helper to shuffle a list in-place
-        static void Shuffle<T>(IList<T> list, Random random)
-        {
-            for (int i = list.Count - 1; i > 0; i--)
+            catch (Exception ex)
             {
-                int j = random.Next(i + 1);
-                (list[i], list[j]) = (list[j], list[i]);
+                Log.Error(ex, $"Failed to spawn node {nodeDefinition.Name}");
             }
         }
-    }
 
-    private static List<ResourceType> GetTypeOrder(ResourceType[] tags, List<ResourceNodeDefinition> definitions)
-    {
-        List<ResourceType> typeOrder = tags
-            .Distinct()
-            .Where(t => definitions.Any(d => d.Type == t))
-            .ToList();
-        return typeOrder;
-    }
-
-    private List<ResourceNodeDefinition> GetDefinitions(List<string> definitionTags)
-    {
-        List<ResourceNodeDefinition> definitions =
-            resourceRepository.All().Where(d => definitionTags.Contains(d.Tag)).ToList();
-        return definitions;
-    }
-
-    private static List<NwWaypoint> GetWaypoints(NwTrigger trigger)
-    {
-        List<NwWaypoint> waypoints = trigger.GetObjectsInTrigger<NwWaypoint>()
-            .Where(w => w.Tag == WorldConstants.NodeSpawnPointRef)
-            .ToList();
-        return waypoints;
-    }
-
-    private ResourceType[] GetTags(NwTrigger trigger)
-    {
-        ResourceType[] tags = NWScript.GetLocalString(trigger, WorldConstants.LvarNodeTags)
-            .ToLower()
-            .Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(TagToEnum)
-            .Where(t => t != ResourceType.Undefined)
-            .ToArray();
-        return tags;
-    }
-
-
-    private ResourceType TagToEnum(string tag)
-    {
-        return tag switch
-        {
-            "ore" => ResourceType.Ore,
-            "tree" => ResourceType.Tree,
-            "geode" => ResourceType.Geode,
-            "boulder" => ResourceType.Boulder,
-            "flora" => ResourceType.Flora,
-            _ => ResourceType.Undefined
-        };
+        NwModule.Instance.SendMessageToAllDMs($"✓ Spawned {spawned} node(s) in trigger '{trigger.Tag}'");
     }
 }
+

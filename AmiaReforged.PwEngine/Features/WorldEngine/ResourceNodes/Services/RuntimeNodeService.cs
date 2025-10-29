@@ -83,7 +83,7 @@ public class RuntimeNodeService(
         if (character is null) return;
 
         // Execute harvest command
-        var command = new HarvestResourceCommand(
+        HarvestResourceCommand command = new HarvestResourceCommand(
             character.GetId().Value,
             node.Instance.Id
         );

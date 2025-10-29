@@ -22,7 +22,7 @@ public class NodeDepletedEventHandler : IEventHandler<NodeDepletedEvent>, IEvent
         // Switch to main thread to safely make NWN calls
         await NwTask.SwitchToMainThread();
 
-        var evt = @event;
+        NodeDepletedEvent evt = @event;
         Log.Info($"Node {evt.NodeInstanceId} in {evt.AreaResRef} has been depleted");
 
         // Optional: Could send a message to DMs

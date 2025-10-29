@@ -54,18 +54,18 @@ public class AnvilEventBusService : IEventBus
     private void DiscoverAndCacheHandlers(IEnumerable<IEventHandlerMarker> eventHandlers)
     {
         // Process and cache all handler metadata once
-        foreach (var handler in eventHandlers)
+        foreach (IEventHandlerMarker handler in eventHandlers)
         {
-            var handlerType = handler.GetType();
-            var handlerInterfaces = handlerType.GetInterfaces()
+            Type handlerType = handler.GetType();
+            IEnumerable<Type> handlerInterfaces = handlerType.GetInterfaces()
                 .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEventHandler<>));
 
-            foreach (var handlerInterface in handlerInterfaces)
+            foreach (Type handlerInterface in handlerInterfaces)
             {
-                var eventType = handlerInterface.GetGenericArguments()[0];
+                Type eventType = handlerInterface.GetGenericArguments()[0];
 
                 // Get the specific HandleAsync method for this event type
-                var handleMethod = handlerInterface.GetMethod(nameof(IEventHandler<IDomainEvent>.HandleAsync));
+                MethodInfo? handleMethod = handlerInterface.GetMethod(nameof(IEventHandler<IDomainEvent>.HandleAsync));
 
                 if (handleMethod == null)
                 {
@@ -79,7 +79,7 @@ public class AnvilEventBusService : IEventBus
                 }
 
                 // Cache the handler instance and its method
-                var invocation = new HandlerInvocation(handler, handleMethod, eventType);
+                HandlerInvocation invocation = new HandlerInvocation(handler, handleMethod, eventType);
                 _handlers[eventType].Add(invocation);
 
                 Log.Info($"Registered and cached handler {handlerType.Name} for event {eventType.Name}");
@@ -105,7 +105,7 @@ public class AnvilEventBusService : IEventBus
                 {
                     await _queueSignal.WaitAsync();
 
-                    if (_eventQueue.TryDequeue(out var @event))
+                    if (_eventQueue.TryDequeue(out IDomainEvent? @event))
                     {
                         await ProcessEventAsync(@event);
                     }
@@ -122,9 +122,9 @@ public class AnvilEventBusService : IEventBus
 
     private async Task ProcessEventAsync(IDomainEvent @event)
     {
-        var eventType = @event.GetType();
+        Type eventType = @event.GetType();
 
-        if (!_handlers.TryGetValue(eventType, out var handlerInvocations))
+        if (!_handlers.TryGetValue(eventType, out List<HandlerInvocation>? handlerInvocations))
         {
             Log.Trace($"No handlers registered for event {eventType.Name}");
             return;
@@ -132,7 +132,7 @@ public class AnvilEventBusService : IEventBus
 
         Log.Debug($"Processing event {eventType.Name} (ID: {@event.EventId}) with {handlerInvocations.Count} handler(s)");
 
-        foreach (var invocation in handlerInvocations)
+        foreach (HandlerInvocation invocation in handlerInvocations)
         {
             try
             {

@@ -17,4 +17,9 @@ internal static class WorldConstants
     public static string ToolTypeVariable => "tool_type";
     public static string PcCachedLvar => "pckey_cached";
     public static string MaterialLvar => "materials";
+
+    // Trigger-Based Node Spawning
+    public static string LvarMaxNodesTotal => "max_nodes_total";
+    public const int DefaultMaxNodesPerTrigger = 5;
+    public const float MinNodeSpacing = 7.5f; // meters
 }

@@ -1,4 +1,3 @@
-using System.Numerics;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.Events;
@@ -9,6 +8,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.Application;
 
@@ -19,18 +19,20 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
     private readonly ResourceNodeService _nodeService;
     private readonly IResourceNodeInstanceRepository _nodeRepository;
     private readonly IResourceNodeDefinitionRepository _definitionRepository;
+    private readonly TriggerBasedSpawnService _triggerSpawnService;
     private readonly IEventBus _eventBus;
-    private readonly Random _random = new();
 
     public ProvisionAreaNodesCommandHandler(
         ResourceNodeService nodeService,
         IResourceNodeInstanceRepository nodeRepository,
         IResourceNodeDefinitionRepository definitionRepository,
+        TriggerBasedSpawnService triggerSpawnService,
         IEventBus eventBus)
     {
         _nodeService = nodeService;
         _nodeRepository = nodeRepository;
         _definitionRepository = definitionRepository;
+        _triggerSpawnService = triggerSpawnService;
         _eventBus = eventBus;
     }
 
@@ -38,13 +40,21 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
     {
         try
         {
-            var area = command.AreaDefinition;
-            var provisionedNodes = new List<ResourceNodeInstance>();
+            AreaDefinition area = command.AreaDefinition;
+            List<ResourceNodeInstance> provisionedNodes = new List<ResourceNodeInstance>();
+
+            // Get the NwArea
+            NwArea? nwArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == area.ResRef.Value);
+            if (nwArea == null)
+            {
+                Log.Warn($"Area {area.ResRef} not loaded in module. Cannot provision nodes.");
+                return CommandResult.Fail($"Area {area.ResRef} not found in module");
+            }
 
             // Check if area already has nodes (unless forcing respawn)
             if (!command.ForceRespawn)
             {
-                var existingNodes = _nodeRepository.GetInstances()
+                List<ResourceNodeInstance> existingNodes = _nodeRepository.GetInstances()
                     .Where(n => n.Area == area.ResRef.Value)
                     .ToList();
 
@@ -62,11 +72,11 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
             else
             {
                 // Clear existing nodes if force respawn
-                var existingNodes = _nodeRepository.GetInstances()
+                List<ResourceNodeInstance> existingNodes = _nodeRepository.GetInstances()
                     .Where(n => n.Area == area.ResRef.Value)
                     .ToList();
 
-                foreach (var node in existingNodes)
+                foreach (ResourceNodeInstance node in existingNodes)
                 {
                     _nodeRepository.Delete(node);
                 }
@@ -74,48 +84,130 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
                 Log.Info($"Cleared {existingNodes.Count} existing nodes from {area.ResRef} for force respawn");
             }
 
-            Log.Info($"Provisioning nodes for area {area.ResRef}");
+            Log.Info($"=== Provisioning nodes for area {area.ResRef} ({nwArea.Name}) ===");
 
-            // Get the NwArea to calculate bounds
-            var nwArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == area.ResRef.Value);
-            if (nwArea == null)
+            // Find all resource zone triggers in this area
+            List<NwTrigger> triggers = _triggerSpawnService.GetResourceTriggers(nwArea);
+
+            if (!triggers.Any())
             {
-                Log.Warn($"Area {area.ResRef} not loaded in module. Cannot provision nodes.");
-                return CommandResult.Fail($"Area {area.ResRef} not found in module");
+                Log.Warn($"No resource zone triggers found in area {area.ResRef}. " +
+                         $"Triggers must be tagged '{WorldConstants.ResourceNodeZoneTag}'");
+                return CommandResult.Ok(new Dictionary<string, object>
+                {
+                    ["provisionedCount"] = 0,
+                    ["skipped"] = true,
+                    ["reason"] = "no_triggers"
+                });
             }
 
-            // Process each resource definition tag for this area
-            foreach (var definitionTag in area.DefinitionTags)
+            Log.Info($"Found {triggers.Count} resource zone trigger(s) in {area.ResRef}");
+
+            // Process each trigger
+            foreach (NwTrigger trigger in triggers)
             {
-                var nodeDefinition = _definitionRepository.Get(definitionTag);
-                if (nodeDefinition == null)
+                // Get TYPE filters from trigger (e.g., "ore,tree,geode")
+                string nodeTypesStr = NWScript.GetLocalString(trigger, WorldConstants.LvarNodeTags);
+
+                if (string.IsNullOrWhiteSpace(nodeTypesStr))
                 {
-                    Log.Warn($"Node definition not found for tag: {definitionTag}");
+                    Log.Warn($"Trigger {trigger.Tag} has no '{WorldConstants.LvarNodeTags}' local variable set. Skipping.");
                     continue;
                 }
 
-                // Determine how many nodes to spawn (could be enhanced with config)
-                int nodesToSpawn = CalculateNodeCount(nodeDefinition, area, nwArea);
+                // Remove quotes if present (defensive)
+                nodeTypesStr = nodeTypesStr.Trim().Trim('"', '\'');
 
-                Log.Info($"Spawning {nodesToSpawn} {nodeDefinition.Name} nodes in {area.ResRef}");
+                List<string> typeFilters = nodeTypesStr.Split(',')
+                    .Select(t => t.Trim().ToLower())
+                    .Where(t => !string.IsNullOrWhiteSpace(t))
+                    .ToList();
 
-                for (int i = 0; i < nodesToSpawn; i++)
+                if (!typeFilters.Any())
                 {
-                    var position = GenerateRandomPosition(nwArea);
-                    var rotation = (float)(_random.NextDouble() * 360);
+                    Log.Warn($"Trigger {trigger.Tag} has empty node_tags. Skipping.");
+                    continue;
+                }
+
+                // Get the actual node definition tags from the area JSON
+                if (!area.DefinitionTags.Any())
+                {
+                    Log.Warn($"Area {area.ResRef} has no DefinitionTags defined");
+                    continue;
+                }
+
+                // Filter area's DefinitionTags by matching their Type to trigger's type filters
+                List<string> matchingDefinitionTags = new List<string>();
+                foreach (string definitionTag in area.DefinitionTags)
+                {
+                    ResourceNodeDefinition? definition = _definitionRepository.Get(definitionTag);
+                    if (definition == null)
+                    {
+                        Log.Warn($"  ✗ {definitionTag}: Definition not found in repository");
+                        continue;
+                    }
+
+                    // Compare the definition's Type field to the trigger's type filters
+                    string defType = definition.Type.ToString().ToLower();
+                    if (typeFilters.Contains(defType))
+                    {
+                        matchingDefinitionTags.Add(definitionTag);
+                        Log.Debug($"  ✓ {definitionTag}: Type '{definition.Type}' matches filter");
+                    }
+                }
+
+                if (!matchingDefinitionTags.Any())
+                {
+                    Log.Info($"Trigger {trigger.Tag} type filters [{string.Join(", ", typeFilters)}] don't match any area definition Types");
+                    continue;
+                }
+
+                // Get max nodes (default 5) using NWScript
+                int maxNodes = NWScript.GetLocalInt(trigger, WorldConstants.LvarMaxNodesTotal);
+                if (maxNodes <= 0)
+                    maxNodes = WorldConstants.DefaultMaxNodesPerTrigger;
+
+                Log.Info($"Processing trigger '{trigger.Tag}': type filters=[{string.Join(", ", typeFilters)}], matched {matchingDefinitionTags.Count} definition(s), max={maxNodes}");
+
+                // Generate spawn locations using the SPECIFIC definition tags (not generic types)
+                List<SpawnLocation> spawnLocations = _triggerSpawnService.GenerateSpawnLocations(
+                    trigger,
+                    matchingDefinitionTags,  // Pass specific tags like "ore_vein_copper_native", not "ore"
+                    maxNodes
+                );
+
+                // Create and spawn nodes at each location
+                foreach (SpawnLocation location in spawnLocations)
+                {
+                    // Now location.NodeTag should be a specific tag like "ore_vein_copper_native"
+                    ResourceNodeDefinition? nodeDefinition = _definitionRepository.Get(location.NodeTag);
+
+                    if (nodeDefinition == null)
+                    {
+                        Log.Warn($"Node definition not found for tag: {location.NodeTag}");
+                        continue;
+                    }
 
                     try
                     {
-                        // Create and spawn the node using the existing service
-                        var node = _nodeService.CreateNewNode(area, nodeDefinition, position, rotation);
+                        ResourceNodeInstance node = _nodeService.CreateNewNode(
+                            area,
+                            nodeDefinition,
+                            location.Position,
+                            location.Rotation
+                        );
+
+                        // TODO: Store trigger source metadata when ResourceNodeInstance supports it
+                        // ...existing code...
+
                         _nodeService.SpawnInstance(node);
                         provisionedNodes.Add(node);
 
-                        Log.Debug($"Spawned {nodeDefinition.Name} at ({position.X:F1}, {position.Y:F1}) in {area.ResRef}");
+                        Log.Debug($"  ✓ Spawned {nodeDefinition.Name} (Type: {nodeDefinition.Type}) at ({location.Position.X:F1}, {location.Position.Y:F1})");
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, $"Failed to spawn node {nodeDefinition.Name} in {area.ResRef}");
+                        Log.Error(ex, $"Failed to spawn node {nodeDefinition.Name} at trigger {trigger.Tag}");
                     }
                 }
             }
@@ -128,7 +220,7 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
                 DateTime.UtcNow
             ));
 
-            Log.Info($"Successfully provisioned {provisionedNodes.Count} nodes in {area.ResRef}");
+            Log.Info($"=== Successfully provisioned {provisionedNodes.Count} nodes in {area.ResRef} ===");
 
             return CommandResult.Ok(new Dictionary<string, object>
             {
@@ -142,38 +234,6 @@ public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNod
             Log.Error(ex, $"Failed to provision nodes for area {command.AreaDefinition.ResRef}");
             return CommandResult.Fail($"Failed to provision nodes: {ex.Message}");
         }
-    }
-
-    private int CalculateNodeCount(ResourceNodeDefinition definition, AreaDefinition area, NwArea nwArea)
-    {
-        // Base count on area size - larger areas get more nodes
-        int areaSize = nwArea.Size.X * nwArea.Size.Y;
-
-        // Calculate base nodes: ~1 node per 100 tiles (adjustable)
-        int baseCount = Math.Max(1, areaSize / 100);
-
-        // Add some randomization (±25%)
-        int variance = Math.Max(1, baseCount / 4);
-        int count = _random.Next(baseCount - variance, baseCount + variance + 1);
-
-        // Cap at reasonable limits
-        return Math.Clamp(count, 1, 20);
-    }
-
-    private Vector3 GenerateRandomPosition(NwArea nwArea)
-    {
-        // Generate random position within area bounds
-        // Note: This is simplified - could be enhanced with:
-        // - Walkable surface detection
-        // - Exclusion zones (buildings, water, etc.)
-        // - Clustering for more realistic distribution
-        // - Minimum distance between nodes
-
-        float x = (float)(_random.NextDouble() * nwArea.Size.X * 10f); // NWN uses 10 units per tile
-        float y = (float)(_random.NextDouble() * nwArea.Size.Y * 10f);
-        float z = 0f; // Ground level - could use GetSurfaceHeight for terrain following
-
-        return new Vector3(x, y, z);
     }
 }
 

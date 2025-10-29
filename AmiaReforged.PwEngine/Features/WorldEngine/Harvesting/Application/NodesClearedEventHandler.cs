@@ -21,11 +21,11 @@ public class NodesClearedEventHandler : IEventHandler<NodesClearedEvent>, IEvent
         // Switch to main thread to safely make NWN calls
         await NwTask.SwitchToMainThread();
 
-        var evt = @event; // Local variable to avoid @ symbol issues in string interpolations
+        NodesClearedEvent evt = @event; // Local variable to avoid @ symbol issues in string interpolations
         Log.Info($"{evt.NodesCleared} nodes cleared from area {evt.AreaResRef}");
 
         // Optional: Send message to DMs
-        var area = NwModule.Instance.Areas
+        NwArea? area = NwModule.Instance.Areas
             .FirstOrDefault(a => a.ResRef.ToString() == evt.AreaResRef);
         if (area != null)
         {

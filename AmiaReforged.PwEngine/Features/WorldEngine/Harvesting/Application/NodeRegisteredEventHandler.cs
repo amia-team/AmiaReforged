@@ -21,11 +21,11 @@ public class NodeRegisteredEventHandler : IEventHandler<NodeRegisteredEvent>, IE
         // Switch to main thread to safely make NWN calls
         await NwTask.SwitchToMainThread();
 
-        var evt = @event;
+        NodeRegisteredEvent evt = @event;
         Log.Info($"Node {evt.NodeInstanceId} registered in {evt.AreaResRef}: {evt.ResourceTag} (Quality: {evt.Quality}, Uses: {evt.InitialUses})");
 
         // Optional: Send message to DMs
-        var area = NwModule.Instance.Areas
+        NwArea? area = NwModule.Instance.Areas
             .FirstOrDefault(a => a.ResRef.ToString() == evt.AreaResRef);
         if (area != null)
         {

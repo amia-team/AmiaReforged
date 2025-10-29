@@ -30,7 +30,7 @@ public class ResourceNodeService(
             : (int)quality;
 
         // Create RegisterNodeCommand to handle instance creation
-        var command = new RegisterNodeCommand(
+        RegisterNodeCommand command = new RegisterNodeCommand(
             null, // New node, no existing ID
             definition.Tag,
             area.ResRef,

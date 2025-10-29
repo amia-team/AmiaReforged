@@ -26,15 +26,19 @@ public class AreaProvisioningService
         _provisionHandler = provisionHandler;
         _regionRepository = regionRepository;
 
-        // Schedule initial provisioning after server startup
+        // Schedule provisioning on the main game thread using Anvil's scheduler
+        // This ensures NWN API calls work correctly
         _ = Task.Run(async () =>
         {
-            await Task.Delay(5000); // Wait 5 seconds for server initialization
+            await Task.Delay(TimeSpan.FromSeconds(5)); // Wait for server initialization
+            await NwTask.SwitchToMainThread(); // Switch to main thread for NWN API access
             await ProvisionAllLoadedAreas();
         });
 
-        Log.Info("AreaProvisioningService initialized");
+        Log.Info("AreaProvisioningService initialized - provisioning scheduled");
     }
+
+    // ...existing ProvisionAreaIfNeeded method...
 
 
     private async Task ProvisionAreaIfNeeded(NwArea nwArea)
@@ -47,7 +51,7 @@ public class AreaProvisioningService
 
         // Find area definition in any region
         AreaDefinition? areaDefinition = null;
-        foreach (var region in _regionRepository.All())
+        foreach (RegionDefinition region in _regionRepository.All())
         {
             areaDefinition = region.Areas.FirstOrDefault(a => a.ResRef.Value == nwArea.ResRef);
             if (areaDefinition != null)
@@ -68,8 +72,8 @@ public class AreaProvisioningService
 
         Log.Info($"Provisioning area {nwArea.Name} ({nwArea.ResRef}) with {areaDefinition.DefinitionTags.Count} resource types");
 
-        var command = new ProvisionAreaNodesCommand(areaDefinition);
-        var result = await _provisionHandler.HandleAsync(command);
+        ProvisionAreaNodesCommand command = new ProvisionAreaNodesCommand(areaDefinition);
+        CommandResult result = await _provisionHandler.HandleAsync(command);
 
         if (result.Success)
         {
@@ -77,8 +81,8 @@ public class AreaProvisioningService
 
             if (result.Data != null)
             {
-                var nodeCount = (int)result.Data["provisionedCount"];
-                var skipped = (bool)result.Data["skipped"];
+                int nodeCount = (int)result.Data["provisionedCount"];
+                bool skipped = (bool)result.Data["skipped"];
 
                 if (!skipped && nodeCount > 0)
                 {
@@ -100,10 +104,10 @@ public class AreaProvisioningService
     {
         Log.Info("=== Starting Resource Node Provisioning ===");
 
-        var areas = NwModule.Instance.Areas.ToList();
+        List<NwArea> areas = NwModule.Instance.Areas.ToList();
         Log.Info($"Found {areas.Count} loaded areas in module");
 
-        foreach (var area in areas)
+        foreach (NwArea area in areas)
         {
             await ProvisionAreaIfNeeded(area);
         }
@@ -116,14 +120,14 @@ public class AreaProvisioningService
     /// </summary>
     public async Task<CommandResult> ProvisionArea(string areaResRef, bool forceRespawn = false)
     {
-        var nwArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == areaResRef);
+        NwArea? nwArea = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == areaResRef);
         if (nwArea == null)
         {
             return CommandResult.Fail($"Area {areaResRef} not found in module");
         }
 
         AreaDefinition? areaDefinition = null;
-        foreach (var region in _regionRepository.All())
+        foreach (RegionDefinition region in _regionRepository.All())
         {
             areaDefinition = region.Areas.FirstOrDefault(a => a.ResRef.Value == areaResRef);
             if (areaDefinition != null)
@@ -135,8 +139,8 @@ public class AreaProvisioningService
             return CommandResult.Fail($"No area definition found for {areaResRef}");
         }
 
-        var command = new ProvisionAreaNodesCommand(areaDefinition, forceRespawn);
-        var result = await _provisionHandler.HandleAsync(command);
+        ProvisionAreaNodesCommand command = new ProvisionAreaNodesCommand(areaDefinition, forceRespawn);
+        CommandResult result = await _provisionHandler.HandleAsync(command);
 
         if (result.Success && forceRespawn)
         {
