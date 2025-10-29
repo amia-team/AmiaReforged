@@ -68,7 +68,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         return combustEffect;
     }
 
-    private ScriptHandleResult ApplyCombust(NwCreature target, int monkLevel)
+    private static ScriptHandleResult ApplyCombust(NwCreature target, int monkLevel)
     {
         int damageRoll = Random.Shared.Roll(6, 2);
         int bonusDamage = monkLevel > 10 ? 10 : monkLevel;
@@ -78,7 +78,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
 
         return ScriptHandleResult.True;
     }
-    private ScriptHandleResult DoCombust(NwCreature target)
+    private static ScriptHandleResult DoCombust(NwCreature target)
     {
         int damageRoll = Random.Shared.Roll(6);
         target.ApplyEffect(EffectDuration.Instant, Effect.Damage(damageRoll, DamageType.Fire));
@@ -139,7 +139,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         return magicMissileEffect;
     }
 
-    private ScriptHandleResult ShootMissile(NwCreature monk, NwCreature[] enemies)
+    private static ScriptHandleResult ShootMissile(NwCreature monk, NwCreature[] enemies)
     {
         Random random = new();
 
@@ -158,7 +158,7 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         return ScriptHandleResult.True;
     }
 
-    private async Task ApplyMissileDamage(NwCreature monk, NwCreature target, float missileTravelDelay)
+    private static async Task ApplyMissileDamage(NwCreature monk, NwCreature target, float missileTravelDelay)
     {
         await NwTask.Delay(TimeSpan.FromSeconds(missileTravelDelay));
 
@@ -171,4 +171,11 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpMagblue, fScale: 0.7f));
     }
 
+    public static readonly Effect BlindnessDeafnessEffect =
+        Effect.LinkEffects(Effect.LinkEffects(Effect.Blindness(), Effect.Deaf()));
+    public static readonly Effect WillUseVfx = Effect.VisualEffect(VfxType.ImpWillSavingThrowUse);
+    public static readonly Effect ReflexUseVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
+    public static readonly Effect FortUseVfx = Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse);
+    public static readonly Effect Stun = Effect.Stunned();
+    public static readonly Effect Hold = Effect.Paralyze();
 }

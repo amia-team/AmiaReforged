@@ -57,6 +57,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
             Effect.VisualEffect(VfxType.DurCessateNegative)
         );
         bane.SubType = EffectSubType.Magical;
+        Effect baneHitVfx = Effect.VisualEffect(VfxType.ImpHeadEvil);
 
         target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfLosEvil30));
 
@@ -69,12 +70,12 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
 
             if (savingThrowResult == SavingThrowResult.Success)
             {
-                enemy.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+                enemy.ApplyEffect(EffectDuration.Instant, WildMagicUtils.WillUseVfx);
                 continue;
             }
 
             enemy.ApplyEffect(EffectDuration.Temporary, bane, WildMagicUtils.LongDuration);
-            enemy.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadEvil));
+            enemy.ApplyEffect(EffectDuration.Instant, baneHitVfx);
         }
     }
 
@@ -91,7 +92,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
-            target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+            target.ApplyEffect(EffectDuration.Instant, WildMagicUtils.WillUseVfx);
             return;
         }
 
@@ -145,7 +146,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
-            target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+            target.ApplyEffect(EffectDuration.Instant, WildMagicUtils.WillUseVfx);
             return;
         }
 
@@ -186,7 +187,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
-            target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+            target.ApplyEffect(EffectDuration.Instant, WildMagicUtils.WillUseVfx);
             return;
         }
 

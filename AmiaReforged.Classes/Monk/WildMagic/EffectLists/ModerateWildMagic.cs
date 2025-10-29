@@ -9,8 +9,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
     public void IsaacsLesserMissileStorm(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.IsaacsLesserMissileStorm);
-        if (spell == null) return;
-        if (target.Location == null) return;
+        if (spell == null || target.Location == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 4, monkLevel))
             return;
@@ -35,7 +34,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         int damage = Random.Shared.Roll(6) + monkLevel;
         if (savingThrowResult == SavingThrowResult.Success)
         {
-            target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+            target.ApplyEffect(EffectDuration.Instant, WildMagicUtils.FortUseVfx);
             damage /= 2;
         }
 
@@ -54,7 +53,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
-            target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+            target.ApplyEffect(EffectDuration.Instant, WildMagicUtils.WillUseVfx);
             damage /= 2;
         }
 
@@ -71,11 +70,13 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
     public void BalagarnsIronHorn(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Balagarnsironhorn);
-        if (spell == null) return;
-        if (monk.Location == null) return;
+        if (spell == null || monk.Location == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Transmutation, 2, monkLevel))
             return;
+
+        Effect knockdown = Effect.Knockdown();
+        Effect impHeadNature = Effect.VisualEffect(VfxType.ImpHeadNature);
 
         monk.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfHowlWarCry));
 
@@ -85,18 +86,20 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
             if (Random.Shared.Roll(20) + enemy.GetAbilityModifier(Ability.Strength) >= Random.Shared.Roll(20) + 5)
                 continue;
 
-            _ = ApplyBalagarns(monk, enemy);
+            _ = ApplyBalagarns(enemy);
         }
-    }
 
-    private async Task ApplyBalagarns(NwCreature monk, NwCreature enemy)
-    {
-        float delay = monk.Distance(enemy) / 20;
+        return;
 
-        await NwTask.Delay(TimeSpan.FromSeconds(delay));
+        async Task ApplyBalagarns(NwCreature enemy)
+        {
+            float delay = monk.Distance(enemy) / 20;
 
-        enemy.ApplyEffect(EffectDuration.Instant, Effect.Knockdown(), NwTimeSpan.FromRounds(1));
-        enemy.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadNature));
+            await NwTask.Delay(TimeSpan.FromSeconds(delay));
+
+            enemy.ApplyEffect(EffectDuration.Instant, knockdown, NwTimeSpan.FromRounds(1));
+            enemy.ApplyEffect(EffectDuration.Instant, impHeadNature);
+        }
     }
 
     public void CureCriticalWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel)
@@ -136,7 +139,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
-            target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpFortitudeSavingThrowUse));
+            target.ApplyEffect(EffectDuration.Instant, WildMagicUtils.FortUseVfx);
             return;
         }
 
@@ -146,14 +149,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
     public void SoundBurst(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.SoundBurst);
-        if (spell == null) return;
-        if (target.Location == null) return;
-
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 2, monkLevel))
-            return;
-
-        Effect stun = Effect.Stunned();
-        stun.SubType = EffectSubType.Magical;
+        if (spell == null || target.Location == null) return;
 
         target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfSoundBurst));
 
@@ -161,6 +157,9 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
                      RadiusSize.Medium, true))
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
+
+            if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 2, monkLevel))
+                continue;
 
             Effect damage = Effect.Damage(Random.Shared.Roll(8), DamageType.Sonic);
             _ = wildMagicUtils.GetObjectContext(monk, damage);
@@ -172,11 +171,11 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
 
             if (savingThrowResult == SavingThrowResult.Success)
             {
-                enemy.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpWillSavingThrowUse));
+                enemy.ApplyEffect(EffectDuration.Instant, WildMagicUtils.WillUseVfx);
                 continue;
             }
 
-            enemy.ApplyEffect(EffectDuration.Temporary, stun, WildMagicUtils.ShortDuration);
+            enemy.ApplyEffect(EffectDuration.Temporary, WildMagicUtils.Stun, WildMagicUtils.ShortDuration);
         }
     }
 
@@ -192,16 +191,95 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
 
     public void GedleesElectricLoop(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.GedleesElectricLoop);
+        if (spell == null || target.Location == null) return;
 
+        Effect lightningVfx = Effect.VisualEffect(VfxType.ImpLightningS);
+
+        foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Small,
+                     true))
+        {
+            if (!monk.IsReactionTypeHostile(enemy)) continue;
+
+            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 2, monkLevel))
+                continue;
+
+            SavingThrowResult reflexSaveResult =
+                enemy.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Electricity, monk);
+
+            if (reflexSaveResult == SavingThrowResult.Success)
+            {
+                enemy.ApplyEffect(EffectDuration.Instant, WildMagicUtils.ReflexUseVfx);
+
+                if (enemy.KnowsFeat(Feat.Evasion!) || enemy.KnowsFeat(Feat.ImprovedEvasion!))
+                    continue;
+            }
+
+            int damage = Random.Shared.Roll(6, 5);
+
+            if (reflexSaveResult == SavingThrowResult.Success || enemy.KnowsFeat(Feat.ImprovedEvasion!))
+                damage /= 2;
+
+            Effect damageEffect =  Effect.Damage(damage, DamageType.Electrical);
+            _ = wildMagicUtils.GetObjectContext(monk, damageEffect);
+
+            enemy.ApplyEffect(EffectDuration.Instant, damageEffect);
+            enemy.ApplyEffect(EffectDuration.Instant, lightningVfx);
+
+            if (reflexSaveResult == SavingThrowResult.Success) continue;
+
+            SavingThrowResult willSaveResult =
+                enemy.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.Electricity, monk);
+
+            if (willSaveResult == SavingThrowResult.Success)
+            {
+                enemy.ApplyEffect(EffectDuration.Instant, WildMagicUtils.WillUseVfx);
+                continue;
+            }
+
+            enemy.ApplyEffect(EffectDuration.Temporary, WildMagicUtils.Stun);
+        }
     }
 
     public void BlindnessDeafness(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.BlindnessAndDeafness);
+        if (spell == null) return;
 
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 2, monkLevel))
+            return;
+
+        SavingThrowResult savingThrowResult =
+            target.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.None, monk);
+
+        if (savingThrowResult == SavingThrowResult.Success)
+        {
+            target.ApplyEffect(EffectDuration.Instant, WildMagicUtils.FortUseVfx);
+            return;
+        }
+
+        target.ApplyEffect(EffectDuration.Temporary, WildMagicUtils.BlindnessDeafnessEffect, WildMagicUtils.ShortDuration);
+        target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpBlindDeafM));
     }
 
     public void HoldMonster(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.HoldMonster);
+        if (spell == null) return;
 
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 4, monkLevel))
+            return;
+
+        SavingThrowResult savingThrowResult =
+            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.None, monk);
+
+        if (savingThrowResult == SavingThrowResult.Success)
+        {
+            target.ApplyEffect(EffectDuration.Instant, WildMagicUtils.WillUseVfx);
+            return;
+        }
+
+        target.ApplyEffect(EffectDuration.Temporary, Effect.Paralyze(), WildMagicUtils.ShortDuration);
+        target.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.DurParalyzeHold), WildMagicUtils.ShortDuration);
     }
 }
