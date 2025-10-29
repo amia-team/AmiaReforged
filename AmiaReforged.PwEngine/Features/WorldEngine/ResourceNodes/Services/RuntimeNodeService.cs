@@ -109,6 +109,7 @@ public class RuntimeNodeService(
                 switch (status)
                 {
                     case "InProgress":
+
                         Effect visualEffect = node.Instance.Definition.Type == ResourceType.Tree
                             ? Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f)
                             : Effect.VisualEffect(VfxType.ComChunkStoneMedium);

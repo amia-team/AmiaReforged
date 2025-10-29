@@ -21,13 +21,25 @@ public class HarvestResourceCommandHandler(
     ICharacterRepository characterRepository,
     IEventBus eventBus) : ICommandHandler<HarvestResourceCommand>
 {
+    // Cache active harvest sessions to preserve transient HarvestProgress
+    private static readonly Dictionary<Guid, ResourceNodeInstance> _activeHarvestSessions = new();
+
     public async Task<CommandResult> HandleAsync(HarvestResourceCommand command, CancellationToken cancellationToken = default)
     {
-        // Find the node
-        ResourceNodeInstance? node = nodeRepository.GetInstances().FirstOrDefault(n => n.Id == command.NodeInstanceId);
-        if (node == null)
+        // Ensure we're on the main thread for NWN API calls
+        await NwTask.SwitchToMainThread();
+
+        // Get or load the node instance (use cached version to preserve HarvestProgress)
+        if (!_activeHarvestSessions.TryGetValue(command.NodeInstanceId, out ResourceNodeInstance? node))
         {
-            return CommandResult.Fail("Node not found");
+            node = nodeRepository.GetInstances().FirstOrDefault(n => n.Id == command.NodeInstanceId);
+            if (node == null)
+            {
+                return CommandResult.Fail("Node not found");
+            }
+
+            // Cache the instance for this harvest session
+            _activeHarvestSessions[command.NodeInstanceId] = node;
         }
 
         // Find the character
@@ -63,6 +75,7 @@ public class HarvestResourceCommandHandler(
 
         if (currentProgress < node.Definition.BaseHarvestRounds)
         {
+            // Still harvesting - keep instance cached for next round
             return CommandResult.OkWith("status", "InProgress");
         }
 
@@ -95,11 +108,17 @@ public class HarvestResourceCommandHandler(
             nodeRepository.Delete(node);
             nodeRepository.SaveChanges();
 
+            // Remove from cache - node is gone
+            _activeHarvestSessions.Remove(command.NodeInstanceId);
+
             return CommandResult.OkWith("status", "NodeDepleted");
         }
 
         nodeRepository.Update(node);
         nodeRepository.SaveChanges();
+
+        // Remove from cache - harvest complete, reset for next harvester
+        _activeHarvestSessions.Remove(command.NodeInstanceId);
 
         return CommandResult.OkWith("status", "Completed");
     }

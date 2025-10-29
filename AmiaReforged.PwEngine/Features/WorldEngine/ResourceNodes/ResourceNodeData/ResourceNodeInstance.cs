@@ -10,6 +10,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeD
 
 public class ResourceNodeInstance
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public delegate void OnHarvestHandler(HarvestEventData data);
 
     public delegate void OnDestroyedHandler(ResourceNodeInstance instance);
