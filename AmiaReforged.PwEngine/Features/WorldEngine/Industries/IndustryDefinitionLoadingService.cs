@@ -1,10 +1,13 @@
 using System.Text.Json;
+using AmiaReforged.PwEngine.Features.WorldEngine.Industries.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 
 [ServiceBinding(typeof(IndustryDefinitionLoadingService))]
-public class IndustryDefinitionLoadingService(IIndustryRepository repository) : IDefinitionLoader
+public class IndustryDefinitionLoadingService(IIndustryRepository repository, IEventBus eventBus) : IDefinitionLoader
 {
     private readonly List<FileLoadResult> _failures = [];
 
@@ -63,6 +66,13 @@ public class IndustryDefinitionLoadingService(IIndustryRepository repository) : 
 
                 // Ensure this matches the repository contract used in tests (method name/signature)
                 repository.Add(definition);
+
+                // Publish event
+                IndustryRegisteredEvent evt = new(
+                    (IndustryTag)definition.Tag,
+                    definition.Name,
+                    DateTime.UtcNow);
+                eventBus.PublishAsync(evt).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {

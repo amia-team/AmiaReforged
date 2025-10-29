@@ -133,9 +133,9 @@ public class BackgroundTraitTests
     }
 
     [Test]
-    public void CanDeselectConfirmedTrait()
+    public void CannotDeselectConfirmedTrait()
     {
-        // Arrange - Confirmed traits can be deselected
+        // Arrange - Confirmed traits are permanent and cannot be deselected by players
         CharacterTrait confirmedTrait = new CharacterTrait
         {
             Id = Guid.NewGuid(),
@@ -149,7 +149,7 @@ public class BackgroundTraitTests
         bool canDeselect = TraitSelectionValidator.CanDeselect(confirmedTrait);
 
         // Assert
-        Assert.That(canDeselect, Is.True, "Confirmed traits can be changed after initial selection");
+        Assert.That(canDeselect, Is.False, "Confirmed traits are permanent and cannot be deselected by players");
     }
 
     [Test]
@@ -235,7 +235,7 @@ public class BackgroundTraitTests
         Assert.That(confirmed, Is.True);
         Assert.That(traits, Has.Count.EqualTo(1));
         Assert.That(traits[0].IsConfirmed, Is.True);
-        Assert.That(canDeselect, Is.True, "Confirmed traits can be deselected - confirmation just finalizes initial selection");
+        Assert.That(canDeselect, Is.False, "Confirmed traits are permanent and cannot be deselected by players");
     }
 
     [Test]

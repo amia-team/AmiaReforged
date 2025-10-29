@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using Moq;
 using NUnit.Framework;
 
@@ -47,7 +48,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
         {
             Environment.SetEnvironmentVariable("RESOURCE_PATH", null);
 
-            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object);
+            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object, new InMemoryEventBus());
 
             sut.Load();
 
@@ -61,7 +62,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
             Environment.SetEnvironmentVariable("RESOURCE_PATH", _tempRoot);
             // Do not create "Industries" directory
 
-            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object);
+            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object, new InMemoryEventBus());
 
             sut.Load();
 
@@ -87,7 +88,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
 
             _repoMock.Setup(r => r.Add(It.Is<Industry>(i => i.Tag == "industry.sample" && i.Name == "Sample Industry")));
 
-            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object);
+            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object, new InMemoryEventBus());
 
             sut.Load();
 
@@ -105,7 +106,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
             string malformed = "{ \"Tag\": \"X\", \"Name\": ";
             File.WriteAllText(Path.Combine(industriesDir, "bad.json"), malformed);
 
-            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object);
+            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object, new InMemoryEventBus());
 
             sut.Load();
 
@@ -123,7 +124,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
             // This causes System.Text.Json to return null
             File.WriteAllText(Path.Combine(industriesDir, "null.json"), "null");
 
-            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object);
+            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object, new InMemoryEventBus());
 
             sut.Load();
 
@@ -146,7 +147,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
                           """;
             File.WriteAllText(Path.Combine(industriesDir, "empty-tag.json"), json);
 
-            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object);
+            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object, new InMemoryEventBus());
 
             sut.Load();
 
@@ -169,7 +170,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
                           """;
             File.WriteAllText(Path.Combine(industriesDir, "empty-name.json"), json);
 
-            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object);
+            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object, new InMemoryEventBus());
 
             sut.Load();
 
@@ -203,7 +204,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders
             _repoMock.Setup(r => r.Add(It.Is<Industry>(i => i.Tag == "A" && i.Name == "Alpha")));
             _repoMock.Setup(r => r.Add(It.Is<Industry>(i => i.Tag == "B" && i.Name == "Beta")));
 
-            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object);
+            IndustryDefinitionLoadingService sut = new IndustryDefinitionLoadingService(_repoMock.Object, new InMemoryEventBus());
 
             sut.Load();
 

@@ -7,6 +7,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using Anvil.API;
 using Moq;
@@ -110,7 +111,7 @@ public class RuntimeCharacterTests
         industryRepository.Add(noKnowledge);
 
         _membershipService = new IndustryMembershipService(InMemoryIndustryMembershipRepository.Create(),
-            industryRepository, _characters, InMemoryCharacterKnowledgeRepository.Create());
+            industryRepository, _characters, InMemoryCharacterKnowledgeRepository.Create(), new InMemoryEventBus());
 
         _characterStatService = new CharacterStatService(InMemoryCharacterStatRepository.Create());
     }

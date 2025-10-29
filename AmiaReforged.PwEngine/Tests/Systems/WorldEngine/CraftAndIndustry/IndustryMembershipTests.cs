@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using Anvil.API;
 using NUnit.Framework;
@@ -22,6 +23,7 @@ public class IndustryMembershipTests
     private readonly Guid _characterGuid = Guid.NewGuid();
     private readonly ICharacterRepository _characterRepository = RuntimeCharacterRepository.Create();
     private ICharacterKnowledgeRepository _characterKnowledgeRepository = null!;
+    private IEventBus _eventBus = null!;
 
     [SetUp]
     public void SetUp()
@@ -79,8 +81,9 @@ public class IndustryMembershipTests
         testIndustryRepo.Add(testIndustry);
 
         _characterKnowledgeRepository = InMemoryCharacterKnowledgeRepository.Create();
+        _eventBus = new InMemoryEventBus();
         _sut = new IndustryMembershipService(new InMemoryIndustryMembershipRepository(), testIndustryRepo, _characterRepository,
-            _characterKnowledgeRepository);
+            _characterKnowledgeRepository, _eventBus);
         TestCharacter c = new(new Dictionary<EquipmentSlots, ItemSnapshot>(), [], CharacterId.From(_characterGuid), _characterKnowledgeRepository, _sut, inventory: [], 999);
         _characterRepository.Add(c);
     }

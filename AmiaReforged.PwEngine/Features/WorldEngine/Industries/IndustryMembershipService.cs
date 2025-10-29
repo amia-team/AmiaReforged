@@ -1,6 +1,8 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Industries.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using Anvil.Services;
 using NLog;
 
@@ -11,7 +13,8 @@ public class IndustryMembershipService(
     IIndustryMembershipRepository membershipRepository,
     IIndustryRepository industryRepository,
     ICharacterRepository characterRepository,
-    ICharacterKnowledgeRepository characterKnowledgeRepository) : IIndustryMembershipService
+    ICharacterKnowledgeRepository characterKnowledgeRepository,
+    IEventBus eventBus) : IIndustryMembershipService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -30,6 +33,14 @@ public class IndustryMembershipService(
         }
 
         membershipRepository.Add(membership);
+
+        // Publish event
+        MemberJoinedIndustryEvent evt = new(
+            membership.CharacterId,
+            membership.IndustryTag,
+            membership.Level,
+            DateTime.UtcNow);
+        eventBus.PublishAsync(evt).GetAwaiter().GetResult();
     }
 
     public LearningResult LearnKnowledge(Guid characterId, string knowledgeTag)
@@ -75,6 +86,15 @@ public class IndustryMembershipService(
 
             characterKnowledgeRepository.Add(ck);
 
+            // Publish event
+            RecipeLearnedEvent evt = new(
+                membership.CharacterId,
+                membership.IndustryTag,
+                knowledge.Tag,
+                knowledge.PointCost,
+                DateTime.UtcNow);
+            eventBus.PublishAsync(evt).GetAwaiter().GetResult();
+
             return LearningResult.Success;
         }
 
@@ -111,9 +131,20 @@ public class IndustryMembershipService(
             return RankUpResult.InsufficientKnowledge;
         }
 
+        ProficiencyLevel previousLevel = membership.Level;
         membership.Level++;
 
         membershipRepository.Update(membership);
+
+        // Publish event
+        ProficiencyGainedEvent evt = new(
+            membership.CharacterId,
+            membership.IndustryTag,
+            membership.Level,
+            previousLevel,
+            DateTime.UtcNow);
+        eventBus.PublishAsync(evt).GetAwaiter().GetResult();
+
         return RankUpResult.Success;
     }
 
@@ -156,6 +187,15 @@ public class IndustryMembershipService(
         };
 
         characterKnowledgeRepository.Add(ck);
+
+        // Publish event
+        RecipeLearnedEvent evt = new(
+            membership.CharacterId,
+            membership.IndustryTag,
+            k.Tag,
+            k.PointCost,
+            DateTime.UtcNow);
+        eventBus.PublishAsync(evt).GetAwaiter().GetResult();
 
         return LearningResult.Success;
     }
