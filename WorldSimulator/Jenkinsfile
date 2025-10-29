@@ -80,15 +80,11 @@ pipeline {
             script {
                 // Only send Discord notification if build actually ran
                 if (currentBuild.result != 'NOT_BUILT') {
-                    // Debug: Show where test results files are
-                    echo "Searching for test result files..."
-                    sh 'find . -name "*.trx" -type f || echo "No TRX files found"'
-
                     // Get test results summary
                     def testSummary = ""
                     try {
-                        // Try multiple possible paths
-                        def testResults = junit allowEmptyResults: true, testResults: '**/test-results.trx, **/TestResults/*.trx, WorldSimulator.Tests/**/test-results.trx'
+                        // Parse TRX test results from the actual location
+                        def testResults = junit allowEmptyResults: true, testResults: 'WorldSimulator.Tests/TestResults/test-results.trx'
                         if (testResults && testResults.totalCount > 0) {
                             def total = testResults.totalCount
                             def passed = testResults.passCount
