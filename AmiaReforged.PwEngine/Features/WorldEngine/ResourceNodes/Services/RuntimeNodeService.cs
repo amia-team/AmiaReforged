@@ -1,6 +1,8 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Harvesting;
+using AmiaReforged.PwEngine.Features.WorldEngine.Harvesting.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -9,7 +11,9 @@ using NLog;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.Services;
 
 [ServiceBinding(typeof(RuntimeNodeService))]
-public class RuntimeNodeService(RuntimeCharacterService characterService, IHarvestProcessor harvestService)
+public class RuntimeNodeService(
+    RuntimeCharacterService characterService,
+    ICommandHandler<HarvestResourceCommand> harvestCommandHandler)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly Dictionary<Guid, SpawnedNode> _spawnedNodes = new();
@@ -32,7 +36,6 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
                 break;
         }
 
-        harvestService.RegisterNode(instance);
         NwModule.Instance.SendMessageToAllDMs($"New resource node registered in {placeable.Area?.Name}");
         Log.Info("Node registered.");
         placeable.OnDeath += Delete;
@@ -79,23 +82,57 @@ public class RuntimeNodeService(RuntimeCharacterService characterService, IHarve
 
         if (character is null) return;
 
-        HarvestResult result = node.Instance.Harvest(character);
+        // Execute harvest command
+        HarvestResourceCommand command = new HarvestResourceCommand(
+            character.GetId().Value,
+            node.Instance.Id
+        );
 
-        switch (result)
+        // Fire and forget - command handler will publish events
+        _ = Task.Run(async () =>
         {
-            case HarvestResult.Finished:
-                player.FloatingTextString($"This resource has {node.Instance.Uses} uses left.");
-                break;
-            case HarvestResult.InProgress:
-                Effect visualEffect = node.Instance.Definition.Type == ResourceType.Tree
-                    ? Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f)
-                    : Effect.VisualEffect(VfxType.ComChunkStoneMedium);
+            try
+            {
+                CommandResult result = await harvestCommandHandler.HandleAsync(command);
 
-                plc.Location.ApplyEffect(EffectDuration.Instant, visualEffect);
-                break;
-            case HarvestResult.NoTool:
-                player.FloatingTextString("You don't have the correct tool for this job.");
-                break;
-        }
+                // Switch back to main thread for NWN API calls
+                await NwTask.SwitchToMainThread();
+
+                if (!result.Success)
+                {
+                    player.FloatingTextString(result.ErrorMessage ?? "Harvest failed");
+                    return;
+                }
+
+                string? status = result.Data?.GetValueOrDefault("status") as string;
+
+                switch (status)
+                {
+                    case "InProgress":
+
+                        Effect visualEffect = node.Instance.Definition.Type == ResourceType.Tree
+                            ? Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f)
+                            : Effect.VisualEffect(VfxType.ComChunkStoneMedium);
+
+                        plc.Location.ApplyEffect(EffectDuration.Instant, visualEffect);
+                        break;
+                    case "Completed":
+                        player.FloatingTextString($"This resource has {node.Instance.Uses} uses left.");
+                        Effect completeEffect = node.Instance.Definition.Type == ResourceType.Tree
+                            ? Effect.VisualEffect(VfxType.ImpDustExplosion, false, 0.4f)
+                            : Effect.VisualEffect(VfxType.ComChunkStoneMedium);
+
+                        plc.Location.ApplyEffect(EffectDuration.Instant, completeEffect);
+                        break;
+                    case "NodeDepleted":
+                        // Node will be destroyed by event handler
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error handling harvest");
+            }
+        });
     }
 }

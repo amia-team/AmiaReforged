@@ -27,7 +27,7 @@ public class GetIndustryRecipesHandler : IQueryHandler<GetIndustryRecipesQuery, 
 
     public Task<List<Recipe>> HandleAsync(GetIndustryRecipesQuery query, CancellationToken cancellationToken = default)
     {
-        var industry = _industryRepository.GetByTag(query.IndustryTag);
+        Industry? industry = _industryRepository.GetByTag(query.IndustryTag);
 
         if (industry == null)
         {

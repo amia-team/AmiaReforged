@@ -112,7 +112,7 @@ public class DiplomaticRelationTests
     {
         // Arrange
         _relation.Stance = DiplomaticStance.Friendly;
-        var originalDate = _relation.LastModifiedDate;
+        DateTime originalDate = _relation.LastModifiedDate;
 
         // Act
         Thread.Sleep(10); // Ensure time difference

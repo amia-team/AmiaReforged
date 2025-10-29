@@ -6,6 +6,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 public class Organization : IOrganization
 {
     public List<OrganizationRequest> Inbox { get; init; } = [];
+    public List<CharacterId> BanList { get; init; } = [];
     public string Name { get; init; }
     public string Description { get; init; }
     public OrganizationType Type { get; init; }
@@ -36,10 +37,20 @@ public class Organization : IOrganization
 
     public event IOrganization.RequestMade? OnRequestMade;
 
-    public static IOrganization CreateNew(string test, string description, OrganizationType type,
+    public static Organization Create(OrganizationId id, string name, string description, OrganizationType type,
         OrganizationId? parent = null)
     {
-        return new Organization(test, description, type)
+        return new Organization(name, description, type)
+        {
+            Id = id,
+            ParentOrganization = parent
+        };
+    }
+
+    public static IOrganization CreateNew(string name, string description, OrganizationType type,
+        OrganizationId? parent = null)
+    {
+        return new Organization(name, description, type)
         {
             Id = OrganizationId.New(),
             ParentOrganization = parent

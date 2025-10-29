@@ -48,9 +48,9 @@ public class GetCoinhouseBalancesQueryTests
     [Test]
     public async Task Given_PersonaWithAccount_When_QueryingBalances_Then_ReturnsBalances()
     {
-        var query = new GetCoinhouseBalancesQuery(_persona);
+        GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        var balances = await _handler.HandleAsync(query);
+        IReadOnlyList<BalanceDto> balances = await _handler.HandleAsync(query);
         Assert.That(balances, Is.Not.Null);
         Assert.That(balances, Has.Count.EqualTo(1));
         Assert.That(balances[0].Balance, Is.EqualTo(1000));
@@ -60,11 +60,11 @@ public class GetCoinhouseBalancesQueryTests
     [Test]
     public async Task Given_PersonaWithAccount_When_QueryingBalances_Then_IncludesLastAccessTime()
     {
-        var lastAccessed = DateTime.UtcNow.AddHours(-2);
+        DateTime lastAccessed = DateTime.UtcNow.AddHours(-2);
         _testAccount.LastAccessedAt = lastAccessed;
-        var query = new GetCoinhouseBalancesQuery(_persona);
+        GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        var balances = await _handler.HandleAsync(query);
+        IReadOnlyList<BalanceDto> balances = await _handler.HandleAsync(query);
         Assert.That(balances[0].LastAccessedAt, Is.EqualTo(lastAccessed));
     }
     [Test]
@@ -72,29 +72,29 @@ public class GetCoinhouseBalancesQueryTests
     {
         _testAccount.Debit = 0;
         _testAccount.Credit = 0;
-        var query = new GetCoinhouseBalancesQuery(_persona);
+        GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        var balances = await _handler.HandleAsync(query);
+        IReadOnlyList<BalanceDto> balances = await _handler.HandleAsync(query);
         Assert.That(balances, Has.Count.EqualTo(1));
         Assert.That(balances[0].Balance, Is.EqualTo(0));
     }
     [Test]
     public async Task Given_PersonaWithNoAccounts_When_QueryingBalances_Then_ReturnsEmptyList()
     {
-        var query = new GetCoinhouseBalancesQuery(_persona);
+        GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns((CoinHouseAccount?)null);
-        var balances = await _handler.HandleAsync(query);
+        IReadOnlyList<BalanceDto> balances = await _handler.HandleAsync(query);
         Assert.That(balances, Is.Not.Null);
         Assert.That(balances, Is.Empty);
     }
     [Test]
     public async Task Given_Query_When_ExecutingMultipleTimes_Then_ResultsAreConsistent()
     {
-        var query = new GetCoinhouseBalancesQuery(_persona);
+        GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        var balances1 = await _handler.HandleAsync(query);
-        var balances2 = await _handler.HandleAsync(query);
-        var balances3 = await _handler.HandleAsync(query);
+        IReadOnlyList<BalanceDto> balances1 = await _handler.HandleAsync(query);
+        IReadOnlyList<BalanceDto> balances2 = await _handler.HandleAsync(query);
+        IReadOnlyList<BalanceDto> balances3 = await _handler.HandleAsync(query);
         Assert.That(balances1, Has.Count.EqualTo(1));
         Assert.That(balances2, Has.Count.EqualTo(1));
         Assert.That(balances3, Has.Count.EqualTo(1));
@@ -106,9 +106,9 @@ public class GetCoinhouseBalancesQueryTests
     {
         _testAccount.Debit = 100;
         _testAccount.Credit = 500;
-        var query = new GetCoinhouseBalancesQuery(_persona);
+        GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
         _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        var balances = await _handler.HandleAsync(query);
+        IReadOnlyList<BalanceDto> balances = await _handler.HandleAsync(query);
         Assert.That(balances[0].Balance, Is.EqualTo(-400));
     }
 }

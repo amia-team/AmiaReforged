@@ -1,6 +1,8 @@
 using System.Numerics;
+using AmiaReforged.PwEngine.Features.WorldEngine.Harvesting.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -9,7 +11,10 @@ using NWN.Core.NWNX;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.Services;
 
 [ServiceBinding(typeof(ResourceNodeService))]
-public class ResourceNodeService(RuntimeNodeService runtimeNodes)
+public class ResourceNodeService(
+    RuntimeNodeService runtimeNodes,
+    ICommandHandler<RegisterNodeCommand> registerNodeCommandHandler,
+    IResourceNodeInstanceRepository nodeRepository)
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -23,17 +28,39 @@ public class ResourceNodeService(RuntimeNodeService runtimeNodes)
         int usesModifier = (int)quality < (int)IPQuality.Average
             ? (int)quality * -1
             : (int)quality;
-        ResourceNodeInstance node = new()
+
+        // Create RegisterNodeCommand to handle instance creation
+        RegisterNodeCommand command = new RegisterNodeCommand(
+            null, // New node, no existing ID
+            definition.Tag,
+            area.ResRef,
+            position.X,
+            position.Y,
+            position.Z,
+            rotation,
+            quality,
+            definition.Uses + usesModifier
+        );
+
+        // Execute command synchronously to get the created instance
+        CommandResult result = registerNodeCommandHandler.HandleAsync(command).GetAwaiter().GetResult();
+
+        if (!result.Success)
         {
-            Area = area.ResRef,
-            Definition = definition,
-            Uses = definition.Uses + usesModifier,
-            Quality = quality,
-            X = position.X,
-            Y = position.Y,
-            Z = position.Z,
-            Rotation = rotation
-        };
+            Log.Error($"Failed to create node: {result.ErrorMessage}");
+            throw new InvalidOperationException($"Failed to create node: {result.ErrorMessage}");
+        }
+
+        Guid nodeId = (Guid)result.Data["nodeInstanceId"]!;
+
+        // Retrieve the created instance from repository
+        ResourceNodeInstance? node = nodeRepository.GetInstances().FirstOrDefault(n => n.Id == nodeId);
+
+        if (node == null)
+        {
+            Log.Error($"Failed to retrieve created node {nodeId}");
+            throw new InvalidOperationException($"Failed to retrieve created node {nodeId}");
+        }
 
         return node;
     }

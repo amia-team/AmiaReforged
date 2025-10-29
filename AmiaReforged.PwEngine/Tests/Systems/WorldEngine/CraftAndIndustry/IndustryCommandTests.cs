@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using NUnit.Framework;
 
@@ -67,14 +68,14 @@ public class IndustryCommandTests
     public async Task AddRecipe_Success()
     {
         // Arrange
-        var command = new AddRecipeToIndustryCommand
+        AddRecipeToIndustryCommand command = new AddRecipeToIndustryCommand
         {
             IndustryTag = new IndustryTag("blacksmithing"),
             Recipe = _testRecipe
         };
 
         // Act
-        var result = await _addRecipeHandler.HandleAsync(command);
+        CommandResult result = await _addRecipeHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.True);
@@ -86,14 +87,14 @@ public class IndustryCommandTests
     public async Task AddRecipe_IndustryNotFound_Fails()
     {
         // Arrange
-        var command = new AddRecipeToIndustryCommand
+        AddRecipeToIndustryCommand command = new AddRecipeToIndustryCommand
         {
             IndustryTag = new IndustryTag("nonexistent"),
             Recipe = _testRecipe
         };
 
         // Act
-        var result = await _addRecipeHandler.HandleAsync(command);
+        CommandResult result = await _addRecipeHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.False);
@@ -106,14 +107,14 @@ public class IndustryCommandTests
         // Arrange - add recipe first time
         _testIndustry.Recipes.Add(_testRecipe);
 
-        var command = new AddRecipeToIndustryCommand
+        AddRecipeToIndustryCommand command = new AddRecipeToIndustryCommand
         {
             IndustryTag = new IndustryTag("blacksmithing"),
             Recipe = _testRecipe
         };
 
         // Act
-        var result = await _addRecipeHandler.HandleAsync(command);
+        CommandResult result = await _addRecipeHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.False);
@@ -124,7 +125,7 @@ public class IndustryCommandTests
     public async Task AddRecipe_IndustryTagMismatch_Fails()
     {
         // Arrange - recipe for different industry
-        var wrongRecipe = new Recipe
+        Recipe wrongRecipe = new Recipe
         {
             RecipeId = new RecipeId("healing_potion"),
             Name = "Healing Potion",
@@ -136,14 +137,14 @@ public class IndustryCommandTests
             KnowledgePointsAwarded = 0
         };
 
-        var command = new AddRecipeToIndustryCommand
+        AddRecipeToIndustryCommand command = new AddRecipeToIndustryCommand
         {
             IndustryTag = new IndustryTag("blacksmithing"),
             Recipe = wrongRecipe
         };
 
         // Act
-        var result = await _addRecipeHandler.HandleAsync(command);
+        CommandResult result = await _addRecipeHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.False);
@@ -156,14 +157,14 @@ public class IndustryCommandTests
         // Arrange - add recipe first
         _testIndustry.Recipes.Add(_testRecipe);
 
-        var command = new RemoveRecipeFromIndustryCommand
+        RemoveRecipeFromIndustryCommand command = new RemoveRecipeFromIndustryCommand
         {
             IndustryTag = new IndustryTag("blacksmithing"),
             RecipeId = new RecipeId("iron_sword")
         };
 
         // Act
-        var result = await _removeRecipeHandler.HandleAsync(command);
+        CommandResult result = await _removeRecipeHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.True);
@@ -174,14 +175,14 @@ public class IndustryCommandTests
     public async Task RemoveRecipe_RecipeNotFound_Fails()
     {
         // Arrange
-        var command = new RemoveRecipeFromIndustryCommand
+        RemoveRecipeFromIndustryCommand command = new RemoveRecipeFromIndustryCommand
         {
             IndustryTag = new IndustryTag("blacksmithing"),
             RecipeId = new RecipeId("nonexistent_recipe")
         };
 
         // Act
-        var result = await _removeRecipeHandler.HandleAsync(command);
+        CommandResult result = await _removeRecipeHandler.HandleAsync(command);
 
         // Assert
         Assert.That(result.Success, Is.False);

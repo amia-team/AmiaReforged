@@ -10,6 +10,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeD
 
 public class ResourceNodeInstance
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public delegate void OnHarvestHandler(HarvestEventData data);
 
     public delegate void OnDestroyedHandler(ResourceNodeInstance instance);
@@ -30,6 +31,31 @@ public class ResourceNodeInstance
     public float Z { get; set; }
     public float Rotation { get; set; }
     private int HarvestProgress { get; set; }
+
+    /// <summary>
+    /// Increment harvest progress and return the new value
+    /// </summary>
+    public int IncrementHarvestProgress(int amount)
+    {
+        HarvestProgress += amount;
+        return HarvestProgress;
+    }
+
+    /// <summary>
+    /// Reset harvest progress to zero
+    /// </summary>
+    public void ResetHarvestProgress()
+    {
+        HarvestProgress = 0;
+    }
+
+    /// <summary>
+    /// Decrement remaining uses
+    /// </summary>
+    public void DecrementUses()
+    {
+        Uses--;
+    }
 
 
     public Location? GameLocation()

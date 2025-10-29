@@ -42,15 +42,15 @@ public class WithdrawGoldCommandHandler : ICommandHandler<WithdrawGoldCommand>
         try
         {
             // Validate coinhouse exists
-            var coinhouse = _coinhouses.GetByTag(command.Coinhouse);
+            CoinHouse? coinhouse = _coinhouses.GetByTag(command.Coinhouse);
             if (coinhouse == null)
             {
                 return CommandResult.Fail($"Coinhouse '{command.Coinhouse.Value}' not found");
             }
 
             // Get account (must exist for withdrawal)
-            var accountId = ExtractAccountId(command.PersonaId);
-            var account = _coinhouses.GetAccountFor(accountId);
+            Guid accountId = ExtractAccountId(command.PersonaId);
+            CoinHouseAccount? account = _coinhouses.GetAccountFor(accountId);
 
             if (account == null)
             {
@@ -59,7 +59,7 @@ public class WithdrawGoldCommandHandler : ICommandHandler<WithdrawGoldCommand>
             }
 
             // Check sufficient balance
-            var currentBalance = account.Debit;
+            int currentBalance = account.Debit;
             if (currentBalance < command.Amount.Value)
             {
                 return CommandResult.Fail(
@@ -74,7 +74,7 @@ public class WithdrawGoldCommandHandler : ICommandHandler<WithdrawGoldCommand>
             account.LastAccessedAt = DateTime.UtcNow;
 
             // Record transaction
-            var transaction = new Transaction
+            Transaction transaction = new Transaction
             {
                 FromPersonaId = coinhouse.PersonaId.ToString(),
                 ToPersonaId = command.PersonaId.ToString(),
@@ -83,12 +83,12 @@ public class WithdrawGoldCommandHandler : ICommandHandler<WithdrawGoldCommand>
                 Timestamp = DateTime.UtcNow
             };
 
-            var recordedTransaction = await _transactions.RecordTransactionAsync(
+            Transaction recordedTransaction = await _transactions.RecordTransactionAsync(
                 transaction,
                 cancellationToken);
 
             // Publish event
-            var evt = new GoldWithdrawnEvent(
+            GoldWithdrawnEvent evt = new GoldWithdrawnEvent(
                 command.PersonaId,
                 command.Coinhouse,
                 command.Amount,
@@ -114,13 +114,13 @@ public class WithdrawGoldCommandHandler : ICommandHandler<WithdrawGoldCommand>
         // PersonaId format: "Type:Value"
         // For Character personas, Value is the CharacterId Guid
         // For Organization personas, Value is the OrganizationId Guid
-        var parts = personaId.ToString().Split(':');
+        string[] parts = personaId.ToString().Split(':');
         if (parts.Length != 2)
         {
             throw new ArgumentException($"Invalid PersonaId format: {personaId}");
         }
 
-        if (Guid.TryParse(parts[1], out var guid))
+        if (Guid.TryParse(parts[1], out Guid guid))
         {
             return guid;
         }

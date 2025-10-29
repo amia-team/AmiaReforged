@@ -9,7 +9,9 @@
 | **Phase 3.1: CQRS Infrastructure** | ✅ Complete | Oct 2025 | [PHASE3_1_CQRS_INFRASTRUCTURE.md](PHASE3_1_CQRS_INFRASTRUCTURE.md) |
 | **Phase 3.2: Codex Application Layer** | ✅ Complete | Oct 28, 2025 | [PHASE3_2_CODEX_APPLICATION.md](PHASE3_2_CODEX_APPLICATION.md) |
 | **Phase 3.3: Economy Expansion** | ✅ Complete | Oct 28, 2025 | [PHASE3_3_COMPLETE.md](PHASE3_3_COMPLETE.md) |
-| **Phase 3.4: Industries** | 🟢 In Progress | Oct 28, 2025 | [PHASE3_4_INDUSTRIES.md](PHASE3_4_INDUSTRIES.md) |
+| **Phase 3.4: Industries** | ✅ Complete | Oct 28, 2025 | [PHASE3_4_INDUSTRIES_COMPLETE.md](PHASE3_4_INDUSTRIES_COMPLETE.md) |
+| **Phase 3.4: Organizations** | ✅ Complete | Oct 28, 2025 | [PHASE3_4_ORGANIZATIONS_CQRS_COMPLETE.md](PHASE3_4_ORGANIZATIONS_CQRS_COMPLETE.md) |
+| **Phase 3.4: Harvesting** | ✅ Complete | Oct 28, 2025 | [HARVESTING_SESSION_COMPLETE.md](HARVESTING_SESSION_COMPLETE.md) |
 | **Phase 3.4: Other Subsystems** | ⏳ Not Started | - | [PHASE3_4_OTHER_SUBSYSTEMS.md](PHASE3_4_OTHER_SUBSYSTEMS.md) |
 | **Phase 4: Event Bus** | ⏳ Not Started | - | [PHASE4_EVENT_BUS.md](PHASE4_EVENT_BUS.md) |
 | **Phase 5: Public API** | ⏳ Not Started | - | [PHASE5_PUBLIC_API.md](PHASE5_PUBLIC_API.md) |
@@ -17,17 +19,21 @@
 ## Vision
 Transform WorldEngine from a primitive-obsessed codebase into a strongly-typed, event-driven system with a clean command/query API.
 ---
-## Current Progress
-### ✅ Completed Phases (62.5%)
+### ✅ Completed Phases (80%)
 **Phase 1 - Strong Types**: Value objects for all domain concepts
 **Phase 2 - Persona Abstraction**: Unified actor system
 **Phase 3.1 - CQRS Infrastructure**: Command/query pattern established
 **Phase 3.2 - Codex Application**: Reference CQRS implementation
-**Phase 3.3 - Economy Expansion**: 55% complete (commands done, queries in progress)
-### 🟢 Next Up (Phase 3.4)
-Apply CQRS to remaining subsystems:
-- Industries, Organizations, Harvesting, Regions, Traits
-- Estimated: 2-3 weeks
+**Phase 3.3 - Economy Expansion**: Complete with commands and queries
+**Phase 3.4 - Industries**: Complete with full test coverage
+**Phase 3.4 - Organizations**: Complete with 46/46 tests passing
+**Phase 3.4 - Harvesting**: Complete with 12/12 tests passing ✨
+**Phase 3.4 - Organizations**: Complete with 46/46 tests passing
+
+Apply CQRS to final subsystems:
+- Regions, Traits, and miscellaneous systems
+- Estimated: 1 week
+- Estimated: 1-2 weeks
 ---
 ## Success Criteria
 - [x] No raw primitives in public APIs

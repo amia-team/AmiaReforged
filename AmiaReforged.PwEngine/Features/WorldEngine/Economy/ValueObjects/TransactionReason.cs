@@ -16,7 +16,7 @@ public readonly record struct TransactionReason
         if (string.IsNullOrWhiteSpace(value))
             throw new ArgumentException("Transaction reason cannot be empty", nameof(value));
 
-        var trimmed = value.Trim();
+        string trimmed = value.Trim();
 
         if (trimmed.Length < MinLength)
             throw new ArgumentException(

@@ -26,10 +26,10 @@ public class EconomyCommand(ResourceNodeInstanceSetupService nodeSetup) : IChatC
         switch (args[0])
         {
             case "init":
-                HandleInit();
+                HandleInit(caller);
                 break;
             case "destroy":
-                HandleDestroy();
+                HandleDestroy(caller);
                 break;
             default:
                 caller.SendServerMessage("Usage: ./economy init|destroy");
@@ -39,13 +39,17 @@ public class EconomyCommand(ResourceNodeInstanceSetupService nodeSetup) : IChatC
         return Task.CompletedTask;
     }
 
-    private void HandleDestroy()
+    private void HandleDestroy(NwPlayer caller)
     {
+        caller.SendServerMessage("Clearing all resource nodes...");
         nodeSetup.ClearOldNodes();
+        caller.SendServerMessage("✓ Resource nodes cleared");
     }
 
-    private void HandleInit()
+    private void HandleInit(NwPlayer caller)
     {
+        caller.SendServerMessage("Initializing resource node economy...");
         nodeSetup.DoSetup();
+        caller.SendServerMessage("✓ Economy initialization complete");
     }
 }

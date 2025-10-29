@@ -121,7 +121,7 @@ public class OrganizationMembershipTests
     public void MemberRole_CanBeCustom()
     {
         // Arrange
-        var customRole = new MemberRole("Blacksmith");
+        MemberRole customRole = new MemberRole("Blacksmith");
 
         // Assert
         Assert.That(customRole.Value, Is.EqualTo("Blacksmith"));

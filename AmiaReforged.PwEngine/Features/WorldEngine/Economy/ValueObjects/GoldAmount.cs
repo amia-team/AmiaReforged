@@ -36,7 +36,7 @@ public readonly record struct GoldAmount
     /// </summary>
     public GoldAmount Subtract(GoldAmount other)
     {
-        var result = Value - other.Value;
+        int result = Value - other.Value;
         if (result < 0)
             throw new InvalidOperationException(
                 $"Cannot subtract {other.Value} from {Value} - would result in negative amount");

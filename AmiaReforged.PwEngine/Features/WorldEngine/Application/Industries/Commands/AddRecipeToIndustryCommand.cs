@@ -28,7 +28,7 @@ public class AddRecipeToIndustryHandler : ICommandHandler<AddRecipeToIndustryCom
 
     public Task<CommandResult> HandleAsync(AddRecipeToIndustryCommand command, CancellationToken cancellationToken = default)
     {
-        var industry = _industryRepository.GetByTag(command.IndustryTag);
+        Industry? industry = _industryRepository.GetByTag(command.IndustryTag);
 
         if (industry == null)
         {
