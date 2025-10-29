@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Comma
 using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using NUnit.Framework;
@@ -16,6 +17,7 @@ public class OrganizationCommandTests
 {
     private IOrganizationRepository _orgRepository = null!;
     private IOrganizationMemberRepository _memberRepository = null!;
+    private IEventBus _eventBus = null!;
     private AddMemberHandler _addMemberHandler = null!;
     private RemoveMemberHandler _removeMemberHandler = null!;
     private AssignRoleHandler _assignRoleHandler = null!;
@@ -31,10 +33,11 @@ public class OrganizationCommandTests
         // Arrange - Create repositories
         _orgRepository = new InMemoryOrganizationRepository();
         _memberRepository = new InMemoryOrganizationMemberRepository();
+        _eventBus = new InMemoryEventBus();
 
         // Arrange - Create handlers
-        _addMemberHandler = new AddMemberHandler(_memberRepository, _orgRepository);
-        _removeMemberHandler = new RemoveMemberHandler(_memberRepository);
+        _addMemberHandler = new AddMemberHandler(_memberRepository, _orgRepository, _eventBus);
+        _removeMemberHandler = new RemoveMemberHandler(_memberRepository, _eventBus);
         _assignRoleHandler = new AssignRoleHandler(_memberRepository);
         _revokeRoleHandler = new RevokeRoleHandler(_memberRepository);
 

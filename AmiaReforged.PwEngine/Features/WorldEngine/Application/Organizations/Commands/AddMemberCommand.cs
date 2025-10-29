@@ -1,6 +1,8 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
+using AmiaReforged.PwEngine.Features.WorldEngine.Organizations.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
@@ -23,13 +25,16 @@ public class AddMemberHandler : ICommandHandler<AddMemberCommand>
 {
     private readonly IOrganizationMemberRepository _memberRepository;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly IEventBus _eventBus;
 
     public AddMemberHandler(
         IOrganizationMemberRepository memberRepository,
-        IOrganizationRepository organizationRepository)
+        IOrganizationRepository organizationRepository,
+        IEventBus eventBus)
     {
         _memberRepository = memberRepository;
         _organizationRepository = organizationRepository;
+        _eventBus = eventBus;
     }
 
     public Task<CommandResult> HandleAsync(AddMemberCommand command, CancellationToken cancellationToken = default)
@@ -78,8 +83,15 @@ public class AddMemberHandler : ICommandHandler<AddMemberCommand>
         _memberRepository.Add(membership);
         _memberRepository.SaveChanges();
 
+        // Publish event
+        MemberJoinedOrganizationEvent evt = new(
+            command.CharacterId,
+            command.OrganizationId,
+            command.InitialRank,
+            DateTime.UtcNow);
+        _eventBus.PublishAsync(evt, cancellationToken).GetAwaiter().GetResult();
+
         return Task.FromResult(CommandResult.OkWith("MembershipId", membership.Id));
     }
 }
-/// <summary>
 

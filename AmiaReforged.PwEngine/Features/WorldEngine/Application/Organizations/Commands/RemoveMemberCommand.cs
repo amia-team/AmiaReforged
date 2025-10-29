@@ -1,6 +1,8 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
+using AmiaReforged.PwEngine.Features.WorldEngine.Organizations.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
@@ -23,10 +25,12 @@ public record RemoveMemberCommand : ICommand
 public class RemoveMemberHandler : ICommandHandler<RemoveMemberCommand>
 {
     private readonly IOrganizationMemberRepository _memberRepository;
+    private readonly IEventBus _eventBus;
 
-    public RemoveMemberHandler(IOrganizationMemberRepository memberRepository)
+    public RemoveMemberHandler(IOrganizationMemberRepository memberRepository, IEventBus eventBus)
     {
         _memberRepository = memberRepository;
+        _eventBus = eventBus;
     }
 
     public Task<CommandResult> HandleAsync(RemoveMemberCommand command, CancellationToken cancellationToken = default)
@@ -96,6 +100,13 @@ public class RemoveMemberHandler : ICommandHandler<RemoveMemberCommand>
 
         _memberRepository.Update(membership);
         _memberRepository.SaveChanges();
+
+        // Publish event
+        MemberLeftOrganizationEvent evt = new(
+            command.CharacterId,
+            command.OrganizationId,
+            DateTime.UtcNow);
+        _eventBus.PublishAsync(evt).GetAwaiter().GetResult();
 
         return Task.FromResult(CommandResult.Ok());
     }

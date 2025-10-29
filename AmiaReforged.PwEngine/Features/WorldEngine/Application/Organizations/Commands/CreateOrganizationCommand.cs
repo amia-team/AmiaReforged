@@ -3,8 +3,10 @@ using System.Linq;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
+using AmiaReforged.PwEngine.Features.WorldEngine.Organizations.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 
@@ -31,13 +33,16 @@ public class CreateOrganizationHandler : ICommandHandler<CreateOrganizationComma
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IPersonaRepository _personaRepository;
+    private readonly IEventBus _eventBus;
 
     public CreateOrganizationHandler(
         IOrganizationRepository organizationRepository,
-        IPersonaRepository personaRepository)
+        IPersonaRepository personaRepository,
+        IEventBus eventBus)
     {
         _organizationRepository = organizationRepository;
         _personaRepository = personaRepository;
+        _eventBus = eventBus;
     }
 
     public Task<CommandResult> HandleAsync(CreateOrganizationCommand command, CancellationToken cancellationToken = default)
@@ -81,6 +86,15 @@ public class CreateOrganizationHandler : ICommandHandler<CreateOrganizationComma
 
         _organizationRepository.Add(organization);
         _organizationRepository.SaveChanges();
+
+        // Publish event
+        OrganizationCreatedEvent evt = new(
+            organization.Id,
+            organization.Name,
+            organization.Type,
+            organization.ParentOrganization,
+            DateTime.UtcNow);
+        _eventBus.PublishAsync(evt).GetAwaiter().GetResult();
 
         return Task.FromResult(CommandResult.OkWith("OrganizationId", organization.Id));
     }
