@@ -45,9 +45,6 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.Bane);
         if (spell == null || target.Location == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 1, monkLevel))
-            return;
-
         Effect bane = Effect.LinkEffects
         (
             Effect.AttackDecrease(1),
@@ -62,6 +59,9 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, true))
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
+
+            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Enchantment, 1, monkLevel))
+                continue;
 
             SavingThrowResult savingThrowResult =
                 enemy.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
@@ -140,7 +140,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
             return;
 
         SavingThrowResult savingThrowResult =
-            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.None, monk);
+            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.Spell, monk);
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
@@ -181,7 +181,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
             return;
 
         SavingThrowResult savingThrowResult =
-            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.None, monk);
+            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
