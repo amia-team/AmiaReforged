@@ -49,7 +49,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         int damage = Math.Min((int)monkLevel, 20) + Random.Shared.Roll(8, 4);
 
         SavingThrowResult savingThrowResult =
-            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.None, monk);
+            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.Negative, monk);
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
@@ -72,9 +72,6 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.Balagarnsironhorn);
         if (spell == null || monk.Location == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Transmutation, 2, monkLevel))
-            return;
-
         Effect knockdown = Effect.Knockdown();
         Effect impHeadNature = Effect.VisualEffect(VfxType.ImpHeadNature);
 
@@ -83,6 +80,10 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         foreach (NwCreature enemy in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, true))
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
+
+            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Transmutation, 2, monkLevel))
+                return;
+
             if (Random.Shared.Roll(20) + enemy.GetAbilityModifier(Ability.Strength) >= Random.Shared.Roll(20) + 5)
                 continue;
 
@@ -135,7 +136,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
             return;
 
         SavingThrowResult savingThrowResult =
-            target.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.None, monk);
+            target.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Spell, monk);
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
@@ -158,7 +159,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 2, monkLevel))
+            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 2, monkLevel))
                 continue;
 
             Effect damage = Effect.Damage(Random.Shared.Roll(8), DamageType.Sonic);
@@ -220,7 +221,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
             if (reflexSaveResult == SavingThrowResult.Success || enemy.KnowsFeat(Feat.ImprovedEvasion!))
                 damage /= 2;
 
-            Effect damageEffect =  Effect.Damage(damage, DamageType.Electrical);
+            Effect damageEffect = Effect.Damage(damage, DamageType.Electrical);
             _ = wildMagicUtils.GetObjectContext(monk, damageEffect);
 
             enemy.ApplyEffect(EffectDuration.Instant, damageEffect);
@@ -250,7 +251,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
             return;
 
         SavingThrowResult savingThrowResult =
-            target.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.None, monk);
+            target.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Spell, monk);
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
@@ -271,7 +272,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
             return;
 
         SavingThrowResult savingThrowResult =
-            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.None, monk);
+            target.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.MindSpells, monk);
 
         if (savingThrowResult == SavingThrowResult.Success)
         {
