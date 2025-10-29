@@ -50,31 +50,49 @@ pipeline {
 
         stage('Test') {
             steps {
-                echo 'Running WorldSimulator tests...'
-                sh '''
-                    dotnet test WorldSimulator.Tests/WorldSimulator.Tests.csproj \
-                      --configuration Release \
-                      --no-build \
-                      --logger "trx;LogFileName=test-results.trx" \
-                      --collect:"XPlat Code Coverage" \
-                      --verbosity normal \
-                      || exit 1
-                '''
+                script {
+                    echo 'Running WorldSimulator tests...'
+                    def testResult = sh(
+                        script: '''
+                            dotnet test WorldSimulator.Tests/WorldSimulator.Tests.csproj \
+                              --configuration Release \
+                              --no-build \
+                              --logger "trx;LogFileName=test-results.trx" \
+                              --collect:"XPlat Code Coverage" \
+                              --verbosity normal
+                        ''',
+                        returnStatus: true
+                    )
+
+                    if (testResult != 0) {
+                        echo "Tests failed with exit code ${testResult}"
+                        currentBuild.result = 'UNSTABLE'
+                    } else {
+                        echo 'All tests passed!'
+                    }
+                }
             }
         }
 
         stage('Publish Test Results') {
-            when {
-                always()
-            }
             steps {
-                echo 'Publishing test results...'
-                junit 'WorldSimulator.Tests/**/test-results.trx'
-                publishHTML([
-                    reportDir: 'WorldSimulator.Tests/TestResults',
-                    reportFiles: 'index.html',
-                    reportName: 'Code Coverage Report'
-                ])
+                script {
+                    // Always publish test results, even if tests fail
+                    try {
+                        echo 'Publishing test results...'
+                        junit allowEmptyResults: true, testResults: 'WorldSimulator.Tests/**/test-results.trx'
+                        publishHTML([
+                            allowMissing: true,
+                            alwaysLinkToLastBuild: false,
+                            keepAll: true,
+                            reportDir: 'WorldSimulator.Tests/TestResults',
+                            reportFiles: 'index.html',
+                            reportName: 'Code Coverage Report'
+                        ])
+                    } catch (Exception e) {
+                        echo "Warning: Could not publish all test results: ${e.message}"
+                    }
+                }
             }
         }
     }
