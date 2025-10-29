@@ -18,12 +18,6 @@ WorldEngine is the **domain-driven, event-sourced game state management system**
 
 **Start here**: [ARCHITECTURE.md](ARCHITECTURE.md) - Comprehensive architecture guide
 
-**Quick overview**: [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md) - Executive summary and final statistics
-
-### For Understanding the Evolution
-
-**Refactoring journey**: [REFACTORING_INDEX.md](REFACTORING_INDEX.md) - Phase-by-phase progression
-
 ---
 
 ## Architecture at a Glance
