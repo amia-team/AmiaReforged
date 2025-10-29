@@ -1,7 +1,6 @@
 pipeline {
     agent any
 
-
     stages {
         stage('Checkout') {
             steps {
@@ -70,6 +69,27 @@ pipeline {
                 }
             }
         }
+
+        stage('Publish Coverage Report') {
+            steps {
+                script {
+                    try {
+                        echo 'Publishing HTML coverage report...'
+                        publishHTML([
+                            allowMissing: true,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: 'WorldSimulator.Tests/TestResults',
+                            reportFiles: 'index.html',
+                            reportName: 'Code Coverage Report',
+                            reportTitles: 'WorldSimulator Code Coverage'
+                        ])
+                    } catch (Exception e) {
+                        echo "Warning: Could not publish coverage report: ${e.message}"
+                    }
+                }
+            }
+        }
     }
 
     post {
@@ -89,6 +109,10 @@ pipeline {
                             def skipped = testResults.skipCount
 
                             testSummary = "\n\n**Test Results:**\n✅ Passed: ${passed}\n❌ Failed: ${failed}\n⏭️ Skipped: ${skipped}\n📊 Total: ${total}"
+
+                            // Add coverage report link
+                            def coverageUrl = "${env.BUILD_URL}Code_Coverage_Report/"
+                            testSummary += "\n\n📊 [View Coverage Report](${coverageUrl})"
                         } else {
                             echo "No test results found or test count is 0"
                             testSummary = "\n\n⚠️ No tests found"
