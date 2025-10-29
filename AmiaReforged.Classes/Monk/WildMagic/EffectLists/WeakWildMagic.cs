@@ -9,8 +9,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
     public void MagicMissile(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.MagicMissile);
-        if (spell == null) return;
-        if (target.Location == null) return;
+        if (spell == null || target.Location == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 1, monkLevel))
             return;
@@ -44,8 +43,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
     public void Bane(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Bane);
-        if (spell == null) return;
-        if (target.Location == null) return;
+        if (spell == null || target.Location == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 1, monkLevel))
             return;
@@ -116,7 +114,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
     public void ElectricJolt(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.ElectricJolt);
-        if (spell is null) return;
+        if (spell == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 0, monkLevel))
             return;
@@ -136,7 +134,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
     public void Silence(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Silence);
-        if (spell is null) return;
+        if (spell == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Illusion, 2, monkLevel))
             return;
@@ -166,7 +164,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
     public void Combust(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Combust);
-        if (spell is null) return;
+        if (spell == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Illusion, 2, monkLevel))
             return;
@@ -177,7 +175,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
     public void CharmMonster(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Combust);
-        if (spell is null) return;
+        if (spell == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 3, monkLevel))
             return;
@@ -198,7 +196,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
     public void InflictLightWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.InflictLightWounds);
-        if (spell is null) return;
+        if (spell == null) return;
 
         if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Necromancy, 1, monkLevel))
             return;

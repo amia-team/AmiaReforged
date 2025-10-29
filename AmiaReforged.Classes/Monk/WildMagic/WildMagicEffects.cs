@@ -67,6 +67,7 @@ public class WildMagicEffects(
 
     public readonly WildMagicEffect[] StrongEffects =
     [
+        new("Isaac's Greater Missile Storm", strongWildMagic.IsaacsGreaterMissileStorm),
         new("Web", strongWildMagic.Web),
         new("Gust of Wind", strongWildMagic.GustOfWind),
         new("Confusion", strongWildMagic.Confusion),
@@ -78,8 +79,7 @@ public class WildMagicEffects(
         new("Greater Planar Binding", strongWildMagic.GreaterPlanarBinding),
         new("Bigby's Interposing Hand", strongWildMagic.BigbysInterposingHand),
         new("Mass Blindness/Deafness", strongWildMagic.MassBlindnessDeafness),
-        new("Mass Polymorph", strongWildMagic.MassPolymorph),
-        new("Isaac's Greater Missile Storm", strongWildMagic.IsaacsGreaterMissileStorm)
+        new("Mass Polymorph", strongWildMagic.MassPolymorph)
     ];
 
     public readonly WildMagicEffect[] EpicEffects =
