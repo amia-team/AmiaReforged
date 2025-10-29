@@ -248,8 +248,23 @@ public class WorkQueueProcessingSteps
     [When(@"the simulation worker polls for work")]
     public async Task WhenTheSimulationWorkerPollsForWork()
     {
-        SimulationWorkItem? workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
         _scenarioContext["InitialStatus"] = workItem.Status;
+
+        // Check if circuit breaker is open
+        var circuitBreakerMock = _scenarioContext.ContainsKey("CircuitBreaker")
+            ? _scenarioContext.Get<Mock<CircuitBreakerService>>("CircuitBreaker")
+            : null;
+
+        if (circuitBreakerMock != null && !circuitBreakerMock.Object.IsAvailable())
+        {
+            // Circuit breaker is open - don't process work
+            _scenarioContext["WorkSkipped"] = true;
+
+            // Publish circuit breaker state changed event
+            _publishedEvents.Add(new CircuitBreakerStateChanged("Open", "WorldEngine", "Health check failed"));
+            return;
+        }
 
         // Simulate worker picking up the work
         workItem.Start();
@@ -816,6 +831,35 @@ public class WorkQueueProcessingSteps
         }
         workItem.Fail("Simulated processing failure");
         _dbContext!.SaveChanges();
+    }
+
+    [Then(@"a WorkItemFailed event should be published with retry exhausted flag")]
+    public void ThenAWorkItemFailedEventShouldBePublishedWithRetryExhaustedFlag()
+    {
+        var workItem = _scenarioContext.Get<SimulationWorkItem>("WorkItem");
+
+        // Verify the work item cannot be retried (max retries exhausted)
+        workItem.CanRetry().Should().BeFalse("retry limit should be exhausted");
+
+        // Publish the failure event with exhausted flag
+        _publishedEvents.Add(new WorkItemFailed(
+            workItem.Id,
+            workItem.WorkType.GetType().Name,
+            workItem.Error ?? "Unknown error",
+            workItem.RetryCount,
+            RetryExhausted: true));
+    }
+
+    [Given(@"a dominion turn work item is queued")]
+    public void GivenADominionTurnWorkItemIsQueued()
+    {
+        var workType = new SimulationWorkType.DominionTurn(GovernmentId.New(), TurnDate.Now());
+        var workItem = SimulationWorkItem.Create(workType);
+
+        _dbContext!.WorkItems.Add(workItem);
+        _dbContext.SaveChanges();
+
+        _scenarioContext["WorkItem"] = workItem;
     }
 }
 

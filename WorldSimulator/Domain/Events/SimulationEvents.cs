@@ -24,8 +24,9 @@ namespace WorldSimulator.Domain.Events
     /// <summary>
     /// Published when a work item fails
     /// </summary>
-    public record WorkItemFailed(Guid Id, string Type, string Error, int RetryCount)
-        : SimulationEvent($"Work item {Type} ({Id}) failed: {Error} (retry {RetryCount})");
+    public record WorkItemFailed(Guid Id, string Type, string Error, int RetryCount, bool RetryExhausted = false)
+        : SimulationEvent($"Work item {Type} ({Id}) failed: {Error} (retry {RetryCount}{(RetryExhausted ? ", exhausted" : "")})");
+
 
     /// <summary>
     /// Published when a work item is queued
