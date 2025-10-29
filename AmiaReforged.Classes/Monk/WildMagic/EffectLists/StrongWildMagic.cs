@@ -325,9 +325,9 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
 
         Effect blindDeafVfx = Effect.VisualEffect(VfxType.ImpBlindDeafM);
 
-        target.Location.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.FnfLosNormal30));
+        target.Location.ApplyEffect(EffectDuration.Temporary, Effect.VisualEffect(VfxType.FnfBlinddeaf));
 
-        foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal,
+        foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large,
                      true))
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
