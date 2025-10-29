@@ -16,10 +16,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Tests\Services"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj" PrivateAssets="all"/>
     </ItemGroup>
 

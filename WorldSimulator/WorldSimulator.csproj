@@ -44,6 +44,12 @@
 
     <ItemGroup>
       <None Remove="DISCORD_TEST_RESULTS.md" />
+      <None Remove="PROJECT_STATUS_ASSESSMENT.md" />
+      <None Remove="PHASE1_PROGRESS_REPORT.md" />
+      <None Remove="DI_QUICK_REFERENCE.md" />
+      <None Remove="BUILD_FIXED.md" />
+      <None Remove="TEST_PROGRESS.md" />
+      <None Remove="INDEPENDENCE_REFACTORING.md" />
     </ItemGroup>
 
 </Project>

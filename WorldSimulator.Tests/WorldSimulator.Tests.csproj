@@ -38,4 +38,8 @@
     <ItemGroup>
         <ProjectReference Include="..\WorldSimulator\WorldSimulator.csproj" />
     </ItemGroup>
+    <ItemGroup>
+      <Content Include="Features\PersonaActionQueue.feature" />
+      <Content Include="Features\PersonaInfluenceLedger.feature" />
+    </ItemGroup>
 </Project>

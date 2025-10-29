@@ -83,9 +83,10 @@ namespace WorldSimulator.Application.Processors
         {
             _logger.LogDebug("Executing territory scenarios for {GovernmentName}", job.GovernmentName);
 
-            // TODO: Load territories from WorldEngine database
-            // TODO: Execute territory-level economic calculations
+            // TODO: Request territory data from WorldEngine via HTTP/gRPC
+            // TODO: Execute territory-level economic calculations locally
             // TODO: Process resource allocation
+            // TODO: Send results back to WorldEngine via event/command
 
             job.RecordScenarioCompleted();
             await _context.SaveChangesAsync(cancellationToken);
@@ -95,9 +96,10 @@ namespace WorldSimulator.Application.Processors
         {
             _logger.LogDebug("Executing region scenarios for {GovernmentName}", job.GovernmentName);
 
-            // TODO: Load regions from WorldEngine database
-            // TODO: Execute region-level trade calculations
+            // TODO: Request region data from WorldEngine via HTTP/gRPC
+            // TODO: Execute region-level trade calculations locally
             // TODO: Process inter-settlement commerce
+            // TODO: Send results back to WorldEngine via event/command
 
             job.RecordScenarioCompleted();
             await _context.SaveChangesAsync(cancellationToken);
@@ -107,10 +109,11 @@ namespace WorldSimulator.Application.Processors
         {
             _logger.LogDebug("Executing settlement scenarios for {GovernmentName}", job.GovernmentName);
 
-            // TODO: Load settlements from WorldEngine database
-            // TODO: Update civic statistics
-            // TODO: Process market pricing
+            // TODO: Request settlement data from WorldEngine via HTTP/gRPC
+            // TODO: Update civic statistics locally
+            // TODO: Process market pricing calculations
             // TODO: Execute persona actions
+            // TODO: Send aggregated results back to WorldEngine via event/command
 
             job.RecordScenarioCompleted();
             await _context.SaveChangesAsync(cancellationToken);

@@ -32,3 +32,24 @@ public record DominionTurnFailedEvent(
     string ErrorMessage
 ) : SimulationEvent($"Dominion turn failed for {GovernmentName}: {ErrorMessage}");
 
+// New typed events for BDD scenarios
+public record DominionTurnCompleted(
+    GovernmentId GovernmentId,
+    TurnDate TurnDate,
+    int ScenariosProcessed,
+    TimeSpan ProcessingTime) : SimulationEvent($"Dominion turn completed");
+
+public record SettlementCivicStatsUpdated(
+    SettlementId SettlementId,
+    CivicScore Loyalty,
+    CivicScore Security,
+    CivicScore Prosperity,
+    DateTimeOffset CalculatedAt) : SimulationEvent($"Civic stats updated");
+
+public record PersonaActionResolved(
+    PersonaId PersonaId,
+    PersonaActionType ActionType,
+    InfluenceAmount CostPaid,
+    bool Success,
+    string? ResultMessage) : SimulationEvent($"Persona action resolved");
+

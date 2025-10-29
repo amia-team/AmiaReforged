@@ -1,5 +1,3 @@
-using WorldSimulator.Domain.Events;
-
 namespace WorldSimulator.Application;
 
 /// <summary>
@@ -35,10 +33,10 @@ public class SimulationWorker : BackgroundService
         string environment = _configuration["ENVIRONMENT_NAME"] ?? "Unknown";
         await _eventPublisher.PublishAsync(
             new SimulationServiceStarted(environment),
-            EventSeverity.Information);
+            EventSeverity.Information, stoppingToken);
 
-        int pollIntervalSeconds = _configuration.GetValue<int>("Simulation:PollIntervalSeconds", 5);
-        int circuitBreakerWaitSeconds = _configuration.GetValue<int>("Simulation:CircuitBreakerWaitSeconds", 30);
+        int pollIntervalSeconds = _configuration.GetValue("Simulation:PollIntervalSeconds", 5);
+        int circuitBreakerWaitSeconds = _configuration.GetValue("Simulation:CircuitBreakerWaitSeconds", 30);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -72,7 +70,7 @@ public class SimulationWorker : BackgroundService
 
         await _eventPublisher.PublishAsync(
             new SimulationServiceStopping("Graceful shutdown"),
-            EventSeverity.Information);
+            EventSeverity.Information, stoppingToken);
 
         _logger.LogInformation("Simulation Worker stopped");
     }
@@ -95,7 +93,7 @@ public class SimulationWorker : BackgroundService
         }
 
         _logger.LogInformation("Processing work item {WorkItemId} of type {WorkType}",
-            workItem.Id, workItem.WorkType);
+            workItem.Id, workItem.WorkType.GetType().Name);
 
         DateTime startTime = DateTime.UtcNow;
 
@@ -105,7 +103,7 @@ public class SimulationWorker : BackgroundService
             workItem.Start();
             await db.SaveChangesAsync(cancellationToken);
 
-            // Process the work item based on type
+            // Process the work item based on type using pattern matching
             await ProcessWorkItemByTypeAsync(workItem, db, cancellationToken);
 
             // Mark as completed
@@ -117,8 +115,8 @@ public class SimulationWorker : BackgroundService
                 workItem.Id, duration.TotalMilliseconds);
 
             await _eventPublisher.PublishAsync(
-                new WorkItemCompleted(workItem.Id, workItem.WorkType, duration),
-                EventSeverity.Information);
+                new WorkItemCompleted(workItem.Id, workItem.WorkType.GetType().Name, duration),
+                EventSeverity.Information, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -128,8 +126,8 @@ public class SimulationWorker : BackgroundService
             await db.SaveChangesAsync(cancellationToken);
 
             await _eventPublisher.PublishAsync(
-                new WorkItemFailed(workItem.Id, workItem.WorkType, ex.Message, workItem.RetryCount),
-                EventSeverity.Warning);
+                new WorkItemFailed(workItem.Id, workItem.WorkType.GetType().Name, ex.Message, workItem.RetryCount),
+                EventSeverity.Warning, cancellationToken);
         }
     }
 
@@ -138,66 +136,68 @@ public class SimulationWorker : BackgroundService
         SimulationDbContext db,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Processing work type: {WorkType}", workItem.WorkType);
+        _logger.LogDebug("Processing work type: {WorkType}", workItem.WorkType.GetType().Name);
 
-        // TODO: Implement actual work type handlers
-        // For now, this is a placeholder that will be extended with:
-        // - DominionTurn
-        // - CivicStats
-        // - PersonaAction
-        // - MarketPricing
-        // etc.
-
-        switch (workItem.WorkType)
+        // Pattern match on strongly-typed SimulationWorkType
+        // Compiler ensures exhaustiveness checking!
+        var result = workItem.WorkType switch
         {
-            case "DominionTurn":
-                await ProcessDominionTurnAsync(workItem.Payload, db, cancellationToken);
-                break;
+            SimulationWorkType.DominionTurn dt => ProcessDominionTurnAsync(dt, db, cancellationToken),
+            SimulationWorkType.CivicStatsAggregation cs => ProcessCivicStatsAsync(cs, db, cancellationToken),
+            SimulationWorkType.PersonaAction pa => ProcessPersonaActionAsync(pa, db, cancellationToken),
+            SimulationWorkType.MarketPricing mp => ProcessMarketPricingAsync(mp, db, cancellationToken),
+            _ => throw new NotImplementedException($"Work type '{workItem.WorkType.GetType().Name}' is not implemented")
+        };
 
-            case "CivicStats":
-                await ProcessCivicStatsAsync(workItem.Payload, db, cancellationToken);
-                break;
-
-            case "PersonaAction":
-                await ProcessPersonaActionAsync(workItem.Payload, db, cancellationToken);
-                break;
-
-            case "MarketPricing":
-                await ProcessMarketPricingAsync(workItem.Payload, db, cancellationToken);
-                break;
-
-            default:
-                _logger.LogWarning("Unknown work type: {WorkType}", workItem.WorkType);
-                throw new NotImplementedException($"Work type '{workItem.WorkType}' is not implemented");
-        }
+        await result;
     }
 
-    // Placeholder methods for work type handlers - to be implemented with TDD/BDD
-    private Task ProcessDominionTurnAsync(string payload, SimulationDbContext db, CancellationToken ct)
+    // Strongly-typed work type handlers - to be implemented with TDD/BDD
+    private Task ProcessDominionTurnAsync(SimulationWorkType.DominionTurn command, SimulationDbContext db, CancellationToken ct)
     {
-        _logger.LogDebug("Processing dominion turn: {Payload}", payload);
+        _logger.LogDebug("Processing dominion turn for government {GovernmentId} on {TurnDate}",
+            command.GovernmentId, command.TurnDate);
+
         // TODO: Implement dominion turn logic
+        // - Request territory/region/settlement data from WorldEngine via HTTP/gRPC
+        // - Execute economic calculations locally
+        // - Send results back to WorldEngine via HTTP POST/event
         return Task.CompletedTask;
     }
 
-    private Task ProcessCivicStatsAsync(string payload, SimulationDbContext db, CancellationToken ct)
+    private Task ProcessCivicStatsAsync(SimulationWorkType.CivicStatsAggregation command, SimulationDbContext db, CancellationToken ct)
     {
-        _logger.LogDebug("Processing civic stats: {Payload}", payload);
+        _logger.LogDebug("Processing civic stats for settlement {SettlementId} since {SinceTimestamp}",
+            command.SettlementId, command.SinceTimestamp);
+
         // TODO: Implement civic stats logic
+        // - Request event history from WorldEngine via HTTP/gRPC
+        // - Aggregate civic statistics locally (loyalty, security, prosperity, etc.)
+        // - Send updated stats back to WorldEngine via HTTP POST/event
         return Task.CompletedTask;
     }
 
-    private Task ProcessPersonaActionAsync(string payload, SimulationDbContext db, CancellationToken ct)
+    private Task ProcessPersonaActionAsync(SimulationWorkType.PersonaAction command, SimulationDbContext db, CancellationToken ct)
     {
-        _logger.LogDebug("Processing persona action: {Payload}", payload);
+        _logger.LogDebug("Processing persona action for {PersonaId}: {ActionType} costing {Cost} influence",
+            command.PersonaId, command.ActionType, command.Cost);
+
         // TODO: Implement persona action logic
+        // - Request influence ledger from WorldEngine via HTTP/gRPC
+        // - Validate and process action locally
+        // - Send action results back to WorldEngine via HTTP POST/event
         return Task.CompletedTask;
     }
 
-    private Task ProcessMarketPricingAsync(string payload, SimulationDbContext db, CancellationToken ct)
+    private Task ProcessMarketPricingAsync(SimulationWorkType.MarketPricing command, SimulationDbContext db, CancellationToken ct)
     {
-        _logger.LogDebug("Processing market pricing: {Payload}", payload);
+        _logger.LogDebug("Processing market pricing for market {MarketId}, item {ItemId} with demand signal {DemandSignal}",
+            command.MarketId, command.ItemId, command.DemandSignal);
+
         // TODO: Implement market pricing logic
+        // - Request demand/supply data from WorldEngine via HTTP/gRPC
+        // - Calculate pricing adjustments locally
+        // - Send price updates back to WorldEngine via HTTP POST/event
         return Task.CompletedTask;
     }
 }
