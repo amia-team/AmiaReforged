@@ -149,7 +149,7 @@ public sealed class CharacterCustomizationModel
         CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
 
         int currentModel = _currentArmor.Appearance.GetArmorModel(creaturePart);
-        int newModel = currentModel + delta;
+        int newModel;
 
         // Apply range restrictions for Torso part only - check AC and keep within valid models
         if (creaturePart == CreaturePart.Torso)
@@ -286,9 +286,9 @@ public sealed class CharacterCustomizationModel
         creature.RunUnequip(oldArmor);
 
         // Create a copy to refresh the inventory icon
-        NwItem? newArmor = oldArmor.Clone(creature);
+        NwItem newArmor = oldArmor.Clone(creature);
 
-        if (newArmor == null || !newArmor.IsValid)
+        if (!newArmor.IsValid)
         {
             _player.SendServerMessage("Failed to refresh armor.", ColorConstants.Red);
             // Re-equip old armor
@@ -362,9 +362,9 @@ public sealed class CharacterCustomizationModel
         creature.RunUnequip(oldArmor);
 
         // Clone the armor to refresh the inventory icon
-        NwItem? newArmor = oldArmor.Clone(creature);
+        NwItem newArmor = oldArmor.Clone(creature);
 
-        if (newArmor == null || !newArmor.IsValid)
+        if (!newArmor.IsValid)
         {
             _player.SendServerMessage("Failed to refresh armor.", ColorConstants.Red);
             // Re-equip old armor
@@ -492,37 +492,6 @@ public sealed class CharacterCustomizationModel
     }
 
     /// <summary>
-    /// Map CreaturePart to NWScript armor piece index for CopyItemAndModify
-    /// These correspond to ITEM_APPR_ARMOR_NUM_* constants in NWScript
-    /// </summary>
-    private int GetArmorPieceIndex(CreaturePart part)
-    {
-        return part switch
-        {
-            CreaturePart.RightFoot => 0,
-            CreaturePart.LeftFoot => 1,
-            CreaturePart.RightShin => 2,
-            CreaturePart.LeftShin => 3,
-            CreaturePart.RightThigh => 4,
-            CreaturePart.LeftThigh => 5,
-            CreaturePart.Pelvis => 6,
-            CreaturePart.Torso => 7,
-            CreaturePart.Belt => 8,
-            CreaturePart.Neck => 9,
-            CreaturePart.RightForearm => 10,
-            CreaturePart.LeftForearm => 11,
-            CreaturePart.RightBicep => 12,
-            CreaturePart.LeftBicep => 13,
-            CreaturePart.RightShoulder => 14,
-            CreaturePart.LeftShoulder => 15,
-            CreaturePart.RightHand => 16,
-            CreaturePart.LeftHand => 17,
-            CreaturePart.Robe => 18,
-            _ => 7 // Default to Torso
-        };
-    }
-
-    /// <summary>
     /// Determine which AC range a torso model belongs to
     /// </summary>
     private int? GetArmorClassFromTorsoModel(int modelIndex)
@@ -539,18 +508,29 @@ public sealed class CharacterCustomizationModel
 
 
     /// <summary>
-    /// Apply all changes to the character - confirms changes and discards backup
+    /// Save current state as new checkpoint - creates a new backup from current armor
     /// </summary>
     public void ApplyChanges()
     {
-        // Destroy the backup since we're keeping the changes
+        if (_currentArmor == null || !_currentArmor.IsValid)
+        {
+            _player.SendServerMessage("No armor to save.", ColorConstants.Orange);
+            return;
+        }
+
+        NwCreature? creature = _player.ControlledCreature;
+        if (creature == null) return;
+
+        // Destroy the old backup
         if (_initialArmorBackup != null && _initialArmorBackup.IsValid)
         {
             _initialArmorBackup.Destroy();
-            _initialArmorBackup = null;
         }
 
-        _player.SendServerMessage("Armor customization saved!", ColorConstants.Green);
+        // Create a new backup from the current armor state
+        _initialArmorBackup = _currentArmor.Clone(creature, null, false);
+
+        _player.SendServerMessage("Armor customization saved! You can continue editing or click Revert to return to this save point. Close the window normally when you're done!", ColorConstants.Green);
     }
 
     /// <summary>
@@ -575,15 +555,15 @@ public sealed class CharacterCustomizationModel
         }
 
         // Clone the backup to restore it
-        NwItem? restoredArmor = _initialArmorBackup.Clone(creature);
+        NwItem restoredArmor = _initialArmorBackup.Clone(creature);
 
-        if (restoredArmor != null && restoredArmor.IsValid)
+        if (restoredArmor.IsValid)
         {
             // Equip the restored armor
             creature.RunEquip(restoredArmor, InventorySlot.Chest);
             _currentArmor = restoredArmor;
 
-            _player.SendServerMessage("Armor customization reverted to original.", ColorConstants.Cyan);
+            _player.SendServerMessage("Armor customization reverted to last save point.", ColorConstants.Cyan);
         }
         else
         {
@@ -593,6 +573,21 @@ public sealed class CharacterCustomizationModel
         // Clean up the backup
         _initialArmorBackup.Destroy();
         _initialArmorBackup = null;
+    }
+
+    /// <summary>
+    /// Confirm and finalize changes - cleans up backup without reverting
+    /// </summary>
+    public void ConfirmAndClose()
+    {
+        // Clean up the backup since we're keeping all changes
+        if (_initialArmorBackup != null && _initialArmorBackup.IsValid)
+        {
+            _initialArmorBackup.Destroy();
+            _initialArmorBackup = null;
+        }
+
+        _player.SendServerMessage("Armor customization confirmed!", ColorConstants.Green);
     }
 }
 

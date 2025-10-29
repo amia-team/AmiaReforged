@@ -47,7 +47,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public NuiButtonImage ModelRight10Button = null!;
     public NuiButtonImage SaveButton = null!;
     public NuiButtonImage CancelButton = null!;
-    public NuiButtonImage ConfirmButton = null!;
+    public readonly NuiButtonImage ConfirmButton = null!;
 
     // Armor part clickable buttons
     public NuiButton[] ArmorPartButtons = new NuiButton[19];
@@ -59,9 +59,6 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public NuiButtonImage Leather2Button = null!;
     public NuiButtonImage Metal1Button = null!;
     public NuiButtonImage Metal2Button = null!;
-
-    // Color buttons (176 colors, 0-175)
-    public List<NuiButtonImage> ColorButtons = new();
 
     // IToolWindow
     public string Title => "Character Customization";
@@ -101,7 +98,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
         return btn;
     }
 
-    private static NuiElement ImagePlatedLabeledButton(string id, string label, out NuiButtonImage logicalButton,
+    private static NuiElement ImagePlatedLabeledButton(string id, string label, string tooltip, out NuiButtonImage logicalButton,
         string resRef, float width = 150f, float height = 38f)
     {
         NuiButtonImage btn = new NuiButtonImage(resRef)
@@ -109,7 +106,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
             Id = id,
             Width = width,
             Height = height,
-            Tooltip = label
+            Tooltip = tooltip
         }.Assign(out logicalButton);
 
         return new NuiColumn
@@ -167,11 +164,11 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                     Children =
                     {
                         new NuiSpacer { Width = 130f }, // Center: (700 - 320) / 2
-                        ImagePlatedLabeledButton("btn_mode_armor", "Armor", out ArmorButton, "app_armor_top", 100f, 100f),
+                        ImagePlatedLabeledButton("btn_mode_armor", "Armor", "Customize Equipped Armor", out ArmorButton, "app_armor_top", 100f, 100f),
                         new NuiSpacer { Width = 10f },
-                        ImagePlatedLabeledButton("btn_mode_equipment", "Equipment", out EquipmentButton, "app_misc", 100f, 100f),
+                        ImagePlatedLabeledButton("btn_mode_equipment", "Equipment", "Customize Other Equipment", out EquipmentButton, "app_misc", 100f, 100f),
                         new NuiSpacer { Width = 10f },
-                        ImagePlatedLabeledButton("btn_mode_appearance", "Appearance", out AppearanceButton, "cc_head_btn", 100f, 100f)
+                        ImagePlatedLabeledButton("btn_mode_appearance", "Character", "Customize Character", out AppearanceButton, "cc_head_btn", 100f, 100f)
                     }
                 }
             }
@@ -361,9 +358,8 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                     Width = 30f,
                     Height = 30f,
                     Tooltip = $"Color {colorIndex}"
-                }.Assign(out NuiButtonImage btnRef);
+                };
 
-                ColorButtons.Add(btnRef);
                 rowElement.Children.Add(colorBtn);
             }
 
@@ -387,9 +383,9 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                     Children =
                     {
                         new NuiSpacer { Width = 140f }, // Center: (700 - 320) / 2
-                        ImagePlatedLabeledButton("btn_save", "", out SaveButton, "ui_btn_save"),
+                        ImagePlatedLabeledButton("btn_save", "", "Save Changes", out SaveButton, "ui_btn_save"),
                         new NuiSpacer { Width = 20f },
-                        ImagePlatedLabeledButton("btn_cancel", "", out CancelButton, "ui_btn_cancel"),
+                        ImagePlatedLabeledButton("btn_cancel", "", "Discard changes and revert to last save", out CancelButton, "ui_btn_discard"),
                     }
                 }
             }

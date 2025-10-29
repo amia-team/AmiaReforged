@@ -79,8 +79,8 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
 
     public override void Close()
     {
-        // Closing the window via X button should save changes (same as Confirm)
-        _model.ApplyChanges();
+        // Closing the window via X button should confirm changes (same as Confirm button)
+        _model.ConfirmAndClose();
         _token.Close();
     }
 
@@ -235,8 +235,8 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         // Action buttons
         if (ev.ElementId == View.SaveButton.Id)
         {
-            // Save current changes as a preset
-            _player.SendServerMessage("Save feature coming soon!", ColorConstants.Orange);
+            // Save current state as a checkpoint - doesn't close the window
+            _model.ApplyChanges();
             return;
         }
 
@@ -249,7 +249,8 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
 
         if (ev.ElementId == View.ConfirmButton.Id)
         {
-            _model.ApplyChanges();
+            // Confirm accepts changes and closes - clean up backup
+            _model.ConfirmAndClose();
             Close();
         }
     }
