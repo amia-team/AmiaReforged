@@ -1,91 +1,94 @@
+using WorldSimulator.Infrastructure.DependencyInjection;
 using WorldSimulator.Application;
-using WorldSimulator.Domain.Services;
-using WorldSimulator.Infrastructure.Persistence;
-using WorldSimulator.Infrastructure.Services;
 using DotNetEnv;
+using LightInject;
+using LightInject.Microsoft.DependencyInjection;
 
-namespace WorldSimulator;
-
-public class Program
+namespace WorldSimulator
 {
-    public static async Task Main(string[] args)
+    public class Program
     {
-        HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
-
-        // Load environment variables from .env file if it exists
-        if (File.Exists(".env"))
+        public static async Task Main(string[] args)
         {
-            Env.Load(".env");
-        }
+            // Load environment variables from .env file if it exists
+            if (File.Exists(".env"))
+            {
+                Env.Load(".env");
+            }
 
-        // Configure Serilog
-        Log.Logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(builder.Configuration)
-            .Enrich.FromLogContext()
-            .WriteTo.Console(
-                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
-            .CreateLogger();
+            // Configure Serilog early for startup logging
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console(
+                    outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .CreateLogger();
 
-        builder.Services.AddSerilog();
+            // Build host using LightInject
+            IHost host = Host.CreateDefaultBuilder(args)
+                .UseServiceProviderFactory(new LightInjectServiceProviderFactory())
+                .ConfigureServices((context, services) =>
+                {
+                    // Reconfigure Serilog with full config now that we have IConfiguration
+                    Log.Logger = new LoggerConfiguration()
+                        .ReadFrom.Configuration(context.Configuration)
+                        .Enrich.FromLogContext()
+                        .WriteTo.Console(
+                            outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                        .CreateLogger();
 
-        // Database
-        builder.Services.AddDbContext<SimulationDbContext>(options =>
-        {
-            string connectionString = builder.Configuration.GetConnectionString("PwEngine")
-                                      ?? throw new InvalidOperationException("ConnectionString 'PwEngine' not found");
-            options.UseNpgsql(connectionString);
-        });
+                    services.AddSerilog();
 
-        // HTTP Clients
-        builder.Services.AddHttpClient("WorldEngine", client =>
-        {
-            int timeout = builder.Configuration.GetValue<int>("WorldEngine:TimeoutSeconds", 30);
-            client.Timeout = TimeSpan.FromSeconds(timeout);
-        });
+                    // HTTP Clients
+                    services.AddHttpClient("WorldEngine", client =>
+                    {
+                        int timeout = context.Configuration.GetValue("WorldEngine:TimeoutSeconds", 30);
+                        client.Timeout = TimeSpan.FromSeconds(timeout);
+                    });
 
-        // Core Services
-        builder.Services.AddSingleton<IEventLogPublisher, DiscordEventLogService>();
-        builder.Services.AddSingleton<CircuitBreakerService>();
+                    // Background Services
+                    services.AddHostedService(sp =>
+                        (DiscordEventLogService)sp.GetRequiredService<IEventLogPublisher>());
+                    services.AddHostedService(sp =>
+                        sp.GetRequiredService<CircuitBreakerService>());
+                    services.AddHostedService<SimulationWorker>();
+                })
+                .ConfigureContainer<IServiceContainer>((context, container) =>
+                {
+                    // Configure services using LightInject
+                    container.ConfigureServices(context.Configuration);
+                })
+                .Build();
 
-        // Background Services (order matters for startup)
-        builder.Services.AddHostedService(sp =>
-            (DiscordEventLogService)sp.GetRequiredService<IEventLogPublisher>());
-        builder.Services.AddHostedService(sp =>
-            sp.GetRequiredService<CircuitBreakerService>());
-        builder.Services.AddHostedService<SimulationWorker>();
+            // Ensure database is created (for development)
+            using (IServiceScope scope = host.Services.CreateScope())
+            {
+                SimulationDbContext db = scope.ServiceProvider.GetRequiredService<SimulationDbContext>();
+                try
+                {
+                    await db.Database.EnsureCreatedAsync();
+                    Log.Information("Database connection verified");
+                }
+                catch (Exception ex)
+                {
+                    Log.Fatal(ex, "Failed to connect to database");
+                    throw;
+                }
+            }
 
-        IHost host = builder.Build();
+            Log.Information("WorldSimulator starting...");
 
-        // Ensure database is created (for development)
-        using (IServiceScope scope = host.Services.CreateScope())
-        {
-            SimulationDbContext db = scope.ServiceProvider.GetRequiredService<SimulationDbContext>();
             try
             {
-                await db.Database.EnsureCreatedAsync();
-                Log.Information("Database connection verified");
+                await host.RunAsync();
             }
             catch (Exception ex)
             {
-                Log.Fatal(ex, "Failed to connect to database");
+                Log.Fatal(ex, "Application terminated unexpectedly");
                 throw;
             }
-        }
-
-        Log.Information("WorldSimulator starting...");
-
-        try
-        {
-            await host.RunAsync();
-        }
-        catch (Exception ex)
-        {
-            Log.Fatal(ex, "Application terminated unexpectedly");
-            throw;
-        }
-        finally
-        {
-            Log.CloseAndFlush();
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
     }
 }

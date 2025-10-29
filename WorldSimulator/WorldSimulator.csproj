@@ -13,7 +13,11 @@
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
         <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
         <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.0" />
-        
+
+        <!-- Dependency Injection -->
+        <PackageReference Include="LightInject" Version="6.6.4" />
+        <PackageReference Include="LightInject.Microsoft.DependencyInjection" Version="3.4.3" />
+
         <!-- Database -->
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
@@ -21,27 +25,22 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Serilog" Version="4.3.0" />
-        
+
         <!-- Observability -->
         <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
         <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.0" />
-        
+
         <!-- Discord Integration -->
         <PackageReference Include="Discord.Net.Webhook" Version="3.16.0" />
-        
+
         <!-- Configuration -->
         <PackageReference Include="DotNetEnv" Version="3.1.1" />
-        
+
         <!-- Resilience -->
         <PackageReference Include="Polly" Version="8.4.2" />
     </ItemGroup>
 
-    <ItemGroup>
-        <!-- Shared Domain References -->
-        <ProjectReference Include="..\AmiaReforged.Core\AmiaReforged.Core.csproj" />
-        <ProjectReference Include="..\AmiaReforged.PwEngine\AmiaReforged.PwEngine.csproj" />
-    </ItemGroup>
 
     <ItemGroup>
       <None Remove="DISCORD_TEST_RESULTS.md" />

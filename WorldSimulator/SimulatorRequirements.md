@@ -1,6 +1,6 @@
 # Simulation Service Requirements
 
-**Document Owners**: WorldEngine Team  
+**Document Owners**: WorldEngine Team
 **Last Updated**: October 29, 2025
 
 ---
@@ -26,10 +26,11 @@ The Simulation Service executes computationally intensive workflows (dominion tu
 
 ---
 
-- **Process Isolation**: Runs as a separate .NET project/container communicating over the existing event bus through the simulation portal mediator.
+- **Process Isolation**: Runs as a separate .NET project/container, completely independent from the game server.
 - **Deployment**: Dockerized workload deployed alongside NWN server containers within the same network. Supports horizontal scaling when required.
-- **Technology Stack**: .NET 8, shared WorldEngine libraries, MediatR for internal CQRS, `System.Threading.Channels` for in-process work queues, PostgreSQL via EF Core DbContext (shared schema), Serilog + OpenTelemetry exporters for observability.
-- **Contracts**: Reuses domain value objects, commands, and events defined in WorldEngine to ensure type safety and backward compatibility.
+- **Technology Stack**: .NET 8 Worker Service, `System.Threading.Channels` for in-process work queues, PostgreSQL via EF Core DbContext (separate database instance), Serilog for structured logging, Polly for resilience patterns, Discord webhooks for event notifications.
+- **Communication**: HTTP/gRPC endpoints for WorldEngine integration, Discord webhooks for notifications and event logging (toggleable at runtime).
+- **Contracts**: Defines its own domain value objects, commands, and events. Communication with WorldEngine happens via agreed-upon DTOs/messages to ensure loose coupling.
 
 ---
 
@@ -99,15 +100,17 @@ The Simulation Service executes computationally intensive workflows (dominion tu
 
 ## 5. Data & Persistence Requirements
 
-- Shares the same PostgreSQL cluster as WorldEngine but operates through a dedicated schema (e.g., `simulation`) using a separate DbContext.
-- Simulation Service persists **only** orchestration metadata it owns:
-  - `SimulationDominionTurn` (job metadata, status, timings)
-  - `SimulationDominionWorkItem` (scenario queue entries and checkpoints)
+- **Operates with a completely separate PostgreSQL database instance** from WorldEngine and the game server.
+- The WorldSimulator is **fully independent** and does not share DbContext, schemas, or database instances with AmiaReforged.Core or AmiaReforged.PwEngine.
+- Simulation Service persists **only** orchestration metadata and simulation state it owns:
+  - `SimulationWorkItem` (work queue entries, status, payloads)
+  - `DominionTurnJob` (dominion turn metadata, status, timings, results)
   - `SimulationOutbox` / `SimulationInbox` (optional) for reliable messaging and retries
-- WorldEngine remains the authoritative writer for domain aggregates (settlement civic stats, influence ledgers, market history). Simulation publishes events and reads the resulting projections but does not write those tables directly.
-- Read access to shared tables (`SettlementCivicStats`, `PersonaInfluenceLedger`, `MarketPriceHistory`, etc.) is required to contextualize simulations.
+  - Future: simulation snapshots, cached projections, event log
+- **Communication with WorldEngine is exclusively through events/commands** (no direct database access).
+- WorldEngine remains the authoritative source for all game domain data. The simulator requests data via commands/queries and receives responses via events.
 - Employ optimistic concurrency tokens (rowversion/`xmin`) on simulation-owned tables to avoid double processing when multiple instances run.
-- Batch writes for job metadata to minimize transaction contention while keeping domain updates in WorldEngine.
+- Database connection configured via environment variables, completely separate from game server database credentials.
 
 ---
 

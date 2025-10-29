@@ -16,7 +16,7 @@ public class WorkPayloadTests
         public void Validate_ShouldSucceed_WhenAllRequiredFieldsAreProvided()
         {
             // Arrange
-            var payload = new DominionTurnPayload
+            DominionTurnPayload payload = new DominionTurnPayload
             {
                 DominionId = Guid.NewGuid(),
                 DominionName = "Kingdom of Amia",
@@ -25,7 +25,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeTrue();
@@ -36,7 +36,7 @@ public class WorkPayloadTests
         public void Validate_ShouldFail_WhenDominionIdIsEmpty()
         {
             // Arrange
-            var payload = new DominionTurnPayload
+            DominionTurnPayload payload = new DominionTurnPayload
             {
                 DominionId = Guid.Empty,
                 DominionName = "Test Kingdom",
@@ -45,7 +45,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeFalse();
@@ -56,7 +56,7 @@ public class WorkPayloadTests
         public void Validate_ShouldFail_WhenDominionNameIsEmpty()
         {
             // Arrange
-            var payload = new DominionTurnPayload
+            DominionTurnPayload payload = new DominionTurnPayload
             {
                 DominionId = Guid.NewGuid(),
                 DominionName = "",
@@ -65,7 +65,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeFalse();
@@ -76,7 +76,7 @@ public class WorkPayloadTests
         public void Validate_ShouldFail_WhenNoEntitiesProvided()
         {
             // Arrange
-            var payload = new DominionTurnPayload
+            DominionTurnPayload payload = new DominionTurnPayload
             {
                 DominionId = Guid.NewGuid(),
                 DominionName = "Test Kingdom",
@@ -84,7 +84,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeFalse();
@@ -99,14 +99,14 @@ public class WorkPayloadTests
         public void Validate_ShouldSucceed_WithValidSettlement()
         {
             // Arrange
-            var payload = new CivicStatsPayload
+            CivicStatsPayload payload = new CivicStatsPayload
             {
                 SettlementId = Guid.NewGuid(),
                 SettlementName = "Cordor"
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeTrue();
@@ -116,7 +116,7 @@ public class WorkPayloadTests
         public void Validate_ShouldFail_WhenLookbackPeriodIsNegative()
         {
             // Arrange
-            var payload = new CivicStatsPayload
+            CivicStatsPayload payload = new CivicStatsPayload
             {
                 SettlementId = Guid.NewGuid(),
                 SettlementName = "Cordor",
@@ -124,7 +124,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeFalse();
@@ -135,7 +135,7 @@ public class WorkPayloadTests
         public void Validate_ShouldFail_WhenLookbackPeriodExceedsMaximum()
         {
             // Arrange
-            var payload = new CivicStatsPayload
+            CivicStatsPayload payload = new CivicStatsPayload
             {
                 SettlementId = Guid.NewGuid(),
                 SettlementName = "Cordor",
@@ -143,7 +143,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeFalse();
@@ -158,7 +158,7 @@ public class WorkPayloadTests
         public void Validate_ShouldSucceed_WithValidAction()
         {
             // Arrange
-            var payload = new PersonaActionPayload
+            PersonaActionPayload payload = new PersonaActionPayload
             {
                 PersonaId = Guid.NewGuid(),
                 PersonaName = "Lord Blackwood",
@@ -168,7 +168,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeTrue();
@@ -178,7 +178,7 @@ public class WorkPayloadTests
         public void Validate_ShouldFail_WhenInfluenceCostIsNegative()
         {
             // Arrange
-            var payload = new PersonaActionPayload
+            PersonaActionPayload payload = new PersonaActionPayload
             {
                 PersonaId = Guid.NewGuid(),
                 PersonaName = "Test Persona",
@@ -188,7 +188,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeFalse();
@@ -199,7 +199,7 @@ public class WorkPayloadTests
         public void Validate_ShouldFail_WhenActionTypeIsEmpty()
         {
             // Arrange
-            var payload = new PersonaActionPayload
+            PersonaActionPayload payload = new PersonaActionPayload
             {
                 PersonaId = Guid.NewGuid(),
                 PersonaName = "Test Persona",
@@ -209,7 +209,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeFalse();
@@ -224,7 +224,7 @@ public class WorkPayloadTests
         public void Validate_ShouldSucceed_WhenRecalculateAllItemsIsTrue()
         {
             // Arrange
-            var payload = new MarketPricingPayload
+            MarketPricingPayload payload = new MarketPricingPayload
             {
                 MarketId = Guid.NewGuid(),
                 MarketName = "Grand Bazaar",
@@ -232,7 +232,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeTrue();
@@ -242,7 +242,7 @@ public class WorkPayloadTests
         public void Validate_ShouldSucceed_WhenItemIdsAreProvided()
         {
             // Arrange
-            var payload = new MarketPricingPayload
+            MarketPricingPayload payload = new MarketPricingPayload
             {
                 MarketId = Guid.NewGuid(),
                 MarketName = "Grand Bazaar",
@@ -250,7 +250,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeTrue();
@@ -260,7 +260,7 @@ public class WorkPayloadTests
         public void Validate_ShouldFail_WhenNeitherRecalculateAllNorItemIdsProvided()
         {
             // Arrange
-            var payload = new MarketPricingPayload
+            MarketPricingPayload payload = new MarketPricingPayload
             {
                 MarketId = Guid.NewGuid(),
                 MarketName = "Grand Bazaar",
@@ -268,7 +268,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var result = payload.Validate();
+            ValidationResult result = payload.Validate();
 
             // Assert
             result.IsValid.Should().BeFalse();
@@ -283,7 +283,7 @@ public class WorkPayloadTests
         public void Create_ShouldCreateWorkItemWithTypedPayload()
         {
             // Arrange
-            var payload = new DominionTurnPayload
+            DominionTurnPayload payload = new DominionTurnPayload
             {
                 DominionId = Guid.NewGuid(),
                 DominionName = "Kingdom of Amia",
@@ -292,7 +292,7 @@ public class WorkPayloadTests
             };
 
             // Act
-            var workItem = SimulationWorkItem.Create(payload);
+            SimulationWorkItem workItem = SimulationWorkItem.Create(payload);
 
             // Assert
             workItem.Should().NotBeNull();
@@ -305,7 +305,7 @@ public class WorkPayloadTests
         public void Create_ShouldThrowArgumentException_WhenPayloadIsInvalid()
         {
             // Arrange
-            var invalidPayload = new DominionTurnPayload
+            DominionTurnPayload invalidPayload = new DominionTurnPayload
             {
                 DominionId = Guid.Empty,  // Invalid
                 DominionName = "",         // Invalid
@@ -323,16 +323,16 @@ public class WorkPayloadTests
         public void GetPayload_ShouldDeserializeToCorrectType()
         {
             // Arrange
-            var originalPayload = new CivicStatsPayload
+            CivicStatsPayload originalPayload = new CivicStatsPayload
             {
                 SettlementId = Guid.NewGuid(),
                 SettlementName = "Cordor",
                 LookbackPeriod = TimeSpan.FromDays(30)
             };
-            var workItem = SimulationWorkItem.Create(originalPayload);
+            SimulationWorkItem workItem = SimulationWorkItem.Create(originalPayload);
 
             // Act
-            var deserializedPayload = workItem.GetPayload<CivicStatsPayload>();
+            CivicStatsPayload deserializedPayload = workItem.GetPayload<CivicStatsPayload>();
 
             // Assert
             deserializedPayload.Should().NotBeNull();
@@ -345,7 +345,7 @@ public class WorkPayloadTests
         public void TryGetPayload_ShouldReturnTrue_WhenDeserializationSucceeds()
         {
             // Arrange
-            var originalPayload = new PersonaActionPayload
+            PersonaActionPayload originalPayload = new PersonaActionPayload
             {
                 PersonaId = Guid.NewGuid(),
                 PersonaName = "Lord Blackwood",
@@ -353,10 +353,10 @@ public class WorkPayloadTests
                 InfluenceCost = 100,
                 TargetEntityId = Guid.NewGuid()
             };
-            var workItem = SimulationWorkItem.Create(originalPayload);
+            SimulationWorkItem workItem = SimulationWorkItem.Create(originalPayload);
 
             // Act
-            var success = workItem.TryGetPayload<PersonaActionPayload>(out var payload);
+            bool success = workItem.TryGetPayload<PersonaActionPayload>(out PersonaActionPayload? payload);
 
             // Assert
             success.Should().BeTrue();
@@ -368,17 +368,17 @@ public class WorkPayloadTests
         public void TryGetPayload_ShouldReturnFalse_WhenDeserializationFails()
         {
             // Arrange
-            var dominionPayload = new DominionTurnPayload
+            DominionTurnPayload dominionPayload = new DominionTurnPayload
             {
                 DominionId = Guid.NewGuid(),
                 DominionName = "Test",
                 TurnDate = DateTime.UtcNow,
                 TerritoryIds = new[] { Guid.NewGuid() }
             };
-            var workItem = SimulationWorkItem.Create(dominionPayload);
+            SimulationWorkItem workItem = SimulationWorkItem.Create(dominionPayload);
 
             // Act - Try to deserialize to wrong type
-            var success = workItem.TryGetPayload<CivicStatsPayload>(out var payload);
+            bool success = workItem.TryGetPayload<CivicStatsPayload>(out CivicStatsPayload? payload);
 
             // Assert
             success.Should().BeFalse();

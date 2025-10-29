@@ -93,12 +93,8 @@ public class CircuitBreakerService : IHostedService, IDisposable
         _logger.LogInformation("Circuit breaker CLOSED - WorldEngine available at {Host}", host);
 
         await _eventPublisher.PublishAsync(
-            new CircuitBreakerStateChanged
-            {
-                State = "Closed",
-                Host = host
-            },
-            EventSeverity.Info);
+            new CircuitBreakerStateChanged("Closed", host, null),
+            EventSeverity.Information);
     }
 
     private async Task TransitionToOpenAsync(string host, string error)
@@ -114,12 +110,7 @@ public class CircuitBreakerService : IHostedService, IDisposable
         _logger.LogWarning("Circuit breaker OPEN - WorldEngine unavailable at {Host}: {Error}", host, error);
 
         await _eventPublisher.PublishAsync(
-            new CircuitBreakerStateChanged
-            {
-                State = "Open",
-                Host = host,
-                Error = error
-            },
+            new CircuitBreakerStateChanged("Open", host, error),
             EventSeverity.Critical);
     }
 

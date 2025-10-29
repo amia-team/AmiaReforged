@@ -8,4 +8,6 @@ global using WorldSimulator.Domain.Aggregates;
 global using WorldSimulator.Domain.ValueObjects;
 global using WorldSimulator.Domain.Services;
 global using WorldSimulator.Domain.WorkPayloads;
+global using WorldSimulator.Domain.Events;
 global using WorldSimulator.Infrastructure.Persistence;
+global using WorldSimulator.Application.Processors;

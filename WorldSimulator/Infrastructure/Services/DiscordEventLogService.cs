@@ -80,7 +80,7 @@ public class DiscordEventLogService : IEventLogPublisher, IHostedService, IDispo
         }
     }
 
-    public async Task PublishAsync(SimulationEvent eventData, EventSeverity severity = EventSeverity.Info)
+    public async Task PublishAsync(SimulationEvent eventData, EventSeverity severity = EventSeverity.Information, CancellationToken cancellationToken = default)
     {
         if (!_isEnabled)
         {
@@ -129,9 +129,10 @@ public class DiscordEventLogService : IEventLogPublisher, IHostedService, IDispo
     {
         EmbedBuilder? embedBuilder = new EmbedBuilder()
             .WithTitle($"🎲 {entry.Event.GetType().Name}")
+            .WithDescription(entry.Event.Message)
             .WithColor(GetColorForSeverity(entry.Severity))
             .WithTimestamp(entry.Timestamp)
-            .WithFooter($"Event ID: {entry.Event.EventId}");
+            .WithFooter($"Occurred at {entry.Event.OccurredAt:yyyy-MM-dd HH:mm:ss} UTC");
 
         // Add environment field
         string environment = _configuration["ENVIRONMENT_NAME"] ?? "Unknown";
@@ -196,7 +197,7 @@ public class DiscordEventLogService : IEventLogPublisher, IHostedService, IDispo
     {
         EventSeverity.Critical => Color.Red,
         EventSeverity.Warning => Color.Gold,
-        EventSeverity.Info => Color.Blue,
+        EventSeverity.Information => Color.Blue,
         _ => Color.Default
     };
 

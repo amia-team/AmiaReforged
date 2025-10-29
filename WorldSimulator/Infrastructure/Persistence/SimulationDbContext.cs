@@ -1,18 +1,17 @@
-using AmiaReforged.PwEngine.Database;
+using Microsoft.EntityFrameworkCore;
+using WorldSimulator.Domain.Aggregates;
+using WorldSimulator.Infrastructure.Persistence.Configurations;
 
 namespace WorldSimulator.Infrastructure.Persistence;
 
 /// <summary>
 /// DbContext for the WorldSimulator service.
-/// Extends PwEngineContext for read access to shared WorldEngine data while managing its own simulation tables.
+/// Completely independent from game server - manages only simulation-specific tables.
 /// </summary>
-public class SimulationDbContext : PwEngineContext
+public class SimulationDbContext : DbContext
 {
-    public SimulationDbContext() : base() { }
-
-    public SimulationDbContext(DbContextOptions<SimulationDbContext> options) : base()
+    public SimulationDbContext(DbContextOptions<SimulationDbContext> options) : base(options)
     {
-        // Inherit connection from base or use provided options
     }
 
     /// <summary>
@@ -20,28 +19,21 @@ public class SimulationDbContext : PwEngineContext
     /// </summary>
     public DbSet<SimulationWorkItem> WorkItems { get; set; } = null!;
 
+    /// <summary>
+    /// Dominion turn jobs for government processing
+    /// </summary>
+    public DbSet<DominionTurnJob> DominionTurnJobs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure simulation-specific tables in the 'simulation' schema
-        modelBuilder.Entity<SimulationWorkItem>(entity =>
-        {
-            entity.ToTable("work_items", "simulation");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.WorkType).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Payload).IsRequired();
-            entity.Property(e => e.Status).IsRequired();
-            entity.Property(e => e.CreatedAt).IsRequired();
-            entity.Property(e => e.Error).HasMaxLength(2000);
-            entity.Property(e => e.Version)
-                .IsRowVersion()
-                .HasColumnName("xmin")
-                .HasColumnType("xid");
+        // Apply entity configurations from separate classes
+        modelBuilder.ApplyConfiguration(new SimulationWorkItemConfiguration());
+        modelBuilder.ApplyConfiguration(new DominionTurnJobConfiguration());
 
-            // Index for efficient polling
-            entity.HasIndex(e => new { e.Status, e.CreatedAt });
-        });
+        // Set default schema for all simulation tables
+        modelBuilder.HasDefaultSchema("simulation");
     }
 }
 

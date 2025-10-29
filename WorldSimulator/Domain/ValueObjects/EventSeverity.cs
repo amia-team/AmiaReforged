@@ -1,17 +1,21 @@
-namespace WorldSimulator.Domain.ValueObjects;
-
-/// <summary>
-/// Event severity levels for logging and Discord notifications
-/// </summary>
-public enum EventSeverity
+namespace WorldSimulator.Domain.ValueObjects
 {
-    /// <summary>Informational events for normal operation</summary>
-    Info = 0,
+    /// <summary>
+    /// Severity level for events and notifications
+    /// </summary>
+    public enum EventSeverity
+    {
+        /// <summary>Informational event</summary>
+        Information = 0,
 
-    /// <summary>Warning events that may require attention</summary>
-    Warning = 1,
+        /// <summary>Warning that requires attention</summary>
+        Warning = 1,
 
-    /// <summary>Critical events requiring immediate attention</summary>
-    Critical = 2
+        /// <summary>Error that caused failure</summary>
+        Error = 2,
+
+        /// <summary>Critical system failure</summary>
+        Critical = 3
+    }
 }
 

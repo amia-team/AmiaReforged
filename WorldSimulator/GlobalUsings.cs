@@ -13,5 +13,5 @@ global using WorldSimulator.Domain.Events;
 global using WorldSimulator.Domain.WorkPayloads;
 global using WorldSimulator.Infrastructure.Persistence;
 global using WorldSimulator.Infrastructure.Services;
-
+global using WorldSimulator.Application.Factories;
 

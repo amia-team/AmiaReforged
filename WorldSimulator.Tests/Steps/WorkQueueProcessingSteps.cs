@@ -33,8 +33,11 @@ public class WorkQueueProcessingSteps
         // Set up mocks
         _eventPublisherMock = new Mock<IEventLogPublisher>();
         _eventPublisherMock
-            .Setup(x => x.PublishAsync(It.IsAny<SimulationEvent>(), It.IsAny<EventSeverity>()))
-            .Callback<SimulationEvent, EventSeverity>((evt, sev) => _publishedEvents.Add(evt))
+            .Setup(x => x.PublishAsync(
+                It.IsAny<SimulationEvent>(),
+                It.IsAny<EventSeverity>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<SimulationEvent, EventSeverity, CancellationToken>((evt, sev, ct) => _publishedEvents.Add(evt))
             .Returns(Task.CompletedTask);
 
         _scenarioContext["EventPublisher"] = _eventPublisherMock;

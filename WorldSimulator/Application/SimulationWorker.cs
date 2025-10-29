@@ -34,8 +34,8 @@ public class SimulationWorker : BackgroundService
 
         string environment = _configuration["ENVIRONMENT_NAME"] ?? "Unknown";
         await _eventPublisher.PublishAsync(
-            new SimulationServiceStarted { Environment = environment },
-            EventSeverity.Info);
+            new SimulationServiceStarted(environment),
+            EventSeverity.Information);
 
         int pollIntervalSeconds = _configuration.GetValue<int>("Simulation:PollIntervalSeconds", 5);
         int circuitBreakerWaitSeconds = _configuration.GetValue<int>("Simulation:CircuitBreakerWaitSeconds", 30);
@@ -71,8 +71,8 @@ public class SimulationWorker : BackgroundService
         }
 
         await _eventPublisher.PublishAsync(
-            new SimulationServiceStopping { Reason = "Graceful shutdown" },
-            EventSeverity.Info);
+            new SimulationServiceStopping("Graceful shutdown"),
+            EventSeverity.Information);
 
         _logger.LogInformation("Simulation Worker stopped");
     }
@@ -117,13 +117,8 @@ public class SimulationWorker : BackgroundService
                 workItem.Id, duration.TotalMilliseconds);
 
             await _eventPublisher.PublishAsync(
-                new WorkItemCompleted
-                {
-                    Id = workItem.Id,
-                    Type = workItem.WorkType,
-                    Duration = duration
-                },
-                EventSeverity.Info);
+                new WorkItemCompleted(workItem.Id, workItem.WorkType, duration),
+                EventSeverity.Information);
         }
         catch (Exception ex)
         {
@@ -133,13 +128,7 @@ public class SimulationWorker : BackgroundService
             await db.SaveChangesAsync(cancellationToken);
 
             await _eventPublisher.PublishAsync(
-                new WorkItemFailed
-                {
-                    Id = workItem.Id,
-                    Type = workItem.WorkType,
-                    Error = ex.Message,
-                    RetryCount = workItem.RetryCount
-                },
+                new WorkItemFailed(workItem.Id, workItem.WorkType, ex.Message, workItem.RetryCount),
                 EventSeverity.Warning);
         }
     }
