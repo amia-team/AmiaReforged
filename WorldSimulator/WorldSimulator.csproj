@@ -43,4 +43,8 @@
         <ProjectReference Include="..\AmiaReforged.PwEngine\AmiaReforged.PwEngine.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="DISCORD_TEST_RESULTS.md" />
+    </ItemGroup>
+
 </Project>
