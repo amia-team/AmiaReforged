@@ -68,19 +68,59 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
     public void Concealment(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Temporary, Effect.Concealment(50), WildMagicUtils.LongDuration);
 
-    public void CircleOfDeath(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public void BalagarnsIronHorn(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.Balagarnsironhorn);
+        if (spell == null) return;
+        if (monk.Location == null) return;
 
+        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Transmutation, 2, monkLevel))
+            return;
+
+        monk.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfHowlWarCry));
+
+        foreach (NwCreature enemy in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Colossal, true))
+        {
+            if (!monk.IsReactionTypeHostile(enemy)) continue;
+            if (Random.Shared.Roll(20) + enemy.GetAbilityModifier(Ability.Strength) >= Random.Shared.Roll(20) + 5)
+                continue;
+
+            _ = ApplyBalagarns(monk, enemy);
+        }
+    }
+
+    private async Task ApplyBalagarns(NwCreature monk, NwCreature enemy)
+    {
+        float delay = monk.Distance(enemy) / 20;
+
+        await NwTask.Delay(TimeSpan.FromSeconds(delay));
+
+        enemy.ApplyEffect(EffectDuration.Instant, Effect.Knockdown(), NwTimeSpan.FromRounds(1));
+        enemy.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHeadNature));
     }
 
     public void CureCriticalWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        int heal = Math.Min((int)monkLevel, 20) + Random.Shared.Roll(8, 4);
 
+        monk.ApplyEffect(EffectDuration.Instant, Effect.Heal(heal));
+        monk.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpHealingG));
     }
 
     public void Restoration(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        monk.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpRestoration));
 
+        foreach (Effect effect in monk.ActiveEffects)
+        {
+            if (effect.EffectType is EffectType.AbilityDecrease or EffectType.AcDecrease or EffectType.DamageDecrease
+                    or EffectType.DamageImmunityDecrease or EffectType.SavingThrowDecrease or EffectType.SkillDecrease
+                    or EffectType.Blindness or EffectType.Deaf or EffectType.Paralyze or EffectType.NegativeLevel or
+                    EffectType.AttackDecrease
+                && effect.SubType != EffectSubType.Unyielding)
+
+                monk.RemoveEffect(effect);
+        }
     }
 
     public void BalefulPolymorph(NwCreature monk, NwCreature target, int dc, byte monkLevel)

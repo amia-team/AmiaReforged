@@ -54,7 +54,7 @@ public class WildMagicEffects(
         new("Healing Sting", moderateWildMagic.HealingSting),
         new("Inflict Critical Wounds", moderateWildMagic.InflictCriticalWounds),
         new("Concealment", moderateWildMagic.Concealment),
-        new("Circle of Death", moderateWildMagic.CircleOfDeath),
+        new("Balagarn's Iron Horn", moderateWildMagic.BalagarnsIronHorn),
         new("Cure Critical Wounds", moderateWildMagic.CureCriticalWounds),
         new("Restoration", moderateWildMagic.Restoration),
         new("Baleful Polymorph", moderateWildMagic.BalefulPolymorph),
