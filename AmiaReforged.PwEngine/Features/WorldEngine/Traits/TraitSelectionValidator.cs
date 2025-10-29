@@ -84,19 +84,19 @@ public static class TraitSelectionValidator
     }
 
     /// <summary>
-    /// Validates if a character trait can be deselected.
+    /// Validates if a trait can be deselected.
     /// </summary>
-    /// <param name="characterTrait">The character trait to check</param>
-    /// <returns>Always true - traits can be changed at any time</returns>
+    /// <param name="characterTrait">The character trait to validate for deselection</param>
+    /// <returns>True if trait can be deselected, false otherwise</returns>
     /// <remarks>
-    /// Confirmation marks the end of initial selection but does not permanently lock traits.
-    /// Players can modify their traits post-creation.
+    /// Confirmed traits are permanent and cannot be deselected by players.
+    /// Only unconfirmed traits can be freely deselected during initial selection.
+    /// DM personas can remove confirmed traits via separate integration code.
     /// </remarks>
     public static bool CanDeselect(CharacterTrait characterTrait)
     {
-        // Traits can always be deselected - confirmation just means the initial selection is finalized,
-        // but players can change their traits later
-        return true;
+        // Confirmed traits are permanent - only unconfirmed traits can be deselected
+        return !characterTrait.IsConfirmed;
     }
 
     private static bool IsRaceEligible(Trait trait, RaceData characterRace)
@@ -131,7 +131,7 @@ public static class TraitSelectionValidator
 
     private static bool HasConflictingTrait(Trait trait, List<CharacterTrait> currentSelections)
     {
-        return trait.ConflictingTraits.Any(ct => 
+        return trait.ConflictingTraits.Any(ct =>
             currentSelections.Any(cs => cs.TraitTag == ct));
     }
 
@@ -142,7 +142,7 @@ public static class TraitSelectionValidator
             return true;
 
         // All prerequisites must be met
-        return trait.PrerequisiteTraits.All(pt => 
+        return trait.PrerequisiteTraits.All(pt =>
             currentSelections.Any(cs => cs.TraitTag == pt));
     }
 }
