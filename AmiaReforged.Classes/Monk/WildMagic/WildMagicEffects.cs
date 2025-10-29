@@ -21,14 +21,15 @@ public class WildMagicEffects(
     public readonly WildMagicEffect[] AdverseEffects =
     [
         new("Polymorph", adverseWildMagic.Polymorph),
-        new("Hermitic Confusion", adverseWildMagic.HermiticConfusion),
-        new("Trade Places", adverseWildMagic.TradePlaces),
+        new("Hermitic Confusion", AdverseWildMagic.HermiticConfusion),
+        new("Trade Places", AdverseWildMagic.TradePlaces),
         new("Heal (Not That One!)", adverseWildMagic.HealNotThatOne),
-        new("Restoration (Not That One!)", adverseWildMagic.RestorationNotThatOne),
+        new("Restoration (Not That One!)", AdverseWildMagic.RestorationNotThatOne),
         new("Self-Immolation", adverseWildMagic.SelfImmolation),
         new("Death Armor (Not That One!)", adverseWildMagic.DeathArmorNotThatOne),
         new("Self-Inflict Wounds", adverseWildMagic.SelfInflictWounds),
-        new("Spontaneous Meditation", adverseWildMagic.SpontaneousMeditation)
+        new("Spontaneous Meditation", AdverseWildMagic.SpontaneousMeditation),
+        new("Lightning Rod", AdverseWildMagic.LightningRod)
     ];
 
     public readonly WildMagicEffect[] WeakEffects =
@@ -73,7 +74,6 @@ public class WildMagicEffects(
         new("Confusion", strongWildMagic.Confusion),
         new("Negative Energy Burst", strongWildMagic.NegativeEnergyBurst),
         new("Call Lightning", strongWildMagic.CallLightning),
-        new("Scintillating Sphere", strongWildMagic.ScintillatingSphere),
         new("Fireball", strongWildMagic.Fireball),
         new("Slow", strongWildMagic.Slow),
         new("Greater Planar Binding", strongWildMagic.GreaterPlanarBinding),
