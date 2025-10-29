@@ -73,27 +73,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Publish Test Results') {
-            steps {
-                script {
-                    // Publish HTML coverage report
-                    try {
-                        echo 'Publishing code coverage report...'
-                        publishHTML([
-                            allowMissing: true,
-                            alwaysLinkToLastBuild: false,
-                            keepAll: true,
-                            reportDir: 'WorldSimulator.Tests/TestResults',
-                            reportFiles: 'index.html',
-                            reportName: 'Code Coverage Report'
-                        ])
-                    } catch (Exception e) {
-                        echo "Warning: Could not publish coverage report: ${e.message}"
-                    }
-                }
-            }
-        }
     }
 
     post {
