@@ -21,6 +21,9 @@ public sealed class CharacterCustomizationModel
     // Current armor being edited
     private NwItem? _currentArmor;
 
+    // Store initial armor state for cancel/revert functionality
+    private NwItem? _initialArmorBackup;
+
     // Torso model ranges organized by armor class (AC)
     private static readonly Dictionary<int, HashSet<int>> TorsoModelsByAc = new()
     {
@@ -86,6 +89,14 @@ public sealed class CharacterCustomizationModel
             LoadCurrentArmor();
             if (_currentArmor != null && _currentArmor.IsValid)
             {
+                // Create a backup of the initial armor state for cancel/revert
+                NwCreature? creature = _player.ControlledCreature;
+                if (creature != null)
+                {
+                    // Clone the armor to an invisible container for backup
+                    _initialArmorBackup = _currentArmor.Clone(creature, null, false);
+                }
+
                 string armorName = _currentArmor.Name;
                 _player.SendServerMessage($"Modifying {armorName}. Select part, model, and color.", ColorConstants.Cyan);
             }
@@ -98,7 +109,7 @@ public sealed class CharacterCustomizationModel
 
     public void SetArmorPart(int partIndex)
     {
-        if (partIndex >= 0 && partIndex < 19)
+        if (partIndex >= 0 && partIndex <= 19) // 0-18 for individual parts, 19 for "All Parts"
         {
             CurrentArmorPart = partIndex;
         }
@@ -115,6 +126,14 @@ public sealed class CharacterCustomizationModel
     public void AdjustArmorPartModel(int delta)
     {
         if (CurrentMode != CustomizationMode.Armor) return;
+
+        // Cannot adjust models in "All Parts" mode
+        if (CurrentArmorPart == 19)
+        {
+            _player.SendServerMessage("Cannot adjust models in 'All Parts' mode. Select a specific part first.", ColorConstants.Orange);
+            return;
+        }
+
         if (_currentArmor == null || !_currentArmor.IsValid)
         {
             _player.SendServerMessage("No armor equipped to modify.", ColorConstants.Orange);
@@ -123,6 +142,8 @@ public sealed class CharacterCustomizationModel
 
         NwCreature? creature = _player.ControlledCreature;
         if (creature == null) return;
+
+        // ...existing code...
 
         // Map our part index to CreaturePart enum
         CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
@@ -300,9 +321,6 @@ public sealed class CharacterCustomizationModel
         NwCreature? creature = _player.ControlledCreature;
         if (creature == null) return;
 
-        // Get the current armor part being edited
-        CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
-
         // Map color channel to ItemAppearanceArmorColor enum
         ItemAppearanceArmorColor colorChannel = GetArmorColorChannel(CurrentColorChannel);
 
@@ -312,8 +330,33 @@ public sealed class CharacterCustomizationModel
         // Store reference to old armor
         NwItem oldArmor = _currentArmor;
 
-        // Use Anvil's native per-part color method
-        oldArmor.Appearance.SetArmorPieceColor(creaturePart, colorChannel, (byte)colorIndex);
+        // Check if "All Parts" mode (index 19)
+        if (CurrentArmorPart == 19)
+        {
+            // Apply color to all parts except Robe
+            CreaturePart[] allParts = new[]
+            {
+                CreaturePart.RightFoot, CreaturePart.LeftFoot, CreaturePart.RightShin, CreaturePart.LeftShin,
+                CreaturePart.RightThigh, CreaturePart.LeftThigh, CreaturePart.Pelvis, CreaturePart.Torso,
+                CreaturePart.Belt, CreaturePart.Neck, CreaturePart.RightForearm, CreaturePart.LeftForearm,
+                CreaturePart.RightBicep, CreaturePart.LeftBicep, CreaturePart.RightShoulder, CreaturePart.LeftShoulder,
+                CreaturePart.RightHand, CreaturePart.LeftHand
+                // Note: Robe (index 18) is intentionally excluded
+            };
+
+            foreach (var part in allParts)
+            {
+                oldArmor.Appearance.SetArmorPieceColor(part, colorChannel, (byte)colorIndex);
+            }
+
+            _player.SendServerMessage($"Applying {channelName} color to all armor parts...", ColorConstants.Cyan);
+        }
+        else
+        {
+            // Single part mode
+            CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
+            oldArmor.Appearance.SetArmorPieceColor(creaturePart, colorChannel, (byte)colorIndex);
+        }
 
         // Unequip and re-equip to refresh the visual
         creature.RunUnequip(oldArmor);
@@ -338,13 +381,20 @@ public sealed class CharacterCustomizationModel
         // Destroy the old armor
         oldArmor.Destroy();
 
-        string[] partNames = new[] { "Right Foot", "Left Foot", "Right Shin", "Left Shin",
-            "Right Thigh", "Left Thigh", "Pelvis", "Torso", "Belt", "Neck",
-            "Right Forearm", "Left Forearm", "Right Bicep", "Left Bicep",
-            "Right Shoulder", "Left Shoulder", "Right Hand", "Left Hand", "Robe" };
-        string partName = CurrentArmorPart < partNames.Length ? partNames[CurrentArmorPart] : "Unknown";
+        if (CurrentArmorPart == 19)
+        {
+            _player.SendServerMessage($"All armor parts {channelName} color updated to {colorIndex}.", ColorConstants.Green);
+        }
+        else
+        {
+            string[] partNames = new[] { "Right Foot", "Left Foot", "Right Shin", "Left Shin",
+                "Right Thigh", "Left Thigh", "Pelvis", "Torso", "Belt", "Neck",
+                "Right Forearm", "Left Forearm", "Right Bicep", "Left Bicep",
+                "Right Shoulder", "Left Shoulder", "Right Hand", "Left Hand", "Robe" };
+            string partName = CurrentArmorPart < partNames.Length ? partNames[CurrentArmorPart] : "Unknown";
 
-        _player.SendServerMessage($"{partName} {channelName} color updated to {colorIndex}.", ColorConstants.Green);
+            _player.SendServerMessage($"{partName} {channelName} color updated to {colorIndex}.", ColorConstants.Green);
+        }
     }
 
     public void SetHairColor(int colorIndex)
@@ -369,6 +419,9 @@ public sealed class CharacterCustomizationModel
     {
         if (_currentArmor == null || !_currentArmor.IsValid) return 0;
 
+        // "All Parts" mode doesn't have a single model number
+        if (CurrentArmorPart == 19) return 0;
+
         CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
         return _currentArmor.Appearance.GetArmorModel(creaturePart);
     }
@@ -377,8 +430,15 @@ public sealed class CharacterCustomizationModel
     {
         if (_currentArmor == null || !_currentArmor.IsValid) return 0;
 
-        CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
         ItemAppearanceArmorColor colorChannel = GetArmorColorChannel(CurrentColorChannel);
+
+        // "All Parts" mode - return the color from Torso as representative
+        if (CurrentArmorPart == 19)
+        {
+            return _currentArmor.Appearance.GetArmorPieceColor(CreaturePart.Torso, colorChannel);
+        }
+
+        CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
 
         // Use Anvil's native per-part color method
         return _currentArmor.Appearance.GetArmorPieceColor(creaturePart, colorChannel);
@@ -479,20 +539,60 @@ public sealed class CharacterCustomizationModel
 
 
     /// <summary>
-    /// Apply all changes to the character (for now, changes are applied immediately)
+    /// Apply all changes to the character - confirms changes and discards backup
     /// </summary>
     public void ApplyChanges()
     {
-        _player.SendServerMessage("Character appearance saved!", ColorConstants.Green);
+        // Destroy the backup since we're keeping the changes
+        if (_initialArmorBackup != null && _initialArmorBackup.IsValid)
+        {
+            _initialArmorBackup.Destroy();
+            _initialArmorBackup = null;
+        }
+
+        _player.SendServerMessage("Armor customization saved!", ColorConstants.Green);
     }
 
     /// <summary>
-    /// Revert all changes back to original (not implemented yet - would need to store original)
+    /// Revert all changes back to original - restores the backup
     /// </summary>
     public void RevertChanges()
     {
-        _player.SendServerMessage("Revert feature coming soon!", ColorConstants.Yellow);
-        LoadCurrentArmor();
+        if (_initialArmorBackup == null || !_initialArmorBackup.IsValid)
+        {
+            _player.SendServerMessage("No changes to revert.", ColorConstants.Orange);
+            return;
+        }
+
+        NwCreature? creature = _player.ControlledCreature;
+        if (creature == null) return;
+
+        // Unequip the current modified armor
+        if (_currentArmor != null && _currentArmor.IsValid)
+        {
+            creature.RunUnequip(_currentArmor);
+            _currentArmor.Destroy();
+        }
+
+        // Clone the backup to restore it
+        NwItem? restoredArmor = _initialArmorBackup.Clone(creature);
+
+        if (restoredArmor != null && restoredArmor.IsValid)
+        {
+            // Equip the restored armor
+            creature.RunEquip(restoredArmor, InventorySlot.Chest);
+            _currentArmor = restoredArmor;
+
+            _player.SendServerMessage("Armor customization reverted to original.", ColorConstants.Cyan);
+        }
+        else
+        {
+            _player.SendServerMessage("Failed to revert armor changes.", ColorConstants.Red);
+        }
+
+        // Clean up the backup
+        _initialArmorBackup.Destroy();
+        _initialArmorBackup = null;
     }
 }
 

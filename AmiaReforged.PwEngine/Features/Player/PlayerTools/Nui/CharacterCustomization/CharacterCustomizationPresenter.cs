@@ -19,7 +19,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         "Right Thigh", "Left Thigh", "Pelvis", "Torso",
         "Belt", "Neck", "Right Forearm", "Left Forearm",
         "Right Bicep", "Left Bicep", "Right Shoulder", "Left Shoulder",
-        "Right Hand", "Left Hand", "Robe"
+        "Right Hand", "Left Hand", "Robe", "All Parts"
     };
 
     public override NuiWindowToken Token() => _token;
@@ -47,6 +47,9 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         {
             // Initialize color palette resource binds (default to regular colors)
             InitializeColorPalette(false);
+
+            // Initialize model buttons as enabled
+            Token().SetBindValue(View.ModelButtonsEnabled, true);
 
             UpdateModeDisplay();
             UpdatePartDisplay();
@@ -76,6 +79,8 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
 
     public override void Close()
     {
+        // Closing the window via X button should save changes (same as Confirm)
+        _model.ApplyChanges();
         _token.Close();
     }
 
@@ -120,7 +125,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         {
             int newPart = _model.CurrentArmorPart - 1;
             if (newPart < 0)
-                newPart = 18; // Wrap to last part (Robe)
+                newPart = 19; // Wrap to last part (All Parts)
             _model.SetArmorPart(newPart);
             UpdatePartDisplay();
             return;
@@ -129,7 +134,7 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         if (ev.ElementId == View.PartRightButton.Id)
         {
             int newPart = _model.CurrentArmorPart + 1;
-            if (newPart > 18)
+            if (newPart > 19)
                 newPart = 0; // Wrap to first part (Right Foot)
             _model.SetArmorPart(newPart);
             UpdatePartDisplay();
@@ -238,7 +243,6 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         if (ev.ElementId == View.CancelButton.Id)
         {
             _model.RevertChanges();
-            _player.SendServerMessage("Changes reverted.", ColorConstants.Orange);
             Close();
             return;
         }
@@ -273,10 +277,23 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
 
         int partIndex = _model.CurrentArmorPart;
 
-        // Update all armor part overlay visibilities - only show the current part
-        for (int i = 0; i < 19; i++)
+        // Update all armor part overlay visibilities
+        // If "All Parts" (index 19) is selected, show all parts except Robe (index 18)
+        if (partIndex == 19)
         {
-            Token().SetBindValue(View.ArmorPartVisible[i], i == partIndex);
+            // All Parts mode - show everything except Robe
+            for (int i = 0; i < 19; i++)
+            {
+                Token().SetBindValue(View.ArmorPartVisible[i], i != 18); // Show all except Robe
+            }
+        }
+        else
+        {
+            // Normal mode - show only the selected part
+            for (int i = 0; i < 19; i++)
+            {
+                Token().SetBindValue(View.ArmorPartVisible[i], i == partIndex);
+            }
         }
 
         if (partIndex >= 0 && partIndex < ArmorPartNames.Length)
@@ -284,9 +301,24 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
             Token().SetBindValue(View.PartName, ArmorPartNames[partIndex]);
         }
 
-        int modelNum = _model.GetCurrentArmorPartModel();
-        Token().SetBindValue(View.CurrentPartModel, modelNum);
-        Token().SetBindValue(View.CurrentPartModelText, modelNum.ToString());
+        // For "All Parts" mode, disable model changing and don't show model number
+        bool isAllPartsMode = partIndex == 19;
+
+        // Disable/enable model changer buttons based on mode
+        Token().SetBindValue(View.ModelButtonsEnabled, !isAllPartsMode);
+
+        if (isAllPartsMode)
+        {
+            Token().SetBindValue(View.CurrentPartModel, 0);
+            Token().SetBindValue(View.CurrentPartModelText, "N/A");
+        }
+        else
+        {
+            int modelNum = _model.GetCurrentArmorPartModel();
+            Token().SetBindValue(View.CurrentPartModel, modelNum);
+            Token().SetBindValue(View.CurrentPartModelText, modelNum.ToString());
+        }
+
         Token().SetBindValue(View.CurrentColor, _model.GetCurrentArmorPartColor());
     }
 

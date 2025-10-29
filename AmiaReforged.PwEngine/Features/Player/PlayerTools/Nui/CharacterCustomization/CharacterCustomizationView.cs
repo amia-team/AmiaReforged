@@ -26,6 +26,9 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public readonly NuiBind<bool> AppearanceModeActive = new("cc_appear_active");
     public readonly NuiBind<bool> UseMetalPalette = new("cc_use_metal_palette");
 
+    // Model button enabled states
+    public readonly NuiBind<bool> ModelButtonsEnabled = new("cc_model_buttons_enabled");
+
     // Armor part overlay visibility binds (one for each of the 19 parts)
     public readonly NuiBind<bool>[] ArmorPartVisible = new NuiBind<bool>[19];
 
@@ -257,8 +260,22 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
-                        ImageButton("btn_model_left_10", "-10", out ModelLeft10Button, 35f, 35f, "cc_arrow_l_btn"),
-                        ImageButton("btn_model_left", "-1", out ModelLeftButton, 35f, 35f, "cc_arrow_l_btn"),
+                        new NuiButtonImage("cc_arrow_l_btn")
+                        {
+                            Id = "btn_model_left_10",
+                            Width = 35f,
+                            Height = 35f,
+                            Tooltip = "-10",
+                            Enabled = ModelButtonsEnabled
+                        }.Assign(out ModelLeft10Button),
+                        new NuiButtonImage("cc_arrow_l_btn")
+                        {
+                            Id = "btn_model_left",
+                            Width = 35f,
+                            Height = 35f,
+                            Tooltip = "-1",
+                            Enabled = ModelButtonsEnabled
+                        }.Assign(out ModelLeftButton),
                         new NuiLabel(CurrentPartModelText)
                         {
                             Width = 60f,
@@ -267,8 +284,22 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
-                        ImageButton("btn_model_right", "+1", out ModelRightButton, 35f, 35f, "cc_arrow_r_btn"),
-                        ImageButton("btn_model_right_10", "+10", out ModelRight10Button, 35f, 35f, "cc_arrow_r_btn")
+                        new NuiButtonImage("cc_arrow_r_btn")
+                        {
+                            Id = "btn_model_right",
+                            Width = 35f,
+                            Height = 35f,
+                            Tooltip = "+1",
+                            Enabled = ModelButtonsEnabled
+                        }.Assign(out ModelRightButton),
+                        new NuiButtonImage("cc_arrow_r_btn")
+                        {
+                            Id = "btn_model_right_10",
+                            Width = 35f,
+                            Height = 35f,
+                            Tooltip = "+10",
+                            Enabled = ModelButtonsEnabled
+                        }.Assign(out ModelRight10Button)
                     }
                 }
             }
