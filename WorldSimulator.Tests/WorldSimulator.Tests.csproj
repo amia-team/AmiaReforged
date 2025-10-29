@@ -16,8 +16,11 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="FluentAssertions" Version="8.8.0" />
+
+        <!-- JUnit XML Logger for Jenkins -->
+        <PackageReference Include="JunitXml.TestLogger" Version="4.1.0" />
+
         <!-- BDD Framework -->
-        <PackageReference Include="SpecFlow.NUnit" Version="3.9.74" />
         <PackageReference Include="SpecFlow.Tools.MsBuild.Generation" Version="3.9.74" />
         <!-- Test Infrastructure -->
         <PackageReference Include="Testcontainers.PostgreSql" Version="4.6.0" />

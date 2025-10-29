@@ -54,7 +54,7 @@ pipeline {
                               --configuration Release \
                               --no-build \
                               --logger "trx;LogFileName=test-results.trx" \
-                              --logger "junit;LogFileName=test-results.xml" \
+                              --logger "junit;LogFileName=test-results.xml;MethodFormat=Class;FailureBodyFormat=Verbose" \
                               --collect:"XPlat Code Coverage" \
                               --verbosity normal
                         ''',
