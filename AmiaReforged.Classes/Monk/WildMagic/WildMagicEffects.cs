@@ -28,7 +28,7 @@ public class WildMagicEffects(
         new("Self-Immolation", adverseWildMagic.SelfImmolation),
         new("Death Armor (Not That One!)", adverseWildMagic.DeathArmorNotThatOne),
         new("Self-Inflict Wounds", adverseWildMagic.SelfInflictWounds),
-        new("Nirvana", adverseWildMagic.Nirvana)
+        new("Spontaneous Meditation", adverseWildMagic.SpontaneousMeditation)
     ];
 
     public readonly WildMagicEffect[] WeakEffects =

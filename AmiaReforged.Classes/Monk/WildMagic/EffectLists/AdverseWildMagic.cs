@@ -61,6 +61,6 @@ public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
     public void SelfInflictWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Instant, wildMagicUtils.InflictLightWoundsEffect(monk, monkLevel));
 
-    public void Nirvana(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
+    public void SpontaneousMeditation(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Temporary, Effect.CutsceneParalyze(), WildMagicUtils.ShortDuration);
 }
