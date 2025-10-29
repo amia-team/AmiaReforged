@@ -97,7 +97,7 @@ public class WorkQueueProcessingSteps
     {
         List<SimulationWorkItem> workItems = new List<SimulationWorkItem>();
 
-        foreach (TableRow? row in table.Rows)
+        foreach (DataTableRow row in table.Rows)
         {
             string? workType = row["WorkType"];
             DateTime createdAt = DateTime.Parse(row["CreatedAt"]);

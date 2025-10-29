@@ -1,7 +1,7 @@
 global using NUnit.Framework;
 global using FluentAssertions;
 global using Moq;
-global using TechTalk.SpecFlow;
+global using Reqnroll;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Logging;
 global using WorldSimulator.Domain.Aggregates;
