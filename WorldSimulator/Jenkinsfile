@@ -13,22 +13,51 @@ pipeline {
             }
         }
 
+        stage('Check for Changes') {
+            steps {
+                script {
+                    // Get list of changed files
+                    def changes = sh(
+                        script: 'git diff --name-only HEAD~1 HEAD || echo "FIRST_BUILD"',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Changed files:\n${changes}"
+
+                    // Check if WorldSimulator or WorldSimulator.Tests were modified
+                    def hasSimulatorChanges = changes.contains('WorldSimulator/') ||
+                                             changes.contains('WorldSimulator.Tests/') ||
+                                             changes == 'FIRST_BUILD'
+
+                    if (!hasSimulatorChanges) {
+                        echo 'No changes detected in WorldSimulator or WorldSimulator.Tests - skipping build'
+                        currentBuild.result = 'NOT_BUILT'
+                        error('No relevant changes - pipeline stopped')
+                    } else {
+                        echo 'Changes detected in WorldSimulator projects - proceeding with build'
+                    }
+                }
+            }
+        }
+
         stage('Build') {
             steps {
-                echo 'Building WorldSimulator...'
+                echo 'Building WorldSimulator and tests...'
                 sh 'dotnet build WorldSimulator/WorldSimulator.csproj --configuration Release'
+                sh 'dotnet build WorldSimulator.Tests/WorldSimulator.Tests.csproj --configuration Release'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Running tests...'
+                echo 'Running WorldSimulator tests...'
                 sh '''
-                    dotnet test WorldSimulator/WorldSimulator.csproj \
+                    dotnet test WorldSimulator.Tests/WorldSimulator.Tests.csproj \
                       --configuration Release \
                       --no-build \
                       --logger "trx;LogFileName=test-results.trx" \
                       --collect:"XPlat Code Coverage" \
+                      --verbosity normal \
                       || exit 1
                 '''
             }
@@ -40,9 +69,9 @@ pipeline {
             }
             steps {
                 echo 'Publishing test results...'
-                junit 'WorldSimulator/**/test-results.trx'
+                junit 'WorldSimulator.Tests/**/test-results.trx'
                 publishHTML([
-                    reportDir: 'WorldSimulator/TestResults',
+                    reportDir: 'WorldSimulator.Tests/TestResults',
                     reportFiles: 'index.html',
                     reportName: 'Code Coverage Report'
                 ])
@@ -53,14 +82,19 @@ pipeline {
     post {
         always {
             script {
-                discordSend(
-                    description: "WorldSimulator build #${BUILD_NUMBER} finished.",
-                    footer: "Build results for WorldSimulator",
-                    link: env.BUILD_URL,
-                    result: currentBuild.currentResult,
-                    title: "${JOB_NAME}",
-                    webhookUrl: params.webhookURL
-                )
+                // Only send Discord notification if build actually ran
+                if (currentBuild.result != 'NOT_BUILT') {
+                    discordSend(
+                        description: "WorldSimulator build #${BUILD_NUMBER} finished.",
+                        footer: "Build results for WorldSimulator",
+                        link: env.BUILD_URL,
+                        result: currentBuild.currentResult,
+                        title: "${JOB_NAME}",
+                        webhookUrl: params.webhookURL
+                    )
+                } else {
+                    echo 'Build skipped - no changes in WorldSimulator projects'
+                }
             }
         }
 
@@ -69,7 +103,12 @@ pipeline {
         }
 
         failure {
-            echo 'Build failed due to test failures!'
+            script {
+                if (currentBuild.result != 'NOT_BUILT') {
+                    echo 'Build failed due to test failures!'
+                }
+            }
         }
     }
 }
+

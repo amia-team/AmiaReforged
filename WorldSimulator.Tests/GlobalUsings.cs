@@ -1,0 +1,11 @@
+global using NUnit.Framework;
+global using FluentAssertions;
+global using Moq;
+global using TechTalk.SpecFlow;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Logging;
+global using WorldSimulator.Domain.Aggregates;
+global using WorldSimulator.Domain.ValueObjects;
+global using WorldSimulator.Domain.Services;
+global using WorldSimulator.Domain.WorkPayloads;
+global using WorldSimulator.Infrastructure.Persistence;

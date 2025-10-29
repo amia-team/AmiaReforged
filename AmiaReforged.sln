@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-#
+# 
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.System", "AmiaReforged.System\AmiaReforged.System.csproj", "{7B4D1F20-6865-416C-BB47-2D763B862EA5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.Classes", "AmiaReforged.Classes\AmiaReforged.Classes.csproj", "{A4CA705A-F208-44F6-8A8F-56C7E284F296}"
@@ -16,6 +16,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmiaReforged.PwEngine", "AmiaReforged.PwEngine\AmiaReforged.PwEngine.csproj", "{38B1FEF4-3CC7-44EC-AFF2-2401D1942756}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorldSimulator", "WorldSimulator\WorldSimulator.csproj", "{49B7BD95-9018-4FB8-ADD4-59C1F50F5D23}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorldSimulator.Tests", "WorldSimulator.Tests\WorldSimulator.Tests.csproj", "{05C4C24D-0EB8-4225-956A-05F82D9DA02A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,5 +57,9 @@ Global
 		{49B7BD95-9018-4FB8-ADD4-59C1F50F5D23}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{49B7BD95-9018-4FB8-ADD4-59C1F50F5D23}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{49B7BD95-9018-4FB8-ADD4-59C1F50F5D23}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05C4C24D-0EB8-4225-956A-05F82D9DA02A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05C4C24D-0EB8-4225-956A-05F82D9DA02A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05C4C24D-0EB8-4225-956A-05F82D9DA02A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05C4C24D-0EB8-4225-956A-05F82D9DA02A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
