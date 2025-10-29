@@ -26,8 +26,6 @@ public class HarvestResourceCommandHandler(
 
     public async Task<CommandResult> HandleAsync(HarvestResourceCommand command, CancellationToken cancellationToken = default)
     {
-        // Ensure we're on the main thread for NWN API calls
-        await NwTask.SwitchToMainThread();
 
         // Get or load the node instance (use cached version to preserve HarvestProgress)
         if (!_activeHarvestSessions.TryGetValue(command.NodeInstanceId, out ResourceNodeInstance? node))
