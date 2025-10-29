@@ -182,7 +182,12 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
 
     public void MordenkainensSword(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        Effect summonHelmHorror = Effect.SummonCreature("NW_S_HelmHorr", VfxType.FnfSummonMonster3!);
+        summonHelmHorror.SubType = EffectSubType.Magical;
 
+        _ = wildMagicUtils.GetObjectContext(monk, summonHelmHorror);
+
+        monk.ApplyEffect(EffectDuration.Temporary, summonHelmHorror, WildMagicUtils.LongDuration);
     }
 
     public void GedleesElectricLoop(NwCreature monk, NwCreature target, int dc, byte monkLevel)
@@ -191,11 +196,6 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
     }
 
     public void BlindnessDeafness(NwCreature monk, NwCreature target, int dc, byte monkLevel)
-    {
-
-    }
-
-    public void Scare(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
 
     }
