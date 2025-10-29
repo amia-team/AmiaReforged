@@ -77,10 +77,9 @@ pipeline {
         stage('Publish Test Results') {
             steps {
                 script {
-                    // Always publish test results, even if tests fail
+                    // Publish HTML coverage report
                     try {
-                        echo 'Publishing test results...'
-                        junit allowEmptyResults: true, testResults: 'WorldSimulator.Tests/**/test-results.trx'
+                        echo 'Publishing code coverage report...'
                         publishHTML([
                             allowMissing: true,
                             alwaysLinkToLastBuild: false,
@@ -90,7 +89,7 @@ pipeline {
                             reportName: 'Code Coverage Report'
                         ])
                     } catch (Exception e) {
-                        echo "Warning: Could not publish all test results: ${e.message}"
+                        echo "Warning: Could not publish coverage report: ${e.message}"
                     }
                 }
             }
@@ -102,8 +101,25 @@ pipeline {
             script {
                 // Only send Discord notification if build actually ran
                 if (currentBuild.result != 'NOT_BUILT') {
+                    // Get test results summary
+                    def testSummary = ""
+                    try {
+                        def testResults = junit allowEmptyResults: true, testResults: 'WorldSimulator.Tests/**/test-results.trx'
+                        if (testResults) {
+                            def total = testResults.totalCount
+                            def passed = testResults.passCount
+                            def failed = testResults.failCount
+                            def skipped = testResults.skipCount
+
+                            testSummary = "\n\n**Test Results:**\n✅ Passed: ${passed}\n❌ Failed: ${failed}\n⏭️ Skipped: ${skipped}\n📊 Total: ${total}"
+                        }
+                    } catch (Exception e) {
+                        echo "Could not get test summary: ${e.message}"
+                        testSummary = "\n\n⚠️ Test results unavailable"
+                    }
+
                     discordSend(
-                        description: "WorldSimulator build #${BUILD_NUMBER} finished.",
+                        description: "WorldSimulator build #${BUILD_NUMBER} finished.${testSummary}",
                         footer: "Build results for WorldSimulator",
                         link: env.BUILD_URL,
                         result: currentBuild.currentResult,
