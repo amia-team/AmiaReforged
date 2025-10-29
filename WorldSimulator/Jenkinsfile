@@ -54,6 +54,7 @@ pipeline {
                               --configuration Release \
                               --no-build \
                               --logger "trx;LogFileName=test-results.trx" \
+                              --logger "junit;LogFileName=test-results.xml" \
                               --collect:"XPlat Code Coverage" \
                               --verbosity normal
                         ''',
@@ -100,8 +101,8 @@ pipeline {
                     // Get test results summary
                     def testSummary = ""
                     try {
-                        // Parse TRX test results from the actual location
-                        def testResults = junit allowEmptyResults: true, testResults: 'WorldSimulator.Tests/TestResults/test-results.trx'
+                        // Parse JUnit test results (dotnet test generates this with junit logger)
+                        def testResults = junit allowEmptyResults: true, testResults: 'WorldSimulator.Tests/TestResults/test-results.xml'
                         if (testResults && testResults.totalCount > 0) {
                             def total = testResults.totalCount
                             def passed = testResults.passCount
