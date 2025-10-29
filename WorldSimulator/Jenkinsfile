@@ -1,9 +1,6 @@
 pipeline {
     agent any
 
-    parameters {
-        string(name: 'webhookURL', defaultValue: '', description: 'Discord webhook URL')
-    }
 
     stages {
         stage('Checkout') {
