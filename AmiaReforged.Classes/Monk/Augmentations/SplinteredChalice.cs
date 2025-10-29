@@ -142,7 +142,7 @@ public sealed class SplinteredChalice : IAugmentation
         monk.ApplyEffect(EffectDuration.Instant, aoeVfx);
         foreach (NwCreature hostileCreature in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large, false))
         {
-            if (monk.IsReactionTypeHostile(hostileCreature)) continue;
+            if (!monk.IsReactionTypeHostile(hostileCreature)) continue;
 
             CreatureEvents.OnSpellCastAt.Signal(monk, hostileCreature, NwSpell.FromSpellType(Spell.NegativeEnergyBurst)!);
 

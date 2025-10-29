@@ -77,7 +77,7 @@ public sealed class IroncladBull : IAugmentation
         eagleDamageDecrease.SubType = EffectSubType.Extraordinary;
         eagleDamageDecrease.Tag = IroncladEagleTag;
 
-        monk.ApplyEffect(EffectDuration.Temporary, eagleDamageDecrease, NwTimeSpan.FromRounds(2));
+        attackData.Target.ApplyEffect(EffectDuration.Temporary, eagleDamageDecrease, NwTimeSpan.FromRounds(2));
     }
 
     /// <summary>
