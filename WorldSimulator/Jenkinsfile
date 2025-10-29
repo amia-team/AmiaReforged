@@ -1,0 +1,75 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'webhookURL', defaultValue: '', description: 'Discord webhook URL')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out code...'
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building WorldSimulator...'
+                sh 'dotnet build WorldSimulator/WorldSimulator.csproj --configuration Release'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+                sh '''
+                    dotnet test WorldSimulator/WorldSimulator.csproj \
+                      --configuration Release \
+                      --no-build \
+                      --logger "trx;LogFileName=test-results.trx" \
+                      --collect:"XPlat Code Coverage" \
+                      || exit 1
+                '''
+            }
+        }
+
+        stage('Publish Test Results') {
+            when {
+                always()
+            }
+            steps {
+                echo 'Publishing test results...'
+                junit 'WorldSimulator/**/test-results.trx'
+                publishHTML([
+                    reportDir: 'WorldSimulator/TestResults',
+                    reportFiles: 'index.html',
+                    reportName: 'Code Coverage Report'
+                ])
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                discordSend(
+                    description: "WorldSimulator build #${BUILD_NUMBER} finished.",
+                    footer: "Build results for WorldSimulator",
+                    link: env.BUILD_URL,
+                    result: currentBuild.currentResult,
+                    title: "${JOB_NAME}",
+                    webhookUrl: params.webhookURL
+                )
+            }
+        }
+
+        success {
+            echo 'Build successful!'
+        }
+
+        failure {
+            echo 'Build failed due to test failures!'
+        }
+    }
+}
