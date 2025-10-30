@@ -44,6 +44,20 @@ namespace WorldSimulator
                         client.Timeout = TimeSpan.FromSeconds(timeout);
                     });
 
+                    // PwEngine API Client
+                    services.AddHttpClient("PwEngine", client =>
+                    {
+                        var baseUrl = context.Configuration["PwEngine:BaseUrl"]
+                            ?? "http://localhost:8080/api/worldengine/";
+                        var apiKey = context.Configuration["PwEngine:ApiKey"]
+                            ?? "dev-api-key-change-in-production";
+
+                        client.BaseAddress = new Uri(baseUrl);
+                        client.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+                        client.Timeout = TimeSpan.FromSeconds(
+                            context.Configuration.GetValue("PwEngine:Timeout", 30));
+                    });
+
                     // Background Services
                     services.AddHostedService(sp =>
                         (DiscordEventLogService)sp.GetRequiredService<IEventLogPublisher>());

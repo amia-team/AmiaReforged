@@ -1,6 +1,7 @@
 using LightInject;
 using WorldSimulator.Application;
 using WorldSimulator.Application.Processors;
+using WorldSimulator.Infrastructure.PwEngineClient;
 
 namespace WorldSimulator.Infrastructure.DependencyInjection
 {
@@ -71,6 +72,9 @@ namespace WorldSimulator.Infrastructure.DependencyInjection
 
             // Event Log Publisher with runtime toggle
             container.Register<IEventLogPublisher, DiscordEventLogService>(new PerContainerLifetime());
+
+            // PwEngine API Client
+            container.Register<IPwEngineClient, PwEngineHttpClient>(new PerContainerLifetime());
         }
 
         private static void RegisterApplicationServices(IServiceContainer container)
