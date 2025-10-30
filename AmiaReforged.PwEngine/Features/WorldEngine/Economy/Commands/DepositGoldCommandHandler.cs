@@ -64,6 +64,8 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
             account.Debit += command.Amount.Value;
             account.LastAccessedAt = DateTime.UtcNow;
 
+            await _coinhouses.SaveAccountAsync(account, cancellationToken);
+
             // Record transaction
             Transaction transaction = new Transaction
             {

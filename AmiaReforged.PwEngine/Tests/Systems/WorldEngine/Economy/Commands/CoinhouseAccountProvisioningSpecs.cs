@@ -58,6 +58,10 @@ public class CoinhouseAccountProvisioningSpecs
             .Setup(r => r.GetByTag(_coinhouseTag))
             .Returns(_coinhouse);
 
+        _coinhouses
+            .Setup(r => r.SaveAccountAsync(It.IsAny<CoinHouseAccount>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         _transactions
             .Setup(r => r.RecordTransactionAsync(It.IsAny<Database.Entities.Economy.Transaction>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Database.Entities.Economy.Transaction t, CancellationToken _) =>
@@ -86,5 +90,10 @@ public class CoinhouseAccountProvisioningSpecs
         Guid expectedAccountId = PersonaAccountId.From(persona);
         Guid actualAccountId = _coinhouse.Accounts![0].Id;
         Assert.That(actualAccountId, Is.EqualTo(expectedAccountId));
+
+        _coinhouses.Verify(r => r.SaveAccountAsync(
+                It.Is<CoinHouseAccount>(a => a.Id == expectedAccountId && a.Debit == 25),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }

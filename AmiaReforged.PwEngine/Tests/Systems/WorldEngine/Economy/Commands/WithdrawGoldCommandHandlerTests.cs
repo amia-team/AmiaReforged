@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
@@ -65,6 +67,10 @@ public class WithdrawGoldCommandHandlerTests
         };
 
         _testCoinhouse.Accounts!.Add(_testAccount);
+
+        _mockCoinhouseRepo
+            .Setup(r => r.SaveAccountAsync(It.IsAny<CoinHouseAccount>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
     }
 
     #region Happy Path Tests

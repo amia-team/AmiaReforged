@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.Services;
@@ -36,6 +38,30 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
             .FirstOrDefault(a => a.Id == id || (a.AccountHolders != null && a.AccountHolders.Any(x => x.HolderId == id)));
 
         return account;
+    }
+
+    public async Task SaveAccountAsync(CoinHouseAccount account, CancellationToken cancellationToken = default)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        CoinHouseAccount? existing = await ctx.CoinHouseAccounts
+            .Include(a => a.AccountHolders)
+            .FirstOrDefaultAsync(a => a.Id == account.Id, cancellationToken);
+
+        if (existing is null)
+        {
+            ctx.CoinHouseAccounts.Add(account);
+        }
+        else
+        {
+            existing.Debit = account.Debit;
+            existing.Credit = account.Credit;
+            existing.LastAccessedAt = account.LastAccessedAt;
+            existing.OpenedAt = account.OpenedAt;
+            existing.CoinHouseId = account.CoinHouseId;
+        }
+
+        await ctx.SaveChangesAsync(cancellationToken);
     }
 
     public CoinHouse? GetSettlementCoinhouse(SettlementId settlementId)
