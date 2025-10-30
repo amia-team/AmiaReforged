@@ -86,4 +86,5 @@ public class QuiveringPalm(AugmentationFactory augmentationFactory) : ITechnique
     }
 
     public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
+    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData) { }
 }

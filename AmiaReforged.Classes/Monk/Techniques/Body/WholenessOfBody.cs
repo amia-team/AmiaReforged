@@ -39,4 +39,5 @@ public class WholenessOfBody(AugmentationFactory augmentationFactory) : ITechniq
     }
 
     public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
+    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData) { }
 }

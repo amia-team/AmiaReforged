@@ -10,6 +10,7 @@ namespace AmiaReforged.Classes.Monk.Techniques.Body;
 public class EmptyBody(AugmentationFactory augmentationFactory) : ITechnique
 {
     public TechniqueType TechniqueType => TechniqueType.EmptyBody;
+
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
@@ -41,4 +42,5 @@ public class EmptyBody(AugmentationFactory augmentationFactory) : ITechnique
     }
 
     public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
+    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData) { }
 }

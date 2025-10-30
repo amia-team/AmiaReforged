@@ -12,25 +12,25 @@ public class EagleStrike(AugmentationFactory augmentationFactory) : ITechnique
     private const string EagleEffectTag = nameof(TechniqueType.EagleStrike);
     public TechniqueType TechniqueType => TechniqueType.EagleStrike;
 
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
+    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
         IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
 
         if (augmentation != null)
-            augmentation.ApplyAttackAugmentation(monk, TechniqueType, attackData);
+            augmentation.ApplyDamageAugmentation(monk, TechniqueType, damageData);
         else
-            DoEagleStrike(monk, attackData);
+            DoEagleStrike(monk, damageData);
     }
 
     /// <summary>
     /// On two successful hits per round against an enemy creature, the target must succeed at a reflex save or suffer
     /// a penalty of -2 to their armor class for two rounds.
     /// </summary>
-    public static SavingThrowResult DoEagleStrike(NwCreature monk, OnCreatureAttack attackData)
+    public static SavingThrowResult DoEagleStrike(NwCreature monk, OnCreatureDamage damageData)
     {
-        if (attackData.Target is not NwCreature targetCreature)
+        if (damageData.Target is not NwCreature targetCreature)
             return SavingThrowResult.Immune;
 
         int dc = MonkUtils.CalculateMonkDc(monk);
@@ -74,5 +74,6 @@ public class EagleStrike(AugmentationFactory augmentationFactory) : ITechnique
         targetCreature.ApplyEffect(EffectDuration.Instant, eagleStrikeVfx);
     }
 
-    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData) {}
+    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData) { }
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
 }

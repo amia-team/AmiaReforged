@@ -16,18 +16,21 @@ public sealed class EchoingValley : IAugmentation
     private const string SummonEchoResRef = "summon_echo";
     private const string EchoingEmptyBodyTag = nameof(PathType.EchoingValley) + nameof(TechniqueType.EmptyBody);
     public PathType PathType => PathType.EchoingValley;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
+
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData)
+    {
+        AugmentAxiomaticStrike(monk, attackData);
+    }
+
+    public void ApplyDamageAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage damageData)
     {
         switch (technique)
         {
             case TechniqueType.StunningStrike:
-                AugmentStunningStrike(monk, attackData);
-                break;
-            case TechniqueType.AxiomaticStrike:
-                AugmentAxiomaticStrike(monk, attackData);
+                AugmentStunningStrike(monk, damageData);
                 break;
             case TechniqueType.EagleStrike:
-                EagleStrike.DoEagleStrike(monk, attackData);
+                EagleStrike.DoEagleStrike(monk, damageData);
                 break;
         }
     }
@@ -58,11 +61,11 @@ public sealed class EchoingValley : IAugmentation
     /// Stunning Strike summons an Echo and makes summoned Echoes deal 1d6 sonic damage in a medium radius.
     /// Echoes last for two turns. Each Ki Focus allows an additional Echo to be summoned.
     /// </summary>
-    private void AugmentStunningStrike(NwCreature monk, OnCreatureAttack attackData)
+    private void AugmentStunningStrike(NwCreature monk, OnCreatureDamage damageData)
     {
-        StunningStrike.DoStunningStrike(attackData);
+        StunningStrike.DoStunningStrike(damageData);
 
-        if (attackData.Target is not NwCreature targetCreature || !targetCreature.IsReactionTypeHostile(monk)) return;
+        if (damageData.Target is not NwCreature targetCreature || !targetCreature.IsReactionTypeHostile(monk)) return;
 
         byte echoCap = MonkUtils.GetKiFocus(monk) switch
         {

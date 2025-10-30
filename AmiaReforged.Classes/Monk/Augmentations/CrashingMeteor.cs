@@ -15,23 +15,30 @@ public sealed class CrashingMeteor : IAugmentation
 {
     private const string MeteorKiShoutTag = nameof(PathType.CrashingMeteor) + nameof(TechniqueType.KiShout);
     public PathType PathType => PathType.CrashingMeteor;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
+
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData)
+    {
+        CrashingMeteorData meteor = GetCrashingMeteorData(monk);
+        AugmentAxiomaticStrike(monk, attackData, meteor);
+    }
+
+    public void ApplyDamageAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage damageData)
     {
         CrashingMeteorData meteor = GetCrashingMeteorData(monk);
 
         switch (technique)
         {
             case TechniqueType.StunningStrike:
-                AugmentStunningStrike(monk, attackData, meteor);
-                break;
-            case TechniqueType.AxiomaticStrike:
-                AugmentAxiomaticStrike(monk, attackData, meteor);
+                AugmentStunningStrike(monk, damageData, meteor);
                 break;
             case TechniqueType.EagleStrike:
-                EagleStrike.DoEagleStrike(monk, attackData);
+                EagleStrike.DoEagleStrike(monk, damageData);
                 break;
         }
+
+        throw new NotImplementedException();
     }
+
     public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
     {
         CrashingMeteorData meteor = GetCrashingMeteorData(monk);
@@ -136,12 +143,11 @@ public sealed class CrashingMeteor : IAugmentation
     ///     critical hits and a successful reflex save halves the damage. Each Ki Focus adds 2d6 to a maximum of 8d6 elemental
     ///     damage.
     /// </summary>
-    private void AugmentStunningStrike(NwCreature monk, OnCreatureAttack attackData,
-        CrashingMeteorData meteor)
+    private void AugmentStunningStrike(NwCreature monk, OnCreatureDamage damageData, CrashingMeteorData meteor)
     {
-        StunningStrike.DoStunningStrike(attackData);
+        StunningStrike.DoStunningStrike(damageData);
 
-        attackData.Target.ApplyEffect(EffectDuration.Instant, meteor.AoeVfx);
+        damageData.Target.ApplyEffect(EffectDuration.Instant, meteor.AoeVfx);
 
         foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))

@@ -17,7 +17,7 @@ public class AxiomaticStrike(AugmentationFactory augmentationFactory) : ITechniq
         IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
 
         if (augmentation != null)
-            augmentation.ApplyAttackAugmentation(monk, TechniqueType, attackData);
+            augmentation.ApplyAttackAugmentation(monk, attackData);
         else
             DoAxiomaticStrike(monk, attackData);
     }
@@ -46,5 +46,6 @@ public class AxiomaticStrike(AugmentationFactory augmentationFactory) : ITechniq
         bludgeoningDamage += (short)bonusDamage;
         damageData.SetDamageByType(DamageType.Bludgeoning, bludgeoningDamage);
     }
-    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData) {}
+    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData) { }
+    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData) { }
 }

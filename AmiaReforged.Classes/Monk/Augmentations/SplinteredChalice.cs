@@ -14,24 +14,26 @@ public sealed class SplinteredChalice : IAugmentation
     private const string SplinteredEmptyBodyTag = nameof(PathType.SplinteredChalice) + nameof(TechniqueType.EmptyBody);
 
     public PathType PathType => PathType.SplinteredChalice;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
+
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData)
     {
         MonkCondition condition = GetMonkCondition(monk);
+        AugmentAxiomaticStrike(monk, attackData, condition);
+    }
 
+    public void ApplyDamageAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage damageData)
+    {
         switch (technique)
         {
-            case TechniqueType.AxiomaticStrike:
-                AugmentAxiomaticStrike(monk, attackData, condition);
-                break;
             case TechniqueType.StunningStrike:
-                StunningStrike.DoStunningStrike(attackData);
+                StunningStrike.DoStunningStrike(damageData);
                 break;
             case TechniqueType.EagleStrike:
-                EagleStrike.DoEagleStrike(monk, attackData);
+                EagleStrike.DoEagleStrike(monk, damageData);
                 break;
         }
-
     }
+
     public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
     {
         MonkCondition condition = GetMonkCondition(monk);

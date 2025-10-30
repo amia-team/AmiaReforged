@@ -14,18 +14,20 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 public class FickleStrand(WildMagicService wildMagicService) : IAugmentation
 {
     public PathType PathType => PathType.FickleStrand;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData)
+    {
+        AugmentAxiomaticStrike(monk, attackData);
+    }
+
+    public void ApplyDamageAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage damageData)
     {
         switch (technique)
         {
             case TechniqueType.EagleStrike:
-                AugmentEagleStrike(monk, attackData);
-                break;
-            case TechniqueType.AxiomaticStrike:
-                AugmentAxiomaticStrike(monk, attackData);
+                AugmentEagleStrike(monk, damageData);
                 break;
             case TechniqueType.StunningStrike:
-                StunningStrike.DoStunningStrike(attackData);
+                StunningStrike.DoStunningStrike(damageData);
                 break;
         }
     }
@@ -56,11 +58,11 @@ public class FickleStrand(WildMagicService wildMagicService) : IAugmentation
     /// Eagle Strike has a 30% chance to impart a wild magic effect.
     /// Each Ki Focus makes potent effects more likely to occur.
     /// </summary>
-    private void AugmentEagleStrike(NwCreature monk, OnCreatureAttack attackData)
+    private void AugmentEagleStrike(NwCreature monk, OnCreatureDamage damageData)
     {
-        EagleStrike.DoEagleStrike(monk, attackData);
+        EagleStrike.DoEagleStrike(monk, damageData);
 
-        if (attackData.Target is not NwCreature targetCreature || !monk.IsReactionTypeHostile(targetCreature)) return;
+        if (damageData.Target is not NwCreature targetCreature || !monk.IsReactionTypeHostile(targetCreature)) return;
 
         if (Random.Shared.Roll(100) <= 30)
             wildMagicService.DoWildMagic(monk, targetCreature);

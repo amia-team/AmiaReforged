@@ -11,23 +11,22 @@ public class StunningStrike(AugmentationFactory augmentationFactory) : ITechniqu
 {
     public TechniqueType TechniqueType => TechniqueType.StunningStrike;
 
-    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData)
+    public void HandleDamageTechnique(NwCreature monk, OnCreatureDamage damageData)
     {
         PathType? path = MonkUtils.GetMonkPath(monk);
 
         IAugmentation? augmentation = path.HasValue ? augmentationFactory.GetAugmentation(path.Value) : null;
 
         if (augmentation != null)
-            augmentation.ApplyAttackAugmentation(monk, TechniqueType, attackData);
+            augmentation.ApplyDamageAugmentation(monk, TechniqueType, damageData);
         else
-            DoStunningStrike(attackData);
+            DoStunningStrike(damageData);
     }
 
-    public static SavingThrowResult DoStunningStrike(OnCreatureAttack attackData)
+    public static SavingThrowResult DoStunningStrike(OnCreatureDamage damageData)
     {
-        if (attackData.Target is not NwCreature targetCreature) return SavingThrowResult.Immune;
-
-        NwCreature monk = attackData.Attacker;
+        if (damageData.Target is not NwCreature targetCreature || damageData.DamagedBy is not NwCreature monk)
+            return SavingThrowResult.Immune;
 
         Effect stunningStrikeEffect = Effect.LinkEffects(
             Effect.Stunned(),
@@ -56,5 +55,6 @@ public class StunningStrike(AugmentationFactory augmentationFactory) : ITechniqu
         return savingThrowResult;
     }
 
-    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData) {}
+    public void HandleCastTechnique(NwCreature monk, OnSpellCast castData) { }
+    public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
 }

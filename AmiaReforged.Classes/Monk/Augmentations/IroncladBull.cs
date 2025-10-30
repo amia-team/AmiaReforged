@@ -15,21 +15,25 @@ public sealed class IroncladBull : IAugmentation
     private const string IroncladEagleTag = nameof(PathType.IroncladBull) + nameof(TechniqueType.EagleStrike);
 
     public PathType PathType => PathType.IroncladBull;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
+
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData)
+    {
+        AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
+    }
+
+    public void ApplyDamageAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage damageData)
     {
         switch (technique)
         {
             case TechniqueType.EagleStrike:
-                AugmentEagleStrike(monk, attackData);
+                AugmentEagleStrike(monk, damageData);
                 break;
             case TechniqueType.StunningStrike:
-                StunningStrike.DoStunningStrike(attackData);
-                break;
-            case TechniqueType.AxiomaticStrike:
-                AxiomaticStrike.DoAxiomaticStrike(monk, attackData);
+                StunningStrike.DoStunningStrike(damageData);
                 break;
         }
     }
+
     public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
     {
         switch (technique)
@@ -55,15 +59,15 @@ public sealed class IroncladBull : IAugmentation
     /// <summary>
     /// Eagle Strike incurs a -1 physical damage penalty. Each Ki Focus increases this by 1 to a maximum of -4.
     /// </summary>
-    private static void AugmentEagleStrike(NwCreature monk, OnCreatureAttack attackData)
+    private static void AugmentEagleStrike(NwCreature monk, OnCreatureDamage damageData)
     {
-        SavingThrowResult savingThrowResult = EagleStrike.DoEagleStrike(monk, attackData);
+        SavingThrowResult savingThrowResult = EagleStrike.DoEagleStrike(monk, damageData);
 
         if (savingThrowResult != SavingThrowResult.Failure) return;
 
-        Effect? existingEffect = attackData.Target.ActiveEffects.FirstOrDefault(e => e.Tag == IroncladEagleTag);
+        Effect? existingEffect = damageData.Target.ActiveEffects.FirstOrDefault(e => e.Tag == IroncladEagleTag);
         if (existingEffect != null)
-            attackData.Target.RemoveEffect(existingEffect);
+            damageData.Target.RemoveEffect(existingEffect);
 
         int damageDecrease = MonkUtils.GetKiFocus(monk) switch
         {
@@ -77,7 +81,7 @@ public sealed class IroncladBull : IAugmentation
         eagleDamageDecrease.SubType = EffectSubType.Extraordinary;
         eagleDamageDecrease.Tag = IroncladEagleTag;
 
-        attackData.Target.ApplyEffect(EffectDuration.Temporary, eagleDamageDecrease, NwTimeSpan.FromRounds(2));
+        damageData.Target.ApplyEffect(EffectDuration.Temporary, eagleDamageDecrease, NwTimeSpan.FromRounds(2));
     }
 
     /// <summary>

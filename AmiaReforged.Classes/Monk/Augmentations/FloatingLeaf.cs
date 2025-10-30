@@ -13,18 +13,21 @@ public class FloatingLeaf : IAugmentation
 {
     private const string FloatingEagleStrikeTag = nameof(PathType.FloatingLeaf) +  nameof(TechniqueType.EagleStrike);
     public PathType PathType => PathType.FloatingLeaf;
-    public void ApplyAttackAugmentation(NwCreature monk, TechniqueType technique, OnCreatureAttack attackData)
+
+    public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData)
+    {
+        AugmentAxiomaticStrike(monk, attackData);
+    }
+
+    public void ApplyDamageAugmentation(NwCreature monk, TechniqueType technique, OnCreatureDamage damageData)
     {
         switch (technique)
         {
             case TechniqueType.StunningStrike:
-                AugmentStunningStrike(attackData);
+                AugmentStunningStrike(damageData);
                 break;
             case TechniqueType.EagleStrike:
-                AugmentEagleStrike(monk, attackData);
-                break;
-            case TechniqueType.AxiomaticStrike:
-                AugmentAxiomaticStrike(monk, attackData);
+                AugmentEagleStrike(monk, damageData);
                 break;
         }
     }
@@ -52,14 +55,13 @@ public class FloatingLeaf : IAugmentation
     /// Stunning Strike does weaker effects if the target is immune to stun. Ki Focus I pacifies (making the
     /// target unable to attack), Ki Focus II dazes, and Ki Focus III paralyzes the target.
     /// </summary>
-    private static void AugmentStunningStrike(OnCreatureAttack attackData)
+    private static void AugmentStunningStrike(OnCreatureDamage damageData)
     {
-        SavingThrowResult stunningStrikeResult = StunningStrike.DoStunningStrike(attackData);
+        SavingThrowResult stunningStrikeResult = StunningStrike.DoStunningStrike(damageData);
 
-        if (attackData.Target is not NwCreature targetCreature || stunningStrikeResult != SavingThrowResult.Immune)
+        if (damageData.Target is not NwCreature targetCreature ||
+            damageData.DamagedBy is not NwCreature monk || stunningStrikeResult != SavingThrowResult.Immune)
             return;
-
-        NwCreature monk = attackData.Attacker;
 
         Effect? stunningEffect = MonkUtils.GetKiFocus(monk) switch
         {
@@ -81,11 +83,11 @@ public class FloatingLeaf : IAugmentation
     /// <summary>
     /// Eagle Strike with Ki Focus I incurs a -1 penalty to attack rolls, increased to -2 with Ki Focus II and -3 with Ki Focus III.
     /// </summary>
-    private static void AugmentEagleStrike(NwCreature monk, OnCreatureAttack attackData)
+    private static void AugmentEagleStrike(NwCreature monk, OnCreatureDamage damageData)
     {
-        SavingThrowResult stunningStrikeResult = EagleStrike.DoEagleStrike(monk, attackData);
+        SavingThrowResult stunningStrikeResult = EagleStrike.DoEagleStrike(monk, damageData);
 
-        if (attackData.Target is not NwCreature targetCreature || stunningStrikeResult != SavingThrowResult.Failure)
+        if (damageData.Target is not NwCreature targetCreature || stunningStrikeResult != SavingThrowResult.Failure)
             return;
 
         int abDecrease = MonkUtils.GetKiFocus(monk) switch
