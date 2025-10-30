@@ -161,7 +161,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
             if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 3, monkLevel))
-                return;
+                continue;
 
             SavingThrowResult reflexSaveResult =
                 enemy.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Electricity, monk);
@@ -201,7 +201,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
             if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 3, monkLevel))
-                return;
+                continue;
 
             SavingThrowResult reflexSaveResult =
                 enemy.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Fire, monk);
@@ -358,7 +358,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
 
         foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large, true))
         {
-            if (!monk.IsReactionTypeHostile(enemy)) return;
+            if (!monk.IsReactionTypeHostile(enemy)) continue;
 
             if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Transmutation, 8, monkLevel))
                 continue;

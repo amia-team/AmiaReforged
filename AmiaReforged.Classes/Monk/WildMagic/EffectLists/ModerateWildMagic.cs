@@ -82,7 +82,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
             if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Transmutation, 2, monkLevel))
-                return;
+                continue;
 
             if (Random.Shared.Roll(20) + enemy.GetAbilityModifier(Ability.Strength) >= Random.Shared.Roll(20) + 5)
                 continue;
