@@ -26,12 +26,12 @@ public class WorldEngineApiRouter : IApiRouter
         _logger.Info("Building route table...");
 
         // Scan current assembly for controllers with route attributes
-        var assembly = Assembly.GetExecutingAssembly();
+        Assembly assembly = Assembly.GetExecutingAssembly();
         _routeTable.ScanAssembly(assembly);
 
         // Log all registered routes
         _logger.Info("Route table complete. Registered routes:");
-        foreach (var (method, pattern, handler) in _routeTable.GetRoutes())
+        foreach ((string method, string pattern, string handler) in _routeTable.GetRoutes())
         {
             _logger.Info("  {Method} {Pattern} -> {Handler}", method, pattern, handler);
         }
@@ -46,7 +46,7 @@ public class WorldEngineApiRouter : IApiRouter
         _logger.Debug("Routing {Method} {Path}", method, path);
 
         // Try to dispatch using route table
-        var result = await _routeTable.DispatchAsync(method, path, request, ct);
+        ApiResult? result = await _routeTable.DispatchAsync(method, path, request, ct);
 
         if (result != null)
         {

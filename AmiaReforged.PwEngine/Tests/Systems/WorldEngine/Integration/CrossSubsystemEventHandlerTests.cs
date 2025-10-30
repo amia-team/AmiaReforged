@@ -20,11 +20,11 @@ public class CrossSubsystemEventHandlerTests
     public async Task OrganizationDisbandedEvent_ShouldLog_ForAuditTrail()
     {
         // Arrange - Handler just logs, no dependencies needed
-        var handler = new OrganizationDisbandedEventHandler();
-        var orgId = OrganizationId.New();
+        OrganizationDisbandedEventHandler handler = new OrganizationDisbandedEventHandler();
+        OrganizationId orgId = OrganizationId.New();
 
         // Create event
-        var evt = new OrganizationDisbandedEvent(
+        OrganizationDisbandedEvent evt = new OrganizationDisbandedEvent(
             orgId,
             "Test Guild",
             DateTime.UtcNow);
@@ -40,10 +40,10 @@ public class CrossSubsystemEventHandlerTests
     public async Task OrganizationDisbandedEvent_WithNoMembers_ShouldComplete_Successfully()
     {
         // Arrange - Handler has no dependencies
-        var handler = new OrganizationDisbandedEventHandler();
-        var orgId = OrganizationId.New();
+        OrganizationDisbandedEventHandler handler = new OrganizationDisbandedEventHandler();
+        OrganizationId orgId = OrganizationId.New();
 
-        var evt = new OrganizationDisbandedEvent(
+        OrganizationDisbandedEvent evt = new OrganizationDisbandedEvent(
             orgId,
             "Empty Guild",
             DateTime.UtcNow);
@@ -59,19 +59,19 @@ public class CrossSubsystemEventHandlerTests
     public async Task MultipleHandlers_ShouldProcess_SameEvent()
     {
         // Arrange - Set up event bus with multiple handlers
-        var eventBus = new InMemoryEventBus();
+        InMemoryEventBus eventBus = new InMemoryEventBus();
 
         // Create handlers
-        var disbandHandler = new OrganizationDisbandedEventHandler();
-        var loggingHandler = new TestLoggingHandler();
+        OrganizationDisbandedEventHandler disbandHandler = new OrganizationDisbandedEventHandler();
+        TestLoggingHandler loggingHandler = new TestLoggingHandler();
 
         // Subscribe both handlers
         eventBus.Subscribe<OrganizationDisbandedEvent>(disbandHandler.HandleAsync);
         eventBus.Subscribe<OrganizationDisbandedEvent>(loggingHandler.HandleAsync);
 
         // Create event
-        var orgId = OrganizationId.New();
-        var evt = new OrganizationDisbandedEvent(
+        OrganizationId orgId = OrganizationId.New();
+        OrganizationDisbandedEvent evt = new OrganizationDisbandedEvent(
             orgId,
             "Test Guild",
             DateTime.UtcNow);
@@ -87,19 +87,19 @@ public class CrossSubsystemEventHandlerTests
     public async Task EventHandlers_ShouldNot_Block_EventPublisher()
     {
         // Arrange
-        var eventBus = new InMemoryEventBus();
-        var handler = new SlowTestHandler();
+        InMemoryEventBus eventBus = new InMemoryEventBus();
+        SlowTestHandler handler = new SlowTestHandler();
         eventBus.Subscribe<OrganizationDisbandedEvent>(handler.HandleAsync);
 
-        var evt = new OrganizationDisbandedEvent(
+        OrganizationDisbandedEvent evt = new OrganizationDisbandedEvent(
             OrganizationId.New(),
             "Test",
             DateTime.UtcNow);
 
         // Act - Publishing should complete quickly even though handler is slow
-        var startTime = DateTime.UtcNow;
+        DateTime startTime = DateTime.UtcNow;
         await eventBus.PublishAsync(evt);
-        var elapsed = DateTime.UtcNow - startTime;
+        TimeSpan elapsed = DateTime.UtcNow - startTime;
 
         // Assert - Publish should be nearly instant (handler runs separately)
         // InMemoryEventBus is synchronous, so this test verifies handler completes

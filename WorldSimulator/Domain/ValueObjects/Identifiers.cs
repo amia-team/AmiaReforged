@@ -16,7 +16,7 @@ public readonly record struct GovernmentId
 
     public static GovernmentId Parse(string input)
     {
-        if (!Guid.TryParse(input, out var guid))
+        if (!Guid.TryParse(input, out Guid guid))
             throw new FormatException($"Invalid GovernmentId format: {input}");
         return new GovernmentId(guid);
     }
@@ -42,7 +42,7 @@ public readonly record struct SettlementId
 
     public static SettlementId Parse(string input)
     {
-        if (!Guid.TryParse(input, out var guid))
+        if (!Guid.TryParse(input, out Guid guid))
             throw new FormatException($"Invalid SettlementId format: {input}");
         return new SettlementId(guid);
     }
@@ -68,7 +68,7 @@ public readonly record struct PersonaId
 
     public static PersonaId Parse(string input)
     {
-        if (!Guid.TryParse(input, out var guid))
+        if (!Guid.TryParse(input, out Guid guid))
             throw new FormatException($"Invalid PersonaId format: {input}");
         return new PersonaId(guid);
     }
@@ -94,7 +94,7 @@ public readonly record struct MarketId
 
     public static MarketId Parse(string input)
     {
-        if (!Guid.TryParse(input, out var guid))
+        if (!Guid.TryParse(input, out Guid guid))
             throw new FormatException($"Invalid MarketId format: {input}");
         return new MarketId(guid);
     }
@@ -120,7 +120,7 @@ public readonly record struct TerritoryId
 
     public static TerritoryId Parse(string input)
     {
-        if (!Guid.TryParse(input, out var guid))
+        if (!Guid.TryParse(input, out Guid guid))
             throw new FormatException($"Invalid TerritoryId format: {input}");
         return new TerritoryId(guid);
     }
@@ -146,7 +146,7 @@ public readonly record struct RegionId
 
     public static RegionId Parse(string input)
     {
-        if (!Guid.TryParse(input, out var guid))
+        if (!Guid.TryParse(input, out Guid guid))
             throw new FormatException($"Invalid RegionId format: {input}");
         return new RegionId(guid);
     }

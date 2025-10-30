@@ -23,7 +23,7 @@ public readonly record struct TurnDate
 
     public static TurnDate Parse(string input)
     {
-        if (!DateTimeOffset.TryParse(input, out var timestamp))
+        if (!DateTimeOffset.TryParse(input, out DateTimeOffset timestamp))
             throw new FormatException($"Invalid TurnDate format: {input}");
         return new TurnDate(timestamp);
     }

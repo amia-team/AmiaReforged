@@ -35,7 +35,7 @@ public class CircuitBreakerService : IHostedService, IDisposable
     {
         _logger.LogInformation("Starting Circuit Breaker Service");
 
-        _httpClient = _httpClientFactory.CreateClient("WorldEngine");
+        _httpClient = _httpClientFactory.CreateClient("PwEngine");
 
         int intervalSeconds = _configuration.GetValue<int>("CircuitBreaker:CheckIntervalSeconds", 30);
         _healthCheckTimer = new Timer(
@@ -56,27 +56,29 @@ public class CircuitBreakerService : IHostedService, IDisposable
 
     private async Task CheckWorldEngineHealthAsync()
     {
-        string host = _configuration["WorldEngine:Host"] ?? "http://localhost:8080";
-        string endpoint = _configuration["WorldEngine:HealthEndpoint"] ?? "/health";
-        int timeout = _configuration.GetValue<int>("CircuitBreaker:TimeoutSeconds", 5);
+        // Use relative path - the PwEngine HttpClient already has BaseAddress and API key configured
+        string healthEndpoint = "health";
+        int timeout = _configuration.GetValue<int>("PwEngine:Timeout", 5);
+        string baseUrl = _configuration["PwEngine:BaseUrl"] ?? "http://localhost:8080/api/worldengine/";
 
         try
         {
             using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
-            HttpResponseMessage response = await _httpClient!.GetAsync($"{host}{endpoint}", cts.Token);
+            // Use relative URL so HttpClient uses its configured BaseAddress and headers (including API key)
+            HttpResponseMessage response = await _httpClient!.GetAsync(healthEndpoint, cts.Token);
 
             if (response.IsSuccessStatusCode)
             {
-                await TransitionToClosedAsync(host);
+                await TransitionToClosedAsync(baseUrl);
             }
             else
             {
-                await TransitionToOpenAsync(host, $"Health check returned {response.StatusCode}");
+                await TransitionToOpenAsync(baseUrl, $"Health check returned {response.StatusCode}");
             }
         }
         catch (Exception ex)
         {
-            await TransitionToOpenAsync(host, ex.Message);
+            await TransitionToOpenAsync(baseUrl, ex.Message);
         }
     }
 

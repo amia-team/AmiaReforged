@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
@@ -33,14 +34,14 @@ public class IndustriesEventFlowTests
         // Set up repositories
         _industryRepository = InMemoryIndustryRepository.Create();
         _knowledgeRepository = new InMemoryCharacterKnowledgeRepository();
-        var membershipRepository = new InMemoryIndustryMembershipRepository();
-        var characterRepository = RuntimeCharacterRepository.Create();
+        InMemoryIndustryMembershipRepository membershipRepository = new InMemoryIndustryMembershipRepository();
+        ICharacterRepository characterRepository = RuntimeCharacterRepository.Create();
 
         // Set up event bus
         _eventBus = new InMemoryEventBus();
 
         // Create test industry
-        var testIndustry = new Industry
+        Industry testIndustry = new Industry
         {
             Tag = _industryTag.Value,
             Name = "Test Industry",
@@ -59,7 +60,7 @@ public class IndustriesEventFlowTests
         _industryRepository.Add(testIndustry);
 
         // Create test character with knowledge points
-        var testCharacter = new TestCharacter(
+        TestCharacter testCharacter = new TestCharacter(
             new Dictionary<Anvil.API.EquipmentSlots, AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData.ItemSnapshot>(),
             new List<SkillData>(),
             CharacterId.From(_characterId),
@@ -84,7 +85,7 @@ public class IndustriesEventFlowTests
     public void AddMembership_ShouldPublish_MemberJoinedIndustryEvent()
     {
         // Arrange
-        var membership = new IndustryMembership
+        IndustryMembership membership = new IndustryMembership
         {
             Id = Guid.NewGuid(),
             CharacterId = CharacterId.From(_characterId),
@@ -97,10 +98,10 @@ public class IndustriesEventFlowTests
         _membershipService.AddMembership(membership);
 
         // Assert - Verify event was published
-        var events = _eventBus.PublishedEvents;
+        IReadOnlyList<IDomainEvent> events = _eventBus.PublishedEvents;
         Assert.That(events, Has.Count.EqualTo(1), "Should publish exactly one event");
 
-        var evt = events.OfType<MemberJoinedIndustryEvent>().FirstOrDefault();
+        MemberJoinedIndustryEvent? evt = events.OfType<MemberJoinedIndustryEvent>().FirstOrDefault();
         Assert.That(evt, Is.Not.Null, "Should publish MemberJoinedIndustryEvent");
         Assert.That(evt!.MemberId.Value, Is.EqualTo(_characterId), "Event should contain correct character ID");
         Assert.That(evt.IndustryTag, Is.EqualTo(_industryTag), "Event should contain correct industry tag");
@@ -111,7 +112,7 @@ public class IndustriesEventFlowTests
     public void LearnKnowledge_ShouldPublish_RecipeLearnedEvent()
     {
         // Arrange - First add membership
-        var membership = new IndustryMembership
+        IndustryMembership membership = new IndustryMembership
         {
             Id = Guid.NewGuid(),
             CharacterId = CharacterId.From(_characterId),
@@ -123,16 +124,16 @@ public class IndustriesEventFlowTests
         _eventBus.ClearPublishedEvents(); // Clear the join event
 
         // Act - Learn knowledge
-        var result = _membershipService.LearnKnowledge(membership, "test_knowledge");
+        LearningResult result = _membershipService.LearnKnowledge(membership, "test_knowledge");
 
         // Assert - Verify success
         Assert.That(result, Is.EqualTo(LearningResult.Success), "Learning should succeed");
 
         // Assert - Verify event was published
-        var events = _eventBus.PublishedEvents;
+        IReadOnlyList<IDomainEvent> events = _eventBus.PublishedEvents;
         Assert.That(events, Has.Count.EqualTo(1), "Should publish exactly one event");
 
-        var evt = events.OfType<RecipeLearnedEvent>().FirstOrDefault();
+        RecipeLearnedEvent? evt = events.OfType<RecipeLearnedEvent>().FirstOrDefault();
         Assert.That(evt, Is.Not.Null, "Should publish RecipeLearnedEvent");
         Assert.That(evt!.LearnerId.Value, Is.EqualTo(_characterId), "Event should contain correct learner ID");
         Assert.That(evt.IndustryTag, Is.EqualTo(_industryTag), "Event should contain correct industry tag");
@@ -144,7 +145,7 @@ public class IndustriesEventFlowTests
     public void RankUp_ShouldPublish_ProficiencyGainedEvent()
     {
         // Arrange - Add membership and learn required knowledge
-        var membership = new IndustryMembership
+        IndustryMembership membership = new IndustryMembership
         {
             Id = Guid.NewGuid(),
             CharacterId = CharacterId.From(_characterId),
@@ -157,16 +158,16 @@ public class IndustriesEventFlowTests
         _eventBus.ClearPublishedEvents(); // Clear previous events
 
         // Act - Rank up
-        var result = _membershipService.RankUp(membership);
+        RankUpResult result = _membershipService.RankUp(membership);
 
         // Assert - Verify success
         Assert.That(result, Is.EqualTo(RankUpResult.Success), "Rank up should succeed");
 
         // Assert - Verify event was published
-        var events = _eventBus.PublishedEvents;
+        IReadOnlyList<IDomainEvent> events = _eventBus.PublishedEvents;
         Assert.That(events, Has.Count.EqualTo(1), "Should publish exactly one event");
 
-        var evt = events.OfType<ProficiencyGainedEvent>().FirstOrDefault();
+        ProficiencyGainedEvent? evt = events.OfType<ProficiencyGainedEvent>().FirstOrDefault();
         Assert.That(evt, Is.Not.Null, "Should publish ProficiencyGainedEvent");
         Assert.That(evt!.MemberId.Value, Is.EqualTo(_characterId), "Event should contain correct member ID");
         Assert.That(evt.IndustryTag, Is.EqualTo(_industryTag), "Event should contain correct industry tag");
@@ -178,7 +179,7 @@ public class IndustriesEventFlowTests
     public void MultipleOperations_ShouldPublish_EventsInOrder()
     {
         // Arrange
-        var membership = new IndustryMembership
+        IndustryMembership membership = new IndustryMembership
         {
             Id = Guid.NewGuid(),
             CharacterId = CharacterId.From(_characterId),
@@ -193,7 +194,7 @@ public class IndustriesEventFlowTests
         _membershipService.RankUp(membership);
 
         // Assert - Verify all events published in order
-        var events = _eventBus.PublishedEvents;
+        IReadOnlyList<IDomainEvent> events = _eventBus.PublishedEvents;
         Assert.That(events, Has.Count.EqualTo(3), "Should publish three events");
 
         Assert.That(events[0], Is.TypeOf<MemberJoinedIndustryEvent>(), "First event should be MemberJoined");

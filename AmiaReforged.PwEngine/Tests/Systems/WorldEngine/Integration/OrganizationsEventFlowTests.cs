@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Comma
 using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 using AmiaReforged.PwEngine.Features.WorldEngine.Organizations.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
@@ -58,7 +59,7 @@ public class OrganizationsEventFlowTests
     public async Task CreateOrganization_ShouldPublish_OrganizationCreatedEvent()
     {
         // Arrange
-        var command = new CreateOrganizationCommand
+        CreateOrganizationCommand command = new CreateOrganizationCommand
         {
             Name = "Test Guild",
             Description = "A test guild",
@@ -67,16 +68,16 @@ public class OrganizationsEventFlowTests
         };
 
         // Act
-        var result = await _createHandler.HandleAsync(command);
+        CommandResult result = await _createHandler.HandleAsync(command);
 
         // Assert - Verify command succeeded
         Assert.That(result.Success, Is.True, "Command should succeed");
 
         // Assert - Verify event was published
-        var events = _eventBus.PublishedEvents;
+        IReadOnlyList<IDomainEvent> events = _eventBus.PublishedEvents;
         Assert.That(events, Has.Count.EqualTo(1), "Should publish exactly one event");
 
-        var evt = events.OfType<OrganizationCreatedEvent>().FirstOrDefault();
+        OrganizationCreatedEvent? evt = events.OfType<OrganizationCreatedEvent>().FirstOrDefault();
         Assert.That(evt, Is.Not.Null, "Should publish OrganizationCreatedEvent");
         Assert.That(evt!.Name, Is.EqualTo("Test Guild"), "Event should contain correct name");
         Assert.That(evt.Type, Is.EqualTo(OrganizationType.Guild), "Event should contain correct type");
@@ -87,12 +88,12 @@ public class OrganizationsEventFlowTests
     public async Task AddMember_ShouldPublish_MemberJoinedOrganizationEvent()
     {
         // Arrange - Create organization first
-        var org = Organization.CreateNew("Test Guild", "Test", OrganizationType.Guild);
+        IOrganization org = Organization.CreateNew("Test Guild", "Test", OrganizationType.Guild);
         _organizationRepository.Add(org);
         _eventBus.ClearPublishedEvents();
 
-        var characterId = new CharacterId(Guid.NewGuid());
-        var command = new AddMemberCommand
+        CharacterId characterId = new CharacterId(Guid.NewGuid());
+        AddMemberCommand command = new AddMemberCommand
         {
             OrganizationId = org.Id,
             CharacterId = characterId,
@@ -100,16 +101,16 @@ public class OrganizationsEventFlowTests
         };
 
         // Act
-        var result = await _addMemberHandler.HandleAsync(command);
+        CommandResult result = await _addMemberHandler.HandleAsync(command);
 
         // Assert - Verify command succeeded
         Assert.That(result.Success, Is.True, "Command should succeed");
 
         // Assert - Verify event was published
-        var events = _eventBus.PublishedEvents;
+        IReadOnlyList<IDomainEvent> events = _eventBus.PublishedEvents;
         Assert.That(events, Has.Count.EqualTo(1), "Should publish exactly one event");
 
-        var evt = events.OfType<MemberJoinedOrganizationEvent>().FirstOrDefault();
+        MemberJoinedOrganizationEvent? evt = events.OfType<MemberJoinedOrganizationEvent>().FirstOrDefault();
         Assert.That(evt, Is.Not.Null, "Should publish MemberJoinedOrganizationEvent");
         Assert.That(evt!.MemberId, Is.EqualTo(characterId), "Event should contain correct member ID");
         Assert.That(evt.OrganizationId, Is.EqualTo(org.Id), "Event should contain correct organization ID");
@@ -120,14 +121,14 @@ public class OrganizationsEventFlowTests
     public async Task RemoveMember_ShouldPublish_MemberLeftOrganizationEvent()
     {
         // Arrange - Create organization and member
-        var org = Organization.CreateNew("Test Guild", "Test", OrganizationType.Guild);
+        IOrganization org = Organization.CreateNew("Test Guild", "Test", OrganizationType.Guild);
         _organizationRepository.Add(org);
 
-        var characterId = new CharacterId(Guid.NewGuid());
-        var removerId = new CharacterId(Guid.NewGuid());
+        CharacterId characterId = new CharacterId(Guid.NewGuid());
+        CharacterId removerId = new CharacterId(Guid.NewGuid());
 
         // Add member
-        var member = new OrganizationMember
+        OrganizationMember member = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = characterId,
@@ -140,7 +141,7 @@ public class OrganizationsEventFlowTests
         _memberRepository.Add(member);
 
         // Add remover (must be officer or higher)
-        var remover = new OrganizationMember
+        OrganizationMember remover = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = removerId,
@@ -153,7 +154,7 @@ public class OrganizationsEventFlowTests
         _memberRepository.Add(remover);
         _eventBus.ClearPublishedEvents();
 
-        var command = new RemoveMemberCommand
+        RemoveMemberCommand command = new RemoveMemberCommand
         {
             OrganizationId = org.Id,
             CharacterId = characterId,
@@ -162,16 +163,16 @@ public class OrganizationsEventFlowTests
         };
 
         // Act
-        var result = await _removeMemberHandler.HandleAsync(command);
+        CommandResult result = await _removeMemberHandler.HandleAsync(command);
 
         // Assert - Verify command succeeded
         Assert.That(result.Success, Is.True, "Command should succeed");
 
         // Assert - Verify event was published
-        var events = _eventBus.PublishedEvents;
+        IReadOnlyList<IDomainEvent> events = _eventBus.PublishedEvents;
         Assert.That(events, Has.Count.EqualTo(1), "Should publish exactly one event");
 
-        var evt = events.OfType<MemberLeftOrganizationEvent>().FirstOrDefault();
+        MemberLeftOrganizationEvent? evt = events.OfType<MemberLeftOrganizationEvent>().FirstOrDefault();
         Assert.That(evt, Is.Not.Null, "Should publish MemberLeftOrganizationEvent");
         Assert.That(evt!.MemberId, Is.EqualTo(characterId), "Event should contain correct member ID");
         Assert.That(evt.OrganizationId, Is.EqualTo(org.Id), "Event should contain correct organization ID");
@@ -181,14 +182,14 @@ public class OrganizationsEventFlowTests
     public async Task ChangeRank_ShouldPublish_MemberRoleChangedEvent()
     {
         // Arrange - Create organization and members
-        var org = Organization.CreateNew("Test Guild", "Test", OrganizationType.Guild);
+        IOrganization org = Organization.CreateNew("Test Guild", "Test", OrganizationType.Guild);
         _organizationRepository.Add(org);
 
-        var characterId = new CharacterId(Guid.NewGuid());
-        var officerId = new CharacterId(Guid.NewGuid());
+        CharacterId characterId = new CharacterId(Guid.NewGuid());
+        CharacterId officerId = new CharacterId(Guid.NewGuid());
 
         // Add member
-        var member = new OrganizationMember
+        OrganizationMember member = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = characterId,
@@ -201,7 +202,7 @@ public class OrganizationsEventFlowTests
         _memberRepository.Add(member);
 
         // Add officer who can promote
-        var officer = new OrganizationMember
+        OrganizationMember officer = new OrganizationMember
         {
             Id = Guid.NewGuid(),
             CharacterId = officerId,
@@ -214,7 +215,7 @@ public class OrganizationsEventFlowTests
         _memberRepository.Add(officer);
         _eventBus.ClearPublishedEvents();
 
-        var command = new ChangeRankCommand
+        ChangeRankCommand command = new ChangeRankCommand
         {
             OrganizationId = org.Id,
             CharacterId = characterId,
@@ -223,16 +224,16 @@ public class OrganizationsEventFlowTests
         };
 
         // Act
-        var result = await _changeRankHandler.HandleAsync(command);
+        CommandResult result = await _changeRankHandler.HandleAsync(command);
 
         // Assert - Verify command succeeded
         Assert.That(result.Success, Is.True, "Command should succeed");
 
         // Assert - Verify event was published
-        var events = _eventBus.PublishedEvents;
+        IReadOnlyList<IDomainEvent> events = _eventBus.PublishedEvents;
         Assert.That(events, Has.Count.EqualTo(1), "Should publish exactly one event");
 
-        var evt = events.OfType<MemberRoleChangedEvent>().FirstOrDefault();
+        MemberRoleChangedEvent? evt = events.OfType<MemberRoleChangedEvent>().FirstOrDefault();
         Assert.That(evt, Is.Not.Null, "Should publish MemberRoleChangedEvent");
         Assert.That(evt!.MemberId, Is.EqualTo(characterId), "Event should contain correct member ID");
         Assert.That(evt.OrganizationId, Is.EqualTo(org.Id), "Event should contain correct organization ID");
@@ -244,7 +245,7 @@ public class OrganizationsEventFlowTests
     public async Task CompleteWorkflow_ShouldPublish_EventsInOrder()
     {
         // Arrange - Create organization
-        var createCommand = new CreateOrganizationCommand
+        CreateOrganizationCommand createCommand = new CreateOrganizationCommand
         {
             Name = "Test Guild",
             Description = "Test",
@@ -252,14 +253,14 @@ public class OrganizationsEventFlowTests
         };
 
         // Act - Complete workflow: create org, add member, add officer, promote member, remove
-        var createResult = await _createHandler.HandleAsync(createCommand);
-        var orgId = (OrganizationId)createResult.Data!["OrganizationId"]!;
+        CommandResult createResult = await _createHandler.HandleAsync(createCommand);
+        OrganizationId orgId = (OrganizationId)createResult.Data!["OrganizationId"]!;
 
-        var characterId = new CharacterId(Guid.NewGuid());
-        var officerId = new CharacterId(Guid.NewGuid());
+        CharacterId characterId = new CharacterId(Guid.NewGuid());
+        CharacterId officerId = new CharacterId(Guid.NewGuid());
 
         // Add officer first (can manage members)
-        var addOfficerResult = await _addMemberHandler.HandleAsync(new AddMemberCommand
+        CommandResult addOfficerResult = await _addMemberHandler.HandleAsync(new AddMemberCommand
         {
             OrganizationId = orgId,
             CharacterId = officerId,
@@ -267,7 +268,7 @@ public class OrganizationsEventFlowTests
         });
 
         // Add regular member
-        var addResult = await _addMemberHandler.HandleAsync(new AddMemberCommand
+        CommandResult addResult = await _addMemberHandler.HandleAsync(new AddMemberCommand
         {
             OrganizationId = orgId,
             CharacterId = characterId,
@@ -275,7 +276,7 @@ public class OrganizationsEventFlowTests
         });
 
         // Officer promotes the member
-        var changeRankResult = await _changeRankHandler.HandleAsync(new ChangeRankCommand
+        CommandResult changeRankResult = await _changeRankHandler.HandleAsync(new ChangeRankCommand
         {
             OrganizationId = orgId,
             CharacterId = characterId,
@@ -283,7 +284,7 @@ public class OrganizationsEventFlowTests
             ChangedBy = officerId // Officer promotes
         });
 
-        var removeResult = await _removeMemberHandler.HandleAsync(new RemoveMemberCommand
+        CommandResult removeResult = await _removeMemberHandler.HandleAsync(new RemoveMemberCommand
         {
             OrganizationId = orgId,
             CharacterId = characterId,
@@ -299,7 +300,7 @@ public class OrganizationsEventFlowTests
         Assert.That(removeResult.Success, Is.True, "Remove member should succeed");
 
         // Assert - Verify all events published in order
-        var events = _eventBus.PublishedEvents;
+        IReadOnlyList<IDomainEvent> events = _eventBus.PublishedEvents;
         Assert.That(events, Has.Count.EqualTo(5), "Should publish five events");
 
         Assert.That(events[0], Is.TypeOf<OrganizationCreatedEvent>(), "First event should be OrganizationCreated");

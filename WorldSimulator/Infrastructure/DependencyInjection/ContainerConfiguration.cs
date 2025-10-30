@@ -34,19 +34,27 @@ namespace WorldSimulator.Infrastructure.DependencyInjection
 
         private static void RegisterDatabase(IServiceContainer container, IConfiguration configuration)
         {
-            // Register DbContextOptions if needed for factory pattern
             container.Register(factory =>
             {
                 var optionsBuilder = new DbContextOptionsBuilder<SimulationDbContext>();
 
-                // Use dedicated WorldSimulator database connection
-                string? connectionString = configuration.GetConnectionString("WorldSimulator");
+                // Resolve connection string with precedence:
+                // 1) ConnectionStrings:DefaultConnection (from .env, overrides appsettings)
+                // 2) POSTGRES_CONNECTION_STRING
+                // 3) Compose from POSTGRES_* parts
+                // 4) ConnectionStrings:WorldSimulator (appsettings default)
+                string? connectionString = configuration.GetConnectionString("DefaultConnection")
+                                           ?? configuration["ConnectionStrings:DefaultConnection"]
+                                           ?? configuration["POSTGRES_CONNECTION_STRING"]
+                                           ?? ComposeFromParts(configuration)
+                                           ?? configuration.GetConnectionString("WorldSimulator");
 
-                if (string.IsNullOrEmpty(connectionString))
+                if (string.IsNullOrWhiteSpace(connectionString))
                 {
                     throw new InvalidOperationException(
                         "WorldSimulator database connection string is not configured. " +
-                        "Please set ConnectionStrings:WorldSimulator in appsettings.json or environment variables.");
+                        "Set ConnectionStrings:WorldSimulator or ConnectionStrings:DefaultConnection, " +
+                        "or provide POSTGRES_* variables.");
                 }
 
                 optionsBuilder.UseNpgsql(connectionString, npgsqlOptions =>
@@ -55,9 +63,20 @@ namespace WorldSimulator.Infrastructure.DependencyInjection
                 });
 
                 return optionsBuilder.Options;
+
+                static string? ComposeFromParts(IConfiguration cfg)
+                {
+                    string host = cfg["POSTGRES_HOST"] ?? "postgres";
+                    string port = cfg["POSTGRES_PORT"] ?? "5432";
+                    string? db = cfg["POSTGRES_DB"];
+                    string? user = cfg["POSTGRES_USER"];
+                    string? pwd = cfg["POSTGRES_PASSWORD"];
+                    if (string.IsNullOrWhiteSpace(db) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(pwd))
+                        return null;
+                    return $"Host={host};Port={port};Database={db};Username={user};Password={pwd}";
+                }
             }, new PerContainerLifetime());
 
-            // Register DbContext with scoped lifetime
             container.Register<SimulationDbContext>(factory =>
             {
                 var options = factory.GetInstance<DbContextOptions<SimulationDbContext>>();
@@ -75,6 +94,9 @@ namespace WorldSimulator.Infrastructure.DependencyInjection
 
             // PwEngine API Client
             container.Register<IPwEngineClient, PwEngineHttpClient>(new PerContainerLifetime());
+
+            // PwEngine Test Service (for Hello/Ping verification)
+            container.Register<PwEngineTestService>(new PerContainerLifetime());
         }
 
         private static void RegisterApplicationServices(IServiceContainer container)

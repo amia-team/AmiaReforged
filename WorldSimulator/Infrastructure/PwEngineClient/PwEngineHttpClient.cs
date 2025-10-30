@@ -24,9 +24,9 @@ public class PwEngineHttpClient : IPwEngineClient
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         // Create resilience pipeline with configuration
-        var maxRetries = configuration.GetValue("PwEngine:Retry:MaxAttempts", 3);
-        var failuresBeforeBreaking = configuration.GetValue("PwEngine:CircuitBreaker:FailuresBeforeOpening", 5);
-        var breakDuration = configuration.GetValue("PwEngine:CircuitBreaker:DurationOfBreakSeconds", 30);
+        int maxRetries = configuration.GetValue("PwEngine:Retry:MaxAttempts", 3);
+        int failuresBeforeBreaking = configuration.GetValue("PwEngine:CircuitBreaker:FailuresBeforeOpening", 5);
+        int breakDuration = configuration.GetValue("PwEngine:CircuitBreaker:DurationOfBreakSeconds", 30);
 
         _resiliencePipeline = PwEngineResiliencePolicies.CreatePipeline(
             maxRetries,
@@ -41,13 +41,13 @@ public class PwEngineHttpClient : IPwEngineClient
             _logger.LogDebug("Checking PwEngine health...");
 
             // Execute with resilience pipeline
-            var response = await _resiliencePipeline.ExecuteAsync(
+            HttpResponseMessage response = await _resiliencePipeline.ExecuteAsync(
                 async token => await _httpClient.GetAsync("health", token),
                 ct);
 
             if (response.IsSuccessStatusCode)
             {
-                var health = await response.Content.ReadFromJsonAsync<HealthResponse>(ct);
+                HealthResponse? health = await response.Content.ReadFromJsonAsync<HealthResponse>(ct);
                 _logger.LogInformation("PwEngine health check successful: {Status}", health?.Status);
                 return true;
             }

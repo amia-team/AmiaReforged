@@ -159,15 +159,15 @@ public class SimulationWorkItem
     /// </summary>
     public static SimulationWorkItem Create<TPayload>(TPayload payload) where TPayload : IWorkPayload
     {
-        var validation = payload.Validate();
+        ValidationResult validation = payload.Validate();
         if (!validation.IsValid)
         {
             throw new ArgumentException(
                 $"Invalid payload: {string.Join(", ", validation.Errors)}",
                 nameof(payload));
         }
-        var workType = typeof(TPayload).Name.Replace("Payload", "");
-        var json = JsonSerializer.Serialize(payload);
+        string workType = typeof(TPayload).Name.Replace("Payload", "");
+        string json = JsonSerializer.Serialize(payload);
         return new SimulationWorkItem(workType, json);
     }
     /// <summary>
@@ -175,7 +175,7 @@ public class SimulationWorkItem
     /// </summary>
     public TPayload GetPayload<TPayload>() where TPayload : IWorkPayload
     {
-        var payload = JsonSerializer.Deserialize<TPayload>(Payload);
+        TPayload? payload = JsonSerializer.Deserialize<TPayload>(Payload);
         if (payload == null)
         {
             throw new InvalidOperationException($"Failed to deserialize payload to {typeof(TPayload).Name}");

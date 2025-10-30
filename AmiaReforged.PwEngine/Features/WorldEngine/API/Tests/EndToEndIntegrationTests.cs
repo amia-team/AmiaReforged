@@ -25,7 +25,7 @@ public class EndToEndIntegrationSpecs
     {
         // Setup PwEngine server
         _logger = LogManager.GetCurrentClassLogger();
-        var router = new WorldEngineApiRouter(_logger);
+        WorldEngineApiRouter router = new WorldEngineApiRouter(_logger);
 
         _server = new WorldEngineHttpServer(router, _logger, TestApiKey, TestPort);
         _server.Start();
@@ -53,11 +53,11 @@ public class EndToEndIntegrationSpecs
     public async Task EndToEnd_WhenHealthCheckCalled_ShouldSucceed()
     {
         // Act
-        var response = await _httpClient!.GetAsync("health");
+        HttpResponseMessage response = await _httpClient!.GetAsync("health");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var content = await response.Content.ReadAsStringAsync();
+        string content = await response.Content.ReadAsStringAsync();
         content.Should().Contain("healthy");
     }
 
@@ -65,10 +65,10 @@ public class EndToEndIntegrationSpecs
     public async Task EndToEnd_WhenMultipleHealthChecksCalled_ShouldAllSucceed()
     {
         // Act
-        var tasks = Enumerable.Range(1, 5)
+        Task<HttpResponseMessage>[] tasks = Enumerable.Range(1, 5)
             .Select(_ => _httpClient!.GetAsync("health"))
             .ToArray();
-        var responses = await Task.WhenAll(tasks);
+        HttpResponseMessage[] responses = await Task.WhenAll(tasks);
 
         // Assert
         responses.Should().AllSatisfy(r => r.StatusCode.Should().Be(HttpStatusCode.OK));
@@ -78,20 +78,20 @@ public class EndToEndIntegrationSpecs
     public async Task EndToEnd_WhenServerRestarted_ShouldRecoverGracefully()
     {
         // Arrange - First health check succeeds
-        var firstResponse = await _httpClient!.GetAsync("health");
+        HttpResponseMessage firstResponse = await _httpClient!.GetAsync("health");
         firstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Act - Restart server
         _server!.Dispose();
         Thread.Sleep(100);
 
-        var router = new WorldEngineApiRouter(_logger);
+        WorldEngineApiRouter router = new WorldEngineApiRouter(_logger);
         _server = new WorldEngineHttpServer(router, _logger, TestApiKey, TestPort);
         _server.Start();
         Thread.Sleep(200);
 
         // Assert - Health check succeeds after restart
-        var secondResponse = await _httpClient.GetAsync("health");
+        HttpResponseMessage secondResponse = await _httpClient.GetAsync("health");
         secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -99,11 +99,11 @@ public class EndToEndIntegrationSpecs
     public async Task EndToEnd_WhenConcurrentRequests_ShouldAllSucceed()
     {
         // Act - Make 20 concurrent requests
-        var tasks = Enumerable.Range(1, 20)
+        Task<HttpResponseMessage>[] tasks = Enumerable.Range(1, 20)
             .Select(_ => _httpClient!.GetAsync("health"))
             .ToArray();
 
-        var responses = await Task.WhenAll(tasks);
+        HttpResponseMessage[] responses = await Task.WhenAll(tasks);
 
         // Assert
         responses.Should().HaveCount(20);
@@ -114,10 +114,10 @@ public class EndToEndIntegrationSpecs
     public async Task EndToEnd_WhenValidJsonReturned_ShouldParseCorrectly()
     {
         // Act
-        var response = await _httpClient!.GetAsync("health");
-        var json = await response.Content.ReadAsStringAsync();
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        var data = JsonSerializer.Deserialize<HealthResponse>(json, options);
+        HttpResponseMessage response = await _httpClient!.GetAsync("health");
+        string json = await response.Content.ReadAsStringAsync();
+        JsonSerializerOptions options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        HealthResponse? data = JsonSerializer.Deserialize<HealthResponse>(json, options);
 
         // Assert
         data.Should().NotBeNull();
@@ -129,14 +129,14 @@ public class EndToEndIntegrationSpecs
     public async Task EndToEnd_WhenApiKeyMissing_ShouldReturn401()
     {
         // Arrange - Client without API key
-        using var clientWithoutKey = new HttpClient
+        using HttpClient clientWithoutKey = new HttpClient
         {
             BaseAddress = new Uri($"http://localhost:{TestPort}/api/worldengine/"),
             Timeout = TimeSpan.FromSeconds(5)
         };
 
         // Act
-        var response = await clientWithoutKey.GetAsync("health");
+        HttpResponseMessage response = await clientWithoutKey.GetAsync("health");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -146,7 +146,7 @@ public class EndToEndIntegrationSpecs
     public async Task EndToEnd_WhenInvalidApiKey_ShouldReturn401()
     {
         // Arrange - Client with wrong API key
-        using var clientWithBadKey = new HttpClient
+        using HttpClient clientWithBadKey = new HttpClient
         {
             BaseAddress = new Uri($"http://localhost:{TestPort}/api/worldengine/"),
             Timeout = TimeSpan.FromSeconds(5)
@@ -154,7 +154,7 @@ public class EndToEndIntegrationSpecs
         clientWithBadKey.DefaultRequestHeaders.Add("X-API-Key", "wrong-key");
 
         // Act
-        var response = await clientWithBadKey.GetAsync("health");
+        HttpResponseMessage response = await clientWithBadKey.GetAsync("health");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);

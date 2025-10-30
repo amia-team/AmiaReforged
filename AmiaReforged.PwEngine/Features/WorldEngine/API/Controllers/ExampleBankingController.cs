@@ -13,7 +13,7 @@ public class ExampleBankingController
     [HttpGet("/api/worldengine/treasuries/{id}/balance")]
     public static async Task<ApiResult> GetTreasuryBalance(RouteContext ctx)
     {
-        var treasuryId = ctx.GetRouteValue("id");
+        string treasuryId = ctx.GetRouteValue("id");
 
         // TODO: Integrate with actual CQRS/MediatR infrastructure
         // var query = new GetTreasuryBalanceQuery(new TreasuryId(Guid.Parse(treasuryId)));
@@ -37,7 +37,7 @@ public class ExampleBankingController
     [HttpPost("/api/worldengine/banking/apply-interest")]
     public static async Task<ApiResult> ApplyInterest(RouteContext ctx)
     {
-        var request = await ctx.ReadJsonBodyAsync<ApplyInterestRequest>();
+        ApplyInterestRequest? request = await ctx.ReadJsonBodyAsync<ApplyInterestRequest>();
 
         if (request == null || string.IsNullOrEmpty(request.TreasuryId))
         {
@@ -52,7 +52,7 @@ public class ExampleBankingController
         //     new GoldAmount(request.InterestAmount));
         // await mediator.Send(command);
 
-        var correlationId = Guid.NewGuid();
+        Guid correlationId = Guid.NewGuid();
 
         return new ApiResult(202, new
         {
@@ -70,7 +70,7 @@ public class ExampleBankingController
     [HttpPost("/api/worldengine/banking/transfer")]
     public static async Task<ApiResult> TransferGold(RouteContext ctx)
     {
-        var request = await ctx.ReadJsonBodyAsync<TransferGoldRequest>();
+        TransferGoldRequest? request = await ctx.ReadJsonBodyAsync<TransferGoldRequest>();
 
         if (request == null ||
             string.IsNullOrEmpty(request.FromTreasuryId) ||
@@ -85,7 +85,7 @@ public class ExampleBankingController
         // var command = new TransferGoldCommand(...);
         // await mediator.Send(command);
 
-        var correlationId = Guid.NewGuid();
+        Guid correlationId = Guid.NewGuid();
 
         return new ApiResult(202, new
         {

@@ -1,3 +1,4 @@
+using System.Net;
 using FluentAssertions;
 using NLog;
 using NUnit.Framework;
@@ -47,7 +48,7 @@ public class RouteTableSpecs
             async ctx => new ApiResult(200, new { id = ctx.GetRouteValue("id") }),
             "GetBalance");
 
-        var routes = _routeTable.GetRoutes().ToList();
+        List<(string Method, string Pattern, string Handler)> routes = _routeTable.GetRoutes().ToList();
 
         // Assert
         routes.Should().HaveCount(1);
@@ -66,7 +67,7 @@ public class RouteTableSpecs
             }),
             "GetArea");
 
-        var routes = _routeTable.GetRoutes().ToList();
+        List<(string Method, string Pattern, string Handler)> routes = _routeTable.GetRoutes().ToList();
 
         // Assert
         routes.Should().HaveCount(1);
@@ -78,7 +79,7 @@ public class RouteTableSpecs
     public async Task DispatchAsync_WhenSimpleRouteMatches_ShouldExecuteHandler()
     {
         // Arrange
-        var executed = false;
+        bool executed = false;
         _routeTable.AddRoute("GET", "/api/test",
             async ctx =>
             {
@@ -87,10 +88,10 @@ public class RouteTableSpecs
             },
             "TestRoute");
 
-        var mockRequest = CreateMockRequest("GET", "/api/test");
+        HttpListenerRequest mockRequest = CreateMockRequest("GET", "/api/test");
 
         // Act
-        var result = await _routeTable.DispatchAsync("GET", "/api/test", mockRequest, CancellationToken.None);
+        ApiResult? result = await _routeTable.DispatchAsync("GET", "/api/test", mockRequest, CancellationToken.None);
 
         // Assert
         executed.Should().BeTrue();
@@ -111,10 +112,10 @@ public class RouteTableSpecs
             },
             "GetBalance");
 
-        var mockRequest = CreateMockRequest("GET", "/api/treasuries/123/balance");
+        HttpListenerRequest mockRequest = CreateMockRequest("GET", "/api/treasuries/123/balance");
 
         // Act
-        var result = await _routeTable.DispatchAsync("GET", "/api/treasuries/123/balance", mockRequest, CancellationToken.None);
+        ApiResult? result = await _routeTable.DispatchAsync("GET", "/api/treasuries/123/balance", mockRequest, CancellationToken.None);
 
         // Assert
         capturedId.Should().Be("123");
@@ -138,10 +139,10 @@ public class RouteTableSpecs
             },
             "GetArea");
 
-        var mockRequest = CreateMockRequest("GET", "/api/regions/north/areas/cordor");
+        HttpListenerRequest mockRequest = CreateMockRequest("GET", "/api/regions/north/areas/cordor");
 
         // Act
-        var result = await _routeTable.DispatchAsync("GET", "/api/regions/north/areas/cordor", mockRequest, CancellationToken.None);
+        ApiResult? result = await _routeTable.DispatchAsync("GET", "/api/regions/north/areas/cordor", mockRequest, CancellationToken.None);
 
         // Assert
         capturedRegionId.Should().Be("north");
@@ -157,10 +158,10 @@ public class RouteTableSpecs
             async ctx => new ApiResult(200, new { }),
             "TestRoute");
 
-        var mockRequest = CreateMockRequest("GET", "/api/notfound");
+        HttpListenerRequest mockRequest = CreateMockRequest("GET", "/api/notfound");
 
         // Act
-        var result = await _routeTable.DispatchAsync("GET", "/api/notfound", mockRequest, CancellationToken.None);
+        ApiResult? result = await _routeTable.DispatchAsync("GET", "/api/notfound", mockRequest, CancellationToken.None);
 
         // Assert
         result.Should().BeNull();
@@ -174,10 +175,10 @@ public class RouteTableSpecs
             async ctx => new ApiResult(200, new { }),
             "TestRoute");
 
-        var mockRequest = CreateMockRequest("POST", "/api/test");
+        HttpListenerRequest mockRequest = CreateMockRequest("POST", "/api/test");
 
         // Act
-        var result = await _routeTable.DispatchAsync("POST", "/api/test", mockRequest, CancellationToken.None);
+        ApiResult? result = await _routeTable.DispatchAsync("POST", "/api/test", mockRequest, CancellationToken.None);
 
         // Assert
         result.Should().BeNull();
@@ -189,7 +190,7 @@ public class RouteTableSpecs
         // Arrange & Act
         _routeTable.ScanType(typeof(TestController));
 
-        var routes = _routeTable.GetRoutes().ToList();
+        List<(string Method, string Pattern, string Handler)> routes = _routeTable.GetRoutes().ToList();
 
         // Assert
         routes.Should().HaveCountGreaterThanOrEqualTo(1);
@@ -201,10 +202,10 @@ public class RouteTableSpecs
     {
         // Arrange
         _routeTable.ScanType(typeof(TestController));
-        var mockRequest = CreateMockRequest("GET", "/api/test/hello");
+        HttpListenerRequest mockRequest = CreateMockRequest("GET", "/api/test/hello");
 
         // Act
-        var result = await _routeTable.DispatchAsync("GET", "/api/test/hello", mockRequest, CancellationToken.None);
+        ApiResult? result = await _routeTable.DispatchAsync("GET", "/api/test/hello", mockRequest, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -216,10 +217,10 @@ public class RouteTableSpecs
     {
         // Arrange
         _routeTable.ScanType(typeof(TestController));
-        var mockRequest = CreateMockRequest("GET", "/api/test/items/456");
+        HttpListenerRequest mockRequest = CreateMockRequest("GET", "/api/test/items/456");
 
         // Act
-        var result = await _routeTable.DispatchAsync("GET", "/api/test/items/456", mockRequest, CancellationToken.None);
+        ApiResult? result = await _routeTable.DispatchAsync("GET", "/api/test/items/456", mockRequest, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -247,7 +248,7 @@ public class RouteTableSpecs
         [HttpGet("/api/test/items/{id}")]
         public static async Task<ApiResult> GetItem(RouteContext ctx)
         {
-            var id = ctx.GetRouteValue("id");
+            string id = ctx.GetRouteValue("id");
             return await Task.FromResult(new ApiResult(200, new { itemId = id }));
         }
 

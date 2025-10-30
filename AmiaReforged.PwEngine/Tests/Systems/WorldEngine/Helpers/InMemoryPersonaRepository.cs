@@ -19,7 +19,7 @@ public class InMemoryPersonaRepository : IPersonaRepository
 
     public Persona GetPersona(PersonaId personaId)
     {
-        var persona = _personas.FirstOrDefault(p => p.Id.Equals(personaId));
+        Persona? persona = _personas.FirstOrDefault(p => p.Id.Equals(personaId));
         if (persona == null)
             throw new InvalidOperationException($"Persona {personaId} not found");
         return persona;
@@ -32,16 +32,16 @@ public class InMemoryPersonaRepository : IPersonaRepository
 
     public string? GetDisplayName(PersonaId personaId)
     {
-        var persona = _personas.FirstOrDefault(p => p.Id.Equals(personaId));
+        Persona? persona = _personas.FirstOrDefault(p => p.Id.Equals(personaId));
         return persona?.DisplayName;
     }
 
     public Dictionary<PersonaId, Persona> GetPersonas(IEnumerable<PersonaId> personaIds)
     {
-        var result = new Dictionary<PersonaId, Persona>();
-        foreach (var id in personaIds)
+        Dictionary<PersonaId, Persona> result = new Dictionary<PersonaId, Persona>();
+        foreach (PersonaId id in personaIds)
         {
-            var persona = _personas.FirstOrDefault(p => p.Id.Equals(id));
+            Persona? persona = _personas.FirstOrDefault(p => p.Id.Equals(id));
             if (persona != null)
             {
                 result[id] = persona;

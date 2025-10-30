@@ -40,8 +40,8 @@ internal class CompiledRoute
 
     public Dictionary<string, string> ExtractRouteValues(string path)
     {
-        var match = Regex.Match(path);
-        var values = new Dictionary<string, string>();
+        Match match = Regex.Match(path);
+        Dictionary<string, string> values = new Dictionary<string, string>();
 
         for (int i = 0; i < ParameterNames.Count && i < match.Groups.Count - 1; i++)
         {
@@ -74,10 +74,10 @@ public class RouteTable
     {
         _logger.Info("Scanning assembly {Assembly} for route handlers...", assembly.GetName().Name);
 
-        var types = assembly.GetTypes()
+        IEnumerable<Type> types = assembly.GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract);
 
-        foreach (var type in types)
+        foreach (Type type in types)
         {
             ScanType(type);
         }
@@ -90,11 +90,11 @@ public class RouteTable
     /// </summary>
     public void ScanType(Type type)
     {
-        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+        MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
 
-        foreach (var method in methods)
+        foreach (MethodInfo method in methods)
         {
-            var attribute = method.GetCustomAttribute<HttpRouteAttribute>();
+            HttpRouteAttribute? attribute = method.GetCustomAttribute<HttpRouteAttribute>();
             if (attribute == null) continue;
 
             RegisterRoute(attribute.Method, attribute.Pattern, method, type);
@@ -110,8 +110,8 @@ public class RouteTable
         Func<RouteContext, Task<ApiResult>> handler,
         string handlerName = "Manual")
     {
-        var (regex, paramNames) = CompilePattern(pattern);
-        var route = new CompiledRoute(httpMethod, pattern, regex, paramNames, handler, handlerName);
+        (Regex regex, List<string> paramNames) = CompilePattern(pattern);
+        CompiledRoute route = new CompiledRoute(httpMethod, pattern, regex, paramNames, handler, handlerName);
         _routes.Add(route);
 
         _logger.Debug("Registered route: {Method} {Pattern} -> {Handler}",
@@ -120,7 +120,7 @@ public class RouteTable
 
     private void RegisterRoute(string httpMethod, string pattern, MethodInfo method, Type type)
     {
-        var (regex, paramNames) = CompilePattern(pattern);
+        (Regex regex, List<string> paramNames) = CompilePattern(pattern);
 
         // Create handler delegate
         Func<RouteContext, Task<ApiResult>> handler;
@@ -130,7 +130,7 @@ public class RouteTable
             // Static method - can invoke directly
             handler = async (ctx) =>
             {
-                var result = method.Invoke(null, new object[] { ctx });
+                object? result = method.Invoke(null, new object[] { ctx });
                 return result is Task<ApiResult> task ? await task : (ApiResult)result!;
             };
         }
@@ -140,13 +140,13 @@ public class RouteTable
             // Assumption: parameterless constructor exists
             handler = async (ctx) =>
             {
-                var instance = Activator.CreateInstance(type);
-                var result = method.Invoke(instance, new object[] { ctx });
+                object? instance = Activator.CreateInstance(type);
+                object? result = method.Invoke(instance, new object[] { ctx });
                 return result is Task<ApiResult> task ? await task : (ApiResult)result!;
             };
         }
 
-        var route = new CompiledRoute(
+        CompiledRoute route = new CompiledRoute(
             httpMethod,
             pattern,
             regex,
@@ -166,11 +166,11 @@ public class RouteTable
     /// </summary>
     private (Regex Regex, List<string> ParameterNames) CompilePattern(string pattern)
     {
-        var paramNames = new List<string>();
+        List<string> paramNames = new List<string>();
 
         // Find all {paramName} placeholders
-        var paramRegex = new Regex(@"\{([^}]+)\}");
-        var matches = paramRegex.Matches(pattern);
+        Regex paramRegex = new Regex(@"\{([^}]+)\}");
+        MatchCollection matches = paramRegex.Matches(pattern);
 
         foreach (Match match in matches)
         {
@@ -179,8 +179,8 @@ public class RouteTable
 
         // Convert pattern to regex
         // /api/treasuries/{id}/balance -> ^/api/treasuries/([^/]+)/balance$
-        var regexPattern = "^" + paramRegex.Replace(pattern, @"([^/]+)") + "$";
-        var regex = new Regex(regexPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        string regexPattern = "^" + paramRegex.Replace(pattern, @"([^/]+)") + "$";
+        Regex regex = new Regex(regexPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         return (regex, paramNames);
     }
@@ -195,7 +195,7 @@ public class RouteTable
         CancellationToken ct)
     {
         // Find matching route
-        var route = _routes.FirstOrDefault(r => r.Matches(method, path));
+        CompiledRoute? route = _routes.FirstOrDefault(r => r.Matches(method, path));
 
         if (route == null)
         {
@@ -207,10 +207,10 @@ public class RouteTable
             method, path, route.HandlerName);
 
         // Extract route values
-        var routeValues = route.ExtractRouteValues(path);
+        Dictionary<string, string> routeValues = route.ExtractRouteValues(path);
 
         // Create context
-        var context = new RouteContext(request, routeValues, ct);
+        RouteContext context = new RouteContext(request, routeValues, ct);
 
         // Execute handler
         try

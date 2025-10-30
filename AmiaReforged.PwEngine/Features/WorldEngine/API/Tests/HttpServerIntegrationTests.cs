@@ -28,7 +28,7 @@ public class HttpServerIntegrationSpecs
         _logger = LogManager.GetCurrentClassLogger();
 
         // Create router with test routes
-        var router = new WorldEngineApiRouter(_logger);
+        WorldEngineApiRouter router = new WorldEngineApiRouter(_logger);
 
         // Add test-specific routes
         router.AddRoute("GET", "/api/worldengine/test/ping",
@@ -42,7 +42,7 @@ public class HttpServerIntegrationSpecs
         router.AddRoute("POST", "/api/worldengine/test/data",
             async ctx =>
             {
-                var data = await ctx.ReadJsonBodyAsync<TestData>();
+                TestData? data = await ctx.ReadJsonBodyAsync<TestData>();
                 return new ApiResult(200, new { received = data?.Value });
             },
             "TestData");
@@ -74,11 +74,11 @@ public class HttpServerIntegrationSpecs
     public async Task SimpleGetRequest_WhenRouteExists_ShouldReturnSuccess()
     {
         // Act
-        var response = await _httpClient!.GetAsync("/api/worldengine/test/ping");
+        HttpResponseMessage response = await _httpClient!.GetAsync("/api/worldengine/test/ping");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var json = await response.Content.ReadAsStringAsync();
+        string json = await response.Content.ReadAsStringAsync();
         json.Should().Contain("pong");
     }
 
@@ -86,11 +86,11 @@ public class HttpServerIntegrationSpecs
     public async Task ParameterizedRoute_WhenCalled_ShouldExtractParameter()
     {
         // Act
-        var response = await _httpClient!.GetAsync("/api/worldengine/test/echo/hello");
+        HttpResponseMessage response = await _httpClient!.GetAsync("/api/worldengine/test/echo/hello");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var content = await response.Content.ReadFromJsonAsync<EchoResponse>();
+        EchoResponse? content = await response.Content.ReadFromJsonAsync<EchoResponse>();
         content.Should().NotBeNull();
         content!.Echo.Should().Be("hello");
     }
@@ -99,18 +99,18 @@ public class HttpServerIntegrationSpecs
     public async Task PostWithJsonBody_WhenValidData_ShouldReceiveData()
     {
         // Arrange
-        var testData = new TestData("test-value-123");
-        var content = new StringContent(
+        TestData testData = new TestData("test-value-123");
+        StringContent content = new StringContent(
             JsonSerializer.Serialize(testData),
             Encoding.UTF8,
             "application/json");
 
         // Act
-        var response = await _httpClient!.PostAsync("/api/worldengine/test/data", content);
+        HttpResponseMessage response = await _httpClient!.PostAsync("/api/worldengine/test/data", content);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<DataResponse>();
+        DataResponse? result = await response.Content.ReadFromJsonAsync<DataResponse>();
         result.Should().NotBeNull();
         result!.Received.Should().Be("test-value-123");
     }
@@ -119,13 +119,13 @@ public class HttpServerIntegrationSpecs
     public async Task RequestWithoutApiKey_WhenMade_ShouldReturn401()
     {
         // Arrange
-        var clientWithoutKey = new HttpClient
+        HttpClient clientWithoutKey = new HttpClient
         {
             BaseAddress = new Uri($"http://localhost:{TestPort}")
         };
 
         // Act
-        var response = await clientWithoutKey.GetAsync("/api/worldengine/test/ping");
+        HttpResponseMessage response = await clientWithoutKey.GetAsync("/api/worldengine/test/ping");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -137,14 +137,14 @@ public class HttpServerIntegrationSpecs
     public async Task RequestWithInvalidApiKey_WhenMade_ShouldReturn401()
     {
         // Arrange
-        var clientWithBadKey = new HttpClient
+        HttpClient clientWithBadKey = new HttpClient
         {
             BaseAddress = new Uri($"http://localhost:{TestPort}")
         };
         clientWithBadKey.DefaultRequestHeaders.Add("X-API-Key", "wrong-key");
 
         // Act
-        var response = await clientWithBadKey.GetAsync("/api/worldengine/test/ping");
+        HttpResponseMessage response = await clientWithBadKey.GetAsync("/api/worldengine/test/ping");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -156,11 +156,11 @@ public class HttpServerIntegrationSpecs
     public async Task NonExistentRoute_WhenCalled_ShouldReturn404()
     {
         // Act
-        var response = await _httpClient!.GetAsync("/api/worldengine/nonexistent");
+        HttpResponseMessage response = await _httpClient!.GetAsync("/api/worldengine/nonexistent");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var content = await response.Content.ReadAsStringAsync();
+        string content = await response.Content.ReadAsStringAsync();
         content.Should().Contain("Not found");
     }
 
@@ -168,11 +168,11 @@ public class HttpServerIntegrationSpecs
     public async Task MultipleConcurrentRequests_WhenMade_ShouldAllSucceed()
     {
         // Act - Make multiple concurrent requests
-        var tasks = Enumerable.Range(1, 10)
+        Task<HttpResponseMessage>[] tasks = Enumerable.Range(1, 10)
             .Select(i => _httpClient!.GetAsync($"/api/worldengine/test/echo/{i}"))
             .ToArray();
 
-        var responses = await Task.WhenAll(tasks);
+        HttpResponseMessage[] responses = await Task.WhenAll(tasks);
 
         // Assert
         responses.Should().AllSatisfy(r => r.StatusCode.Should().Be(HttpStatusCode.OK));
@@ -182,7 +182,7 @@ public class HttpServerIntegrationSpecs
     public async Task ResponseContentType_WhenReturned_ShouldBeApplicationJson()
     {
         // Act
-        var response = await _httpClient!.GetAsync("/api/worldengine/test/ping");
+        HttpResponseMessage response = await _httpClient!.GetAsync("/api/worldengine/test/ping");
 
         // Assert
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");

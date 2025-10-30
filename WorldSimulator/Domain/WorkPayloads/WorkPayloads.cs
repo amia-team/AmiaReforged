@@ -42,7 +42,7 @@ public record DominionTurnPayload : IWorkPayload
 
     public ValidationResult Validate()
     {
-        var errors = new List<string>();
+        List<string> errors = new List<string>();
 
         if (DominionId == Guid.Empty)
             errors.Add("DominionId cannot be empty");
@@ -75,7 +75,7 @@ public record CivicStatsPayload : IWorkPayload
 
     public ValidationResult Validate()
     {
-        var errors = new List<string>();
+        List<string> errors = new List<string>();
 
         if (SettlementId == Guid.Empty)
             errors.Add("SettlementId cannot be empty");
@@ -110,7 +110,7 @@ public record PersonaActionPayload : IWorkPayload
 
     public ValidationResult Validate()
     {
-        var errors = new List<string>();
+        List<string> errors = new List<string>();
 
         if (PersonaId == Guid.Empty)
             errors.Add("PersonaId cannot be empty");
@@ -146,7 +146,7 @@ public record MarketPricingPayload : IWorkPayload
 
     public ValidationResult Validate()
     {
-        var errors = new List<string>();
+        List<string> errors = new List<string>();
 
         if (MarketId == Guid.Empty)
             errors.Add("MarketId cannot be empty");

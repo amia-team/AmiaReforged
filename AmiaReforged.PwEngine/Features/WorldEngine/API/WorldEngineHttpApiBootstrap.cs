@@ -20,11 +20,11 @@ public class WorldEngineHttpApiBootstrap : IDisposable
         try
         {
             // Get configuration from environment or config
-            var port = GetConfigInt("WORLDENGINE_API_PORT", 8080);
-            var apiKey = GetConfigString("WORLDENGINE_API_KEY", "dev-api-key-change-in-production");
+            int port = GetConfigInt("WORLDENGINE_API_PORT", 8080);
+            string apiKey = GetConfigString("WORLDENGINE_API_KEY", "dev-api-key-change-in-production");
 
             // Create router
-            var router = new WorldEngineApiRouter(_logger);
+            WorldEngineApiRouter router = new WorldEngineApiRouter(_logger);
 
             // Create and start server
             _httpServer = new WorldEngineHttpServer(router, _logger, apiKey, port);
@@ -41,8 +41,8 @@ public class WorldEngineHttpApiBootstrap : IDisposable
 
     private int GetConfigInt(string key, int defaultValue)
     {
-        var value = Environment.GetEnvironmentVariable(key);
-        return int.TryParse(value, out var result) ? result : defaultValue;
+        string? value = Environment.GetEnvironmentVariable(key);
+        return int.TryParse(value, out int result) ? result : defaultValue;
     }
 
     private string GetConfigString(string key, string defaultValue)

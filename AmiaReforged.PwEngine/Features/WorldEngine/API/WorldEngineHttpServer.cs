@@ -70,7 +70,7 @@ public class WorldEngineHttpServer : IDisposable
         {
             try
             {
-                var context = await _listener.GetContextAsync();
+                HttpListenerContext context = await _listener.GetContextAsync();
 
                 // Handle each request in a separate task (non-blocking)
                 _ = Task.Run(() => HandleRequestAsync(context), _cts.Token);
@@ -91,13 +91,13 @@ public class WorldEngineHttpServer : IDisposable
 
     private async Task HandleRequestAsync(HttpListenerContext context)
     {
-        var sw = Stopwatch.StartNew();
-        var request = context.Request;
-        var response = context.Response;
+        Stopwatch sw = Stopwatch.StartNew();
+        HttpListenerRequest request = context.Request;
+        HttpListenerResponse response = context.Response;
 
-        var method = request.HttpMethod;
-        var path = request.Url?.AbsolutePath ?? "/";
-        var correlationId = Guid.NewGuid().ToString("N")[..8];
+        string method = request.HttpMethod;
+        string path = request.Url?.AbsolutePath ?? "/";
+        string correlationId = Guid.NewGuid().ToString("N")[..8];
 
         try
         {
@@ -113,7 +113,7 @@ public class WorldEngineHttpServer : IDisposable
             }
 
             // Route to handler
-            var result = await _router.RouteAsync(method, path, request, _cts.Token);
+            ApiResult result = await _router.RouteAsync(method, path, request, _cts.Token);
 
             // Write response
             await WriteResponseAsync(response, result.StatusCode, result.Data);
@@ -139,7 +139,7 @@ public class WorldEngineHttpServer : IDisposable
     private bool ValidateApiKey(HttpListenerRequest request)
     {
         // Check X-API-Key header
-        var providedKey = request.Headers["X-API-Key"];
+        string? providedKey = request.Headers["X-API-Key"];
 
         if (string.IsNullOrEmpty(providedKey))
         {
@@ -164,13 +164,13 @@ public class WorldEngineHttpServer : IDisposable
         response.ContentType = "application/json";
         response.Headers.Add("X-Powered-By", "WorldEngine/1.0");
 
-        var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
+        string json = JsonSerializer.Serialize(data, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = false
         });
 
-        var buffer = Encoding.UTF8.GetBytes(json);
+        byte[] buffer = Encoding.UTF8.GetBytes(json);
         response.ContentLength64 = buffer.Length;
 
         await response.OutputStream.WriteAsync(buffer, _cts.Token);

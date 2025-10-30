@@ -140,7 +140,7 @@ public class SimulationWorker : BackgroundService
 
         // Pattern match on strongly-typed SimulationWorkType
         // Compiler ensures exhaustiveness checking!
-        var result = workItem.WorkType switch
+        Task result = workItem.WorkType switch
         {
             SimulationWorkType.DominionTurn dt => ProcessDominionTurnAsync(dt, db, cancellationToken),
             SimulationWorkType.CivicStatsAggregation cs => ProcessCivicStatsAsync(cs, db, cancellationToken),

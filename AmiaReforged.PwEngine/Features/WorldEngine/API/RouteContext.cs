@@ -27,7 +27,7 @@ public class RouteContext
     /// </summary>
     public string GetRouteValue(string key)
     {
-        return RouteValues.TryGetValue(key, out var value) ? value : string.Empty;
+        return RouteValues.TryGetValue(key, out string? value) ? value : string.Empty;
     }
 
     /// <summary>
@@ -45,8 +45,8 @@ public class RouteContext
     {
         if (Request == null) return default;
 
-        using var reader = new StreamReader(Request.InputStream);
-        var json = await reader.ReadToEndAsync();
+        using StreamReader reader = new StreamReader(Request.InputStream);
+        string json = await reader.ReadToEndAsync();
         return JsonSerializer.Deserialize<T>(json);
     }
 }
