@@ -9,5 +9,4 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Regions.Commands;
 public sealed record RegisterRegionCommand(
     RegionTag Tag,
     string Name,
-    List<AreaDefinition> Areas,
-    List<SettlementId> Settlements) : ICommand;
+    List<AreaDefinition> Areas) : ICommand;

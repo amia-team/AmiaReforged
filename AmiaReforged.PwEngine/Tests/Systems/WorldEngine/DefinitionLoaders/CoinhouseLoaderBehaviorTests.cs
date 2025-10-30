@@ -1,8 +1,10 @@
+using System.Collections.Generic;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Moq;
 using NUnit.Framework;
@@ -37,8 +39,8 @@ public class CoinhouseLoaderBehaviorTests
             coinhouses.Setup(c => c.TagExists(new CoinhouseTag("ch-1"))).Returns(false);
 
             Mock<IRegionRepository> regions = new Mock<IRegionRepository>(MockBehavior.Strict);
-            RegionDefinition? notUsed;
-            regions.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(777), out notUsed)).Returns(false);
+            RegionDefinition? missingRegion = null;
+            regions.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(777), out missingRegion)).Returns(false);
 
             CoinhouseLoader loader = new(coinhouses.Object, regions.Object);
             loader.Load();
@@ -71,7 +73,7 @@ public class CoinhouseLoaderBehaviorTests
             coinhouses.Setup(c => c.AddNewCoinhouse(It.Is<CoinHouse>(x => x.Tag == "ch-2" && x.Settlement == 101)));
 
             Mock<IRegionRepository> regions = new Mock<IRegionRepository>(MockBehavior.Strict);
-            RegionDefinition existing = new() { Tag = new RegionTag("r1"), Name = "Region", Areas = new(), Settlements = new(){SettlementId.Parse(101)} };
+            RegionDefinition existing = new() { Tag = new RegionTag("r1"), Name = "Region", Areas = [CreateArea("r1-area", 101)] };
             regions.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(101), out existing)).Returns(true);
 
             CoinhouseLoader loader = new(coinhouses.Object, regions.Object);
@@ -105,7 +107,7 @@ public class CoinhouseLoaderBehaviorTests
 
             // First pass: region known
             Mock<IRegionRepository> regions = new Mock<IRegionRepository>(MockBehavior.Strict);
-            RegionDefinition existing = new() { Tag = new RegionTag("r1"), Name = "Region", Areas = new(), Settlements = new(){SettlementId.Parse(202)} };
+            RegionDefinition existing = new() { Tag = new RegionTag("r1"), Name = "Region", Areas = [CreateArea("r1-area", 202)] };
             regions.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(202), out existing)).Returns(true);
 
             CoinhouseLoader loader = new(coinhouses.Object, regions.Object);
@@ -114,8 +116,8 @@ public class CoinhouseLoaderBehaviorTests
 
             // Simulate regions reload where settlement becomes unknown
             Mock<IRegionRepository> regions2 = new Mock<IRegionRepository>(MockBehavior.Strict);
-            RegionDefinition? notUsed;
-            regions2.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(202), out notUsed)).Returns(false);
+            RegionDefinition? missingAfterReload = null;
+            regions2.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(202), out missingAfterReload)).Returns(false);
 
             CoinhouseLoader loader2 = new(coinhouses.Object, regions2.Object);
             loader2.Load();
@@ -126,5 +128,14 @@ public class CoinhouseLoaderBehaviorTests
         {
             try { Directory.Delete(tmp.FullName, true); } catch (Exception) { /* best-effort cleanup */ }
         }
+    }
+
+    private static AreaDefinition CreateArea(string resRef, int settlement)
+    {
+        return new AreaDefinition(
+            new AreaTag(resRef),
+            new List<string>(),
+            new EnvironmentData(Climate.Temperate, EconomyQuality.Average, new QualityRange()),
+            LinkedSettlement: SettlementId.Parse(settlement));
     }
 }

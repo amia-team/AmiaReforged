@@ -9,6 +9,5 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Regions.Commands;
 public sealed record UpdateRegionCommand(
     RegionTag Tag,
     string? Name = null,
-    List<AreaDefinition>? Areas = null,
-    List<SettlementId>? Settlements = null) : ICommand;
+    List<AreaDefinition>? Areas = null) : ICommand;
 

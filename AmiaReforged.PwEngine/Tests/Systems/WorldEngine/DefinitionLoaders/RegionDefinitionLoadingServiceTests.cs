@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -35,9 +37,9 @@ public class RegionDefinitionLoadingServiceTests
             {
               "Tag": "region-a",
               "Name": "Region A",
-              "Settlements": [ 10, 11 ],
               "Areas": [
-                {"ResRef":"area_a1","DefinitionTags":[],"Environment": {"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}
+                                {"ResRef":"area_a1","DefinitionTags":[],"Environment": {"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}, "LinkedSettlement": 10},
+                                {"ResRef":"area_a2","DefinitionTags":[],"Environment": {"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}, "LinkedSettlement": 11}
               ]
             }
             """);
@@ -79,9 +81,8 @@ public class RegionDefinitionLoadingServiceTests
             {
               "Tag": "region-bad",
               "Name": "Region Bad",
-              "Settlements": [ -1 ],
               "Areas": [
-                {"ResRef":"area_b1","DefinitionTags":[],"Environment": {"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}
+                                {"ResRef":"area_b1","DefinitionTags":[],"Environment": {"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}, "LinkedSettlement": -1}
               ]
             }
             """);

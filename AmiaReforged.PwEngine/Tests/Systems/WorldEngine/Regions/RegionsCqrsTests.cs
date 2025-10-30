@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions.Application;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions.Commands;
@@ -65,19 +69,14 @@ public class RegionsCqrsTests
         // Given
         List<AreaDefinition> areas = new()
         {
-            new AreaDefinition(
-                new AreaTag(TestAreaResRef),
-                new List<string> { "wilderness" },
-                new EnvironmentData(Climate.Temperate, EconomyQuality.Average, new QualityRange()))
+            CreateAreaDefinition("test_area_1", SettlementId.Parse(1)),
+            CreateAreaDefinition("test_area_2", SettlementId.Parse(2))
         };
-
-        List<SettlementId> settlements = new() { SettlementId.Parse(1), SettlementId.Parse(2) };
 
         RegisterRegionCommand command = new(
             new RegionTag(TestRegionTag),
             TestRegionName,
-            areas,
-            settlements);
+            areas);
 
         // When
         CommandResult result = await _registerHandler.HandleAsync(command, CancellationToken.None);
@@ -96,8 +95,8 @@ public class RegionsCqrsTests
         Assert.That(evt, Is.Not.Null);
         Assert.That(evt!.Tag.Value, Is.EqualTo(TestRegionTag));
         Assert.That(evt.Name, Is.EqualTo(TestRegionName));
-        Assert.That(evt.AreaCount, Is.EqualTo(1));
-        Assert.That(evt.SettlementCount, Is.EqualTo(2));
+    Assert.That(evt.AreaCount, Is.EqualTo(areas.Count));
+    Assert.That(evt.SettlementCount, Is.EqualTo(2));
     }
 
     [Test]
@@ -114,8 +113,7 @@ public class RegionsCqrsTests
         RegisterRegionCommand command = new(
             new RegionTag(TestRegionTag),
             "",
-            new List<AreaDefinition>(),
-            new List<SettlementId>());
+            new List<AreaDefinition>());
 
         // When
         CommandResult result = await _registerHandler.HandleAsync(command, CancellationToken.None);
@@ -133,8 +131,7 @@ public class RegionsCqrsTests
         RegisterRegionCommand command = new(
             new RegionTag(TestRegionTag),
             TestRegionName,
-            new List<AreaDefinition>(),
-            new List<SettlementId>());
+            new List<AreaDefinition>());
 
         // When
         CommandResult result = await _registerHandler.HandleAsync(command, CancellationToken.None);
@@ -151,17 +148,13 @@ public class RegionsCqrsTests
         // Given - first region registered successfully
         List<AreaDefinition> areas = new()
         {
-            new AreaDefinition(
-                new AreaTag(TestAreaResRef),
-                new List<string> { "wilderness" },
-                new EnvironmentData(Climate.Temperate, EconomyQuality.Average, new QualityRange()))
+            CreateAreaDefinition(TestAreaResRef)
         };
 
         RegisterRegionCommand command1 = new(
             new RegionTag(TestRegionTag),
             TestRegionName,
-            areas,
-            new List<SettlementId>());
+            areas);
 
         await _registerHandler.HandleAsync(command1, CancellationToken.None);
         _publishedEvents.Clear();
@@ -170,8 +163,7 @@ public class RegionsCqrsTests
         RegisterRegionCommand command2 = new(
             new RegionTag(TestRegionTag),
             "Different Name",
-            areas,
-            new List<SettlementId>());
+            areas);
 
         CommandResult result = await _registerHandler.HandleAsync(command2, CancellationToken.None);
 
@@ -450,23 +442,44 @@ public class RegionsCqrsTests
     private async Task RegisterTestRegion(
         string tag = TestRegionTag,
         string name = TestRegionName,
-        List<SettlementId>? settlements = null)
+        List<SettlementId>? settlements = null,
+        List<AreaDefinition>? additionalAreas = null)
     {
         List<AreaDefinition> areas = new()
         {
-            new AreaDefinition(
-                new AreaTag(TestAreaResRef),
-                new List<string> { "wilderness" },
-                new EnvironmentData(Climate.Temperate, EconomyQuality.Average, new QualityRange()))
+            CreateAreaDefinition($"{tag}_base")
         };
+
+        if (settlements is { Count: > 0 })
+        {
+            int index = 0;
+            foreach (SettlementId settlement in settlements)
+            {
+                areas.Add(CreateAreaDefinition($"{tag}_settlement_{settlement.Value}_{index++}", settlement));
+            }
+        }
+
+        if (additionalAreas is { Count: > 0 })
+        {
+            areas.AddRange(additionalAreas);
+        }
 
         RegisterRegionCommand command = new(
             new RegionTag(tag),
             name,
-            areas,
-            settlements ?? new List<SettlementId>());
+            areas);
 
         await _registerHandler.HandleAsync(command, CancellationToken.None);
+    }
+
+    private static AreaDefinition CreateAreaDefinition(string resRef, SettlementId? settlement = null, List<PlaceOfInterest>? pois = null)
+    {
+        return new AreaDefinition(
+            new AreaTag(resRef),
+            new List<string> { "wilderness" },
+            new EnvironmentData(Climate.Temperate, EconomyQuality.Average, new QualityRange()),
+            pois,
+            settlement);
     }
 
     /// <summary>

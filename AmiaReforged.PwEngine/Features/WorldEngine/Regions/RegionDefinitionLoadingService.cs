@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.Services;
 using Microsoft.IdentityModel.Tokens;
@@ -66,11 +68,9 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
 
                 repository.Add(definition);
 
-                // Index settlements for cross-file duplicate detection
-                foreach (SettlementId sid in definition.Settlements)
+                foreach (SettlementId sid in ExtractSettlements(definition))
                 {
-                    // Implicit conversion from SettlementId to int
-                    _seenSettlements.Add(sid);
+                    _seenSettlements.Add(sid.Value);
                 }
             }
             catch (Exception ex)
@@ -113,22 +113,24 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
             return false;
         }
 
-        // Treat 0 and negatives as invalid - already validated by SettlementId.Parse
-        if (definition.Settlements is { Count: > 0 } && definition.Settlements.Any(s => s.Value <= 0))
+        List<SettlementId> linkedSettlements = definition.Areas
+            .Where(a => a.LinkedSettlement.HasValue)
+            .Select(a => a.LinkedSettlement!.Value)
+            .ToList();
+
+        if (linkedSettlements.Any(s => s.Value <= 0))
         {
             error = "Settlement IDs must be positive integers.";
             return false;
         }
 
-        // Reject intra-file duplicates
-        if (definition.Settlements.Count != definition.Settlements.Select(s => s.Value).Distinct().Count())
-        {
-            error = "Duplicate settlement IDs within the same region definition are not allowed.";
-            return false;
-        }
+        // Reject cross-file duplicates for settlements already assigned to other regions
+        List<int> duplicates = linkedSettlements
+            .Select(s => s.Value)
+            .Where(id => _seenSettlements.Contains(id))
+            .Distinct()
+            .ToList();
 
-        // Reject cross-file duplicates
-        List<int> duplicates = definition.Settlements.Select(s => s.Value).Where(s => _seenSettlements.Contains(s)).Distinct().ToList();
         if (duplicates.Count > 0)
         {
             string dupList = string.Join(", ", duplicates);
@@ -148,5 +150,13 @@ public class RegionDefinitionLoadingService(IRegionRepository repository) : IDef
     public List<FileLoadResult> Failures()
     {
         return _failures;
+    }
+
+    private static IEnumerable<SettlementId> ExtractSettlements(RegionDefinition definition)
+    {
+        return definition.Areas
+            .Where(a => a.LinkedSettlement.HasValue)
+            .Select(a => a.LinkedSettlement!.Value)
+            .Distinct();
     }
 }

@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Taxation;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Moq;
@@ -34,15 +36,14 @@ public class RegionPolicyResolverTests
         {
             Tag = new RegionTag("rX"),
             Name = "Region X",
-            Areas = new(),
-            Settlements = new() { SettlementId.Parse(42) }
+            Areas = [CreateArea("rx-area", 42)]
         });
         RegionIndex index = new(repo);
 
         RegionPolicyResolver resolver = new(coinhouses.Object, index);
 
-    Assert.That(resolver.TryGetRegionTagForCoinhouseTag("ch1", out string? regionTag), Is.True);
-    Assert.That(regionTag, Is.EqualTo("rx"));  // RegionTag normalizes to lowercase
+        Assert.That(resolver.TryGetRegionTagForCoinhouseTag("ch1", out string? regionTag), Is.True);
+        Assert.That(regionTag, Is.EqualTo("rx"));  // RegionTag normalizes to lowercase
     }
 
     [Test]
@@ -59,6 +60,15 @@ public class RegionPolicyResolverTests
 
         RegionPolicyResolver resolver = new(coinhouses.Object, index);
         Assert.That(resolver.TryGetRegionTagForCoinhouseTag("missing", out string? _), Is.False);
+    }
+
+    private static AreaDefinition CreateArea(string resRef, int settlement)
+    {
+        return new AreaDefinition(
+            new AreaTag(resRef),
+            new List<string>(),
+            new EnvironmentData(Climate.Temperate, EconomyQuality.Average, new QualityRange()),
+            LinkedSettlement: SettlementId.Parse(settlement));
     }
 }
 

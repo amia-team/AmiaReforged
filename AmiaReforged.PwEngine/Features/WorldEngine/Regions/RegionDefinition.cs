@@ -8,8 +8,6 @@ public class RegionDefinition
     public required RegionTag Tag { get; set; }
     public required string Name { get; set; }
     public List<AreaDefinition> Areas { get; set; } = [];
-    // Settlement IDs associated with this region (predefined constants across Amia)
-    public List<SettlementId> Settlements { get; set; } = [];
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -26,10 +28,10 @@ public class RegionDefinitionLoadingBehaviorTests
             Directory.CreateDirectory(dir);
 
             File.WriteAllText(Path.Combine(dir, "r1.json"), """
-            {"Tag":"r1","Name":"Region One","Settlements":[100],"Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}]}
+            {"Tag":"r1","Name":"Region One","Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":100}]}
             """);
             File.WriteAllText(Path.Combine(dir, "r2.json"), """
-            {"Tag":"r2","Name":"Region Two","Settlements":[100],"Areas":[{"ResRef":"a2","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}]}
+            {"Tag":"r2","Name":"Region Two","Areas":[{"ResRef":"a2","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":100}]}
             """);
 
             Environment.SetEnvironmentVariable("RESOURCE_PATH", root.FullName);
@@ -50,7 +52,7 @@ public class RegionDefinitionLoadingBehaviorTests
     }
 
     [Test]
-    public void Intra_File_Duplicate_Settlements_Fail_And_Adds_No_Regions()
+    public void Intra_File_Duplicate_Settlements_AreAllowed()
     {
         DirectoryInfo root = Directory.CreateTempSubdirectory("regions-dup-intra");
         try
@@ -59,7 +61,10 @@ public class RegionDefinitionLoadingBehaviorTests
             Directory.CreateDirectory(dir);
 
             File.WriteAllText(Path.Combine(dir, "r1.json"), """
-            {"Tag":"r1","Name":"Region One","Settlements":[200,200],"Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}]}
+            {"Tag":"r1","Name":"Region One","Areas":[
+                {"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":200},
+                {"ResRef":"a2","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":200}
+            ]}
             """);
 
             Environment.SetEnvironmentVariable("RESOURCE_PATH", root.FullName);
@@ -69,9 +74,9 @@ public class RegionDefinitionLoadingBehaviorTests
             loader.Load();
             List<FileLoadResult> failures = loader.Failures();
 
-            Assert.That(failures, Is.Not.Empty);
-            Assert.That(failures[0].Message, Does.Contain("Duplicate settlement IDs within the same region definition"));
-            Assert.That(repo.All(), Is.Empty);
+            Assert.That(failures, Is.Empty);
+            IReadOnlyCollection<SettlementId> settlements = repo.GetSettlements(new RegionTag("r1"));
+            CollectionAssert.AreEquivalent(new[]{200}, settlements.Select(s => s.Value));
         }
         finally
         {
@@ -89,7 +94,10 @@ public class RegionDefinitionLoadingBehaviorTests
             Directory.CreateDirectory(dir);
 
             File.WriteAllText(Path.Combine(dir, "r1.json"), """
-            {"Tag":"r1","Name":"Region One","Settlements":[0,-1],"Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}]}
+            {"Tag":"r1","Name":"Region One","Areas":[
+                {"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":0},
+                {"ResRef":"a2","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":-1}
+            ]}
             """);
 
             Environment.SetEnvironmentVariable("RESOURCE_PATH", root.FullName);
@@ -118,10 +126,10 @@ public class RegionDefinitionLoadingBehaviorTests
             Directory.CreateDirectory(dir);
 
             File.WriteAllText(Path.Combine(dir, "r1.json"), """
-            {"Tag":"r","Name":"Region R1","Settlements":[311],"Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}]}
+            {"Tag":"r","Name":"Region R1","Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":311}]}
             """);
             File.WriteAllText(Path.Combine(dir, "r2.json"), """
-            {"Tag":"r","Name":"Region R2","Settlements":[312],"Areas":[{"ResRef":"a2","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}]}
+            {"Tag":"r","Name":"Region R2","Areas":[{"ResRef":"a2","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":312}]}
             """);
 
             Environment.SetEnvironmentVariable("RESOURCE_PATH", root.FullName);
@@ -152,7 +160,7 @@ public class RegionDefinitionLoadingBehaviorTests
 
             string file = Path.Combine(dir, "r1.json");
             File.WriteAllText(file, """
-            {"Tag":"r1","Name":"Region One","Settlements":[900],"Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}]}
+            {"Tag":"r1","Name":"Region One","Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":900}]}
             """);
 
             Environment.SetEnvironmentVariable("RESOURCE_PATH", root.FullName);
@@ -165,7 +173,7 @@ public class RegionDefinitionLoadingBehaviorTests
 
             // Change file to different settlement and reload
             File.WriteAllText(file, """
-            {"Tag":"r1","Name":"Region One","Settlements":[901],"Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}]}
+            {"Tag":"r1","Name":"Region One","Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":901}]}
             """);
 
             loader.Load();
@@ -189,7 +197,10 @@ public class RegionDefinitionLoadingBehaviorTests
             Directory.CreateDirectory(dir);
 
             File.WriteAllText(Path.Combine(dir, "r1.json"), """
-            {"Tag":"r1","Name":"Region One","Settlements":[1000,1001],"Areas":[{"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}}}]}
+            {"Tag":"r1","Name":"Region One","Areas":[
+                {"ResRef":"a1","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":1000},
+                {"ResRef":"a2","DefinitionTags":[],"Environment":{"Climate":"Temperate","SoilQuality":"Average","MineralQualityRange":{"Min":"Average","Max":"Average"}},"LinkedSettlement":1001}
+            ]}
             """);
 
             Environment.SetEnvironmentVariable("RESOURCE_PATH", root.FullName);
@@ -198,11 +209,13 @@ public class RegionDefinitionLoadingBehaviorTests
 
             loader.Load();
             RegionDefinition first = repo.All().Single();
-            CollectionAssert.AreEquivalent(new[]{1000,1001}, first.Settlements.Select(s => s.Value).ToArray());
+            IReadOnlyCollection<SettlementId> initialSettlements = repo.GetSettlements(new RegionTag("r1"));
+            CollectionAssert.AreEquivalent(new[]{1000,1001}, initialSettlements.Select(s => s.Value).ToArray());
 
             loader.Load();
             RegionDefinition second = repo.All().Single();
-            CollectionAssert.AreEquivalent(new[]{1000,1001}, second.Settlements.Select(s => s.Value).ToArray());
+            IReadOnlyCollection<SettlementId> reloadedSettlements = repo.GetSettlements(new RegionTag("r1"));
+            CollectionAssert.AreEquivalent(new[]{1000,1001}, reloadedSettlements.Select(s => s.Value).ToArray());
         }
         finally
         {

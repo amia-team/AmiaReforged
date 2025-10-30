@@ -31,8 +31,7 @@ public class UpdateRegionCommandHandler(
         {
             Tag = command.Tag,
             Name = command.Name ?? existing.Name,
-            Areas = command.Areas ?? existing.Areas,
-            Settlements = command.Settlements ?? existing.Settlements
+            Areas = command.Areas ?? existing.Areas
         };
 
         // Validate

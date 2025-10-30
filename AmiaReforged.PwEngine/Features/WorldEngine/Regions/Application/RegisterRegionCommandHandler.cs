@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
@@ -42,19 +43,27 @@ public class RegisterRegionCommandHandler(
         {
             Tag = command.Tag,
             Name = command.Name,
-            Areas = command.Areas,
-            Settlements = command.Settlements ?? new List<SharedKernel.ValueObjects.SettlementId>()
+            Areas = command.Areas
         };
 
         // Add to repository
         repository.Add(definition);
+
+        HashSet<int> settlementIds = new();
+        foreach (AreaDefinition area in command.Areas)
+        {
+            if (area.LinkedSettlement is { } settlement)
+            {
+                settlementIds.Add(settlement.Value);
+            }
+        }
 
         // Publish event
         await eventBus.PublishAsync(new RegionRegisteredEvent(
             command.Tag,
             command.Name,
             command.Areas.Count,
-            command.Settlements?.Count ?? 0,
+            settlementIds.Count,
             DateTime.UtcNow), cancellationToken);
 
         return CommandResult.OkWith("tag", command.Tag.Value);

@@ -1,8 +1,10 @@
+using System.Collections.Generic;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Moq;
 using NUnit.Framework;
@@ -82,7 +84,7 @@ public class CoinhouseLoaderTests
             coinhouses.Setup(c => c.AddNewCoinhouse(It.IsAny<CoinHouse>()));
 
             Mock<IRegionRepository> regions = new Mock<IRegionRepository>(MockBehavior.Strict);
-            RegionDefinition region = new() { Tag = new RegionTag("region-a"), Name = "Region A", Areas = new(), Settlements = new(){SettlementId.Parse(101)} };
+            RegionDefinition region = new() { Tag = new RegionTag("region-a"), Name = "Region A", Areas = [CreateArea("region-a-area", 101)] };
             regions.Setup(r => r.TryGetRegionBySettlement(SettlementId.Parse(101), out region)).Returns(true);
 
             CoinhouseLoader loader = new(coinhouses.Object, regions.Object);
@@ -98,6 +100,15 @@ public class CoinhouseLoaderTests
         {
             try { Directory.Delete(tempRoot.FullName, true); } catch { /* ignore */ }
         }
+    }
+
+    private static AreaDefinition CreateArea(string resRef, int settlement)
+    {
+        return new AreaDefinition(
+            new AreaTag(resRef),
+            new List<string>(),
+            new EnvironmentData(Climate.Temperate, EconomyQuality.Average, new QualityRange()),
+            LinkedSettlement: SettlementId.Parse(settlement));
     }
 }
 
