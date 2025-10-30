@@ -9,7 +9,7 @@ public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
     public void Polymorph(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.RandomPolymorphEffect(), WildMagicUtils.LongDuration);
 
-    public static void HermiticConfusion(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public static void HermeticConfusion(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         Effect confused = Effect.Confused();
         confused.IgnoreImmunity = true;

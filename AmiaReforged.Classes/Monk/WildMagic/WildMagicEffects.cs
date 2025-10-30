@@ -21,7 +21,7 @@ public class WildMagicEffects(
     public readonly WildMagicEffect[] AdverseEffects =
     [
         new("Polymorph", adverseWildMagic.Polymorph),
-        new("Hermitic Confusion", AdverseWildMagic.HermiticConfusion),
+        new("Hermetic Confusion", AdverseWildMagic.HermeticConfusion),
         new("Trade Places", AdverseWildMagic.TradePlaces),
         new("Heal (Not That One!)", adverseWildMagic.HealNotThatOne),
         new("Restoration (Not That One!)", AdverseWildMagic.RestorationNotThatOne),
