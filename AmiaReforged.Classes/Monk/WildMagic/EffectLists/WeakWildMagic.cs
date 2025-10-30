@@ -189,7 +189,9 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
             return;
         }
 
-        target.ApplyEffect(EffectDuration.Temporary, Effect.Dazed(), WildMagicUtils.ShortDuration);
+        Effect daze = Effect.LinkEffects(Effect.Dazed(), Effect.VisualEffect(VfxType.DurMindAffectingNegative));
+
+        target.ApplyEffect(EffectDuration.Temporary, daze, WildMagicUtils.ShortDuration);
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpCharm));
     }
 

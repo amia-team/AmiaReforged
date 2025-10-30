@@ -63,7 +63,7 @@ public class EpicWildMagic(WildMagicUtils wildMagicUtils)
         if (spell == null || target.Location == null) return;
 
         Effect divineVfx = Effect.VisualEffect(VfxType.ImpDivineStrikeHoly);
-        Effect daze = Effect.Dazed();
+        Effect daze = Effect.LinkEffects(Effect.Dazed(), Effect.VisualEffect(VfxType.DurMindAffectingNegative));
 
         target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfStrikeHoly));
 
