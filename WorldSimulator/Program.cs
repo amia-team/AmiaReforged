@@ -4,6 +4,7 @@ using WorldSimulator.Infrastructure.PwEngineClient;
 using DotNetEnv;
 using LightInject;
 using LightInject.Microsoft.DependencyInjection;
+using Npgsql;
 
 namespace WorldSimulator
 {
@@ -33,10 +34,10 @@ namespace WorldSimulator
                 .ConfigureAppConfiguration((context, config) =>
                 {
                     // Build current configuration snapshot to read env vars
-                    var built = config.Build();
-                    var composed = ComposeConnectionStringFromEnvironment(built);
-                    var existing = built.GetConnectionString("DefaultConnection")
-                                   ?? built["ConnectionStrings:DefaultConnection"];
+                    IConfigurationRoot built = config.Build();
+                    string? composed = ComposeConnectionStringFromEnvironment(built);
+                    string? existing = built.GetConnectionString("DefaultConnection")
+                                       ?? built["ConnectionStrings:DefaultConnection"];
 
                     if (!string.IsNullOrWhiteSpace(composed) && string.IsNullOrWhiteSpace(existing))
                     {
@@ -98,7 +99,7 @@ namespace WorldSimulator
             // Ensure database is created (for development) - optionally skippable
             using (IServiceScope scope = host.Services.CreateScope())
             {
-                var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                IConfiguration configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
                 bool skipDbInit = string.Equals(
                         Environment.GetEnvironmentVariable("WORLD_SIMULATOR_SKIP_DB_INIT"),
                         "true",
@@ -123,7 +124,7 @@ namespace WorldSimulator
                     // Diagnostic: log resolved connection (without password)
                     try
                     {
-                        var builder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
+                        NpgsqlConnectionStringBuilder builder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
                         Log.Information("Using DB connection Host={Host}, Port={Port}, Database={Database}, Username={Username}",
                             builder.Host, builder.Port, builder.Database, builder.Username);
                     }
@@ -149,9 +150,9 @@ namespace WorldSimulator
             Log.Information("WorldSimulator starting...");
 
             // Test communication with PwEngine (fire and forget - don't block startup)
-            using (var testScope = host.Services.CreateScope())
+            using (IServiceScope testScope = host.Services.CreateScope())
             {
-                var testService = testScope.ServiceProvider.GetService<PwEngineTestService>();
+                PwEngineTestService? testService = testScope.ServiceProvider.GetService<PwEngineTestService>();
                 if (testService != null)
                 {
                     Log.Information("Testing connectivity to PwEngine (non-blocking)...");
@@ -188,7 +189,7 @@ namespace WorldSimulator
         private static string? ComposeConnectionStringFromEnvironment(IConfiguration config)
         {
             // 1) If explicit fallback variable is set, honor it
-            var cs = config["POSTGRES_CONNECTION_STRING"];
+            string? cs = config["POSTGRES_CONNECTION_STRING"];
             if (!string.IsNullOrWhiteSpace(cs)) return cs;
 
             // 2) Assemble from discrete parts

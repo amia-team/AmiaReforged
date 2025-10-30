@@ -36,7 +36,7 @@ public class PwEngineTestService
             string baseUrl = _configuration["PwEngine:BaseUrl"]
                            ?? "http://localhost:8080/api/worldengine/";
 
-            using var httpClient = _httpClientFactory.CreateClient("PwEngine");
+            using HttpClient httpClient = _httpClientFactory.CreateClient("PwEngine");
 
             var payload = new
             {
@@ -45,14 +45,14 @@ public class PwEngineTestService
 
             _logger.LogInformation("Sending Hello request to PwEngine at {BaseUrl}echo/hello", baseUrl);
 
-            var response = await httpClient.PostAsJsonAsync(
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
                 $"{baseUrl}echo/hello",
                 payload,
                 cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                string content = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("PwEngine Echo Response: {Response}", content);
                 return true;
             }
@@ -98,17 +98,17 @@ public class PwEngineTestService
             string baseUrl = _configuration["PwEngine:BaseUrl"]
                            ?? "http://localhost:8080/api/worldengine/";
 
-            using var httpClient = _httpClientFactory.CreateClient("PwEngine");
+            using HttpClient httpClient = _httpClientFactory.CreateClient("PwEngine");
 
             _logger.LogInformation("Pinging PwEngine at {BaseUrl}echo/ping", baseUrl);
 
-            var response = await httpClient.GetAsync(
+            HttpResponseMessage response = await httpClient.GetAsync(
                 $"{baseUrl}echo/ping",
                 cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                string content = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("PwEngine Ping Response: {Response}", content);
                 return true;
             }

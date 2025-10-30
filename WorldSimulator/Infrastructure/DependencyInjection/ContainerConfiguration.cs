@@ -36,7 +36,7 @@ namespace WorldSimulator.Infrastructure.DependencyInjection
         {
             container.Register(factory =>
             {
-                var optionsBuilder = new DbContextOptionsBuilder<SimulationDbContext>();
+                DbContextOptionsBuilder<SimulationDbContext> optionsBuilder = new DbContextOptionsBuilder<SimulationDbContext>();
 
                 // Resolve connection string with precedence:
                 // 1) ConnectionStrings:DefaultConnection (from .env, overrides appsettings)
@@ -79,7 +79,7 @@ namespace WorldSimulator.Infrastructure.DependencyInjection
 
             container.Register<SimulationDbContext>(factory =>
             {
-                var options = factory.GetInstance<DbContextOptions<SimulationDbContext>>();
+                DbContextOptions<SimulationDbContext>? options = factory.GetInstance<DbContextOptions<SimulationDbContext>>();
                 return new SimulationDbContext(options);
             }, new PerScopeLifetime());
         }
