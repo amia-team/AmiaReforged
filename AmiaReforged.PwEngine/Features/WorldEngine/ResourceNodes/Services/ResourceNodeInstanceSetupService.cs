@@ -92,7 +92,7 @@ public class ResourceNodeInstanceSetupService(
     {
         // Get TYPE filters from trigger local variable (e.g., "ore,geode,tree")
         // Note: Variable is named "node_tags" but actually contains TYPE filters
-        var nodeTypesStr = NWScript.GetLocalString(trigger, WorldConstants.LvarNodeTags);
+        string nodeTypesStr = NWScript.GetLocalString(trigger, WorldConstants.LvarNodeTags);
 
         // Defensive parsing: handle null, empty, or whitespace
         if (string.IsNullOrWhiteSpace(nodeTypesStr))
@@ -104,7 +104,7 @@ public class ResourceNodeInstanceSetupService(
         // Remove surrounding quotes if present (defensive against toolset variations)
         nodeTypesStr = nodeTypesStr.Trim().Trim('"', '\'');
 
-        var allowedTypes = nodeTypesStr.Split(',')
+        HashSet<string> allowedTypes = nodeTypesStr.Split(',')
             .Select(t => t.Trim().ToLower())
             .Where(t => !string.IsNullOrWhiteSpace(t))  // Skip empty entries
             .ToHashSet();
@@ -123,14 +123,14 @@ public class ResourceNodeInstanceSetupService(
         }
 
         // Filter area's DefinitionTags by matching their Type to trigger's type filters
-        var matchingDefinitionTags = new List<string>();
+        List<string> matchingDefinitionTags = new List<string>();
         Log.Info($"Checking {area.DefinitionTags.Count} definitions in area {area.ResRef} against type filters: [{string.Join(", ", allowedTypes)}]");
 
-        foreach (var definitionTag in area.DefinitionTags)
+        foreach (string definitionTag in area.DefinitionTags)
         {
             Log.Info($" Checking definition tag: {definitionTag}");
             // Load the definition to check its Type field
-            var definition = resourceRepository.Get(definitionTag);
+            ResourceNodeDefinition? definition = resourceRepository.Get(definitionTag);
             if (definition == null)
             {
                 Log.Warn($"  ✗ {definitionTag}: Definition not found in repository");
@@ -138,7 +138,7 @@ public class ResourceNodeInstanceSetupService(
             }
 
             // Compare the definition's Type field to the trigger's type filters
-            var defType = definition.Type.ToString().ToLower();
+            string defType = definition.Type.ToString().ToLower();
             if (allowedTypes.Contains(defType))
             {
                 matchingDefinitionTags.Add(definitionTag);
@@ -157,14 +157,14 @@ public class ResourceNodeInstanceSetupService(
         }
 
         // Get max nodes (default 5)
-        var maxNodes = NWScript.GetLocalInt(trigger, WorldConstants.LvarMaxNodesTotal);
+        int maxNodes = NWScript.GetLocalInt(trigger, WorldConstants.LvarMaxNodesTotal);
         if (maxNodes <= 0)
             maxNodes = WorldConstants.DefaultMaxNodesPerTrigger;
 
         NwModule.Instance.SendMessageToAllDMs($"Trigger '{trigger.Tag}': type filters=[{string.Join(", ", allowedTypes)}], matched {matchingDefinitionTags.Count} definition(s), max={maxNodes}");
 
         // Generate spawn locations using the matching definition tags
-        var spawnLocations = triggerSpawnService.GenerateSpawnLocations(
+        List<SpawnLocation> spawnLocations = triggerSpawnService.GenerateSpawnLocations(
             trigger,
             matchingDefinitionTags,
             maxNodes
@@ -174,9 +174,9 @@ public class ResourceNodeInstanceSetupService(
 
         // Create and spawn nodes at each location
         int spawned = 0;
-        foreach (var location in spawnLocations)
+        foreach (SpawnLocation location in spawnLocations)
         {
-            var nodeDefinition = resourceRepository.Get(location.NodeTag);
+            ResourceNodeDefinition? nodeDefinition = resourceRepository.Get(location.NodeTag);
 
             if (nodeDefinition == null)
             {
@@ -186,7 +186,7 @@ public class ResourceNodeInstanceSetupService(
 
             try
             {
-                var node = nodeService.CreateNewNode(
+                ResourceNodeInstance node = nodeService.CreateNewNode(
                     area,
                     nodeDefinition,
                     location.Position,
