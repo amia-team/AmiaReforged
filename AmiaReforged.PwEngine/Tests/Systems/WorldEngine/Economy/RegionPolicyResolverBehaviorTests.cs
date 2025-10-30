@@ -1,7 +1,8 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Taxation;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Moq;
 using NUnit.Framework;
@@ -14,20 +15,30 @@ public class RegionPolicyResolverBehaviorTests
     [Test]
     public void Coinhouse_Found_But_Settlement_Unknown_Returns_False()
     {
-        Mock<ICoinhouseRepository> coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
-        coinhouses.Setup(c => c.GetByTag(new CoinhouseTag("ch1"))).Returns(new CoinHouse { Tag = "ch1", Settlement = 999, EngineId = Guid.NewGuid() });
+        Mock<ICoinhouseRepository> coinhouses = new(MockBehavior.Strict);
+        CoinhouseTag coinhouseTag = new("ch1");
+        coinhouses
+            .Setup(c => c.GetByTagAsync(coinhouseTag, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CoinhouseDto
+            {
+                Id = 100,
+                Tag = coinhouseTag,
+                Settlement = 999,
+                EngineId = Guid.NewGuid(),
+                Persona = PersonaId.FromCoinhouse(coinhouseTag)
+            });
         InMemoryRegionRepository repo = new();
         RegionIndex index = new(repo);
         RegionPolicyResolver resolver = new(coinhouses.Object, index);
 
-        Assert.That(resolver.TryGetRegionTagForCoinhouseTag("ch1", out string? tag), Is.False);
-        Assert.That(tag, Is.Null);
+        Assert.That(resolver.TryGetRegionTagForCoinhouseTag("ch1", out string? regionTag), Is.False);
+        Assert.That(regionTag, Is.Null);
     }
 
     [Test]
     public void Null_Or_Empty_Input_Returns_False()
     {
-        Mock<ICoinhouseRepository> coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
+        Mock<ICoinhouseRepository> coinhouses = new(MockBehavior.Strict);
         RegionPolicyResolver resolver = new(coinhouses.Object, new RegionIndex(new InMemoryRegionRepository()));
 
         Assert.That(resolver.TryGetRegionTagForCoinhouseTag(null!, out string? _), Is.False);
@@ -38,13 +49,16 @@ public class RegionPolicyResolverBehaviorTests
     [Test]
     public void Repository_Exception_Is_Swalllowed_And_Returns_False()
     {
-        Mock<ICoinhouseRepository> coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
-        coinhouses.Setup(c => c.GetByTag(new CoinhouseTag("boom"))).Throws(new Exception("db is down"));
+        Mock<ICoinhouseRepository> coinhouses = new(MockBehavior.Strict);
+        CoinhouseTag coinhouseTag = new("boom");
+        coinhouses
+            .Setup(c => c.GetByTagAsync(coinhouseTag, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("db is down"));
 
         RegionPolicyResolver resolver = new(coinhouses.Object, new RegionIndex(new InMemoryRegionRepository()));
 
-        Assert.That(resolver.TryGetRegionTagForCoinhouseTag("boom", out string? tag), Is.False);
-        Assert.That(tag, Is.Null);
+        Assert.That(resolver.TryGetRegionTagForCoinhouseTag("boom", out string? regionTag), Is.False);
+        Assert.That(regionTag, Is.Null);
     }
 }
 

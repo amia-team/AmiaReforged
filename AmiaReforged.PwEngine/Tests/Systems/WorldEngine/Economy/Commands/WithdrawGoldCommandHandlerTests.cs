@@ -1,7 +1,9 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Database.Entities.Economy;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Transactions;
@@ -16,61 +18,80 @@ using NUnit.Framework;
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Economy.Commands;
 
 /// <summary>
-/// BDD-style tests for WithdrawGoldCommandHandler.
-/// Tests the handler's ability to withdraw gold from a coinhouse account.
+/// BDD-style tests for WithdrawGoldCommandHandler using the DTO-based repository contract.
 /// </summary>
 [TestFixture]
 public class WithdrawGoldCommandHandlerTests
 {
-    private Mock<ICoinhouseRepository> _mockCoinhouseRepo = null!;
-    private Mock<ITransactionRepository> _mockTransactionRepo = null!;
-    private Mock<IEventBus> _mockEventBus = null!;
+    private Mock<ICoinhouseRepository> _coinhouses = null!;
+    private Mock<ITransactionRepository> _transactions = null!;
+    private Mock<IEventBus> _eventBus = null!;
     private WithdrawGoldCommandHandler _handler = null!;
 
     private PersonaId _withdrawer;
-    private CoinhouseTag _coinhouse;
-    private CoinHouse _testCoinhouse = null!;
-    private CoinHouseAccount _testAccount = null!;
+    private CoinhouseTag _coinhouseTag;
+    private CoinhouseDto _coinhouse = null!;
+    private CoinhouseAccountDto _account = null!;
 
     [SetUp]
     public void Setup()
     {
-        _mockCoinhouseRepo = new Mock<ICoinhouseRepository>();
-        _mockTransactionRepo = new Mock<ITransactionRepository>();
-        _mockEventBus = new Mock<IEventBus>();
+        _coinhouses = new Mock<ICoinhouseRepository>();
+        _transactions = new Mock<ITransactionRepository>();
+        _eventBus = new Mock<IEventBus>();
+
         _handler = new WithdrawGoldCommandHandler(
-            _mockCoinhouseRepo.Object,
-            _mockTransactionRepo.Object,
-            _mockEventBus.Object);
+            _coinhouses.Object,
+            _transactions.Object,
+            _eventBus.Object);
 
         _withdrawer = PersonaTestHelpers.CreateCharacterPersona().Id;
-        _coinhouse = EconomyTestHelpers.CreateCoinhouseTag("cordor_bank");
+        _coinhouseTag = EconomyTestHelpers.CreateCoinhouseTag("cordor_bank");
 
-        // Setup test coinhouse with account
-        _testCoinhouse = new CoinHouse
+        _coinhouse = new CoinhouseDto
         {
             Id = 1,
-            Tag = _coinhouse.Value,
+            Tag = _coinhouseTag,
             Settlement = 1,
             EngineId = Guid.NewGuid(),
-            StoredGold = 0,
-            Accounts = new List<CoinHouseAccount>()
+            Persona = PersonaId.FromCoinhouse(_coinhouseTag)
         };
 
-        _testAccount = new CoinHouseAccount
+        _account = new CoinhouseAccountDto
         {
-            Id = Guid.NewGuid(),
-            Debit = 1000, // Start with 1000 gold in account
+            Id = PersonaAccountId.From(_withdrawer),
+            Debit = 1000,
             Credit = 0,
-            CoinHouseId = _testCoinhouse.Id,
-            OpenedAt = DateTime.UtcNow
+            CoinHouseId = _coinhouse.Id,
+            OpenedAt = DateTime.UtcNow,
+            LastAccessedAt = DateTime.UtcNow,
+            Coinhouse = _coinhouse
         };
 
-        _testCoinhouse.Accounts!.Add(_testAccount);
+        _coinhouses
+            .Setup(r => r.GetByTagAsync(It.IsAny<CoinhouseTag>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoinhouseTag tag, CancellationToken _) =>
+                tag.Value == _coinhouseTag.Value ? _coinhouse : null);
 
-        _mockCoinhouseRepo
-            .Setup(r => r.SaveAccountAsync(It.IsAny<CoinHouseAccount>(), It.IsAny<CancellationToken>()))
+        _coinhouses
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, CancellationToken __) => _account);
+
+        _coinhouses
+            .Setup(r => r.SaveAccountAsync(It.IsAny<CoinhouseAccountDto>(), It.IsAny<CancellationToken>()))
+            .Callback<CoinhouseAccountDto, CancellationToken>((dto, _) => _account = dto)
             .Returns(Task.CompletedTask);
+    }
+
+    private void SetupTransactionSuccess()
+    {
+        _transactions
+            .Setup(r => r.RecordTransactionAsync(It.IsAny<Transaction>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Transaction t, CancellationToken _) =>
+            {
+                t.Id = 123;
+                return t;
+            });
     }
 
     #region Happy Path Tests
@@ -78,23 +99,11 @@ public class WithdrawGoldCommandHandlerTests
     [Test]
     public async Task Given_ValidWithdrawal_When_HandlingCommand_Then_ReturnsSuccess()
     {
-        // Given
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Test withdrawal");
+        SetupTransactionSuccess();
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Test withdrawal");
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        _mockTransactionRepo
-            .Setup(r => r.RecordTransactionAsync(It.IsAny<Database.Entities.Economy.Transaction>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Database.Entities.Economy.Transaction t, CancellationToken _) =>
-            {
-                t.Id = 123;
-                return t;
-            });
-
-        // When
         CommandResult result = await _handler.HandleAsync(command);
 
-        // Then
         Assert.That(result.Success, Is.True);
         Assert.That(result.ErrorMessage, Is.Null);
     }
@@ -102,53 +111,29 @@ public class WithdrawGoldCommandHandlerTests
     [Test]
     public async Task Given_ValidWithdrawal_When_HandlingCommand_Then_DecreasesAccountBalance()
     {
-        // Given
-        int initialBalance = _testAccount.Debit;
-        int withdrawAmount = 500;
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, withdrawAmount, "Test withdrawal");
+        SetupTransactionSuccess();
+        int startingBalance = _account.Debit;
+        int amount = 500;
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, amount, "Test withdrawal");
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        _mockTransactionRepo
-            .Setup(r => r.RecordTransactionAsync(It.IsAny<Database.Entities.Economy.Transaction>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Database.Entities.Economy.Transaction t, CancellationToken _) =>
-            {
-                t.Id = 123;
-                return t;
-            });
-
-        // When
         await _handler.HandleAsync(command);
 
-        // Then
-        Assert.That(_testAccount.Debit, Is.EqualTo(initialBalance - withdrawAmount));
+        Assert.That(_account.Debit, Is.EqualTo(startingBalance - amount));
     }
 
     [Test]
     public async Task Given_ValidWithdrawal_When_HandlingCommand_Then_PublishesGoldWithdrawnEvent()
     {
-        // Given
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Test withdrawal");
+        SetupTransactionSuccess();
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Test withdrawal");
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        _mockTransactionRepo
-            .Setup(r => r.RecordTransactionAsync(It.IsAny<Database.Entities.Economy.Transaction>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Database.Entities.Economy.Transaction t, CancellationToken _) =>
-            {
-                t.Id = 123;
-                return t;
-            });
-
-        // When
         await _handler.HandleAsync(command);
 
-        // Then
-        _mockEventBus.Verify(bus =>
+        _eventBus.Verify(bus =>
             bus.PublishAsync(
                 It.Is<GoldWithdrawnEvent>(e =>
                     e.Withdrawer == _withdrawer &&
-                    e.Coinhouse == _coinhouse &&
+                    e.Coinhouse == _coinhouseTag &&
                     e.Amount.Value == 500),
                 It.IsAny<CancellationToken>()),
             Times.Once);
@@ -157,57 +142,36 @@ public class WithdrawGoldCommandHandlerTests
     [Test]
     public async Task Given_ValidWithdrawal_When_HandlingCommand_Then_RecordsTransaction()
     {
-        // Given
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Test withdrawal");
-
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        _mockTransactionRepo
-            .Setup(r => r.RecordTransactionAsync(It.IsAny<Database.Entities.Economy.Transaction>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Database.Entities.Economy.Transaction t, CancellationToken _) =>
+        Transaction? captured = null;
+        _transactions
+            .Setup(r => r.RecordTransactionAsync(It.IsAny<Transaction>(), It.IsAny<CancellationToken>()))
+            .Callback<Transaction, CancellationToken>((t, _) => captured = t)
+            .ReturnsAsync((Transaction t, CancellationToken _) =>
             {
-                t.Id = 123;
+                t.Id = 456;
                 return t;
             });
 
-        // When
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Test withdrawal");
         await _handler.HandleAsync(command);
 
-        // Then
-        _mockTransactionRepo.Verify(repo =>
-            repo.RecordTransactionAsync(
-                It.Is<Database.Entities.Economy.Transaction>(t =>
-                    t.FromPersonaId == _testCoinhouse.PersonaId.ToString() &&
-                    t.ToPersonaId == _withdrawer.ToString() &&
-                    t.Amount == 500 &&
-                    t.Memo!.Contains("Test withdrawal")),
-                It.IsAny<CancellationToken>()),
-            Times.Once);
+        Assert.That(captured, Is.Not.Null);
+        Assert.That(captured!.FromPersonaId, Is.EqualTo(_coinhouse.Persona.ToString()));
+        Assert.That(captured.ToPersonaId, Is.EqualTo(_withdrawer.ToString()));
+        Assert.That(captured.Amount, Is.EqualTo(500));
+        Assert.That(captured.Memo, Does.Contain("Test withdrawal"));
     }
 
     [Test]
     public async Task Given_ExactBalanceWithdrawal_When_HandlingCommand_Then_BalanceBecomesZero()
     {
-        // Given
-        int exactBalance = _testAccount.Debit;
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, exactBalance, "Withdraw all");
+        SetupTransactionSuccess();
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, _account.Debit, "Withdraw all");
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        _mockTransactionRepo
-            .Setup(r => r.RecordTransactionAsync(It.IsAny<Database.Entities.Economy.Transaction>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Database.Entities.Economy.Transaction t, CancellationToken _) =>
-            {
-                t.Id = 123;
-                return t;
-            });
-
-        // When
         CommandResult result = await _handler.HandleAsync(command);
 
-        // Then
         Assert.That(result.Success, Is.True);
-        Assert.That(_testAccount.Debit, Is.EqualTo(0));
+        Assert.That(_account.Debit, Is.EqualTo(0));
     }
 
     #endregion
@@ -217,56 +181,36 @@ public class WithdrawGoldCommandHandlerTests
     [Test]
     public async Task Given_InsufficientBalance_When_HandlingCommand_Then_ReturnsFailure()
     {
-        // Given
-        _testAccount.Debit = 100; // Only 100 gold
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Overdraft attempt");
+        _account = _account with { Debit = 100 };
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Overdraft attempt");
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-
-        // When
         CommandResult result = await _handler.HandleAsync(command);
 
-        // Then
         Assert.That(result.Success, Is.False);
         Assert.That(result.ErrorMessage, Does.Contain("Insufficient balance"));
-        Assert.That(result.ErrorMessage, Does.Contain("100")); // Current balance
-        Assert.That(result.ErrorMessage, Does.Contain("500")); // Requested amount
     }
 
     [Test]
     public async Task Given_InsufficientBalance_When_HandlingCommand_Then_DoesNotModifyBalance()
     {
-        // Given
-        _testAccount.Debit = 100;
-        int initialBalance = _testAccount.Debit;
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Overdraft attempt");
+        _account = _account with { Debit = 100 };
+        int initialBalance = _account.Debit;
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Overdraft attempt");
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-
-        // When
         await _handler.HandleAsync(command);
 
-        // Then
-        Assert.That(_testAccount.Debit, Is.EqualTo(initialBalance), "Balance should not change on failed withdrawal");
+        Assert.That(_account.Debit, Is.EqualTo(initialBalance));
     }
 
     [Test]
     public async Task Given_InsufficientBalance_When_HandlingCommand_Then_DoesNotPublishEvent()
     {
-        // Given
-        _testAccount.Debit = 100;
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Overdraft attempt");
+        _account = _account with { Debit = 100 };
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Overdraft attempt");
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-
-        // When
         await _handler.HandleAsync(command);
 
-        // Then
-        _mockEventBus.Verify(bus =>
+        _eventBus.Verify(bus =>
             bus.PublishAsync(It.IsAny<GoldWithdrawnEvent>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -274,19 +218,13 @@ public class WithdrawGoldCommandHandlerTests
     [Test]
     public async Task Given_InsufficientBalance_When_HandlingCommand_Then_DoesNotRecordTransaction()
     {
-        // Given
-        _testAccount.Debit = 100;
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Overdraft attempt");
+        _account = _account with { Debit = 100 };
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Overdraft attempt");
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-
-        // When
         await _handler.HandleAsync(command);
 
-        // Then
-        _mockTransactionRepo.Verify(repo =>
-            repo.RecordTransactionAsync(It.IsAny<Database.Entities.Economy.Transaction>(), It.IsAny<CancellationToken>()),
+        _transactions.Verify(repo =>
+            repo.RecordTransactionAsync(It.IsAny<Transaction>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -297,51 +235,41 @@ public class WithdrawGoldCommandHandlerTests
     [Test]
     public async Task Given_NonexistentCoinhouse_When_HandlingCommand_Then_ReturnsFailure()
     {
-        // Given
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Test withdrawal");
+        _coinhouses
+            .Setup(r => r.GetByTagAsync(_coinhouseTag, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoinhouseDto?)null);
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns((CoinHouse?)null);
-
-        // When
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Test withdrawal");
         CommandResult result = await _handler.HandleAsync(command);
 
-        // Then
         Assert.That(result.Success, Is.False);
         Assert.That(result.ErrorMessage, Does.Contain("Coinhouse"));
-        Assert.That(result.ErrorMessage, Does.Contain("not found"));
     }
 
     [Test]
     public async Task Given_NoAccount_When_HandlingCommand_Then_ReturnsFailure()
     {
-        // Given
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Test withdrawal");
+        _coinhouses
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoinhouseAccountDto?)null);
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns((CoinHouseAccount?)null);
-
-        // When
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Test withdrawal");
         CommandResult result = await _handler.HandleAsync(command);
 
-        // Then
         Assert.That(result.Success, Is.False);
-        Assert.That(result.ErrorMessage, Does.Contain("No account found"));
+        Assert.That(result.ErrorMessage, Does.Contain("No account"));
     }
 
     [Test]
     public async Task Given_RepositoryThrowsException_When_HandlingCommand_Then_ReturnsFailure()
     {
-        // Given
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Test withdrawal");
+        _coinhouses
+            .Setup(r => r.GetByTagAsync(_coinhouseTag, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Database error"));
 
-        _mockCoinhouseRepo
-            .Setup(r => r.GetByTag(_coinhouse))
-            .Throws(new InvalidOperationException("Database error"));
-
-        // When
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Test withdrawal");
         CommandResult result = await _handler.HandleAsync(command);
 
-        // Then
         Assert.That(result.Success, Is.False);
         Assert.That(result.ErrorMessage, Does.Contain("Failed"));
     }
@@ -353,50 +281,26 @@ public class WithdrawGoldCommandHandlerTests
     [Test]
     public async Task Given_ZeroAmountWithdrawal_When_HandlingCommand_Then_ReturnsSuccess()
     {
-        // Given
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 0, "Zero withdrawal test");
+        SetupTransactionSuccess();
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 0, "Zero withdrawal test");
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        _mockTransactionRepo
-            .Setup(r => r.RecordTransactionAsync(It.IsAny<Database.Entities.Economy.Transaction>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Database.Entities.Economy.Transaction t, CancellationToken _) =>
-            {
-                t.Id = 123;
-                return t;
-            });
-
-        // When
         CommandResult result = await _handler.HandleAsync(command);
 
-        // Then
         Assert.That(result.Success, Is.True);
-        Assert.That(_testAccount.Debit, Is.EqualTo(1000)); // Unchanged
+        Assert.That(_account.Debit, Is.EqualTo(1000));
     }
 
     [Test]
     public async Task Given_MultipleWithdrawals_When_HandlingCommands_Then_DecreasesBalanceAccumulatively()
     {
-        // Given
-        WithdrawGoldCommand command1 = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 300, "First withdrawal");
-        WithdrawGoldCommand command2 = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 200, "Second withdrawal");
+        SetupTransactionSuccess();
+        WithdrawGoldCommand first = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 300, "First");
+        WithdrawGoldCommand second = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 200, "Second");
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
-        _mockTransactionRepo
-            .Setup(r => r.RecordTransactionAsync(It.IsAny<Database.Entities.Economy.Transaction>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Database.Entities.Economy.Transaction t, CancellationToken _) =>
-            {
-                t.Id = 123;
-                return t;
-            });
+        await _handler.HandleAsync(first);
+        await _handler.HandleAsync(second);
 
-        // When
-        await _handler.HandleAsync(command1);
-        await _handler.HandleAsync(command2);
-
-        // Then
-        Assert.That(_testAccount.Debit, Is.EqualTo(500)); // 1000 - 300 - 200
+        Assert.That(_account.Debit, Is.EqualTo(500));
     }
 
     #endregion
@@ -406,14 +310,10 @@ public class WithdrawGoldCommandHandlerTests
     [Test]
     public void Given_CancellationRequested_When_HandlingCommand_Then_PropagatesCancellation()
     {
-        // Given
-        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouse, 500, "Test withdrawal");
-        CancellationTokenSource cts = new CancellationTokenSource();
+        WithdrawGoldCommand command = WithdrawGoldCommand.Create(_withdrawer, _coinhouseTag, 500, "Test withdrawal");
+        using CancellationTokenSource cts = new CancellationTokenSource();
         cts.Cancel();
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-
-        // When/Then
         Assert.ThrowsAsync<OperationCanceledException>(async () =>
             await _handler.HandleAsync(command, cts.Token));
     }

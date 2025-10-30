@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Transactions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.ValueObjects;
@@ -43,7 +43,7 @@ public class WithdrawGoldCommandHandler : ICommandHandler<WithdrawGoldCommand>
         try
         {
             // Validate coinhouse exists
-            CoinHouse? coinhouse = _coinhouses.GetByTag(command.Coinhouse);
+            CoinhouseDto? coinhouse = await _coinhouses.GetByTagAsync(command.Coinhouse, cancellationToken);
             if (coinhouse == null)
             {
                 return CommandResult.Fail($"Coinhouse '{command.Coinhouse.Value}' not found");
@@ -51,7 +51,7 @@ public class WithdrawGoldCommandHandler : ICommandHandler<WithdrawGoldCommand>
 
             // Get account (must exist for withdrawal)
             Guid accountId = PersonaAccountId.From(command.PersonaId);
-            CoinHouseAccount? account = _coinhouses.GetAccountFor(accountId);
+            CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId, cancellationToken);
 
             if (account == null)
             {
@@ -71,15 +71,18 @@ public class WithdrawGoldCommandHandler : ICommandHandler<WithdrawGoldCommand>
             cancellationToken.ThrowIfCancellationRequested();
 
             // Update account balance
-            account.Debit -= command.Amount.Value;
-            account.LastAccessedAt = DateTime.UtcNow;
+            account = account with
+            {
+                Debit = account.Debit - command.Amount.Value,
+                LastAccessedAt = DateTime.UtcNow
+            };
 
             await _coinhouses.SaveAccountAsync(account, cancellationToken);
 
             // Record transaction
             Transaction transaction = new Transaction
             {
-                FromPersonaId = coinhouse.PersonaId.ToString(),
+                FromPersonaId = coinhouse.Persona.ToString(),
                 ToPersonaId = command.PersonaId.ToString(),
                 Amount = command.Amount.Value,
                 Memo = $"Withdrawal: {command.Reason.Value}",

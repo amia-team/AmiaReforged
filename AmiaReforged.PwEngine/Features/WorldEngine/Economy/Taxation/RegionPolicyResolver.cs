@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.Services;
@@ -20,14 +20,17 @@ public class RegionPolicyResolver(ICoinhouseRepository coinhouses, RegionIndex r
         try
         {
             CoinhouseTag tag = new CoinhouseTag(coinhouseTag);
-            CoinHouse? ch = coinhouses.GetByTag(tag);
-            if (ch is null) return false;
+            CoinhouseDto? coinhouse = coinhouses
+                .GetByTagAsync(tag)
+                .GetAwaiter()
+                .GetResult();
+            if (coinhouse is null) return false;
 
             try
             {
-                // ch.SettlementId returns SettlementId from the NotMapped property
-                bool result = regionIndex.TryGetRegionTagForSettlement(ch.SettlementId, out RegionTag? regionTagValue);
-                regionTag = regionTagValue?.Value;  // Extract string value
+                SettlementId settlementId = SettlementId.Parse(coinhouse.Settlement);
+                bool result = regionIndex.TryGetRegionTagForSettlement(settlementId, out RegionTag? regionTagValue);
+                regionTag = regionTagValue?.Value;
                 return result;
             }
             catch

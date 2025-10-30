@@ -1,7 +1,8 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Taxation;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Moq;
 using NUnit.Framework;
@@ -14,25 +15,44 @@ public class RegionPolicyResolverTests
     [Test]
     public void TryGetRegionTagForCoinhouseTag_Returns_RegionTag_When_Found()
     {
-        Mock<ICoinhouseRepository> coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
-        CoinHouse ch = new() { Tag = "ch1", Settlement = 42, EngineId = Guid.NewGuid() };
-        coinhouses.Setup(c => c.GetByTag(new CoinhouseTag("ch1"))).Returns(ch);
+        Mock<ICoinhouseRepository> coinhouses = new(MockBehavior.Strict);
+        CoinhouseTag coinhouseTag = new("ch1");
+        CoinhouseDto dto = new()
+        {
+            Id = 10,
+            Tag = coinhouseTag,
+            Settlement = 42,
+            EngineId = Guid.NewGuid(),
+            Persona = PersonaId.FromCoinhouse(coinhouseTag)
+        };
+        coinhouses
+            .Setup(c => c.GetByTagAsync(coinhouseTag, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dto);
 
         InMemoryRegionRepository repo = new();
-        repo.Add(new RegionDefinition { Tag = new RegionTag("rX"), Name = "Region X", Areas = new(), Settlements = new(){SettlementId.Parse(42)} });
+        repo.Add(new RegionDefinition
+        {
+            Tag = new RegionTag("rX"),
+            Name = "Region X",
+            Areas = new(),
+            Settlements = new() { SettlementId.Parse(42) }
+        });
         RegionIndex index = new(repo);
 
         RegionPolicyResolver resolver = new(coinhouses.Object, index);
 
-        Assert.That(resolver.TryGetRegionTagForCoinhouseTag("ch1", out string? tag), Is.True);
-        Assert.That(tag, Is.EqualTo("rx"));  // RegionTag normalizes to lowercase
+    Assert.That(resolver.TryGetRegionTagForCoinhouseTag("ch1", out string? regionTag), Is.True);
+    Assert.That(regionTag, Is.EqualTo("rx"));  // RegionTag normalizes to lowercase
     }
 
     [Test]
     public void TryGetRegionTagForCoinhouseTag_Fails_When_Coinhouse_NotFound()
     {
-        Mock<ICoinhouseRepository> coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
-        coinhouses.Setup(c => c.GetByTag(new CoinhouseTag("missing"))).Returns((CoinHouse?)null);
+        Mock<ICoinhouseRepository> coinhouses = new(MockBehavior.Strict);
+        CoinhouseTag coinhouseTag = new("missing");
+        coinhouses
+            .Setup(c => c.GetByTagAsync(coinhouseTag, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoinhouseDto?)null);
 
         InMemoryRegionRepository repo = new();
         RegionIndex index = new(repo);

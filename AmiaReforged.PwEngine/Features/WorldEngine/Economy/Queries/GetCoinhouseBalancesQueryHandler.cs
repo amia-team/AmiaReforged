@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.DTOs;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
@@ -21,42 +21,33 @@ public class GetCoinhouseBalancesQueryHandler : IQueryHandler<GetCoinhouseBalanc
         _coinhouses = coinhouses;
     }
 
-    public Task<IReadOnlyList<BalanceDto>> HandleAsync(
+    public async Task<IReadOnlyList<BalanceDto>> HandleAsync(
         GetCoinhouseBalancesQuery query,
         CancellationToken cancellationToken = default)
     {
-        Guid accountId = ExtractAccountId(query.PersonaId);
-        CoinHouseAccount? account = _coinhouses.GetAccountFor(accountId);
+        Guid accountId = PersonaAccountId.From(query.PersonaId);
+        CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId, cancellationToken);
 
-        if (account == null)
+        if (account is null)
         {
-            return Task.FromResult<IReadOnlyList<BalanceDto>>(Array.Empty<BalanceDto>());
+            return Array.Empty<BalanceDto>();
         }
 
-        // For now, return single balance (will be enhanced when we have multi-coinhouse support)
+        CoinhouseDto? coinhouse = account.Coinhouse ??
+            await _coinhouses.GetByIdAsync(account.CoinHouseId, cancellationToken);
+
+        if (coinhouse is null)
+        {
+            return Array.Empty<BalanceDto>();
+        }
+
         BalanceDto balance = BalanceDto.Create(
             query.PersonaId,
-            account.CoinHouse!.CoinhouseTag,
+            coinhouse.Tag,
             account.Balance,
             account.LastAccessedAt);
 
-        return Task.FromResult<IReadOnlyList<BalanceDto>>(new[] { balance });
-    }
-
-    private static Guid ExtractAccountId(PersonaId personaId)
-    {
-        string[] parts = personaId.ToString().Split(':');
-        if (parts.Length != 2)
-        {
-            throw new ArgumentException($"Invalid PersonaId format: {personaId}");
-        }
-
-        if (Guid.TryParse(parts[1], out Guid guid))
-        {
-            return guid;
-        }
-
-        return Guid.NewGuid(); // TODO: Deterministic Guid generation
+        return new[] { balance };
     }
 }
 

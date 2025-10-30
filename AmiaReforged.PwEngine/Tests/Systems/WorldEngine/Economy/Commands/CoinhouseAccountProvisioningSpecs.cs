@@ -1,9 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Database.Entities.Economy;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Transactions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
@@ -27,8 +27,9 @@ public class CoinhouseAccountProvisioningSpecs
     private Mock<IEventBus> _eventBus = null!;
     private DepositGoldCommandHandler _handler = null!;
 
-    private CoinHouse _coinhouse = null!;
+    private CoinhouseDto _coinhouse = null!;
     private CoinhouseTag _coinhouseTag;
+    private CoinhouseAccountDto? _savedAccount;
 
     [SetUp]
     public void Setup()
@@ -44,22 +45,23 @@ public class CoinhouseAccountProvisioningSpecs
 
         _coinhouseTag = EconomyTestHelpers.CreateCoinhouseTag("rspec-bank");
 
-        _coinhouse = new CoinHouse
+        _coinhouse = new CoinhouseDto
         {
             Id = 42,
-            Tag = _coinhouseTag.Value,
+            Tag = _coinhouseTag,
             Settlement = 7,
             EngineId = Guid.NewGuid(),
-            StoredGold = 0,
-            Accounts = new List<CoinHouseAccount>()
+            Persona = PersonaId.FromCoinhouse(_coinhouseTag)
         };
 
         _coinhouses
-            .Setup(r => r.GetByTag(_coinhouseTag))
-            .Returns(_coinhouse);
+            .Setup(r => r.GetByTagAsync(It.IsAny<CoinhouseTag>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoinhouseTag tag, CancellationToken _) =>
+                tag.Value == _coinhouseTag.Value ? _coinhouse : null);
 
         _coinhouses
-            .Setup(r => r.SaveAccountAsync(It.IsAny<CoinHouseAccount>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.SaveAccountAsync(It.IsAny<CoinhouseAccountDto>(), It.IsAny<CancellationToken>()))
+            .Callback<CoinhouseAccountDto, CancellationToken>((dto, _) => _savedAccount = dto)
             .Returns(Task.CompletedTask);
 
         _transactions
@@ -78,21 +80,22 @@ public class CoinhouseAccountProvisioningSpecs
         DepositGoldCommand command = DepositGoldCommand.Create(persona, _coinhouseTag, 25, "Initial float");
 
         _coinhouses
-            .Setup(r => r.GetAccountFor(It.IsAny<Guid>()))
-            .Returns((CoinHouseAccount?)null);
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoinhouseAccountDto?)null);
 
         CommandResult result = await _handler.HandleAsync(command);
 
         Assert.That(result.Success, Is.True, "expected deposit to succeed for lazy provisioning");
-        Assert.That(_coinhouse.Accounts, Is.Not.Null);
-        Assert.That(_coinhouse.Accounts, Has.Count.EqualTo(1));
-
         Guid expectedAccountId = PersonaAccountId.From(persona);
-        Guid actualAccountId = _coinhouse.Accounts![0].Id;
-        Assert.That(actualAccountId, Is.EqualTo(expectedAccountId));
+        Assert.That(_savedAccount, Is.Not.Null, "expected newly provisioned account to be persisted");
+        Assert.That(_savedAccount!.Id, Is.EqualTo(expectedAccountId));
+        Assert.That(_savedAccount.Debit, Is.EqualTo(25));
+        Assert.That(_savedAccount.CoinHouseId, Is.EqualTo(_coinhouse.Id));
+        Assert.That(_savedAccount.Coinhouse, Is.Not.Null);
+        Assert.That(_savedAccount.Coinhouse!.Id, Is.EqualTo(_coinhouse.Id));
 
         _coinhouses.Verify(r => r.SaveAccountAsync(
-                It.Is<CoinHouseAccount>(a => a.Id == expectedAccountId && a.Debit == 25),
+                It.Is<CoinhouseAccountDto>(a => a.Id == expectedAccountId && a.Debit == 25),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }

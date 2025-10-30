@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.DTOs;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -15,8 +15,8 @@ public class GetCoinhouseBalancesQueryTests
     private GetCoinhouseBalancesQueryHandler _handler = null!;
     private PersonaId _persona;
     private CoinhouseTag _coinhouse;
-    private CoinHouse _testCoinhouse = null!;
-    private CoinHouseAccount _testAccount = null!;
+    private CoinhouseDto _coinhouseDto = null!;
+    private CoinhouseAccountDto _accountDto = null!;
     [SetUp]
     public void Setup()
     {
@@ -24,32 +24,43 @@ public class GetCoinhouseBalancesQueryTests
         _handler = new GetCoinhouseBalancesQueryHandler(_mockCoinhouseRepo.Object);
         _persona = PersonaTestHelpers.CreateCharacterPersona().Id;
         _coinhouse = EconomyTestHelpers.CreateCoinhouseTag("cordor_bank");
-        _testCoinhouse = new CoinHouse
+
+        _coinhouseDto = new CoinhouseDto
         {
             Id = 1,
-            Tag = _coinhouse.Value,
+            Tag = _coinhouse,
             Settlement = 1,
             EngineId = Guid.NewGuid(),
-            StoredGold = 0,
-            Accounts = new List<CoinHouseAccount>()
+            Persona = PersonaId.FromCoinhouse(_coinhouse)
         };
-        _testAccount = new CoinHouseAccount
+
+        _accountDto = new CoinhouseAccountDto
         {
-            Id = Guid.NewGuid(),
+            Id = PersonaAccountId.From(_persona),
             Debit = 1000,
             Credit = 0,
-            CoinHouseId = _testCoinhouse.Id,
-            CoinHouse = _testCoinhouse,
+            CoinHouseId = _coinhouseDto.Id,
             OpenedAt = DateTime.UtcNow,
-            LastAccessedAt = DateTime.UtcNow
+            LastAccessedAt = DateTime.UtcNow,
+            Coinhouse = _coinhouseDto
         };
-        _testCoinhouse.Accounts!.Add(_testAccount);
+
+        _mockCoinhouseRepo
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, CancellationToken __) => _accountDto);
+
+        _mockCoinhouseRepo
+            .Setup(r => r.GetByIdAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((long id, CancellationToken _) =>
+                id == _coinhouseDto.Id ? _coinhouseDto : null);
     }
     [Test]
     public async Task Given_PersonaWithAccount_When_QueryingBalances_Then_ReturnsBalances()
     {
         GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
+        _mockCoinhouseRepo
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, CancellationToken __) => _accountDto);
         IReadOnlyList<BalanceDto> balances = await _handler.HandleAsync(query);
         Assert.That(balances, Is.Not.Null);
         Assert.That(balances, Has.Count.EqualTo(1));
@@ -61,19 +72,22 @@ public class GetCoinhouseBalancesQueryTests
     public async Task Given_PersonaWithAccount_When_QueryingBalances_Then_IncludesLastAccessTime()
     {
         DateTime lastAccessed = DateTime.UtcNow.AddHours(-2);
-        _testAccount.LastAccessedAt = lastAccessed;
+        _accountDto = _accountDto with { LastAccessedAt = lastAccessed };
         GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
+        _mockCoinhouseRepo
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, CancellationToken __) => _accountDto);
         IReadOnlyList<BalanceDto> balances = await _handler.HandleAsync(query);
         Assert.That(balances[0].LastAccessedAt, Is.EqualTo(lastAccessed));
     }
     [Test]
     public async Task Given_AccountWithZeroBalance_When_QueryingBalances_Then_IncludesZeroBalance()
     {
-        _testAccount.Debit = 0;
-        _testAccount.Credit = 0;
+        _accountDto = _accountDto with { Debit = 0, Credit = 0 };
         GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
+        _mockCoinhouseRepo
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, CancellationToken __) => _accountDto);
         IReadOnlyList<BalanceDto> balances = await _handler.HandleAsync(query);
         Assert.That(balances, Has.Count.EqualTo(1));
         Assert.That(balances[0].Balance, Is.EqualTo(0));
@@ -82,7 +96,9 @@ public class GetCoinhouseBalancesQueryTests
     public async Task Given_PersonaWithNoAccounts_When_QueryingBalances_Then_ReturnsEmptyList()
     {
         GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns((CoinHouseAccount?)null);
+        _mockCoinhouseRepo
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoinhouseAccountDto?)null);
         IReadOnlyList<BalanceDto> balances = await _handler.HandleAsync(query);
         Assert.That(balances, Is.Not.Null);
         Assert.That(balances, Is.Empty);
@@ -91,7 +107,9 @@ public class GetCoinhouseBalancesQueryTests
     public async Task Given_Query_When_ExecutingMultipleTimes_Then_ResultsAreConsistent()
     {
         GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
+        _mockCoinhouseRepo
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, CancellationToken __) => _accountDto);
         IReadOnlyList<BalanceDto> balances1 = await _handler.HandleAsync(query);
         IReadOnlyList<BalanceDto> balances2 = await _handler.HandleAsync(query);
         IReadOnlyList<BalanceDto> balances3 = await _handler.HandleAsync(query);
@@ -104,10 +122,11 @@ public class GetCoinhouseBalancesQueryTests
     [Test]
     public async Task Given_NegativeBalance_When_QueryingBalances_Then_ReturnsNegativeValue()
     {
-        _testAccount.Debit = 100;
-        _testAccount.Credit = 500;
+        _accountDto = _accountDto with { Debit = 100, Credit = 500 };
         GetCoinhouseBalancesQuery query = new GetCoinhouseBalancesQuery(_persona);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
+        _mockCoinhouseRepo
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, CancellationToken __) => _accountDto);
         IReadOnlyList<BalanceDto> balances = await _handler.HandleAsync(query);
         Assert.That(balances[0].Balance, Is.EqualTo(-400));
     }

@@ -24,8 +24,8 @@ public class RegionIndex(IRegionRepository regions)
     {
         // Return a distinct, stable-order copy so callers don't observe internal mutations
         IReadOnlyCollection<SettlementId> items = regions.GetSettlements(regionTag);
-        List<SettlementId> result = new();
-        HashSet<int> seen = new();
+        List<SettlementId> result = [];
+        HashSet<int> seen = [];
         foreach (SettlementId s in items)
         {
             // Use underlying int value for deduplication
@@ -45,8 +45,8 @@ public class RegionIndex(IRegionRepository regions)
             {
                 Tag = r.Tag,
                 Name = r.Name,
-                Areas = new List<AreaDefinition>(r.Areas),
-                Settlements = new List<SettlementId>(r.Settlements)
+                Areas = [..r.Areas],
+                Settlements = [..r.Settlements]
             });
         }
         return snapshot;

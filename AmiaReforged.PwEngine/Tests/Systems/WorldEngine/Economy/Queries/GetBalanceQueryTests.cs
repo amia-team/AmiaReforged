@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -21,8 +21,8 @@ public class GetBalanceQueryHandlerTests
 
     private PersonaId _persona;
     private CoinhouseTag _coinhouse;
-    private CoinHouse _testCoinhouse = null!;
-    private CoinHouseAccount _testAccount = null!;
+    private CoinhouseDto _coinhouseDto = null!;
+    private CoinhouseAccountDto _accountDto = null!;
 
     [SetUp]
     public void Setup()
@@ -33,28 +33,34 @@ public class GetBalanceQueryHandlerTests
         _persona = PersonaTestHelpers.CreateCharacterPersona().Id;
         _coinhouse = EconomyTestHelpers.CreateCoinhouseTag("cordor_bank");
 
-        // Setup test coinhouse with account
-        _testCoinhouse = new CoinHouse
+        _coinhouseDto = new CoinhouseDto
         {
             Id = 1,
-            Tag = _coinhouse.Value,
+            Tag = _coinhouse,
             Settlement = 1,
             EngineId = Guid.NewGuid(),
-            StoredGold = 0,
-            Accounts = new List<CoinHouseAccount>()
+            Persona = PersonaId.FromCoinhouse(_coinhouse)
         };
 
-        _testAccount = new CoinHouseAccount
+        _accountDto = new CoinhouseAccountDto
         {
-            Id = Guid.NewGuid(),
+            Id = PersonaAccountId.From(_persona),
             Debit = 1000,
             Credit = 0,
-            CoinHouseId = _testCoinhouse.Id,
+            CoinHouseId = _coinhouseDto.Id,
             OpenedAt = DateTime.UtcNow,
-            LastAccessedAt = DateTime.UtcNow
+            LastAccessedAt = DateTime.UtcNow,
+            Coinhouse = _coinhouseDto
         };
 
-        _testCoinhouse.Accounts!.Add(_testAccount);
+        _mockCoinhouseRepo
+            .Setup(r => r.GetByTagAsync(It.IsAny<CoinhouseTag>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoinhouseTag tag, CancellationToken _) =>
+                tag.Value == _coinhouse.Value ? _coinhouseDto : null);
+
+        _mockCoinhouseRepo
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, CancellationToken __) => _accountDto);
     }
 
     #region Happy Path Tests
@@ -63,12 +69,8 @@ public class GetBalanceQueryHandlerTests
     public async Task Given_AccountWithBalance_When_QueryingBalance_Then_ReturnsCorrectBalance()
     {
         // Given
-        _testAccount.Debit = 1500;
-        _testAccount.Credit = 0;
+    _accountDto = _accountDto with { Debit = 1500, Credit = 0 };
         GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
-
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
         int? balance = await _handler.HandleAsync(query);
@@ -82,12 +84,8 @@ public class GetBalanceQueryHandlerTests
     public async Task Given_AccountWithDebitAndCredit_When_QueryingBalance_Then_ReturnsNetBalance()
     {
         // Given
-        _testAccount.Debit = 1000;
-        _testAccount.Credit = 300; // Has some debt
+    _accountDto = _accountDto with { Debit = 1000, Credit = 300 };
         GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
-
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
         int? balance = await _handler.HandleAsync(query);
@@ -100,12 +98,8 @@ public class GetBalanceQueryHandlerTests
     public async Task Given_ZeroBalance_When_QueryingBalance_Then_ReturnsZero()
     {
         // Given
-        _testAccount.Debit = 0;
-        _testAccount.Credit = 0;
+    _accountDto = _accountDto with { Debit = 0, Credit = 0 };
         GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
-
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
         int? balance = await _handler.HandleAsync(query);
@@ -124,7 +118,9 @@ public class GetBalanceQueryHandlerTests
         // Given
         GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns((CoinHouse?)null);
+        _mockCoinhouseRepo
+            .Setup(r => r.GetByTagAsync(_coinhouse, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoinhouseDto?)null);
 
         // When
         int? balance = await _handler.HandleAsync(query);
@@ -139,8 +135,9 @@ public class GetBalanceQueryHandlerTests
         // Given
         GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
 
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns((CoinHouseAccount?)null);
+        _mockCoinhouseRepo
+            .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CoinhouseAccountDto?)null);
 
         // When
         int? balance = await _handler.HandleAsync(query);
@@ -157,12 +154,8 @@ public class GetBalanceQueryHandlerTests
     public async Task Given_NegativeBalance_When_QueryingBalance_Then_ReturnsNegativeValue()
     {
         // Given - Account is in debt (credit > debit)
-        _testAccount.Debit = 500;
-        _testAccount.Credit = 800;
+    _accountDto = _accountDto with { Debit = 500, Credit = 800 };
         GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
-
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
         int? balance = await _handler.HandleAsync(query);
@@ -175,12 +168,8 @@ public class GetBalanceQueryHandlerTests
     public async Task Given_LargeBalance_When_QueryingBalance_Then_ReturnsCorrectValue()
     {
         // Given
-        _testAccount.Debit = 999999999;
-        _testAccount.Credit = 0;
+    _accountDto = _accountDto with { Debit = 999999999, Credit = 0 };
         GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
-
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
         int? balance = await _handler.HandleAsync(query);
@@ -197,11 +186,8 @@ public class GetBalanceQueryHandlerTests
     public async Task Given_Query_When_ExecutingMultipleTimes_Then_BalanceDoesNotChange()
     {
         // Given
-        _testAccount.Debit = 1000;
+    _accountDto = _accountDto with { Debit = 1000, Credit = 0 };
         GetBalanceQuery query = new GetBalanceQuery(_persona, _coinhouse);
-
-        _mockCoinhouseRepo.Setup(r => r.GetByTag(_coinhouse)).Returns(_testCoinhouse);
-        _mockCoinhouseRepo.Setup(r => r.GetAccountFor(It.IsAny<Guid>())).Returns(_testAccount);
 
         // When
         int? balance1 = await _handler.HandleAsync(query);
@@ -212,7 +198,7 @@ public class GetBalanceQueryHandlerTests
         Assert.That(balance1, Is.EqualTo(1000));
         Assert.That(balance2, Is.EqualTo(1000));
         Assert.That(balance3, Is.EqualTo(1000));
-        Assert.That(_testAccount.Debit, Is.EqualTo(1000), "Account balance should not be modified by queries");
+        Assert.That(_accountDto.Debit, Is.EqualTo(1000), "Account balance should not be modified by queries");
     }
 
     #endregion

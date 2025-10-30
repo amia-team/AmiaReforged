@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Transactions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.ValueObjects;
@@ -39,53 +39,46 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
     {
         try
         {
-            // Validate coinhouse exists
-            CoinHouse? coinhouse = _coinhouses.GetByTag(command.Coinhouse);
-            if (coinhouse == null)
+            CoinhouseDto? coinhouse = await _coinhouses.GetByTagAsync(command.Coinhouse, cancellationToken);
+            if (coinhouse is null)
             {
                 return CommandResult.Fail($"Coinhouse '{command.Coinhouse.Value}' not found");
             }
 
-            // Get or create account
-            Guid accountId = PersonaAccountId.From(command.PersonaId);
-            CoinHouseAccount? account = _coinhouses.GetAccountFor(accountId);
-
-            if (account == null)
-            {
-                account = CreateNewAccount(accountId, coinhouse);
-                coinhouse.Accounts ??= new List<CoinHouseAccount>();
-                coinhouse.Accounts.Add(account);
-            }
-
-            // Check cancellation before mutation
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Update account balance
-            account.Debit += command.Amount.Value;
-            account.LastAccessedAt = DateTime.UtcNow;
+            Guid accountId = PersonaAccountId.From(command.PersonaId);
+            CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId, cancellationToken);
 
-            await _coinhouses.SaveAccountAsync(account, cancellationToken);
+            DateTime timestamp = DateTime.UtcNow;
+            CoinhouseAccountDto updatedAccount = account is null
+                ? CreateNewAccount(accountId, coinhouse, timestamp)
+                : account with { LastAccessedAt = timestamp };
 
-            // Record transaction
+            updatedAccount = updatedAccount with
+            {
+                Debit = updatedAccount.Debit + command.Amount.Value,
+                LastAccessedAt = timestamp
+            };
+
+            await _coinhouses.SaveAccountAsync(updatedAccount, cancellationToken);
+
             Transaction transaction = new Transaction
             {
                 FromPersonaId = command.PersonaId.ToString(),
-                ToPersonaId = coinhouse.PersonaId.ToString(),
+                ToPersonaId = coinhouse.Persona.ToString(),
                 Amount = command.Amount.Value,
                 Memo = $"Deposit: {command.Reason.Value}",
-                Timestamp = DateTime.UtcNow
+                Timestamp = timestamp
             };
 
-            Transaction recordedTransaction = await _transactions.RecordTransactionAsync(
-                transaction,
-                cancellationToken);
+            Transaction recordedTransaction = await _transactions.RecordTransactionAsync(transaction, cancellationToken);
 
-            // Publish event
             GoldDepositedEvent evt = new GoldDepositedEvent(
                 command.PersonaId,
                 command.Coinhouse,
                 command.Amount,
-                TransactionId.NewId(), // TODO: Use DB transaction ID once we switch to Guid
+                TransactionId.NewId(),
                 recordedTransaction.Timestamp);
 
             await _eventBus.PublishAsync(evt, cancellationToken);
@@ -102,16 +95,17 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
         }
     }
 
-    private static CoinHouseAccount CreateNewAccount(Guid accountId, CoinHouse coinhouse)
+    private static CoinhouseAccountDto CreateNewAccount(Guid accountId, CoinhouseDto coinhouse, DateTime timestamp)
     {
-        return new CoinHouseAccount
+        return new CoinhouseAccountDto
         {
             Id = accountId,
             Debit = 0,
             Credit = 0,
             CoinHouseId = coinhouse.Id,
-            OpenedAt = DateTime.UtcNow,
-            LastAccessedAt = DateTime.UtcNow
+            OpenedAt = timestamp,
+            LastAccessedAt = timestamp,
+            Coinhouse = coinhouse
         };
     }
 }

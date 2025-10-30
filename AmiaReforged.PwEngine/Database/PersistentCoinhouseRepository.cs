@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
@@ -28,21 +29,25 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
         }
     }
 
-    public CoinHouseAccount? GetAccountFor(Guid id)
+    public async Task<CoinhouseAccountDto?> GetAccountForAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        using PwEngineContext ctx = factory.CreateDbContext();
+        await using PwEngineContext ctx = factory.CreateDbContext();
 
-        CoinHouseAccount? account = ctx.CoinHouseAccounts
+        CoinHouseAccount? account = await ctx.CoinHouseAccounts
+            .Include(x => x.CoinHouse)
             .Include(x => x.AccountHolders)
             .Include(x => x.Receipts)
-            .FirstOrDefault(a => a.Id == id || (a.AccountHolders != null && a.AccountHolders.Any(x => x.HolderId == id)));
+            .FirstOrDefaultAsync(
+                a => a.Id == id ||
+                     (a.AccountHolders != null && a.AccountHolders.Any(x => x.HolderId == id)),
+                cancellationToken);
 
-        return account;
+        return account?.ToDto();
     }
 
-    public async Task SaveAccountAsync(CoinHouseAccount account, CancellationToken cancellationToken = default)
+    public async Task SaveAccountAsync(CoinhouseAccountDto account, CancellationToken cancellationToken = default)
     {
-        using PwEngineContext ctx = factory.CreateDbContext();
+        await using PwEngineContext ctx = factory.CreateDbContext();
 
         CoinHouseAccount? existing = await ctx.CoinHouseAccounts
             .Include(a => a.AccountHolders)
@@ -50,15 +55,12 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
 
         if (existing is null)
         {
-            ctx.CoinHouseAccounts.Add(account);
+            CoinHouseAccount entity = account.ToEntity();
+            ctx.CoinHouseAccounts.Add(entity);
         }
         else
         {
-            existing.Debit = account.Debit;
-            existing.Credit = account.Credit;
-            existing.LastAccessedAt = account.LastAccessedAt;
-            existing.OpenedAt = account.OpenedAt;
-            existing.CoinHouseId = account.CoinHouseId;
+            existing.UpdateFrom(account);
         }
 
         await ctx.SaveChangesAsync(cancellationToken);
@@ -74,14 +76,24 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
         return coinhouse;
     }
 
-    public CoinHouse? GetByTag(CoinhouseTag tag)
+    public async Task<CoinhouseDto?> GetByTagAsync(CoinhouseTag tag, CancellationToken cancellationToken = default)
     {
-        using PwEngineContext ctx = factory.CreateDbContext();
+        await using PwEngineContext ctx = factory.CreateDbContext();
 
         // Implicit conversion from CoinhouseTag to string
-        CoinHouse? coinhouse = ctx.CoinHouses.FirstOrDefault(x => x.Tag == tag);
+        CoinHouse? coinhouse = await ctx.CoinHouses
+            .FirstOrDefaultAsync(x => x.Tag == tag, cancellationToken);
 
-        return coinhouse;
+        return coinhouse?.ToDto();
+    }
+
+    public async Task<CoinhouseDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+    {
+        await using PwEngineContext ctx = factory.CreateDbContext();
+
+        CoinHouse? coinhouse = await ctx.CoinHouses.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        return coinhouse?.ToDto();
     }
 
     public bool TagExists(CoinhouseTag tag)
