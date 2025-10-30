@@ -11,7 +11,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.MagicMissile);
         if (spell == null || target.Location == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 1, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Evocation, 1, monkLevel))
             return;
 
         Effect? magicMissileEffect = wildMagicUtils.MagicMissileEffect(monk, target.Location);
@@ -25,7 +25,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.Flare);
         if (spell is null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 0, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Evocation, 0, monkLevel))
             return;
 
         int diceAmount = monkLevel / 2;
@@ -60,7 +60,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Enchantment, 1, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Enchantment, 1, monkLevel))
                 continue;
 
             SavingThrowResult savingThrowResult =
@@ -82,7 +82,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.Doom);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 1, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Enchantment, 1, monkLevel))
             return;
 
         SavingThrowResult savingThrowResult =
@@ -116,7 +116,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.ElectricJolt);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 0, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Evocation, 0, monkLevel))
             return;
 
         int diceAmount = monkLevel / 2;
@@ -136,7 +136,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.Silence);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Illusion, 2, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Illusion, 2, monkLevel))
             return;
 
         SavingThrowResult savingThrowResult =
@@ -166,7 +166,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.Combust);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Illusion, 2, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Illusion, 2, monkLevel))
             return;
 
         target.ApplyEffect(EffectDuration.Temporary, wildMagicUtils.CombustEffect(monk, target, monkLevel), WildMagicUtils.LongDuration);
@@ -177,7 +177,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.Combust);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 3, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Enchantment, 3, monkLevel))
             return;
 
         SavingThrowResult savingThrowResult =
@@ -198,7 +198,7 @@ public class WeakWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.InflictLightWounds);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Necromancy, 1, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Necromancy, 1, monkLevel))
             return;
 
         target.ApplyEffect(EffectDuration.Instant, wildMagicUtils.InflictLightWoundsEffect(monk, monkLevel));

@@ -11,7 +11,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.IsaacsGreaterMissileStorm);
         if (spell == null || target.Location == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 6, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Evocation, 6, monkLevel))
             return;
 
         Effect? magicMissileEffect = wildMagicUtils.MagicMissileEffect(monk, target.Location);
@@ -20,7 +20,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         target.ApplyEffect(EffectDuration.Temporary, magicMissileEffect, TimeSpan.FromSeconds(0.18));
     }
 
-    public static void Web(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public void Web(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.Web);
         if (spell == null || target.Location == null) return;
@@ -32,6 +32,9 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Huge, true))
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
+
+            if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Conjuration, 2, monkLevel))
+                continue;
 
             SavingThrowResult savingThrowResult =
                 enemy.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Spell, monk);
@@ -48,7 +51,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         }
     }
 
-    public static void GustOfWind(NwCreature monk, NwCreature target, int dc, byte monkLevel)
+    public void GustOfWind(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
         NwSpell? spell = NwSpell.FromSpellType(Spell.GustOfWind);
         if (spell == null || target.Location == null) return;
@@ -74,6 +77,9 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
             }
 
             if (nwObject is not NwCreature enemy || !monk.IsReactionTypeHostile(enemy)) continue;
+
+            if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Evocation, 3, monkLevel))
+                continue;
 
             SavingThrowResult fortSaveResult =
                 enemy.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.None, monk);
@@ -103,7 +109,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Enchantment, 3, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Enchantment, 3, monkLevel))
                 continue;
 
             SavingThrowResult willSaveResult =
@@ -141,7 +147,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Necromancy, 3, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Necromancy, 3, monkLevel))
                 continue;
 
             enemy.ApplyEffect(EffectDuration.Temporary, strDrain, WildMagicUtils.LongDuration);
@@ -160,7 +166,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 3, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Evocation, 3, monkLevel))
                 continue;
 
             SavingThrowResult reflexSaveResult =
@@ -200,7 +206,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 3, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Evocation, 3, monkLevel))
                 continue;
 
             SavingThrowResult reflexSaveResult =
@@ -242,7 +248,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Transmutation, 3, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Transmutation, 3, monkLevel))
                 continue;
 
             SavingThrowResult willSaveResult = enemy.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.Spell, monk);
@@ -309,10 +315,11 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.BigbysInterposingHand);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 5, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Evocation, 5, monkLevel))
             return;
 
-        Effect interposingHand = Effect.LinkEffects(Effect.VisualEffect(VfxType.DurBigbysInterposingHand), Effect.AttackDecrease(10));
+        Effect interposingHand = Effect.LinkEffects(Effect.VisualEffect(VfxType.DurBigbysInterposingHand),
+            Effect.AttackDecrease(10));
         interposingHand.SubType = EffectSubType.Magical;
 
         target.ApplyEffect(EffectDuration.Temporary, interposingHand, WildMagicUtils.LongDuration);
@@ -332,7 +339,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Illusion, 8, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Illusion, 8, monkLevel))
                 continue;
 
             SavingThrowResult fortSaveResult = enemy.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Spell, monk);
@@ -360,7 +367,7 @@ public class StrongWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Transmutation, 8, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Transmutation, 8, monkLevel))
                 continue;
 
             SavingThrowResult savingThrowResult =

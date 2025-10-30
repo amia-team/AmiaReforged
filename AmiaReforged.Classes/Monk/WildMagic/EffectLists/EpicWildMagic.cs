@@ -1,6 +1,5 @@
 ﻿using Anvil.API;
 using Anvil.Services;
-using Org.BouncyCastle.Crypto.Digests;
 
 namespace AmiaReforged.Classes.Monk.WildMagic.EffectLists;
 
@@ -9,12 +8,53 @@ public class EpicWildMagic(WildMagicUtils wildMagicUtils)
 {
     public void TimeStop(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.TimeStop);
+        if (spell == null) return;
 
+        Effect? runTimeStopEffect = wildMagicUtils.RunTimeStopEffect(monk);
+        if (runTimeStopEffect == null) return;
+
+        monk.ApplyEffect(EffectDuration.Temporary, runTimeStopEffect, TimeSpan.FromSeconds(9));
     }
 
     public void GreatThunderclap(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
+        NwSpell? spell = NwSpell.FromSpellType(Spell.GreatThunderclap);
+        if (spell == null || target.Location == null) return;
 
+        target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfMysticalExplosion));
+        target.Location.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.FnfScreenShake));
+
+        Effect knockdown = Effect.Knockdown();
+        Effect deaf = Effect.Deaf();
+        Effect stun = Effect.Stunned();
+
+        TimeSpan roundDuration = NwTimeSpan.FromRounds(1);
+        TimeSpan turnDuration = NwTimeSpan.FromTurns(1);
+
+        foreach (NwCreature enemy in target.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
+                     RadiusSize.Gargantuan, true))
+        {
+            if (!monk.IsReactionTypeHostile(enemy)) continue;
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Evocation, 7, monkLevel))
+                continue;
+
+            SavingThrowResult willSavingThrow =
+                enemy.RollSavingThrow(SavingThrow.Will, dc, SavingThrowType.Sonic, monk);
+            SavingThrowResult fortSavingThrow =
+                enemy.RollSavingThrow(SavingThrow.Fortitude, dc, SavingThrowType.Sonic, monk);
+            SavingThrowResult reflexSavingThrow =
+                enemy.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.Sonic, monk);
+
+            if (willSavingThrow == SavingThrowResult.Failure)
+                enemy.ApplyEffect(EffectDuration.Temporary, stun, roundDuration);
+
+            if (fortSavingThrow == SavingThrowResult.Failure)
+                enemy.ApplyEffect(EffectDuration.Temporary, deaf, turnDuration);
+
+            if (reflexSavingThrow == SavingThrowResult.Failure)
+                enemy.ApplyEffect(EffectDuration.Temporary, knockdown, roundDuration);
+        }
     }
 
     public void HammerOfTheGods(NwCreature monk, NwCreature target, int dc, byte monkLevel)
@@ -31,7 +71,7 @@ public class EpicWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 4, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Evocation, 4, monkLevel))
                 continue;
 
             SavingThrowResult willSaveResult =
@@ -73,7 +113,7 @@ public class EpicWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 7, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Evocation, 7, monkLevel))
                 continue;
 
             SavingThrowResult reflexSaveResult =
@@ -138,7 +178,7 @@ public class EpicWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 9, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Evocation, 9, monkLevel))
                 continue;
 
             SavingThrowResult reflexSaveResult =

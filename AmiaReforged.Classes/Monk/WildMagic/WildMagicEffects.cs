@@ -28,7 +28,7 @@ public class WildMagicEffects(
         new("Self-Immolation", adverseWildMagic.SelfImmolation),
         new("Death Armor (Not That One!)", adverseWildMagic.DeathArmorNotThatOne),
         new("Self-Inflict Wounds", adverseWildMagic.SelfInflictWounds),
-        new("Spontaneous Meditation", AdverseWildMagic.SpontaneousMeditation),
+        new("Effigy", AdverseWildMagic.Effigy),
         new("Lightning Rod", AdverseWildMagic.LightningRod)
     ];
 
@@ -69,8 +69,8 @@ public class WildMagicEffects(
     public readonly WildMagicEffect[] StrongEffects =
     [
         new("Isaac's Greater Missile Storm", strongWildMagic.IsaacsGreaterMissileStorm),
-        new("Web", StrongWildMagic.Web),
-        new("Gust of Wind", StrongWildMagic.GustOfWind),
+        new("Web", strongWildMagic.Web),
+        new("Gust of Wind", strongWildMagic.GustOfWind),
         new("Confusion", strongWildMagic.Confusion),
         new("Negative Energy Burst", strongWildMagic.NegativeEnergyBurst),
         new("Call Lightning", strongWildMagic.CallLightning),

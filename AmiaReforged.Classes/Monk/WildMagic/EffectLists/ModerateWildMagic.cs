@@ -11,7 +11,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.IsaacsLesserMissileStorm);
         if (spell == null || target.Location == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Evocation, 4, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Evocation, 4, monkLevel))
             return;
 
         Effect? magicMissileEffect = wildMagicUtils.MagicMissileEffect(monk, target.Location);
@@ -25,7 +25,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.HealingSting);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Necromancy, 3, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Necromancy, 3, monkLevel))
             return;
 
         SavingThrowResult savingThrowResult =
@@ -81,7 +81,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Transmutation, 2, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Transmutation, 2, monkLevel))
                 continue;
 
             if (Random.Shared.Roll(20) + enemy.GetAbilityModifier(Ability.Strength) >= Random.Shared.Roll(20) + 5)
@@ -132,7 +132,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.Feeblemind);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Transmutation, 5, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Transmutation, 5, monkLevel))
             return;
 
         SavingThrowResult savingThrowResult =
@@ -159,7 +159,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 2, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Evocation, 2, monkLevel))
                 continue;
 
             Effect damage = Effect.Damage(Random.Shared.Roll(8), DamageType.Sonic);
@@ -202,7 +202,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         {
             if (!monk.IsReactionTypeHostile(enemy)) continue;
 
-            if (wildMagicUtils.CheckSpellResist(enemy, monk, spell, SpellSchool.Evocation, 2, monkLevel))
+            if (wildMagicUtils.ResistedSpell(enemy, monk, spell, SpellSchool.Evocation, 2, monkLevel))
                 continue;
 
             SavingThrowResult reflexSaveResult =
@@ -247,7 +247,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.BlindnessAndDeafness);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 2, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Enchantment, 2, monkLevel))
             return;
 
         SavingThrowResult savingThrowResult =
@@ -268,7 +268,7 @@ public class ModerateWildMagic(WildMagicUtils wildMagicUtils)
         NwSpell? spell = NwSpell.FromSpellType(Spell.HoldMonster);
         if (spell == null) return;
 
-        if (wildMagicUtils.CheckSpellResist(target, monk, spell, SpellSchool.Enchantment, 4, monkLevel))
+        if (wildMagicUtils.ResistedSpell(target, monk, spell, SpellSchool.Enchantment, 4, monkLevel))
             return;
 
         SavingThrowResult savingThrowResult =

@@ -7,7 +7,7 @@ namespace AmiaReforged.Classes.Monk.WildMagic;
 [ServiceBinding(typeof(WildMagicUtils))]
 public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
 {
-    public bool CheckSpellResist(NwCreature target, NwCreature monk, NwSpell spell, SpellSchool school, int spellLevel, int monkLevel) =>
+    public bool ResistedSpell(NwCreature target, NwCreature monk, NwSpell spell, SpellSchool school, int spellLevel, int monkLevel) =>
         monk.SpellAbsorptionLimitedCheck(target, spell, school, spellLevel)
         || monk.SpellAbsorptionUnlimitedCheck(target, spell, school, spellLevel)
         || monk.SpellResistanceCheck(target, spell, monkLevel);
@@ -171,6 +171,76 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpMagblue, fScale: 0.7f));
     }
 
+    public Effect? RunTimeStopEffect(NwCreature monk)
+    {
+        if (monk.Location == null) return null;
+        monk.Location.ApplyEffect(EffectDuration.Instant, TimeStopVfx);
+
+        NwCreature[] creatures = monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
+            RadiusSize.Colossal * 3, false)
+            .Where(c => !c.IsDMPossessed && c != monk)
+            .ToArray();
+
+        if (creatures.Length == 0) return null;
+
+        Effect[] damageImmunities =
+            Enum.GetValues<DamageType>().Select(damageType => Effect.DamageImmunityIncrease(damageType, 100)).ToArray();
+
+        Effect timeStopEffect = damageImmunities[0];
+
+        for (int i = 1; i < damageImmunities.Length; i++)
+        {
+            timeStopEffect = Effect.LinkEffects(timeStopEffect, damageImmunities[i]);
+        }
+
+        timeStopEffect = Effect.LinkEffects
+        (
+            timeStopEffect,
+            Effect.Immunity(ImmunityType.None),
+            Effect.SpellImmunity(),
+            Effect.CutsceneParalyze(),
+            Effect.VisualEffect(VfxType.DurFreezeAnimation)
+        );
+
+        timeStopEffect.SubType = EffectSubType.Supernatural;
+
+        ScriptCallbackHandle timeStopStart
+            = scriptHandleFactory.CreateUniqueHandler(_ => TimeStopStart(creatures, timeStopEffect));
+
+        ScriptCallbackHandle timeStopEnd
+            = scriptHandleFactory.CreateUniqueHandler(_ => TimeStopEnd(monk, creatures));
+
+        Effect runTimeStopEffect = Effect.RunAction(timeStopStart,
+            timeStopEnd);
+
+        timeStopStart.Dispose();
+        timeStopEnd.Dispose();
+
+        return runTimeStopEffect;
+    }
+
+    private static ScriptHandleResult TimeStopStart(NwCreature[] creatures, Effect timeStopEffect)
+    {
+        foreach (NwCreature creature in creatures)
+        {
+            creature.ApplyEffect(EffectDuration.Temporary, timeStopEffect, TimeSpan.FromSeconds(9));
+            creature.ApplyEffect(EffectDuration.Instant, TimeStopStartVfx);
+        }
+
+        return ScriptHandleResult.True;
+    }
+
+    private static ScriptHandleResult TimeStopEnd(NwCreature monk, NwCreature[] creatures)
+    {
+        monk.ApplyEffect(EffectDuration.Instant, TimeStopVfx);
+
+        foreach (NwCreature creature in creatures)
+            creature.ApplyEffect(EffectDuration.Instant, TimeStopEndVfx);
+
+        return ScriptHandleResult.True;
+    }
+
+
     private static readonly Random Random = new();
 
     /// <summary>
@@ -190,6 +260,9 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         return min + randomDouble * (max - min);
     }
 
+    private static readonly Effect TimeStopStartVfx = Effect.VisualEffect((VfxType)471);
+    private static readonly Effect TimeStopEndVfx = Effect.VisualEffect((VfxType)471);
+    private static readonly Effect TimeStopVfx = Effect.VisualEffect(VfxType.FnfTimeStop);
 
     public static readonly Effect BlindnessDeafnessEffect =
         Effect.LinkEffects(Effect.LinkEffects(Effect.Blindness(), Effect.Deaf()));

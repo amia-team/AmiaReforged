@@ -61,8 +61,9 @@ public class AdverseWildMagic(WildMagicUtils wildMagicUtils)
     public void SelfInflictWounds(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
         monk.ApplyEffect(EffectDuration.Instant, wildMagicUtils.InflictLightWoundsEffect(monk, monkLevel));
 
-    public static void SpontaneousMeditation(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
-        monk.ApplyEffect(EffectDuration.Temporary, Effect.CutsceneParalyze(), WildMagicUtils.ShortDuration);
+    public static void Effigy(NwCreature monk, NwCreature target, int dc, byte monkLevel) =>
+        monk.ApplyEffect(EffectDuration.Temporary, Effect.LinkEffects(Effect.CutsceneParalyze(),
+            Effect.VisualEffect(VfxType.DurFreezeAnimation)), WildMagicUtils.ShortDuration);
 
     public static void LightningRod(NwCreature monk, NwCreature target, int dc, byte monkLevel)
     {
