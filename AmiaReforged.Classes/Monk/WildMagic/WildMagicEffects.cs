@@ -88,9 +88,7 @@ public class WildMagicEffects(
         new("Great Thunderclap", epicWildMagic.GreatThunderclap),
         new("Hammer of the Gods", epicWildMagic.HammerOfTheGods),
         new("Firestorm", epicWildMagic.Firestorm),
-        new("Earthquake", epicWildMagic.Earthquake),
-        new("Sunburst", epicWildMagic.Sunburst),
-        new("Meteor Storm", epicWildMagic.MeteorStorm),
+        new("Meteor Swarm", epicWildMagic.MeteorSwam),
         new("Black Blade of Disaster", epicWildMagic.BlackBladeOfDisaster)
     ];
 }
