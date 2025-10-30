@@ -1,0 +1,50 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+
+# IDE and editor files
+**/.vs/
+**/.vscode/
+**/.idea/
+**/.rider/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Test results
+**/TestResults/
+**/*.trx
+
+# NuGet packages (will be restored during build)
+**/packages/
+*.nupkg
+*.snupkg
+
+# Environment files
+**/.env
+**/.env.local
+
+# Documentation
+**/*.md
+!README.md
+
+# Git
+**/.git/
+**/.gitignore
+**/.gitattributes
+
+# Logs
+**/logs/
+**/*.log
+
+# Temporary files
+**/tmp/
+**/temp/
+
+# Docker files (not needed in build context)
+**/Dockerfile
+**/docker-compose*.yml
+**/.dockerignore
+
