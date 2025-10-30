@@ -14,9 +14,9 @@
         <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
         <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.0" />
 
-        <!-- Dependency Injection -->
-        <PackageReference Include="LightInject" Version="6.6.4" />
-        <PackageReference Include="LightInject.Microsoft.DependencyInjection" Version="3.4.3" />
+        <!-- Dependency Injection (pinned compatible versions) -->
+        <PackageReference Include="LightInject" Version="7.0.1" />
+        <PackageReference Include="LightInject.Microsoft.DependencyInjection" Version="4.0.3" />
 
         <!-- Database -->
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />

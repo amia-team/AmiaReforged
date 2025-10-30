@@ -72,19 +72,40 @@ namespace WorldSimulator
                 })
                 .Build();
 
-            // Ensure database is created (for development)
+            // Ensure database is created (for development) - optionally skippable
             using (IServiceScope scope = host.Services.CreateScope())
             {
-                SimulationDbContext db = scope.ServiceProvider.GetRequiredService<SimulationDbContext>();
-                try
+                var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                bool skipDbInit = string.Equals(
+                        Environment.GetEnvironmentVariable("WORLD_SIMULATOR_SKIP_DB_INIT"),
+                        "true",
+                        StringComparison.OrdinalIgnoreCase)
+                    || configuration.GetValue("WorldSimulator:SkipDbInit", false);
+
+                string? connectionString = configuration.GetConnectionString("DefaultConnection")
+                    ?? configuration["ConnectionStrings:DefaultConnection"];
+
+                if (skipDbInit)
                 {
-                    await db.Database.EnsureCreatedAsync();
-                    Log.Information("Database connection verified");
+                    Log.Information("Skipping database initialization due to configuration (WORLD_SIMULATOR_SKIP_DB_INIT).");
                 }
-                catch (Exception ex)
+                else if (string.IsNullOrWhiteSpace(connectionString))
                 {
-                    Log.Fatal(ex, "Failed to connect to database");
-                    throw;
+                    Log.Warning("No ConnectionStrings:DefaultConnection configured. Skipping database initialization.");
+                }
+                else
+                {
+                    SimulationDbContext db = scope.ServiceProvider.GetRequiredService<SimulationDbContext>();
+                    try
+                    {
+                        await db.Database.EnsureCreatedAsync();
+                        Log.Information("Database connection verified");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Fatal(ex, "Failed to connect to database");
+                        throw;
+                    }
                 }
             }
 
@@ -106,4 +127,3 @@ namespace WorldSimulator
         }
     }
 }
-
