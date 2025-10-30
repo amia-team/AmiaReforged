@@ -8,7 +8,7 @@ namespace AmiaReforged.Classes.Monk.WildMagic;
 [ServiceBinding(typeof(WildMagicService))]
 public class WildMagicService(WildMagicEffects wildMagicEffects)
 {
-    private static readonly (int weak, int moderate, int strong) DefaultChances = (66, 33, 0);
+    private static readonly (int weak, int moderate, int strong) DefaultChances = (66, 32, 0);
 
     // chances for weak, moderate, strong wild magic; this should always add up to 98,
     // leaving a 1% chance for adverse wild magic and 1% chance for epic wild magic
