@@ -97,45 +97,6 @@ public static class MonkUtils
         return monk.GetObjectVariable<LocalVariableEnum<ElementalType>>(ElementalVarName);
     }
 
-    public static bool AbilityRestricted(NwCreature monk, string abilityName, NwFeat kiPointFeat)
-    {
-        bool noKiLeft = !monk.KnowsFeat(kiPointFeat) || NWScript.GetFeatRemainingUses(kiPointFeat.Id, monk) < 1;
-        bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
-        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
-        bool hasFocusWithoutUnarmed
-            = monk.GetItemInSlot(InventorySlot.RightHand) != null
-              && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Torches;
-
-        if (!monk.IsPlayerControlled(out NwPlayer? player))
-            return noKiLeft || hasArmor || hasShield || hasFocusWithoutUnarmed;
-
-        if (noKiLeft)
-        {
-            player.SendServerMessage($"Cannot use {abilityName} because you have no Ki left.");
-            return noKiLeft;
-        }
-
-        if (hasArmor)
-        {
-            player.SendServerMessage($"Cannot use {abilityName} because you are wearing armor.");
-            return hasArmor;
-        }
-
-        if (hasShield)
-        {
-            player.SendServerMessage($"Cannot use {abilityName} because you are wielding a shield.");
-            return hasShield;
-        }
-
-        if (hasFocusWithoutUnarmed)
-        {
-            player.SendServerMessage($"Cannot use {abilityName} because you are wielding a focus without being unarmed.");
-            return hasFocusWithoutUnarmed;
-        }
-
-        return false;
-    }
-
     public static int GetCritMultiplier(OnCreatureAttack attackData, NwCreature monk)
     {
         byte baseMultiplier = attackData.WeaponAttackType switch
