@@ -184,7 +184,10 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         if (creatures.Length == 0) return null;
 
         Effect[] damageImmunities =
-            Enum.GetValues<DamageType>().Select(damageType => Effect.DamageImmunityIncrease(damageType, 100)).ToArray();
+            Enum.GetValues<DamageType>()
+                .Where(damageType => damageType <= DamageType.Sonic)
+                .Select(damageType => Effect.DamageImmunityIncrease(damageType, 100))
+                .ToArray();
 
         Effect timeStopEffect = damageImmunities[0];
 
@@ -212,9 +215,6 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
 
         Effect runTimeStopEffect = Effect.RunAction(timeStopStart,
             timeStopEnd);
-
-        timeStopStart.Dispose();
-        timeStopEnd.Dispose();
 
         return runTimeStopEffect;
     }
