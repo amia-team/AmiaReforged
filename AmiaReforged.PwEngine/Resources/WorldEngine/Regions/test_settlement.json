@@ -1,7 +1,10 @@
 {
   "Tag": "test_settlement",
   "Name": "Test Settlement Region",
-  "Settlements": [ 101, 205 ],
+  "Settlements": [
+    100,
+    205
+  ],
   "Areas": [
     {
       "ResRef": "zworldttemprate",
@@ -9,6 +12,7 @@
         "ore_vein_copper_native",
         "tree_oak"
       ],
+      "LinkedSettlement": 100,
       "Environment": {
         "Climate": "Temperate",
         "SoilQuality": "Good",
@@ -22,6 +26,7 @@
       "ResRef": "zwrldsettlemnt",
       "DefinitionTags": [
       ],
+      "LinkedSettlement": 100,
       "Environment": {
         "Climate": "Temperate",
         "SoilQuality": "Good",
@@ -30,10 +35,14 @@
           "Max": "Excellent"
         }
       },
-      "PlaceOfInterest": {
-        "Tag": "test_settlement_district1",
-        "Name": "Test Settlement Main District"
-      }
+      "PlacesOfInterest": [
+        {
+          "ResRef": "zwrld_tsts_bank",
+          "Tag": "test_settlement_bank",
+          "Name": "Bank of Tests",
+          "PoiType": "Bank"
+        }
+      ]
     }
   ]
 }
