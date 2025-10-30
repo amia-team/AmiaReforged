@@ -38,17 +38,8 @@ public class EagleStrike(AugmentationFactory augmentationFactory) : ITechnique
         SavingThrowResult savingThrowResult =
             targetCreature.RollSavingThrow(SavingThrow.Reflex, dc, SavingThrowType.None, monk);
 
-        switch (savingThrowResult)
-        {
-            case SavingThrowResult.Immune:
-                break;
-            case SavingThrowResult.Success:
-                targetCreature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
-                break;
-            case SavingThrowResult.Failure:
-                ApplyEagleStrike(targetCreature);
-                break;
-        }
+        if (savingThrowResult == SavingThrowResult.Success)
+            ApplyEagleStrike(targetCreature);
 
         return savingThrowResult;
     }
