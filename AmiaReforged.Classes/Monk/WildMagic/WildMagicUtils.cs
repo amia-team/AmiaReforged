@@ -171,6 +171,26 @@ public class WildMagicUtils(ScriptHandleFactory scriptHandleFactory)
         target.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpMagblue, fScale: 0.7f));
     }
 
+    private static readonly Random Random = new();
+
+    /// <summary>
+    /// Generates a random double within the specified range.
+    /// </summary>
+    /// <param name="min">The minimum value (inclusive).</param>
+    /// <param name="max">The maximum value (exclusive).</param>
+    /// <returns>A random double between min (inclusive) and max (exclusive).</returns>
+    public static double GetRandomDoubleInRange(double min, double max)
+    {
+        if (min > max)
+        {
+            return 0;
+        }
+
+        double randomDouble = Random.NextDouble();
+        return min + randomDouble * (max - min);
+    }
+
+
     public static readonly Effect BlindnessDeafnessEffect =
         Effect.LinkEffects(Effect.LinkEffects(Effect.Blindness(), Effect.Deaf()));
     public static readonly Effect WillUseVfx = Effect.VisualEffect(VfxType.ImpWillSavingThrowUse);
