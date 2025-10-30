@@ -6,6 +6,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Transactions;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
@@ -46,7 +47,7 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
             }
 
             // Get or create account
-            Guid accountId = ExtractAccountId(command.PersonaId);
+            Guid accountId = PersonaAccountId.From(command.PersonaId);
             CoinHouseAccount? account = _coinhouses.GetAccountFor(accountId);
 
             if (account == null)
@@ -97,27 +98,6 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
         {
             return CommandResult.Fail($"Failed to deposit gold: {ex.Message}");
         }
-    }
-
-    private static Guid ExtractAccountId(SharedKernel.Personas.PersonaId personaId)
-    {
-        // PersonaId format: "Type:Value"
-        // For Character personas, Value is the CharacterId Guid
-        // For Organization personas, Value is the OrganizationId Guid
-        string[] parts = personaId.ToString().Split(':');
-        if (parts.Length != 2)
-        {
-            throw new ArgumentException($"Invalid PersonaId format: {personaId}");
-        }
-
-        if (Guid.TryParse(parts[1], out Guid guid))
-        {
-            return guid;
-        }
-
-        // For non-Guid persona types (e.g., Coinhouse, System), generate deterministic Guid
-        // This ensures consistent account IDs for the same persona
-        return Guid.NewGuid(); // TODO: Implement deterministic Guid generation from string
     }
 
     private static CoinHouseAccount CreateNewAccount(Guid accountId, CoinHouse coinhouse)

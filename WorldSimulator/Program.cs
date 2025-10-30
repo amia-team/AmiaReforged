@@ -1,6 +1,5 @@
 using WorldSimulator.Infrastructure.DependencyInjection;
 using WorldSimulator.Application;
-using WorldSimulator.Infrastructure.PwEngineClient;
 using DotNetEnv;
 using LightInject;
 using LightInject.Microsoft.DependencyInjection;
@@ -150,26 +149,6 @@ namespace WorldSimulator
             Log.Information("WorldSimulator starting...");
 
             // Test communication with PwEngine (fire and forget - don't block startup)
-            using (IServiceScope testScope = host.Services.CreateScope())
-            {
-                PwEngineTestService? testService = testScope.ServiceProvider.GetService<PwEngineTestService>();
-                if (testService != null)
-                {
-                    Log.Information("Testing connectivity to PwEngine (non-blocking)...");
-                    // Fire and forget - don't wait for result, don't block startup
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues
-                    _ = Task.Run(async () =>
-                    {
-                        bool pinged = await testService.PingPwEngineAsync();
-                        if (pinged)
-                        {
-                            await testService.SendHelloToPwEngineAsync();
-                        }
-                    });
-#pragma warning restore CS4014
-                }
-            }
-
             try
             {
                 await host.RunAsync();

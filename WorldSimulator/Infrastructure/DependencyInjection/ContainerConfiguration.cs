@@ -94,9 +94,6 @@ namespace WorldSimulator.Infrastructure.DependencyInjection
 
             // PwEngine API Client
             container.Register<IPwEngineClient, PwEngineHttpClient>(new PerContainerLifetime());
-
-            // PwEngine Test Service (for Hello/Ping verification)
-            container.Register<PwEngineTestService>(new PerContainerLifetime());
         }
 
         private static void RegisterApplicationServices(IServiceContainer container)

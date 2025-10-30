@@ -30,8 +30,10 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
-        CoinHouseAccount? account = ctx.CoinHouseAccounts.Include(x => x.AccountHolders)
-            .FirstOrDefault(a => a.AccountHolders != null && a.AccountHolders.Any(x => x.HolderId == id));
+        CoinHouseAccount? account = ctx.CoinHouseAccounts
+            .Include(x => x.AccountHolders)
+            .Include(x => x.Receipts)
+            .FirstOrDefault(a => a.Id == id || (a.AccountHolders != null && a.AccountHolders.Any(x => x.HolderId == id)));
 
         return account;
     }

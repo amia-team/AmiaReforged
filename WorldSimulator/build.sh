@@ -194,6 +194,12 @@ if [ -z "$VERSION" ]; then
     log_info "Auto-detected version: ${VERSION}"
 fi
 
+# Always append 'latest' to additional tags unless already present
+if [[ " ${ADDITIONAL_TAGS[*]} " != *" latest "* ]]; then
+    ADDITIONAL_TAGS+=("latest")
+    log_info "Appended tag: latest"
+fi
+
 # Validate
 if [ -z "$VERSION" ]; then
     log_error "Failed to determine version"

@@ -16,7 +16,7 @@ public class EchoController
         try
         {
             // Try to read request body
-            HelloRequest? request = await ctx.ReadJsonBodyAsync<HelloRequest>();
+            var request = await ctx.ReadJsonBodyAsync<HelloRequest>();
 
             if (request == null)
             {

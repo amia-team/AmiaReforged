@@ -344,7 +344,7 @@ public sealed class CharacterCustomizationModel
                 // Note: Robe (index 18) is intentionally excluded
             };
 
-            foreach (var part in allParts)
+            foreach (CreaturePart part in allParts)
             {
                 oldArmor.Appearance.SetArmorPieceColor(part, colorChannel, (byte)colorIndex);
             }
@@ -496,7 +496,7 @@ public sealed class CharacterCustomizationModel
     /// </summary>
     private int? GetArmorClassFromTorsoModel(int modelIndex)
     {
-        foreach (var kvp in TorsoModelsByAc)
+        foreach (KeyValuePair<int, HashSet<int>> kvp in TorsoModelsByAc)
         {
             if (kvp.Value.Contains(modelIndex))
             {

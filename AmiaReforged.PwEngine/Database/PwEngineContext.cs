@@ -107,5 +107,10 @@ public class PwEngineContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new CharacterStatisticsConfiguration());
+        modelBuilder.ApplyConfiguration(new CoinHouseConfiguration());
+        modelBuilder.ApplyConfiguration(new CoinHouseAccountConfiguration());
+        modelBuilder.ApplyConfiguration(new CoinHouseAccountHolderConfiguration());
+        modelBuilder.ApplyConfiguration(new CoinHouseTransactionConfiguration());
+        modelBuilder.ApplyConfiguration(new TransactionConfiguration());
     }
 }
