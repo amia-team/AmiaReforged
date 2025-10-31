@@ -88,7 +88,7 @@ public class CraftingBudgetService
             NWScript.BASE_ITEM_BULLET => 4,
             // Special case where there isn't actually a set base item type
             CraftingPropertyData.CasterWeapon1H => 6,
-            CraftingPropertyData.CasterWeapon2H => 16,
+            CraftingPropertyData.CasterWeapon2H => 12,
             _ => 0
         };
     }
