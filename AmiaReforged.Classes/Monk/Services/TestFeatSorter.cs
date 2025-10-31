@@ -14,19 +14,20 @@ public class TestFeatSorter
 
     private static readonly Dictionary<int, List<NwFeat?>> MonkFeatsByLevel = new()
     {
-        [1] = [NwFeat.FromFeatId(MonkFeat.StunningStrike), NwFeat.FromFeatType(Feat.WeaponProficiencySimple)],
+        [2] = [NwFeat.FromFeatId(MonkFeat.StunningStrike)],
         [3] = [NwFeat.FromFeatId(MonkFeat.MonkDefense)],
-        [4] = [NwFeat.FromFeatId(MonkFeat.MonkSpeedNew), NwFeat.FromFeatId(MonkFeat.EagleStrike)],
+        [4] = [NwFeat.FromFeatId(MonkFeat.MonkSpeedNew)],
+        [5] = [NwFeat.FromFeatId(MonkFeat.EagleStrike)],
         [6] = [NwFeat.FromFeatId(MonkFeat.MonkFightingStyle)],
         [7] = [NwFeat.FromFeatId(MonkFeat.WholenessOfBodyNew)],
-        [10] = [NwFeat.FromFeatId(MonkFeat.KiBarrier)],
-        [11] = [NwFeat.FromFeatId(MonkFeat.AxiomaticStrike)],
+        [11] = [NwFeat.FromFeatId(MonkFeat.KiBarrier)],
         [12] = [NwFeat.FromFeatId(MonkFeat.PoeBase)],
         [13] = [NwFeat.FromFeatType(Feat.DiamondSoul)],
+        [14] = [NwFeat.FromFeatId(MonkFeat.AxiomaticStrike)],
         [15] = [NwFeat.FromFeatId(MonkFeat.EmptyBodyNew)],
-        [17] = [NwFeat.FromFeatId(MonkFeat.QuiveringPalmNew)],
+        [16] = [NwFeat.FromFeatId(MonkFeat.QuiveringPalmNew)],
+        [17] = [NwFeat.FromFeatId(MonkFeat.KiShout)],
         [18] = [NwFeat.FromFeatId(MonkFeat.KiStrike)],
-        [19] = [NwFeat.FromFeatId(MonkFeat.KiShout)],
         [24] = [NwFeat.FromFeatId(MonkFeat.KiStrike2)],
         [30] = [NwFeat.FromFeatId(MonkFeat.KiStrike3)]
     };
