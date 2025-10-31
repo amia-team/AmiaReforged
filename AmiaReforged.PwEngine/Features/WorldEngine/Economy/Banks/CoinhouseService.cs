@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Nui;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -19,13 +21,15 @@ public class CoinhouseService
     private readonly ICoinhouseRepository _coinHouses;
     private readonly IWarehouseRepository _warehouses;
     private readonly RegionIndex _regions;
+    private readonly WindowDirector _windowDirector;
 
     public CoinhouseService(ICoinhouseRepository coinHouses, IWarehouseRepository warehouses,
-        SchedulerService scheduler, RegionIndex regions)
+        SchedulerService scheduler, RegionIndex regions, WindowDirector windowDirector)
     {
         _coinHouses = coinHouses;
         _warehouses = warehouses;
         _regions = regions;
+        _windowDirector = windowDirector;
 
         List<NwCreature> bankers = NwObject.FindObjectsWithTag<NwCreature>("pwengine_banker").ToList();
 
@@ -38,11 +42,11 @@ public class CoinhouseService
 
     private void OpenBankWindow(CreatureEvents.OnConversation obj)
     {
-        obj.Creature.SpeakString("Beep beep");
-        // For now, we validate if it's in a valid coinhouse POI or not and make it speak a string stating AM I VALID? TRUE/FALSE
-
-
-        obj.Creature.SpeakString("Valid PC");
+        NwPlayer? player = obj.PlayerSpeaker;
+        if (player is null)
+        {
+            return;
+        }
         NwArea? area = obj.Creature.Area;
         if (area is null)
         {
@@ -56,8 +60,9 @@ public class CoinhouseService
         }
         catch (ArgumentException ex)
         {
-            obj.Creature.SpeakString(
-                $"Coinhouse validation failed: invalid area resref '{area.ResRef}' ({ex.Message}).");
+            player.SendServerMessage(
+                message: $"Banking service unavailable: invalid area resref '{area.ResRef}' ({ex.Message}).",
+                ColorConstants.Red);
             return;
         }
 
@@ -66,16 +71,18 @@ public class CoinhouseService
 
         if (!settlementFound)
         {
-            obj.Creature.SpeakString(
-                $"Coinhouse validation failed: location '{area.ResRef}' is not linked to a settlement.");
+            player.SendServerMessage(
+                message: $"Banking service unavailable: location '{area.ResRef}' is not linked to a settlement.",
+                ColorConstants.Red);
             return;
         }
 
         Database.Entities.Economy.Treasuries.CoinHouse? coinhouse = _coinHouses.GetSettlementCoinhouse(settlementId);
         if (coinhouse is null)
         {
-            obj.Creature.SpeakString(
-                $"Coinhouse validation failed: no coinhouse registered for settlement {settlementId.Value}.");
+            player.SendServerMessage(
+                message: "Banking service unavailable: no coinhouse is registered for this settlement.",
+                ColorConstants.Red);
             return;
         }
 
@@ -90,15 +97,31 @@ public class CoinhouseService
              || (!string.IsNullOrWhiteSpace(creatureTag) && string.Equals(p.Tag, creatureTag, StringComparison.OrdinalIgnoreCase))));
         if (bankPoi is null)
         {
-            obj.Creature.SpeakString(
-                $"Coinhouse validation failed: location '{area.ResRef}' is not mapped as a bank POI.");
+            player.SendServerMessage(
+                message: "Banking service unavailable: this location is not configured as a bank.",
+                ColorConstants.Red);
             return;
         }
 
-        obj.Creature.SpeakString(
-            $"Coinhouse ready: {coinhouse.Tag} (settlement {settlementId.Value}) via POI '{bankPoi.Tag}'.");
+        CoinhouseTag coinhouseTag = new(coinhouse.Tag);
+        string displayName = ResolveDisplayName(bankPoi, coinhouse.Tag);
+
+        BankWindowView view = new(player, coinhouseTag, displayName);
+        _windowDirector.OpenWindow(view.Presenter);
+
+        player.SendServerMessage($"Opening {displayName}.", ColorConstants.Cyan);
     }
 
+
+    private static string ResolveDisplayName(PlaceOfInterest bankPoi, string coinhouseTag)
+    {
+        if (!string.IsNullOrWhiteSpace(bankPoi.Name))
+        {
+            return bankPoi.Name;
+        }
+
+        return $"Coinhouse ({coinhouseTag})";
+    }
 
     public bool ItemsAreInHoldingForPlayer(CharacterId id)
     {
