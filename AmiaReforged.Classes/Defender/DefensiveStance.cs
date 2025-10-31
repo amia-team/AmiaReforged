@@ -32,10 +32,10 @@ public class DefensiveStance
         if (activeEffect != null)
         {
             character.RemoveEffect(activeEffect);
+            character.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPdkHeroicShield));
             return;
         }
 
-        character.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPdkHeroicShield));
 
         int defenderLevel =
             character.Classes.FirstOrDefault(c => c.Class.ClassType == ClassType.DwarvenDefender)?.Level ?? 0;
