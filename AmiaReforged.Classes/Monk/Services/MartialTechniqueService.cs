@@ -18,6 +18,8 @@ public class MartialTechniqueService
 
     private readonly Effect _martialCooldownEffect = Effect.VisualEffect(VfxType.None);
 
+    private static readonly NwFeat? StunningStrikeFeat = NwFeat.FromFeatId(MonkFeat.StunningStrike);
+
     private const string MartialCooldownTag = "martialtechnique_cd";
     private const string MartialTechnique = "martial_technique";
     private const string StunningTag = nameof(TechniqueType.StunningStrike);
@@ -102,6 +104,8 @@ public class MartialTechniqueService
     /// </summary>
     private void EnterMartialTechnique(OnCombatRoundStart eventData)
     {
+        if (!eventData.Creature.KnowsFeat(StunningStrikeFeat!)) return;
+
         NwCreature monk = eventData.Creature;
         LocalVariableInt queuedTechnique = monk.GetObjectVariable<LocalVariableInt>(MartialTechnique);
 
@@ -130,6 +134,8 @@ public class MartialTechniqueService
     /// </summary>
     private void OnHitApplyAxiomatic(OnCreatureAttack attackData)
     {
+        if (!attackData.Attacker.KnowsFeat(StunningStrikeFeat!)) return;
+
         if (attackData.AttackResult is not (AttackResult.Hit or AttackResult.AutomaticHit or AttackResult.CriticalHit
             or AttackResult.DevastatingCritical)) return;
 
@@ -148,7 +154,7 @@ public class MartialTechniqueService
 
     private void OnDamageApplyTechnique(OnCreatureDamage damageData)
     {
-        if (damageData.DamagedBy is not NwCreature monk) return;
+        if (damageData.DamagedBy is not NwCreature monk || !monk.KnowsFeat(StunningStrikeFeat!)) return;
         if (!monk.ActiveEffects.Any(effect => effect.Tag is StunningTag or EagleTag))
             return;
         if (monk.ActiveEffects.Any(effect => effect.Tag is MartialCooldownTag))
