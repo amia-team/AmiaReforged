@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Queries;
@@ -470,6 +472,12 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
     [Inject]
     private Lazy<ICommandHandler<OpenCoinhouseAccountCommand>> OpenAccountCommandHandler { get; init; } = null!;
 
+    [Inject]
+    private Lazy<ICommandHandler<DepositGoldCommand>> DepositCommandHandler { get; init; } = null!;
+
+    [Inject]
+    private WindowDirector WindowDirector { get; init; } = null!;
+
     private BankAccountModel Model => _model ??= new BankAccountModel(
         AccountQueryHandler.Value,
         EligibilityQueryHandler.Value);
@@ -677,6 +685,12 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
             return;
         }
 
+        int deposit = Model.PersonalOpeningDeposit;
+        if (!await HasSufficientFundsAsync(deposit))
+        {
+            return;
+        }
+
         string? displayName = _player.LoginCreature?.Name?.Trim();
 
         OpenCoinhouseAccountCommand command = new(
@@ -685,38 +699,219 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
             _coinhouseTag,
             string.IsNullOrWhiteSpace(displayName) ? null : displayName);
 
-        CommandResult result;
+        if (deposit <= 0)
+        {
+            await ProcessOpenPersonalAccountAsync(command, deposit);
+            return;
+        }
+
+        string messageBody =
+            $"Opening a personal coinhouse account requires {FormatCurrency(deposit)}. Do you wish to proceed?";
+
+        WindowDirector.OpenPopupWithReaction(
+            _player,
+            "Confirm Personal Account",
+            messageBody,
+            () => _ = ProcessOpenPersonalAccountAsync(command, deposit),
+            linkedToken: Token());
+    }
+
+    private async Task ProcessOpenPersonalAccountAsync(OpenCoinhouseAccountCommand command, int deposit)
+    {
+        bool goldDeducted = false;
 
         try
         {
-            result = await OpenAccountCommandHandler.Value.HandleAsync(command);
+            if (deposit > 0)
+            {
+                goldDeducted = await TryWithdrawGoldAsync(deposit);
+                if (!goldDeducted)
+                {
+                    return;
+                }
+            }
+
+            CommandResult openResult;
+            try
+            {
+                openResult = await OpenAccountCommandHandler.Value.HandleAsync(command);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to open personal account for player {PlayerName} at coinhouse {Tag}",
+                    _player.PlayerName, _coinhouseTag.Value);
+
+                if (goldDeducted)
+                {
+                    await RefundGoldAsync(deposit);
+                }
+
+                await NwTask.SwitchToMainThread();
+                Token().Player.SendServerMessage(
+                    message: "The banker could not create your account due to an unexpected error.",
+                    ColorConstants.Orange);
+                return;
+            }
+
+            if (!openResult.Success)
+            {
+                if (goldDeducted)
+                {
+                    await RefundGoldAsync(deposit);
+                }
+
+                await NwTask.SwitchToMainThread();
+                Token().Player.SendServerMessage(
+                    message: openResult.ErrorMessage ?? "Unable to open a personal account.",
+                    ColorConstants.Orange);
+                return;
+            }
+
+            if (deposit > 0)
+            {
+                CommandResult depositResult;
+                try
+                {
+                    DepositGoldCommand depositCommand = DepositGoldCommand.Create(
+                        Model.Persona,
+                        _coinhouseTag,
+                        deposit,
+                        "Opening deposit");
+
+                    depositResult = await DepositCommandHandler.Value.HandleAsync(depositCommand);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Failed to record opening deposit for player {PlayerName} at coinhouse {Tag}",
+                        _player.PlayerName, _coinhouseTag.Value);
+                    depositResult = CommandResult.Fail("Failed to record the opening deposit.");
+                }
+
+                if (!depositResult.Success)
+                {
+                    if (goldDeducted)
+                    {
+                        await RefundGoldAsync(deposit);
+                    }
+
+                    await NwTask.SwitchToMainThread();
+                    Token().Player.SendServerMessage(
+                        message:
+                        "Your account was created but the opening deposit failed. Your gold has been returned.",
+                        ColorConstants.Orange);
+                    return;
+                }
+            }
+
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "Your personal coinhouse account has been opened.",
+                ColorConstants.White);
+
+            await ReloadModelAsync();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to open personal account for player {PlayerName} at coinhouse {Tag}",
+            Log.Error(ex,
+                "Unexpected failure while opening personal account for player {PlayerName} at coinhouse {Tag}",
                 _player.PlayerName, _coinhouseTag.Value);
+
+            if (goldDeducted)
+            {
+                await RefundGoldAsync(deposit);
+            }
+
             await NwTask.SwitchToMainThread();
             Token().Player.SendServerMessage(
                 message: "The banker could not create your account due to an unexpected error.",
                 ColorConstants.Orange);
+        }
+    }
+
+    private async Task<bool> HasSufficientFundsAsync(int required)
+    {
+        if (required <= 0)
+        {
+            return true;
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        NwCreature? creature = _player.LoginCreature;
+        if (creature is null)
+        {
+            Token().Player.SendServerMessage(
+                message: "You must be possessing a character to open a coinhouse account.",
+                ColorConstants.Orange);
+            return false;
+        }
+
+        uint available = creature.Gold;
+        uint requiredGold = (uint)Math.Max(required, 0);
+
+        if (available < requiredGold)
+        {
+            Token().Player.SendServerMessage(
+                message: $"You need {FormatCurrency(required)} on hand to open this account.",
+                ColorConstants.Orange);
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> TryWithdrawGoldAsync(int amount)
+    {
+        if (amount <= 0)
+        {
+            return true;
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        NwCreature? creature = _player.LoginCreature;
+        if (creature is null)
+        {
+            Token().Player.SendServerMessage(
+                message: "You must be possessing a character to open a coinhouse account.",
+                ColorConstants.Orange);
+            return false;
+        }
+
+        uint available = creature.Gold;
+        uint requested = (uint)Math.Max(amount, 0);
+
+        if (available < requested)
+        {
+            Token().Player.SendServerMessage(
+                message: $"You need {FormatCurrency(amount)} on hand to open this account.",
+                ColorConstants.Orange);
+            return false;
+        }
+
+        creature.Gold = available - requested;
+        return true;
+    }
+
+    private async Task RefundGoldAsync(int amount)
+    {
+        if (amount <= 0)
+        {
             return;
         }
 
         await NwTask.SwitchToMainThread();
 
-        if (!result.Success)
+        NwCreature? creature = _player.LoginCreature;
+        if (creature is not null)
         {
-            Token().Player.SendServerMessage(
-                message: result.ErrorMessage ?? "Unable to open a personal account.",
-                ColorConstants.Orange);
-            return;
+            creature.Gold = creature.Gold + (uint)Math.Max(amount, 0);
         }
+    }
 
-        Token().Player.SendServerMessage(
-            message: "Your personal coinhouse account has been opened.",
-            ColorConstants.White);
-
-        await ReloadModelAsync();
+    private static string FormatCurrency(int amount)
+    {
+        return amount.ToString("N0", CultureInfo.InvariantCulture) + " gp";
     }
 
     private async Task HandleOpenOrganizationAccountAsync()

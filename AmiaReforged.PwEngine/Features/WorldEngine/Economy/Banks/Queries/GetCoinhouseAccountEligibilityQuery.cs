@@ -40,6 +40,11 @@ public sealed record CoinhouseAccountEligibilityResult
     public string? PersonalAccountBlockedReason { get; init; }
 
     /// <summary>
+    /// The minimum deposit required to open a personal coinhouse account.
+    /// </summary>
+    public int PersonalAccountOpeningDeposit { get; init; }
+
+    /// <summary>
     /// Enumerates organization options the persona may open accounts for.
     /// </summary>
     public IReadOnlyList<OrganizationAccountEligibility> Organizations { get; init; }
@@ -51,6 +56,7 @@ public sealed record CoinhouseAccountEligibilityResult
         CoinhouseError = message,
         CanOpenPersonalAccount = false,
         PersonalAccountBlockedReason = message,
+        PersonalAccountOpeningDeposit = 0,
         Organizations = Array.Empty<OrganizationAccountEligibility>()
     };
 }
@@ -65,4 +71,5 @@ public sealed record OrganizationAccountEligibility
     public required bool CanOpen { get; init; }
     public bool AlreadyHasAccount { get; init; }
     public string? BlockedReason { get; init; }
+    public int RequiredDeposit { get; init; }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
@@ -19,6 +20,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Nui;
 /// </summary>
 public sealed class BankAccountModel
 {
+    private const int DefaultPersonalDeposit = 500;
+    private const int DefaultOrganizationDeposit = 500;
+
     private readonly IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?> _accountQuery;
     private readonly IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> _eligibilityQuery;
 
@@ -55,6 +59,9 @@ public sealed class BankAccountModel
     public int SelectedOrganizationOption { get; set; }
     public bool CanOpenPersonalAccount => Eligibility?.CanOpenPersonalAccount ?? false;
     public bool HasOrganizationChoice => OrganizationEligibility.Count > 0;
+
+    public int PersonalOpeningDeposit { get; private set; } = DefaultPersonalDeposit;
+    public int OrganizationOpeningDeposit { get; private set; } = DefaultOrganizationDeposit;
 
     public int SelectedDepositMode { get; set; }
     public int SelectedWithdrawMode { get; set; }
@@ -94,6 +101,8 @@ public sealed class BankAccountModel
         PersonalEligibilityStatus = string.Empty;
         OrganizationEligibilityStatus = string.Empty;
         SelectedOrganizationOption = 0;
+    PersonalOpeningDeposit = DefaultPersonalDeposit;
+    OrganizationOpeningDeposit = DefaultOrganizationDeposit;
 
         GetCoinhouseAccountQuery query = new(Persona, Coinhouse);
         CoinhouseAccountQueryResult? result = await _accountQuery.HandleAsync(query, cancellationToken);
@@ -148,6 +157,11 @@ public sealed class BankAccountModel
 
         Eligibility = eligibility;
 
+        if (eligibility.PersonalAccountOpeningDeposit > 0)
+        {
+            PersonalOpeningDeposit = eligibility.PersonalAccountOpeningDeposit;
+        }
+
         if (!eligibility.CoinhouseExists)
         {
             EligibilitySummary = eligibility.CoinhouseError ?? "The selected coinhouse is unavailable.";
@@ -157,10 +171,10 @@ public sealed class BankAccountModel
             return;
         }
 
-        EligibilitySummary = "You do not yet have an account at this coinhouse.";
+        EligibilitySummary = $"Opening an account requires an initial deposit of {FormatCurrency(PersonalOpeningDeposit)}.";
 
         PersonalEligibilityStatus = eligibility.CanOpenPersonalAccount
-            ? "You are eligible to open a personal account."
+            ? $"You are eligible to open a personal account with {FormatCurrency(PersonalOpeningDeposit)}."
             : eligibility.PersonalAccountBlockedReason ?? "Personal account access is currently blocked.";
 
         if (eligibility.Organizations.Count == 0)
@@ -170,9 +184,18 @@ public sealed class BankAccountModel
             return;
         }
 
-        OrganizationEligibilityStatus = "Select an organization to open a shared account.";
+        OrganizationEligibilityStatus =
+            $"Select an organization to open a shared account (requires {FormatCurrency(OrganizationOpeningDeposit)}).";
 
         OrganizationEligibility.AddRange(eligibility.Organizations);
+
+        int? firstDeposit = eligibility.Organizations.FirstOrDefault()?.RequiredDeposit;
+        if (firstDeposit.HasValue && firstDeposit > 0)
+        {
+            OrganizationOpeningDeposit = firstDeposit.Value;
+            OrganizationEligibilityStatus =
+                $"Select an organization to open a shared account (requires {FormatCurrency(OrganizationOpeningDeposit)}).";
+        }
 
         for (int index = 0; index < OrganizationEligibility.Count; index++)
         {

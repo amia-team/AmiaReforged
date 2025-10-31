@@ -20,6 +20,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Queries;
 public sealed class GetCoinhouseAccountEligibilityQueryHandler
     : IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult>
 {
+    private const int PersonalAccountDeposit = 500;
+    private const int OrganizationAccountDeposit = 500;
+
     private readonly ICoinhouseRepository _coinhouses;
     private readonly IOrganizationMemberRepository _organizationMembers;
     private readonly IOrganizationRepository _organizations;
@@ -75,6 +78,7 @@ public sealed class GetCoinhouseAccountEligibilityQueryHandler
             CoinhouseExists = true,
             CanOpenPersonalAccount = canOpenPersonalAccount,
             PersonalAccountBlockedReason = canOpenPersonalAccount ? null : personalAccountReason,
+            PersonalAccountOpeningDeposit = PersonalAccountDeposit,
             Organizations = organizationOptions
         };
     }
@@ -156,7 +160,8 @@ public sealed class GetCoinhouseAccountEligibilityQueryHandler
                 OrganizationName = organization.Name,
                 CanOpen = canOpen,
                 AlreadyHasAccount = !canOpen,
-                BlockedReason = reason
+                BlockedReason = reason,
+                RequiredDeposit = OrganizationAccountDeposit
             });
         }
 
