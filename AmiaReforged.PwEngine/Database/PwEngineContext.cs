@@ -112,6 +112,7 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new CoinHouseAccountConfiguration());
         modelBuilder.ApplyConfiguration(new CoinHouseAccountHolderConfiguration());
         modelBuilder.ApplyConfiguration(new CoinHouseTransactionConfiguration());
+        modelBuilder.ApplyConfiguration(new OrganizationConfiguration());
         modelBuilder.ApplyConfiguration(new OrganizationMemberConfiguration());
         modelBuilder.ApplyConfiguration(new TransactionConfiguration());
     }

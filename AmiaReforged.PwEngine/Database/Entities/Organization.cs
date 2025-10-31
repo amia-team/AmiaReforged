@@ -13,6 +13,20 @@ public class Organization
 
     public string? Description { get; set; }
 
+    public OrganizationType Type { get; set; }
+
+    public Guid? ParentOrganizationId { get; set; }
+
+    /// <summary>
+    /// JSON serialized list of banned character ids.
+    /// </summary>
+    public string BanListJson { get; set; } = "[]";
+
+    /// <summary>
+    /// JSON serialized inbox of pending organization requests.
+    /// </summary>
+    public string InboxJson { get; set; } = "[]";
+
     /// <summary>
     /// PersonaId for cross-subsystem references (transactions, reputation, ownership).
     /// Format: "Organization:{Id}"
