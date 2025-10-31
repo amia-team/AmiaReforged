@@ -430,7 +430,6 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     }
 }
 
-
 public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
 {
     private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -453,13 +452,21 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
             : bankDisplayName;
     }
 
-    [Inject] private Lazy<AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
+    [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
+
     [Inject]
-    private Lazy<IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?>> AccountQueryHandler { get; init; }
+    private Lazy<IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?>> AccountQueryHandler
+    {
+        get;
+        init;
+    }
         = null!;
+
     [Inject]
-    private Lazy<IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult>> EligibilityQueryHandler { get; init; }
+    private Lazy<IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult>>
+        EligibilityQueryHandler { get; init; }
         = null!;
+
     [Inject]
     private Lazy<ICommandHandler<OpenCoinhouseAccountCommand>> OpenAccountCommandHandler { get; init; } = null!;
 
@@ -473,11 +480,11 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
 
     public override void InitBefore()
     {
-    _model ??= new BankAccountModel(AccountQueryHandler.Value, EligibilityQueryHandler.Value);
+        _model ??= new BankAccountModel(AccountQueryHandler.Value, EligibilityQueryHandler.Value);
 
         _window = new NuiWindow(View.RootLayout(), _bankDisplayName)
         {
-            Geometry = new NuiRect(120f, 120f, 720f, 540f),
+            Geometry = new NuiRect(120f, 120f, 720f, 980f),
             Resizable = true
         };
     }
