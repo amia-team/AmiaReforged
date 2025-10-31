@@ -1,3 +1,4 @@
+using System.Numerics;
 using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Body;
 using AmiaReforged.Classes.Monk.Techniques.Martial;
@@ -35,8 +36,6 @@ public sealed class CrashingMeteor : IAugmentation
                 EagleStrike.DoEagleStrike(monk, damageData);
                 break;
         }
-
-        throw new NotImplementedException();
     }
 
     public void ApplyCastAugmentation(NwCreature monk, TechniqueType technique, OnSpellCast castData)
@@ -69,6 +68,7 @@ public sealed class CrashingMeteor : IAugmentation
         public int DiceAmount;
         public short BonusDamage;
         public Effect AoeVfx;
+        public Effect PulseVfx;
         public VfxType DamageVfx;
         public DamageType DamageType;
         public SavingThrowType SaveType;
@@ -104,6 +104,14 @@ public sealed class CrashingMeteor : IAugmentation
                 ElementalType.Earth => MonkVfx.FnfVitriolicSphere,
                 _ => VfxType.FnfFireball
             }, RadiusSize.Large),
+            PulseVfx = MonkUtils.ResizedVfx(elementalType switch
+            {
+                ElementalType.Fire => MonkVfx.ImpPulseFireChest,
+                ElementalType.Water => MonkVfx.ImpPulseColdChest,
+                ElementalType.Air => MonkVfx.ImpPulseAirChest,
+                ElementalType.Earth => MonkVfx.ImpPulseEarthChest,
+                _ => MonkVfx.ImpPulseFireChest
+            }, RadiusSize.Medium),
             DamageVfx = elementalType switch
             {
                 ElementalType.Fire => VfxType.ImpFlameS,
@@ -147,38 +155,31 @@ public sealed class CrashingMeteor : IAugmentation
     {
         StunningStrike.DoStunningStrike(damageData);
 
-        damageData.Target.ApplyEffect(EffectDuration.Instant, meteor.AoeVfx);
+        if (damageData.Target.Location is not { } location) return;
 
-        foreach (NwGameObject nwObject in monk.Location!.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
-                     ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
+        damageData.Target.ApplyEffect(EffectDuration.Instant, meteor.PulseVfx);
+
+        foreach (NwCreature creature in location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Medium, true))
         {
+            if (!monk.IsReactionTypeHostile(creature)) continue;
             int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
-            if (nwObject is not NwCreature creatureInShape)
-            {
-                _ = ApplyAoeDamage(nwObject, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
-                continue;
-            }
 
-            if (monk.IsReactionTypeFriendly(creatureInShape)) continue;
-
-            CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.Fireball)!);
-
-            bool hasEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.Evasion)!);
-            bool hasImprovedEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
+            bool hasEvasion = creature.KnowsFeat(NwFeat.FromFeatType(Feat.Evasion)!);
+            bool hasImprovedEvasion = creature.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
 
             SavingThrowResult savingThrowResult =
-                creatureInShape.RollSavingThrow(SavingThrow.Reflex, meteor.Dc, meteor.SaveType, monk);
+                creature.RollSavingThrow(SavingThrow.Reflex, meteor.Dc, meteor.SaveType, monk);
 
             if ((hasEvasion || hasImprovedEvasion) &&  savingThrowResult == SavingThrowResult.Success)
             {
-                creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
+                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
                 continue;
             }
 
             if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
                 damageAmount /= 2;
 
-            _ = ApplyAoeDamage(creatureInShape, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
+            _ = ApplyAoeDamage(creature, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
         }
     }
 
