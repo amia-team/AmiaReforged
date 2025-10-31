@@ -41,6 +41,7 @@ public class PwEngineContext : DbContext
     public DbSet<CoinHouse> CoinHouses { get; set; } = null!;
 
     public DbSet<Organization> Organizations { get; set; } = null!;
+    public DbSet<OrganizationMemberRecord> OrganizationMembers { get; set; } = null!;
 
     /// <summary>
     /// Generic catch all for any physical item that must be kept track of in storage.
@@ -111,6 +112,7 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new CoinHouseAccountConfiguration());
         modelBuilder.ApplyConfiguration(new CoinHouseAccountHolderConfiguration());
         modelBuilder.ApplyConfiguration(new CoinHouseTransactionConfiguration());
+        modelBuilder.ApplyConfiguration(new OrganizationMemberConfiguration());
         modelBuilder.ApplyConfiguration(new TransactionConfiguration());
     }
 }

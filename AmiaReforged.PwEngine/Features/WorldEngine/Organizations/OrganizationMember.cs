@@ -56,7 +56,7 @@ public class OrganizationMember
     /// <summary>
     /// Extensible metadata for organization-specific data
     /// </summary>
-    public Dictionary<string, object> Metadata { get; init; } = new();
+    public Dictionary<string, object?> Metadata { get; init; } = new();
 
     /// <summary>
     /// Check if member has a specific role
