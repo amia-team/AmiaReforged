@@ -28,10 +28,11 @@ public class DefensiveStance
 
         NwCreature character = obj.Creature;
 
-        foreach (Effect effect in character.ActiveEffects)
+        Effect? activeEffect = character.ActiveEffects.FirstOrDefault(e => e.Tag == DefensiveStanceEffectTag);
+        if (activeEffect != null)
         {
-            if (effect.Tag == DefensiveStanceEffectTag)
-                character.RemoveEffect(effect);
+            character.RemoveEffect(activeEffect);
+            return;
         }
 
         character.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpPdkHeroicShield));
