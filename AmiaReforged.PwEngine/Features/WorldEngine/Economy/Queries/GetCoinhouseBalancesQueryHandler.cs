@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.DTOs;
@@ -25,29 +29,48 @@ public class GetCoinhouseBalancesQueryHandler : IQueryHandler<GetCoinhouseBalanc
         GetCoinhouseBalancesQuery query,
         CancellationToken cancellationToken = default)
     {
-        Guid accountId = PersonaAccountId.From(query.PersonaId);
-        CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId, cancellationToken);
-
-        if (account is null)
+        if (!Guid.TryParse(query.PersonaId.Value, out Guid holderId))
         {
             return Array.Empty<BalanceDto>();
         }
 
-        CoinhouseDto? coinhouse = account.Coinhouse ??
-            await _coinhouses.GetByIdAsync(account.CoinHouseId, cancellationToken);
+        IReadOnlyList<CoinhouseAccountDto> accounts = await _coinhouses
+            .GetAccountsForHolderAsync(holderId, cancellationToken);
 
-        if (coinhouse is null)
+        if (accounts.Count == 0)
         {
             return Array.Empty<BalanceDto>();
         }
 
-        BalanceDto balance = BalanceDto.Create(
-            query.PersonaId,
-            coinhouse.Tag,
-            account.Balance,
-            account.LastAccessedAt);
+        List<BalanceDto> balances = new(accounts.Count);
+        Dictionary<long, CoinhouseDto> coinhouseCache = new();
 
-        return new[] { balance };
+        foreach (CoinhouseAccountDto account in accounts)
+        {
+            CoinhouseDto? coinhouse = account.Coinhouse;
+
+            if (coinhouse is null)
+            {
+                if (!coinhouseCache.TryGetValue(account.CoinHouseId, out coinhouse))
+                {
+                    coinhouse = await _coinhouses.GetByIdAsync(account.CoinHouseId, cancellationToken);
+                    if (coinhouse is null)
+                    {
+                        continue;
+                    }
+
+                    coinhouseCache[account.CoinHouseId] = coinhouse;
+                }
+            }
+
+            balances.Add(BalanceDto.Create(
+                query.PersonaId,
+                coinhouse.Tag,
+                account.Balance,
+                account.LastAccessedAt));
+        }
+
+        return balances;
     }
 }
 

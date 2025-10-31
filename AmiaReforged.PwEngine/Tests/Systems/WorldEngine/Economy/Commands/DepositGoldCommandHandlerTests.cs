@@ -60,7 +60,7 @@ public class DepositGoldCommandHandlerTests
 
         _account = new CoinhouseAccountDto
         {
-            Id = PersonaAccountId.From(_depositor),
+            Id = PersonaAccountId.ForCoinhouse(_depositor, _coinhouseTag),
             Debit = 0,
             Credit = 0,
             CoinHouseId = _coinhouse.Id,
@@ -219,7 +219,7 @@ public class DepositGoldCommandHandlerTests
         Assert.That(createdAccount, Is.Not.Null);
         Assert.Multiple(() =>
         {
-            Assert.That(createdAccount!.Id, Is.EqualTo(PersonaAccountId.From(_depositor)));
+            Assert.That(createdAccount!.Id, Is.EqualTo(PersonaAccountId.ForCoinhouse(_depositor, _coinhouseTag)));
             Assert.That(createdAccount.CoinHouseId, Is.EqualTo(_coinhouse.Id));
             Assert.That(createdAccount.Debit, Is.EqualTo(400));
         });

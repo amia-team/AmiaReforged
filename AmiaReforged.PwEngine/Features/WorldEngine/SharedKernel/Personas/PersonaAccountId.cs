@@ -1,3 +1,5 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 
 /// <summary>
@@ -19,5 +21,16 @@ public static class PersonaAccountId
         }
 
         return DeterministicGuidFactory.Create(Scope, personaId.ToString());
+    }
+
+    /// <summary>
+    /// Computes a deterministic account identifier scoped to a specific coinhouse.
+    /// Ensures personas can hold a dedicated account per coinhouse instead of a global account.
+    /// </summary>
+    public static Guid ForCoinhouse(PersonaId personaId, CoinhouseTag coinhouse)
+    {
+        string coinhouseKey = coinhouse.Value ?? throw new ArgumentException("Coinhouse tag must have a value", nameof(coinhouse));
+        string composite = $"{personaId}:{coinhouseKey.ToLowerInvariant()}";
+        return DeterministicGuidFactory.Create(Scope, composite);
     }
 }

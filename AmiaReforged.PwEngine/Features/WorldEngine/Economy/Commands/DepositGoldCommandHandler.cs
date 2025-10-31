@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
@@ -47,12 +49,12 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            Guid accountId = PersonaAccountId.From(command.PersonaId);
+            Guid accountId = PersonaAccountId.ForCoinhouse(command.PersonaId, command.Coinhouse);
             CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId, cancellationToken);
 
             DateTime timestamp = DateTime.UtcNow;
             CoinhouseAccountDto updatedAccount = account is null
-                ? CreateNewAccount(accountId, coinhouse, timestamp)
+                ? CreateNewAccount(accountId, coinhouse, command.PersonaId, timestamp)
                 : account with { LastAccessedAt = timestamp };
 
             updatedAccount = updatedAccount with
@@ -95,7 +97,11 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
         }
     }
 
-    private static CoinhouseAccountDto CreateNewAccount(Guid accountId, CoinhouseDto coinhouse, DateTime timestamp)
+    private static CoinhouseAccountDto CreateNewAccount(
+        Guid accountId,
+        CoinhouseDto coinhouse,
+        PersonaId owner,
+        DateTime timestamp)
     {
         return new CoinhouseAccountDto
         {
@@ -105,8 +111,35 @@ public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
             CoinHouseId = coinhouse.Id,
             OpenedAt = timestamp,
             LastAccessedAt = timestamp,
-            Coinhouse = coinhouse
+            Coinhouse = coinhouse,
+            Holders = CreateDefaultHolders(owner)
         };
+    }
+
+    private static IReadOnlyList<CoinhouseAccountHolderDto> CreateDefaultHolders(PersonaId owner)
+    {
+        if (!Guid.TryParse(owner.Value, out Guid holderId))
+        {
+            return Array.Empty<CoinhouseAccountHolderDto>();
+        }
+
+        HolderType holderType = owner.Type switch
+        {
+            PersonaType.Organization => HolderType.Organization,
+            PersonaType.Government => HolderType.Government,
+            _ => HolderType.Individual
+        };
+
+        CoinhouseAccountHolderDto primaryHolder = new()
+        {
+            HolderId = holderId,
+            Type = holderType,
+            Role = HolderRole.Owner,
+            FirstName = owner.Value,
+            LastName = string.Empty
+        };
+
+        return new[] { primaryHolder };
     }
 }
 

@@ -86,7 +86,7 @@ public class CoinhouseAccountProvisioningSpecs
         CommandResult result = await _handler.HandleAsync(command);
 
         Assert.That(result.Success, Is.True, "expected deposit to succeed for lazy provisioning");
-        Guid expectedAccountId = PersonaAccountId.From(persona);
+    Guid expectedAccountId = PersonaAccountId.ForCoinhouse(persona, _coinhouseTag);
         Assert.That(_savedAccount, Is.Not.Null, "expected newly provisioned account to be persisted");
         Assert.That(_savedAccount!.Id, Is.EqualTo(expectedAccountId));
         Assert.That(_savedAccount.Debit, Is.EqualTo(25));

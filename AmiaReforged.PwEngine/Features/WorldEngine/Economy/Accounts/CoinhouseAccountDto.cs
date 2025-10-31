@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 
@@ -14,6 +15,7 @@ public sealed record CoinhouseAccountDto
     public required DateTime OpenedAt { get; init; }
     public DateTime? LastAccessedAt { get; init; }
     public CoinhouseDto? Coinhouse { get; init; }
+    public IReadOnlyList<CoinhouseAccountHolderDto> Holders { get; init; } = Array.Empty<CoinhouseAccountHolderDto>();
 
     public int Balance => Debit - Credit;
 }

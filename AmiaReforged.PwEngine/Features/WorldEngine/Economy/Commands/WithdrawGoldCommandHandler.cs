@@ -50,7 +50,7 @@ public class WithdrawGoldCommandHandler : ICommandHandler<WithdrawGoldCommand>
             }
 
             // Get account (must exist for withdrawal)
-            Guid accountId = PersonaAccountId.From(command.PersonaId);
+            Guid accountId = PersonaAccountId.ForCoinhouse(command.PersonaId, command.Coinhouse);
             CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId, cancellationToken);
 
             if (account == null)

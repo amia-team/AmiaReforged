@@ -25,7 +25,7 @@ public class GetBalanceQueryHandler : IQueryHandler<GetBalanceQuery, int?>
             return null;
         }
 
-        Guid accountId = PersonaAccountId.From(query.PersonaId);
+        Guid accountId = PersonaAccountId.ForCoinhouse(query.PersonaId, query.Coinhouse);
         CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId, cancellationToken);
 
         if (account is null)

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 
 namespace AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 
@@ -18,19 +19,4 @@ public class CoinHouseAccountHolder
 
     public required Guid AccountId { get; set; }
     [ForeignKey(nameof(AccountId))] public CoinHouseAccount? Account { get; set; }
-}
-
-
-public enum HolderType
-{
-    Individual = 0,
-    Organization = 1,
-    Government = 2
-}
-
-public enum HolderRole
-{
-    Owner = 0,
-    Signatory = 1,
-    Viewer = 2
 }

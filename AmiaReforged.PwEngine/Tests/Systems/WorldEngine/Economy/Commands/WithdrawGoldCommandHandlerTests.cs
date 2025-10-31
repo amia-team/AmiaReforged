@@ -59,7 +59,7 @@ public class WithdrawGoldCommandHandlerTests
 
         _account = new CoinhouseAccountDto
         {
-            Id = PersonaAccountId.From(_withdrawer),
+            Id = PersonaAccountId.ForCoinhouse(_withdrawer, _coinhouseTag),
             Debit = 1000,
             Credit = 0,
             CoinHouseId = _coinhouse.Id,

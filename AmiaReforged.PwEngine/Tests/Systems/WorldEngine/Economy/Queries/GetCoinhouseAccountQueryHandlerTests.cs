@@ -43,7 +43,7 @@ public class GetCoinhouseAccountQueryHandlerTests
 
         _accountDto = new CoinhouseAccountDto
         {
-            Id = PersonaAccountId.From(_persona),
+            Id = PersonaAccountId.ForCoinhouse(_persona, _coinhouseTag),
             Debit = 5000,
             Credit = 1200,
             CoinHouseId = _coinhouseDto.Id,

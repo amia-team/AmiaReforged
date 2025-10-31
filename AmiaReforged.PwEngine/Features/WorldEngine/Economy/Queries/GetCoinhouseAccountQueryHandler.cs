@@ -25,7 +25,7 @@ public sealed class GetCoinhouseAccountQueryHandler : IQueryHandler<GetCoinhouse
         GetCoinhouseAccountQuery query,
         CancellationToken cancellationToken = default)
     {
-        Guid accountId = PersonaAccountId.From(query.Persona);
+    Guid accountId = PersonaAccountId.ForCoinhouse(query.Persona, query.Coinhouse);
         CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId, cancellationToken);
 
         if (account is null)

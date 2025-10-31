@@ -44,7 +44,7 @@ public class GetBalanceQueryHandlerTests
 
         _accountDto = new CoinhouseAccountDto
         {
-            Id = PersonaAccountId.From(_persona),
+            Id = PersonaAccountId.ForCoinhouse(_persona, _coinhouse),
             Debit = 1000,
             Credit = 0,
             CoinHouseId = _coinhouseDto.Id,

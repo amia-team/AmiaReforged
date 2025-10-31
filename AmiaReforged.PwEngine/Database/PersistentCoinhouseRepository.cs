@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
@@ -68,9 +71,25 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
         else
         {
             existing.UpdateFrom(account);
+            SyncAccountHolders(ctx, existing, account.Holders);
         }
 
         await ctx.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<CoinhouseAccountDto>> GetAccountsForHolderAsync(
+        Guid holderId,
+        CancellationToken cancellationToken = default)
+    {
+        await using PwEngineContext ctx = factory.CreateDbContext();
+
+        List<CoinHouseAccount> accounts = await ctx.CoinHouseAccounts
+            .Include(x => x.CoinHouse)
+            .Include(x => x.AccountHolders)
+            .Where(x => x.AccountHolders != null && x.AccountHolders.Any(h => h.HolderId == holderId))
+            .ToListAsync(cancellationToken);
+
+        return accounts.Select(static a => a.ToDto()).ToList();
     }
 
     public CoinHouse? GetSettlementCoinhouse(SettlementId settlementId)
@@ -115,5 +134,52 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
         using PwEngineContext ctx = factory.CreateDbContext();
 
         return ctx.CoinHouses.Any(x => x.Settlement == settlementId);
+    }
+
+    private static void SyncAccountHolders(
+        PwEngineContext ctx,
+        CoinHouseAccount entity,
+        IReadOnlyList<CoinhouseAccountHolderDto> holderDtos)
+    {
+        entity.AccountHolders ??= new List<CoinHouseAccountHolder>();
+
+        Dictionary<long, CoinHouseAccountHolder> existingById = entity.AccountHolders
+            .Where(h => h.Id != 0)
+            .ToDictionary(h => h.Id);
+
+        HashSet<long> retainedIds = new();
+
+        foreach (CoinhouseAccountHolderDto holderDto in holderDtos)
+        {
+            if (holderDto.Id is { } id && id != 0 && existingById.TryGetValue(id, out CoinHouseAccountHolder existing))
+            {
+                existing.FirstName = holderDto.FirstName;
+                existing.LastName = holderDto.LastName;
+                existing.Type = holderDto.Type;
+                existing.Role = holderDto.Role;
+                existing.HolderId = holderDto.HolderId;
+                retainedIds.Add(id);
+            }
+            else
+            {
+                CoinHouseAccountHolder newHolder = holderDto.ToEntity(entity.Id);
+                entity.AccountHolders.Add(newHolder);
+
+                if (newHolder.Id != 0)
+                {
+                    retainedIds.Add(newHolder.Id);
+                }
+            }
+        }
+
+        List<CoinHouseAccountHolder> toRemove = entity.AccountHolders
+            .Where(h => h.Id != 0 && !retainedIds.Contains(h.Id))
+            .ToList();
+
+        foreach (CoinHouseAccountHolder holder in toRemove)
+        {
+            entity.AccountHolders.Remove(holder);
+            ctx.CoinHouseAccountHolders.Remove(holder);
+        }
     }
 }
