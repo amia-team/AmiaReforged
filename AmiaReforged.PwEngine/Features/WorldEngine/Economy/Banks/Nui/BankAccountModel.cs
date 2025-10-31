@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
@@ -19,10 +20,14 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Nui;
 public sealed class BankAccountModel
 {
     private readonly IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?> _accountQuery;
+    private readonly IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> _eligibilityQuery;
 
-    public BankAccountModel(IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?> accountQuery)
+    public BankAccountModel(
+        IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?> accountQuery,
+        IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> eligibilityQuery)
     {
         _accountQuery = accountQuery;
+        _eligibilityQuery = eligibilityQuery;
     }
 
     public string BankTitle { get; private set; } = "Coinhouse Banking";
@@ -40,6 +45,16 @@ public sealed class BankAccountModel
     public List<string> PendingDepositItems { get; } = new();
     public List<NuiComboEntry> DepositModeOptions { get; } = new();
     public List<NuiComboEntry> WithdrawModeOptions { get; } = new();
+    public List<NuiComboEntry> OrganizationOptions { get; } = new();
+    public List<OrganizationAccountEligibility> OrganizationEligibility { get; } = new();
+
+    public CoinhouseAccountEligibilityResult? Eligibility { get; private set; }
+    public string EligibilitySummary { get; private set; } = string.Empty;
+    public string PersonalEligibilityStatus { get; private set; } = string.Empty;
+    public string OrganizationEligibilityStatus { get; private set; } = string.Empty;
+    public int SelectedOrganizationOption { get; set; }
+    public bool CanOpenPersonalAccount => Eligibility?.CanOpenPersonalAccount ?? false;
+    public bool HasOrganizationChoice => OrganizationEligibility.Count > 0;
 
     public int SelectedDepositMode { get; set; }
     public int SelectedWithdrawMode { get; set; }
@@ -72,9 +87,16 @@ public sealed class BankAccountModel
         PendingDepositItems.Clear();
         DepositModeOptions.Clear();
         WithdrawModeOptions.Clear();
+        OrganizationOptions.Clear();
+        OrganizationEligibility.Clear();
+        Eligibility = null;
+        EligibilitySummary = string.Empty;
+        PersonalEligibilityStatus = string.Empty;
+        OrganizationEligibilityStatus = string.Empty;
+        SelectedOrganizationOption = 0;
 
-    GetCoinhouseAccountQuery query = new(Persona, Coinhouse);
-    CoinhouseAccountQueryResult? result = await _accountQuery.HandleAsync(query, cancellationToken);
+        GetCoinhouseAccountQuery query = new(Persona, Coinhouse);
+        CoinhouseAccountQueryResult? result = await _accountQuery.HandleAsync(query, cancellationToken);
 
         AccountExists = result?.AccountExists ?? false;
         AccountSummary = result?.Account;
@@ -86,6 +108,8 @@ public sealed class BankAccountModel
 
             AccountEntries.Add("No active account");
             HoldingEntries.Add("Open a treasury to begin banking.");
+
+            await LoadEligibilityAsync(cancellationToken);
 
             SeedDefaultCombos();
             EnsureInventoryPlaceholder();
@@ -114,6 +138,74 @@ public sealed class BankAccountModel
 
         SeedDefaultCombos();
         EnsureInventoryPlaceholder();
+    }
+
+    private async Task LoadEligibilityAsync(CancellationToken cancellationToken)
+    {
+        GetCoinhouseAccountEligibilityQuery eligibilityQuery = new(Persona, Coinhouse);
+        CoinhouseAccountEligibilityResult eligibility =
+            await _eligibilityQuery.HandleAsync(eligibilityQuery, cancellationToken);
+
+        Eligibility = eligibility;
+
+        if (!eligibility.CoinhouseExists)
+        {
+            EligibilitySummary = eligibility.CoinhouseError ?? "The selected coinhouse is unavailable.";
+            PersonalEligibilityStatus = "Personal accounts cannot be opened right now.";
+            OrganizationEligibilityStatus = string.Empty;
+            OrganizationOptions.Add(new NuiComboEntry("No organizations available", 0));
+            return;
+        }
+
+        EligibilitySummary = "You do not yet have an account at this coinhouse.";
+
+        PersonalEligibilityStatus = eligibility.CanOpenPersonalAccount
+            ? "You are eligible to open a personal account."
+            : eligibility.PersonalAccountBlockedReason ?? "Personal account access is currently blocked.";
+
+        if (eligibility.Organizations.Count == 0)
+        {
+            OrganizationEligibilityStatus = "You do not lead any organizations that can open an account here.";
+            OrganizationOptions.Add(new NuiComboEntry("No organizations available", 0));
+            return;
+        }
+
+        OrganizationEligibilityStatus = "Select an organization to open a shared account.";
+
+        OrganizationEligibility.AddRange(eligibility.Organizations);
+
+        for (int index = 0; index < OrganizationEligibility.Count; index++)
+        {
+            OrganizationAccountEligibility option = OrganizationEligibility[index];
+            string label = option.CanOpen
+                ? option.OrganizationName
+                : option.AlreadyHasAccount
+                    ? $"{option.OrganizationName} (already has account)"
+                    : $"{option.OrganizationName} (blocked)";
+
+            OrganizationOptions.Add(new NuiComboEntry(label, index));
+        }
+
+        SelectedOrganizationOption = OrganizationEligibility.FindIndex(o => o.CanOpen);
+        if (SelectedOrganizationOption < 0)
+        {
+            SelectedOrganizationOption = 0;
+        }
+    }
+
+    public OrganizationAccountEligibility? GetOrganizationSelection(int selection)
+    {
+        if (OrganizationEligibility.Count == 0)
+        {
+            return null;
+        }
+
+        if (selection < 0 || selection >= OrganizationEligibility.Count)
+        {
+            return null;
+        }
+
+        return OrganizationEligibility[selection];
     }
 
     private static string FormatCurrency(int amount)

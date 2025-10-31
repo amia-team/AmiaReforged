@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -36,6 +40,11 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     public readonly NuiBind<string> InventoryItemLabels = new("bank_inventory_item_labels");
     public readonly NuiBind<int> PendingDepositCount = new("bank_pending_deposit_count");
     public readonly NuiBind<string> PendingDepositLabels = new("bank_pending_deposit_labels");
+    public readonly NuiBind<string> EligibilitySummary = new("bank_eligibility_summary");
+    public readonly NuiBind<string> PersonalEligibilityStatus = new("bank_personal_eligibility_status");
+    public readonly NuiBind<string> OrganizationEligibilityStatus = new("bank_organization_eligibility_status");
+    public readonly NuiBind<List<NuiComboEntry>> OrganizationAccountEntries = new("bank_org_account_entries");
+    public readonly NuiBind<int> OrganizationAccountSelection = new("bank_org_account_selection");
 
     public NuiButton DepositButton = null!;
     public NuiButton WithdrawButton = null!;
@@ -46,6 +55,8 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     public NuiButton DoneButton = null!;
     public NuiButton CancelButton = null!;
     public NuiButton HelpButton = null!;
+    public NuiButton OpenPersonalAccountButton = null!;
+    public NuiButton OpenOrganizationAccountButton = null!;
 
     public BankWindowView(NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -100,6 +111,8 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
             Children =
             [
                 BuildHeader(),
+                new NuiSpacer { Height = 4f },
+                BuildProvisioningSection(),
                 new NuiSpacer { Height = 6f },
                 BuildControlsRow(),
                 new NuiSpacer { Height = 4f },
@@ -112,6 +125,70 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
         };
 
         return root;
+    }
+
+    private NuiElement BuildProvisioningSection()
+    {
+        return new NuiColumn
+        {
+            Children =
+            [
+                new NuiLabel(EligibilitySummary)
+                {
+                    Height = 22f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle
+                },
+                new NuiRow
+                {
+                    Height = 36f,
+                    Children =
+                    [
+                        new NuiButton("Open Personal Account")
+                        {
+                            Id = "bank_btn_open_personal",
+                            Width = 200f,
+                            Height = 32f
+                        }.Assign(out OpenPersonalAccountButton),
+                        new NuiSpacer { Width = 12f },
+                        new NuiLabel(PersonalEligibilityStatus)
+                        {
+                            Width = 360f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle
+                        }
+                    ]
+                },
+                new NuiSpacer { Height = 2f },
+                new NuiRow
+                {
+                    Height = 36f,
+                    Children =
+                    [
+                        new NuiCombo
+                        {
+                            Id = "bank_org_account_combo",
+                            Width = 260f,
+                            Entries = OrganizationAccountEntries,
+                            Selected = OrganizationAccountSelection
+                        },
+                        new NuiSpacer { Width = 12f },
+                        new NuiButton("Open Organization Account")
+                        {
+                            Id = "bank_btn_open_org",
+                            Width = 220f,
+                            Height = 32f
+                        }.Assign(out OpenOrganizationAccountButton)
+                    ]
+                },
+                new NuiLabel(OrganizationEligibilityStatus)
+                {
+                    Height = 22f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle
+                }
+            ]
+        };
     }
 
     private NuiElement BuildHeader()
@@ -380,8 +457,15 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
     [Inject]
     private Lazy<IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?>> AccountQueryHandler { get; init; }
         = null!;
+    [Inject]
+    private Lazy<IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult>> EligibilityQueryHandler { get; init; }
+        = null!;
+    [Inject]
+    private Lazy<ICommandHandler<OpenCoinhouseAccountCommand>> OpenAccountCommandHandler { get; init; } = null!;
 
-    private BankAccountModel Model => _model ??= new BankAccountModel(AccountQueryHandler.Value);
+    private BankAccountModel Model => _model ??= new BankAccountModel(
+        AccountQueryHandler.Value,
+        EligibilityQueryHandler.Value);
 
     public override BankWindowView View { get; }
 
@@ -389,7 +473,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
 
     public override void InitBefore()
     {
-        _model ??= new BankAccountModel(AccountQueryHandler.Value);
+    _model ??= new BankAccountModel(AccountQueryHandler.Value, EligibilityQueryHandler.Value);
 
         _window = new NuiWindow(View.RootLayout(), _bankDisplayName)
         {
@@ -453,7 +537,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         if (!Model.AccountExists)
         {
             Token().Player.SendServerMessage(
-                message: "You do not yet have an account at this coinhouse. Speak with the banker to open one.",
+                message: "You do not yet have an account at this coinhouse. Use the controls above to open one.",
                 ColorConstants.Orange);
         }
     }
@@ -483,6 +567,36 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
 
         Token().SetBindValues(View.PendingDepositLabels, Model.PendingDepositItems);
         Token().SetBindValue(View.PendingDepositCount, Model.PendingDepositItems.Count);
+
+        string eligibilitySummary = Model.AccountExists
+            ? "You already have an active account at this coinhouse."
+            : Model.EligibilitySummary;
+
+        string personalStatus = Model.AccountExists
+            ? "Personal account is already open."
+            : Model.PersonalEligibilityStatus;
+
+        string organizationStatus = Model.AccountExists
+            ? "Shared account tools will become available after provisioning."
+            : Model.OrganizationEligibilityStatus;
+
+        Token().SetBindValue(View.EligibilitySummary, eligibilitySummary);
+        Token().SetBindValue(View.PersonalEligibilityStatus, personalStatus);
+        Token().SetBindValue(View.OrganizationEligibilityStatus, organizationStatus);
+
+        if (Model.AccountExists)
+        {
+            Token().SetBindValue(View.OrganizationAccountEntries, new List<NuiComboEntry>
+            {
+                new("Account already open", 0)
+            });
+            Token().SetBindValue(View.OrganizationAccountSelection, 0);
+        }
+        else
+        {
+            Token().SetBindValue(View.OrganizationAccountEntries, Model.OrganizationOptions);
+            Token().SetBindValue(View.OrganizationAccountSelection, Model.SelectedOrganizationOption);
+        }
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
@@ -494,6 +608,12 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
 
         switch (obj.ElementId)
         {
+            case "bank_btn_open_personal":
+                _ = HandleOpenPersonalAccountAsync();
+                break;
+            case "bank_btn_open_org":
+                _ = HandleOpenOrganizationAccountAsync();
+                break;
             case "bank_btn_deposit":
                 Token().Player.SendServerMessage("Deposit workflow is coming soon.", ColorConstants.White);
                 break;
@@ -531,5 +651,169 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
     public override void Close()
     {
         _token.Close();
+    }
+
+    private async Task HandleOpenPersonalAccountAsync()
+    {
+        if (Model.AccountExists)
+        {
+            Token().Player.SendServerMessage("An account already exists for this persona.", ColorConstants.White);
+            return;
+        }
+
+        if (!Model.CanOpenPersonalAccount)
+        {
+            string message = string.IsNullOrWhiteSpace(Model.PersonalEligibilityStatus)
+                ? "You cannot open a personal account right now."
+                : Model.PersonalEligibilityStatus;
+            Token().Player.SendServerMessage(message, ColorConstants.Orange);
+            return;
+        }
+
+        string? displayName = _player.LoginCreature?.Name?.Trim();
+
+        OpenCoinhouseAccountCommand command = new(
+            Model.Persona,
+            Model.Persona,
+            _coinhouseTag,
+            string.IsNullOrWhiteSpace(displayName) ? null : displayName);
+
+        CommandResult result;
+
+        try
+        {
+            result = await OpenAccountCommandHandler.Value.HandleAsync(command);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to open personal account for player {PlayerName} at coinhouse {Tag}",
+                _player.PlayerName, _coinhouseTag.Value);
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "The banker could not create your account due to an unexpected error.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        if (!result.Success)
+        {
+            Token().Player.SendServerMessage(
+                message: result.ErrorMessage ?? "Unable to open a personal account.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        Token().Player.SendServerMessage(
+            message: "Your personal coinhouse account has been opened.",
+            ColorConstants.White);
+
+        await ReloadModelAsync();
+    }
+
+    private async Task HandleOpenOrganizationAccountAsync()
+    {
+        if (Model.AccountExists)
+        {
+            Token().Player.SendServerMessage("An account is already active for this coinhouse.", ColorConstants.White);
+            return;
+        }
+
+        int selected = Token().GetBindValue(View.OrganizationAccountSelection);
+        Model.SelectedOrganizationOption = selected;
+
+        OrganizationAccountEligibility? option = Model.GetOrganizationSelection(selected);
+        if (option is null)
+        {
+            Token().Player.SendServerMessage(
+                message: "Select an organization before opening an account.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        if (!option.CanOpen)
+        {
+            string reason = option.BlockedReason ?? "That organization cannot open an account right now.";
+            Token().Player.SendServerMessage(reason, ColorConstants.Orange);
+            return;
+        }
+
+        PersonaId organizationPersona = PersonaId.FromOrganization(option.OrganizationId);
+
+        List<CoinhouseAccountHolderDto> additional = new();
+
+        if (Guid.TryParse(Model.Persona.Value, out Guid requestorGuid))
+        {
+            string? requestorLabel = _player.LoginCreature?.Name?.Trim();
+            string fallbackName = string.IsNullOrWhiteSpace(requestorLabel)
+                ? (_player.PlayerName ?? "Unknown Player")
+                : requestorLabel;
+            additional.Add(new CoinhouseAccountHolderDto
+            {
+                HolderId = requestorGuid,
+                Type = HolderType.Individual,
+                Role = HolderRole.Signatory,
+                FirstName = fallbackName,
+                LastName = string.Empty
+            });
+        }
+
+        OpenCoinhouseAccountCommand command = new(
+            Model.Persona,
+            organizationPersona,
+            _coinhouseTag,
+            option.OrganizationName,
+            additional);
+
+        CommandResult result;
+        try
+        {
+            result = await OpenAccountCommandHandler.Value.HandleAsync(command);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to open organization account {Organization} at coinhouse {Tag}",
+                option.OrganizationName, _coinhouseTag.Value);
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "The banker could not create the organization account due to an unexpected error.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        if (!result.Success)
+        {
+            Token().Player.SendServerMessage(
+                message: result.ErrorMessage ?? "Unable to open the organization account.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        Token().Player.SendServerMessage(
+            message: $"{option.OrganizationName} now maintains an account at this coinhouse.",
+            ColorConstants.White);
+
+        await ReloadModelAsync();
+    }
+
+    private async Task ReloadModelAsync()
+    {
+        try
+        {
+            await Model.LoadAsync();
+            await NwTask.SwitchToMainThread();
+            UpdateView();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to refresh bank window after provisioning for player {PlayerName} at {Tag}",
+                _player.PlayerName, _coinhouseTag.Value);
+            Token().Player.SendServerMessage(
+                message: "The bank window failed to refresh. Please close and reopen it.",
+                ColorConstants.Orange);
+        }
     }
 }
