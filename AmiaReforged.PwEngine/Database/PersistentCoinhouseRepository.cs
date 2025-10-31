@@ -29,6 +29,13 @@ public class PersistentCoinhouseRepository(PwContextFactory factory) : ICoinhous
         }
     }
 
+    public CoinHouse? GetCoinhouseByTag(CoinhouseTag tag)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        return ctx.CoinHouses.FirstOrDefault(x => x.Tag == tag);
+    }
+
     public async Task<CoinhouseAccountDto?> GetAccountForAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await using PwEngineContext ctx = factory.CreateDbContext();

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -45,7 +46,7 @@ public class RegionsCqrsTests
     public void SetUp()
     {
         _repository = new InMemoryRegionRepository();
-        _publishedEvents = new List<IDomainEvent>();
+        _publishedEvents = [];
         _eventBus = new TestEventBus(_publishedEvents);
 
         // Initialize command handlers
@@ -67,11 +68,11 @@ public class RegionsCqrsTests
     public async Task RegisterRegion_WithValidData_ShouldSucceed()
     {
         // Given
-        List<AreaDefinition> areas = new()
-        {
+        List<AreaDefinition> areas =
+        [
             CreateAreaDefinition("test_area_1", SettlementId.Parse(1)),
             CreateAreaDefinition("test_area_2", SettlementId.Parse(2))
-        };
+        ];
 
         RegisterRegionCommand command = new(
             new RegionTag(TestRegionTag),
@@ -113,7 +114,7 @@ public class RegionsCqrsTests
         RegisterRegionCommand command = new(
             new RegionTag(TestRegionTag),
             "",
-            new List<AreaDefinition>());
+            []);
 
         // When
         CommandResult result = await _registerHandler.HandleAsync(command, CancellationToken.None);
@@ -131,7 +132,7 @@ public class RegionsCqrsTests
         RegisterRegionCommand command = new(
             new RegionTag(TestRegionTag),
             TestRegionName,
-            new List<AreaDefinition>());
+            []);
 
         // When
         CommandResult result = await _registerHandler.HandleAsync(command, CancellationToken.None);
@@ -146,10 +147,7 @@ public class RegionsCqrsTests
     public async Task RegisterRegion_WithDuplicateTag_ShouldFail()
     {
         // Given - first region registered successfully
-        List<AreaDefinition> areas = new()
-        {
-            CreateAreaDefinition(TestAreaResRef)
-        };
+        List<AreaDefinition> areas = [CreateAreaDefinition(TestAreaResRef)];
 
         RegisterRegionCommand command1 = new(
             new RegionTag(TestRegionTag),
@@ -378,7 +376,7 @@ public class RegionsCqrsTests
     public async Task GetRegionBySettlement_WithExistingSettlement_ShouldReturnRegion()
     {
         // Given - region with settlements
-        List<SettlementId> settlements = new() { SettlementId.Parse(1), SettlementId.Parse(2) };
+        List<SettlementId> settlements = [SettlementId.Parse(1), SettlementId.Parse(2)];
         await RegisterTestRegion(settlements: settlements);
 
         // When - querying by settlement
@@ -408,7 +406,7 @@ public class RegionsCqrsTests
     public async Task GetSettlementsForRegion_WithExistingRegion_ShouldReturnSettlements()
     {
         // Given - region with settlements
-        List<SettlementId> settlements = new() { SettlementId.Parse(1), SettlementId.Parse(2), SettlementId.Parse(3) };
+        List<SettlementId> settlements = [SettlementId.Parse(1), SettlementId.Parse(2), SettlementId.Parse(3)];
         await RegisterTestRegion(settlements: settlements);
 
         // When - querying settlements
@@ -445,17 +443,14 @@ public class RegionsCqrsTests
         List<SettlementId>? settlements = null,
         List<AreaDefinition>? additionalAreas = null)
     {
-        List<AreaDefinition> areas = new()
-        {
-            CreateAreaDefinition($"{tag}_base")
-        };
+        List<AreaDefinition> areas = [CreateAreaDefinition(BuildResRef(tag))];
 
         if (settlements is { Count: > 0 })
         {
             int index = 0;
             foreach (SettlementId settlement in settlements)
             {
-                areas.Add(CreateAreaDefinition($"{tag}_settlement_{settlement.Value}_{index++}", settlement));
+                areas.Add(CreateAreaDefinition(BuildResRef(tag, settlement.Value, index++), settlement));
             }
         }
 
@@ -476,10 +471,39 @@ public class RegionsCqrsTests
     {
         return new AreaDefinition(
             new AreaTag(resRef),
-            new List<string> { "wilderness" },
+            ["wilderness"],
             new EnvironmentData(Climate.Temperate, EconomyQuality.Average, new QualityRange()),
             pois,
             settlement);
+    }
+
+    private static string BuildResRef(string tag, int? settlement = null, int? index = null)
+    {
+        string alphanumeric = new(tag.Where(char.IsLetterOrDigit).ToArray());
+        if (string.IsNullOrEmpty(alphanumeric))
+        {
+            alphanumeric = "region";
+        }
+
+        string prefix = alphanumeric.Length > 8 ? alphanumeric[..8] : alphanumeric;
+        string suffix;
+
+        if (settlement.HasValue)
+        {
+            int lastFour = Math.Abs(settlement.Value) % 10_000;
+            suffix = $"s{lastFour:0000}";
+            if (index.HasValue)
+            {
+                suffix += index.Value % 10;
+            }
+        }
+        else
+        {
+            suffix = "base";
+        }
+
+        string candidate = $"{prefix}_{suffix}".ToLowerInvariant();
+        return candidate.Length <= 16 ? candidate : candidate[..16];
     }
 
     /// <summary>

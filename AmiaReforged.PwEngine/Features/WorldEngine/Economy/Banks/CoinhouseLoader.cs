@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.Services;
 
@@ -10,9 +14,15 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks;
 public class CoinhouseLoader(ICoinhouseRepository coinhouses, IRegionRepository regions) : IDefinitionLoader
 {
     private readonly List<FileLoadResult> _failures = new();
+    private readonly HashSet<int> _seenSettlements = new();
+    private readonly HashSet<string> _seenTags = new(StringComparer.OrdinalIgnoreCase);
 
     public void Load()
     {
+        _failures.Clear();
+        _seenSettlements.Clear();
+        _seenTags.Clear();
+
         string? resourcePath = Environment.GetEnvironmentVariable("RESOURCE_PATH");
         if (string.IsNullOrEmpty(resourcePath))
         {
@@ -29,6 +39,7 @@ public class CoinhouseLoader(ICoinhouseRepository coinhouses, IRegionRepository 
         }
 
         string[] jsonFiles = Directory.GetFiles(regionDir, "*.json", SearchOption.AllDirectories);
+        Array.Sort(jsonFiles, StringComparer.OrdinalIgnoreCase);
 
 
         foreach (string file in jsonFiles)
@@ -47,22 +58,10 @@ public class CoinhouseLoader(ICoinhouseRepository coinhouses, IRegionRepository 
                     continue;
                 }
 
-                if (!TryValidate(definition, out string? error))
+                if (!TryProcessDefinition(definition, fileName))
                 {
-                    _failures.Add(new FileLoadResult(ResultType.Fail, error, fileName));
                     continue;
                 }
-
-                // Strong types are created from JSON primitives and validated
-                CoinhouseTag coinhouseTag = new CoinhouseTag(definition.Tag);
-                SettlementId settlementId = SettlementId.Parse(definition.Settlement);
-
-                coinhouses.AddNewCoinhouse(new CoinHouse
-                {
-                    Tag = coinhouseTag,  // Implicit conversion to string
-                    Settlement = settlementId,  // Implicit conversion to int
-                    EngineId = Guid.NewGuid()
-                });
             }
             catch (Exception ex)
             {
@@ -71,9 +70,8 @@ public class CoinhouseLoader(ICoinhouseRepository coinhouses, IRegionRepository 
         }
     }
 
-    private bool TryValidate(CoinhouseDefinition definition, out string? error)
+    private bool TryProcessDefinition(CoinhouseDefinition definition, string fileName)
     {
-        // Validate and create strong types
         SettlementId settlementId;
         CoinhouseTag coinhouseTag;
 
@@ -84,29 +82,69 @@ public class CoinhouseLoader(ICoinhouseRepository coinhouses, IRegionRepository 
         }
         catch (ArgumentException ex)
         {
-            error = ex.Message;
+            _failures.Add(new FileLoadResult(ResultType.Fail, ex.Message, fileName));
             return false;
         }
 
-        if (coinhouses.SettlementHasCoinhouse(settlementId))
+        if (!_seenSettlements.Add(settlementId.Value))
         {
-            error = "Settlement already has a coinhouse.";
+            _failures.Add(new FileLoadResult(ResultType.Fail,
+                $"Duplicate coinhouse settlement '{settlementId.Value}' detected in definitions.", fileName));
             return false;
         }
 
-        if (coinhouses.TagExists(coinhouseTag))
+        if (!_seenTags.Add(coinhouseTag.Value))
         {
-            error = "Tag already associated with a coinhouse.";
+            _failures.Add(new FileLoadResult(ResultType.Fail,
+                $"Duplicate coinhouse tag '{coinhouseTag.Value}' detected in definitions.", fileName));
             return false;
         }
 
         if (!regions.TryGetRegionBySettlement(settlementId, out _))
         {
-            error = "Settlement is not defined in any region.";
+            _failures.Add(new FileLoadResult(ResultType.Fail,
+                $"Settlement {settlementId.Value} is not defined in any region.", fileName));
             return false;
         }
 
-        error = "";
+        CoinHouse? existingForSettlement = coinhouses.GetSettlementCoinhouse(settlementId);
+        if (existingForSettlement is not null)
+        {
+            if (!existingForSettlement.Tag.Equals(coinhouseTag.Value, StringComparison.OrdinalIgnoreCase))
+            {
+                _failures.Add(new FileLoadResult(ResultType.Fail,
+                    $"Settlement {settlementId.Value} already mapped to coinhouse '{existingForSettlement.Tag}'.",
+                    fileName));
+                return false;
+            }
+
+            // Already registered with matching mapping; nothing to add.
+            return true;
+        }
+
+        CoinHouse? existingForTag = coinhouses.GetCoinhouseByTag(coinhouseTag);
+        if (existingForTag is not null)
+        {
+            if (existingForTag.Settlement != settlementId.Value)
+            {
+                _failures.Add(new FileLoadResult(ResultType.Fail,
+                    $"Coinhouse tag '{coinhouseTag.Value}' already assigned to settlement {existingForTag.Settlement}.",
+                    fileName));
+                return false;
+            }
+
+            return true;
+        }
+
+        CoinHouse newCoinhouse = new()
+        {
+            Tag = coinhouseTag,
+            Settlement = settlementId,
+            EngineId = Guid.NewGuid(),
+            PersonaIdString = PersonaId.FromCoinhouse(coinhouseTag).ToString()
+        };
+
+        coinhouses.AddNewCoinhouse(newCoinhouse);
         return true;
     }
 

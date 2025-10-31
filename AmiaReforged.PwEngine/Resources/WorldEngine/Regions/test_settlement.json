@@ -1,10 +1,6 @@
 {
   "Tag": "test_settlement",
   "Name": "Test Settlement Region",
-  "Settlements": [
-    100,
-    205
-  ],
   "Areas": [
     {
       "ResRef": "zworldttemprate",
@@ -40,6 +36,29 @@
           "ResRef": "zwrld_tsts_bank",
           "Tag": "test_settlement_bank",
           "Name": "Bank of Tests",
+          "Type": "Bank"
+        }
+      ]
+    },
+    {
+      "ResRef": "zworldholdfast",
+      "DefinitionTags": [
+        "ore_vein_iron_rich"
+      ],
+      "LinkedSettlement": 205,
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "Average",
+        "MineralQualityRange": {
+          "Min": "Average",
+          "Max": "VeryGood"
+        }
+      },
+      "PlacesOfInterest": [
+        {
+          "ResRef": "zwrld_holdfast_bank",
+          "Tag": "holdfast_bank",
+          "Name": "Holdfast Coin Exchange",
           "PoiType": "Bank"
         }
       ]

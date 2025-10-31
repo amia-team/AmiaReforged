@@ -7,6 +7,7 @@ namespace AmiaReforged.PwEngine.Database;
 public interface ICoinhouseRepository
 {
     void AddNewCoinhouse(CoinHouse newCoinhouse);
+    CoinHouse? GetCoinhouseByTag(CoinhouseTag tag);
     Task<CoinhouseAccountDto?> GetAccountForAsync(Guid id, CancellationToken cancellationToken = default);
     Task SaveAccountAsync(CoinhouseAccountDto account, CancellationToken cancellationToken = default);
     Task<CoinhouseDto?> GetByTagAsync(CoinhouseTag tag, CancellationToken cancellationToken = default);

@@ -22,8 +22,8 @@ public readonly record struct AreaTag
         if (string.IsNullOrWhiteSpace(tag))
             throw new ArgumentException("Area tag cannot be empty", nameof(tag));
 
-        if (tag.Length > 100)
-            throw new ArgumentException("Area tag cannot exceed 100 characters", nameof(tag));
+        if (tag.Length > 16)
+            throw new ArgumentException("Area tag cannot exceed 16 characters", nameof(tag));
 
         return tag.Trim().ToLowerInvariant();
     }

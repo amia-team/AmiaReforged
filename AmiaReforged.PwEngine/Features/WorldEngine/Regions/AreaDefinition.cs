@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 
@@ -17,6 +18,7 @@ public record QualityRange(EconomyQuality Min = EconomyQuality.Average, EconomyQ
 
 public record PlaceOfInterest(string ResRef, string Tag, string Name, PoiType Type);
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum PoiType
 {
     Undefined,

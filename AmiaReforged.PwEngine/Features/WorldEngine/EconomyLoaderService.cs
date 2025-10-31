@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks;
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
@@ -17,11 +18,13 @@ public class EconomyLoaderService
     private readonly ItemDefinitionLoadingService _itemLoader;
     private readonly IndustryDefinitionLoadingService _industryLoader;
     private readonly RegionDefinitionLoadingService _regionLoader;
+    private readonly CoinhouseLoader _coinhouseLoader;
 
     public EconomyLoaderService(ResourceDefinitionLoadingService resourceLoader,
         ItemDefinitionLoadingService itemLoader,
         IndustryDefinitionLoadingService industryLoader,
         RegionDefinitionLoadingService regionLoader,
+        CoinhouseLoader coinhouseLoader,
         ResourceWatcherService resourceWatcherService)
     {
         string resourcePath = UtilPlugin.GetEnvironmentVariable("RESOURCE_PATH");
@@ -32,6 +35,7 @@ public class EconomyLoaderService
         _itemLoader = itemLoader;
         _industryLoader = industryLoader;
         _regionLoader = regionLoader;
+        _coinhouseLoader = coinhouseLoader;
 
         resourceWatcherService.FileSystemChanged += ReloadChanges;
     }
@@ -56,11 +60,13 @@ public class EconomyLoaderService
         _itemLoader.Load();
         _resourceLoader.Load();
         _regionLoader.Load();
+        _coinhouseLoader.Load();
 
         LogErrors(_industryLoader.Failures());
         LogErrors(_itemLoader.Failures());
         LogErrors(_resourceLoader.Failures());
         LogErrors(_regionLoader.Failures());
+        LogErrors(_coinhouseLoader.Failures());
     }
 
     private static void LogErrors(List<FileLoadResult> failures)
