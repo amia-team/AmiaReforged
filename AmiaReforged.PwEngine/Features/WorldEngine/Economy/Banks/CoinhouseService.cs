@@ -42,11 +42,19 @@ public class CoinhouseService
 
     private void OpenBankWindow(CreatureEvents.OnConversation obj)
     {
-        NwPlayer? player = obj.PlayerSpeaker;
-        if (player is null)
+        // Player is never speaking so we need to get nearest player controlled creature
+        NwCreature? playerCreature = obj.Creature
+            .GetNearestCreatures(CreatureTypeFilter.Perception(PerceptionType.Seen)).FirstOrDefault();
+        if (playerCreature is null)
         {
             return;
         }
+
+        if (!playerCreature.IsLoginPlayerCharacter(out NwPlayer? player))
+        {
+            return;
+        }
+
         NwArea? area = obj.Creature.Area;
         if (area is null)
         {
@@ -103,6 +111,7 @@ public class CoinhouseService
             return;
         }
 
+        player.SendServerMessage("Opening an account window");
         CoinhouseTag coinhouseTag = new(coinhouse.Tag);
         string displayName = ResolveDisplayName(bankPoi, coinhouse.Tag);
 
