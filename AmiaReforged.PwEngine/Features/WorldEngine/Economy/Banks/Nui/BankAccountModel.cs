@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Access;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -25,13 +26,16 @@ public sealed class BankAccountModel
 
     private readonly IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?> _accountQuery;
     private readonly IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> _eligibilityQuery;
+    private readonly IBankAccessEvaluator _accessEvaluator;
 
     public BankAccountModel(
         IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?> accountQuery,
-        IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> eligibilityQuery)
+        IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> eligibilityQuery,
+        IBankAccessEvaluator accessEvaluator)
     {
         _accountQuery = accountQuery;
         _eligibilityQuery = eligibilityQuery;
+        _accessEvaluator = accessEvaluator;
     }
 
     public string BankTitle { get; private set; } = "Coinhouse Banking";
@@ -42,6 +46,9 @@ public sealed class BankAccountModel
     public CoinhouseAccountSummary? AccountSummary { get; private set; }
     public int CurrentBalance { get; private set; }
     public DateTime? LastAccessedAt { get; private set; }
+    public IReadOnlyList<CoinhouseAccountHolderDto> AccountHolders { get; private set; } = Array.Empty<CoinhouseAccountHolderDto>();
+    public HolderRole? CurrentHolderRole { get; private set; }
+    public BankPermission Permissions { get; private set; } = BankPermission.None;
 
     public List<string> AccountEntries { get; } = new();
     public List<string> HoldingEntries { get; } = new();
@@ -65,6 +72,12 @@ public sealed class BankAccountModel
 
     public int SelectedDepositMode { get; set; }
     public int SelectedWithdrawMode { get; set; }
+
+    public bool CanView => Permissions.HasFlag(BankPermission.View);
+    public bool CanDeposit => Permissions.HasFlag(BankPermission.Deposit);
+    public bool CanWithdraw => Permissions.HasFlag(BankPermission.Withdraw);
+    public bool CanRequestWithdraw => Permissions.HasFlag(BankPermission.RequestWithdraw);
+    public bool CanIssueShares => Permissions.HasFlag(BankPermission.IssueShares);
 
     public string BalanceLabel => $"Current Balance: {FormatCurrency(CurrentBalance)}";
     public string LastAccessedDisplay => LastAccessedAt.HasValue
@@ -103,12 +116,16 @@ public sealed class BankAccountModel
         SelectedOrganizationOption = 0;
     PersonalOpeningDeposit = DefaultPersonalDeposit;
     OrganizationOpeningDeposit = DefaultOrganizationDeposit;
+        AccountHolders = Array.Empty<CoinhouseAccountHolderDto>();
+        CurrentHolderRole = null;
+        Permissions = BankPermission.None;
 
         GetCoinhouseAccountQuery query = new(Persona, Coinhouse);
         CoinhouseAccountQueryResult? result = await _accountQuery.HandleAsync(query, cancellationToken);
 
-        AccountExists = result?.AccountExists ?? false;
-        AccountSummary = result?.Account;
+    AccountExists = result?.AccountExists ?? false;
+    AccountSummary = result?.Account;
+    AccountHolders = result?.Holders ?? Array.Empty<CoinhouseAccountHolderDto>();
 
         if (!AccountExists || AccountSummary is null)
         {
@@ -122,6 +139,7 @@ public sealed class BankAccountModel
 
             SeedDefaultCombos();
             EnsureInventoryPlaceholder();
+            ApplyAccessProfile(BankAccessProfile.None);
             return;
         }
 
@@ -147,6 +165,8 @@ public sealed class BankAccountModel
 
         SeedDefaultCombos();
         EnsureInventoryPlaceholder();
+
+    ApplyAccessProfile(_accessEvaluator.Evaluate(Persona, AccountSummary!, AccountHolders));
     }
 
     private async Task LoadEligibilityAsync(CancellationToken cancellationToken)
@@ -261,5 +281,11 @@ public sealed class BankAccountModel
         {
             PendingDepositItems.Add("No pending transactions.");
         }
+    }
+
+    private void ApplyAccessProfile(BankAccessProfile profile)
+    {
+        Permissions = profile.Permissions;
+        CurrentHolderRole = profile.HolderRole;
     }
 }

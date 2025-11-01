@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -18,6 +20,7 @@ public sealed record CoinhouseAccountQueryResult
 {
     public required bool AccountExists { get; init; }
     public required CoinhouseAccountSummary? Account { get; init; }
+    public IReadOnlyList<CoinhouseAccountHolderDto> Holders { get; init; } = Array.Empty<CoinhouseAccountHolderDto>();
 }
 
 /// <summary>

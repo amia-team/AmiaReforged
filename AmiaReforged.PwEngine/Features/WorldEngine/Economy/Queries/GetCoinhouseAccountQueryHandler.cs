@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -25,25 +27,39 @@ public sealed class GetCoinhouseAccountQueryHandler : IQueryHandler<GetCoinhouse
         GetCoinhouseAccountQuery query,
         CancellationToken cancellationToken = default)
     {
-    Guid accountId = PersonaAccountId.ForCoinhouse(query.Persona, query.Coinhouse);
+        CoinhouseDto? coinhouse = await _coinhouses.GetByTagAsync(query.Coinhouse, cancellationToken);
+        if (coinhouse is null)
+        {
+            return null;
+        }
+
+        Guid accountId = PersonaAccountId.ForCoinhouse(query.Persona, query.Coinhouse);
         CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId, cancellationToken);
+
+        if (account is null && Guid.TryParse(query.Persona.Value, out Guid holderGuid))
+        {
+            IReadOnlyList<CoinhouseAccountDto>? accounts = await _coinhouses
+                .GetAccountsForHolderAsync(holderGuid, cancellationToken);
+
+            if (accounts is not null)
+            {
+                account = accounts.FirstOrDefault(a => a.CoinHouseId == coinhouse.Id);
+            }
+        }
 
         if (account is null)
         {
             return null;
         }
 
-        CoinhouseDto? coinhouse = account.Coinhouse ??
-            await _coinhouses.GetByIdAsync(account.CoinHouseId, cancellationToken);
-
-        if (coinhouse is null)
+        if (account.CoinHouseId != coinhouse.Id)
         {
             return null;
         }
 
-        if (!string.Equals(coinhouse.Tag.Value, query.Coinhouse.Value, StringComparison.OrdinalIgnoreCase))
+        if (account.Coinhouse is null)
         {
-            return null;
+            account = account with { Coinhouse = coinhouse };
         }
 
         CoinhouseAccountSummary summary = new()
@@ -59,7 +75,8 @@ public sealed class GetCoinhouseAccountQueryHandler : IQueryHandler<GetCoinhouse
         return new CoinhouseAccountQueryResult
         {
             AccountExists = true,
-            Account = summary
+            Account = summary,
+            Holders = account.Holders ?? Array.Empty<CoinhouseAccountHolderDto>()
         };
     }
 }

@@ -19,5 +19,8 @@ public enum HolderRole
 {
     Owner = 0,
     Signatory = 1,
-    Viewer = 2
+    Viewer = 2,
+    JointOwner = 3,
+    AuthorizedUser = 4,
+    Trustee = 5
 }

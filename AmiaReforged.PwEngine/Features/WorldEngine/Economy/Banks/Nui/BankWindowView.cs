@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Access;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Queries;
@@ -36,8 +38,10 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     public readonly NuiBind<string> LastAccessed = new("bank_last_accessed");
     public readonly NuiBind<List<NuiComboEntry>> DepositModeEntries = new("bank_deposit_mode_entries");
     public readonly NuiBind<int> DepositModeSelection = new("bank_deposit_mode_selection");
+    public readonly NuiBind<string> DepositAmountText = new("bank_deposit_amount_text");
     public readonly NuiBind<List<NuiComboEntry>> WithdrawModeEntries = new("bank_withdraw_mode_entries");
     public readonly NuiBind<int> WithdrawModeSelection = new("bank_withdraw_mode_selection");
+    public readonly NuiBind<string> WithdrawAmountText = new("bank_withdraw_amount_text");
     public readonly NuiBind<int> InventoryItemCount = new("bank_inventory_item_count");
     public readonly NuiBind<string> InventoryItemLabels = new("bank_inventory_item_labels");
     public readonly NuiBind<int> PendingDepositCount = new("bank_pending_deposit_count");
@@ -50,7 +54,6 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
 
     public NuiButton DepositButton = null!;
     public NuiButton WithdrawButton = null!;
-    public NuiButton TransferButton = null!;
     public NuiButton ConfirmDepositButton = null!;
     public NuiButton ViewHistoryButton = null!;
     public NuiButton CloseAccountButton = null!;
@@ -59,6 +62,9 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     public NuiButton HelpButton = null!;
     public NuiButton OpenPersonalAccountButton = null!;
     public NuiButton OpenOrganizationAccountButton = null!;
+
+    public NuiBind<bool> ShowPersonalAccountActions = new("bank_show_personal_actions");
+    public NuiBind<bool> IsOrganizationLeader = new("bank_is_org_leader");
 
     public BankWindowView(NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -137,6 +143,7 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
             [
                 new NuiLabel(EligibilitySummary)
                 {
+                    Visible = ShowPersonalAccountActions,
                     Height = 22f,
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Middle
@@ -144,6 +151,7 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                 new NuiRow
                 {
                     Height = 36f,
+                    Visible = ShowPersonalAccountActions,
                     Children =
                     [
                         new NuiButton("Open Personal Account")
@@ -165,6 +173,7 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                 new NuiRow
                 {
                     Height = 36f,
+                    Visible = IsOrganizationLeader,
                     Children =
                     [
                         new NuiCombo
@@ -178,6 +187,7 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                         new NuiButton("Open Organization Account")
                         {
                             Id = "bank_btn_open_org",
+                            Visible = IsOrganizationLeader,
                             Width = 220f,
                             Height = 32f
                         }.Assign(out OpenOrganizationAccountButton)
@@ -240,13 +250,7 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                     Id = "bank_btn_withdraw",
                     Width = 100f,
                     Height = 32f
-                }.Assign(out WithdrawButton),
-                new NuiButton("Transfer")
-                {
-                    Id = "bank_btn_transfer",
-                    Width = 100f,
-                    Height = 32f
-                }.Assign(out TransferButton)
+                }.Assign(out WithdrawButton)
             ]
         };
     }
@@ -313,6 +317,22 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                     Height = 36f,
                     Children =
                     [
+                        new NuiLabel("Coin Amount")
+                        {
+                            Width = 80f,
+                            VerticalAlign = NuiVAlign.Middle
+                        },
+                        new NuiTextEdit("", DepositAmountText, 9, false)
+                        {
+                            Width = 170f
+                        }
+                    ]
+                },
+                new NuiRow
+                {
+                    Height = 36f,
+                    Children =
+                    [
                         new NuiLabel("Withdraw")
                         {
                             Width = 80f,
@@ -324,6 +344,22 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                             Width = 170f,
                             Entries = WithdrawModeEntries,
                             Selected = WithdrawModeSelection
+                        }
+                    ]
+                },
+                new NuiRow
+                {
+                    Height = 36f,
+                    Children =
+                    [
+                        new NuiLabel("Coin Amount")
+                        {
+                            Width = 80f,
+                            VerticalAlign = NuiVAlign.Middle
+                        },
+                        new NuiTextEdit("", WithdrawAmountText, 9, false)
+                        {
+                            Width = 170f
                         }
                     ]
                 },
@@ -457,17 +493,9 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
     [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
 
     [Inject]
-    private Lazy<IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?>> AccountQueryHandler
-    {
-        get;
-        init;
-    }
-        = null!;
-
+    private Lazy<IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?>> AccountQueryHandler { get; init; } = null!;
     [Inject]
-    private Lazy<IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult>>
-        EligibilityQueryHandler { get; init; }
-        = null!;
+    private Lazy<IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult>> EligibilityQueryHandler { get; init; } = null!;
 
     [Inject]
     private Lazy<ICommandHandler<OpenCoinhouseAccountCommand>> OpenAccountCommandHandler { get; init; } = null!;
@@ -476,11 +504,18 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
     private Lazy<ICommandHandler<DepositGoldCommand>> DepositCommandHandler { get; init; } = null!;
 
     [Inject]
+    private Lazy<ICommandHandler<WithdrawGoldCommand>> WithdrawCommandHandler { get; init; } = null!;
+
+    [Inject]
+    private Lazy<IBankAccessEvaluator> BankAccessEvaluator { get; init; } = null!;
+
+    [Inject]
     private WindowDirector WindowDirector { get; init; } = null!;
 
     private BankAccountModel Model => _model ??= new BankAccountModel(
         AccountQueryHandler.Value,
-        EligibilityQueryHandler.Value);
+        EligibilityQueryHandler.Value,
+        BankAccessEvaluator.Value);
 
     public override BankWindowView View { get; }
 
@@ -488,7 +523,10 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
 
     public override void InitBefore()
     {
-        _model ??= new BankAccountModel(AccountQueryHandler.Value, EligibilityQueryHandler.Value);
+        _model ??= new BankAccountModel(
+            AccountQueryHandler.Value,
+            EligibilityQueryHandler.Value,
+            BankAccessEvaluator.Value);
 
         _window = new NuiWindow(View.RootLayout(), _bankDisplayName)
         {
@@ -548,6 +586,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         await NwTask.SwitchToMainThread();
 
         UpdateView();
+        ResetAmountInputs();
 
         if (!Model.AccountExists)
         {
@@ -599,6 +638,12 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         Token().SetBindValue(View.PersonalEligibilityStatus, personalStatus);
         Token().SetBindValue(View.OrganizationEligibilityStatus, organizationStatus);
 
+        bool showPersonalActions = !Model.AccountExists;
+        Token().SetBindValue(View.ShowPersonalAccountActions, showPersonalActions);
+
+    bool showOrganizationActions = Model.OrganizationEligibility.Any(option => !option.AlreadyHasAccount);
+        Token().SetBindValue(View.IsOrganizationLeader, showOrganizationActions);
+
         if (Model.AccountExists)
         {
             Token().SetBindValue(View.OrganizationAccountEntries, new List<NuiComboEntry>
@@ -630,13 +675,10 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
                 _ = HandleOpenOrganizationAccountAsync();
                 break;
             case "bank_btn_deposit":
-                Token().Player.SendServerMessage("Deposit workflow is coming soon.", ColorConstants.White);
+                _ = HandleDepositAsync();
                 break;
             case "bank_btn_withdraw":
-                Token().Player.SendServerMessage("Withdraw workflow is coming soon.", ColorConstants.White);
-                break;
-            case "bank_btn_transfer":
-                Token().Player.SendServerMessage("Transfer workflow is coming soon.", ColorConstants.White);
+                _ = HandleWithdrawAsync();
                 break;
             case "bank_btn_confirm_deposit":
                 Token().Player.SendServerMessage("Confirming deposits will be implemented in the next iteration.",
@@ -686,7 +728,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         }
 
         int deposit = Model.PersonalOpeningDeposit;
-        if (!await HasSufficientFundsAsync(deposit))
+        if (!await HasSufficientFundsAsync(deposit, "open this account"))
         {
             return;
         }
@@ -724,7 +766,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         {
             if (deposit > 0)
             {
-                goldDeducted = await TryWithdrawGoldAsync(deposit);
+                goldDeducted = await TryWithdrawGoldAsync(deposit, "open this account");
                 if (!goldDeducted)
                 {
                     return;
@@ -828,7 +870,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         }
     }
 
-    private async Task<bool> HasSufficientFundsAsync(int required)
+    private async Task<bool> HasSufficientFundsAsync(int required, string purpose)
     {
         if (required <= 0)
         {
@@ -841,7 +883,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         if (creature is null)
         {
             Token().Player.SendServerMessage(
-                message: "You must be possessing a character to open a coinhouse account.",
+                message: $"You must be possessing a character to {purpose}.",
                 ColorConstants.Orange);
             return false;
         }
@@ -852,7 +894,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         if (available < requiredGold)
         {
             Token().Player.SendServerMessage(
-                message: $"You need {FormatCurrency(required)} on hand to open this account.",
+                message: $"You need {FormatCurrency(required)} on hand to {purpose}.",
                 ColorConstants.Orange);
             return false;
         }
@@ -860,7 +902,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         return true;
     }
 
-    private async Task<bool> TryWithdrawGoldAsync(int amount)
+    private async Task<bool> TryWithdrawGoldAsync(int amount, string purpose)
     {
         if (amount <= 0)
         {
@@ -873,7 +915,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         if (creature is null)
         {
             Token().Player.SendServerMessage(
-                message: "You must be possessing a character to open a coinhouse account.",
+                message: $"You must be possessing a character to {purpose}.",
                 ColorConstants.Orange);
             return false;
         }
@@ -884,7 +926,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         if (available < requested)
         {
             Token().Player.SendServerMessage(
-                message: $"You need {FormatCurrency(amount)} on hand to open this account.",
+                message: $"You need {FormatCurrency(amount)} on hand to {purpose}.",
                 ColorConstants.Orange);
             return false;
         }
@@ -1001,6 +1043,211 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
         await ReloadModelAsync();
     }
 
+    private async Task HandleDepositAsync()
+    {
+        if (!Model.AccountExists)
+        {
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "You need an open account before the banker can accept coin.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        if (!Model.CanDeposit)
+        {
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "You are not authorized to deposit coin into this account.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        int selectedMode = Token().GetBindValue(View.DepositModeSelection);
+        Model.SelectedDepositMode = selectedMode;
+
+        if (selectedMode != 0)
+        {
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "For now the banker only accepts coins handed over at the counter.",
+                ColorConstants.White);
+            return;
+        }
+
+        string rawAmount = Token().GetBindValue(View.DepositAmountText) ?? string.Empty;
+        if (!TryParseAmount(rawAmount, out int amount, out string sanitized))
+        {
+            Token().SetBindValue(View.DepositAmountText, sanitized);
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "Tell the banker how many coins you wish to deposit.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        Token().SetBindValue(View.DepositAmountText, sanitized);
+
+        bool goldDeducted = false;
+        try
+        {
+            goldDeducted = await TryWithdrawGoldAsync(amount, "deposit into your coinhouse account");
+            if (!goldDeducted)
+            {
+                return;
+            }
+
+            CommandResult result;
+            try
+            {
+                DepositGoldCommand command = DepositGoldCommand.Create(
+                    Model.Persona,
+                    _coinhouseTag,
+                    amount,
+                    "Counter deposit");
+
+                result = await DepositCommandHandler.Value.HandleAsync(command);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to record deposit for player {PlayerName} at coinhouse {Tag}",
+                    _player.PlayerName, _coinhouseTag.Value);
+                result = CommandResult.Fail("The ledger could not be updated with your deposit.");
+            }
+
+            if (!result.Success)
+            {
+                if (goldDeducted)
+                {
+                    await RefundGoldAsync(amount);
+                }
+
+                await NwTask.SwitchToMainThread();
+                Token().Player.SendServerMessage(
+                    message: result.ErrorMessage ?? "The banker could not accept your deposit.",
+                    ColorConstants.Orange);
+                return;
+            }
+
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: $"Deposited {FormatCurrency(amount)} into your account.",
+                ColorConstants.White);
+
+            ResetAmountInputs();
+            await ReloadModelAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Unexpected failure while depositing for player {PlayerName} at coinhouse {Tag}",
+                _player.PlayerName, _coinhouseTag.Value);
+
+            if (goldDeducted)
+            {
+                await RefundGoldAsync(amount);
+            }
+
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "The banker fumbles the ledger. Your gold has been returned.",
+                ColorConstants.Orange);
+        }
+    }
+
+    private async Task HandleWithdrawAsync()
+    {
+        if (!Model.AccountExists)
+        {
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "There is no account to draw coin from yet.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        if (!Model.CanWithdraw)
+        {
+            await NwTask.SwitchToMainThread();
+            string message = Model.CanRequestWithdraw
+                ? "You may only request a withdrawal. Present your request to a banker."
+                : "You are not authorized to withdraw from this account.";
+
+            Token().Player.SendServerMessage(message, ColorConstants.Orange);
+            return;
+        }
+
+        int selectedMode = Token().GetBindValue(View.WithdrawModeSelection);
+        Model.SelectedWithdrawMode = selectedMode;
+
+        if (selectedMode != 0)
+        {
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "Withdrawals are presently paid out in coins at the counter.",
+                ColorConstants.White);
+            return;
+        }
+
+        string rawAmount = Token().GetBindValue(View.WithdrawAmountText) ?? string.Empty;
+        if (!TryParseAmount(rawAmount, out int amount, out string sanitized))
+        {
+            Token().SetBindValue(View.WithdrawAmountText, sanitized);
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "Let the banker know how many coins you require.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        Token().SetBindValue(View.WithdrawAmountText, sanitized);
+
+        if (Model.CurrentBalance < amount)
+        {
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: $"You only have {FormatCurrency(Model.CurrentBalance)} available to withdraw.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        CommandResult result;
+        try
+        {
+            WithdrawGoldCommand command = WithdrawGoldCommand.Create(
+                Model.Persona,
+                _coinhouseTag,
+                amount,
+                "Counter withdrawal");
+
+            result = await WithdrawCommandHandler.Value.HandleAsync(command);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to record withdrawal for player {PlayerName} at coinhouse {Tag}",
+                _player.PlayerName, _coinhouseTag.Value);
+            result = CommandResult.Fail("The ledger could not be updated with your withdrawal.");
+        }
+
+        if (!result.Success)
+        {
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: result.ErrorMessage ?? "The banker could not fulfill your withdrawal.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        await RefundGoldAsync(amount); // Reuse helper to credit coins to the player.
+
+        await NwTask.SwitchToMainThread();
+        Token().Player.SendServerMessage(
+            message: $"Withdrew {FormatCurrency(amount)} from your account.",
+            ColorConstants.White);
+
+        ResetAmountInputs();
+        await ReloadModelAsync();
+    }
+
     private async Task ReloadModelAsync()
     {
         try
@@ -1008,6 +1255,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
             await Model.LoadAsync();
             await NwTask.SwitchToMainThread();
             UpdateView();
+            ResetAmountInputs();
         }
         catch (Exception ex)
         {
@@ -1017,5 +1265,37 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
                 message: "The bank window failed to refresh. Please close and reopen it.",
                 ColorConstants.Orange);
         }
+    }
+
+    private void ResetAmountInputs()
+    {
+        Token().SetBindValue(View.DepositAmountText, string.Empty);
+        Token().SetBindValue(View.WithdrawAmountText, string.Empty);
+    }
+
+    private static bool TryParseAmount(string? raw, out int amount, out string sanitized)
+    {
+        string source = raw?.Trim() ?? string.Empty;
+        sanitized = new string(source.Where(char.IsDigit).ToArray());
+
+        if (sanitized.Length == 0)
+        {
+            amount = 0;
+            return false;
+        }
+
+        if (!int.TryParse(sanitized, NumberStyles.None, CultureInfo.InvariantCulture, out amount))
+        {
+            amount = 0;
+            return false;
+        }
+
+        if (amount <= 0)
+        {
+            amount = 0;
+            return false;
+        }
+
+        return true;
     }
 }
