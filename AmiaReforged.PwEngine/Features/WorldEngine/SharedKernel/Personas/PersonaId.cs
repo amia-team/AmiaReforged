@@ -46,6 +46,14 @@ public readonly record struct PersonaId
     public static PersonaId FromGovernment(GovernmentId govId) =>
         new(PersonaType.Government, govId.Value.ToString());
 
+    public static Guid ToGuid(PersonaId personaId)
+    {
+        string guidStr = personaId.Value.Split(':')[1];
+
+        return Guid.Parse(guidStr);
+
+    }
+
     /// <summary>
     /// Creates a PersonaId for a system process.
     /// </summary>

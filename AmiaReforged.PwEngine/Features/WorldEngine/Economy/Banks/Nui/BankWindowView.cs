@@ -20,6 +20,7 @@ using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Nui;
 
@@ -51,6 +52,9 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     public readonly NuiBind<string> OrganizationEligibilityStatus = new("bank_organization_eligibility_status");
     public readonly NuiBind<List<NuiComboEntry>> OrganizationAccountEntries = new("bank_org_account_entries");
     public readonly NuiBind<int> OrganizationAccountSelection = new("bank_org_account_selection");
+    public readonly NuiBind<List<NuiComboEntry>> ShareTypeEntries = new("bank_share_type_entries");
+    public readonly NuiBind<int> ShareTypeSelection = new("bank_share_type_selection");
+    public readonly NuiBind<string> ShareInstructions = new("bank_share_instructions");
 
     public NuiButton DepositButton = null!;
     public NuiButton WithdrawButton = null!;
@@ -62,9 +66,11 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     public NuiButton HelpButton = null!;
     public NuiButton OpenPersonalAccountButton = null!;
     public NuiButton OpenOrganizationAccountButton = null!;
+    public NuiButton IssueShareDocumentButton = null!;
 
     public NuiBind<bool> ShowPersonalAccountActions = new("bank_show_personal_actions");
     public NuiBind<bool> IsOrganizationLeader = new("bank_is_org_leader");
+    public NuiBind<bool> ShowShareTools = new("bank_show_share_tools");
 
     public BankWindowView(NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -364,6 +370,43 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                     ]
                 },
                 new NuiSpacer { Height = 8f },
+                new NuiLabel("Account Sharing")
+                {
+                    Height = 22f,
+                    Visible = ShowShareTools,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle
+                },
+                new NuiRow
+                {
+                    Height = 36f,
+                    Visible = ShowShareTools,
+                    Children =
+                    [
+                        new NuiCombo
+                        {
+                            Id = "bank_share_combo",
+                            Width = 170f,
+                            Entries = ShareTypeEntries,
+                            Selected = ShareTypeSelection
+                        },
+                        new NuiSpacer { Width = 12f },
+                        new NuiButton("Issue Share Document")
+                        {
+                            Id = "bank_btn_issue_share",
+                            Width = 180f,
+                            Height = 32f
+                        }.Assign(out IssueShareDocumentButton)
+                    ]
+                },
+                new NuiLabel(ShareInstructions)
+                {
+                    Visible = ShowShareTools,
+                    Height = 40f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Top
+                },
+                new NuiSpacer { Height = 8f },
                 new NuiLabel("Pending Transactions")
                 {
                     Height = 22f
@@ -471,6 +514,22 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
 public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
 {
     private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+    private const string ShareDocumentResRef = "bank_sharedoc";
+    private const string ShareDocumentFallbackResRef = "nw_it_mp_scroll001";
+
+    private static class ShareDocumentLocals
+    {
+        public const string AccountId = "bank_share_account_id";
+        public const string CoinhouseTag = "bank_share_coinhouse";
+        public const string ShareType = "bank_share_type";
+        public const string ShareTypeId = "bank_share_type_id";
+        public const string HolderRole = "bank_share_holder_role";
+        public const string HolderRoleId = "bank_share_holder_role_id";
+        public const string Issuer = "bank_share_issuer";
+        public const string DocumentId = "bank_share_document_id";
+        public const string IssuedAt = "bank_share_issued_at";
+        public const string BankName = "bank_share_bank_name";
+    }
 
     private readonly string _bankDisplayName;
     private readonly CoinhouseTag _coinhouseTag;
@@ -643,6 +702,10 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
 
     bool showOrganizationActions = Model.OrganizationEligibility.Any(option => !option.AlreadyHasAccount);
         Token().SetBindValue(View.IsOrganizationLeader, showOrganizationActions);
+        Token().SetBindValue(View.ShowShareTools, Model.ShouldShowShareTools);
+        Token().SetBindValue(View.ShareTypeEntries, Model.ShareTypeOptions);
+        Token().SetBindValue(View.ShareTypeSelection, Model.SelectedShareType);
+        Token().SetBindValue(View.ShareInstructions, Model.ShareInstructions);
 
         if (Model.AccountExists)
         {
@@ -691,6 +754,9 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
             case "bank_btn_close_account":
                 Token().Player.SendServerMessage("Account closure requires banker assistance.",
                     ColorConstants.White);
+                break;
+            case "bank_btn_issue_share":
+                _ = HandleIssueShareDocumentAsync();
                 break;
             case "bank_btn_done":
             case "bank_btn_cancel":
@@ -1041,6 +1107,149 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
             ColorConstants.White);
 
         await ReloadModelAsync();
+    }
+
+    private async Task HandleIssueShareDocumentAsync()
+    {
+        if (!Model.AccountExists)
+        {
+            Token().Player.SendServerMessage(
+                message: "Open an account before issuing share documents.",
+                ColorConstants.White);
+            return;
+        }
+
+        if (!Model.CanIssueShares)
+        {
+            Token().Player.SendServerMessage(
+                message: "You are not authorized to issue share documents for this account.",
+                ColorConstants.White);
+            return;
+        }
+
+        int selected = Token().GetBindValue(View.ShareTypeSelection);
+        Model.SelectedShareType = selected;
+
+        if (!Model.TryGetShareType(selected, out BankShareType shareType))
+        {
+            Model.SelectedShareType = (int)BankShareType.JointOwner;
+            Token().SetBindValue(View.ShareTypeSelection, Model.SelectedShareType);
+            Token().Player.SendServerMessage(
+                message: "Select a share role before issuing a document.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        if (_player.LoginCreature is null)
+        {
+            Token().Player.SendServerMessage(
+                message: "You must be possessing a character to issue share documents.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        Guid accountId = PersonaAccountId.ForCoinhouse(Model.Persona, Model.Coinhouse);
+        Guid documentId = Guid.NewGuid();
+        HolderRole holderRole = shareType.ToHolderRole();
+        DateTime issuedAt = DateTime.UtcNow;
+
+        try
+        {
+            await NwTask.SwitchToMainThread();
+
+            NwCreature? creature = _player.LoginCreature;
+            if (creature?.Location == null)
+            {
+                Token().Player.SendServerMessage(
+                    message: "Share documents cannot be issued right now. Please try again shortly.",
+                    ColorConstants.Orange);
+                return;
+            }
+
+            NwItem? document = NwItem.Create(ShareDocumentResRef, creature.Location);
+            if (document is null)
+            {
+                Log.Warn("Share document blueprint '{ResRef}' was not found. Falling back to '{Fallback}'.",
+                    ShareDocumentResRef, ShareDocumentFallbackResRef);
+                document = NwItem.Create(ShareDocumentFallbackResRef, creature.Location);
+            }
+
+            if (document is null)
+            {
+                Token().Player.SendServerMessage(
+                    message: "The bank cannot produce share documents at this time.",
+                    ColorConstants.Orange);
+                return;
+            }
+
+            string issuerName = creature.Name ?? _player.PlayerName ?? "Unknown Issuer";
+            string documentName = FormatShareDocumentName(shareType);
+
+            document.Tag = documentId.ToString("N");
+            document.Name = documentName;
+            document.Description = BuildShareDocumentDescription(
+                shareType,
+                accountId,
+                documentId,
+                issuerName,
+                issuedAt);
+            document.Identified = true;
+            document.StackSize = 1;
+
+            NWScript.SetLocalString(document, ShareDocumentLocals.AccountId, accountId.ToString());
+            NWScript.SetLocalString(document, ShareDocumentLocals.CoinhouseTag, Model.Coinhouse.Value ?? string.Empty);
+            NWScript.SetLocalString(document, ShareDocumentLocals.ShareType, shareType.ToString());
+            NWScript.SetLocalInt(document, ShareDocumentLocals.ShareTypeId, (int)shareType);
+            NWScript.SetLocalString(document, ShareDocumentLocals.HolderRole, holderRole.ToString());
+            NWScript.SetLocalInt(document, ShareDocumentLocals.HolderRoleId, (int)holderRole);
+            NWScript.SetLocalString(document, ShareDocumentLocals.Issuer, issuerName);
+            NWScript.SetLocalString(document, ShareDocumentLocals.DocumentId, documentId.ToString());
+            NWScript.SetLocalString(document, ShareDocumentLocals.IssuedAt, issuedAt.ToString("o", CultureInfo.InvariantCulture));
+            NWScript.SetLocalString(document, ShareDocumentLocals.BankName, Model.BankTitle);
+
+            creature.AcquireItem(document);
+
+            Token().Player.SendServerMessage(
+                message: $"A {documentName} has been added to your inventory.",
+                ColorConstants.White);
+
+            Log.Info("Issued bank share document {DocumentId} for account {AccountId} ({ShareType}) at coinhouse {Coinhouse}.",
+                documentId, accountId, shareType, Model.Coinhouse.Value ?? "(unknown)");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to create share document for account {AccountId} at coinhouse {Coinhouse}.",
+                accountId, Model.Coinhouse.Value ?? "(unknown)");
+
+            Token().Player.SendServerMessage(
+                message: "The banker failed to prepare the share document. Please try again later.",
+                ColorConstants.Orange);
+        }
+        finally
+        {
+            Token().SetBindValue(View.ShareTypeSelection, Model.SelectedShareType);
+            Token().SetBindValue(View.ShareInstructions, Model.ShareInstructions);
+        }
+    }
+
+    private string FormatShareDocumentName(BankShareType shareType)
+    {
+        string roleName = Model.ShareRoleName(shareType);
+        return $"{Model.BankTitle} Share ({roleName})";
+    }
+
+    private string BuildShareDocumentDescription(
+        BankShareType shareType,
+        Guid accountId,
+        Guid documentId,
+        string issuerName,
+        DateTime issuedAt)
+    {
+        string roleName = Model.ShareRoleName(shareType);
+        string summary = Model.ShareRoleSummary(shareType);
+        string coinhouseTag = Model.Coinhouse.Value ?? "Unspecified";
+
+        return $"{Model.BankTitle}\nShare Role: {roleName}\nScope: {summary}\nCoinhouse: {coinhouseTag}\nAccount Reference: {accountId}\nDocument: {documentId}\nIssuer: {issuerName}\nIssued (UTC): {issuedAt.ToString("g", CultureInfo.InvariantCulture)}\n\nPresent this parchment at the banker to register the share.";
     }
 
     private async Task HandleDepositAsync()
