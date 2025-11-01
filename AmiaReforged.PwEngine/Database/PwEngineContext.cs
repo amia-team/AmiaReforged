@@ -1,5 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Properties;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Database.Entities.PlayerHousing;
@@ -63,6 +64,8 @@ public class PwEngineContext : DbContext
     /// </summary>
     public DbSet<Transaction> Transactions { get; set; } = null!;
 
+    public DbSet<RentablePropertyRecord> RentableProperties { get; set; } = null!;
+
 
     public PwEngineContext()
     {
@@ -115,5 +118,6 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new OrganizationConfiguration());
         modelBuilder.ApplyConfiguration(new OrganizationMemberConfiguration());
         modelBuilder.ApplyConfiguration(new TransactionConfiguration());
+        modelBuilder.ApplyConfiguration(new RentablePropertyConfiguration());
     }
 }
