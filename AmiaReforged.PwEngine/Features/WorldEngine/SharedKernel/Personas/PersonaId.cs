@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json.Serialization;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -48,10 +49,13 @@ public readonly record struct PersonaId
 
     public static Guid ToGuid(PersonaId personaId)
     {
-        string guidStr = personaId.Value.Split(':')[1];
-
-        return Guid.Parse(guidStr);
-
+        return personaId.Type switch
+        {
+            PersonaType.Character or PersonaType.Organization or PersonaType.Government
+                => Guid.Parse(personaId.Value),
+            _ => throw new InvalidOperationException(
+                $"Persona '{personaId}' does not map to a GUID identifier.")
+        };
     }
 
     /// <summary>

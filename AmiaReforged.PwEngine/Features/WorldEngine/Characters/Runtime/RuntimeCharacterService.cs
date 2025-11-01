@@ -92,6 +92,11 @@ public class RuntimeCharacterService
         return _playerKeys[player];
     }
 
+    public bool TryGetPlayerKey(NwPlayer player, out Guid key)
+    {
+        return _playerKeys.TryGetValue(player, out key);
+    }
+
     public RuntimeCharacter? GetRuntimeCharacter(NwCreature creature)
     {
         return _repository.GetById(creature.UUID) as RuntimeCharacter;

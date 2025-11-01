@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
@@ -14,11 +16,9 @@ public class JoinCoinhouseAccountCommandHandler(IPersonaRepository personas, ICo
     public async Task<CommandResult> HandleAsync(JoinCoinhouseAccountCommand command,
         CancellationToken cancellationToken = default)
     {
-        bool isValid = GetIsValidCharacter(command.Requestor);
-
-        if (!isValid)
+        if (!TryResolveHolderCharacter(command.Requestor, out Guid holderId))
         {
-            return CommandResult.Fail("The requestor persona is not valid.");
+            return CommandResult.Fail("Only active characters may join coinhouse accounts.");
         }
 
         CoinhouseAccountDto? coinhouse = await coinhouses.GetAccountForAsync(command.AccountId, cancellationToken);
@@ -29,10 +29,14 @@ public class JoinCoinhouseAccountCommandHandler(IPersonaRepository personas, ICo
 
         List<CoinhouseAccountHolderDto> holders = coinhouse.Holders.ToList();
 
-        Guid id = PersonaId.ToGuid(command.Requestor);
+        if (holders.Any(h => h.HolderId == holderId))
+        {
+            return CommandResult.Fail("This character is already listed as an account holder.");
+        }
+
         CoinhouseAccountHolderDto newHolder = new()
         {
-            HolderId = id,
+            HolderId = holderId,
             FirstName = command.HolderFirstName,
             LastName = command.HolderLastName,
             Type = command.HolderType,
@@ -51,8 +55,20 @@ public class JoinCoinhouseAccountCommandHandler(IPersonaRepository personas, ICo
         return CommandResult.Ok();
     }
 
-    private bool GetIsValidCharacter(PersonaId commandRequestor)
+    private bool TryResolveHolderCharacter(PersonaId personaId, out Guid characterId)
     {
-        return personas.Exists(commandRequestor);
+        characterId = Guid.Empty;
+
+        if (personaId.Type != PersonaType.Character)
+            return false;
+
+        if (!Guid.TryParse(personaId.Value, out Guid parsed))
+            return false;
+
+        if (!personas.Exists(personaId))
+            return false;
+
+        characterId = parsed;
+        return true;
     }
 }
