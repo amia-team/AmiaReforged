@@ -37,6 +37,7 @@ public class PersistentRentablePropertyRepositoryTests
         PropertyId propertyId = PropertyId.New();
         PersonaId tenant = PersonaId.FromCharacter(CharacterId.New());
         PersonaId owner = PersonaId.FromSystem("CityOfCordor");
+    PersonaId resident = PersonaId.FromCharacter(CharacterId.New());
 
         RentablePropertyDefinition definition = new(
             propertyId,
@@ -68,6 +69,7 @@ public class PersistentRentablePropertyRepositoryTests
             PropertyOccupancyStatus.Rented,
             tenant,
             owner,
+            new[] { resident },
             agreement);
 
         await _repository.PersistRentalAsync(snapshot);
@@ -88,6 +90,7 @@ public class PersistentRentablePropertyRepositoryTests
             Assert.That(loaded.OccupancyStatus, Is.EqualTo(PropertyOccupancyStatus.Rented));
             Assert.That(loaded.ActiveRental, Is.Not.Null);
             Assert.That(loaded.ActiveRental!.PaymentMethod, Is.EqualTo(RentalPaymentMethod.CoinhouseAccount));
+            Assert.That(loaded.Residents, Contains.Item(resident));
         });
     }
 
@@ -119,6 +122,7 @@ public class PersistentRentablePropertyRepositoryTests
             PropertyOccupancyStatus.Rented,
             tenant,
             owner,
+            Residents: new[] { owner },
             new RentalAgreementSnapshot(
                 tenant,
                 DateOnly.FromDateTime(DateTime.UtcNow.Date),
@@ -134,6 +138,7 @@ public class PersistentRentablePropertyRepositoryTests
             PropertyOccupancyStatus.Vacant,
             CurrentTenant: null,
             CurrentOwner: owner,
+            Residents: rented.Residents,
             ActiveRental: null);
 
         await _repository.PersistRentalAsync(vacated);

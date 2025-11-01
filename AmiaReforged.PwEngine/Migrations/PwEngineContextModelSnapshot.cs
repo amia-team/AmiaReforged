@@ -176,6 +176,34 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.ToTable("rentable_properties", (string)null);
                 });
 
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Properties.RentablePropertyResidentRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Persona")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("persona");
+
+                    b.Property<Guid>("PropertyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("property_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PropertyId", "Persona")
+                        .IsUnique()
+                        .HasDatabaseName("rentable_property_residents_property_persona_idx");
+
+                    b.ToTable("rentable_property_residents", (string)null);
+                });
+
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.PlayerStall", b =>
                 {
                     b.Property<long>("Id")
@@ -870,6 +898,17 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Navigation("Character");
                 });
 
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Properties.RentablePropertyResidentRecord", b =>
+                {
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Properties.RentablePropertyRecord", "Property")
+                        .WithMany("Residents")
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Property");
+                });
+
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.PlayerStall", b =>
                 {
                     b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", "Account")
@@ -990,6 +1029,11 @@ namespace AmiaReforged.PwEngine.Migrations
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.PersistentIndustryMembership", b =>
                 {
                     b.Navigation("Knowledge");
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Properties.RentablePropertyRecord", b =>
+                {
+                    b.Navigation("Residents");
                 });
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.PlayerStall", b =>

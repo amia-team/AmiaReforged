@@ -65,6 +65,7 @@ public class PwEngineContext : DbContext
     public DbSet<Transaction> Transactions { get; set; } = null!;
 
     public DbSet<RentablePropertyRecord> RentableProperties { get; set; } = null!;
+    public DbSet<RentablePropertyResidentRecord> RentablePropertyResidents { get; set; } = null!;
 
 
     public PwEngineContext()
@@ -119,5 +120,6 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new OrganizationMemberConfiguration());
         modelBuilder.ApplyConfiguration(new TransactionConfiguration());
         modelBuilder.ApplyConfiguration(new RentablePropertyConfiguration());
+        modelBuilder.ApplyConfiguration(new RentablePropertyResidentConfiguration());
     }
 }

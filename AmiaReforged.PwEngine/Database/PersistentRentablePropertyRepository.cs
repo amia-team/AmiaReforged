@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.ValueObjects;
@@ -25,6 +28,7 @@ public sealed class PersistentRentablePropertyRepository(IDbContextFactory<PwEng
             Guid propertyGuid = id;
 
             RentablePropertyRecord? entity = await ctx.RentableProperties
+                .Include(p => p.Residents)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == propertyGuid, cancellationToken);
 
@@ -47,6 +51,7 @@ public sealed class PersistentRentablePropertyRepository(IDbContextFactory<PwEng
             Guid propertyGuid = snapshot.Definition.Id;
 
             RentablePropertyRecord? entity = await ctx.RentableProperties
+                .Include(p => p.Residents)
                 .FirstOrDefaultAsync(p => p.Id == propertyGuid, cancellationToken);
 
             if (entity is null)
@@ -56,6 +61,7 @@ public sealed class PersistentRentablePropertyRepository(IDbContextFactory<PwEng
                     Id = propertyGuid,
                     InternalName = snapshot.Definition.InternalName,
                     SettlementTag = snapshot.Definition.Settlement.Value,
+                    Residents = new List<RentablePropertyResidentRecord>()
                 };
                 ctx.RentableProperties.Add(entity);
             }
@@ -111,11 +117,16 @@ public sealed class PersistentRentablePropertyRepository(IDbContextFactory<PwEng
                 entity.LastOccupantSeenUtc);
         }
 
+        IReadOnlyCollection<PersonaId> residents = entity.Residents?
+            .Select(resident => PersonaId.Parse(resident.Persona))
+            .ToArray() ?? Array.Empty<PersonaId>();
+
         return new RentablePropertySnapshot(
             definition,
             entity.OccupancyStatus,
             currentTenant,
             currentOwner,
+            residents,
             activeRental);
     }
 
@@ -155,6 +166,8 @@ public sealed class PersistentRentablePropertyRepository(IDbContextFactory<PwEng
             entity.RentalPaymentMethod = null;
             entity.LastOccupantSeenUtc = null;
         }
+
+        SyncResidents(snapshot.Residents, entity);
     }
 
     private static PersonaId? ParsePersona(string? personaString)
@@ -163,5 +176,33 @@ public sealed class PersistentRentablePropertyRepository(IDbContextFactory<PwEng
             return null;
 
         return PersonaId.Parse(personaString);
+    }
+
+    private static void SyncResidents(
+        IReadOnlyCollection<PersonaId> residents,
+        RentablePropertyRecord entity)
+    {
+        entity.Residents ??= new List<RentablePropertyResidentRecord>();
+
+        HashSet<string> incoming = residents
+            .Select(resident => resident.ToString())
+            .ToHashSet(StringComparer.Ordinal);
+
+        entity.Residents.RemoveAll(existing => !incoming.Contains(existing.Persona));
+
+        foreach (string persona in incoming)
+        {
+            bool exists = entity.Residents.Any(r => string.Equals(r.Persona, persona, StringComparison.Ordinal));
+            if (exists)
+            {
+                continue;
+            }
+
+            entity.Residents.Add(new RentablePropertyResidentRecord
+            {
+                PropertyId = entity.Id,
+                Persona = persona
+            });
+        }
     }
 }

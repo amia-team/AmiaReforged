@@ -1,3 +1,4 @@
+using System;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
@@ -130,6 +131,7 @@ public class PropertyRentalPolicyTests
             status,
             CurrentTenant: null,
             CurrentOwner: null,
+            Residents: Array.Empty<PersonaId>(),
             ActiveRental: null);
     }
 }

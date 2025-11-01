@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
 
@@ -54,4 +55,6 @@ public class RentablePropertyRecord
     public RentalPaymentMethod? RentalPaymentMethod { get; set; }
 
     public DateTimeOffset? LastOccupantSeenUtc { get; set; }
+
+    public List<RentablePropertyResidentRecord> Residents { get; set; } = new();
 }

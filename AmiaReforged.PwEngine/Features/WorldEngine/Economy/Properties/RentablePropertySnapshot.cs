@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
@@ -10,4 +11,5 @@ public sealed record RentablePropertySnapshot(
     PropertyOccupancyStatus OccupancyStatus,
     PersonaId? CurrentTenant,
     PersonaId? CurrentOwner,
+    IReadOnlyCollection<PersonaId> Residents,
     RentalAgreementSnapshot? ActiveRental);

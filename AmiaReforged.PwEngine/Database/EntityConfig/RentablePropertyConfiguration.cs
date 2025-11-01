@@ -86,5 +86,14 @@ public class RentablePropertyConfiguration : IEntityTypeConfiguration<RentablePr
 
         builder.HasIndex(p => p.SettlementTag)
             .HasDatabaseName("rentable_properties_settlement_idx");
+
+        builder.HasMany(p => p.Residents)
+            .WithOne(r => r.Property)
+            .HasForeignKey(r => r.PropertyId)
+            .HasPrincipalKey(p => p.Id)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(p => p.Residents)
+            .AutoInclude();
     }
 }
