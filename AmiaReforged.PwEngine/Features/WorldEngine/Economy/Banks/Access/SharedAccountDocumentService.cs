@@ -16,14 +16,14 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Access;
 [ServiceBinding(typeof(SharedAccountDocumentService))]
 public class SharedAccountDocumentService
 {
-    private readonly JoinCoinhouseAccountCommandHandler _joinAccountHandler;
-    private readonly PersonaDescriptorService _personaDescriptors;
+    private readonly ICommandHandler<JoinCoinhouseAccountCommand> _joinAccountHandler;
+    private readonly IPersonaDescriptorService _personaDescriptors;
     private readonly RuntimeCharacterService _runtimeCharacterService;
     private const string ShareDocumentResRef = "bank_sharedoc";
 
 
-    public SharedAccountDocumentService(JoinCoinhouseAccountCommandHandler joinAccountHandler,
-        PersonaDescriptorService personaDescriptors, RuntimeCharacterService runtimeCharacterService)
+    public SharedAccountDocumentService(ICommandHandler<JoinCoinhouseAccountCommand> joinAccountHandler,
+        IPersonaDescriptorService personaDescriptors, RuntimeCharacterService runtimeCharacterService)
     {
         _joinAccountHandler = joinAccountHandler;
         _personaDescriptors = personaDescriptors;
