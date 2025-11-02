@@ -1,0 +1,33 @@
+{
+  "Tag": "cordor_furnishings",
+  "DisplayName": "Cordor Furnishings",
+  "ShopkeeperTag": "cordor_shopkeeper",
+  "Description": "A curated selection of municipal furniture for Cordor properties.",
+  "Restock": {
+    "MinMinutes": 45,
+    "MaxMinutes": 120
+  },
+  "Products": [
+    {
+      "ResRef": "furn_chair_oak",
+      "Price": 250,
+      "InitialStock": 2,
+      "MaxStock": 6,
+      "RestockAmount": 1
+    },
+    {
+      "ResRef": "furn_table_round",
+      "Price": 475,
+      "InitialStock": 1,
+      "MaxStock": 4,
+      "RestockAmount": 1
+    },
+    {
+      "ResRef": "furn_bed_simple",
+      "Price": 525,
+      "InitialStock": 1,
+      "MaxStock": 3,
+      "RestockAmount": 1
+    }
+  ]
+}
