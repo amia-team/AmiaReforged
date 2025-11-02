@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
@@ -19,7 +20,10 @@ public sealed class InterimRandomRestockStrategy : IShopRestockStrategy
             throw new ArgumentNullException(nameof(shop));
         }
 
-        ScheduleNextRestock(shop, DateTime.UtcNow);
+        if (!shop.ManualRestock)
+        {
+            ScheduleNextRestock(shop, DateTime.UtcNow);
+        }
     }
 
     public bool ShouldRestock(NpcShop shop, DateTime utcNow)
@@ -29,18 +33,29 @@ public sealed class InterimRandomRestockStrategy : IShopRestockStrategy
             throw new ArgumentNullException(nameof(shop));
         }
 
+        if (shop.ManualRestock)
+        {
+            return false;
+        }
+
         return utcNow >= shop.NextRestockUtc;
     }
 
-    public void Restock(NpcShop shop, DateTime utcNow)
+    public IReadOnlyList<(NpcShopProduct Product, int Added)> Restock(NpcShop shop, DateTime utcNow)
     {
         if (shop == null)
         {
             throw new ArgumentNullException(nameof(shop));
         }
 
-        shop.RestockAll();
+        if (shop.ManualRestock)
+        {
+            return Array.Empty<(NpcShopProduct, int)>();
+        }
+
+        IReadOnlyList<(NpcShopProduct Product, int Added)> restocked = shop.RestockAll();
         ScheduleNextRestock(shop, utcNow);
+        return restocked;
     }
 
     private static void ScheduleNextRestock(NpcShop shop, DateTime fromTime)

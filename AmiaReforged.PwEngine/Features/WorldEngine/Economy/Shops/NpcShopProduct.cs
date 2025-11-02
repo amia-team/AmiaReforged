@@ -5,11 +5,14 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 public sealed class NpcShopProduct
 {
     public NpcShopProduct(
+        long id,
         string resRef,
         int price,
-        int initialStock,
+        int currentStock,
         int maxStock,
         int restockAmount,
+        bool isPlayerManaged,
+        int sortOrder,
         IReadOnlyList<NpcShopLocalVariable>? localVariables = null,
         SimpleModelAppearance? appearance = null)
     {
@@ -23,43 +26,57 @@ public sealed class NpcShopProduct
             throw new ArgumentOutOfRangeException(nameof(price), price, "Price cannot be negative.");
         }
 
-        if (maxStock <= 0)
+        if (maxStock < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(maxStock), maxStock, "Max stock must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(maxStock), maxStock, "Max stock cannot be negative.");
         }
 
-        if (restockAmount <= 0)
+        if (restockAmount < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(restockAmount), restockAmount, "Restock amount must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(restockAmount), restockAmount, "Restock amount cannot be negative.");
         }
 
+        Id = id;
         ResRef = resRef;
         Price = price;
         MaxStock = maxStock;
         RestockAmount = restockAmount;
-        CurrentStock = Math.Clamp(initialStock, 0, maxStock);
+        IsPlayerManaged = isPlayerManaged;
+        SortOrder = sortOrder;
+        CurrentStock = Math.Clamp(currentStock, 0, maxStock == 0 ? int.MaxValue : maxStock);
         LocalVariables = localVariables ?? Array.Empty<NpcShopLocalVariable>();
         Appearance = appearance;
     }
 
+    public long Id { get; }
     public string ResRef { get; }
     public int Price { get; }
+    public int CurrentStock { get; private set; }
     public int MaxStock { get; }
     public int RestockAmount { get; }
-    public int CurrentStock { get; private set; }
+    public bool IsPlayerManaged { get; }
+    public int SortOrder { get; }
     public IReadOnlyList<NpcShopLocalVariable> LocalVariables { get; }
     public SimpleModelAppearance? Appearance { get; }
 
     public bool IsOutOfStock => CurrentStock <= 0;
 
-    public void Restock()
+    public int Restock()
     {
-        if (CurrentStock >= MaxStock)
+        if (MaxStock <= 0)
         {
-            return;
+            return 0;
         }
 
-        CurrentStock = Math.Min(MaxStock, CurrentStock + RestockAmount);
+        if (CurrentStock >= MaxStock)
+        {
+            return 0;
+        }
+
+        int missing = MaxStock - CurrentStock;
+        int added = RestockAmount <= 0 ? missing : Math.Min(RestockAmount, missing);
+        CurrentStock += added;
+        return added;
     }
 
     public bool TryConsume(int quantity)
@@ -85,6 +102,22 @@ public sealed class NpcShopProduct
             return;
         }
 
+        if (MaxStock == 0)
+        {
+            CurrentStock += quantity;
+            return;
+        }
+
         CurrentStock = Math.Min(MaxStock, CurrentStock + quantity);
+    }
+
+    public void SetCurrentStock(int quantity)
+    {
+        if (quantity < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity), quantity, "Stock cannot be negative.");
+        }
+
+        CurrentStock = MaxStock == 0 ? quantity : Math.Min(quantity, MaxStock);
     }
 }

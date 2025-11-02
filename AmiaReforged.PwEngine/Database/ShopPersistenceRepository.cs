@@ -101,6 +101,88 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
         await ctx.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<bool> TryConsumeStockAsync(
+        long shopId,
+        string resRef,
+        int quantity,
+        CancellationToken cancellationToken = default)
+    {
+        if (quantity <= 0)
+        {
+            return true;
+        }
+
+        await using PwEngineContext ctx = contextFactory.CreateDbContext();
+
+        ShopProductRecord? product = await ctx.ShopProducts
+            .FirstOrDefaultAsync(p => p.ShopId == shopId && p.ResRef == resRef, cancellationToken);
+
+        if (product is null)
+        {
+            return false;
+        }
+
+        if (product.CurrentStock < quantity)
+        {
+            return false;
+        }
+
+        product.CurrentStock -= quantity;
+        product.UpdatedAt = DateTime.UtcNow;
+
+        await ctx.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task ReturnStockAsync(
+        long shopId,
+        string resRef,
+        int quantity,
+        CancellationToken cancellationToken = default)
+    {
+        if (quantity <= 0)
+        {
+            return;
+        }
+
+        await using PwEngineContext ctx = contextFactory.CreateDbContext();
+
+        ShopProductRecord? product = await ctx.ShopProducts
+            .FirstOrDefaultAsync(p => p.ShopId == shopId && p.ResRef == resRef, cancellationToken);
+
+        if (product is null)
+        {
+            return;
+        }
+
+        product.CurrentStock += quantity;
+        if (product.MaxStock > 0)
+        {
+            product.CurrentStock = Math.Min(product.CurrentStock, product.MaxStock);
+        }
+
+        product.UpdatedAt = DateTime.UtcNow;
+        await ctx.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateNextRestockAsync(
+        long shopId,
+        DateTime? nextRestockUtc,
+        CancellationToken cancellationToken = default)
+    {
+        await using PwEngineContext ctx = contextFactory.CreateDbContext();
+
+        ShopRecord? record = await ctx.Shops.FirstOrDefaultAsync(s => s.Id == shopId, cancellationToken);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.NextRestockUtc = nextRestockUtc;
+        record.UpdatedAt = DateTime.UtcNow;
+        await ctx.SaveChangesAsync(cancellationToken);
+    }
+
     private static void UpdateShop(ShopRecord existing, ShopRecord incoming)
     {
         existing.DisplayName = incoming.DisplayName;

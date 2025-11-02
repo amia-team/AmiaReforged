@@ -21,4 +21,21 @@ public interface IShopPersistenceRepository
         long shopId,
         IReadOnlyCollection<string> definedResRefs,
         CancellationToken cancellationToken = default);
+
+    Task<bool> TryConsumeStockAsync(
+        long shopId,
+        string resRef,
+        int quantity,
+        CancellationToken cancellationToken = default);
+
+    Task ReturnStockAsync(
+        long shopId,
+        string resRef,
+        int quantity,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateNextRestockAsync(
+        long shopId,
+        DateTime? nextRestockUtc,
+        CancellationToken cancellationToken = default);
 }

@@ -30,17 +30,24 @@ public sealed class NpcShopRestockService
     {
         DateTime now = DateTime.UtcNow;
 
-        foreach (NpcShop shop in _repository.All())
+        foreach (NpcShop shop in _repository.All(ShopKind.Npc))
         {
             if (_initialized.Add(shop.Tag))
             {
                 _strategy.Initialize(shop);
+                _repository.TryUpdateNextRestock(shop.Tag, shop.NextRestockUtc);
                 Log.Info("Initialized NPC shop {Tag} with next restock at {Restock}.", shop.Tag, shop.NextRestockUtc);
             }
 
             if (_strategy.ShouldRestock(shop, now))
             {
-                _strategy.Restock(shop, now);
+                IReadOnlyList<(NpcShopProduct Product, int Added)> restocked = _strategy.Restock(shop, now);
+                if (restocked.Count > 0)
+                {
+                    _repository.ApplyRestock(shop, restocked);
+                }
+
+                _repository.TryUpdateNextRestock(shop.Tag, shop.NextRestockUtc);
                 Log.Info("Restocked NPC shop {Tag}. Next restock at {Restock}.", shop.Tag, shop.NextRestockUtc);
             }
         }

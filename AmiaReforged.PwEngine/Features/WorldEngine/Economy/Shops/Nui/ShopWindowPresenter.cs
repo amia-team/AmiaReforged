@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -30,6 +31,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
     [Inject] private Lazy<IShopItemBlacklist> ItemBlacklist { get; init; } = null!;
     [Inject] private Lazy<INpcShopItemFactory> ItemFactory { get; init; } = null!;
     [Inject] private Lazy<IShopPriceCalculator> PriceCalculator { get; init; } = null!;
+    [Inject] private Lazy<INpcShopRepository> ShopRepository { get; init; } = null!;
 
     public override ShopWindowView View { get; }
 
@@ -218,7 +220,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
             return;
         }
 
-        if (!product.TryConsume(1))
+        if (!ShopRepository.Value.TryConsumeProduct(_shop.Tag, product.ResRef, 1))
         {
             await NotifyAsync("Another customer just claimed the last one.", ColorConstants.Orange, refresh: true);
             return;
@@ -227,7 +229,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         NwCreature? buyer = ResolveActiveBuyer();
         if (buyer is null)
         {
-            product.ReturnToStock(1);
+            ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1);
             await NotifyAsync("You must be possessing your character to make a purchase.", ColorConstants.Orange);
             return;
         }
@@ -240,7 +242,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
             bool paymentTaken = await TryWithdrawGoldAsync(buyer, salePrice);
             if (!paymentTaken)
             {
-                product.ReturnToStock(1);
+                ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1);
                 await NotifyAsync("You cannot afford that purchase.", ColorConstants.Orange, refresh: true);
                 return;
             }
@@ -259,7 +261,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
                     paymentCaptured = false;
                 }
 
-                product.ReturnToStock(1);
+                ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1);
                 await NotifyAsync("The merchant cannot produce that item right now.", ColorConstants.Orange, refresh: true);
                 return;
             }
@@ -275,7 +277,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
                 await RefundGoldAsync(buyer, salePrice);
             }
 
-            product.ReturnToStock(1);
+            ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1);
             Log.Error(ex,
                 "Failed to fulfill item purchase for player {PlayerName} in shop {ShopTag} (item {ResRef}).",
                 _player.PlayerName,
