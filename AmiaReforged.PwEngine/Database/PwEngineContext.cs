@@ -39,6 +39,11 @@ public class PwEngineContext : DbContext
 
     public DbSet<StallTransaction> StallTransactions { get; set; } = null!;
 
+    public DbSet<NpcShopRecord> NpcShops { get; set; } = null!;
+    public DbSet<NpcShopProductRecord> NpcShopProducts { get; set; } = null!;
+    public DbSet<NpcShopLedgerEntry> NpcShopLedgerEntries { get; set; } = null!;
+    public DbSet<NpcShopVaultItem> NpcShopVaultItems { get; set; } = null!;
+
     public DbSet<CoinHouse> CoinHouses { get; set; } = null!;
 
     public DbSet<Organization> Organizations { get; set; } = null!;
@@ -121,5 +126,9 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new TransactionConfiguration());
         modelBuilder.ApplyConfiguration(new RentablePropertyConfiguration());
         modelBuilder.ApplyConfiguration(new RentablePropertyResidentConfiguration());
+        modelBuilder.ApplyConfiguration(new NpcShopConfiguration());
+        modelBuilder.ApplyConfiguration(new NpcShopProductConfiguration());
+        modelBuilder.ApplyConfiguration(new NpcShopLedgerEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new NpcShopVaultItemConfiguration());
     }
 }

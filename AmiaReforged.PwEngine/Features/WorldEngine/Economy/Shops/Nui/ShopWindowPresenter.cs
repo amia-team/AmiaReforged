@@ -29,6 +29,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
 
     [Inject] private Lazy<IShopItemBlacklist> ItemBlacklist { get; init; } = null!;
     [Inject] private Lazy<INpcShopItemFactory> ItemFactory { get; init; } = null!;
+    [Inject] private Lazy<IShopPriceCalculator> PriceCalculator { get; init; } = null!;
 
     public override ShopWindowView View { get; }
 
@@ -83,15 +84,17 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
 
     public override void UpdateView()
     {
-    List<bool> productPurchasable;
-    List<string> productEntries = BuildProductEntries(out productPurchasable);
+        NwCreature? buyer = ResolveActiveBuyer();
+
+        List<bool> productPurchasable;
+        List<string> productEntries = BuildProductEntries(buyer, out productPurchasable);
         List<string> inventoryEntries = BuildInventoryEntries();
 
         Token().SetBindValue(View.StoreTitle, BuildTitleText());
         Token().SetBindValue(View.StoreDescription, BuildDescriptionText());
 
         Token().SetBindValues(View.ProductEntries, productEntries);
-    Token().SetBindValues(View.ProductPurchasable, productPurchasable);
+        Token().SetBindValues(View.ProductPurchasable, productPurchasable);
         Token().SetBindValue(View.ProductCount, productEntries.Count);
 
         Token().SetBindValues(View.InventoryEntries, inventoryEntries);
@@ -168,7 +171,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         return formatted;
     }
 
-    private List<string> BuildProductEntries(out List<bool> purchasable)
+    private List<string> BuildProductEntries(NwCreature? buyer, out List<bool> purchasable)
     {
         purchasable = new List<bool>();
 
@@ -187,9 +190,11 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
                 : string.Format(CultureInfo.InvariantCulture, "{0}/{1} on hand", product.CurrentStock,
                     product.MaxStock);
 
-            string priceLabel = product.Price == 0
+            int salePrice = CalculateSalePrice(product, buyer);
+
+            string priceLabel = salePrice == 0
                 ? "Complimentary"
-                : string.Format(CultureInfo.InvariantCulture, "{0:N0} gp", product.Price);
+                : string.Format(CultureInfo.InvariantCulture, "{0:N0} gp", salePrice);
 
             entries.Add($"{product.ResRef} — {priceLabel} ({stockLabel})");
             purchasable.Add(!product.IsOutOfStock);
@@ -219,12 +224,28 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
             return;
         }
 
-        NwCreature? buyer = _player.ControlledCreature ?? _player.LoginCreature;
-        if (buyer is null || !buyer.IsValid)
+        NwCreature? buyer = ResolveActiveBuyer();
+        if (buyer is null)
         {
             product.ReturnToStock(1);
             await NotifyAsync("You must be possessing your character to make a purchase.", ColorConstants.Orange);
             return;
+        }
+
+        int salePrice = CalculateSalePrice(product, buyer);
+        bool paymentCaptured = false;
+
+        if (salePrice > 0)
+        {
+            bool paymentTaken = await TryWithdrawGoldAsync(buyer, salePrice);
+            if (!paymentTaken)
+            {
+                product.ReturnToStock(1);
+                await NotifyAsync("You cannot afford that purchase.", ColorConstants.Orange, refresh: true);
+                return;
+            }
+
+            paymentCaptured = true;
         }
 
         try
@@ -232,17 +253,28 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
             NwItem? item = await ItemFactory.Value.CreateForInventoryAsync(buyer, product);
             if (item is null)
             {
+                if (paymentCaptured)
+                {
+                    await RefundGoldAsync(buyer, salePrice);
+                    paymentCaptured = false;
+                }
+
                 product.ReturnToStock(1);
                 await NotifyAsync("The merchant cannot produce that item right now.", ColorConstants.Orange, refresh: true);
                 return;
             }
 
             string itemName = string.IsNullOrWhiteSpace(item.Name) ? product.ResRef : item.Name;
-            string message = BuildPurchaseMessage(itemName, product.Price);
+            string message = BuildPurchaseMessage(itemName, salePrice);
             await NotifyAsync(message, ColorConstants.Lime, refresh: true);
         }
         catch (Exception ex)
         {
+            if (paymentCaptured)
+            {
+                await RefundGoldAsync(buyer, salePrice);
+            }
+
             product.ReturnToStock(1);
             Log.Error(ex,
                 "Failed to fulfill item purchase for player {PlayerName} in shop {ShopTag} (item {ResRef}).",
@@ -321,6 +353,74 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         }
 
         return entries;
+    }
+
+    private NwCreature? ResolveActiveBuyer()
+    {
+        NwCreature? creature = _player.ControlledCreature ?? _player.LoginCreature;
+        if (creature is null || !creature.IsValid)
+        {
+            return null;
+        }
+
+        return creature;
+    }
+
+    private int CalculateSalePrice(NpcShopProduct product, NwCreature? buyer)
+    {
+        try
+        {
+            return Math.Max(0, PriceCalculator.Value.CalculatePrice(_shop, product, buyer));
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex,
+                "Shop price calculation failed for product {ProductResRef} in shop {ShopTag}.",
+                product.ResRef,
+                _shop.Tag);
+            return Math.Max(0, product.Price);
+        }
+    }
+
+    private static async Task<bool> TryWithdrawGoldAsync(NwCreature buyer, int amount)
+    {
+        if (amount <= 0)
+        {
+            return true;
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        if (!buyer.IsValid)
+        {
+            return false;
+        }
+
+        uint required = (uint)amount;
+        if (buyer.Gold < required)
+        {
+            return false;
+        }
+
+        buyer.Gold -= required;
+        return true;
+    }
+
+    private static async Task RefundGoldAsync(NwCreature buyer, int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        if (!buyer.IsValid)
+        {
+            return;
+        }
+
+        buyer.Gold += (uint)amount;
     }
 
     private bool CanSell(NwItem item)
