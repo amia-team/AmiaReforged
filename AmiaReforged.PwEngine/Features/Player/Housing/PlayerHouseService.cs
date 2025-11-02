@@ -56,7 +56,9 @@ public class PlayerHouseService
     private static readonly GoldAmount HouseSize1Rent = GoldAmount.Parse(50_000);
     private static readonly GoldAmount HouseSize2Rent = GoldAmount.Parse(120_000);
     private static readonly GoldAmount HouseSize3Rent = GoldAmount.Parse(300_000);
-        private static readonly Regex SettlementIdentifierPattern = new(@"^[a-z0-9_-]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static readonly Regex SettlementIdentifierPattern =
+        new(@"^[a-z0-9_-]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public PlayerHouseService(
         IRentablePropertyRepository properties,
@@ -124,7 +126,8 @@ public class PlayerHouseService
 
             if (string.IsNullOrWhiteSpace(targetAreaTag))
             {
-                Log.Warn("Door {DoorTag} is missing the {LocalVar} local variable.", obj.Door.Tag, TargetAreaTagLocalString);
+                Log.Warn("Door {DoorTag} is missing the {LocalVar} local variable.", obj.Door.Tag,
+                    TargetAreaTagLocalString);
                 await ShowFloatingTextAsync(player, "This door is missing its destination. Please notify a DM.");
                 return;
             }
@@ -133,7 +136,8 @@ public class PlayerHouseService
             if (area is null)
             {
                 Log.Error("Failed to locate area with tag {AreaTag} for door {DoorTag}.", targetAreaTag, obj.Door.Tag);
-                await ShowFloatingTextAsync(player, "The destination for this property could not be located. Please notify a DM.");
+                await ShowFloatingTextAsync(player,
+                    "The destination for this property could not be located. Please notify a DM.");
                 return;
             }
 
@@ -158,7 +162,8 @@ public class PlayerHouseService
             RentablePropertySnapshot? snapshot = await EnsurePropertySnapshotAsync(propertyId, metadata);
             if (snapshot is null)
             {
-                await ShowFloatingTextAsync(player, "The housing record for this property could not be loaded. Please try again later.");
+                await ShowFloatingTextAsync(player,
+                    "The housing record for this property could not be loaded. Please try again later.");
                 return;
             }
 
@@ -220,7 +225,8 @@ public class PlayerHouseService
         GoldAmount availableGold = await GetPlayerGoldAsync(player);
         DateOnly evaluationDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        RentPropertyRequest capabilityRequest = new(personaId, propertyId, RentalPaymentMethod.OutOfPocket, evaluationDate);
+        RentPropertyRequest capabilityRequest =
+            new(personaId, propertyId, RentalPaymentMethod.OutOfPocket, evaluationDate);
         PaymentCapabilitySnapshot capabilities =
             await _paymentCapabilities.EvaluateAsync(capabilityRequest, snapshotWithRent);
 
@@ -362,8 +368,10 @@ public class PlayerHouseService
 
             return method switch
             {
-                RentalPaymentMethod.OutOfPocket => await HandleDirectRentalAsync(player, personaId, activeSession, workingSnapshot),
-                RentalPaymentMethod.CoinhouseAccount => await HandleCoinhouseRentalAsync(player, personaId, activeSession, workingSnapshot),
+                RentalPaymentMethod.OutOfPocket => await HandleDirectRentalAsync(player, personaId, activeSession,
+                    workingSnapshot),
+                RentalPaymentMethod.CoinhouseAccount => await HandleCoinhouseRentalAsync(player, personaId,
+                    activeSession, workingSnapshot),
                 _ => RentPropertySubmissionResult.Error("Unsupported payment method.", closeWindow: false)
             };
         }
@@ -533,7 +541,8 @@ public class PlayerHouseService
 
             string formattedRent = FormatGold(session.RentCost.Value);
             string dueDateText = FormatDueDate(nextDueDate);
-            string baseMessage = $"You have rented {session.PropertyDisplayName}. Your next payment is due on {dueDateText}.";
+            string baseMessage =
+                $"You have rented {session.PropertyDisplayName}. Your next payment is due on {dueDateText}.";
 
             await SendServerMessageAsync(player, baseMessage, ColorConstants.Orange);
 
@@ -915,7 +924,8 @@ public class PlayerHouseService
     {
         foreach (string variableName in PropertyIdVariableNames)
         {
-            if (TryParsePropertyId(area.GetObjectVariable<LocalVariableString>(variableName), out PropertyId propertyId))
+            if (TryParsePropertyId(area.GetObjectVariable<LocalVariableString>(variableName),
+                    out PropertyId propertyId))
             {
                 return propertyId;
             }
@@ -948,9 +958,9 @@ public class PlayerHouseService
             throw new InvalidOperationException("House areas must be tagged to participate in housing.");
         }
 
-    string areaResRef = area.ResRef ?? throw new InvalidOperationException("House areas must have a valid resref.");
+        string areaResRef = area.ResRef ?? throw new InvalidOperationException("House areas must have a valid resref.");
 
-    string internalName = ResolveInternalName(area);
+        string internalName = ResolveInternalName(area);
         PropertyCategory category = ResolvePropertyCategory(area);
         SettlementTag settlement = ResolveSettlementTag(area);
         GoldAmount monthlyRent = ResolveMonthlyRent(area);
@@ -1031,7 +1041,8 @@ public class PlayerHouseService
                 AreaTag areaResRefTag = new(areaResRef);
                 if (_regions.TryGetSettlementForArea(areaResRefTag, out SettlementId settlementForArea))
                 {
-                    string? settlementFromArea = ResolveSettlementTagFromSettlement(settlementForArea, areaResRef, areaTag);
+                    string? settlementFromArea =
+                        ResolveSettlementTagFromSettlement(settlementForArea, areaResRef, areaTag);
                     if (!string.IsNullOrWhiteSpace(settlementFromArea))
                     {
                         return new SettlementTag(settlementFromArea);
@@ -1040,12 +1051,14 @@ public class PlayerHouseService
             }
             catch (ArgumentException ex)
             {
-                Log.Warn(ex, "Invalid area resref '{ResRef}' while resolving settlement tag for area {AreaTag}.", areaResRef, areaTag ?? "<untagged>");
+                Log.Warn(ex, "Invalid area resref '{ResRef}' while resolving settlement tag for area {AreaTag}.",
+                    areaResRef, areaTag ?? "<untagged>");
             }
 
             try
             {
-                if (TryGetHousingAreaContext(areaResRef, areaTag, out RegionDefinition? region, out AreaDefinition? definition, out PlaceOfInterest? poi))
+                if (TryGetHousingAreaContext(areaResRef, areaTag, out RegionDefinition? region,
+                        out AreaDefinition? definition, out PlaceOfInterest? poi))
                 {
                     string? settlementFromPoi = ExtractSettlementTagFromPoi(poi);
                     if (!string.IsNullOrWhiteSpace(settlementFromPoi))
@@ -1055,7 +1068,8 @@ public class PlayerHouseService
 
                     if (definition?.LinkedSettlement is { } linkedSettlement)
                     {
-                        string? settlementFromLinked = ResolveSettlementTagFromSettlement(linkedSettlement, areaResRef, areaTag);
+                        string? settlementFromLinked =
+                            ResolveSettlementTagFromSettlement(linkedSettlement, areaResRef, areaTag);
                         if (!string.IsNullOrWhiteSpace(settlementFromLinked))
                         {
                             return new SettlementTag(settlementFromLinked);
@@ -1077,7 +1091,8 @@ public class PlayerHouseService
             }
             catch (Exception ex)
             {
-                Log.Warn(ex, "Failed to derive settlement metadata for housing area {AreaTag} ({AreaResRef}).", areaTag ?? "<untagged>", areaResRef);
+                Log.Warn(ex, "Failed to derive settlement metadata for housing area {AreaTag} ({AreaResRef}).",
+                    areaTag ?? "<untagged>", areaResRef);
             }
         }
 
@@ -1089,7 +1104,9 @@ public class PlayerHouseService
 
         string fallbackToken = !string.IsNullOrWhiteSpace(areaTag)
             ? areaTag
-            : !string.IsNullOrWhiteSpace(areaResRef) ? areaResRef : "unassigned";
+            : !string.IsNullOrWhiteSpace(areaResRef)
+                ? areaResRef
+                : "unassigned";
 
         return new SettlementTag($"legacy:{fallbackToken}");
     }
@@ -1202,7 +1219,8 @@ public class PlayerHouseService
 
         try
         {
-            if (TryGetHousingAreaContext(metadata.AreaResRef, metadata.AreaTag, out RegionDefinition? region, out _, out PlaceOfInterest? poi))
+            if (TryGetHousingAreaContext(metadata.AreaResRef, metadata.AreaTag, out RegionDefinition? region, out _,
+                    out PlaceOfInterest? poi))
             {
                 settlementName ??= region?.Name;
 
@@ -1250,27 +1268,53 @@ public class PlayerHouseService
             return false;
         }
 
+        RegionDefinition? fallbackRegion = null;
+        AreaDefinition? fallbackArea = null;
+        PlaceOfInterest? fallbackPoi = null;
+
         IReadOnlyList<RegionDefinition> regions = _regions.All();
         foreach (RegionDefinition region in regions)
         {
             foreach (AreaDefinition area in region.Areas)
             {
-                if (!string.Equals(area.ResRef.Value, areaResRef, StringComparison.OrdinalIgnoreCase))
+                PlaceOfInterest? matchingPoi = area.PlacesOfInterest?
+                    .FirstOrDefault(p =>
+                        string.Equals(p.ResRef, areaResRef, StringComparison.OrdinalIgnoreCase) ||
+                        (!string.IsNullOrWhiteSpace(areaTag) &&
+                         string.Equals(p.Tag, areaTag, StringComparison.OrdinalIgnoreCase)));
+
+                if (matchingPoi is not null)
+                {
+                    regionDefinition = region;
+                    areaDefinition = area;
+                    pointOfInterest = matchingPoi;
+                    return true;
+                }
+
+                bool areaMatches = string.Equals(area.ResRef.Value, areaResRef, StringComparison.OrdinalIgnoreCase);
+                if (!areaMatches)
                 {
                     continue;
                 }
 
-                regionDefinition = region;
-                areaDefinition = area;
+                fallbackRegion ??= region;
+                fallbackArea ??= area;
 
-                pointOfInterest = area.PlacesOfInterest?
-                    .FirstOrDefault(p =>
-                        string.Equals(p.ResRef, areaResRef, StringComparison.OrdinalIgnoreCase) ||
-                        (!string.IsNullOrWhiteSpace(areaTag) && string.Equals(p.Tag, areaTag, StringComparison.OrdinalIgnoreCase)))
-                    ?? area.PlacesOfInterest?.FirstOrDefault(p => p.Type == PoiType.House);
-
-                return true;
+                if (fallbackPoi is null && area.PlacesOfInterest is { Count: > 0 })
+                {
+                    fallbackPoi = area.PlacesOfInterest.FirstOrDefault(p => p.Type == PoiType.House)
+                                  ?? area.PlacesOfInterest.FirstOrDefault(p => p.Type != PoiType.Undefined)
+                                  ?? area.PlacesOfInterest.First();
+                }
             }
+        }
+
+        if (fallbackRegion is not null)
+        {
+            regionDefinition = fallbackRegion;
+            areaDefinition = fallbackArea;
+            pointOfInterest = fallbackPoi;
+            return true;
         }
 
         return false;
@@ -1293,7 +1337,8 @@ public class PlayerHouseService
 
             PlaceOfInterest? matchingPoi = pois.FirstOrDefault(p =>
                 string.Equals(p.ResRef, areaResRef, StringComparison.OrdinalIgnoreCase) ||
-                (!string.IsNullOrWhiteSpace(areaTag) && string.Equals(p.Tag, areaTag, StringComparison.OrdinalIgnoreCase)));
+                (!string.IsNullOrWhiteSpace(areaTag) &&
+                 string.Equals(p.Tag, areaTag, StringComparison.OrdinalIgnoreCase)));
 
             string? candidate = ExtractSettlementTagFromPoi(matchingPoi);
             if (!string.IsNullOrWhiteSpace(candidate))
@@ -1302,10 +1347,10 @@ public class PlayerHouseService
             }
 
             PlaceOfInterest? settlementPoi = pois.FirstOrDefault(p => p.Type == PoiType.Bank)
-                                           ?? pois.FirstOrDefault(p => p.Type == PoiType.Guild)
-                                           ?? pois.FirstOrDefault(p => p.Type == PoiType.Temple)
-                                           ?? pois.FirstOrDefault(p => p.Type == PoiType.Library)
-                                           ?? pois.FirstOrDefault();
+                                             ?? pois.FirstOrDefault(p => p.Type == PoiType.Guild)
+                                             ?? pois.FirstOrDefault(p => p.Type == PoiType.Temple)
+                                             ?? pois.FirstOrDefault(p => p.Type == PoiType.Library)
+                                             ?? pois.FirstOrDefault();
 
             candidate = ExtractSettlementTagFromPoi(settlementPoi);
             if (!string.IsNullOrWhiteSpace(candidate))
@@ -1315,7 +1360,8 @@ public class PlayerHouseService
         }
         catch (Exception ex)
         {
-            Log.Warn(ex, "Failed to resolve settlement tag from points of interest for settlement {SettlementId}.", settlementId.Value);
+            Log.Warn(ex, "Failed to resolve settlement tag from points of interest for settlement {SettlementId}.",
+                settlementId.Value);
         }
 
         return null;
@@ -1454,7 +1500,8 @@ public class PlayerHouseService
         return CreateDirectOptionModel(visible: true, enabled: hasDirectFunds, status);
     }
 
-    private static RentPropertyPaymentOptionViewModel CreateDirectOptionModel(bool visible, bool enabled, string status) =>
+    private static RentPropertyPaymentOptionViewModel
+        CreateDirectOptionModel(bool visible, bool enabled, string status) =>
         new(RentalPaymentMethod.OutOfPocket, "Pay from Pockets", visible, enabled, status, status);
 
     private static string BuildDirectShortfallMessage(GoldAmount rentCost, GoldAmount availableGold)
