@@ -304,7 +304,7 @@ public class PlayerHouseService
                     closeWindow: true);
             }
 
-            PendingRentSession activeSession = session!;
+            PendingRentSession activeSession = session;
 
             if (DateTimeOffset.UtcNow - activeSession.CreatedAt > RentalConfirmationTimeout)
             {
@@ -957,7 +957,7 @@ public class PlayerHouseService
     }
 
     private static string DescribeSettlement(string? settlementName) =>
-        string.IsNullOrWhiteSpace(settlementName) ? "this settlement" : settlementName!;
+        string.IsNullOrWhiteSpace(settlementName) ? "this settlement" : settlementName;
 
     private static string BuildCoinhouseReason(string propertyDisplayName)
     {
