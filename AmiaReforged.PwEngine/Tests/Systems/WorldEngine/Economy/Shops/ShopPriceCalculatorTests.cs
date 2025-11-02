@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 using NUnit.Framework;
 
@@ -78,24 +79,32 @@ public class ShopPriceCalculatorTests
 
     private static NpcShop BuildShop(int basePrice, out NpcShopProduct product)
     {
-        NpcShopProductDefinition productDefinition = new(
-            "test_item",
-            basePrice,
-            2,
-            5,
-            1,
-            null,
-            null);
+        ShopProductRecord productRecord = new()
+        {
+            Id = 100,
+            ResRef = "test_item",
+            Price = basePrice,
+            CurrentStock = 2,
+            MaxStock = 5,
+            RestockAmount = 1,
+            SortOrder = 0
+        };
 
-        NpcShopDefinition shopDefinition = new(
-            "test_shop",
-            "Test Shop",
-            "test_keeper",
-            null,
-            new NpcShopRestockDefinition(10, 20),
-            new[] { productDefinition });
+        ShopRecord record = new()
+        {
+            Id = 50,
+            Tag = "test_shop",
+            DisplayName = "Test Shop",
+            ShopkeeperTag = "test_keeper",
+            RestockMinMinutes = 10,
+            RestockMaxMinutes = 20,
+            Products = new List<ShopProductRecord> { productRecord }
+        };
 
-        NpcShop shop = new(shopDefinition);
+        productRecord.ShopId = record.Id;
+        productRecord.Shop = record;
+
+        NpcShop shop = new(record);
         product = shop.Products.Single();
         return shop;
     }

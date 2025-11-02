@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 using NUnit.Framework;
 
@@ -11,7 +12,7 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Economy.Shops;
 public class NpcShopProductTests
 {
     [Test]
-    public void LocalVariablesAndAppearanceAreProjectedFromDefinition()
+    public void LocalVariablesAndAppearanceAreProjectedFromRecord()
     {
         JsonLocalVariableDefinition[] locals =
         {
@@ -19,24 +20,20 @@ public class NpcShopProductTests
             new("tier", JsonLocalVariableType.Int, JsonDocument.Parse("3").RootElement.Clone()),
         };
 
-        NpcShopProductDefinition productDefinition = new(
-            "furn_chair_oak",
-            250,
-            2,
-            6,
-            1,
-            locals,
-            new SimpleModelAppearanceDefinition(0, 12));
+        ShopProductRecord productRecord = new()
+        {
+            Id = 10,
+            ResRef = "furn_chair_oak",
+            Price = 250,
+            CurrentStock = 2,
+            MaxStock = 6,
+            RestockAmount = 1,
+            SortOrder = 0,
+            LocalVariablesJson = JsonSerializer.Serialize(locals),
+            AppearanceJson = JsonSerializer.Serialize(new SimpleModelAppearanceDefinition(0, 12)),
+        };
 
-        NpcShopDefinition shopDefinition = new(
-            "test_shop",
-            "Test Shop",
-            "test_keeper",
-            null,
-            new NpcShopRestockDefinition(30, 60),
-            new[] { productDefinition });
-
-        NpcShop shop = new(shopDefinition);
+        NpcShop shop = CreateShop(productRecord);
         NpcShopProduct product = shop.Products.Single();
 
         Assert.Multiple(() =>
@@ -57,24 +54,19 @@ public class NpcShopProductTests
             new("tier", JsonLocalVariableType.Int, JsonDocument.Parse("\"not-a-number\"").RootElement.Clone()),
         };
 
-        NpcShopProductDefinition productDefinition = new(
-            "furn_table_round",
-            500,
-            1,
-            3,
-            1,
-            locals,
-            null);
+        ShopProductRecord productRecord = new()
+        {
+            Id = 11,
+            ResRef = "furn_table_round",
+            Price = 500,
+            CurrentStock = 1,
+            MaxStock = 3,
+            RestockAmount = 1,
+            SortOrder = 0,
+            LocalVariablesJson = JsonSerializer.Serialize(locals),
+        };
 
-        NpcShopDefinition shopDefinition = new(
-            "test_shop_invalid",
-            "Test Shop",
-            "test_keeper",
-            null,
-            new NpcShopRestockDefinition(30, 60),
-            new[] { productDefinition });
-
-        Assert.That(() => new NpcShop(shopDefinition), Throws.ArgumentException);
+        Assert.That(() => CreateShop(productRecord), Throws.ArgumentException);
     }
 
     [Test]
@@ -142,11 +134,14 @@ public class NpcShopProductTests
     public void ReturnToStockRestoresQuantityWithoutExceedingMax()
     {
         NpcShopProduct product = new(
-            "furn_shelf",
-            150,
-            initialStock: 1,
+            id: 20,
+            resRef: "furn_shelf",
+            price: 150,
+            currentStock: 1,
             maxStock: 2,
-            restockAmount: 1);
+            restockAmount: 1,
+            isPlayerManaged: false,
+            sortOrder: 0);
 
         Assert.That(product.TryConsume(1), Is.True);
         Assert.That(product.CurrentStock, Is.EqualTo(0));
@@ -156,5 +151,24 @@ public class NpcShopProductTests
 
         product.ReturnToStock(5);
         Assert.That(product.CurrentStock, Is.EqualTo(2));
+    }
+
+    private static NpcShop CreateShop(ShopProductRecord productRecord)
+    {
+        ShopRecord record = new()
+        {
+            Id = 1,
+            Tag = "test_shop",
+            DisplayName = "Test Shop",
+            ShopkeeperTag = "test_keeper",
+            RestockMinMinutes = 30,
+            RestockMaxMinutes = 60,
+            Products = new List<ShopProductRecord> { productRecord }
+        };
+
+        productRecord.ShopId = record.Id;
+        productRecord.Shop = record;
+
+        return new NpcShop(record);
     }
 }

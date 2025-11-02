@@ -163,7 +163,7 @@ public sealed class NpcShop
 
             return locals;
         }
-        catch
+        catch (JsonException)
         {
             return Array.Empty<NpcShopLocalVariable>();
         }
