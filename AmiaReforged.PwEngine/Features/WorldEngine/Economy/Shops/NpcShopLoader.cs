@@ -177,8 +177,78 @@ public sealed class NpcShopLoader : IDefinitionLoader
                     $"Product '{product.ResRef}' has InitialStock greater than MaxStock.", fileName));
                 return false;
             }
+
+            if (!ValidateLocalVariables(product, fileName))
+            {
+                return false;
+            }
+
+            if (!ValidateAppearance(product, fileName))
+            {
+                return false;
+            }
         }
 
         return true;
+    }
+
+    private bool ValidateLocalVariables(NpcShopProductDefinition product, string fileName)
+    {
+        if (product.LocalVariables is null || product.LocalVariables.Count == 0)
+        {
+            return true;
+        }
+
+        HashSet<string> names = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (JsonLocalVariableDefinition local in product.LocalVariables)
+        {
+            if (string.IsNullOrWhiteSpace(local.Name))
+            {
+                _failures.Add(new FileLoadResult(ResultType.Fail,
+                    $"Product '{product.ResRef}' defines a local variable with an empty name.", fileName));
+                return false;
+            }
+
+            if (!names.Add(local.Name))
+            {
+                _failures.Add(new FileLoadResult(ResultType.Fail,
+                    $"Product '{product.ResRef}' defines duplicate local variable '{local.Name}'.", fileName));
+                return false;
+            }
+
+            try
+            {
+                _ = NpcShopLocalVariable.FromDefinition(local);
+            }
+            catch (Exception ex)
+            {
+                _failures.Add(new FileLoadResult(ResultType.Fail,
+                    $"Local variable '{local.Name}' for product '{product.ResRef}' is invalid: {ex.Message}", fileName));
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool ValidateAppearance(NpcShopProductDefinition product, string fileName)
+    {
+        if (product.Appearance is null)
+        {
+            return true;
+        }
+
+        try
+        {
+            _ = new SimpleModelAppearance(product.Appearance.ModelType, product.Appearance.SimpleModelNumber);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _failures.Add(new FileLoadResult(ResultType.Fail,
+                $"Appearance for product '{product.ResRef}' is invalid: {ex.Message}", fileName));
+            return false;
+        }
     }
 }

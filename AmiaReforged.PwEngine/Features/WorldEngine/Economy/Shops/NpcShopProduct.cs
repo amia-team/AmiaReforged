@@ -4,7 +4,14 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 
 public sealed class NpcShopProduct
 {
-    public NpcShopProduct(string resRef, int price, int initialStock, int maxStock, int restockAmount)
+    public NpcShopProduct(
+        string resRef,
+        int price,
+        int initialStock,
+        int maxStock,
+        int restockAmount,
+        IReadOnlyList<NpcShopLocalVariable>? localVariables = null,
+        SimpleModelAppearance? appearance = null)
     {
         if (string.IsNullOrWhiteSpace(resRef))
         {
@@ -31,6 +38,8 @@ public sealed class NpcShopProduct
         MaxStock = maxStock;
         RestockAmount = restockAmount;
         CurrentStock = Math.Clamp(initialStock, 0, maxStock);
+        LocalVariables = localVariables ?? Array.Empty<NpcShopLocalVariable>();
+        Appearance = appearance;
     }
 
     public string ResRef { get; }
@@ -38,6 +47,8 @@ public sealed class NpcShopProduct
     public int MaxStock { get; }
     public int RestockAmount { get; }
     public int CurrentStock { get; private set; }
+    public IReadOnlyList<NpcShopLocalVariable> LocalVariables { get; }
+    public SimpleModelAppearance? Appearance { get; }
 
     public bool IsOutOfStock => CurrentStock <= 0;
 

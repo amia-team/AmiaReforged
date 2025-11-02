@@ -56,12 +56,17 @@ public sealed class NpcShop
                 continue;
             }
 
+            IReadOnlyList<NpcShopLocalVariable> locals = BuildLocalVariables(productDefinition);
+            SimpleModelAppearance? appearance = BuildAppearance(productDefinition.Appearance);
+
             NpcShopProduct product = new(
                 productDefinition.ResRef,
                 productDefinition.Price,
                 productDefinition.InitialStock,
                 productDefinition.MaxStock,
-                productDefinition.RestockAmount);
+                productDefinition.RestockAmount,
+                locals,
+                appearance);
 
             _products.Add(product);
         }
@@ -76,6 +81,33 @@ public sealed class NpcShop
         }
 
         Products = _products;
+    }
+
+    private static IReadOnlyList<NpcShopLocalVariable> BuildLocalVariables(NpcShopProductDefinition productDefinition)
+    {
+        if (productDefinition.LocalVariables is null || productDefinition.LocalVariables.Count == 0)
+        {
+            return Array.Empty<NpcShopLocalVariable>();
+        }
+
+        List<NpcShopLocalVariable> locals = new(productDefinition.LocalVariables.Count);
+
+        foreach (JsonLocalVariableDefinition localDefinition in productDefinition.LocalVariables)
+        {
+            locals.Add(NpcShopLocalVariable.FromDefinition(localDefinition));
+        }
+
+        return locals;
+    }
+
+    private static SimpleModelAppearance? BuildAppearance(SimpleModelAppearanceDefinition? appearanceDefinition)
+    {
+        if (appearanceDefinition is null)
+        {
+            return null;
+        }
+
+        return new SimpleModelAppearance(appearanceDefinition.ModelType, appearanceDefinition.SimpleModelNumber);
     }
 
     public string Tag { get; }
