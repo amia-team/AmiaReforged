@@ -962,11 +962,11 @@ public class PlayerHouseService
 
         string internalName = ResolveInternalName(area);
         PropertyCategory category = ResolvePropertyCategory(area);
-        SettlementTag settlement = ResolveSettlementTag(area);
-        GoldAmount monthlyRent = ResolveMonthlyRent(area);
-        bool allowsCoinhouse = ResolveBoolean(area, "allows_coinhouse_rental", defaultValue: false);
-        bool allowsDirect = ResolveBoolean(area, "allows_direct_rental", defaultValue: true);
-        CoinhouseTag? coinhouseTag = ResolveCoinhouseTag(area);
+    SettlementTag settlement = ResolveSettlementTag(area);
+    GoldAmount monthlyRent = ResolveMonthlyRent(area);
+    CoinhouseTag? coinhouseTag = ResolveCoinhouseTag(area);
+    bool allowsCoinhouse = ResolveBoolean(area, "allows_coinhouse_rental", coinhouseTag is not null);
+    bool allowsDirect = ResolveBoolean(area, "allows_direct_rental", defaultValue: true);
         GoldAmount? purchasePrice = ResolveOptionalGold(area, "purchase_price");
         GoldAmount? ownershipTax = ResolveOptionalGold(area, "monthly_ownership_tax");
         int evictionGraceDays = ResolveEvictionGraceDays(area);
