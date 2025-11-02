@@ -137,4 +137,24 @@ public class NpcShopProductTests
             Jsons[name] = json;
         }
     }
+
+    [Test]
+    public void ReturnToStockRestoresQuantityWithoutExceedingMax()
+    {
+        NpcShopProduct product = new(
+            "furn_shelf",
+            150,
+            initialStock: 1,
+            maxStock: 2,
+            restockAmount: 1);
+
+        Assert.That(product.TryConsume(1), Is.True);
+        Assert.That(product.CurrentStock, Is.EqualTo(0));
+
+        product.ReturnToStock(1);
+        Assert.That(product.CurrentStock, Is.EqualTo(1));
+
+        product.ReturnToStock(5);
+        Assert.That(product.CurrentStock, Is.EqualTo(2));
+    }
 }

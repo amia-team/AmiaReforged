@@ -77,4 +77,14 @@ public sealed class NpcShopProduct
         CurrentStock -= quantity;
         return true;
     }
+
+    public void ReturnToStock(int quantity)
+    {
+        if (quantity <= 0)
+        {
+            return;
+        }
+
+        CurrentStock = Math.Min(MaxStock, CurrentStock + quantity);
+    }
 }

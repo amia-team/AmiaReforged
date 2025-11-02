@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
@@ -27,6 +28,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
     }
 
     [Inject] private Lazy<IShopItemBlacklist> ItemBlacklist { get; init; } = null!;
+    [Inject] private Lazy<INpcShopItemFactory> ItemFactory { get; init; } = null!;
 
     public override ShopWindowView View { get; }
 
@@ -81,13 +83,15 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
 
     public override void UpdateView()
     {
-        List<string> productEntries = BuildProductEntries();
+    List<bool> productPurchasable;
+    List<string> productEntries = BuildProductEntries(out productPurchasable);
         List<string> inventoryEntries = BuildInventoryEntries();
 
         Token().SetBindValue(View.StoreTitle, BuildTitleText());
         Token().SetBindValue(View.StoreDescription, BuildDescriptionText());
 
         Token().SetBindValues(View.ProductEntries, productEntries);
+    Token().SetBindValues(View.ProductPurchasable, productPurchasable);
         Token().SetBindValue(View.ProductCount, productEntries.Count);
 
         Token().SetBindValues(View.InventoryEntries, inventoryEntries);
@@ -105,6 +109,18 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         {
             RaiseCloseEvent();
             Close();
+        }
+
+        if (eventData.ElementId == View.BuyButton.Id)
+        {
+            int rowIndex = eventData.ArrayIndex;
+            if (rowIndex < 0)
+            {
+                return;
+            }
+
+            _ = HandlePurchaseAsync(rowIndex);
+            return;
         }
     }
 
@@ -152,10 +168,13 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         return formatted;
     }
 
-    private List<string> BuildProductEntries()
+    private List<string> BuildProductEntries(out List<bool> purchasable)
     {
+        purchasable = new List<bool>();
+
         if (_shop.Products.Count == 0)
         {
+            purchasable.Add(false);
             return new List<string> { "This merchant has nothing to sell." };
         }
 
@@ -173,9 +192,103 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
                 : string.Format(CultureInfo.InvariantCulture, "{0:N0} gp", product.Price);
 
             entries.Add($"{product.ResRef} — {priceLabel} ({stockLabel})");
+            purchasable.Add(!product.IsOutOfStock);
         }
 
         return entries;
+    }
+
+    private async Task HandlePurchaseAsync(int productIndex)
+    {
+        if (productIndex < 0 || productIndex >= _shop.Products.Count)
+        {
+            return;
+        }
+
+        NpcShopProduct product = _shop.Products[productIndex];
+
+        if (product.IsOutOfStock)
+        {
+            await NotifyAsync("That item is sold out.", ColorConstants.Orange, refresh: true);
+            return;
+        }
+
+        if (!product.TryConsume(1))
+        {
+            await NotifyAsync("Another customer just claimed the last one.", ColorConstants.Orange, refresh: true);
+            return;
+        }
+
+        NwCreature? buyer = _player.ControlledCreature ?? _player.LoginCreature;
+        if (buyer is null || !buyer.IsValid)
+        {
+            product.ReturnToStock(1);
+            await NotifyAsync("You must be possessing your character to make a purchase.", ColorConstants.Orange);
+            return;
+        }
+
+        try
+        {
+            NwItem? item = await ItemFactory.Value.CreateForInventoryAsync(buyer, product);
+            if (item is null)
+            {
+                product.ReturnToStock(1);
+                await NotifyAsync("The merchant cannot produce that item right now.", ColorConstants.Orange, refresh: true);
+                return;
+            }
+
+            string itemName = string.IsNullOrWhiteSpace(item.Name) ? product.ResRef : item.Name;
+            string message = BuildPurchaseMessage(itemName, product.Price);
+            await NotifyAsync(message, ColorConstants.Lime, refresh: true);
+        }
+        catch (Exception ex)
+        {
+            product.ReturnToStock(1);
+            Log.Error(ex,
+                "Failed to fulfill item purchase for player {PlayerName} in shop {ShopTag} (item {ResRef}).",
+                _player.PlayerName,
+                _shop.Tag,
+                product.ResRef);
+
+            await NotifyAsync("The merchant fumbles with that order; please try again shortly.",
+                ColorConstants.Orange,
+                refresh: true);
+        }
+    }
+
+    private static string BuildPurchaseMessage(string itemName, int price)
+    {
+        if (price <= 0)
+        {
+            return $"You received {itemName}.";
+        }
+
+        string priceLabel = string.Format(CultureInfo.InvariantCulture, "{0:N0} gp", price);
+        return $"You purchased {itemName} for {priceLabel}.";
+    }
+
+    private async Task NotifyAsync(string message, Color color, bool refresh = false)
+    {
+        await NwTask.SwitchToMainThread();
+
+        if (_player.IsValid)
+        {
+            _player.SendServerMessage(message, color);
+        }
+
+        if (!refresh)
+        {
+            return;
+        }
+
+        try
+        {
+            UpdateView();
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Refreshing NPC shop view failed for player {PlayerName}.", _player.PlayerName);
+        }
     }
 
     private List<string> BuildInventoryEntries()
