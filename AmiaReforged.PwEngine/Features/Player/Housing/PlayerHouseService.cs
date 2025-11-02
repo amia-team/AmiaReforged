@@ -1135,15 +1135,121 @@ public class PlayerHouseService
         return variable.HasValue ? variable.Value > 0 : defaultValue;
     }
 
-    private static CoinhouseTag? ResolveCoinhouseTag(NwArea area)
+    private CoinhouseTag? ResolveCoinhouseTag(NwArea area)
     {
         LocalVariableString coinhouseVar = area.GetObjectVariable<LocalVariableString>("settlement_coinhouse_tag");
-        if (!coinhouseVar.HasValue || string.IsNullOrWhiteSpace(coinhouseVar.Value))
+        if (coinhouseVar.HasValue && !string.IsNullOrWhiteSpace(coinhouseVar.Value))
+        {
+            return new CoinhouseTag(coinhouseVar.Value);
+        }
+
+        string? areaResRef = area.ResRef;
+        string? areaTag = area.Tag;
+        if (string.IsNullOrWhiteSpace(areaResRef))
         {
             return null;
         }
 
-        return new CoinhouseTag(coinhouseVar.Value);
+        try
+        {
+            if (TryResolveSettlementId(areaResRef, areaTag, out SettlementId settlementId))
+            {
+                string? derivedTag = ResolveCoinhouseTagFromSettlement(settlementId);
+                if (!string.IsNullOrWhiteSpace(derivedTag))
+                {
+                    return new CoinhouseTag(derivedTag);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to derive coinhouse tag for housing area {AreaTag} ({AreaResRef}).", areaTag ?? "<untagged>", areaResRef);
+        }
+
+        return null;
+    }
+
+    private string? ResolveCoinhouseTagFromSettlement(SettlementId settlementId)
+    {
+        if (settlementId.Value <= 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            IReadOnlyList<PlaceOfInterest> pois = _regions.GetPointsOfInterestForSettlement(settlementId);
+            PlaceOfInterest? bankPoi = pois.FirstOrDefault(p => p.Type == PoiType.Bank)
+                                     ?? pois.FirstOrDefault(p => p.Type == PoiType.Guild)
+                                     ?? pois.FirstOrDefault(p => p.Type == PoiType.Temple)
+                                     ?? pois.FirstOrDefault();
+
+            if (bankPoi is null)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(bankPoi.Tag))
+            {
+                return bankPoi.Tag.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(bankPoi.ResRef))
+            {
+                return bankPoi.ResRef.Trim();
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to resolve coinhouse tag from settlement {SettlementId}.", settlementId.Value);
+        }
+
+        return null;
+    }
+
+    private bool TryResolveSettlementId(string areaResRef, string? areaTag, out SettlementId settlementId)
+    {
+        settlementId = default;
+
+        if (_regions.TryGetSettlementForPointOfInterest(areaResRef, out settlementId))
+        {
+            return settlementId.Value > 0;
+        }
+
+        try
+        {
+            AreaTag areaResRefTag = new(areaResRef);
+            if (_regions.TryGetSettlementForArea(areaResRefTag, out settlementId) && settlementId.Value > 0)
+            {
+                return true;
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            Log.Debug(ex, "Invalid area resref '{ResRef}' while resolving settlement id for housing area {AreaTag}.", areaResRef, areaTag ?? "<untagged>");
+        }
+
+        if (TryGetHousingAreaContext(areaResRef, areaTag, out RegionDefinition? region, out AreaDefinition? areaDefinition, out _))
+        {
+            if (areaDefinition?.LinkedSettlement is { } linked && linked.Value > 0)
+            {
+                settlementId = linked;
+                return true;
+            }
+
+            SettlementId? regionSettlement = region?.Areas
+                .Select(a => a.LinkedSettlement)
+                .FirstOrDefault(id => id is { Value: > 0 });
+
+            if (regionSettlement is { } fallback)
+            {
+                settlementId = fallback;
+                return true;
+            }
+        }
+
+        settlementId = default;
+        return false;
     }
 
     private static GoldAmount? ResolveOptionalGold(NwArea area, string variableName)
