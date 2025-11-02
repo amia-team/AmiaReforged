@@ -204,187 +204,6 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.ToTable("rentable_property_residents", (string)null);
                 });
 
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopLedgerEntry", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("BuyerName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ProductName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("ProductResRef")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SalePrice")
-                        .HasColumnType("integer");
-
-                    b.Property<long>("ShopId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("SoldAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ShopId", "SoldAt");
-
-                    b.ToTable("NpcShopLedgerEntries", (string)null);
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopProductRecord", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("AppearanceJson")
-                        .HasColumnType("jsonb");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("CurrentStock")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("LocalVariablesJson")
-                        .HasColumnType("jsonb");
-
-                    b.Property<int>("MaxStock")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Price")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ResRef")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<int>("RestockAmount")
-                        .HasColumnType("integer");
-
-                    b.Property<long>("ShopId")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ShopId", "ResRef")
-                        .IsUnique();
-
-                    b.ToTable("NpcShopProducts", (string)null);
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopRecord", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DefinitionHash")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<DateTime?>("NextRestockUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("RestockMaxMinutes")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("RestockMinMinutes")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ShopkeeperTag")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("Tag")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("VaultBalance")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Tag")
-                        .IsUnique();
-
-                    b.ToTable("NpcShops", (string)null);
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopVaultItem", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<byte[]>("ItemData")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
-                    b.Property<string>("MetadataJson")
-                        .HasColumnType("jsonb");
-
-                    b.Property<DateTime?>("RetrievedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("ShopId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("StoredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ShopId", "StoredAt");
-
-                    b.ToTable("NpcShopVaultItems", (string)null);
-                });
-
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.PlayerStall", b =>
                 {
                     b.Property<long>("Id")
@@ -423,6 +242,280 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.HasIndex("AccountId");
 
                     b.ToTable("PlayerStalls");
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopLedgerEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("BuyerName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("buyer_name");
+
+                    b.Property<string>("BuyerPersona")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("buyer_persona");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("ResRef")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("resref");
+
+                    b.Property<long>("ShopId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("shop_id");
+
+                    b.Property<int>("TotalPrice")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_price");
+
+                    b.Property<int>("UnitPrice")
+                        .HasColumnType("integer")
+                        .HasColumnName("unit_price");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShopId", "OccurredAtUtc")
+                        .HasDatabaseName("npc_shop_ledger_entries_shop_timestamp_idx");
+
+                    b.ToTable("npc_shop_ledger_entries", (string)null);
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopProductRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AppearanceJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("appearance_json");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("CurrentStock")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_stock");
+
+                    b.Property<bool>("IsPlayerManaged")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_player_managed");
+
+                    b.Property<string>("LocalVariablesJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("locals_json");
+
+                    b.Property<int>("MaxStock")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_stock");
+
+                    b.Property<int>("Price")
+                        .HasColumnType("integer")
+                        .HasColumnName("price");
+
+                    b.Property<string>("ResRef")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("resref");
+
+                    b.Property<int>("RestockAmount")
+                        .HasColumnType("integer")
+                        .HasColumnName("restock_amount");
+
+                    b.Property<long>("ShopId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("shop_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShopId", "ResRef")
+                        .IsUnique()
+                        .HasDatabaseName("npc_shop_products_shop_resref_idx");
+
+                    b.ToTable("npc_shop_products", (string)null);
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("DefinitionHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("definition_hash");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
+
+                    b.Property<bool>("ManualPricing")
+                        .HasColumnType("boolean")
+                        .HasColumnName("manual_pricing");
+
+                    b.Property<bool>("ManualRestock")
+                        .HasColumnType("boolean")
+                        .HasColumnName("manual_restock");
+
+                    b.Property<DateTime?>("NextRestockUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_restock_utc");
+
+                    b.Property<Guid?>("OwnerAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_account_id");
+
+                    b.Property<Guid?>("OwnerCharacterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_character_id");
+
+                    b.Property<string>("OwnerDisplayName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("owner_display_name");
+
+                    b.Property<int>("RestockMaxMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("restock_max_minutes");
+
+                    b.Property<int>("RestockMinMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("restock_min_minutes");
+
+                    b.Property<string>("ShopkeeperTag")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("shopkeeper_tag");
+
+                    b.Property<string>("Tag")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("tag");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("VaultBalance")
+                        .HasColumnType("integer")
+                        .HasColumnName("vault_balance");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerAccountId");
+
+                    b.HasIndex("Tag")
+                        .IsUnique()
+                        .HasDatabaseName("npc_shops_tag_idx");
+
+                    b.ToTable("npc_shops", (string)null);
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopVaultItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<byte[]>("ItemData")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("item_data");
+
+                    b.Property<string>("ItemName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("item_name");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("ResRef")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("resref");
+
+                    b.Property<long>("ShopId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTime>("StoredAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("stored_at_utc")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShopId", "StoredAtUtc")
+                        .HasDatabaseName("npc_shop_vault_items_shop_timestamp_idx");
+
+                    b.ToTable("npc_shop_vault_items", (string)null);
                 });
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.StallProduct", b =>
@@ -1090,9 +1183,18 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Navigation("Property");
                 });
 
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopLedgerEntry", b =>
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.PlayerStall", b =>
                 {
-                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopRecord", "Shop")
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId");
+
+                    b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopLedgerEntry", b =>
+                {
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopRecord", "Shop")
                         .WithMany("LedgerEntries")
                         .HasForeignKey("ShopId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1101,9 +1203,9 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Navigation("Shop");
                 });
 
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopProductRecord", b =>
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopProductRecord", b =>
                 {
-                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopRecord", "Shop")
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopRecord", "Shop")
                         .WithMany("Products")
                         .HasForeignKey("ShopId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1112,24 +1214,24 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Navigation("Shop");
                 });
 
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopVaultItem", b =>
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopRecord", b =>
                 {
-                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopRecord", "Shop")
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", "OwnerAccount")
+                        .WithMany()
+                        .HasForeignKey("OwnerAccountId");
+
+                    b.Navigation("OwnerAccount");
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopVaultItem", b =>
+                {
+                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopRecord", "Shop")
                         .WithMany("VaultItems")
                         .HasForeignKey("ShopId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Shop");
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.PlayerStall", b =>
-                {
-                    b.HasOne("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouseAccount", "Account")
-                        .WithMany()
-                        .HasForeignKey("AccountId");
-
-                    b.Navigation("Account");
                 });
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.StallProduct", b =>
@@ -1250,20 +1352,20 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Navigation("Residents");
                 });
 
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.NpcShopRecord", b =>
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.PlayerStall", b =>
+                {
+                    b.Navigation("Products");
+
+                    b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.ShopRecord", b =>
                 {
                     b.Navigation("LedgerEntries");
 
                     b.Navigation("Products");
 
                     b.Navigation("VaultItems");
-                });
-
-            modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Shops.PlayerStall", b =>
-                {
-                    b.Navigation("Products");
-
-                    b.Navigation("Transactions");
                 });
 
             modelBuilder.Entity("AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries.CoinHouse", b =>

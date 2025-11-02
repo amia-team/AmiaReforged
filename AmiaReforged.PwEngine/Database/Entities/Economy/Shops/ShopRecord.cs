@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 
 namespace AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 
-public class NpcShopRecord
+public class ShopRecord
 {
     [Key]
     public long Id { get; set; }
@@ -18,6 +19,22 @@ public class NpcShopRecord
     public required string ShopkeeperTag { get; set; }
 
     public string? Description { get; set; }
+
+    public ShopKind Kind { get; set; } = ShopKind.Npc;
+
+    public bool ManualRestock { get; set; }
+
+    public bool ManualPricing { get; set; }
+
+    public Guid? OwnerAccountId { get; set; }
+
+    [ForeignKey(nameof(OwnerAccountId))]
+    public CoinHouseAccount? OwnerAccount { get; set; }
+
+    public Guid? OwnerCharacterId { get; set; }
+
+    [MaxLength(255)]
+    public string? OwnerDisplayName { get; set; }
 
     public int RestockMinMinutes { get; set; }
 
@@ -34,12 +51,12 @@ public class NpcShopRecord
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    [InverseProperty(nameof(NpcShopProductRecord.Shop))]
-    public List<NpcShopProductRecord> Products { get; set; } = new();
+    [InverseProperty(nameof(ShopProductRecord.Shop))]
+    public List<ShopProductRecord> Products { get; set; } = new();
 
-    [InverseProperty(nameof(NpcShopLedgerEntry.Shop))]
-    public List<NpcShopLedgerEntry> LedgerEntries { get; set; } = new();
+    [InverseProperty(nameof(ShopLedgerEntry.Shop))]
+    public List<ShopLedgerEntry> LedgerEntries { get; set; } = new();
 
-    [InverseProperty(nameof(NpcShopVaultItem.Shop))]
-    public List<NpcShopVaultItem> VaultItems { get; set; } = new();
+    [InverseProperty(nameof(ShopVaultItem.Shop))]
+    public List<ShopVaultItem> VaultItems { get; set; } = new();
 }

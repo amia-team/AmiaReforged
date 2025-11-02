@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 
-public class NpcShopVaultItem
+public class ShopVaultItem
 {
     [Key]
     public long Id { get; set; }
@@ -11,14 +11,17 @@ public class NpcShopVaultItem
     public long ShopId { get; set; }
 
     [ForeignKey(nameof(ShopId))]
-    public NpcShopRecord? Shop { get; set; }
+    public ShopRecord? Shop { get; set; }
 
-    [Required]
     public required byte[] ItemData { get; set; }
 
-    public DateTime StoredAt { get; set; } = DateTime.UtcNow;
+    [MaxLength(255)]
+    public string? ItemName { get; set; }
 
-    public DateTime? RetrievedAt { get; set; }
+    [MaxLength(64)]
+    public string? ResRef { get; set; }
 
-    public string? MetadataJson { get; set; }
+    public int Quantity { get; set; }
+
+    public DateTime StoredAtUtc { get; set; } = DateTime.UtcNow;
 }

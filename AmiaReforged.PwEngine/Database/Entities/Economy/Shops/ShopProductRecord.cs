@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 
-public class NpcShopProductRecord
+public class ShopProductRecord
 {
     [Key]
     public long Id { get; set; }
@@ -11,7 +11,7 @@ public class NpcShopProductRecord
     public long ShopId { get; set; }
 
     [ForeignKey(nameof(ShopId))]
-    public NpcShopRecord? Shop { get; set; }
+    public ShopRecord? Shop { get; set; }
 
     [MaxLength(64)]
     public required string ResRef { get; set; }
@@ -23,6 +23,8 @@ public class NpcShopProductRecord
     public int MaxStock { get; set; }
 
     public int RestockAmount { get; set; }
+
+    public bool IsPlayerManaged { get; set; }
 
     public int SortOrder { get; set; }
 
