@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Globalization;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.ValueObjects;
@@ -35,6 +38,13 @@ public class PlayerHouseService
     private readonly RuntimeCharacterService _characters;
     private readonly IRentablePropertyRepository _properties;
     private readonly HashSet<uint> _registeredDoorIds = new();
+    private readonly ConcurrentDictionary<PersonaId, PendingRentRequest> _pendingRentRequests = new();
+
+    private static readonly TimeSpan RentalConfirmationTimeout = TimeSpan.FromSeconds(30);
+    private static readonly PropertyRentalPolicy RentalPolicy = new();
+    private static readonly GoldAmount HouseSize1Rent = GoldAmount.Parse(50_000);
+    private static readonly GoldAmount HouseSize2Rent = GoldAmount.Parse(120_000);
+    private static readonly GoldAmount HouseSize3Rent = GoldAmount.Parse(300_000);
 
     public PlayerHouseService(IRentablePropertyRepository properties, RuntimeCharacterService characters)
     {
@@ -71,6 +81,7 @@ public class PlayerHouseService
         }
     }
 
+    [SuppressMessage("ReSharper", "AsyncVoidMethod")]
     private async void HandlePlayerInteraction(DoorEvents.OnFailToOpen obj)
     {
         if (!obj.WhoFailed.IsPlayerControlled(out NwPlayer? player))
@@ -135,13 +146,19 @@ public class PlayerHouseService
                 return;
             }
 
-            if (!CanPlayerAccess(personaId, snapshot))
+            if (CanPlayerAccess(personaId, snapshot))
             {
-                await ShowFloatingTextAsync(player, BuildAccessDeniedMessage(snapshot));
+                await UnlockDoorAsync(obj.Door);
                 return;
             }
 
-            await UnlockDoorAsync(obj.Door);
+            if (snapshot.OccupancyStatus == PropertyOccupancyStatus.Vacant)
+            {
+                await HandleVacantPropertyInteractionAsync(obj.Door, player, personaId, propertyId);
+                return;
+            }
+
+            await ShowFloatingTextAsync(player, BuildAccessDeniedMessage(snapshot));
         }
         catch (Exception ex)
         {
@@ -157,6 +174,127 @@ public class PlayerHouseService
                 Log.Error(nested, "Failed to send error feedback to player during housing interaction.");
             }
         }
+    }
+
+    private async Task HandleVacantPropertyInteractionAsync(
+        NwDoor door,
+        NwPlayer player,
+        PersonaId personaId,
+        PropertyId propertyId)
+    {
+    GoldAmount? configuredRent = await ResolveDoorRentAsync(door).ConfigureAwait(false);
+        if (configuredRent is null)
+        {
+            Log.Warn("Door {DoorTag} is missing a valid house_size local variable for rental pricing.", door.Tag);
+            await ShowFloatingTextAsync(player,
+                "This property is not configured for rental yet. Please notify a DM.");
+            return;
+        }
+
+        GoldAmount availableGold = await GetPlayerGoldAsync(player);
+        if (!availableGold.CanAfford(configuredRent.Value))
+        {
+            _pendingRentRequests.TryRemove(personaId, out _);
+            await SendServerMessageAsync(player,
+                $"Rent is {FormatGold(configuredRent.Value)} gold. You need more gold to rent this property.",
+                ColorConstants.Red);
+            await ShowFloatingTextAsync(player, "You do not have enough gold to rent this property.");
+            return;
+        }
+
+        if (_pendingRentRequests.TryGetValue(personaId, out PendingRentRequest pending))
+        {
+            if (pending.PropertyId.Equals(propertyId) && pending.Cost.Equals(configuredRent.Value) &&
+                DateTimeOffset.UtcNow - pending.RequestedAt <= RentalConfirmationTimeout)
+            {
+                _pendingRentRequests.TryRemove(personaId, out _);
+                await FinalizeRentalAsync(player, personaId, propertyId, configuredRent.Value, door);
+                return;
+            }
+
+            _pendingRentRequests.TryRemove(personaId, out _);
+        }
+
+        _pendingRentRequests[personaId] = new PendingRentRequest(propertyId, configuredRent.Value, DateTimeOffset.UtcNow);
+
+        string formattedCost = FormatGold(configuredRent.Value);
+
+        await SendServerMessageAsync(player,
+            $"This property is vacant. Rent is {formattedCost} gold. Activate the door again within 30 seconds to confirm.",
+            ColorConstants.Orange);
+
+        await ShowFloatingTextAsync(player,
+            $"Rent is {formattedCost} gold. Use the door again within 30 seconds to confirm.");
+    }
+
+    private async Task FinalizeRentalAsync(
+        NwPlayer player,
+        PersonaId personaId,
+        PropertyId propertyId,
+        GoldAmount rentCost,
+        NwDoor door)
+    {
+        RentablePropertySnapshot? latest = await _properties.GetSnapshotAsync(propertyId);
+        if (latest is null)
+        {
+            await ShowFloatingTextAsync(player,
+                "We couldn't load the rental record for this property. Please try again shortly.");
+            return;
+        }
+
+        if (latest.OccupancyStatus != PropertyOccupancyStatus.Vacant)
+        {
+            await ShowFloatingTextAsync(player, "This property has already been claimed by someone else.");
+            return;
+        }
+
+        GoldAmount availableGold = await GetPlayerGoldAsync(player);
+        if (!availableGold.CanAfford(rentCost))
+        {
+            await SendServerMessageAsync(player,
+                $"Rent is {FormatGold(rentCost)} gold. You no longer have enough gold to rent this property.",
+                ColorConstants.Red);
+            await ShowFloatingTextAsync(player, "You no longer have enough gold to rent this property.");
+            return;
+        }
+
+        if (!await TryWithdrawGoldAsync(player, rentCost))
+        {
+            await ShowFloatingTextAsync(player, "Failed to withdraw gold for the rental. Please try again.");
+            return;
+        }
+
+        DateOnly startDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        DateOnly nextDueDate = RentalPolicy.CalculateNextDueDate(startDate);
+
+        RentablePropertyDefinition updatedDefinition = latest.Definition with
+        {
+            MonthlyRent = rentCost
+        };
+
+        RentalAgreementSnapshot agreement = new(
+            personaId,
+            startDate,
+            nextDueDate,
+            rentCost,
+            RentalPaymentMethod.OutOfPocket,
+            null);
+
+        RentablePropertySnapshot updated = latest with
+        {
+            Definition = updatedDefinition,
+            OccupancyStatus = PropertyOccupancyStatus.Rented,
+            CurrentTenant = personaId,
+            ActiveRental = agreement
+        };
+
+        await _properties.PersistRentalAsync(updated);
+
+        await SendServerMessageAsync(player,
+            $"You have rented this property. Your next payment is due on {nextDueDate}.", ColorConstants.Orange);
+        await ShowFloatingTextAsync(player, "You have rented this property!");
+
+        await UnlockDoorAsync(door);
     }
 
     private async Task EnsureHouseDefinitionsAsync()
@@ -252,7 +390,7 @@ public class PlayerHouseService
         return property.OccupancyStatus switch
         {
             PropertyOccupancyStatus.Vacant =>
-                "This property is currently vacant. Rental and purchase options are coming soon.",
+                "This property is currently vacant. Rent it to gain access.",
             PropertyOccupancyStatus.Rented =>
                 "This property is currently rented by another resident.",
             PropertyOccupancyStatus.Owned =>
@@ -281,9 +419,9 @@ public class PlayerHouseService
             return;
         }
 
-    bool wasLocked = door.Locked;
-    door.Locked = false;
-    await door.Open();
+        bool wasLocked = door.Locked;
+        door.Locked = false;
+        await door.Open();
 
         if (!wasLocked)
         {
@@ -297,6 +435,96 @@ public class PlayerHouseService
             door.Locked = true;
         }
     }
+
+    private static async Task<GoldAmount?> ResolveDoorRentAsync(NwDoor door)
+    {
+        await NwTask.SwitchToMainThread();
+
+        if (!door.IsValid)
+        {
+            return null;
+        }
+
+        LocalVariableInt sizeVariable = door.GetObjectVariable<LocalVariableInt>("house_size");
+        if (!sizeVariable.HasValue)
+        {
+            return null;
+        }
+
+        return sizeVariable.Value switch
+        {
+            1 => HouseSize1Rent,
+            2 => HouseSize2Rent,
+            3 => HouseSize3Rent,
+            _ => null
+        };
+    }
+
+    private static async Task<GoldAmount> GetPlayerGoldAsync(NwPlayer player)
+    {
+        await NwTask.SwitchToMainThread();
+
+        if (!player.IsValid)
+        {
+            return GoldAmount.Zero;
+        }
+
+        NwCreature? creature = player.ControlledCreature ?? player.LoginCreature;
+        if (creature is null || !creature.IsValid)
+        {
+            return GoldAmount.Zero;
+        }
+
+        uint rawGold = creature.Gold;
+        int normalized = rawGold > int.MaxValue ? int.MaxValue : (int)rawGold;
+        return GoldAmount.Parse(normalized);
+    }
+
+    private static async Task<bool> TryWithdrawGoldAsync(NwPlayer player, GoldAmount amount)
+    {
+        await NwTask.SwitchToMainThread();
+
+        if (!player.IsValid)
+        {
+            return false;
+        }
+
+        NwCreature? creature = player.ControlledCreature ?? player.LoginCreature;
+        if (creature is null || !creature.IsValid)
+        {
+            return false;
+        }
+
+        if (creature.Gold < (uint)amount.Value)
+        {
+            return false;
+        }
+
+        creature.Gold -= (uint)amount.Value;
+        return true;
+    }
+
+    private static async Task SendServerMessageAsync(NwPlayer player, string message, Color? color = null)
+    {
+        await NwTask.SwitchToMainThread();
+
+        if (!player.IsValid)
+        {
+            return;
+        }
+
+        if (color is { } value)
+        {
+            player.SendServerMessage(message, value);
+        }
+        else
+        {
+            player.SendServerMessage(message);
+        }
+    }
+
+    private static string FormatGold(GoldAmount amount) =>
+        amount.Value.ToString("N0", CultureInfo.InvariantCulture);
 
     private bool TryResolvePersona(NwPlayer player, out PersonaId personaId)
     {
@@ -584,6 +812,8 @@ public class PlayerHouseService
 
         return definition;
     }
+
+    private sealed record PendingRentRequest(PropertyId PropertyId, GoldAmount Cost, DateTimeOffset RequestedAt);
 
     private sealed record PropertyAreaMetadata(
         string AreaTag,

@@ -37,6 +37,12 @@
           "Tag": "test_settlement_bank",
           "Name": "Bank of Tests",
           "Type": "Bank"
+        },
+        {
+          "ResRef": "zwrld_testhaus1",
+          "Tag": "zwrld_testhaus1",
+          "Name": "Small Test House",
+          "Type": "House"
         }
       ]
     },
