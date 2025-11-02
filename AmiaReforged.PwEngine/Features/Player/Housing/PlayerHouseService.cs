@@ -26,14 +26,6 @@ public class PlayerHouseService
 
     private const string HouseDoorTag = "db_house_door";
     private const string TargetAreaTagLocalString = "target_area_tag";
-    private const string PropertyIdScope = "player-housing-area";
-
-    private static readonly string[] PropertyIdVariableNames =
-    {
-        "rentable_property_id",
-        "property_id",
-        "house_property_id"
-    };
 
     private readonly RuntimeCharacterService _characters;
     private readonly IRentablePropertyRepository _properties;
@@ -41,6 +33,7 @@ public class PlayerHouseService
     private readonly WindowDirector _windowDirector;
     private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
     private readonly PropertyMetadataResolver _metadataResolver;
+    private readonly PropertyDefinitionSynchronizer _definitionSynchronizer;
 
     private readonly HashSet<uint> _registeredDoorIds = new();
     private readonly ConcurrentDictionary<PersonaId, PendingRentSession> _activeRentSessions = new();
@@ -57,7 +50,8 @@ public class PlayerHouseService
         IRentalPaymentCapabilityService paymentCapabilities,
         WindowDirector windowDirector,
         ICommandHandler<WithdrawGoldCommand> withdrawHandler,
-        PropertyMetadataResolver metadataResolver)
+        PropertyMetadataResolver metadataResolver,
+        PropertyDefinitionSynchronizer definitionSynchronizer)
     {
         _properties = properties;
         _characters = characters;
@@ -65,6 +59,7 @@ public class PlayerHouseService
         _windowDirector = windowDirector;
         _withdrawHandler = withdrawHandler;
         _metadataResolver = metadataResolver;
+        _definitionSynchronizer = definitionSynchronizer;
 
         BindHouseDoors();
         NwModule.Instance.OnModuleLoad += RegisterNewHouses;
@@ -135,7 +130,7 @@ public class PlayerHouseService
             PropertyAreaMetadata metadata;
             try
             {
-                PropertyId? explicitPropertyId = TryResolveExplicitPropertyId(area);
+                PropertyId? explicitPropertyId = _metadataResolver.TryResolveExplicitPropertyId(area);
                 metadata = _metadataResolver.Capture(area, explicitPropertyId);
             }
             catch (Exception metaEx)
@@ -602,69 +597,14 @@ public class PlayerHouseService
 
     private async Task EnsureHouseDefinitionsAsync()
     {
-        List<PropertyAreaMetadata> metadataList;
-
-        try
-        {
-            metadataList = NwModule.Instance.Areas
-                .Where(IsHouseArea)
-                .Select(area =>
-                {
-                    PropertyId? explicitPropertyId = TryResolveExplicitPropertyId(area);
-                    return _metadataResolver.Capture(area, explicitPropertyId);
-                })
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to read housing metadata from module.");
-            return;
-        }
-
-        foreach (PropertyAreaMetadata metadata in metadataList)
-        {
-            try
-            {
-                PropertyId propertyId = metadata.ExplicitPropertyId ?? DerivePropertyId(metadata.AreaTag);
-                await EnsurePropertySnapshotAsync(propertyId, metadata);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to provision housing record for area {AreaTag}.", metadata.AreaTag);
-            }
-        }
+        await _definitionSynchronizer.SynchronizeModuleHousingAsync().ConfigureAwait(false);
     }
 
     private async Task<RentablePropertySnapshot?> EnsurePropertySnapshotAsync(
         PropertyId propertyId,
         PropertyAreaMetadata metadata)
     {
-        RentablePropertySnapshot? existing = await _properties.GetSnapshotAsync(propertyId);
-        if (existing is not null)
-        {
-            return existing;
-        }
-
-        RentablePropertyDefinition definition = BuildDefinition(propertyId, metadata);
-        PropertyOccupancyStatus occupancy = metadata.DefaultOwner is null
-            ? PropertyOccupancyStatus.Vacant
-            : PropertyOccupancyStatus.Owned;
-
-        RentablePropertySnapshot seed = new(
-            definition,
-            occupancy,
-            CurrentTenant: null,
-            CurrentOwner: metadata.DefaultOwner,
-            Residents: Array.Empty<PersonaId>(),
-            ActiveRental: null);
-
-        await _properties.PersistRentalAsync(seed);
-
-        Log.Info("Provisioned housing record for area {AreaTag} with property id {PropertyId}.",
-            metadata.AreaTag,
-            propertyId);
-
-        return seed;
+        return await _definitionSynchronizer.EnsureSnapshotAsync(propertyId, metadata).ConfigureAwait(false);
     }
 
     private static bool CanPlayerAccess(PersonaId personaId, RentablePropertySnapshot property)
@@ -872,99 +812,18 @@ public class PlayerHouseService
         PropertyAreaMetadata metadata,
         out PropertyId propertyId)
     {
-        foreach (string variableName in PropertyIdVariableNames)
+        foreach (string variableName in PropertyMetadataResolver.PropertyIdVariableNames)
         {
-            if (TryParsePropertyId(door.GetObjectVariable<LocalVariableString>(variableName), out propertyId))
+            if (PropertyMetadataResolver.TryParsePropertyId(
+                    door.GetObjectVariable<LocalVariableString>(variableName),
+                    out propertyId))
             {
                 return true;
             }
         }
 
-        if (metadata.ExplicitPropertyId is { } explicitId)
-        {
-            propertyId = explicitId;
-            return true;
-        }
-
-        propertyId = DerivePropertyId(metadata.AreaTag);
+        propertyId = _definitionSynchronizer.ResolvePropertyId(metadata);
         return true;
-    }
-
-    private static bool TryParsePropertyId(LocalVariableString variable, out PropertyId propertyId)
-    {
-        propertyId = default;
-
-        if (!variable.HasValue)
-        {
-            return false;
-        }
-
-        string? value = variable.Value;
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
-
-        if (!Guid.TryParse(value, out Guid parsed) || parsed == Guid.Empty)
-        {
-            Log.Warn("Invalid property id '{Value}' encountered in local variable '{VarName}'.", value, variable.Name);
-            return false;
-        }
-
-        propertyId = PropertyId.Parse(parsed);
-        return true;
-    }
-
-    private static PropertyId? TryResolveExplicitPropertyId(NwArea area)
-    {
-        foreach (string variableName in PropertyIdVariableNames)
-        {
-            if (TryParsePropertyId(area.GetObjectVariable<LocalVariableString>(variableName),
-                    out PropertyId propertyId))
-            {
-                return propertyId;
-            }
-        }
-
-        return null;
-    }
-
-    private static bool IsHouseArea(NwArea area)
-    {
-        return area.GetObjectVariable<LocalVariableInt>("is_house").Value > 0;
-    }
-
-    private static PropertyId DerivePropertyId(string areaTag)
-    {
-        if (string.IsNullOrWhiteSpace(areaTag))
-        {
-            throw new ArgumentException("Area tag cannot be empty when deriving property id.", nameof(areaTag));
-        }
-
-        Guid derived = DeterministicGuidFactory.Create(PropertyIdScope, areaTag);
-        return PropertyId.Parse(derived);
-    }
-
-    private static RentablePropertyDefinition BuildDefinition(PropertyId propertyId, PropertyAreaMetadata metadata)
-    {
-        RentablePropertyDefinition definition = new(
-            propertyId,
-            metadata.InternalName,
-            metadata.Settlement,
-            metadata.Category,
-            metadata.MonthlyRent,
-            metadata.AllowsCoinhouseRental,
-            metadata.AllowsDirectRental,
-            metadata.SettlementCoinhouseTag,
-            metadata.PurchasePrice,
-            metadata.MonthlyOwnershipTax,
-            metadata.EvictionGraceDays)
-        {
-            DefaultOwner = metadata.DefaultOwner
-        };
-
-        return definition;
     }
 
     private PropertyPresentation ResolvePropertyPresentation(PropertyAreaMetadata metadata)

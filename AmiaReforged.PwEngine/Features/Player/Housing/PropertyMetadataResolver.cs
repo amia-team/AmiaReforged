@@ -23,6 +23,12 @@ public sealed class PropertyMetadataResolver
     private const int DefaultEvictionGraceDays = 2;
     private static readonly Regex SettlementIdentifierPattern =
         new("^[a-z0-9_-]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    internal static readonly string[] PropertyIdVariableNames =
+    {
+        "rentable_property_id",
+        "property_id",
+        "house_property_id"
+    };
 
     private readonly RegionIndex _regions;
     private readonly ICoinhouseRepository _coinhouses;
@@ -31,6 +37,24 @@ public sealed class PropertyMetadataResolver
     {
         _regions = regions;
         _coinhouses = coinhouses;
+    }
+
+    public PropertyId? TryResolveExplicitPropertyId(NwArea area)
+    {
+        foreach (string variableName in PropertyIdVariableNames)
+        {
+            if (TryParsePropertyId(area.GetObjectVariable<LocalVariableString>(variableName), out PropertyId propertyId))
+            {
+                return propertyId;
+            }
+        }
+
+        return null;
+    }
+
+    public static bool IsHouseArea(NwArea area)
+    {
+        return area.GetObjectVariable<LocalVariableInt>("is_house").Value > 0;
     }
 
     public PropertyAreaMetadata Capture(NwArea area, PropertyId? explicitPropertyId)
@@ -70,6 +94,32 @@ public sealed class PropertyMetadataResolver
             evictionGraceDays,
             defaultOwner,
             explicitPropertyId);
+    }
+
+    internal static bool TryParsePropertyId(LocalVariableString variable, out PropertyId propertyId)
+    {
+        propertyId = default;
+
+        if (!variable.HasValue)
+        {
+            return false;
+        }
+
+        string? value = variable.Value;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (!Guid.TryParse(value, out Guid parsed) || parsed == Guid.Empty)
+        {
+            Log.Warn("Invalid property id '{Value}' encountered in local variable '{VarName}'.", value, variable.Name);
+            return false;
+        }
+
+        propertyId = PropertyId.Parse(parsed);
+        return true;
     }
 
     public bool TryGetHousingAreaContext(
