@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Threading.Tasks;
+using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
@@ -47,6 +48,7 @@ public class PlayerHouseService
     private readonly WindowDirector _windowDirector;
     private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
     private readonly RegionIndex _regions;
+    private readonly ICoinhouseRepository _coinhouses;
 
     private readonly HashSet<uint> _registeredDoorIds = new();
     private readonly ConcurrentDictionary<PersonaId, PendingRentSession> _activeRentSessions = new();
@@ -66,7 +68,8 @@ public class PlayerHouseService
         IRentalPaymentCapabilityService paymentCapabilities,
         WindowDirector windowDirector,
         ICommandHandler<WithdrawGoldCommand> withdrawHandler,
-        RegionIndex regions)
+        RegionIndex regions,
+        ICoinhouseRepository coinhouses)
     {
         _properties = properties;
         _characters = characters;
@@ -74,6 +77,7 @@ public class PlayerHouseService
         _windowDirector = windowDirector;
         _withdrawHandler = withdrawHandler;
         _regions = regions;
+        _coinhouses = coinhouses;
 
         BindHouseDoors();
         NwModule.Instance.OnModuleLoad += RegisterNewHouses;
@@ -962,11 +966,11 @@ public class PlayerHouseService
 
         string internalName = ResolveInternalName(area);
         PropertyCategory category = ResolvePropertyCategory(area);
-    SettlementTag settlement = ResolveSettlementTag(area);
-    GoldAmount monthlyRent = ResolveMonthlyRent(area);
-    CoinhouseTag? coinhouseTag = ResolveCoinhouseTag(area);
-    bool allowsCoinhouse = ResolveBoolean(area, "allows_coinhouse_rental", coinhouseTag is not null);
-    bool allowsDirect = ResolveBoolean(area, "allows_direct_rental", defaultValue: true);
+        SettlementTag settlement = ResolveSettlementTag(area);
+        GoldAmount monthlyRent = ResolveMonthlyRent(area);
+        CoinhouseTag? coinhouseTag = ResolveCoinhouseTag(area);
+        bool allowsCoinhouse = ResolveBoolean(area, "allows_coinhouse_rental", coinhouseTag is not null);
+        bool allowsDirect = ResolveBoolean(area, "allows_direct_rental", defaultValue: true);
         GoldAmount? purchasePrice = ResolveOptionalGold(area, "purchase_price");
         GoldAmount? ownershipTax = ResolveOptionalGold(area, "monthly_ownership_tax");
         int evictionGraceDays = ResolveEvictionGraceDays(area);
@@ -1137,12 +1141,6 @@ public class PlayerHouseService
 
     private CoinhouseTag? ResolveCoinhouseTag(NwArea area)
     {
-        LocalVariableString coinhouseVar = area.GetObjectVariable<LocalVariableString>("settlement_coinhouse_tag");
-        if (coinhouseVar.HasValue && !string.IsNullOrWhiteSpace(coinhouseVar.Value))
-        {
-            return new CoinhouseTag(coinhouseVar.Value);
-        }
-
         string? areaResRef = area.ResRef;
         string? areaTag = area.Tag;
         if (string.IsNullOrWhiteSpace(areaResRef))
@@ -1154,6 +1152,12 @@ public class PlayerHouseService
         {
             if (TryResolveSettlementId(areaResRef, areaTag, out SettlementId settlementId))
             {
+                var coinhouse = _coinhouses.GetSettlementCoinhouse(settlementId);
+                if (coinhouse is not null)
+                {
+                    return coinhouse.CoinhouseTag;
+                }
+
                 string? derivedTag = ResolveCoinhouseTagFromSettlement(settlementId);
                 if (!string.IsNullOrWhiteSpace(derivedTag))
                 {
@@ -1163,7 +1167,8 @@ public class PlayerHouseService
         }
         catch (Exception ex)
         {
-            Log.Warn(ex, "Failed to derive coinhouse tag for housing area {AreaTag} ({AreaResRef}).", areaTag ?? "<untagged>", areaResRef);
+            Log.Warn(ex, "Failed to derive coinhouse tag for housing area {AreaTag} ({AreaResRef}).",
+                areaTag ?? "<untagged>", areaResRef);
         }
 
         return null;
@@ -1180,9 +1185,9 @@ public class PlayerHouseService
         {
             IReadOnlyList<PlaceOfInterest> pois = _regions.GetPointsOfInterestForSettlement(settlementId);
             PlaceOfInterest? bankPoi = pois.FirstOrDefault(p => p.Type == PoiType.Bank)
-                                     ?? pois.FirstOrDefault(p => p.Type == PoiType.Guild)
-                                     ?? pois.FirstOrDefault(p => p.Type == PoiType.Temple)
-                                     ?? pois.FirstOrDefault();
+                                       ?? pois.FirstOrDefault(p => p.Type == PoiType.Guild)
+                                       ?? pois.FirstOrDefault(p => p.Type == PoiType.Temple)
+                                       ?? pois.FirstOrDefault();
 
             if (bankPoi is null)
             {
@@ -1226,10 +1231,12 @@ public class PlayerHouseService
         }
         catch (ArgumentException ex)
         {
-            Log.Debug(ex, "Invalid area resref '{ResRef}' while resolving settlement id for housing area {AreaTag}.", areaResRef, areaTag ?? "<untagged>");
+            Log.Debug(ex, "Invalid area resref '{ResRef}' while resolving settlement id for housing area {AreaTag}.",
+                areaResRef, areaTag ?? "<untagged>");
         }
 
-        if (TryGetHousingAreaContext(areaResRef, areaTag, out RegionDefinition? region, out AreaDefinition? areaDefinition, out _))
+        if (TryGetHousingAreaContext(areaResRef, areaTag, out RegionDefinition? region,
+                out AreaDefinition? areaDefinition, out _))
         {
             if (areaDefinition?.LinkedSettlement is { } linked && linked.Value > 0)
             {
