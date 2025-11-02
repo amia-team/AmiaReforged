@@ -16,7 +16,7 @@ public record EnvironmentData(Climate Climate, EconomyQuality SoilQuality, Quali
 
 public record QualityRange(EconomyQuality Min = EconomyQuality.Average, EconomyQuality Max = EconomyQuality.Average);
 
-public record PlaceOfInterest(string ResRef, string Tag, string Name, PoiType Type);
+public record PlaceOfInterest(string ResRef, string Tag, string Name, PoiType Type, string? Description = null);
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum PoiType
@@ -25,6 +25,7 @@ public enum PoiType
     Dungeon,
     Landmark,
     ResourceNode,
+    House,
     Guild,
     Temple,
     Library,

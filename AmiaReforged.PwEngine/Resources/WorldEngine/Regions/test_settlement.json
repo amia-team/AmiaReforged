@@ -36,13 +36,15 @@
           "ResRef": "zwrld_tsts_bank",
           "Tag": "test_settlement_bank",
           "Name": "Bank of Tests",
-          "Type": "Bank"
+          "Type": "Bank",
+          "Description": "A modest financial hall where settlers store and withdraw their coin."
         },
         {
           "ResRef": "zwrld_testhaus1",
           "Tag": "zwrld_testhaus1",
           "Name": "Small Test House",
-          "Type": "House"
+          "Type": "House",
+          "Description": "A cozy prototype cottage featuring a single room and a tidy hearth."
         }
       ]
     },
@@ -65,7 +67,8 @@
           "ResRef": "zwrld_holdfast_bank",
           "Tag": "holdfast_bank",
           "Name": "Holdfast Coin Exchange",
-          "PoiType": "Bank"
+          "Type": "Bank",
+          "Description": "The fortified Holdfast branch that secures the settlement's bullion reserves."
         }
       ]
     }
