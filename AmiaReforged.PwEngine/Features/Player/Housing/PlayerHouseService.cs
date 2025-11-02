@@ -834,7 +834,8 @@ public class PlayerHouseService
 
         try
         {
-        if (_metadataResolver.TryGetHousingAreaContext(metadata.AreaResRef, metadata.AreaTag, out RegionDefinition? region, out _,
+            if (_metadataResolver.TryGetHousingAreaContext(metadata.AreaResRef, metadata.AreaTag,
+                    out RegionDefinition? region, out _,
                     out PlaceOfInterest? poi))
             {
                 settlementName ??= region?.Name;
