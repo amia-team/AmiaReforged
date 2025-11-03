@@ -2,13 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using Microsoft.IdentityModel.Logging;
 using NLog;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Nui;
 
@@ -24,6 +29,8 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
     private readonly List<NwItem> _inventoryItems = new();
     private readonly List<NpcShopProduct?> _inventoryProducts = new();
     private readonly List<int> _inventoryBuyPrices = new();
+    private bool _shopkeeperResolved;
+    private NwCreature? _shopkeeper;
 
     public ShopWindowPresenter(ShopWindowView view, NwPlayer player, NpcShop shop)
     {
@@ -254,7 +261,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
             return;
         }
 
-        if (!ShopRepository.Value.TryConsumeProduct(_shop.Tag, product.ResRef, 1))
+        if (!ShopRepository.Value.TryConsumeProduct(_shop.Tag, product.ResRef, 1, out ConsignedItemData? consignedItem))
         {
             await NotifyAsync("Another customer just claimed the last one.", ColorConstants.Orange, refresh: true);
             return;
@@ -263,7 +270,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         NwCreature? buyer = ResolveActiveBuyer();
         if (buyer is null)
         {
-            ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1);
+            ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1, consignedItem);
             await NotifyAsync("You must be possessing your character to make a purchase.", ColorConstants.Orange);
             return;
         }
@@ -276,7 +283,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
             bool paymentTaken = await TryWithdrawGoldAsync(buyer, salePrice);
             if (!paymentTaken)
             {
-                ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1);
+                ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1, consignedItem);
                 await NotifyAsync("You cannot afford that purchase.", ColorConstants.Orange, refresh: true);
                 return;
             }
@@ -286,7 +293,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
 
         try
         {
-            NwItem? item = await ItemFactory.Value.CreateForInventoryAsync(buyer, product);
+            NwItem? item = await ItemFactory.Value.CreateForInventoryAsync(buyer, product, consignedItem);
             if (item is null)
             {
                 if (paymentCaptured)
@@ -295,8 +302,9 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
                     paymentCaptured = false;
                 }
 
-                ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1);
-                await NotifyAsync("The merchant cannot produce that item right now.", ColorConstants.Orange, refresh: true);
+                ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1, consignedItem);
+                await NotifyAsync("The merchant cannot produce that item right now.", ColorConstants.Orange,
+                    refresh: true);
                 return;
             }
 
@@ -311,7 +319,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
                 await RefundGoldAsync(buyer, salePrice);
             }
 
-            ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1);
+            ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1, consignedItem);
             Log.Error(ex,
                 "Failed to fulfill item purchase for player {PlayerName} in shop {ShopTag} (item {ResRef}).",
                 _player.PlayerName,
@@ -351,29 +359,36 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
             return;
         }
 
-    if (!CanSell(item, out NpcShopProduct? product) || product is null)
+        NpcShopProduct? product = inventoryIndex < _inventoryProducts.Count ? _inventoryProducts[inventoryIndex] : null;
+
+        if (product is null)
         {
-            await NotifyAsync("This merchant is not interested in that item.", ColorConstants.Orange, refresh: true);
-            return;
+            HashSet<int> acceptedTypes = BuildAcceptedBaseItemSet();
+            if (!TryGetSellProduct(item, acceptedTypes, out product) || product is null)
+            {
+                await NotifyAsync("This merchant is not interested in that item.", ColorConstants.Orange,
+                    refresh: true);
+                return;
+            }
         }
 
         int pricePerItem = (inventoryIndex < _inventoryBuyPrices.Count) ? _inventoryBuyPrices[inventoryIndex] : 0;
         if (pricePerItem <= 0)
         {
-            await NotifyAsync("The merchant cannot offer coin for that item right now.", ColorConstants.Orange, refresh: true);
+            await NotifyAsync("The merchant cannot offer coin for that item right now.", ColorConstants.Orange,
+                refresh: true);
             return;
         }
 
         int quantity = Math.Max(item.StackSize, 1);
         int payout = pricePerItem * quantity;
 
-        try
+        ConsignedItemData consignedItem = BuildConsignedItemData(item);
+        ShopProductRecord listing = BuildConsignmentProductRecord(item, product, consignedItem.Quantity);
+
+        if (!ShopRepository.Value.TryStorePlayerProduct(_shop.Tag, listing, consignedItem))
         {
-            ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, quantity);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to store sold item {ResRef} for shop {Tag}.", product.ResRef, _shop.Tag);
+            Log.Warn("Failed to persist consigned item {ResRef} for shop {Tag}.", listing.ResRef, _shop.Tag);
             await NotifyAsync("The merchant cannot accept that item right now.", ColorConstants.Orange, refresh: false);
             return;
         }
@@ -450,19 +465,20 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         }
 
         List<string> entries = new();
+        HashSet<int> acceptedTypes = BuildAcceptedBaseItemSet();
 
         foreach (NwItem item in creature.Inventory.Items)
         {
+            Log.Info(item.BaseItem.ItemType);
             _inventoryItems.Add(item);
 
             string itemName = string.IsNullOrWhiteSpace(item.Name) ? item.ResRef : item.Name;
             int stack = item.StackSize;
             string stackInfo = stack > 1 ? $" x{stack}" : string.Empty;
 
-            if (CanSell(item, out NpcShopProduct? product))
+            if (TryGetSellProduct(item, acceptedTypes, out NpcShopProduct? product) && product is not null)
             {
-                int salePrice = CalculateSalePrice(product, creature);
-                int buyback = CalculateBuybackPrice(salePrice);
+                int buyback = CalculateBuybackPrice(product, creature!);
                 int total = buyback * Math.Max(stack, 1);
 
                 entries.Add($"{itemName}{stackInfo} — Sell {total} gp");
@@ -504,9 +520,11 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
 
     private int CalculateSalePrice(NpcShopProduct product, NwCreature? buyer)
     {
+        int basePrice;
+
         try
         {
-            return Math.Max(0, PriceCalculator.Value.CalculatePrice(_shop, product, buyer));
+            basePrice = Math.Max(0, PriceCalculator.Value.CalculatePrice(_shop, product, buyer));
         }
         catch (Exception ex)
         {
@@ -514,18 +532,36 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
                 "Shop price calculation failed for product {ProductResRef} in shop {ShopTag}.",
                 product.ResRef,
                 _shop.Tag);
-            return Math.Max(0, product.Price);
+            basePrice = Math.Max(0, product.Price);
         }
+
+        return ApplyAppraiseForPurchase(basePrice, buyer);
     }
 
-    private static int CalculateBuybackPrice(int salePrice)
+    private int CalculateBuybackPrice(NpcShopProduct product, NwCreature seller)
     {
-        if (salePrice <= 0)
+        int basePrice;
+
+        try
+        {
+            basePrice = Math.Max(0, PriceCalculator.Value.CalculatePrice(_shop, product, seller));
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex,
+                "Shop buyback calculation failed for product {ProductResRef} in shop {ShopTag}.",
+                product.ResRef,
+                _shop.Tag);
+            basePrice = Math.Max(0, product.Price);
+        }
+
+        int negotiated = ApplyAppraiseForSell(basePrice, seller);
+        if (negotiated <= 0)
         {
             return 0;
         }
 
-        int buyback = salePrice / 2;
+        int buyback = negotiated / 2;
         return Math.Max(1, buyback);
     }
 
@@ -570,61 +606,279 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         buyer.Gold += (uint)amount;
     }
 
-    private bool CanSell(NwItem item, out NpcShopProduct? matchedProduct)
+    private HashSet<int> BuildAcceptedBaseItemSet()
     {
-        matchedProduct = null;
+        return new HashSet<int>(_shop.AcceptedBaseItemTypes);
+    }
 
-        if (!item.IsValid)
+    private bool TryGetSellProduct(NwItem item, HashSet<int> acceptedTypes, out NpcShopProduct? product)
+    {
+        product = null;
+
+        if (!item.IsValid || item.PlotFlag)
         {
             return false;
         }
 
-        if (item.PlotFlag)
+        Log.Info($"{item.Name} is valid? {item.IsValid}, plot? {item.PlotFlag}");
+
+        if (item.StackSize < 0)
         {
             return false;
         }
 
-        if (item.StackSize <= 0)
+        if (acceptedTypes.Count == 0)
+        {
+            Log.Info("This shop isn't accepting anything");
+            return false;
+        }
+
+        string itemResRef = item.ResRef;
+        if (ItemBlacklist.Value.IsBlacklisted(itemResRef))
         {
             return false;
         }
 
-        if (string.IsNullOrWhiteSpace(item.ResRef))
+
+        int baseTypeId = (int)item.BaseItem.ItemType;
+
+        if (!acceptedTypes.Contains(baseTypeId))
         {
+            Log.Info($"Base type was {baseTypeId} and the shop does not accept it");
             return false;
         }
 
-        if (item.BaseItem is null)
+        product = FindProductForItem(item, baseTypeId);
+        return product is not null;
+    }
+
+    private NpcShopProduct? FindProductForItem(NwItem item, int baseTypeId)
+    {
+        NpcShopProduct? direct = _shop.FindProduct(item.ResRef);
+        if (direct is not null)
         {
-            return false;
+            return direct;
+        }
+
+        IReadOnlyList<NpcShopProduct> baseMatches = _shop.FindProductsByBaseItemType(baseTypeId);
+        if (baseMatches.Count > 0)
+        {
+            return baseMatches.OrderBy(p => p.SortOrder).First();
+        }
+
+        return CreateAdHocProduct(item, baseTypeId);
+    }
+
+    private NpcShopProduct? CreateAdHocProduct(NwItem item, int baseTypeId)
+    {
+        string resRef = string.IsNullOrWhiteSpace(item.ResRef)
+            ? $"player_item_{baseTypeId}"
+            : item.ResRef.Trim();
+
+        string displayName = string.IsNullOrWhiteSpace(item.Name) ? resRef : item.Name.Trim();
+        string? description = string.IsNullOrWhiteSpace(item.Description) ? null : item.Description.Trim();
+        int stack = Math.Max(item.StackSize, 1);
+        int price;
+
+        try
+        {
+            price = NWScript.GetGoldPieceValue(item);
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Failed to read gold value for item {ResRef}.", resRef);
+            price = 0;
+        }
+
+        price = Math.Max(price, 1);
+
+        try
+        {
+            return new NpcShopProduct(
+                id: -1,
+                resRef: resRef,
+                displayName: displayName,
+                description: description,
+                price: price,
+                currentStock: stack,
+                maxStock: stack,
+                restockAmount: 0,
+                isPlayerManaged: true,
+                sortOrder: 0,
+                baseItemType: baseTypeId);
+        }
+        catch (ArgumentException ex)
+        {
+            Log.Debug(ex, "Failed to map item {ResRef} to shop product.", resRef);
+            return null;
+        }
+    }
+
+    private int ApplyAppraiseForPurchase(int price, NwCreature? buyer)
+    {
+        if (price <= 0)
+        {
+            return 0;
+        }
+
+        int buyerSkill = GetAppraiseSkill(buyer);
+        int merchantSkill = GetAppraiseSkill(ResolveShopkeeper());
+        int delta = Math.Clamp(buyerSkill - merchantSkill, -15, 15);
+
+        if (delta == 0)
+        {
+            return price;
+        }
+
+        decimal multiplier = 1m - (delta / 100m);
+        return ScalePrice(price, multiplier);
+    }
+
+    private int ApplyAppraiseForSell(int price, NwCreature seller)
+    {
+        if (price <= 0)
+        {
+            return 0;
+        }
+
+        int sellerSkill = GetAppraiseSkill(seller);
+        int merchantSkill = GetAppraiseSkill(ResolveShopkeeper());
+        int delta = Math.Clamp(sellerSkill - merchantSkill, -15, 15);
+
+        if (delta == 0)
+        {
+            return price;
+        }
+
+        decimal multiplier = 1m + (delta / 100m);
+        return ScalePrice(price, multiplier);
+    }
+
+    private static int GetAppraiseSkill(NwCreature? creature)
+    {
+        if (creature is null || !creature.IsValid)
+        {
+            return 0;
         }
 
         try
         {
-            if (ItemBlacklist.Value.IsBlacklisted(item.ResRef))
+            return creature.GetSkillRank(Skill.Appraise!);
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private NwCreature? ResolveShopkeeper()
+    {
+        if (_shopkeeperResolved)
+        {
+            if (_shopkeeper is { IsValid: false })
             {
-                return false;
+                _shopkeeper = null;
             }
-        }
-        catch (Exception ex)
-        {
-            Log.Debug(ex, "Blacklist check failed for item {ItemResRef}.", item.ResRef);
+
+            return _shopkeeper;
         }
 
-        matchedProduct = _shop.FindProduct(item.ResRef);
-        if (matchedProduct is not null)
+        _shopkeeperResolved = true;
+
+        if (string.IsNullOrWhiteSpace(_shop.ShopkeeperTag))
         {
-            return true;
+            return null;
         }
 
-    int baseItemTypeId = (int)item.BaseItem.ItemType;
-    IReadOnlyList<NpcShopProduct> baseMatches = _shop.FindProductsByBaseItemType(baseItemTypeId);
-        if (baseMatches.Count > 0)
+        _shopkeeper = NwObject.FindObjectsWithTag<NwCreature>(_shop.ShopkeeperTag)
+            .FirstOrDefault(creature => creature.IsValid);
+
+        return _shopkeeper;
+    }
+
+    private ConsignedItemData BuildConsignedItemData(NwItem item)
+    {
+        Json serialized = NWScript.ObjectToJson(item);
+        string payload = serialized.Dump();
+        byte[] itemData = Encoding.UTF8.GetBytes(payload);
+        int quantity = Math.Max(item.StackSize, 1);
+        string? name = string.IsNullOrWhiteSpace(item.Name) ? item.ResRef : item.Name.Trim();
+
+        return new ConsignedItemData(itemData, quantity, name, item.ResRef);
+    }
+
+    private ShopProductRecord BuildConsignmentProductRecord(NwItem item, NpcShopProduct template, int quantity)
+    {
+        string resRef = GenerateConsignmentResRef(template.ResRef);
+        string displayName = string.IsNullOrWhiteSpace(item.Name)
+            ? template.DisplayName
+            : item.Name.Trim();
+
+        if (displayName.Length > 255)
         {
-            matchedProduct = baseMatches.OrderBy(p => p.SortOrder).First();
-            return true;
+            displayName = displayName[..255];
         }
 
-        return false;
+        string? description = string.IsNullOrWhiteSpace(item.Description)
+            ? template.Description
+            : item.Description.Trim();
+
+        int price = Math.Max(template.Price, 1);
+        int? baseItemType = template.BaseItemType;
+
+        if (item.BaseItem is { } baseItem)
+        {
+            baseItemType = (int)baseItem.ItemType;
+        }
+
+        int sortOrder = GetNextSortOrder();
+
+        return new ShopProductRecord
+        {
+            ResRef = resRef,
+            DisplayName = displayName,
+            Description = description,
+            Price = price,
+            CurrentStock = quantity,
+            MaxStock = quantity,
+            RestockAmount = 0,
+            BaseItemType = baseItemType,
+            IsPlayerManaged = true,
+            SortOrder = sortOrder,
+            LocalVariablesJson = null,
+            AppearanceJson = null
+        };
+    }
+
+    private int GetNextSortOrder()
+    {
+        return _shop.Products.Count == 0
+            ? 0
+            : _shop.Products.Max(p => p.SortOrder) + 1;
+    }
+
+    private static string GenerateConsignmentResRef(string templateResRef)
+    {
+        string baseResRef = string.IsNullOrWhiteSpace(templateResRef)
+            ? "consign"
+            : templateResRef.Trim();
+
+        string suffix = RandomNumberGenerator.GetHexString(8).ToLowerInvariant();
+        int maxPrefix = Math.Max(1, 64 - suffix.Length - 1);
+
+        if (baseResRef.Length > maxPrefix)
+        {
+            baseResRef = baseResRef[..maxPrefix];
+        }
+
+        string candidate = $"{baseResRef}_{suffix}";
+        return candidate.Length <= 64 ? candidate : candidate[..64];
+    }
+
+    private static int ScalePrice(int price, decimal multiplier)
+    {
+        decimal scaled = price * multiplier;
+        int rounded = (int)Math.Round(scaled, MidpointRounding.AwayFromZero);
+        return Math.Max(0, rounded);
     }
 }

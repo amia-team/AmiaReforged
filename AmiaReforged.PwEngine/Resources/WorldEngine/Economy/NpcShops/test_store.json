@@ -16,7 +16,7 @@
       "InitialStock": 2,
       "MaxStock": 6,
       "RestockAmount": 1,
-      "BaseItemType": 43,
+  "BaseItemType": 74,
       "LocalVariables": [],
       "Appearance": {
         "ModelType": 0,
@@ -31,7 +31,11 @@
       "InitialStock": 0,
       "MaxStock": 0,
       "RestockAmount": 0,
-      "BaseItemType": 43
+  "BaseItemType": 74
     }
-  ]
+  ],
+  "AcceptCategories": [
+    74
+  ],
+  "MarkupPercent": 25
 }

@@ -77,7 +77,19 @@ public class ShopPriceCalculatorTests
         Assert.That(price, Is.EqualTo(0));
     }
 
-    private static NpcShop BuildShop(int basePrice, out NpcShopProduct product)
+    [Test]
+    public void CalculatePrice_AppliesMarkupFromShop()
+    {
+        NpcShop shop = BuildShop(basePrice: 100, out NpcShopProduct product, markupPercent: 25);
+        ShopMarkupPriceModifier markupModifier = new();
+        ShopPriceCalculator calculator = new(new IShopPriceModifier[] { markupModifier });
+
+        int price = calculator.CalculatePrice(shop, product, buyer: null);
+
+        Assert.That(price, Is.EqualTo(125));
+    }
+
+    private static NpcShop BuildShop(int basePrice, out NpcShopProduct product, int markupPercent = 0)
     {
         ShopProductRecord productRecord = new()
         {
@@ -100,6 +112,7 @@ public class ShopPriceCalculatorTests
             ShopkeeperTag = "test_keeper",
             RestockMinMinutes = 10,
             RestockMaxMinutes = 20,
+            MarkupPercent = markupPercent,
             Products = new List<ShopProductRecord> { productRecord }
         };
 

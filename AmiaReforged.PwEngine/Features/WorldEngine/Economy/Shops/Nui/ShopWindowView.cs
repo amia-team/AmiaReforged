@@ -47,7 +47,7 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
             {
                 Width = 430f
             },
-            new(new NuiButton("Purchase")
+            new(new NuiButton("Buy")
             {
                 Id = "shop_buy",
                 Enabled = ProductPurchasable,

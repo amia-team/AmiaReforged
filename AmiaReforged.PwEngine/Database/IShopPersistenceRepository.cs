@@ -43,5 +43,21 @@ public interface IShopPersistenceRepository
     Task<ShopProductRecord> UpsertPlayerProductAsync(
         long shopId,
         ShopProductRecord product,
+        byte[] itemData,
+        int quantity,
+        string? itemName,
+        CancellationToken cancellationToken = default);
+
+    Task StoreVaultItemAsync(
+        long shopId,
+        string resRef,
+        string? itemName,
+        byte[] itemData,
+        int quantity,
+        CancellationToken cancellationToken = default);
+
+    Task<ShopVaultItem?> TakeVaultItemAsync(
+        long shopId,
+        string resRef,
         CancellationToken cancellationToken = default);
 }

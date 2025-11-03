@@ -11,9 +11,9 @@ public interface INpcShopRepository
     bool TryGet(string shopTag, out NpcShop? shop);
     bool TryGetByShopkeeper(string shopkeeperTag, out NpcShop? shop);
     IReadOnlyCollection<NpcShop> All(ShopKind? kind = null);
-    bool TryConsumeProduct(string shopTag, string productResRef, int quantity);
-    void ReturnProduct(string shopTag, string productResRef, int quantity);
-    bool TryStorePlayerProduct(string shopTag, ShopProductRecord product);
+    bool TryConsumeProduct(string shopTag, string productResRef, int quantity, out ConsignedItemData? consumedItem);
+    void ReturnProduct(string shopTag, string productResRef, int quantity, ConsignedItemData? consignedItem = null);
+    bool TryStorePlayerProduct(string shopTag, ShopProductRecord product, ConsignedItemData consignedItem);
     bool TryUpdateNextRestock(string shopTag, DateTime? nextRestockUtc);
     void ApplyRestock(NpcShop shop, IReadOnlyList<(NpcShopProduct Product, int Added)> restocked);
 }

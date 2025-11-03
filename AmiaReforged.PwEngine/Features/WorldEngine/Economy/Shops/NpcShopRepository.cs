@@ -115,8 +115,10 @@ public sealed class NpcShopRepository : INpcShopRepository
         }
     }
 
-    public bool TryConsumeProduct(string shopTag, string productResRef, int quantity)
+    public bool TryConsumeProduct(string shopTag, string productResRef, int quantity, out ConsignedItemData? consumedItem)
     {
+        consumedItem = null;
+
         if (quantity <= 0)
         {
             return false;
@@ -140,31 +142,48 @@ public sealed class NpcShopRepository : INpcShopRepository
                 return false;
             }
 
-            bool persisted;
-
             try
             {
-                persisted = _persistence.TryConsumeStockAsync(shop.Id, product.ResRef, quantity, CancellationToken.None)
+                bool persisted = _persistence.TryConsumeStockAsync(shop.Id, product.ResRef, quantity, CancellationToken.None)
                     .GetAwaiter()
                     .GetResult();
+
+                if (!persisted)
+                {
+                    product.ReturnToStock(quantity);
+                    return false;
+                }
+
+                if (product.IsPlayerManaged)
+                {
+                    ShopVaultItem? vaultItem = _persistence.TakeVaultItemAsync(shop.Id, product.ResRef, CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult();
+
+                    if (vaultItem is null)
+                    {
+                        product.ReturnToStock(quantity);
+                        _persistence.ReturnStockAsync(shop.Id, product.ResRef, quantity, CancellationToken.None)
+                            .GetAwaiter()
+                            .GetResult();
+                        return false;
+                    }
+
+                    consumedItem = new ConsignedItemData(vaultItem.ItemData, vaultItem.Quantity, vaultItem.ItemName, vaultItem.ResRef);
+                }
+
+                return true;
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to persist stock consumption for shop {Tag} product {ResRef}.", shop.Tag, product.ResRef);
-                persisted = false;
-            }
-
-            if (!persisted)
-            {
                 product.ReturnToStock(quantity);
                 return false;
             }
-
-            return true;
         }
     }
 
-    public void ReturnProduct(string shopTag, string productResRef, int quantity)
+    public void ReturnProduct(string shopTag, string productResRef, int quantity, ConsignedItemData? consignedItem = null)
     {
         if (quantity <= 0)
         {
@@ -191,6 +210,19 @@ public sealed class NpcShopRepository : INpcShopRepository
                 _persistence.ReturnStockAsync(shop.Id, product.ResRef, quantity, CancellationToken.None)
                     .GetAwaiter()
                     .GetResult();
+
+                if (consignedItem is not null && product.IsPlayerManaged)
+                {
+                    _persistence.StoreVaultItemAsync(
+                            shop.Id,
+                            product.ResRef,
+                            consignedItem.ItemName,
+                            consignedItem.ItemData,
+                            consignedItem.Quantity,
+                            CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult();
+                }
             }
             catch (Exception ex)
             {
@@ -199,9 +231,10 @@ public sealed class NpcShopRepository : INpcShopRepository
         }
     }
 
-    public bool TryStorePlayerProduct(string shopTag, ShopProductRecord product)
+    public bool TryStorePlayerProduct(string shopTag, ShopProductRecord product, ConsignedItemData consignedItem)
     {
         ArgumentNullException.ThrowIfNull(product);
+        ArgumentNullException.ThrowIfNull(consignedItem);
 
         if (!TryGet(shopTag, out NpcShop? shop) || shop is null)
         {
@@ -210,7 +243,13 @@ public sealed class NpcShopRepository : INpcShopRepository
 
         try
         {
-            ShopProductRecord persisted = _persistence.UpsertPlayerProductAsync(shop.Id, product, CancellationToken.None)
+            ShopProductRecord persisted = _persistence.UpsertPlayerProductAsync(
+                    shop.Id,
+                    product,
+                    consignedItem.ItemData,
+                    consignedItem.Quantity,
+                    consignedItem.ItemName,
+                    CancellationToken.None)
                 .GetAwaiter()
                 .GetResult();
 

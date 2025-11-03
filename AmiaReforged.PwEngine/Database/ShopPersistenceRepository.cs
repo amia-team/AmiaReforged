@@ -186,9 +186,23 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
     public async Task<ShopProductRecord> UpsertPlayerProductAsync(
         long shopId,
         ShopProductRecord product,
+        byte[] itemData,
+        int quantity,
+        string? itemName,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(product);
+        ArgumentNullException.ThrowIfNull(itemData);
+
+        if (quantity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity), quantity, "Quantity must be positive.");
+        }
+
+        if (itemData.Length == 0)
+        {
+            throw new ArgumentException("Serialized item data must not be empty.", nameof(itemData));
+        }
 
         await using PwEngineContext ctx = contextFactory.CreateDbContext();
 
@@ -203,10 +217,16 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
 
         if (existing is not null)
         {
-            existing.CurrentStock += product.CurrentStock;
+            existing.CurrentStock += quantity;
             existing.Price = product.Price;
             existing.DisplayName = product.DisplayName;
             existing.Description = product.Description;
+            existing.MaxStock = Math.Max(existing.MaxStock, product.MaxStock);
+            existing.RestockAmount = product.RestockAmount;
+            existing.BaseItemType = product.BaseItemType;
+            existing.LocalVariablesJson = product.LocalVariablesJson;
+            existing.AppearanceJson = product.AppearanceJson;
+            existing.IsPlayerManaged = true;
             existing.SortOrder = product.SortOrder;
             existing.UpdatedAt = DateTime.UtcNow;
 
@@ -214,14 +234,89 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
             return existing;
         }
 
-        product.ShopId = shopId;
-        product.CreatedAt = DateTime.UtcNow;
-        product.UpdatedAt = DateTime.UtcNow;
+        else
+        {
+            product.ShopId = shopId;
+            product.CurrentStock = quantity;
+            product.IsPlayerManaged = true;
+            product.CreatedAt = DateTime.UtcNow;
+            product.UpdatedAt = DateTime.UtcNow;
+            ctx.ShopProducts.Add(product);
+            existing = product;
+        }
 
-        ctx.ShopProducts.Add(product);
+        ShopVaultItem vaultItem = new()
+        {
+            ShopId = shopId,
+            ItemData = itemData,
+            ItemName = itemName,
+            ResRef = product.ResRef,
+            Quantity = quantity,
+            StoredAtUtc = DateTime.UtcNow
+        };
+
+        ctx.ShopVaultItems.Add(vaultItem);
         await ctx.SaveChangesAsync(cancellationToken);
 
-        return product;
+        return existing;
+    }
+
+    public async Task StoreVaultItemAsync(
+        long shopId,
+        string resRef,
+        string? itemName,
+        byte[] itemData,
+        int quantity,
+        CancellationToken cancellationToken = default)
+    {
+        if (quantity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity), quantity, "Quantity must be positive.");
+        }
+
+        ArgumentNullException.ThrowIfNull(itemData);
+
+        if (itemData.Length == 0)
+        {
+            throw new ArgumentException("Serialized item data must not be empty.", nameof(itemData));
+        }
+
+        await using PwEngineContext ctx = contextFactory.CreateDbContext();
+
+        ShopVaultItem vaultItem = new()
+        {
+            ShopId = shopId,
+            ItemData = itemData,
+            ItemName = itemName,
+            ResRef = resRef,
+            Quantity = quantity,
+            StoredAtUtc = DateTime.UtcNow
+        };
+
+        ctx.ShopVaultItems.Add(vaultItem);
+        await ctx.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<ShopVaultItem?> TakeVaultItemAsync(
+        long shopId,
+        string resRef,
+        CancellationToken cancellationToken = default)
+    {
+        await using PwEngineContext ctx = contextFactory.CreateDbContext();
+
+        ShopVaultItem? item = await ctx.ShopVaultItems
+            .Where(v => v.ShopId == shopId && v.ResRef == resRef)
+            .OrderBy(v => v.StoredAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (item is null)
+        {
+            return null;
+        }
+
+        ctx.ShopVaultItems.Remove(item);
+        await ctx.SaveChangesAsync(cancellationToken);
+        return item;
     }
 
     private static void UpdateShop(ShopRecord existing, ShopRecord incoming)
