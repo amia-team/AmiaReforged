@@ -243,6 +243,12 @@ public sealed class CharacterCustomizationPresenter : ScryPresenter<CharacterCus
         if (ev.ElementId == View.CancelButton.Id)
         {
             _model.RevertChanges();
+            return;
+        }
+
+        if (ev.ElementId == View.CloseButton.Id)
+        {
+            _model.RevertChanges();
             Close();
             return;
         }

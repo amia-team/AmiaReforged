@@ -47,6 +47,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public NuiButtonImage ModelRight10Button = null!;
     public NuiButtonImage SaveButton = null!;
     public NuiButtonImage CancelButton = null!;
+    public NuiButtonImage CloseButton = null!;
     public readonly NuiButtonImage ConfirmButton = null!;
 
     // Armor part clickable buttons
@@ -163,7 +164,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 130f }, // Center: (700 - 320) / 2
+                        new NuiSpacer { Width = 160f },
                         ImagePlatedLabeledButton("btn_mode_armor", "Armor", "Customize Equipped Armor", out ArmorButton, "app_armor_top", 100f, 100f),
                         new NuiSpacer { Width = 10f },
                         ImagePlatedLabeledButton("btn_mode_equipment", "Equipment", "Customize Other Equipment", out EquipmentButton, "app_misc", 100f, 100f),
@@ -186,7 +187,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 115f }, // Center: (700 - 370) / 2
+                        new NuiSpacer { Width = 142.5f },
                         ImageButton("btn_part_left", "Previous Part", out PartLeftButton, 35f, 35f, "cc_arrow_l_btn"),
                         new NuiLabel(PartName)
                         {
@@ -207,18 +208,15 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     {
         const float bodyWidth = 120f;
         const float bodyHeight = 120f;
-        const float leftPad = 180f; // Adjusted for better centering
+        const float leftPad = 210f;
 
-        // Create the base layer with background image and overlays
         List<NuiDrawListItem> drawList = new List<NuiDrawListItem>
         {
             new NuiDrawListImage("app_armor_body", new NuiRect(leftPad, 0f, bodyWidth, bodyHeight))
         };
 
-        // Mapping of armor part index to ARMOR_PART image number
         int[] partImageMap = { 16, 17, 14, 15, 12, 13, 7, 4, 10, 1, 6, 8, 3, 5, 0, 2, 9, 11, 18 };
 
-        // Add all 19 overlay images (they'll be toggled visible/invisible)
         for (int i = 0; i < 19; i++)
         {
             drawList.Add(new NuiDrawListImage($"ARMOR_PART_{partImageMap[i]}",
@@ -249,7 +247,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 120f }, // Adjusted for extra buttons
+                        new NuiSpacer { Width = 145f },
                         new NuiLabel("Model:")
                         {
                             Width = 80f,
@@ -305,8 +303,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
 
     private NuiElement BuildMaterialSelector()
     {
-        // Total width: 6 buttons (35px each) + 5 spacers (5px each) = 235px
-        const float leftPad = 185f; // Center: (700 - 235) / 2 = 232.5
+        const float leftPad = 207.5f;
 
         return new NuiColumn
         {
@@ -338,20 +335,16 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     {
         List<NuiElement> colorGrid = new List<NuiElement>();
 
-        // Create 176 color buttons in a grid (16 columns × 11 rows)
         for (int row = 0; row < 11; row++)
         {
             NuiRow rowElement = new NuiRow { Children = new List<NuiElement>() };
-
-            // Add left spacer to center: (700 - 480) / 2 = 110px
-            rowElement.Children.Add(new NuiSpacer { Width = 40f });
+            rowElement.Children.Add(new NuiSpacer { Width = 65f });
 
             for (int col = 0; col < 16; col++)
             {
                 int colorIndex = row * 16 + col;
                 if (colorIndex >= 176) break;
 
-                // Use the pre-created bind for this color index
                 NuiButtonImage colorBtn = new NuiButtonImage(ColorResRef[colorIndex])
                 {
                     Id = $"btn_color_{colorIndex}",
@@ -382,10 +375,12 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 140f }, // Center: (700 - 320) / 2
+                        new NuiSpacer { Width = 80f },
                         ImagePlatedLabeledButton("btn_save", "", "Save Changes", out SaveButton, "ui_btn_save"),
                         new NuiSpacer { Width = 20f },
                         ImagePlatedLabeledButton("btn_cancel", "", "Discard changes and revert to last save", out CancelButton, "ui_btn_discard"),
+                        new NuiSpacer { Width = 20f },
+                        ImagePlatedLabeledButton("btn_close", "", "Close window without saving", out CloseButton, "ui_btn_cancel"),
                     }
                 }
             }
@@ -407,7 +402,6 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
 
     public override NuiLayout RootLayout()
     {
-        // Background
         NuiRow bgLayer = new NuiRow
         {
             Width = 0f,
@@ -432,7 +426,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 220f }, // Center the title
+                        new NuiSpacer { Width = 250f },
                         new NuiLabel("Character Customization")
                         {
                             Height = 20f,
@@ -455,7 +449,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 260f }, // Center the label
+                        new NuiSpacer { Width = 290f },
                         new NuiLabel("Color Palette")
                         {
                             Height = 20f,

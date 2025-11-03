@@ -2,29 +2,15 @@
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.CharacterCustomization;
 
-/// <summary>
-/// Model for character customization - handles business logic for appearance changes
-/// </summary>
 public sealed class CharacterCustomizationModel
 {
     private readonly NwPlayer _player;
-
-    // Current customization mode - start with None
     public CustomizationMode CurrentMode { get; private set; } = CustomizationMode.None;
-
-    // Current armor part being edited (for armor mode)
     public int CurrentArmorPart { get; private set; }
 
-    // Current color channel (0=Leather1, 1=Leather2, 2=Cloth1, 3=Cloth2, 4=Metal1, 5=Metal2)
-    public int CurrentColorChannel { get; private set; } = 2; // Default to Cloth 1
-
-    // Current armor being edited
+    public int CurrentColorChannel { get; private set; } = 2;
     private NwItem? _currentArmor;
-
-    // Store initial armor state for cancel/revert functionality
     private NwItem? _initialArmorBackup;
-
-    // Torso model ranges organized by armor class (AC)
     private static readonly Dictionary<int, HashSet<int>> TorsoModelsByAc = new()
     {
         [0] = new HashSet<int> { 1, 3, 5, 6, 7, 8, 9, 12, 19, 39, 50, 66, 67, 73, 74, 150, 158, 199, 200, 210, 228, 239, 240, 251 }, // Cloth
@@ -38,7 +24,6 @@ public sealed class CharacterCustomizationModel
         [8] = new HashSet<int> { 14, 21, 23, 37, 53, 57, 60, 61, 62, 65, 70, 71, 72, 90, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 186, 190, 209, 220, 221, 222, 223, 252 } // Fullplate
     };
 
-    // Valid model indices for each armor part
     private static readonly Dictionary<CreaturePart, HashSet<int>> ValidModelsByPart = new()
     {
         [CreaturePart.Neck] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 25, 26, 28, 63, 70, 71, 127, 129, 131, 132, 133, 134, 186 },
@@ -64,12 +49,8 @@ public sealed class CharacterCustomizationModel
     public CharacterCustomizationModel(NwPlayer player)
     {
         _player = player;
-        // Don't load armor on construction - only when Armor mode is selected
     }
 
-    /// <summary>
-    /// Load current armor item
-    /// </summary>
     private void LoadCurrentArmor()
     {
         NwCreature? creature = _player.ControlledCreature;
@@ -81,19 +62,16 @@ public sealed class CharacterCustomizationModel
     public void SetMode(CustomizationMode mode)
     {
         CurrentMode = mode;
-        CurrentArmorPart = 0; // Reset to first part when switching modes
+        CurrentArmorPart = 0;
 
-        // Send message when entering Armor mode
         if (mode == CustomizationMode.Armor)
         {
             LoadCurrentArmor();
             if (_currentArmor != null && _currentArmor.IsValid)
             {
-                // Create a backup of the initial armor state for cancel/revert
                 NwCreature? creature = _player.ControlledCreature;
                 if (creature != null)
                 {
-                    // Clone the armor to an invisible container for backup
                     _initialArmorBackup = _currentArmor.Clone(creature, null, false);
                 }
 
@@ -127,7 +105,6 @@ public sealed class CharacterCustomizationModel
     {
         if (CurrentMode != CustomizationMode.Armor) return;
 
-        // Cannot adjust models in "All Parts" mode
         if (CurrentArmorPart == 19)
         {
             _player.SendServerMessage("Cannot adjust models in 'All Parts' mode. Select a specific part first.", ColorConstants.Orange);
@@ -143,33 +120,24 @@ public sealed class CharacterCustomizationModel
         NwCreature? creature = _player.ControlledCreature;
         if (creature == null) return;
 
-        // ...existing code...
-
-        // Map our part index to CreaturePart enum
         CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
 
         int currentModel = _currentArmor.Appearance.GetArmorModel(creaturePart);
         int newModel;
 
-        // Apply range restrictions for Torso part only - check AC and keep within valid models
         if (creaturePart == CreaturePart.Torso)
         {
-            // Determine which AC range the current model belongs to
             int? currentAc = GetArmorClassFromTorsoModel(currentModel);
 
             if (currentAc.HasValue && TorsoModelsByAc.TryGetValue(currentAc.Value, out HashSet<int>? validModels))
             {
-                // Convert to sorted list for cycling
                 List<int> sortedModels = validModels.OrderBy(m => m).ToList();
                 int currentIndex = sortedModels.IndexOf(currentModel);
 
                 if (currentIndex >= 0)
                 {
-                    // For small deltas (+1/-1), move by index position and wrap around
-                    // For large deltas (+10/-10), find closest model to currentModel ± delta
                     if (Math.Abs(delta) == 1)
                     {
-                        // Move by index position and wrap around
                         int newIndex = currentIndex + delta;
                         if (newIndex < 0)
                             newIndex = sortedModels.Count - 1;
@@ -180,22 +148,17 @@ public sealed class CharacterCustomizationModel
                     }
                     else
                     {
-                        // For +10/-10, find the closest valid model to (currentModel + delta)
                         int targetModel = currentModel + delta;
 
                         if (delta > 0)
                         {
-                            // Going forward: find first model >= targetModel
                             newModel = sortedModels.FirstOrDefault(m => m >= targetModel);
-                            // If none found, wrap to first
                             if (newModel == 0)
                                 newModel = sortedModels.First();
                         }
                         else
                         {
-                            // Going backward: find last model <= targetModel
                             newModel = sortedModels.LastOrDefault(m => m <= targetModel);
-                            // If none found, wrap to last
                             if (newModel == 0)
                                 newModel = sortedModels.Last();
                         }
@@ -203,33 +166,26 @@ public sealed class CharacterCustomizationModel
                 }
                 else
                 {
-                    // Current model not found in valid list, default to first valid model
                     newModel = sortedModels.FirstOrDefault();
                 }
             }
             else
             {
-                // Unknown AC or no valid models, keep current model
                 _player.SendServerMessage("Could not determine armor class. No change made.", ColorConstants.Orange);
                 return;
             }
         }
         else
         {
-            // For other parts, use the valid models dictionary
             if (ValidModelsByPart.TryGetValue(creaturePart, out HashSet<int>? validModels))
             {
-                // Convert to sorted list for cycling
                 List<int> sortedModels = validModels.OrderBy(m => m).ToList();
                 int currentIndex = sortedModels.IndexOf(currentModel);
 
                 if (currentIndex >= 0)
                 {
-                    // For small deltas (+1/-1), move by index position and wrap around
-                    // For large deltas (+10/-10), find closest model to currentModel ± delta
                     if (Math.Abs(delta) == 1)
                     {
-                        // Move by index position and wrap around
                         int newIndex = currentIndex + delta;
                         if (newIndex < 0)
                             newIndex = sortedModels.Count - 1;
@@ -240,22 +196,17 @@ public sealed class CharacterCustomizationModel
                     }
                     else
                     {
-                        // For +10/-10, find the closest valid model to (currentModel + delta)
                         int targetModel = currentModel + delta;
 
                         if (delta > 0)
                         {
-                            // Going forward: find first model >= targetModel
                             newModel = sortedModels.FirstOrDefault(m => m >= targetModel);
-                            // If none found, wrap to first
                             if (newModel == 0)
                                 newModel = sortedModels.First();
                         }
                         else
                         {
-                            // Going backward: find last model <= targetModel
                             newModel = sortedModels.LastOrDefault(m => m <= targetModel);
-                            // If none found, wrap to last
                             if (newModel == 0)
                                 newModel = sortedModels.Last();
                         }
@@ -263,48 +214,32 @@ public sealed class CharacterCustomizationModel
                 }
                 else
                 {
-                    // Current model not found in valid list, default to first valid model
                     newModel = sortedModels.FirstOrDefault();
                 }
             }
             else
             {
-                // No valid models dictionary for this part, keep current model
                 _player.SendServerMessage("No valid models for this part.", ColorConstants.Orange);
                 return;
             }
         }
 
-
-        // Store reference to old armor
         NwItem oldArmor = _currentArmor;
 
-        // Use Anvil's native method to directly modify the armor appearance
         oldArmor.Appearance.SetArmorModel(creaturePart, (byte)newModel);
-
-        // Unequip the armor
         creature.RunUnequip(oldArmor);
-
-        // Create a copy to refresh the inventory icon
         NwItem newArmor = oldArmor.Clone(creature);
 
         if (!newArmor.IsValid)
         {
             _player.SendServerMessage("Failed to refresh armor.", ColorConstants.Red);
-            // Re-equip old armor
             creature.RunEquip(oldArmor, InventorySlot.Chest);
             return;
         }
 
-        // Re-equip the new copy
         creature.RunEquip(newArmor, InventorySlot.Chest);
-
-        // Update our reference
         _currentArmor = newArmor;
-
-        // Destroy the old armor
         oldArmor.Destroy();
-
         _player.SendServerMessage($"Part model updated to {newModel}.", ColorConstants.Green);
     }
 
@@ -321,27 +256,22 @@ public sealed class CharacterCustomizationModel
         NwCreature? creature = _player.ControlledCreature;
         if (creature == null) return;
 
-        // Map color channel to ItemAppearanceArmorColor enum
         ItemAppearanceArmorColor colorChannel = GetArmorColorChannel(CurrentColorChannel);
 
         string[] channelNames = new[] { "Leather 1", "Leather 2", "Cloth 1", "Cloth 2", "Metal 1", "Metal 2" };
         string channelName = CurrentColorChannel < channelNames.Length ? channelNames[CurrentColorChannel] : "Unknown";
 
-        // Store reference to old armor
         NwItem oldArmor = _currentArmor;
 
-        // Check if "All Parts" mode (index 19)
         if (CurrentArmorPart == 19)
         {
-            // Apply color to all parts except Robe
             CreaturePart[] allParts = new[]
             {
                 CreaturePart.RightFoot, CreaturePart.LeftFoot, CreaturePart.RightShin, CreaturePart.LeftShin,
                 CreaturePart.RightThigh, CreaturePart.LeftThigh, CreaturePart.Pelvis, CreaturePart.Torso,
                 CreaturePart.Belt, CreaturePart.Neck, CreaturePart.RightForearm, CreaturePart.LeftForearm,
                 CreaturePart.RightBicep, CreaturePart.LeftBicep, CreaturePart.RightShoulder, CreaturePart.LeftShoulder,
-                CreaturePart.RightHand, CreaturePart.LeftHand
-                // Note: Robe (index 18) is intentionally excluded
+                CreaturePart.RightHand, CreaturePart.LeftHand, CreaturePart.Robe
             };
 
             foreach (CreaturePart part in allParts)
@@ -353,32 +283,22 @@ public sealed class CharacterCustomizationModel
         }
         else
         {
-            // Single part mode
             CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
             oldArmor.Appearance.SetArmorPieceColor(creaturePart, colorChannel, (byte)colorIndex);
         }
 
-        // Unequip and re-equip to refresh the visual
         creature.RunUnequip(oldArmor);
-
-        // Clone the armor to refresh the inventory icon
         NwItem newArmor = oldArmor.Clone(creature);
 
         if (!newArmor.IsValid)
         {
             _player.SendServerMessage("Failed to refresh armor.", ColorConstants.Red);
-            // Re-equip old armor
             creature.RunEquip(oldArmor, InventorySlot.Chest);
             return;
         }
 
-        // Re-equip the new copy
         creature.RunEquip(newArmor, InventorySlot.Chest);
-
-        // Update our reference
         _currentArmor = newArmor;
-
-        // Destroy the old armor
         oldArmor.Destroy();
 
         if (CurrentArmorPart == 19)
@@ -418,10 +338,7 @@ public sealed class CharacterCustomizationModel
     public int GetCurrentArmorPartModel()
     {
         if (_currentArmor == null || !_currentArmor.IsValid) return 0;
-
-        // "All Parts" mode doesn't have a single model number
         if (CurrentArmorPart == 19) return 0;
-
         CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
         return _currentArmor.Appearance.GetArmorModel(creaturePart);
     }
@@ -429,24 +346,16 @@ public sealed class CharacterCustomizationModel
     public int GetCurrentArmorPartColor()
     {
         if (_currentArmor == null || !_currentArmor.IsValid) return 0;
-
         ItemAppearanceArmorColor colorChannel = GetArmorColorChannel(CurrentColorChannel);
-
-        // "All Parts" mode - return the color from Torso as representative
         if (CurrentArmorPart == 19)
         {
             return _currentArmor.Appearance.GetArmorPieceColor(CreaturePart.Torso, colorChannel);
         }
 
         CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
-
-        // Use Anvil's native per-part color method
         return _currentArmor.Appearance.GetArmorPieceColor(creaturePart, colorChannel);
     }
 
-    /// <summary>
-    /// Map our part index to Anvil's CreaturePart enum
-    /// </summary>
     private CreaturePart GetCreaturePart(int partIndex)
     {
         return partIndex switch
@@ -474,9 +383,6 @@ public sealed class CharacterCustomizationModel
         };
     }
 
-    /// <summary>
-    /// Map our color channel index to Anvil's ItemAppearanceArmorColor enum
-    /// </summary>
     private ItemAppearanceArmorColor GetArmorColorChannel(int channelIndex)
     {
         return channelIndex switch
@@ -491,9 +397,6 @@ public sealed class CharacterCustomizationModel
         };
     }
 
-    /// <summary>
-    /// Determine which AC range a torso model belongs to
-    /// </summary>
     private int? GetArmorClassFromTorsoModel(int modelIndex)
     {
         foreach (KeyValuePair<int, HashSet<int>> kvp in TorsoModelsByAc)
@@ -503,13 +406,9 @@ public sealed class CharacterCustomizationModel
                 return kvp.Key;
             }
         }
-        return null; // Model not found in any AC range
+        return null;
     }
 
-
-    /// <summary>
-    /// Save current state as new checkpoint - creates a new backup from current armor
-    /// </summary>
     public void ApplyChanges()
     {
         if (_currentArmor == null || !_currentArmor.IsValid)
@@ -521,21 +420,15 @@ public sealed class CharacterCustomizationModel
         NwCreature? creature = _player.ControlledCreature;
         if (creature == null) return;
 
-        // Destroy the old backup
         if (_initialArmorBackup != null && _initialArmorBackup.IsValid)
         {
             _initialArmorBackup.Destroy();
         }
 
-        // Create a new backup from the current armor state
         _initialArmorBackup = _currentArmor.Clone(creature, null, false);
-
         _player.SendServerMessage("Armor customization saved! You can continue editing or click Revert to return to this save point. Close the window normally when you're done!", ColorConstants.Green);
     }
 
-    /// <summary>
-    /// Revert all changes back to original - restores the backup
-    /// </summary>
     public void RevertChanges()
     {
         if (_initialArmorBackup == null || !_initialArmorBackup.IsValid)
@@ -547,19 +440,16 @@ public sealed class CharacterCustomizationModel
         NwCreature? creature = _player.ControlledCreature;
         if (creature == null) return;
 
-        // Unequip the current modified armor
         if (_currentArmor != null && _currentArmor.IsValid)
         {
             creature.RunUnequip(_currentArmor);
             _currentArmor.Destroy();
         }
 
-        // Clone the backup to restore it
         NwItem restoredArmor = _initialArmorBackup.Clone(creature);
 
         if (restoredArmor.IsValid)
         {
-            // Equip the restored armor
             creature.RunEquip(restoredArmor, InventorySlot.Chest);
             _currentArmor = restoredArmor;
 
@@ -570,17 +460,12 @@ public sealed class CharacterCustomizationModel
             _player.SendServerMessage("Failed to revert armor changes.", ColorConstants.Red);
         }
 
-        // Clean up the backup
         _initialArmorBackup.Destroy();
         _initialArmorBackup = null;
     }
 
-    /// <summary>
-    /// Confirm and finalize changes - cleans up backup without reverting
-    /// </summary>
     public void ConfirmAndClose()
     {
-        // Clean up the backup since we're keeping all changes
         if (_initialArmorBackup != null && _initialArmorBackup.IsValid)
         {
             _initialArmorBackup.Destroy();
