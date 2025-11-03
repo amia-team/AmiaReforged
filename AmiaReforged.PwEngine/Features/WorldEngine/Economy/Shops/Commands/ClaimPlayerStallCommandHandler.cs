@@ -1,10 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Commands;
@@ -15,11 +14,11 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Commands;
 [ServiceBinding(typeof(ICommandHandler<ClaimPlayerStallCommand>))]
 public sealed class ClaimPlayerStallCommandHandler : ICommandHandler<ClaimPlayerStallCommand>
 {
-    private readonly IPlayerShopRepository _shops;
+    private readonly IPlayerStallService _stallService;
 
-    public ClaimPlayerStallCommandHandler(IPlayerShopRepository shops)
+    public ClaimPlayerStallCommandHandler(IPlayerStallService stallService)
     {
-        _shops = shops;
+        _stallService = stallService ?? throw new ArgumentNullException(nameof(stallService));
     }
 
     public Task<CommandResult> HandleAsync(
@@ -28,47 +27,42 @@ public sealed class ClaimPlayerStallCommandHandler : ICommandHandler<ClaimPlayer
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        PlayerStall? stall = _shops.GetShopById(command.StallId);
-        if (stall == null)
+        ClaimPlayerStallRequest request = new(
+            command.StallId,
+            command.OwnerPersona,
+            command.OwnerDisplayName,
+            command.CoinHouseAccountId,
+            command.HoldEarningsInStall,
+            command.LeaseStartUtc,
+            command.NextRentDueUtc);
+
+        return _stallService.ClaimAsync(request, cancellationToken)
+            .ContinueWith(task => MapToCommandResult(task.Result), cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+    }
+
+    private static CommandResult MapToCommandResult(PlayerStallServiceResult serviceResult)
+    {
+        if (serviceResult.Success)
         {
-            return Task.FromResult(CommandResult.Fail($"Stall {command.StallId} was not found."));
+            return CommandResult.Ok(CopyPayload(serviceResult.Data));
         }
 
-        Guid ownerGuid;
-        try
-        {
-            ownerGuid = PersonaId.ToGuid(command.OwnerPersona);
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or FormatException or ArgumentException)
-        {
-            return Task.FromResult(CommandResult.Fail("Owner persona must resolve to a GUID-backed actor."));
-        }
+        return CommandResult.Fail(serviceResult.ErrorMessage ?? "Failed to claim stall.");
+    }
 
-        if (stall.OwnerCharacterId.HasValue && stall.OwnerCharacterId != ownerGuid)
+    private static Dictionary<string, object>? CopyPayload(IReadOnlyDictionary<string, object>? data)
+    {
+        if (data is null)
         {
-            return Task.FromResult(CommandResult.Fail("Stall is already claimed by a different owner."));
+            return null;
         }
 
-        bool updated = _shops.UpdateShop(stall.Id, entity =>
+        Dictionary<string, object> copy = new(data.Count);
+        foreach (KeyValuePair<string, object> entry in data)
         {
-            entity.OwnerCharacterId = ownerGuid;
-            entity.OwnerPersonaId = command.OwnerPersona.ToString();
-            entity.OwnerDisplayName = command.OwnerDisplayName;
-            entity.CoinHouseAccountId = command.CoinHouseAccountId;
-            entity.HoldEarningsInStall = command.HoldEarningsInStall;
-            entity.LeaseStartUtc = command.LeaseStartUtc;
-            entity.NextRentDueUtc = command.NextRentDueUtc;
-            entity.LastRentPaidUtc ??= command.LeaseStartUtc;
-            entity.SuspendedUtc = null;
-            entity.DeactivatedUtc = null;
-            entity.IsActive = true;
-        });
-
-        if (!updated)
-        {
-            return Task.FromResult(CommandResult.Fail("Failed to persist stall ownership changes."));
+            copy[entry.Key] = entry.Value;
         }
 
-        return Task.FromResult(CommandResult.OkWith("stallId", stall.Id));
+        return copy;
     }
 }

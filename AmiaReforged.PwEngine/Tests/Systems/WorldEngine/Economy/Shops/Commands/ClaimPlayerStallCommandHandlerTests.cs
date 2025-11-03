@@ -1,11 +1,13 @@
 using System;
+using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
-using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Moq;
 using NUnit.Framework;
 
@@ -14,162 +16,86 @@ namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Economy.Shops.Commands
 [TestFixture]
 public class ClaimPlayerStallCommandHandlerTests
 {
-    private Mock<IPlayerShopRepository> _shops = null!;
+    private Mock<IPlayerStallService> _service = null!;
     private ClaimPlayerStallCommandHandler _handler = null!;
-    private PlayerStall _persisted = null!;
-    private Guid _ownerGuid;
-    private PersonaId _ownerPersona;
 
     [SetUp]
     public void SetUp()
     {
-        _shops = new Mock<IPlayerShopRepository>();
-        _handler = new ClaimPlayerStallCommandHandler(_shops.Object);
-
-        _ownerGuid = Guid.NewGuid();
-        _ownerPersona = PersonaId.FromCharacter(CharacterId.From(_ownerGuid));
-
-        _persisted = CreateStall();
-
-        _shops
-            .Setup(r => r.GetShopById(It.IsAny<long>()))
-            .Returns<long>(id => id == _persisted.Id ? Clone(_persisted) : null);
-
-        _shops
-            .Setup(r => r.UpdateShop(It.IsAny<long>(), It.IsAny<Action<PlayerStall>>()))
-            .Returns<long, Action<PlayerStall>>((id, action) =>
-            {
-                if (id != _persisted.Id)
-                {
-                    return false;
-                }
-
-                action(_persisted);
-                return true;
-            });
+        _service = new Mock<IPlayerStallService>();
+        _handler = new ClaimPlayerStallCommandHandler(_service.Object);
     }
 
     [Test]
-    public async Task Given_UnownedStall_When_Claiming_Then_AssignsOwner()
+    public async Task HandleAsync_WhenServiceSucceeds_ReturnsSuccessResult()
     {
-        Guid coinHouseAccount = Guid.NewGuid();
-        DateTime leaseStart = new DateTime(2025, 11, 03, 10, 15, 00, DateTimeKind.Utc);
-
         ClaimPlayerStallCommand command = ClaimPlayerStallCommand.Create(
-            _persisted.Id,
-            _ownerPersona,
-            "Aria Moonwhisper",
-            coinHouseAccountId: coinHouseAccount,
-            holdEarningsInStall: true,
-            rentInterval: TimeSpan.FromHours(12),
-            leaseStartUtc: leaseStart);
+            stallId: 42,
+            ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
+            ownerDisplayName: "Aria Moonwhisper");
+
+        IReadOnlyDictionary<string, object> payload = new Dictionary<string, object>
+        {
+            ["stallId"] = 42L
+        };
+
+        _service
+            .Setup(s => s.ClaimAsync(It.IsAny<ClaimPlayerStallRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PlayerStallServiceResult.Ok(payload));
 
         CommandResult result = await _handler.HandleAsync(command);
 
         Assert.That(result.Success, Is.True);
+    Assert.That(result.Data, Is.Not.Null);
+    Assert.That(result.Data!.TryGetValue("stallId", out object? value), Is.True);
+    Assert.That(value, Is.EqualTo(42L));
+    _service.Verify(s => s.ClaimAsync(It.IsAny<ClaimPlayerStallRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task HandleAsync_WhenServiceFails_ReturnsFailureResult()
+    {
+        ClaimPlayerStallCommand command = ClaimPlayerStallCommand.Create(
+            stallId: 42,
+            ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
+            ownerDisplayName: "Aria");
+
+        _service
+            .Setup(s => s.ClaimAsync(It.IsAny<ClaimPlayerStallRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PlayerStallServiceResult.Fail(PlayerStallError.PersistenceFailure, "persist failure"));
+
+        CommandResult result = await _handler.HandleAsync(command);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.ErrorMessage, Is.EqualTo("persist failure"));
+    _service.Verify(s => s.ClaimAsync(It.IsAny<ClaimPlayerStallRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task HandleAsync_PassesCommandDataToService()
+    {
+        ClaimPlayerStallRequest? captured = null;
+        ClaimPlayerStallCommand command = ClaimPlayerStallCommand.Create(
+            stallId: 99,
+            ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
+            ownerDisplayName: "Aria",
+            rentInterval: TimeSpan.FromHours(6));
+
+        _service
+            .Setup(s => s.ClaimAsync(It.IsAny<ClaimPlayerStallRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<ClaimPlayerStallRequest, CancellationToken>((req, _) => captured = req)
+            .ReturnsAsync(PlayerStallServiceResult.Ok());
+
+        await _handler.HandleAsync(command);
+
+        Assert.That(captured, Is.Not.Null);
         Assert.Multiple(() =>
         {
-            Assert.That(_persisted.OwnerCharacterId, Is.EqualTo(_ownerGuid));
-            Assert.That(_persisted.OwnerPersonaId, Is.EqualTo(_ownerPersona.ToString()));
-            Assert.That(_persisted.OwnerDisplayName, Is.EqualTo("Aria Moonwhisper"));
-            Assert.That(_persisted.CoinHouseAccountId, Is.EqualTo(coinHouseAccount));
-            Assert.That(_persisted.HoldEarningsInStall, Is.True);
-            Assert.That(_persisted.LeaseStartUtc, Is.EqualTo(leaseStart));
-            Assert.That(_persisted.NextRentDueUtc, Is.EqualTo(command.NextRentDueUtc));
-            Assert.That(_persisted.LastRentPaidUtc, Is.EqualTo(leaseStart));
-            Assert.That(_persisted.IsActive, Is.True);
-            Assert.That(_persisted.SuspendedUtc, Is.Null);
+            Assert.That(captured!.StallId, Is.EqualTo(command.StallId));
+            Assert.That(captured!.OwnerPersona, Is.EqualTo(command.OwnerPersona));
+            Assert.That(captured!.OwnerDisplayName, Is.EqualTo(command.OwnerDisplayName));
+            Assert.That(captured!.NextRentDueUtc, Is.EqualTo(command.NextRentDueUtc));
         });
-    }
-
-    [Test]
-    public async Task Given_StallClaimedBySomeoneElse_When_Claiming_Then_Fails()
-    {
-        Guid existingOwner = Guid.NewGuid();
-        PersonaId existingPersona = PersonaId.FromCharacter(CharacterId.From(existingOwner));
-        _persisted.OwnerCharacterId = existingOwner;
-        _persisted.OwnerPersonaId = existingPersona.ToString();
-
-        ClaimPlayerStallCommand command = ClaimPlayerStallCommand.Create(
-            _persisted.Id,
-            _ownerPersona,
-            "Aria");
-
-        CommandResult result = await _handler.HandleAsync(command);
-
-        Assert.That(result.Success, Is.False);
-        _shops.Verify(r => r.UpdateShop(It.IsAny<long>(), It.IsAny<Action<PlayerStall>>()), Times.Never);
-    }
-
-    [Test]
-    public async Task Given_StallDoesNotExist_When_Claiming_Then_Fails()
-    {
-        ClaimPlayerStallCommand command = ClaimPlayerStallCommand.Create(
-            999,
-            _ownerPersona,
-            "Aria");
-
-        CommandResult result = await _handler.HandleAsync(command);
-
-        Assert.That(result.Success, Is.False);
-    }
-
-    [Test]
-    public async Task Given_PersonaWithoutGuid_When_Claiming_Then_Fails()
-    {
-        PersonaId systemPersona = PersonaId.FromSystem("stall-daemon");
-        ClaimPlayerStallCommand command = ClaimPlayerStallCommand.Create(
-            _persisted.Id,
-            systemPersona,
-            "Daemon");
-
-        CommandResult result = await _handler.HandleAsync(command);
-
-        Assert.That(result.Success, Is.False);
-        _shops.Verify(r => r.UpdateShop(It.IsAny<long>(), It.IsAny<Action<PlayerStall>>()), Times.Never);
-    }
-
-    private static PlayerStall CreateStall()
-    {
-        return new PlayerStall
-        {
-            Id = 42,
-            Tag = "stall_test",
-            AreaResRef = "ar_test",
-            SettlementTag = "settlement",
-            DailyRent = 1000,
-            LeaseStartUtc = DateTime.UtcNow,
-            NextRentDueUtc = DateTime.UtcNow.AddDays(1),
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
-        };
-    }
-
-    private static PlayerStall Clone(PlayerStall source)
-    {
-        return new PlayerStall
-        {
-            Id = source.Id,
-            Tag = source.Tag,
-            AreaResRef = source.AreaResRef,
-            SettlementTag = source.SettlementTag,
-            OwnerCharacterId = source.OwnerCharacterId,
-            OwnerPersonaId = source.OwnerPersonaId,
-            OwnerDisplayName = source.OwnerDisplayName,
-            CoinHouseAccountId = source.CoinHouseAccountId,
-            HoldEarningsInStall = source.HoldEarningsInStall,
-            EscrowBalance = source.EscrowBalance,
-            LifetimeGrossSales = source.LifetimeGrossSales,
-            LifetimeNetEarnings = source.LifetimeNetEarnings,
-            DailyRent = source.DailyRent,
-            LeaseStartUtc = source.LeaseStartUtc,
-            NextRentDueUtc = source.NextRentDueUtc,
-            LastRentPaidUtc = source.LastRentPaidUtc,
-            SuspendedUtc = source.SuspendedUtc,
-            IsActive = source.IsActive,
-            CreatedUtc = source.CreatedUtc,
-            UpdatedUtc = source.UpdatedUtc,
-            DeactivatedUtc = source.DeactivatedUtc
-        };
+        _service.Verify(s => s.ClaimAsync(It.IsAny<ClaimPlayerStallRequest>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

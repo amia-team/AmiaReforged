@@ -1,0 +1,188 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using Anvil.Services;
+
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
+
+/// <summary>
+/// Application service coordinating player stall domain operations with persistence.
+/// </summary>
+[ServiceBinding(typeof(IPlayerStallService))]
+public sealed class PlayerStallService : IPlayerStallService
+{
+    private readonly IPlayerShopRepository _shops;
+
+    public PlayerStallService(IPlayerShopRepository shops)
+    {
+        _shops = shops ?? throw new ArgumentNullException(nameof(shops));
+    }
+
+    public Task<PlayerStallServiceResult> ClaimAsync(ClaimPlayerStallRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        PlayerStall? stall = _shops.GetShopById(request.StallId);
+        if (stall is null)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(PlayerStallError.StallNotFound, $"Stall {request.StallId} was not found."));
+        }
+
+        if (!TryResolvePersonaGuid(request.OwnerPersona, out Guid ownerGuid))
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.PersonaNotGuidBacked,
+                "Owner persona must resolve to a GUID-backed actor."));
+        }
+
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+        PlayerStallClaimOptions options = new(
+            request.OwnerPersona.ToString(),
+            request.OwnerDisplayName,
+            request.CoinHouseAccountId,
+            request.HoldEarningsInStall,
+            request.LeaseStartUtc,
+            request.NextRentDueUtc);
+
+        PlayerStallDomainResult<Action<PlayerStall>> domainResult = aggregate.TryClaim(ownerGuid, options);
+        if (!domainResult.Success)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+        }
+
+        bool updated = _shops.UpdateShop(request.StallId, domainResult.Payload!);
+        if (!updated)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.PersistenceFailure,
+                "Failed to persist stall ownership changes."));
+        }
+
+        IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
+        {
+            ["stallId"] = request.StallId,
+            ["nextRentDueUtc"] = request.NextRentDueUtc
+        };
+
+        return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
+
+    public Task<PlayerStallServiceResult> ReleaseAsync(ReleasePlayerStallRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        PlayerStall? stall = _shops.GetShopById(request.StallId);
+        if (stall is null)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(PlayerStallError.StallNotFound, $"Stall {request.StallId} was not found."));
+        }
+
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+        DateTime releasedUtc = (request.ReleasedUtc ?? DateTime.UtcNow).ToUniversalTime();
+        string personaId = request.Requestor.ToString();
+
+        PlayerStallDomainResult<Action<PlayerStall>> domainResult = aggregate.TryRelease(personaId, request.Force, releasedUtc);
+        if (!domainResult.Success)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+        }
+
+        bool updated = _shops.UpdateShop(request.StallId, domainResult.Payload!);
+        if (!updated)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.PersistenceFailure,
+                "Failed to release stall ownership."));
+        }
+
+        IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
+        {
+            ["stallId"] = request.StallId,
+            ["releasedUtc"] = releasedUtc
+        };
+
+        return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
+
+    public Task<PlayerStallServiceResult> ListProductAsync(ListStallProductRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        PlayerStall? stall = _shops.GetShopById(request.StallId);
+        if (stall is null)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(PlayerStallError.StallNotFound, $"Stall {request.StallId} was not found."));
+        }
+
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+        PlayerStallProductDescriptor descriptor = new(
+            request.StallId,
+            request.ResRef,
+            request.Name,
+            request.Description,
+            request.Price,
+            request.Quantity,
+            request.BaseItemType,
+            request.ItemData,
+            request.ConsignorPersona?.ToString(),
+            string.IsNullOrWhiteSpace(request.ConsignorDisplayName) ? null : request.ConsignorDisplayName,
+            string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes,
+            request.SortOrder,
+            request.IsActive,
+            request.ListedUtc,
+            request.UpdatedUtc);
+
+        PlayerStallDomainResult<StallProduct> domainResult = aggregate.CreateProduct(descriptor);
+        if (!domainResult.Success)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+        }
+
+        StallProduct product = domainResult.Payload!;
+        _shops.AddProductToShop(request.StallId, product);
+
+        IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
+        {
+            ["stallId"] = request.StallId,
+            ["productId"] = product.Id
+        };
+
+        return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
+
+    private static bool TryResolvePersonaGuid(PersonaId persona, out Guid guid)
+    {
+        try
+        {
+            guid = PersonaId.ToGuid(persona);
+            return true;
+        }
+        catch (Exception) when (persona.Type != PersonaType.Character)
+        {
+            guid = Guid.Empty;
+            return false;
+        }
+        catch (FormatException)
+        {
+            guid = Guid.Empty;
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            guid = Guid.Empty;
+            return false;
+        }
+        catch (ArgumentException)
+        {
+            guid = Guid.Empty;
+            return false;
+        }
+    }
+}

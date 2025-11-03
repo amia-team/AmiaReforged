@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using Anvil.Services;
 
@@ -14,11 +14,11 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Commands;
 [ServiceBinding(typeof(ICommandHandler<ListStallProductCommand>))]
 public sealed class ListStallProductCommandHandler : ICommandHandler<ListStallProductCommand>
 {
-    private readonly IPlayerShopRepository _shops;
+    private readonly IPlayerStallService _stallService;
 
-    public ListStallProductCommandHandler(IPlayerShopRepository shops)
+    public ListStallProductCommandHandler(IPlayerStallService stallService)
     {
-        _shops = shops;
+        _stallService = stallService ?? throw new ArgumentNullException(nameof(stallService));
     }
 
     public Task<CommandResult> HandleAsync(
@@ -27,33 +27,50 @@ public sealed class ListStallProductCommandHandler : ICommandHandler<ListStallPr
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        PlayerStall? stall = _shops.GetShopById(command.StallId);
-        if (stall == null)
+        ListStallProductRequest request = new(
+            command.StallId,
+            command.ResRef,
+            command.Name,
+            command.Description,
+            command.Price,
+            command.Quantity,
+            command.BaseItemType,
+            command.ItemData,
+            command.ConsignorPersona,
+            command.ConsignorDisplayName,
+            command.Notes,
+            command.SortOrder,
+            command.IsActive,
+            command.ListedUtc,
+            command.UpdatedUtc);
+
+        return _stallService.ListProductAsync(request, cancellationToken)
+            .ContinueWith(task => MapToCommandResult(task.Result), cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+    }
+
+    private static CommandResult MapToCommandResult(PlayerStallServiceResult serviceResult)
+    {
+        if (serviceResult.Success)
         {
-            return Task.FromResult(CommandResult.Fail($"Stall {command.StallId} was not found."));
+            return CommandResult.Ok(CopyPayload(serviceResult.Data));
         }
 
-        StallProduct product = new StallProduct
+        return CommandResult.Fail(serviceResult.ErrorMessage ?? "Failed to list product.");
+    }
+
+    private static Dictionary<string, object>? CopyPayload(IReadOnlyDictionary<string, object>? data)
+    {
+        if (data is null)
         {
-            StallId = command.StallId,
-            ResRef = command.ResRef,
-            Name = command.Name,
-            Description = command.Description,
-            Price = command.Price,
-            Quantity = command.Quantity,
-            BaseItemType = command.BaseItemType,
-            ItemData = (byte[])command.ItemData.Clone(),
-            ConsignedByPersonaId = command.ConsignorPersona?.ToString(),
-            ConsignedByDisplayName = command.ConsignorDisplayName,
-            Notes = command.Notes,
-            SortOrder = command.SortOrder,
-            IsActive = command.IsActive,
-            ListedUtc = command.ListedUtc,
-            UpdatedUtc = command.UpdatedUtc
-        };
+            return null;
+        }
 
-        _shops.AddProductToShop(command.StallId, product);
+        Dictionary<string, object> copy = new(data.Count);
+        foreach (KeyValuePair<string, object> entry in data)
+        {
+            copy[entry.Key] = entry.Value;
+        }
 
-        return Task.FromResult(CommandResult.OkWith("productId", product.Id));
+        return copy;
     }
 }

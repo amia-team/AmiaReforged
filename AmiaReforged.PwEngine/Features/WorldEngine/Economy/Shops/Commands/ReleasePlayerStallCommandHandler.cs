@@ -1,10 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Commands;
@@ -15,11 +14,11 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Commands;
 [ServiceBinding(typeof(ICommandHandler<ReleasePlayerStallCommand>))]
 public sealed class ReleasePlayerStallCommandHandler : ICommandHandler<ReleasePlayerStallCommand>
 {
-    private readonly IPlayerShopRepository _shops;
+    private readonly IPlayerStallService _stallService;
 
-    public ReleasePlayerStallCommandHandler(IPlayerShopRepository shops)
+    public ReleasePlayerStallCommandHandler(IPlayerStallService stallService)
     {
-        _shops = shops;
+        _stallService = stallService ?? throw new ArgumentNullException(nameof(stallService));
     }
 
     public Task<CommandResult> HandleAsync(
@@ -28,43 +27,38 @@ public sealed class ReleasePlayerStallCommandHandler : ICommandHandler<ReleasePl
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        PlayerStall? stall = _shops.GetShopById(command.StallId);
-        if (stall == null)
+        ReleasePlayerStallRequest request = new(
+            command.StallId,
+            command.Requestor,
+            command.Force);
+
+        return _stallService.ReleaseAsync(request, cancellationToken)
+            .ContinueWith(task => MapToCommandResult(task.Result), cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+    }
+
+    private static CommandResult MapToCommandResult(PlayerStallServiceResult serviceResult)
+    {
+        if (serviceResult.Success)
         {
-            return Task.FromResult(CommandResult.Fail($"Stall {command.StallId} was not found."));
+            return CommandResult.Ok(CopyPayload(serviceResult.Data));
         }
 
-        string requestorKey = command.Requestor.ToString();
-        bool isOwned = stall.OwnerCharacterId.HasValue || !string.IsNullOrWhiteSpace(stall.OwnerPersonaId);
-        bool isOwner = string.Equals(stall.OwnerPersonaId, requestorKey, StringComparison.OrdinalIgnoreCase);
+        return CommandResult.Fail(serviceResult.ErrorMessage ?? "Failed to release stall.");
+    }
 
-        if (!isOwned && !command.Force)
+    private static Dictionary<string, object>? CopyPayload(IReadOnlyDictionary<string, object>? data)
+    {
+        if (data is null)
         {
-            return Task.FromResult(CommandResult.Fail("Stall is not currently owned."));
+            return null;
         }
 
-        if (!isOwner && !command.Force)
+        Dictionary<string, object> copy = new(data.Count);
+        foreach (KeyValuePair<string, object> entry in data)
         {
-            return Task.FromResult(CommandResult.Fail("Only the owner can release this stall."));
+            copy[entry.Key] = entry.Value;
         }
 
-        bool updated = _shops.UpdateShop(stall.Id, entity =>
-        {
-            entity.OwnerCharacterId = null;
-            entity.OwnerPersonaId = null;
-            entity.OwnerDisplayName = null;
-            entity.CoinHouseAccountId = null;
-            entity.HoldEarningsInStall = false;
-            entity.SuspendedUtc = DateTime.UtcNow;
-            entity.DeactivatedUtc = DateTime.UtcNow;
-            entity.IsActive = false;
-        });
-
-        if (!updated)
-        {
-            return Task.FromResult(CommandResult.Fail("Failed to release stall ownership."));
-        }
-
-        return Task.FromResult(CommandResult.OkWith("stallId", stall.Id));
+        return copy;
     }
 }
