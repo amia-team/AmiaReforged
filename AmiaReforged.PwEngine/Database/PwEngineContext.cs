@@ -35,8 +35,9 @@ public class PwEngineContext : DbContext
     public DbSet<PersistentObject> PersistentObjects { get; set; } = null!;
 
     public DbSet<PlayerStall> PlayerStalls { get; set; } = null!;
+    public DbSet<PlayerStallMember> PlayerStallMembers { get; set; } = null!;
+    public DbSet<PlayerStallLedgerEntry> PlayerStallLedgerEntries { get; set; } = null!;
     public DbSet<StallProduct> StallProducts { get; set; } = null!;
-
     public DbSet<StallTransaction> StallTransactions { get; set; } = null!;
 
     public DbSet<ShopRecord> Shops { get; set; } = null!;
@@ -130,5 +131,10 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new ShopProductConfiguration());
         modelBuilder.ApplyConfiguration(new ShopLedgerEntryConfiguration());
         modelBuilder.ApplyConfiguration(new ShopVaultItemConfiguration());
+        modelBuilder.ApplyConfiguration(new PlayerStallConfiguration());
+        modelBuilder.ApplyConfiguration(new PlayerStallMemberConfiguration());
+        modelBuilder.ApplyConfiguration(new PlayerStallLedgerEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new StallProductConfiguration());
+        modelBuilder.ApplyConfiguration(new StallTransactionConfiguration());
     }
 }

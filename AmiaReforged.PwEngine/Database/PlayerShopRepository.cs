@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using Anvil.Services;
 using NLog;
@@ -29,7 +32,9 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
-        return ctx.StallProducts.Where(p => p.ShopId == shopId).ToList();
+        return ctx.StallProducts
+            .Where(p => p.StallId == shopId)
+            .ToList();
     }
 
     public void AddProductToShop(long shopId, StallProduct product)
@@ -38,6 +43,7 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
 
         try
         {
+            product.StallId = shopId;
             ctx.StallProducts.Add(product);
             ctx.SaveChanges();
         }
@@ -53,7 +59,7 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
 
         try
         {
-            StallProduct? product = ctx.StallProducts.SingleOrDefault(p => p.Id == productId && p.ShopId == shopId);
+            StallProduct? product = ctx.StallProducts.SingleOrDefault(p => p.Id == productId && p.StallId == shopId);
             if (product == null) return;
             ctx.StallProducts.Remove(product);
             ctx.SaveChanges();
@@ -71,7 +77,7 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
         PlayerStall? shop = ctx.PlayerStalls.Find(shopId);
         if (shop == null) return false;
 
-        return shop.AccountId == characterId;
+        return shop.OwnerCharacterId == characterId;
     }
 
     public void CreateShop(PlayerStall shop)
@@ -114,12 +120,41 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
         {
             PlayerStall? shop = ctx.PlayerStalls.Find(shopId);
             if (shop == null) return;
-            shop.AccountId = null;
+            shop.OwnerCharacterId = null;
+            shop.OwnerPersonaId = null;
+            shop.OwnerDisplayName = null;
+            shop.CoinHouseAccountId = null;
+            shop.HoldEarningsInStall = false;
             ctx.SaveChanges();
         }
         catch (Exception e)
         {
             Log.Error(e);
+        }
+    }
+
+    public bool UpdateShop(long stallId, Action<PlayerStall> updateAction)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        try
+        {
+            PlayerStall? stall = ctx.PlayerStalls.SingleOrDefault(s => s.Id == stallId);
+            if (stall == null)
+            {
+                return false;
+            }
+
+            updateAction(stall);
+            stall.UpdatedUtc = DateTime.UtcNow;
+
+            ctx.SaveChanges();
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+            return false;
         }
     }
 
@@ -169,9 +204,11 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
-        return ctx.StallTransactions
-            .Where(t => t.StallId == shopId && t.StallOwnerId == ownerId)
-            .ToList();
+    return (from transaction in ctx.StallTransactions
+        join stall in ctx.PlayerStalls on transaction.StallId equals stall.Id
+        where transaction.StallId == shopId && stall.OwnerCharacterId == ownerId
+        select transaction)
+        .ToList();
     }
 
     public void SaveTransaction(StallTransaction transaction)
@@ -214,6 +251,8 @@ public interface IPlayerShopRepository
 
     void UnownShop(long shopId);
     void AddStall(PlayerStall newStall);
+
+    bool UpdateShop(long stallId, Action<PlayerStall> updateAction);
 
     List<StallTransaction>? TransactionsForShop(long shopId);
     List<StallTransaction>? TransactionsForStallWhenOwnedBy(long shopId, Guid ownerId);
