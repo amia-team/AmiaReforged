@@ -70,9 +70,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.WeaponTopModelText, "1");
         Token().SetBindValue(View.WeaponMidModelText, "1");
         Token().SetBindValue(View.WeaponBotModelText, "1");
-        Token().SetBindValue(View.WeaponTopColorText, "1");
-        Token().SetBindValue(View.WeaponMidColorText, "1");
-        Token().SetBindValue(View.WeaponBotColorText, "1");
 
         Token().SetBindValue(View.BootsTopModelText, "1");
         Token().SetBindValue(View.BootsMidModelText, "1");
@@ -182,44 +179,44 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             return;
         }
 
-        if (ev.ElementId == View.WeaponTopColorLeftButton.Id)
+        if (ev.ElementId == View.WeaponTopModelLeft10Button.Id)
         {
-            _model.AdjustWeaponTopColor(-1);
+            _model.AdjustWeaponTopModel(-10);
             UpdateWeaponDisplay();
             return;
         }
 
-        if (ev.ElementId == View.WeaponTopColorRightButton.Id)
+        if (ev.ElementId == View.WeaponTopModelRight10Button.Id)
         {
-            _model.AdjustWeaponTopColor(1);
+            _model.AdjustWeaponTopModel(10);
             UpdateWeaponDisplay();
             return;
         }
 
-        if (ev.ElementId == View.WeaponMidColorLeftButton.Id)
+        if (ev.ElementId == View.WeaponMidModelLeft10Button.Id)
         {
-            _model.AdjustWeaponMidColor(-1);
+            _model.AdjustWeaponMidModel(-10);
             UpdateWeaponDisplay();
             return;
         }
 
-        if (ev.ElementId == View.WeaponMidColorRightButton.Id)
+        if (ev.ElementId == View.WeaponMidModelRight10Button.Id)
         {
-            _model.AdjustWeaponMidColor(1);
+            _model.AdjustWeaponMidModel(10);
             UpdateWeaponDisplay();
             return;
         }
 
-        if (ev.ElementId == View.WeaponBotColorLeftButton.Id)
+        if (ev.ElementId == View.WeaponBotModelLeft10Button.Id)
         {
-            _model.AdjustWeaponBotColor(-1);
+            _model.AdjustWeaponBotModel(-10);
             UpdateWeaponDisplay();
             return;
         }
 
-        if (ev.ElementId == View.WeaponBotColorRightButton.Id)
+        if (ev.ElementId == View.WeaponBotModelRight10Button.Id)
         {
-            _model.AdjustWeaponBotColor(1);
+            _model.AdjustWeaponBotModel(10);
             UpdateWeaponDisplay();
             return;
         }
@@ -434,9 +431,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.WeaponTopModelText, _model.WeaponTopModel.ToString());
         Token().SetBindValue(View.WeaponMidModelText, _model.WeaponMidModel.ToString());
         Token().SetBindValue(View.WeaponBotModelText, _model.WeaponBotModel.ToString());
-        Token().SetBindValue(View.WeaponTopColorText, _model.WeaponTopColor.ToString());
-        Token().SetBindValue(View.WeaponMidColorText, _model.WeaponMidColor.ToString());
-        Token().SetBindValue(View.WeaponBotColorText, _model.WeaponBotColor.ToString());
     }
 
     private void UpdateBootsDisplay()

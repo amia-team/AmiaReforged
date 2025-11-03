@@ -18,9 +18,6 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
     public readonly NuiBind<string> WeaponTopModelText = new("eq_weapon_top_model");
     public readonly NuiBind<string> WeaponMidModelText = new("eq_weapon_mid_model");
     public readonly NuiBind<string> WeaponBotModelText = new("eq_weapon_bot_model");
-    public readonly NuiBind<string> WeaponTopColorText = new("eq_weapon_top_color");
-    public readonly NuiBind<string> WeaponMidColorText = new("eq_weapon_mid_color");
-    public readonly NuiBind<string> WeaponBotColorText = new("eq_weapon_bot_color");
 
     public readonly NuiBind<string> BootsTopModelText = new("eq_boots_top_model");
     public readonly NuiBind<string> BootsMidModelText = new("eq_boots_mid_model");
@@ -57,12 +54,12 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
     public NuiButtonImage WeaponBotModelLeftButton = null!;
     public NuiButtonImage WeaponBotModelRightButton = null!;
 
-    public NuiButtonImage WeaponTopColorLeftButton = null!;
-    public NuiButtonImage WeaponTopColorRightButton = null!;
-    public NuiButtonImage WeaponMidColorLeftButton = null!;
-    public NuiButtonImage WeaponMidColorRightButton = null!;
-    public NuiButtonImage WeaponBotColorLeftButton = null!;
-    public NuiButtonImage WeaponBotColorRightButton = null!;
+    public NuiButtonImage WeaponTopModelLeft10Button = null!;
+    public NuiButtonImage WeaponTopModelRight10Button = null!;
+    public NuiButtonImage WeaponMidModelLeft10Button = null!;
+    public NuiButtonImage WeaponMidModelRight10Button = null!;
+    public NuiButtonImage WeaponBotModelLeft10Button = null!;
+    public NuiButtonImage WeaponBotModelRight10Button = null!;
 
     public NuiButtonImage BootsTopModelLeftButton = null!;
     public NuiButtonImage BootsTopModelRightButton = null!;
@@ -191,7 +188,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 80f },
+                        new NuiSpacer { Width = 140f },
                         new NuiLabel("Top Model:")
                         {
                             Width = 100f,
@@ -199,6 +196,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
+                        ImageButton("btn_weapon_top_model_left10", "-10", out WeaponTopModelLeft10Button, 30f, 30f, "cc_arrow_l_btn", WeaponControlsEnabled),
                         ImageButton("btn_weapon_top_model_left", "-1", out WeaponTopModelLeftButton, 30f, 30f, "cc_arrow_l_btn", WeaponControlsEnabled),
                         new NuiLabel(WeaponTopModelText)
                         {
@@ -209,38 +207,22 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                             ForegroundColor = new Color(30, 20, 12)
                         },
                         ImageButton("btn_weapon_top_model_right", "+1", out WeaponTopModelRightButton, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled),
-                        new NuiSpacer { Width = 40f },
-                        new NuiLabel("Top Color:")
-                        {
-                            Width = 100f,
-                            Height = 30f,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_weapon_top_color_left", "-1", out WeaponTopColorLeftButton, 30f, 30f, "cc_arrow_l_btn", WeaponControlsEnabled),
-                        new NuiLabel(WeaponTopColorText)
-                        {
-                            Width = 40f,
-                            Height = 30f,
-                            HorizontalAlign = NuiHAlign.Center,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_weapon_top_color_right", "+1", out WeaponTopColorRightButton, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled)
+                        ImageButton("btn_weapon_top_model_right10", "+10", out WeaponTopModelRight10Button, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled)
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 80f },
+                        new NuiSpacer { Width = 120f },
                         new NuiLabel("Middle Model:")
                         {
-                            Width = 100f,
+                            Width = 120f,
                             Height = 30f,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
+                        ImageButton("btn_weapon_mid_model_left10", "-10", out WeaponMidModelLeft10Button, 30f, 30f, "cc_arrow_l_btn", WeaponControlsEnabled),
                         ImageButton("btn_weapon_mid_model_left", "-1", out WeaponMidModelLeftButton, 30f, 30f, "cc_arrow_l_btn", WeaponControlsEnabled),
                         new NuiLabel(WeaponMidModelText)
                         {
@@ -251,38 +233,22 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                             ForegroundColor = new Color(30, 20, 12)
                         },
                         ImageButton("btn_weapon_mid_model_right", "+1", out WeaponMidModelRightButton, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled),
-                        new NuiSpacer { Width = 40f },
-                        new NuiLabel("Middle Color:")
-                        {
-                            Width = 100f,
-                            Height = 30f,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_weapon_mid_color_left", "-1", out WeaponMidColorLeftButton, 30f, 30f, "cc_arrow_l_btn", WeaponControlsEnabled),
-                        new NuiLabel(WeaponMidColorText)
-                        {
-                            Width = 40f,
-                            Height = 30f,
-                            HorizontalAlign = NuiHAlign.Center,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_weapon_mid_color_right", "+1", out WeaponMidColorRightButton, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled)
+                        ImageButton("btn_weapon_mid_model_right10", "+10", out WeaponMidModelRight10Button, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled)
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 80f },
+                        new NuiSpacer { Width = 110f },
                         new NuiLabel("Bottom Model:")
                         {
-                            Width = 100f,
+                            Width = 130f,
                             Height = 30f,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
+                        ImageButton("btn_weapon_bot_model_left10", "-10", out WeaponBotModelLeft10Button, 30f, 30f, "cc_arrow_l_btn", WeaponControlsEnabled),
                         ImageButton("btn_weapon_bot_model_left", "-1", out WeaponBotModelLeftButton, 30f, 30f, "cc_arrow_l_btn", WeaponControlsEnabled),
                         new NuiLabel(WeaponBotModelText)
                         {
@@ -293,24 +259,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                             ForegroundColor = new Color(30, 20, 12)
                         },
                         ImageButton("btn_weapon_bot_model_right", "+1", out WeaponBotModelRightButton, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled),
-                        new NuiSpacer { Width = 40f },
-                        new NuiLabel("Bottom Color:")
-                        {
-                            Width = 100f,
-                            Height = 30f,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_weapon_bot_color_left", "-1", out WeaponBotColorLeftButton, 30f, 30f, "cc_arrow_l_btn", WeaponControlsEnabled),
-                        new NuiLabel(WeaponBotColorText)
-                        {
-                            Width = 40f,
-                            Height = 30f,
-                            HorizontalAlign = NuiHAlign.Center,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_weapon_bot_color_right", "+1", out WeaponBotColorRightButton, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled)
+                        ImageButton("btn_weapon_bot_model_right10", "+10", out WeaponBotModelRight10Button, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled)
                     }
                 }
             }
