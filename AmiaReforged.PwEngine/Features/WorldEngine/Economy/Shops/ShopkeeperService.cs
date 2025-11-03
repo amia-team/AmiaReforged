@@ -16,12 +16,15 @@ public sealed class ShopkeeperService
 
     private readonly INpcShopRepository _shops;
     private readonly WindowDirector _windowDirector;
+    private readonly ShopLocationResolver _shopLocations;
     private readonly HashSet<NwCreature> _registeredCreatures = new();
 
-    public ShopkeeperService(INpcShopRepository shops, WindowDirector windowDirector)
+    public ShopkeeperService(INpcShopRepository shops, WindowDirector windowDirector,
+        ShopLocationResolver shopLocations)
     {
         _shops = shops;
         _windowDirector = windowDirector;
+        _shopLocations = shopLocations;
 
         RegisterExistingShopkeepers();
         NwModule.Instance.OnModuleLoad += HandleModuleLoad;
@@ -92,13 +95,13 @@ public sealed class ShopkeeperService
             return;
         }
 
-    NwPlayer? player = ResolvePlayer(npc);
+        NwPlayer? player = ResolvePlayer(npc);
         if (player is null)
         {
             return;
         }
 
-        OpenShopWindow(player, shop);
+        OpenShopWindow(player, shop, npc);
     }
 
     private NwPlayer? ResolvePlayer(NwCreature npc)
@@ -114,7 +117,7 @@ public sealed class ShopkeeperService
         return null;
     }
 
-    private void OpenShopWindow(NwPlayer player, NpcShop shop)
+    private void OpenShopWindow(NwPlayer player, NpcShop shop, NwCreature shopkeeper)
     {
         if (!player.IsValid)
         {
@@ -123,13 +126,33 @@ public sealed class ShopkeeperService
 
         _windowDirector.CloseWindow(player, typeof(ShopWindowPresenter));
 
+        string displayName = shop.DisplayName;
+        if (_shopLocations.TryResolve(shop, shopkeeper, out ShopLocationMetadata location))
+        {
+            if (!string.IsNullOrWhiteSpace(location.ShopDisplayName))
+            {
+                displayName = location.ShopDisplayName;
+            }
+
+            Log.Debug("Shop '{ShopTag}' resolved to settlement '{Settlement}' in region '{Region}' via POI '{PoiTag}'.",
+                location.ShopTag,
+                location.Settlement.Value,
+                location.RegionTag.Value,
+                location.PoiTag ?? "<unknown>");
+        }
+        else
+        {
+            string areaResRef = shopkeeper.Area?.ResRef ?? "<unknown>";
+            Log.Warn("Shop '{ShopTag}' at area '{AreaResRef}' lacks a matching shop POI in region data.",
+                shop.Tag, areaResRef);
+        }
+
         ShopWindowView view = new(player, shop);
         _windowDirector.OpenWindow(view.Presenter);
 
-        player.SendServerMessage(
-            message: string.IsNullOrWhiteSpace(shop.DisplayName)
-                ? "Browsing merchant wares."
-                : $"Browsing {shop.DisplayName}.",
-            ColorConstants.Cyan);
+        string message = string.IsNullOrWhiteSpace(displayName)
+            ? "Browsing merchant wares."
+            : $"Browsing {displayName}.";
+        player.SendServerMessage(message, ColorConstants.Cyan);
     }
 }
