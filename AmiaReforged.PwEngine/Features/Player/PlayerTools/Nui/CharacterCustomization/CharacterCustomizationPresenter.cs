@@ -40,6 +40,13 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
         {
             InitializeColorPalette(false);
             Token().SetBindValue(View.ModelButtonsEnabled, true);
+
+            // Initialize armor part visibility - hide all parts so only base body shows
+            for (int i = 0; i < 19; i++)
+            {
+                Token().SetBindValue(View.ArmorPartVisible[i], false);
+            }
+
             UpdateModeDisplay();
             UpdatePartDisplay();
         }

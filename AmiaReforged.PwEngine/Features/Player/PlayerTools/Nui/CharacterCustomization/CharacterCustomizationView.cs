@@ -213,7 +213,6 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
 
         return new NuiRow
         {
-            Visible = ArmorModeActive,
             Width = 0f,
             Height = bodyHeight,
             Children = new List<NuiElement>(),
