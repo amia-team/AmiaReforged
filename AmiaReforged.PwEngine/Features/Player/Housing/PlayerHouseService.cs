@@ -107,8 +107,14 @@ public class PlayerHouseService
             PropertyAreaMetadata metadata;
             try
             {
-                PropertyId? explicitPropertyId = _metadataResolver.TryResolveExplicitPropertyId(area);
-                metadata = _metadataResolver.Capture(area, explicitPropertyId);
+                if (!_metadataResolver.TryCapture(area, out metadata))
+                {
+                    Log.Warn("Area {AreaTag} did not resolve to a configured property via region metadata.",
+                        area.Tag);
+                    await ShowFloatingTextAsync(player,
+                        "This property is not registered in the housing system. Please notify a DM.");
+                    return;
+                }
             }
             catch (Exception metaEx)
             {
@@ -117,11 +123,7 @@ public class PlayerHouseService
                 return;
             }
 
-            if (!TryResolvePropertyId(obj.Door, metadata, out PropertyId propertyId))
-            {
-                await ShowFloatingTextAsync(player, "This property is missing an identifier. Please notify a DM.");
-                return;
-            }
+            PropertyId propertyId = _definitionSynchronizer.ResolvePropertyId(metadata);
 
             RentablePropertySnapshot? snapshot = await EnsurePropertySnapshotAsync(propertyId, metadata);
             if (snapshot is null)
@@ -267,25 +269,6 @@ public class PlayerHouseService
     {
         return NwModule.Instance.Areas
             .FirstOrDefault(area => string.Equals(area.Tag, areaTag, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private bool TryResolvePropertyId(
-        NwDoor door,
-        PropertyAreaMetadata metadata,
-        out PropertyId propertyId)
-    {
-        foreach (string variableName in PropertyMetadataResolver.PropertyIdVariableNames)
-        {
-            if (PropertyMetadataResolver.TryParsePropertyId(
-                    door.GetObjectVariable<LocalVariableString>(variableName),
-                    out propertyId))
-            {
-                return true;
-            }
-        }
-
-        propertyId = _definitionSynchronizer.ResolvePropertyId(metadata);
-        return true;
     }
 
     private PropertyRentFlow.RentOfferPresentation ResolvePropertyPresentation(PropertyAreaMetadata metadata)

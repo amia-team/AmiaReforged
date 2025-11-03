@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
@@ -13,7 +15,7 @@ using NLog;
 namespace AmiaReforged.PwEngine.Features.Player.Housing;
 
 [ServiceBinding(typeof(PropertyMetadataResolver))]
-public sealed class PropertyMetadataResolver(RegionIndex regions, ICoinhouseRepository coinhouses)
+public sealed class PropertyMetadataResolver
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private const int DefaultEvictionGraceDays = 2;
@@ -21,94 +23,51 @@ public sealed class PropertyMetadataResolver(RegionIndex regions, ICoinhouseRepo
     private static readonly Regex SettlementIdentifierPattern =
         new("^[a-z0-9_-]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    internal static readonly string[] PropertyIdVariableNames =
-    [
-        "rentable_property_id",
-        "property_id",
-        "house_property_id"
-    ];
+    private readonly RegionIndex _regions;
+    private readonly ICoinhouseRepository _coinhouses;
 
-    public PropertyId? TryResolveExplicitPropertyId(NwArea area)
+    public PropertyMetadataResolver(RegionIndex regions, ICoinhouseRepository coinhouses)
     {
-        foreach (string variableName in PropertyIdVariableNames)
-        {
-            if (TryParsePropertyId(area.GetObjectVariable<LocalVariableString>(variableName),
-                    out PropertyId propertyId))
-            {
-                return propertyId;
-            }
-        }
-
-        return null;
+        _regions = regions;
+        _coinhouses = coinhouses;
     }
 
-    public static bool IsHouseArea(NwArea area)
+    public bool TryCapture(NwArea area, out PropertyAreaMetadata metadata)
     {
-        return area.GetObjectVariable<LocalVariableInt>("is_house").Value > 0;
-    }
+        metadata = default!;
 
-    public PropertyAreaMetadata Capture(NwArea area, PropertyId? explicitPropertyId)
-    {
-        string areaTag = area.Tag;
-        if (string.IsNullOrWhiteSpace(areaTag))
+        if (!TryResolveContext(area, out RegionDefinition? region, out AreaDefinition? areaDefinition,
+                out PlaceOfInterest? poi, out SettlementId settlementId))
         {
-            throw new InvalidOperationException("House areas must be tagged to participate in housing.");
+            return false;
         }
 
-        string areaResRef = area.ResRef ?? throw new InvalidOperationException("House areas must have a valid resref.");
+        string areaTag = ResolveAreaTag(area, poi!);
+        string areaResRef = ResolveAreaResRef(area, areaDefinition!, poi!);
+        string displayName = ResolveInternalName(area, poi!, areaDefinition!);
+        PropertyCategory category = ResolvePropertyCategory(poi!);
+        SettlementTag settlement = BuildSettlementTag(region!, settlementId, poi!);
+        CoinhouseTag? coinhouseTag = ResolveCoinhouseTag(settlementId);
 
-        string internalName = ResolveInternalName(area);
-        PropertyCategory category = ResolvePropertyCategory(area);
-        SettlementTag settlement = ResolveSettlementTag(area);
-        GoldAmount monthlyRent = ResolveMonthlyRent(area);
-        CoinhouseTag? coinhouseTag = ResolveCoinhouseTag(area);
-        bool allowsCoinhouse = ResolveBoolean(area, "allows_coinhouse_rental", coinhouseTag is not null);
-        bool allowsDirect = ResolveBoolean(area, "allows_direct_rental", true);
-        GoldAmount? purchasePrice = ResolveOptionalGold(area, "purchase_price");
-        GoldAmount? ownershipTax = ResolveOptionalGold(area, "monthly_ownership_tax");
-        int evictionGraceDays = ResolveEvictionGraceDays(area);
-        PersonaId? defaultOwner = ResolveDefaultOwner(area);
-
-        return new PropertyAreaMetadata(
+        metadata = new PropertyAreaMetadata(
             areaTag,
             areaResRef,
-            internalName,
+            displayName,
             category,
             settlement,
-            monthlyRent,
-            allowsCoinhouse,
-            allowsDirect,
-            coinhouseTag,
-            purchasePrice,
-            ownershipTax,
-            evictionGraceDays,
-            defaultOwner,
-            explicitPropertyId);
-    }
+            MonthlyRent: GoldAmount.Zero,
+            AllowsCoinhouseRental: coinhouseTag is not null,
+            AllowsDirectRental: true,
+            SettlementCoinhouseTag: coinhouseTag,
+            PurchasePrice: null,
+            MonthlyOwnershipTax: null,
+            EvictionGraceDays: DefaultEvictionGraceDays,
+            DefaultOwner: null,
+            RegionTag: region!.Tag,
+            PoiTag: poi!.Tag,
+            PoiResRef: poi!.ResRef,
+            Description: poi!.Description);
 
-    internal static bool TryParsePropertyId(LocalVariableString variable, out PropertyId propertyId)
-    {
-        propertyId = default;
-
-        if (!variable.HasValue)
-        {
-            return false;
-        }
-
-        string? value = variable.Value;
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
-
-        if (!Guid.TryParse(value, out Guid parsed) || parsed == Guid.Empty)
-        {
-            Log.Warn("Invalid property id '{Value}' encountered in local variable '{VarName}'.", value, variable.Name);
-            return false;
-        }
-
-        propertyId = PropertyId.Parse(parsed);
         return true;
     }
 
@@ -128,239 +87,224 @@ public sealed class PropertyMetadataResolver(RegionIndex regions, ICoinhouseRepo
             return false;
         }
 
-        RegionDefinition? fallbackRegion = null;
-        AreaDefinition? fallbackArea = null;
-        PlaceOfInterest? fallbackPoi = null;
-
-        IReadOnlyList<RegionDefinition> regions1 = regions.All();
-        foreach (RegionDefinition region in regions1)
+        IReadOnlyList<RegionDefinition> snapshot = _regions.All();
+        foreach (RegionDefinition region in snapshot)
         {
             foreach (AreaDefinition area in region.Areas)
             {
-                PlaceOfInterest? matchingPoi = area.PlacesOfInterest?
-                    .FirstOrDefault(p =>
-                        string.Equals(p.ResRef, areaResRef, StringComparison.OrdinalIgnoreCase) ||
-                        (!string.IsNullOrWhiteSpace(areaTag) &&
-                         string.Equals(p.Tag, areaTag, StringComparison.OrdinalIgnoreCase)));
-
-                if (matchingPoi is not null)
-                {
-                    regionDefinition = region;
-                    areaDefinition = area;
-                    pointOfInterest = matchingPoi;
-                    return true;
-                }
-
-                bool areaMatches = string.Equals(area.ResRef.Value, areaResRef, StringComparison.OrdinalIgnoreCase);
-                if (!areaMatches)
+                if (!string.Equals(area.ResRef.Value, areaResRef, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
-                fallbackRegion ??= region;
-                fallbackArea ??= area;
-
-                if (fallbackPoi is null && area.PlacesOfInterest is { Count: > 0 })
+                PlaceOfInterest? housePoi = ResolveHousePoi(area, areaTag, areaResRef);
+                if (housePoi is null)
                 {
-                    fallbackPoi = area.PlacesOfInterest.FirstOrDefault(p => p.Type == PoiType.House)
-                                  ?? area.PlacesOfInterest.FirstOrDefault(p => p.Type != PoiType.Undefined)
-                                  ?? area.PlacesOfInterest.First();
+                    continue;
                 }
-            }
-        }
 
-        if (fallbackRegion is not null)
-        {
-            regionDefinition = fallbackRegion;
-            areaDefinition = fallbackArea;
-            pointOfInterest = fallbackPoi;
-            return true;
+                regionDefinition = region;
+                areaDefinition = area;
+                pointOfInterest = housePoi;
+                return true;
+            }
         }
 
         return false;
     }
 
-    private static string ResolveInternalName(NwArea area)
+    private bool TryResolveContext(
+        NwArea area,
+        out RegionDefinition? region,
+        out AreaDefinition? areaDefinition,
+        out PlaceOfInterest? poi,
+        out SettlementId settlementId)
     {
-        LocalVariableString internalNameVar = area.GetObjectVariable<LocalVariableString>("property_internal_name");
-        if (internalNameVar.HasValue && !string.IsNullOrWhiteSpace(internalNameVar.Value))
+        region = null;
+        areaDefinition = null;
+        poi = null;
+        settlementId = default;
+
+        string? areaResRef = area.ResRef;
+        string? areaTag = area.Tag;
+
+        if (string.IsNullOrWhiteSpace(areaResRef) && string.IsNullOrWhiteSpace(areaTag))
         {
-            return internalNameVar.Value.Trim();
+            return false;
         }
 
-        return area.Tag ?? throw new InvalidOperationException("House areas must have a valid tag.");
-    }
-
-    private static PropertyCategory ResolvePropertyCategory(NwArea area)
-    {
-        LocalVariableString categoryVar = area.GetObjectVariable<LocalVariableString>("property_category");
-
-        if (categoryVar.HasValue && !string.IsNullOrWhiteSpace(categoryVar.Value) &&
-            Enum.TryParse(categoryVar.Value, true, out PropertyCategory parsed))
+        IReadOnlyList<RegionDefinition> snapshot = _regions.All();
+        foreach (RegionDefinition candidateRegion in snapshot)
         {
-            return parsed;
-        }
-
-        return PropertyCategory.Residential;
-    }
-
-    private SettlementTag ResolveSettlementTag(NwArea area)
-    {
-        LocalVariableString settlementVar = area.GetObjectVariable<LocalVariableString>("settlement_tag");
-        if (settlementVar.HasValue && !string.IsNullOrWhiteSpace(settlementVar.Value))
-        {
-            return new SettlementTag(settlementVar.Value.Trim());
-        }
-
-        string areaResRef = area.ResRef;
-        string areaTag = area.Tag;
-
-        if (!string.IsNullOrWhiteSpace(areaResRef))
-        {
-            if (regions.TryGetSettlementForPointOfInterest(areaResRef, out SettlementId poiSettlement))
+            foreach (AreaDefinition candidateArea in candidateRegion.Areas)
             {
-                string? settlementFromPoi = ResolveSettlementTagFromSettlement(poiSettlement, areaResRef, areaTag);
-                if (!string.IsNullOrWhiteSpace(settlementFromPoi))
+                PlaceOfInterest? housePoi = ResolveHousePoi(candidateArea, areaTag, areaResRef);
+                if (housePoi is null)
                 {
-                    return new SettlementTag(settlementFromPoi);
+                    continue;
                 }
-            }
 
-            try
-            {
-                AreaTag areaResRefTag = new(areaResRef);
-                if (regions.TryGetSettlementForArea(areaResRefTag, out SettlementId settlementForArea))
+                SettlementId? resolvedSettlement = ResolveSettlementId(candidateArea, housePoi);
+                if (resolvedSettlement is not { Value: > 0 })
                 {
-                    string? settlementFromArea =
-                        ResolveSettlementTagFromSettlement(settlementForArea, areaResRef, areaTag);
-                    if (!string.IsNullOrWhiteSpace(settlementFromArea))
-                    {
-                        return new SettlementTag(settlementFromArea);
-                    }
+                    continue;
                 }
-            }
-            catch (ArgumentException ex)
-            {
-                Log.Warn(ex, "Invalid area resref '{ResRef}' while resolving settlement tag for area {AreaTag}.",
-                    areaResRef, areaTag);
-            }
 
-            try
-            {
-                if (TryGetHousingAreaContext(areaResRef, areaTag, out RegionDefinition? region,
-                        out AreaDefinition? definition, out PlaceOfInterest? poi))
-                {
-                    string? settlementFromPoi = ExtractSettlementTagFromPoi(poi);
-                    if (!string.IsNullOrWhiteSpace(settlementFromPoi))
-                    {
-                        return new SettlementTag(settlementFromPoi);
-                    }
-
-                    if (definition?.LinkedSettlement is { } linkedSettlement)
-                    {
-                        string? settlementFromLinked =
-                            ResolveSettlementTagFromSettlement(linkedSettlement, areaResRef, areaTag);
-                        if (!string.IsNullOrWhiteSpace(settlementFromLinked))
-                        {
-                            return new SettlementTag(settlementFromLinked);
-                        }
-                    }
-
-                    string? settlementFromDefinition = ResolveSettlementTagFromAreaDefinition(definition);
-                    if (!string.IsNullOrWhiteSpace(settlementFromDefinition))
-                    {
-                        return new SettlementTag(settlementFromDefinition);
-                    }
-
-                    string? settlementFromRegion = ResolveSettlementTagFromRegion(region);
-                    if (!string.IsNullOrWhiteSpace(settlementFromRegion))
-                    {
-                        return new SettlementTag(settlementFromRegion);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Warn(ex, "Failed to derive settlement metadata for housing area {AreaTag} ({AreaResRef}).",
-                    areaTag, areaResRef);
+                region = candidateRegion;
+                areaDefinition = candidateArea;
+                poi = housePoi;
+                settlementId = resolvedSettlement.Value;
+                return true;
             }
         }
 
-        LocalVariableInt legacySettlement = area.GetObjectVariable<LocalVariableInt>("settlement");
-        if (legacySettlement is { HasValue: true, Value: > 0 })
-        {
-            return new SettlementTag($"legacy:{legacySettlement.Value}");
-        }
-
-        string fallbackToken = !string.IsNullOrWhiteSpace(areaTag)
-            ? areaTag
-            : !string.IsNullOrWhiteSpace(areaResRef)
-                ? areaResRef
-                : "unassigned";
-
-        return new SettlementTag($"legacy:{fallbackToken}");
+        return false;
     }
 
-    private GoldAmount ResolveMonthlyRent(NwArea area)
+    private static PlaceOfInterest? ResolveHousePoi(
+        AreaDefinition areaDefinition,
+        string? areaTag,
+        string? areaResRef)
     {
-        LocalVariableInt rentVar = area.GetObjectVariable<LocalVariableInt>("monthly_rent");
-        int rent = rentVar.HasValue ? rentVar.Value : 0;
-
-        if (!rentVar.HasValue || rent <= 0)
-        {
-            LocalVariableInt legacyRent = area.GetObjectVariable<LocalVariableInt>("rent");
-            if (legacyRent is { HasValue: true, Value: > 0 })
-            {
-                rent = legacyRent.Value;
-            }
-        }
-
-        rent = Math.Max(0, rent);
-        return GoldAmount.Parse(rent);
-    }
-
-    private static bool ResolveBoolean(NwArea area, string variableName, bool defaultValue)
-    {
-        LocalVariableInt variable = area.GetObjectVariable<LocalVariableInt>(variableName);
-        return variable.HasValue ? variable.Value > 0 : defaultValue;
-    }
-
-    private CoinhouseTag? ResolveCoinhouseTag(NwArea area)
-    {
-        string areaResRef = area.ResRef;
-        string areaTag = area.Tag;
-        if (string.IsNullOrWhiteSpace(areaResRef))
+        if (areaDefinition.PlacesOfInterest is not { Count: > 0 })
         {
             return null;
         }
 
+        return areaDefinition.PlacesOfInterest.FirstOrDefault(p =>
+                   p.Type == PoiType.House &&
+                   (MatchesTag(p, areaTag) || MatchesResRef(p, areaResRef) || MatchesArea(areaDefinition, areaResRef)))
+               ?? areaDefinition.PlacesOfInterest.FirstOrDefault(p =>
+                   p.Type == PoiType.House && MatchesArea(areaDefinition, areaResRef));
+
+        static bool MatchesTag(PlaceOfInterest poi, string? tag)
+        {
+            return !string.IsNullOrWhiteSpace(tag) &&
+                   !string.IsNullOrWhiteSpace(poi.Tag) &&
+                   string.Equals(poi.Tag, tag, StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool MatchesResRef(PlaceOfInterest poi, string? resRef)
+        {
+            return !string.IsNullOrWhiteSpace(resRef) &&
+                   !string.IsNullOrWhiteSpace(poi.ResRef) &&
+                   string.Equals(poi.ResRef, resRef, StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool MatchesArea(AreaDefinition area, string? resRef)
+        {
+            return !string.IsNullOrWhiteSpace(resRef) &&
+                   string.Equals(area.ResRef.Value, resRef, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private SettlementId? ResolveSettlementId(AreaDefinition areaDefinition, PlaceOfInterest poi)
+    {
+        if (areaDefinition.LinkedSettlement is { Value: > 0 } direct)
+        {
+            return direct;
+        }
+
+        if (!string.IsNullOrWhiteSpace(poi.ResRef) &&
+            _regions.TryGetSettlementForPointOfInterest(poi.ResRef, out SettlementId poiSettlement) &&
+            poiSettlement.Value > 0)
+        {
+            return poiSettlement;
+        }
+
         try
         {
-            if (TryResolveSettlementId(areaResRef, areaTag, out SettlementId settlementId))
+            if (_regions.TryGetSettlementForArea(areaDefinition.ResRef, out SettlementId areaSettlement) &&
+                areaSettlement.Value > 0)
             {
-                CoinHouse? coinhouse = coinhouses.GetSettlementCoinhouse(settlementId);
-                if (coinhouse is not null)
-                {
-                    return coinhouse.CoinhouseTag;
-                }
-
-                string? derivedTag = ResolveCoinhouseTagFromSettlement(settlementId);
-                if (!string.IsNullOrWhiteSpace(derivedTag))
-                {
-                    return new CoinhouseTag(derivedTag);
-                }
+                return areaSettlement;
             }
         }
-        catch (Exception ex)
+        catch (ArgumentException ex)
         {
-            Log.Warn(ex, "Failed to derive coinhouse tag for housing area {AreaTag} ({AreaResRef}).",
-                areaTag, areaResRef);
+            Log.Warn(ex, "Invalid area resref '{ResRef}' when resolving settlement for housing area.",
+                areaDefinition.ResRef.Value);
         }
 
         return null;
     }
 
-    private string? ResolveCoinhouseTagFromSettlement(SettlementId settlementId)
+    private static string ResolveAreaTag(NwArea area, PlaceOfInterest poi)
+    {
+        if (!string.IsNullOrWhiteSpace(poi.Tag))
+        {
+            return poi.Tag.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(area.Tag))
+        {
+            return area.Tag.Trim();
+        }
+
+        throw new InvalidOperationException("Housing areas must have a tag or matching POI tag.");
+    }
+
+    private static string ResolveAreaResRef(NwArea area, AreaDefinition areaDefinition, PlaceOfInterest poi)
+    {
+        if (!string.IsNullOrWhiteSpace(area.ResRef))
+        {
+            return area.ResRef;
+        }
+
+        if (!string.IsNullOrWhiteSpace(poi.ResRef))
+        {
+            return poi.ResRef.Trim();
+        }
+
+        return areaDefinition.ResRef.Value;
+    }
+
+    private static string ResolveInternalName(NwArea area, PlaceOfInterest poi, AreaDefinition areaDefinition)
+    {
+        if (!string.IsNullOrWhiteSpace(poi.Name))
+        {
+            return poi.Name.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(area.Name))
+        {
+            return area.Name.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(area.Tag))
+        {
+            return area.Tag.Trim();
+        }
+
+        return areaDefinition.ResRef.Value;
+    }
+
+    private static PropertyCategory ResolvePropertyCategory(PlaceOfInterest poi)
+    {
+        return poi.Type switch
+        {
+            PoiType.Shop => PropertyCategory.Commercial,
+            PoiType.Guild or PoiType.Temple or PoiType.Library => PropertyCategory.GuildHall,
+            PoiType.Warehouse => PropertyCategory.Industrial,
+            _ => PropertyCategory.Residential
+        };
+    }
+
+    private SettlementTag BuildSettlementTag(RegionDefinition region, SettlementId settlementId, PlaceOfInterest poi)
+    {
+        string? candidate = NormalizeSettlementIdentifier(poi.Tag)
+                            ?? NormalizeSettlementIdentifier(poi.Name)
+                            ?? ResolveSettlementTagFromRegion(region);
+
+        if (string.IsNullOrWhiteSpace(candidate))
+        {
+            candidate = $"settlement-{settlementId.Value}";
+        }
+
+        return new SettlementTag(candidate);
+    }
+
+    private CoinhouseTag? ResolveCoinhouseTag(SettlementId settlementId)
     {
         if (settlementId.Value <= 0)
         {
@@ -369,25 +313,49 @@ public sealed class PropertyMetadataResolver(RegionIndex regions, ICoinhouseRepo
 
         try
         {
-            IReadOnlyList<PlaceOfInterest> pois = regions.GetPointsOfInterestForSettlement(settlementId);
-            PlaceOfInterest? bankPoi = pois.FirstOrDefault(p => p.Type == PoiType.Bank)
-                                       ?? pois.FirstOrDefault(p => p.Type == PoiType.Guild)
-                                       ?? pois.FirstOrDefault(p => p.Type == PoiType.Temple)
-                                       ?? pois.FirstOrDefault();
+            CoinHouse? coinhouse = _coinhouses.GetSettlementCoinhouse(settlementId);
+            if (coinhouse is not null)
+            {
+                return coinhouse.CoinhouseTag;
+            }
 
-            if (bankPoi is null)
+            string? derivedTag = ResolveCoinhouseTagFromSettlement(settlementId);
+            if (!string.IsNullOrWhiteSpace(derivedTag))
+            {
+                return new CoinhouseTag(derivedTag);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to derive coinhouse tag for settlement {SettlementId}.", settlementId.Value);
+        }
+
+        return null;
+    }
+
+    private string? ResolveCoinhouseTagFromSettlement(SettlementId settlementId)
+    {
+        try
+        {
+            IReadOnlyList<PlaceOfInterest> pois = _regions.GetPointsOfInterestForSettlement(settlementId);
+            PlaceOfInterest? candidate = pois.FirstOrDefault(p => p.Type == PoiType.Bank)
+                                           ?? pois.FirstOrDefault(p => p.Type == PoiType.Guild)
+                                           ?? pois.FirstOrDefault(p => p.Type == PoiType.Temple)
+                                           ?? pois.FirstOrDefault();
+
+            if (candidate is null)
             {
                 return null;
             }
 
-            if (!string.IsNullOrWhiteSpace(bankPoi.Tag))
+            if (!string.IsNullOrWhiteSpace(candidate.Tag))
             {
-                return bankPoi.Tag.Trim();
+                return candidate.Tag.Trim();
             }
 
-            if (!string.IsNullOrWhiteSpace(bankPoi.ResRef))
+            if (!string.IsNullOrWhiteSpace(candidate.ResRef))
             {
-                return bankPoi.ResRef.Trim();
+                return candidate.ResRef.Trim();
             }
         }
         catch (Exception ex)
@@ -396,160 +364,6 @@ public sealed class PropertyMetadataResolver(RegionIndex regions, ICoinhouseRepo
         }
 
         return null;
-    }
-
-    private bool TryResolveSettlementId(string areaResRef, string? areaTag, out SettlementId settlementId)
-    {
-        settlementId = default;
-
-        if (regions.TryGetSettlementForPointOfInterest(areaResRef, out settlementId))
-        {
-            return settlementId.Value > 0;
-        }
-
-        try
-        {
-            AreaTag areaResRefTag = new(areaResRef);
-            if (regions.TryGetSettlementForArea(areaResRefTag, out settlementId) && settlementId.Value > 0)
-            {
-                return true;
-            }
-        }
-        catch (ArgumentException ex)
-        {
-            Log.Debug(ex, "Invalid area resref '{ResRef}' while resolving settlement id for housing area {AreaTag}.",
-                areaResRef, areaTag ?? "<untagged>");
-        }
-
-        if (TryGetHousingAreaContext(areaResRef, areaTag, out RegionDefinition? region,
-                out AreaDefinition? areaDefinition, out _))
-        {
-            if (areaDefinition?.LinkedSettlement is { Value: > 0 } linked)
-            {
-                settlementId = linked;
-                return true;
-            }
-
-            SettlementId? regionSettlement = region?.Areas
-                .Select(a => a.LinkedSettlement)
-                .FirstOrDefault(id => id is { Value: > 0 });
-
-            if (regionSettlement is { } fallback)
-            {
-                settlementId = fallback;
-                return true;
-            }
-        }
-
-        settlementId = default;
-        return false;
-    }
-
-    private static GoldAmount? ResolveOptionalGold(NwArea area, string variableName)
-    {
-        LocalVariableInt variable = area.GetObjectVariable<LocalVariableInt>(variableName);
-        if (!variable.HasValue)
-        {
-            return null;
-        }
-
-        int value = Math.Max(0, variable.Value);
-        return value == 0 ? null : GoldAmount.Parse(value);
-    }
-
-    private static int ResolveEvictionGraceDays(NwArea area)
-    {
-        LocalVariableInt graceVar = area.GetObjectVariable<LocalVariableInt>("eviction_grace_days");
-        if (!graceVar.HasValue || graceVar.Value <= 0)
-        {
-            return DefaultEvictionGraceDays;
-        }
-
-        return graceVar.Value;
-    }
-
-    private static PersonaId? ResolveDefaultOwner(NwArea area)
-    {
-        LocalVariableString ownerVar = area.GetObjectVariable<LocalVariableString>("default_owner_persona");
-        if (!ownerVar.HasValue || string.IsNullOrWhiteSpace(ownerVar.Value))
-        {
-            return null;
-        }
-
-        try
-        {
-            return PersonaId.Parse(ownerVar.Value);
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(ex, "Invalid default owner persona '{Persona}' configured for area {AreaTag}.",
-                ownerVar.Value,
-                area.Tag);
-            return null;
-        }
-    }
-
-    private string? ResolveSettlementTagFromSettlement(SettlementId settlementId, string areaResRef, string? areaTag)
-    {
-        if (settlementId.Value <= 0)
-        {
-            return null;
-        }
-
-        try
-        {
-            IReadOnlyList<PlaceOfInterest> pois = regions.GetPointsOfInterestForSettlement(settlementId);
-            if (pois.Count == 0)
-            {
-                return null;
-            }
-
-            PlaceOfInterest? matchingPoi = pois.FirstOrDefault(p =>
-                string.Equals(p.ResRef, areaResRef, StringComparison.OrdinalIgnoreCase) ||
-                (!string.IsNullOrWhiteSpace(areaTag) &&
-                 string.Equals(p.Tag, areaTag, StringComparison.OrdinalIgnoreCase)));
-
-            string? candidate = ExtractSettlementTagFromPoi(matchingPoi);
-            if (!string.IsNullOrWhiteSpace(candidate))
-            {
-                return candidate;
-            }
-
-            PlaceOfInterest? settlementPoi = pois.FirstOrDefault(p => p.Type == PoiType.Bank)
-                                             ?? pois.FirstOrDefault(p => p.Type == PoiType.Guild)
-                                             ?? pois.FirstOrDefault(p => p.Type == PoiType.Temple)
-                                             ?? pois.FirstOrDefault(p => p.Type == PoiType.Library)
-                                             ?? pois.FirstOrDefault();
-
-            candidate = ExtractSettlementTagFromPoi(settlementPoi);
-            if (!string.IsNullOrWhiteSpace(candidate))
-            {
-                return candidate;
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(ex, "Failed to resolve settlement tag from points of interest for settlement {SettlementId}.",
-                settlementId.Value);
-        }
-
-        return null;
-    }
-
-    private static string? ExtractSettlementTagFromPoi(PlaceOfInterest? poi)
-    {
-        if (poi is null)
-        {
-            return null;
-        }
-
-        string? candidate = NormalizeSettlementIdentifier(poi.Tag);
-        if (!string.IsNullOrWhiteSpace(candidate))
-        {
-            return candidate;
-        }
-
-        return NormalizeSettlementIdentifier(poi.Name);
     }
 
     private static string? NormalizeSettlementIdentifier(string? value)
@@ -595,52 +409,8 @@ public sealed class PropertyMetadataResolver(RegionIndex regions, ICoinhouseRepo
         return trimmed.ToLowerInvariant();
     }
 
-    private static string? ResolveSettlementTagFromAreaDefinition(AreaDefinition? areaDefinition)
+    private static string? ResolveSettlementTagFromRegion(RegionDefinition region)
     {
-        if (areaDefinition?.DefinitionTags is not { Count: > 0 })
-        {
-            return null;
-        }
-
-        foreach (string tag in areaDefinition.DefinitionTags)
-        {
-            if (string.IsNullOrWhiteSpace(tag))
-            {
-                continue;
-            }
-
-            string trimmed = tag.Trim();
-            int colonIndex = trimmed.IndexOf(':');
-            if (colonIndex <= 0 || colonIndex >= trimmed.Length - 1)
-            {
-                continue;
-            }
-
-            string prefix = trimmed[..colonIndex];
-            if (!prefix.Equals("settlement", StringComparison.OrdinalIgnoreCase) &&
-                !prefix.Equals("municipality", StringComparison.OrdinalIgnoreCase) &&
-                !prefix.Equals("town", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            string? candidate = NormalizeSettlementIdentifier(trimmed[(colonIndex + 1)..]);
-            if (!string.IsNullOrWhiteSpace(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        return null;
-    }
-
-    private static string? ResolveSettlementTagFromRegion(RegionDefinition? region)
-    {
-        if (region is null)
-        {
-            return null;
-        }
-
         string? candidate = NormalizeSettlementIdentifier(region.Tag.Value);
         if (!string.IsNullOrWhiteSpace(candidate))
         {
@@ -665,4 +435,7 @@ public sealed record PropertyAreaMetadata(
     GoldAmount? MonthlyOwnershipTax,
     int EvictionGraceDays,
     PersonaId? DefaultOwner,
-    PropertyId? ExplicitPropertyId);
+    RegionTag RegionTag,
+    string? PoiTag,
+    string? PoiResRef,
+    string? Description);

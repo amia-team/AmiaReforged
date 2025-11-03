@@ -26,23 +26,21 @@ public sealed class PropertyDefinitionSynchronizer
 
     public async Task SynchronizeModuleHousingAsync()
     {
-        List<PropertyAreaMetadata> metadataList;
+        List<PropertyAreaMetadata> metadataList = new();
 
-        try
+        foreach (NwArea area in NwModule.Instance.Areas)
         {
-            metadataList = NwModule.Instance.Areas
-                .Where(PropertyMetadataResolver.IsHouseArea)
-                .Select(area =>
+            try
+            {
+                if (_metadataResolver.TryCapture(area, out PropertyAreaMetadata metadata))
                 {
-                    PropertyId? explicitPropertyId = _metadataResolver.TryResolveExplicitPropertyId(area);
-                    return _metadataResolver.Capture(area, explicitPropertyId);
-                })
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to read housing metadata from module.");
-            return;
+                    metadataList.Add(metadata);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex, "Failed to capture housing metadata for area {AreaTag}.", area.Tag ?? "<untagged>");
+            }
         }
 
         foreach (PropertyAreaMetadata metadata in metadataList)
@@ -59,10 +57,7 @@ public sealed class PropertyDefinitionSynchronizer
         }
     }
 
-    public PropertyId ResolvePropertyId(PropertyAreaMetadata metadata)
-    {
-        return metadata.ExplicitPropertyId ?? DerivePropertyId(metadata.AreaTag);
-    }
+    public PropertyId ResolvePropertyId(PropertyAreaMetadata metadata) => DerivePropertyId(metadata.AreaTag);
 
     public async Task<RentablePropertySnapshot?> EnsureSnapshotAsync(
         PropertyId propertyId,
