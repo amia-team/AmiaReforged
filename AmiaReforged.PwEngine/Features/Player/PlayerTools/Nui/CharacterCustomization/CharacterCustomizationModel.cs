@@ -1,59 +1,135 @@
 ﻿using Anvil.API;
+using Newtonsoft.Json;
+using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.CharacterCustomization;
 
-public sealed class CharacterCustomizationModel
+public sealed class CharacterCustomizationModel(NwPlayer player)
 {
-    private readonly NwPlayer _player;
     public CustomizationMode CurrentMode { get; private set; } = CustomizationMode.None;
     public int CurrentArmorPart { get; private set; }
 
-    public int CurrentColorChannel { get; private set; } = 2;
+    private int CurrentColorChannel { get; set; } = 2;
     private NwItem? _currentArmor;
-    private NwItem? _initialArmorBackup;
+    private const string BackupDataKey = "ARMOR_CUSTOMIZATION_BACKUP";
+
     private static readonly Dictionary<int, HashSet<int>> TorsoModelsByAc = new()
     {
-        [0] = new HashSet<int> { 1, 3, 5, 6, 7, 8, 9, 12, 19, 39, 50, 66, 67, 73, 74, 150, 158, 199, 200, 210, 228, 239, 240, 251 }, // Cloth
-        [1] = new HashSet<int> { 20, 28, 40 }, // Padded
-        [2] = new HashSet<int> { 10, 13, 16, 27, 41, 42, 49, 58, 75, 76, 77, 86, 91, 92 }, // Hide
-        [3] = new HashSet<int> { 22, 29, 43, 44 }, // Studded
-        [4] = new HashSet<int> { 4, 15, 18, 34, 35, 36, 38, 54, 55, 56, 59, 63, 64, 68, 69, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105 }, // Scale
-        [5] = new HashSet<int> { 24, 25, 26, 31, 32, 204 }, // Chain
-        [6] = new HashSet<int> { 11, 17, 30, 45, 48 }, // Banded
-        [7] = new HashSet<int> { 33, 46, 47, 51, 52 }, // Halfplate
-        [8] = new HashSet<int> { 14, 21, 23, 37, 53, 57, 60, 61, 62, 65, 70, 71, 72, 90, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 186, 190, 209, 220, 221, 222, 223, 252 } // Fullplate
+        [0] =
+        [
+            1, 3, 5, 6, 7, 8, 9, 12, 19, 39, 50, 66, 67, 73, 74, 150, 158, 199, 200, 210, 228, 239, 240, 251
+        ], // Cloth
+        [1] = [20, 28, 40], // Padded
+        [2] = [10, 13, 16, 27, 41, 42, 49, 58, 75, 76, 77, 86, 91, 92], // Hide
+        [3] = [22, 29, 43, 44], // Studded
+        [4] =
+        [
+            4, 15, 18, 34, 35, 36, 38, 54, 55, 56, 59, 63, 64, 68, 69, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103,
+            104, 105
+        ], // Scale
+        [5] = [24, 25, 26, 31, 32, 204], // Chain
+        [6] = [11, 17, 30, 45, 48], // Banded
+        [7] = [33, 46, 47, 51, 52], // Half-plate
+        [8] =
+        [
+            14, 21, 23, 37, 53, 57, 60, 61, 62, 65, 70, 71, 72, 90, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+            116, 117, 186, 190, 209, 220, 221, 222, 223, 252
+        ] // Full plate
     };
 
     private static readonly Dictionary<CreaturePart, HashSet<int>> ValidModelsByPart = new()
     {
-        [CreaturePart.Neck] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 25, 26, 28, 63, 70, 71, 127, 129, 131, 132, 133, 134, 186 },
-        [CreaturePart.Belt] = new HashSet<int> { 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 31, 32, 37, 39, 40, 41, 42, 43, 44, 63, 71, 96, 108, 186, 189, 190, 191 },
-        [CreaturePart.Pelvis] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 63, 157, 186, 190 },
-        [CreaturePart.RightShoulder] = new HashSet<int> { 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 40, 41, 42, 43, 44, 96, 100, 103, 106, 186, 190 },
-        [CreaturePart.LeftShoulder] = new HashSet<int> { 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 40, 41, 42, 43, 44, 96, 100, 103, 106, 186, 190 },
-        [CreaturePart.RightBicep] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 63, 186 },
-        [CreaturePart.LeftBicep] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 63, 186 },
-        [CreaturePart.RightForearm] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 63, 186 },
-        [CreaturePart.LeftForearm] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 63, 186 },
-        [CreaturePart.RightHand] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 63, 186 },
-        [CreaturePart.LeftHand] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 63, 186 },
-        [CreaturePart.RightThigh] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 39, 63, 186, 190 },
-        [CreaturePart.LeftThigh] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 39, 63, 186, 190 },
-        [CreaturePart.RightShin] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 39, 40, 63, 186, 190, 195, 196, 197 },
-        [CreaturePart.LeftShin] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 39, 40, 63, 186, 190, 195, 196, 197 },
-        [CreaturePart.RightFoot] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 39, 63, 160, 186, 195, 196, 197, 198, 199, 200 },
-        [CreaturePart.LeftFoot] = new HashSet<int> { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 39, 63, 160, 186, 195, 196, 197, 198, 199, 200 },
-        [CreaturePart.Robe] = new HashSet<int> { 0, 3, 4, 5, 6, 10, 11, 12, 13, 15, 16, 20, 21, 27, 30, 31, 32, 33, 38, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 100, 110, 111, 112, 114, 115, 118, 122, 123, 124, 125, 126, 127, 128, 135, 143, 145, 147, 152, 154, 159, 164, 166, 167, 168, 182, 183, 186, 187, 188, 189, 190, 191, 192, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254 }
+        [CreaturePart.Neck] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 25, 26, 28, 63, 70, 71, 127, 129,
+            131, 132, 133, 134, 186
+        ],
+        [CreaturePart.Belt] =
+        [
+            0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 31, 32, 37, 39, 40, 41, 42,
+            43, 44, 63, 71, 96, 108, 186, 189, 190, 191
+        ],
+        [CreaturePart.Pelvis] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 63, 157, 186, 190
+        ],
+        [CreaturePart.RightShoulder] =
+        [
+            0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            40, 41, 42, 43, 44, 96, 100, 103, 106, 186, 190
+        ],
+        [CreaturePart.LeftShoulder] =
+        [
+            0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            40, 41, 42, 43, 44, 96, 100, 103, 106, 186, 190
+        ],
+        [CreaturePart.RightBicep] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 38, 63, 186
+        ],
+        [CreaturePart.LeftBicep] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 38, 63, 186
+        ],
+        [CreaturePart.RightForearm] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 63, 186
+        ],
+        [CreaturePart.LeftForearm] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 63, 186
+        ],
+        [CreaturePart.RightHand] = [1, 3, 4, 5, 6, 7, 8, 9, 10, 63, 186],
+        [CreaturePart.LeftHand] = [1, 3, 4, 5, 6, 7, 8, 9, 10, 63, 186],
+        [CreaturePart.RightThigh] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 39, 63, 186, 190
+        ],
+        [CreaturePart.LeftThigh] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 39, 63, 186, 190
+        ],
+        [CreaturePart.RightShin] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 39, 40, 63, 186, 190, 195, 196, 197
+        ],
+        [CreaturePart.LeftShin] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 39, 40, 63, 186, 190, 195, 196, 197
+        ],
+        [CreaturePart.RightFoot] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 39, 63, 160,
+            186, 195, 196, 197, 198, 199, 200
+        ],
+        [CreaturePart.LeftFoot] =
+        [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 39, 63, 160,
+            186, 195, 196, 197, 198, 199, 200
+        ],
+        [CreaturePart.Robe] =
+        [
+            0, 3, 4, 5, 6, 10, 11, 12, 13, 15, 16, 20, 21, 27, 30, 31, 32, 33, 38, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+            64, 65, 66, 67, 68, 69, 70, 71, 72, 100, 110, 111, 112, 114, 115, 118, 122, 123, 124, 125, 126, 127, 128,
+            135, 143, 145, 147, 152, 154, 159, 164, 166, 167, 168, 182, 183, 186, 187, 188, 189, 190, 191, 192, 200,
+            201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 215, 216, 217, 218, 219, 220, 221, 222,
+            223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243,
+            244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254
+        ]
     };
-
-    public CharacterCustomizationModel(NwPlayer player)
-    {
-        _player = player;
-    }
 
     private void LoadCurrentArmor()
     {
-        NwCreature? creature = _player.ControlledCreature;
+        NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
 
         _currentArmor = creature.GetItemInSlot(InventorySlot.Chest);
@@ -69,25 +145,26 @@ public sealed class CharacterCustomizationModel
             LoadCurrentArmor();
             if (_currentArmor != null && _currentArmor.IsValid)
             {
-                NwCreature? creature = _player.ControlledCreature;
+                NwCreature? creature = player.ControlledCreature;
                 if (creature != null)
                 {
-                    _initialArmorBackup = _currentArmor.Clone(creature, null, false);
+                    SaveBackupToPcKey();
                 }
 
                 string armorName = _currentArmor.Name;
-                _player.SendServerMessage($"Modifying {armorName}. Select part, model, and color.", ColorConstants.Cyan);
+                player.SendServerMessage($"Modifying {armorName}. Select part, model, and color.",
+                    ColorConstants.Cyan);
             }
             else
             {
-                _player.SendServerMessage("You must be wearing armor to customize it.", ColorConstants.Orange);
+                player.SendServerMessage("You must be wearing armor to customize it.", ColorConstants.Orange);
             }
         }
     }
 
     public void SetArmorPart(int partIndex)
     {
-        if (partIndex >= 0 && partIndex <= 19) // 0-18 for individual parts, 19 for "All Parts"
+        if (partIndex is >= 0 and <= 19) // 0-18 for individual parts, 19 for "All Parts"
         {
             CurrentArmorPart = partIndex;
         }
@@ -95,7 +172,7 @@ public sealed class CharacterCustomizationModel
 
     public void SetColorChannel(int channel)
     {
-        if (channel >= 0 && channel <= 5)
+        if (channel is >= 0 and <= 5)
         {
             CurrentColorChannel = channel;
         }
@@ -107,17 +184,18 @@ public sealed class CharacterCustomizationModel
 
         if (CurrentArmorPart == 19)
         {
-            _player.SendServerMessage("Cannot adjust models in 'All Parts' mode. Select a specific part first.", ColorConstants.Orange);
+            player.SendServerMessage("Cannot adjust models in 'All Parts' mode. Select a specific part first.",
+                ColorConstants.Orange);
             return;
         }
 
         if (_currentArmor == null || !_currentArmor.IsValid)
         {
-            _player.SendServerMessage("No armor equipped to modify.", ColorConstants.Orange);
+            player.SendServerMessage("No armor equipped to modify.", ColorConstants.Orange);
             return;
         }
 
-        NwCreature? creature = _player.ControlledCreature;
+        NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
 
         CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
@@ -171,7 +249,7 @@ public sealed class CharacterCustomizationModel
             }
             else
             {
-                _player.SendServerMessage("Could not determine armor class. No change made.", ColorConstants.Orange);
+                player.SendServerMessage("Could not determine armor class. No change made.", ColorConstants.Orange);
                 return;
             }
         }
@@ -219,7 +297,7 @@ public sealed class CharacterCustomizationModel
             }
             else
             {
-                _player.SendServerMessage("No valid models for this part.", ColorConstants.Orange);
+                player.SendServerMessage("No valid models for this part.", ColorConstants.Orange);
                 return;
             }
         }
@@ -232,7 +310,7 @@ public sealed class CharacterCustomizationModel
 
         if (!newArmor.IsValid)
         {
-            _player.SendServerMessage("Failed to refresh armor.", ColorConstants.Red);
+            player.SendServerMessage("Failed to refresh armor.", ColorConstants.Red);
             creature.RunEquip(oldArmor, InventorySlot.Chest);
             return;
         }
@@ -240,7 +318,7 @@ public sealed class CharacterCustomizationModel
         creature.RunEquip(newArmor, InventorySlot.Chest);
         _currentArmor = newArmor;
         oldArmor.Destroy();
-        _player.SendServerMessage($"Part model updated to {newModel}.", ColorConstants.Green);
+        player.SendServerMessage($"Part model updated to {newModel}.", ColorConstants.Green);
     }
 
     public void SetArmorPartColor(int colorIndex)
@@ -249,37 +327,37 @@ public sealed class CharacterCustomizationModel
         if (colorIndex < 0 || colorIndex > 175) return;
         if (_currentArmor == null || !_currentArmor.IsValid)
         {
-            _player.SendServerMessage("No armor equipped to modify.", ColorConstants.Orange);
+            player.SendServerMessage("No armor equipped to modify.", ColorConstants.Orange);
             return;
         }
 
-        NwCreature? creature = _player.ControlledCreature;
+        NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
 
         ItemAppearanceArmorColor colorChannel = GetArmorColorChannel(CurrentColorChannel);
 
-        string[] channelNames = new[] { "Leather 1", "Leather 2", "Cloth 1", "Cloth 2", "Metal 1", "Metal 2" };
+        string[] channelNames = ["Leather 1", "Leather 2", "Cloth 1", "Cloth 2", "Metal 1", "Metal 2"];
         string channelName = CurrentColorChannel < channelNames.Length ? channelNames[CurrentColorChannel] : "Unknown";
 
         NwItem oldArmor = _currentArmor;
 
         if (CurrentArmorPart == 19)
         {
-            CreaturePart[] allParts = new[]
-            {
+            CreaturePart[] allParts =
+            [
                 CreaturePart.RightFoot, CreaturePart.LeftFoot, CreaturePart.RightShin, CreaturePart.LeftShin,
                 CreaturePart.RightThigh, CreaturePart.LeftThigh, CreaturePart.Pelvis, CreaturePart.Torso,
                 CreaturePart.Belt, CreaturePart.Neck, CreaturePart.RightForearm, CreaturePart.LeftForearm,
                 CreaturePart.RightBicep, CreaturePart.LeftBicep, CreaturePart.RightShoulder, CreaturePart.LeftShoulder,
                 CreaturePart.RightHand, CreaturePart.LeftHand, CreaturePart.Robe
-            };
+            ];
 
             foreach (CreaturePart part in allParts)
             {
                 oldArmor.Appearance.SetArmorPieceColor(part, colorChannel, (byte)colorIndex);
             }
 
-            _player.SendServerMessage($"Applying {channelName} color to all armor parts...", ColorConstants.Cyan);
+            player.SendServerMessage($"Applying {channelName} color to all armor parts...", ColorConstants.Cyan);
         }
         else
         {
@@ -292,7 +370,7 @@ public sealed class CharacterCustomizationModel
 
         if (!newArmor.IsValid)
         {
-            _player.SendServerMessage("Failed to refresh armor.", ColorConstants.Red);
+            player.SendServerMessage("Failed to refresh armor.", ColorConstants.Red);
             creature.RunEquip(oldArmor, InventorySlot.Chest);
             return;
         }
@@ -303,36 +381,40 @@ public sealed class CharacterCustomizationModel
 
         if (CurrentArmorPart == 19)
         {
-            _player.SendServerMessage($"All armor parts {channelName} color updated to {colorIndex}.", ColorConstants.Green);
+            player.SendServerMessage($"All armor parts {channelName} color updated to {colorIndex}.",
+                ColorConstants.Green);
         }
         else
         {
-            string[] partNames = new[] { "Right Foot", "Left Foot", "Right Shin", "Left Shin",
+            string[] partNames =
+            [
+                "Right Foot", "Left Foot", "Right Shin", "Left Shin",
                 "Right Thigh", "Left Thigh", "Pelvis", "Torso", "Belt", "Neck",
                 "Right Forearm", "Left Forearm", "Right Bicep", "Left Bicep",
-                "Right Shoulder", "Left Shoulder", "Right Hand", "Left Hand", "Robe" };
+                "Right Shoulder", "Left Shoulder", "Right Hand", "Left Hand", "Robe"
+            ];
             string partName = CurrentArmorPart < partNames.Length ? partNames[CurrentArmorPart] : "Unknown";
 
-            _player.SendServerMessage($"{partName} {channelName} color updated to {colorIndex}.", ColorConstants.Green);
+            player.SendServerMessage($"{partName} {channelName} color updated to {colorIndex}.", ColorConstants.Green);
         }
     }
 
     public void SetHairColor(int colorIndex)
     {
         if (colorIndex < 0 || colorIndex > 175) return;
-        _player.SendServerMessage($"Hair color {colorIndex} - feature coming soon!", ColorConstants.Yellow);
+        player.SendServerMessage($"Hair color {colorIndex} - feature coming soon!", ColorConstants.Yellow);
     }
 
     public void SetTattoo1Color(int colorIndex)
     {
         if (colorIndex < 0 || colorIndex > 175) return;
-        _player.SendServerMessage($"Tattoo1 color {colorIndex} - feature coming soon!", ColorConstants.Yellow);
+        player.SendServerMessage($"Tattoo1 color {colorIndex} - feature coming soon!", ColorConstants.Yellow);
     }
 
     public void SetTattoo2Color(int colorIndex)
     {
         if (colorIndex < 0 || colorIndex > 175) return;
-        _player.SendServerMessage($"Tattoo2 color {colorIndex} - feature coming soon!", ColorConstants.Yellow);
+        player.SendServerMessage($"Tattoo2 color {colorIndex} - feature coming soon!", ColorConstants.Yellow);
     }
 
     public int GetCurrentArmorPartModel()
@@ -406,6 +488,7 @@ public sealed class CharacterCustomizationModel
                 return kvp.Key;
             }
         }
+
         return null;
     }
 
@@ -413,66 +496,117 @@ public sealed class CharacterCustomizationModel
     {
         if (_currentArmor == null || !_currentArmor.IsValid)
         {
-            _player.SendServerMessage("No armor to save.", ColorConstants.Orange);
+            player.SendServerMessage("No armor to save.", ColorConstants.Orange);
             return;
         }
 
-        NwCreature? creature = _player.ControlledCreature;
+        NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
 
-        if (_initialArmorBackup != null && _initialArmorBackup.IsValid)
-        {
-            _initialArmorBackup.Destroy();
-        }
-
-        _initialArmorBackup = _currentArmor.Clone(creature, null, false);
-        _player.SendServerMessage("Armor customization saved! You can continue editing or click Revert to return to this save point. Close the window normally when you're done!", ColorConstants.Green);
+        SaveBackupToPcKey();
+        player.SendServerMessage(
+            "Armor customization saved! You can continue editing or click Revert to return to this save point.",
+            ColorConstants.Green);
     }
 
     public void RevertChanges()
     {
-        if (_initialArmorBackup == null || !_initialArmorBackup.IsValid)
+        var backupData = LoadBackupFromPcKey();
+        if (backupData == null)
         {
-            _player.SendServerMessage("No changes to revert.", ColorConstants.Orange);
+            player.SendServerMessage("No changes to revert.", ColorConstants.Orange);
             return;
         }
 
-        NwCreature? creature = _player.ControlledCreature;
+        NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
 
         if (_currentArmor != null && _currentArmor.IsValid)
         {
             creature.RunUnequip(_currentArmor);
-            _currentArmor.Destroy();
+            NwItem newArmor = _currentArmor.Clone(creature);
+
+            if (newArmor.IsValid)
+            {
+                backupData.ApplyToItem(newArmor);
+
+                creature.RunEquip(newArmor, InventorySlot.Chest);
+                _currentArmor.Destroy();
+                _currentArmor = newArmor;
+                player.SendServerMessage("Armor customization reverted to last save point.", ColorConstants.Cyan);
+            }
+            else
+            {
+                creature.RunEquip(_currentArmor, InventorySlot.Chest);
+                player.SendServerMessage("Failed to revert armor changes.", ColorConstants.Red);
+            }
         }
-
-        NwItem restoredArmor = _initialArmorBackup.Clone(creature);
-
-        if (restoredArmor.IsValid)
-        {
-            creature.RunEquip(restoredArmor, InventorySlot.Chest);
-            _currentArmor = restoredArmor;
-
-            _player.SendServerMessage("Armor customization reverted to last save point.", ColorConstants.Cyan);
-        }
-        else
-        {
-            _player.SendServerMessage("Failed to revert armor changes.", ColorConstants.Red);
-        }
-
-        _initialArmorBackup.Destroy();
-        _initialArmorBackup = null;
     }
 
     public void ConfirmAndClose()
     {
-        if (_initialArmorBackup != null && _initialArmorBackup.IsValid)
+        ClearBackupFromPcKey();
+        player.SendServerMessage("Armor customization confirmed!", ColorConstants.Green);
+    }
+
+    private void SaveBackupToPcKey()
+    {
+        if (_currentArmor == null || !_currentArmor.IsValid) return;
+
+        var backupData = ArmorBackupData.FromItem(_currentArmor);
+        if (backupData == null) return;
+
+        string json = JsonConvert.SerializeObject(backupData);
+
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        if (pcKey != null && pcKey.IsValid)
         {
-            _initialArmorBackup.Destroy();
-            _initialArmorBackup = null;
+            NWScript.SetLocalString(pcKey, BackupDataKey, json);
+            player.SendServerMessage($"Backup saved: {json.Length} characters.", ColorConstants.Gray);
+        }
+        else
+        {
+            player.SendServerMessage("Warning: PC Key not found for backup!", ColorConstants.Orange);
+        }
+    }
+
+    private ArmorBackupData? LoadBackupFromPcKey()
+    {
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        if (pcKey == null || !pcKey.IsValid)
+        {
+            player.SendServerMessage("PC Key not found when loading backup.", ColorConstants.Orange);
+            return null;
         }
 
-        _player.SendServerMessage("Armor customization confirmed!", ColorConstants.Green);
+        string json = NWScript.GetLocalString(pcKey, BackupDataKey);
+        if (string.IsNullOrEmpty(json))
+        {
+            player.SendServerMessage("No backup data found on PC Key.", ColorConstants.Orange);
+            return null;
+        }
+
+        player.SendServerMessage($"Backup loaded: {json.Length} characters", ColorConstants.Gray);
+
+        try
+        {
+            return JsonConvert.DeserializeObject<ArmorBackupData>(json);
+        }
+        catch
+        {
+            player.SendServerMessage("Failed to deserialize backup data.", ColorConstants.Red);
+            return null;
+        }
+    }
+
+    private void ClearBackupFromPcKey()
+    {
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        if (pcKey != null && pcKey.IsValid)
+        {
+            NWScript.DeleteLocalString(pcKey, BackupDataKey);
+            player.SendServerMessage("Backup cleared from PC Key.", ColorConstants.Gray);
+        }
     }
 }
 
@@ -484,3 +618,94 @@ public enum CustomizationMode
     Appearance
 }
 
+public class ArmorBackupData
+{
+    public string ArmorResRef = "";
+    public string ArmorName = "";
+    public Dictionary<string, int> ArmorModels { get; set; } = new();
+    public Dictionary<string, Dictionary<string, int>> ArmorColors { get; set; } = new();
+
+    public static ArmorBackupData? FromItem(NwItem armor)
+    {
+        if (!armor.IsValid) return null;
+
+        var data = new ArmorBackupData
+        {
+            ArmorResRef = armor.ResRef,
+            ArmorName = armor.Name,
+            ArmorModels = new Dictionary<string, int>(),
+            ArmorColors = new Dictionary<string, Dictionary<string, int>>()
+        };
+
+        CreaturePart[] allParts =
+        [
+            CreaturePart.RightFoot, CreaturePart.LeftFoot, CreaturePart.RightShin, CreaturePart.LeftShin,
+            CreaturePart.RightThigh, CreaturePart.LeftThigh, CreaturePart.Pelvis, CreaturePart.Torso,
+            CreaturePart.Belt, CreaturePart.Neck, CreaturePart.RightForearm, CreaturePart.LeftForearm,
+            CreaturePart.RightBicep, CreaturePart.LeftBicep, CreaturePart.RightShoulder, CreaturePart.LeftShoulder,
+            CreaturePart.RightHand, CreaturePart.LeftHand, CreaturePart.Robe
+        ];
+
+        foreach (var part in allParts)
+        {
+            data.ArmorModels[part.ToString()] = armor.Appearance.GetArmorModel(part);
+        }
+
+        ItemAppearanceArmorColor[] colorChannels =
+        [
+            ItemAppearanceArmorColor.Leather1, ItemAppearanceArmorColor.Leather2,
+            ItemAppearanceArmorColor.Cloth1, ItemAppearanceArmorColor.Cloth2,
+            ItemAppearanceArmorColor.Metal1, ItemAppearanceArmorColor.Metal2
+        ];
+
+        foreach (var part in allParts)
+        {
+            var partColors = new Dictionary<string, int>();
+            foreach (var channel in colorChannels)
+            {
+                partColors[channel.ToString()] = armor.Appearance.GetArmorPieceColor(part, channel);
+            }
+
+            data.ArmorColors[part.ToString()] = partColors;
+        }
+
+        return data;
+    }
+
+    public void ApplyToItem(NwItem armor)
+    {
+        if (!armor.IsValid) return;
+
+        int appliedModels = 0;
+        int appliedColors = 0;
+
+        foreach (var kvp in ArmorModels)
+        {
+            if (Enum.TryParse<CreaturePart>(kvp.Key, out var part))
+            {
+                armor.Appearance.SetArmorModel(part, (byte)kvp.Value);
+                appliedModels++;
+            }
+        }
+
+        foreach (var partKvp in ArmorColors)
+        {
+            if (Enum.TryParse<CreaturePart>(partKvp.Key, out var part))
+            {
+                foreach (var colorKvp in partKvp.Value)
+                {
+                    if (Enum.TryParse<ItemAppearanceArmorColor>(colorKvp.Key, out var channel))
+                    {
+                        armor.Appearance.SetArmorPieceColor(part, channel, (byte)colorKvp.Value);
+                        appliedColors++;
+                    }
+                }
+            }
+        }
+
+        if (armor.RootPossessor != null)
+        {
+            NWScript.SendMessageToPC(armor.RootPossessor, $"DEBUG: Applied {appliedModels} models and {appliedColors} colors");
+        }
+    }
+}

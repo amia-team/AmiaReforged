@@ -15,7 +15,6 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
 
     public override CharacterCustomizationPresenter Presenter { get; protected set; }
 
-    // Binds
     public readonly NuiBind<string> ModeName = new("cc_mode_name");
     public readonly NuiBind<string> PartName = new("cc_part_name");
     public readonly NuiBind<string> CurrentPartModelText = new("cc_part_model_text");
@@ -26,16 +25,12 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public readonly NuiBind<bool> AppearanceModeActive = new("cc_appear_active");
     public readonly NuiBind<bool> UseMetalPalette = new("cc_use_metal_palette");
 
-    // Model button enabled states
     public readonly NuiBind<bool> ModelButtonsEnabled = new("cc_model_buttons_enabled");
 
-    // Armor part overlay visibility binds (one for each of the 19 parts)
     public readonly NuiBind<bool>[] ArmorPartVisible = new NuiBind<bool>[19];
 
-    // Color palette resource binds (one for each of the 176 colors)
     public readonly NuiBind<string>[] ColorResRef = new NuiBind<string>[176];
 
-    // Buttons
     public NuiButtonImage ArmorButton = null!;
     public NuiButtonImage EquipmentButton = null!;
     public NuiButtonImage AppearanceButton = null!;
@@ -50,10 +45,8 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public NuiButtonImage CloseButton = null!;
     public readonly NuiButtonImage ConfirmButton = null!;
 
-    // Armor part clickable buttons
     public NuiButton[] ArmorPartButtons = new NuiButton[19];
 
-    // Material selector buttons
     public NuiButtonImage Cloth1Button = null!;
     public NuiButtonImage Cloth2Button = null!;
     public NuiButtonImage Leather1Button = null!;
@@ -61,7 +54,6 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public NuiButtonImage Metal1Button = null!;
     public NuiButtonImage Metal2Button = null!;
 
-    // IToolWindow
     public string Title => "Character Customization";
     public string Id => "char_customization";
     public string CategoryTag => "Appearance";
@@ -71,13 +63,11 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
 
     public CharacterCustomizationView(NwPlayer player)
     {
-        // Initialize armor part visibility binds
         for (int i = 0; i < 19; i++)
         {
             ArmorPartVisible[i] = new NuiBind<bool>($"cc_armor_part_visible_{i}");
         }
 
-        // Initialize color palette resource binds
         for (int i = 0; i < 176; i++)
         {
             ColorResRef[i] = new NuiBind<string>($"color_resref_{i}");
@@ -147,10 +137,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
             Width = 0f,
             Height = 0f,
             Children = new List<NuiElement>(),
-            DrawList = new()
-            {
-                new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))
-            }
+            DrawList = [new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))]
         };
     }
 
@@ -210,12 +197,10 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
         const float bodyHeight = 120f;
         const float leftPad = 210f;
 
-        List<NuiDrawListItem> drawList = new List<NuiDrawListItem>
-        {
-            new NuiDrawListImage("app_armor_body", new NuiRect(leftPad, 0f, bodyWidth, bodyHeight))
-        };
+        List<NuiDrawListItem> drawList =
+            [new NuiDrawListImage("app_armor_body", new NuiRect(leftPad, 0f, bodyWidth, bodyHeight))];
 
-        int[] partImageMap = { 16, 17, 14, 15, 12, 13, 7, 4, 10, 1, 6, 8, 3, 5, 0, 2, 9, 11, 18 };
+        int[] partImageMap = [16, 17, 14, 15, 12, 13, 7, 4, 10, 1, 6, 8, 3, 5, 0, 2, 9, 11, 18];
 
         for (int i = 0; i < 19; i++)
         {
@@ -337,8 +322,11 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
 
         for (int row = 0; row < 11; row++)
         {
-            NuiRow rowElement = new NuiRow { Children = new List<NuiElement>() };
-            rowElement.Children.Add(new NuiSpacer { Width = 65f });
+            NuiRow rowElement = new NuiRow { Children =
+                [
+                    new NuiSpacer { Width = 65f }
+                ]
+            };
 
             for (int col = 0; col < 16; col++)
             {
@@ -392,11 +380,11 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
         return new NuiRow
         {
             Height = thickness + 4f,
-            DrawList = new()
-            {
+            DrawList =
+            [
                 new NuiDrawListLine(new Color(0, 0, 0, alpha), false, thickness + 2f,
                     new NuiVector(0.0f, 100.0f), new NuiVector(0.0f, 400.0f))
-            }
+            ]
         };
     }
 
@@ -407,7 +395,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
             Width = 0f,
             Height = 0f,
             Children = new List<NuiElement>(),
-            DrawList = new() { new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH)) }
+            DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))]
         };
 
         NuiElement headerOverlay = BuildHeaderOverlay();
