@@ -328,12 +328,18 @@ public sealed class NpcShopRepository : INpcShopRepository
             int sortOrder = 0;
             foreach (NpcShopProductDefinition product in definition.Products)
             {
+                string displayName = product.Name.Trim();
+                string? description = string.IsNullOrWhiteSpace(product.Description)
+                    ? null
+                    : product.Description.Trim();
                 int maxStock = Math.Max(0, product.MaxStock);
                 int initialStock = Math.Clamp(product.InitialStock, 0, maxStock == 0 ? int.MaxValue : maxStock);
 
                 ShopProductRecord productRecord = new()
                 {
                     ResRef = product.ResRef,
+                    DisplayName = displayName,
+                    Description = description,
                     Price = product.Price,
                     CurrentStock = initialStock,
                     MaxStock = maxStock,

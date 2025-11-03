@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
@@ -18,12 +19,14 @@ public class EconomyLoaderService
     private readonly ItemDefinitionLoadingService _itemLoader;
     private readonly IndustryDefinitionLoadingService _industryLoader;
     private readonly RegionDefinitionLoadingService _regionLoader;
+    private readonly NpcShopLoader _shopLoader;
     private readonly CoinhouseLoader _coinhouseLoader;
 
     public EconomyLoaderService(ResourceDefinitionLoadingService resourceLoader,
         ItemDefinitionLoadingService itemLoader,
         IndustryDefinitionLoadingService industryLoader,
         RegionDefinitionLoadingService regionLoader,
+        NpcShopLoader shopLoader,
         CoinhouseLoader coinhouseLoader,
         ResourceWatcherService resourceWatcherService)
     {
@@ -35,6 +38,7 @@ public class EconomyLoaderService
         _itemLoader = itemLoader;
         _industryLoader = industryLoader;
         _regionLoader = regionLoader;
+        _shopLoader = shopLoader;
         _coinhouseLoader = coinhouseLoader;
 
         resourceWatcherService.FileSystemChanged += ReloadChanges;
@@ -60,12 +64,14 @@ public class EconomyLoaderService
         _itemLoader.Load();
         _resourceLoader.Load();
         _regionLoader.Load();
+        _shopLoader.Load();
         _coinhouseLoader.Load();
 
         LogErrors(_industryLoader.Failures());
         LogErrors(_itemLoader.Failures());
         LogErrors(_resourceLoader.Failures());
         LogErrors(_regionLoader.Failures());
+        LogErrors(_shopLoader.Failures());
         LogErrors(_coinhouseLoader.Failures());
     }
 

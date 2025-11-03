@@ -7,6 +7,8 @@ public sealed class NpcShopProduct
     public NpcShopProduct(
         long id,
         string resRef,
+        string displayName,
+        string? description,
         int price,
         int currentStock,
         int maxStock,
@@ -19,6 +21,11 @@ public sealed class NpcShopProduct
         if (string.IsNullOrWhiteSpace(resRef))
         {
             throw new ArgumentException("ResRef must not be empty.", nameof(resRef));
+        }
+
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            throw new ArgumentException("Display name must not be empty.", nameof(displayName));
         }
 
         if (price < 0)
@@ -38,6 +45,8 @@ public sealed class NpcShopProduct
 
         Id = id;
         ResRef = resRef;
+    DisplayName = displayName;
+    Description = string.IsNullOrWhiteSpace(description) ? null : description;
         Price = price;
         MaxStock = maxStock;
         RestockAmount = restockAmount;
@@ -50,6 +59,8 @@ public sealed class NpcShopProduct
 
     public long Id { get; }
     public string ResRef { get; }
+    public string DisplayName { get; }
+    public string? Description { get; }
     public int Price { get; }
     public int CurrentStock { get; private set; }
     public int MaxStock { get; }

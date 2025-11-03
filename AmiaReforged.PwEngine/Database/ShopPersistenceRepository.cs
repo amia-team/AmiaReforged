@@ -211,6 +211,8 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
         {
             if (existingByResRef.TryGetValue(incomingProduct.ResRef, out ShopProductRecord? record))
             {
+                record.DisplayName = incomingProduct.DisplayName;
+                record.Description = incomingProduct.Description;
                 record.Price = incomingProduct.Price;
                 record.MaxStock = incomingProduct.MaxStock;
                 record.RestockAmount = incomingProduct.RestockAmount;
@@ -225,6 +227,8 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
                 existing.Products.Add(new ShopProductRecord
                 {
                     ResRef = incomingProduct.ResRef,
+                    DisplayName = incomingProduct.DisplayName,
+                    Description = incomingProduct.Description,
                     Price = incomingProduct.Price,
                     MaxStock = incomingProduct.MaxStock,
                     RestockAmount = incomingProduct.RestockAmount,

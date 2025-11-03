@@ -83,6 +83,8 @@ public class ShopPriceCalculatorTests
         {
             Id = 100,
             ResRef = "test_item",
+            DisplayName = "Test Item",
+            Description = "A mock item for price calculation tests.",
             Price = basePrice,
             CurrentStock = 2,
             MaxStock = 5,

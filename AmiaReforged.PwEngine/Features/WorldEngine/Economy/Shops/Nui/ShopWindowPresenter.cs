@@ -88,14 +88,16 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
     {
         NwCreature? buyer = ResolveActiveBuyer();
 
-        List<bool> productPurchasable;
-        List<string> productEntries = BuildProductEntries(buyer, out productPurchasable);
+    List<bool> productPurchasable;
+    List<string> productTooltips;
+    List<string> productEntries = BuildProductEntries(buyer, out productPurchasable, out productTooltips);
         List<string> inventoryEntries = BuildInventoryEntries();
 
         Token().SetBindValue(View.StoreTitle, BuildTitleText());
         Token().SetBindValue(View.StoreDescription, BuildDescriptionText());
 
         Token().SetBindValues(View.ProductEntries, productEntries);
+    Token().SetBindValues(View.ProductTooltips, productTooltips);
         Token().SetBindValues(View.ProductPurchasable, productPurchasable);
         Token().SetBindValue(View.ProductCount, productEntries.Count);
 
@@ -173,13 +175,15 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         return formatted;
     }
 
-    private List<string> BuildProductEntries(NwCreature? buyer, out List<bool> purchasable)
+    private List<string> BuildProductEntries(NwCreature? buyer, out List<bool> purchasable, out List<string> tooltips)
     {
         purchasable = new List<bool>();
+        tooltips = new List<string>();
 
         if (_shop.Products.Count == 0)
         {
             purchasable.Add(false);
+            tooltips.Add("This merchant has nothing to offer right now.");
             return new List<string> { "This merchant has nothing to sell." };
         }
 
@@ -187,6 +191,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
 
         foreach (NpcShopProduct product in _shop.Products)
         {
+            string displayName = product.DisplayName;
             string stockLabel = product.IsOutOfStock
                 ? "Sold out"
                 : string.Format(CultureInfo.InvariantCulture, "{0}/{1} on hand", product.CurrentStock,
@@ -198,8 +203,18 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
                 ? "Complimentary"
                 : string.Format(CultureInfo.InvariantCulture, "{0:N0} gp", salePrice);
 
-            entries.Add($"{product.ResRef} — {priceLabel} ({stockLabel})");
+            entries.Add($"{displayName} — {priceLabel} ({stockLabel})");
             purchasable.Add(!product.IsOutOfStock);
+
+            string description = string.IsNullOrWhiteSpace(product.Description)
+                ? string.Empty
+                : product.Description.Trim();
+
+            string tooltip = string.IsNullOrEmpty(description)
+                ? $"ResRef: {product.ResRef}"
+                : $"{description}\n\nResRef: {product.ResRef}";
+
+            tooltips.Add(tooltip);
         }
 
         return entries;
@@ -266,7 +281,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
                 return;
             }
 
-            string itemName = string.IsNullOrWhiteSpace(item.Name) ? product.ResRef : item.Name;
+            string itemName = string.IsNullOrWhiteSpace(item.Name) ? product.DisplayName : item.Name;
             string message = BuildPurchaseMessage(itemName, salePrice);
             await NotifyAsync(message, ColorConstants.Lime, refresh: true);
         }

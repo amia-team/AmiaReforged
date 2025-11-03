@@ -19,6 +19,15 @@ public class ShopProductConfiguration : IEntityTypeConfiguration<ShopProductReco
             .IsRequired()
             .HasMaxLength(64);
 
+        builder.Property(p => p.DisplayName)
+            .HasColumnName("display_name")
+            .IsRequired()
+            .HasMaxLength(255);
+
+        builder.Property(p => p.Description)
+            .HasColumnName("description")
+            .HasColumnType("text");
+
         builder.Property(p => p.Price)
             .HasColumnName("price")
             .IsRequired();

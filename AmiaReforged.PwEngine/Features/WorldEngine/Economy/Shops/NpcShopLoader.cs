@@ -143,6 +143,13 @@ public sealed class NpcShopLoader : IDefinitionLoader
                 return false;
             }
 
+            if (string.IsNullOrWhiteSpace(product.Name))
+            {
+                _failures.Add(new FileLoadResult(ResultType.Fail,
+                    $"Product '{product.ResRef}' must define a Name.", fileName));
+                return false;
+            }
+
             if (product.Price < 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,

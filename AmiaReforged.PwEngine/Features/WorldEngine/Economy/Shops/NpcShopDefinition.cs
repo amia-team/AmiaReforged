@@ -13,6 +13,8 @@ public sealed record NpcShopDefinition(
 
 public sealed record NpcShopProductDefinition(
     string ResRef,
+    string Name,
+    string? Description,
     int Price,
     int InitialStock,
     int MaxStock,

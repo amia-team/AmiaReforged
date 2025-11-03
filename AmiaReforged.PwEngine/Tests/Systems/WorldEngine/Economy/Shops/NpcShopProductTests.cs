@@ -24,6 +24,8 @@ public class NpcShopProductTests
         {
             Id = 10,
             ResRef = "furn_chair_oak",
+            DisplayName = "Oak Chair",
+            Description = "A sturdy oak chair finished in warm stain.",
             Price = 250,
             CurrentStock = 2,
             MaxStock = 6,
@@ -58,6 +60,7 @@ public class NpcShopProductTests
         {
             Id = 11,
             ResRef = "furn_table_round",
+            DisplayName = "Round Table",
             Price = 500,
             CurrentStock = 1,
             MaxStock = 3,
@@ -136,6 +139,8 @@ public class NpcShopProductTests
         NpcShopProduct product = new(
             id: 20,
             resRef: "furn_shelf",
+            displayName: "Oak Shelf",
+            description: "A tall shelf made from dark oak.",
             price: 150,
             currentStock: 1,
             maxStock: 2,

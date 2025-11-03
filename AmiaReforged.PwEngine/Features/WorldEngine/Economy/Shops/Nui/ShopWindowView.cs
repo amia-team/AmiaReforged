@@ -13,6 +13,7 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
     public readonly NuiBind<string> StoreDescription = new("shop_desc");
     public readonly NuiBind<int> ProductCount = new("shop_product_count");
     public readonly NuiBind<string> ProductEntries = new("shop_product_entries");
+    public readonly NuiBind<string> ProductTooltips = new("shop_product_tooltips");
     public readonly NuiBind<bool> ProductPurchasable = new("shop_product_purchasable");
     public readonly NuiBind<int> InventoryCount = new("shop_inventory_count");
     public readonly NuiBind<string> InventoryEntries = new("shop_inventory_entries");
@@ -37,7 +38,8 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
             new(new NuiLabel(ProductEntries)
             {
                 HorizontalAlign = NuiHAlign.Left,
-                VerticalAlign = NuiVAlign.Middle
+                VerticalAlign = NuiVAlign.Middle,
+                Tooltip = ProductTooltips
             })
             {
                 Width = 430f
@@ -64,8 +66,11 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
             })
         ];
 
+        const float elementWidth = 500f;
+
         NuiColumn root = new()
         {
+            Width = 500f,
             Children =
             [
                 new NuiLabel(StoreTitle)
@@ -89,6 +94,7 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
                 },
                 new NuiList(productTemplate, ProductCount)
                 {
+                    Width = elementWidth,
                     RowHeight = 28f,
                     Height = 220f
                 },
@@ -101,6 +107,7 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
                 },
                 new NuiList(inventoryTemplate, InventoryCount)
                 {
+                    Width = elementWidth,
                     RowHeight = 24f,
                     Height = 160f
                 },

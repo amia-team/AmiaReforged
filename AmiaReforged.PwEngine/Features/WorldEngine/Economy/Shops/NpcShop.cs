@@ -57,10 +57,18 @@ public sealed class NpcShop
 
                 IReadOnlyList<NpcShopLocalVariable> locals = BuildLocalVariables(productRecord.LocalVariablesJson);
                 SimpleModelAppearance? appearance = BuildAppearance(productRecord.AppearanceJson);
+                string displayName = string.IsNullOrWhiteSpace(productRecord.DisplayName)
+                    ? productRecord.ResRef
+                    : productRecord.DisplayName;
+                string? description = string.IsNullOrWhiteSpace(productRecord.Description)
+                    ? null
+                    : productRecord.Description;
 
                 NpcShopProduct product = new(
                     productRecord.Id,
                     productRecord.ResRef,
+                    displayName,
+                    description,
                     productRecord.Price,
                     productRecord.CurrentStock,
                     productRecord.MaxStock,
