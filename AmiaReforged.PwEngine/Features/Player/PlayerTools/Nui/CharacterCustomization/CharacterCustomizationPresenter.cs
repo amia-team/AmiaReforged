@@ -1,6 +1,8 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.CharacterCustomization;
 
@@ -12,6 +14,8 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
     private readonly CharacterCustomizationModel _model = new(player);
     private NuiWindowToken _token;
     private bool _initializing;
+
+    [Inject] private Lazy<WindowDirector> WindowDirector { get; set; } = null!;
 
     private static readonly string[] ArmorPartNames =
     [
@@ -41,7 +45,6 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
             InitializeColorPalette(false);
             Token().SetBindValue(View.ModelButtonsEnabled, true);
 
-            // Initialize armor part visibility - hide all parts so only base body shows
             for (int i = 0; i < 19; i++)
             {
                 Token().SetBindValue(View.ArmorPartVisible[i], false);
@@ -96,8 +99,46 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
 
         if (ev.ElementId == View.EquipmentButton.Id)
         {
-            _model.SetMode(CustomizationMode.Equipment);
-            UpdateModeDisplay();
+            player.SendServerMessage("Equipment button clicked - attempting to open window...", ColorConstants.Cyan);
+
+            if (WindowDirector?.Value == null)
+            {
+                player.SendServerMessage("WARNING: WindowDirector is not injected in CharacterCustomizationPresenter!", ColorConstants.Red);
+                player.SendServerMessage("This presenter may not have been properly initialized.", ColorConstants.Orange);
+            }
+
+            try
+            {
+                // Open the Equipment Customization window
+                EquipmentCustomizationView equipmentView = new EquipmentCustomizationView(player);
+
+                // Inject dependencies into the presenter
+                InjectionService? injector = AnvilCore.GetService<InjectionService>();
+                if (injector != null)
+                {
+                    injector.Inject(equipmentView.Presenter);
+                    player.SendServerMessage("Equipment presenter dependencies injected successfully", ColorConstants.Green);
+                }
+                else
+                {
+                    player.SendServerMessage("WARNING: InjectionService is null!", ColorConstants.Orange);
+                }
+
+                if (WindowDirector?.Value != null)
+                {
+                    WindowDirector.Value.OpenWindow(equipmentView.Presenter);
+                    player.SendServerMessage("Equipment window opened successfully!", ColorConstants.Green);
+                }
+                else
+                {
+                    player.SendServerMessage("ERROR: WindowDirector is still null after injection!", ColorConstants.Red);
+                }
+            }
+            catch (Exception ex)
+            {
+                player.SendServerMessage($"ERROR opening equipment window: {ex.Message}", ColorConstants.Red);
+            }
+
             return;
         }
 

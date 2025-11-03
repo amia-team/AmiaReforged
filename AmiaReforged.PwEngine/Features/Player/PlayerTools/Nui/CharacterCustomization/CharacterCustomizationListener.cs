@@ -1,4 +1,5 @@
-﻿using Anvil.API;
+﻿using Anvil;
+using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -42,6 +43,14 @@ public class CharacterCustomizationListener
         Log.Info($"Opening Character Customization for player: {player.PlayerName}");
 
         CharacterCustomizationView view = new CharacterCustomizationView(player);
+
+        // Inject dependencies into the presenter
+        InjectionService? injector = AnvilCore.GetService<InjectionService>();
+        if (injector != null)
+        {
+            injector.Inject(view.Presenter);
+        }
+
         _windowDirector.OpenWindow(view.Presenter);
 
         player.SendServerMessage("Opening Character Customization...", ColorConstants.Cyan);
