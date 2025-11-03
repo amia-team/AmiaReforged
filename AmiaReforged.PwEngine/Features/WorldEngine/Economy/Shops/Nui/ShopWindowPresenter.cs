@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
@@ -20,6 +21,9 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
 
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private readonly List<NwItem> _inventoryItems = new();
+    private readonly List<NpcShopProduct?> _inventoryProducts = new();
+    private readonly List<int> _inventoryBuyPrices = new();
 
     public ShopWindowPresenter(ShopWindowView view, NwPlayer player, NpcShop shop)
     {
@@ -88,20 +92,24 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
     {
         NwCreature? buyer = ResolveActiveBuyer();
 
-    List<bool> productPurchasable;
-    List<string> productTooltips;
-    List<string> productEntries = BuildProductEntries(buyer, out productPurchasable, out productTooltips);
-        List<string> inventoryEntries = BuildInventoryEntries();
+        List<bool> productPurchasable;
+        List<string> productTooltips;
+        List<string> productEntries = BuildProductEntries(buyer, out productPurchasable, out productTooltips);
+        List<bool> inventorySellable;
+        List<string> inventoryItemIds;
+        List<string> inventoryEntries = BuildInventoryEntries(buyer, out inventoryItemIds, out inventorySellable);
 
         Token().SetBindValue(View.StoreTitle, BuildTitleText());
         Token().SetBindValue(View.StoreDescription, BuildDescriptionText());
 
         Token().SetBindValues(View.ProductEntries, productEntries);
-    Token().SetBindValues(View.ProductTooltips, productTooltips);
+        Token().SetBindValues(View.ProductTooltips, productTooltips);
         Token().SetBindValues(View.ProductPurchasable, productPurchasable);
         Token().SetBindValue(View.ProductCount, productEntries.Count);
 
         Token().SetBindValues(View.InventoryEntries, inventoryEntries);
+        Token().SetBindValues(View.InventoryItemIds, inventoryItemIds);
+        Token().SetBindValues(View.InventorySellable, inventorySellable);
         Token().SetBindValue(View.InventoryCount, inventoryEntries.Count);
     }
 
@@ -128,6 +136,17 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
 
             _ = HandlePurchaseAsync(rowIndex);
             return;
+        }
+
+        if (eventData.ElementId == View.SellButton.Id)
+        {
+            int rowIndex = eventData.ArrayIndex;
+            if (rowIndex < 0)
+            {
+                return;
+            }
+
+            _ = HandleSellAsync(rowIndex);
         }
     }
 
@@ -305,6 +324,80 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         }
     }
 
+    private async Task HandleSellAsync(int inventoryIndex)
+    {
+        if (inventoryIndex < 0 || inventoryIndex >= _inventoryItems.Count)
+        {
+            return;
+        }
+
+        NwItem item = _inventoryItems[inventoryIndex];
+        if (item is null || !item.IsValid)
+        {
+            await NotifyAsync("That item is no longer available.", ColorConstants.Orange, refresh: true);
+            return;
+        }
+
+        NwCreature? seller = ResolveActiveBuyer();
+        if (seller is null)
+        {
+            await NotifyAsync("You are not possessing a creature.", ColorConstants.Orange);
+            return;
+        }
+
+        if (item.Possessor != seller)
+        {
+            await NotifyAsync("You must be holding the item to sell it.", ColorConstants.Orange, refresh: true);
+            return;
+        }
+
+    if (!CanSell(item, out NpcShopProduct? product) || product is null)
+        {
+            await NotifyAsync("This merchant is not interested in that item.", ColorConstants.Orange, refresh: true);
+            return;
+        }
+
+        int pricePerItem = (inventoryIndex < _inventoryBuyPrices.Count) ? _inventoryBuyPrices[inventoryIndex] : 0;
+        if (pricePerItem <= 0)
+        {
+            await NotifyAsync("The merchant cannot offer coin for that item right now.", ColorConstants.Orange, refresh: true);
+            return;
+        }
+
+        int quantity = Math.Max(item.StackSize, 1);
+        int payout = pricePerItem * quantity;
+
+        try
+        {
+            ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, quantity);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to store sold item {ResRef} for shop {Tag}.", product.ResRef, _shop.Tag);
+            await NotifyAsync("The merchant cannot accept that item right now.", ColorConstants.Orange, refresh: false);
+            return;
+        }
+
+        string itemName = string.IsNullOrWhiteSpace(item.Name) ? product.DisplayName : item.Name;
+
+        await NwTask.SwitchToMainThread();
+        if (item.IsValid)
+        {
+            item.Destroy();
+        }
+
+        if (payout > 0)
+        {
+            await RefundGoldAsync(seller, payout);
+        }
+
+        string message = payout > 0
+            ? string.Format(CultureInfo.InvariantCulture, "You sold {0} for {1:N0} gp.", itemName, payout)
+            : string.Format(CultureInfo.InvariantCulture, "You consign {0} with the merchant.", itemName);
+
+        await NotifyAsync(message, ColorConstants.Lime, refresh: true);
+    }
+
     private static string BuildPurchaseMessage(string itemName, int price)
     {
         if (price <= 0)
@@ -340,9 +433,17 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         }
     }
 
-    private List<string> BuildInventoryEntries()
+    private List<string> BuildInventoryEntries(
+        NwCreature? creature,
+        out List<string> itemIds,
+        out List<bool> sellable)
     {
-        NwCreature? creature = _player.ControlledCreature ?? _player.LoginCreature;
+        itemIds = new List<string>();
+        sellable = new List<bool>();
+        _inventoryItems.Clear();
+        _inventoryProducts.Clear();
+        _inventoryBuyPrices.Clear();
+
         if (creature == null)
         {
             return new List<string> { "You are not possessing a creature." };
@@ -352,21 +453,39 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
 
         foreach (NwItem item in creature.Inventory.Items)
         {
-            if (!CanSell(item))
-            {
-                continue;
-            }
+            _inventoryItems.Add(item);
 
             string itemName = string.IsNullOrWhiteSpace(item.Name) ? item.ResRef : item.Name;
             int stack = item.StackSize;
             string stackInfo = stack > 1 ? $" x{stack}" : string.Empty;
 
-            entries.Add($"{itemName}{stackInfo}");
+            if (CanSell(item, out NpcShopProduct? product))
+            {
+                int salePrice = CalculateSalePrice(product, creature);
+                int buyback = CalculateBuybackPrice(salePrice);
+                int total = buyback * Math.Max(stack, 1);
+
+                entries.Add($"{itemName}{stackInfo} — Sell {total} gp");
+                sellable.Add(true);
+                _inventoryProducts.Add(product);
+                _inventoryBuyPrices.Add(buyback);
+            }
+            else
+            {
+                entries.Add($"{itemName}{stackInfo}");
+                sellable.Add(false);
+                _inventoryProducts.Add(null);
+                _inventoryBuyPrices.Add(0);
+            }
+
+            itemIds.Add(item.ObjectId.ToString(CultureInfo.InvariantCulture));
         }
 
         if (entries.Count == 0)
         {
             entries.Add("No items in your inventory may be sold here.");
+            itemIds.Add(string.Empty);
+            sellable.Add(false);
         }
 
         return entries;
@@ -397,6 +516,17 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
                 _shop.Tag);
             return Math.Max(0, product.Price);
         }
+    }
+
+    private static int CalculateBuybackPrice(int salePrice)
+    {
+        if (salePrice <= 0)
+        {
+            return 0;
+        }
+
+        int buyback = salePrice / 2;
+        return Math.Max(1, buyback);
     }
 
     private static async Task<bool> TryWithdrawGoldAsync(NwCreature buyer, int amount)
@@ -440,8 +570,10 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
         buyer.Gold += (uint)amount;
     }
 
-    private bool CanSell(NwItem item)
+    private bool CanSell(NwItem item, out NpcShopProduct? matchedProduct)
     {
+        matchedProduct = null;
+
         if (!item.IsValid)
         {
             return false;
@@ -462,7 +594,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
             return false;
         }
 
-        if (_shop.FindProduct(item.ResRef) is null)
+        if (item.BaseItem is null)
         {
             return false;
         }
@@ -479,6 +611,20 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
             Log.Debug(ex, "Blacklist check failed for item {ItemResRef}.", item.ResRef);
         }
 
-        return true;
+        matchedProduct = _shop.FindProduct(item.ResRef);
+        if (matchedProduct is not null)
+        {
+            return true;
+        }
+
+    int baseItemTypeId = (int)item.BaseItem.ItemType;
+    IReadOnlyList<NpcShopProduct> baseMatches = _shop.FindProductsByBaseItemType(baseItemTypeId);
+        if (baseMatches.Count > 0)
+        {
+            matchedProduct = baseMatches.OrderBy(p => p.SortOrder).First();
+            return true;
+        }
+
+        return false;
     }
 }

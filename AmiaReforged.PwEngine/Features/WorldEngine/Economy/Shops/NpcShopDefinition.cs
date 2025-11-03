@@ -9,7 +9,9 @@ public sealed record NpcShopDefinition(
     string ShopkeeperTag,
     string? Description,
     NpcShopRestockDefinition Restock,
-    IReadOnlyList<NpcShopProductDefinition> Products);
+    IReadOnlyList<NpcShopProductDefinition> Products,
+    IReadOnlyList<int>? AcceptCategories = null,
+    int MarkupPercent = 0);
 
 public sealed record NpcShopProductDefinition(
     string ResRef,
@@ -19,6 +21,7 @@ public sealed record NpcShopProductDefinition(
     int InitialStock,
     int MaxStock,
     int RestockAmount,
+    int? BaseItemType = null,
     IReadOnlyList<JsonLocalVariableDefinition>? LocalVariables = null,
     SimpleModelAppearanceDefinition? Appearance = null);
 

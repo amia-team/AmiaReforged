@@ -68,6 +68,14 @@ public class ShopConfiguration : IEntityTypeConfiguration<ShopRecord>
             .HasColumnName("definition_hash")
             .HasMaxLength(128);
 
+        builder.Property(s => s.MarkupPercent)
+            .HasColumnName("markup_percent")
+            .HasDefaultValue(0);
+
+        builder.Property(s => s.AcceptedBaseItemTypesJson)
+            .HasColumnName("accepted_base_item_types")
+            .HasColumnType("text");
+
         builder.Property(s => s.CreatedAt)
             .HasColumnName("created_at")
             .HasDefaultValueSql("CURRENT_TIMESTAMP");

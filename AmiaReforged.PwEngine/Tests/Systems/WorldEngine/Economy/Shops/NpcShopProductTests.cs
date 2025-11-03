@@ -146,7 +146,8 @@ public class NpcShopProductTests
             maxStock: 2,
             restockAmount: 1,
             isPlayerManaged: false,
-            sortOrder: 0);
+            sortOrder: 0,
+            baseItemType: null);
 
         Assert.That(product.TryConsume(1), Is.True);
         Assert.That(product.CurrentStock, Is.EqualTo(0));

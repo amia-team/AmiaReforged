@@ -183,6 +183,47 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
         await ctx.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<ShopProductRecord> UpsertPlayerProductAsync(
+        long shopId,
+        ShopProductRecord product,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(product);
+
+        await using PwEngineContext ctx = contextFactory.CreateDbContext();
+
+        ShopProductRecord? existing = await ctx.ShopProducts.FirstOrDefaultAsync(
+            p => p.ShopId == shopId
+                 && p.IsPlayerManaged
+                 && p.ResRef == product.ResRef
+                 && p.LocalVariablesJson == product.LocalVariablesJson
+                 && p.AppearanceJson == product.AppearanceJson
+                 && p.BaseItemType == product.BaseItemType,
+            cancellationToken);
+
+        if (existing is not null)
+        {
+            existing.CurrentStock += product.CurrentStock;
+            existing.Price = product.Price;
+            existing.DisplayName = product.DisplayName;
+            existing.Description = product.Description;
+            existing.SortOrder = product.SortOrder;
+            existing.UpdatedAt = DateTime.UtcNow;
+
+            await ctx.SaveChangesAsync(cancellationToken);
+            return existing;
+        }
+
+        product.ShopId = shopId;
+        product.CreatedAt = DateTime.UtcNow;
+        product.UpdatedAt = DateTime.UtcNow;
+
+        ctx.ShopProducts.Add(product);
+        await ctx.SaveChangesAsync(cancellationToken);
+
+        return product;
+    }
+
     private static void UpdateShop(ShopRecord existing, ShopRecord incoming)
     {
         existing.DisplayName = incoming.DisplayName;
@@ -199,6 +240,8 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
         existing.NextRestockUtc = incoming.NextRestockUtc;
         existing.VaultBalance = incoming.VaultBalance;
         existing.DefinitionHash = incoming.DefinitionHash;
+        existing.MarkupPercent = incoming.MarkupPercent;
+        existing.AcceptedBaseItemTypesJson = incoming.AcceptedBaseItemTypesJson;
         existing.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -219,6 +262,7 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
                 record.SortOrder = incomingProduct.SortOrder;
                 record.LocalVariablesJson = incomingProduct.LocalVariablesJson;
                 record.AppearanceJson = incomingProduct.AppearanceJson;
+                record.BaseItemType = incomingProduct.BaseItemType;
                 record.IsPlayerManaged = incomingProduct.IsPlayerManaged;
                 record.UpdatedAt = DateTime.UtcNow;
             }
@@ -235,6 +279,7 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
                     SortOrder = incomingProduct.SortOrder,
                     LocalVariablesJson = incomingProduct.LocalVariablesJson,
                     AppearanceJson = incomingProduct.AppearanceJson,
+                    BaseItemType = incomingProduct.BaseItemType,
                     CurrentStock = incomingProduct.CurrentStock,
                     IsPlayerManaged = incomingProduct.IsPlayerManaged,
                     CreatedAt = DateTime.UtcNow,

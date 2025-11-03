@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
@@ -37,5 +38,10 @@ public interface IShopPersistenceRepository
     Task UpdateNextRestockAsync(
         long shopId,
         DateTime? nextRestockUtc,
+        CancellationToken cancellationToken = default);
+
+    Task<ShopProductRecord> UpsertPlayerProductAsync(
+        long shopId,
+        ShopProductRecord product,
         CancellationToken cancellationToken = default);
 }

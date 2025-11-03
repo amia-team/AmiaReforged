@@ -10,6 +10,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 public sealed class NpcShop
 {
     private readonly Dictionary<string, NpcShopProduct> _productsByResref = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<int, List<NpcShopProduct>> _productsByBaseItemType = new();
+    private readonly HashSet<int> _acceptedBaseItemTypes = new();
     private readonly List<NpcShopProduct> _products = new();
 
     public NpcShop(ShopRecord record, IShopItemBlacklist? blacklist = null)
@@ -43,6 +45,29 @@ public sealed class NpcShop
         NextRestockUtc = record.NextRestockUtc ?? default;
         VaultBalance = record.VaultBalance;
         DefinitionHash = record.DefinitionHash;
+        MarkupPercent = Math.Max(0, record.MarkupPercent);
+
+        if (!string.IsNullOrWhiteSpace(record.AcceptedBaseItemTypesJson))
+        {
+            try
+            {
+                int[]? categories = JsonSerializer.Deserialize<int[]>(record.AcceptedBaseItemTypesJson);
+                if (categories is { Length: > 0 })
+                {
+                    foreach (int category in categories)
+                    {
+                        if (category >= 0)
+                        {
+                            _acceptedBaseItemTypes.Add(category);
+                        }
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // Ignored; malformed configuration falls back to no accepted categories.
+            }
+        }
 
         if (record.Products is { Count: > 0 })
         {
@@ -75,11 +100,23 @@ public sealed class NpcShop
                     productRecord.RestockAmount,
                     productRecord.IsPlayerManaged,
                     productRecord.SortOrder,
+                    productRecord.BaseItemType,
                     locals,
                     appearance);
 
                 _products.Add(product);
                 _productsByResref[product.ResRef] = product;
+
+                if (productRecord.BaseItemType is int baseItemType)
+                {
+                    if (!_productsByBaseItemType.TryGetValue(baseItemType, out List<NpcShopProduct>? list))
+                    {
+                        list = new List<NpcShopProduct>();
+                        _productsByBaseItemType[baseItemType] = list;
+                    }
+
+                    list.Add(product);
+                }
             }
         }
 
@@ -104,6 +141,8 @@ public sealed class NpcShop
     public DateTime NextRestockUtc { get; private set; }
     public int VaultBalance { get; private set; }
     public string? DefinitionHash { get; }
+    public int MarkupPercent { get; }
+    public IReadOnlyCollection<int> AcceptedBaseItemTypes => _acceptedBaseItemTypes;
 
     public bool IsPlayerManagedShop => Kind == ShopKind.Player;
 
@@ -141,6 +180,73 @@ public sealed class NpcShop
         }
 
         return _productsByResref.TryGetValue(resRef, out NpcShopProduct? product) ? product : null;
+    }
+
+    public IReadOnlyList<NpcShopProduct> FindProductsByBaseItemType(int baseItemType)
+    {
+        return _productsByBaseItemType.TryGetValue(baseItemType, out List<NpcShopProduct>? products)
+            ? products
+            : Array.Empty<NpcShopProduct>();
+    }
+
+    public bool AcceptsBaseItemType(int baseItemType)
+    {
+        return _acceptedBaseItemTypes.Contains(baseItemType);
+    }
+
+    public NpcShopProduct UpsertProduct(ShopProductRecord record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+
+        lock (SyncRoot)
+        {
+            if (_productsByResref.TryGetValue(record.ResRef, out NpcShopProduct? existing))
+            {
+                existing.SetCurrentStock(record.CurrentStock);
+                return existing;
+            }
+
+            IReadOnlyList<NpcShopLocalVariable> locals = BuildLocalVariables(record.LocalVariablesJson);
+            SimpleModelAppearance? appearance = BuildAppearance(record.AppearanceJson);
+            string displayName = string.IsNullOrWhiteSpace(record.DisplayName)
+                ? record.ResRef
+                : record.DisplayName;
+            string? description = string.IsNullOrWhiteSpace(record.Description)
+                ? null
+                : record.Description;
+
+            NpcShopProduct product = new(
+                record.Id,
+                record.ResRef,
+                displayName,
+                description,
+                record.Price,
+                record.CurrentStock,
+                record.MaxStock,
+                record.RestockAmount,
+                record.IsPlayerManaged,
+                record.SortOrder,
+                record.BaseItemType,
+                locals,
+                appearance);
+
+            _products.Add(product);
+            _productsByResref[product.ResRef] = product;
+
+            if (record.BaseItemType is int baseItemType)
+            {
+                if (!_productsByBaseItemType.TryGetValue(baseItemType, out List<NpcShopProduct>? list))
+                {
+                    list = new List<NpcShopProduct>();
+                    _productsByBaseItemType[baseItemType] = list;
+                }
+
+                list.Add(product);
+            }
+
+            _products.Sort(static (left, right) => left.SortOrder.CompareTo(right.SortOrder));
+            return product;
+        }
     }
 
     public void SetVaultBalance(int amount)

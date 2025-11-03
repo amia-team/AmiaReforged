@@ -15,6 +15,7 @@ public sealed class NpcShopProduct
         int restockAmount,
         bool isPlayerManaged,
         int sortOrder,
+        int? baseItemType,
         IReadOnlyList<NpcShopLocalVariable>? localVariables = null,
         SimpleModelAppearance? appearance = null)
     {
@@ -52,6 +53,7 @@ public sealed class NpcShopProduct
         RestockAmount = restockAmount;
         IsPlayerManaged = isPlayerManaged;
         SortOrder = sortOrder;
+        BaseItemType = baseItemType;
         CurrentStock = Math.Clamp(currentStock, 0, maxStock == 0 ? int.MaxValue : maxStock);
         LocalVariables = localVariables ?? Array.Empty<NpcShopLocalVariable>();
         Appearance = appearance;
@@ -67,6 +69,7 @@ public sealed class NpcShopProduct
     public int RestockAmount { get; }
     public bool IsPlayerManaged { get; }
     public int SortOrder { get; }
+    public int? BaseItemType { get; }
     public IReadOnlyList<NpcShopLocalVariable> LocalVariables { get; }
     public SimpleModelAppearance? Appearance { get; }
 

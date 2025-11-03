@@ -47,6 +47,10 @@ public class ShopRecord
     [MaxLength(128)]
     public string? DefinitionHash { get; set; }
 
+    public int MarkupPercent { get; set; }
+
+    public string? AcceptedBaseItemTypesJson { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

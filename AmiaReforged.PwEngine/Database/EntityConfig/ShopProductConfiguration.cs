@@ -44,6 +44,9 @@ public class ShopProductConfiguration : IEntityTypeConfiguration<ShopProductReco
             .HasColumnName("restock_amount")
             .IsRequired();
 
+        builder.Property(p => p.BaseItemType)
+            .HasColumnName("base_item_type");
+
         builder.Property(p => p.IsPlayerManaged)
             .HasColumnName("is_player_managed")
             .IsRequired();

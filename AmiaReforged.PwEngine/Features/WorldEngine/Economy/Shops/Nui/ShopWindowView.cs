@@ -17,9 +17,12 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
     public readonly NuiBind<bool> ProductPurchasable = new("shop_product_purchasable");
     public readonly NuiBind<int> InventoryCount = new("shop_inventory_count");
     public readonly NuiBind<string> InventoryEntries = new("shop_inventory_entries");
+    public readonly NuiBind<string> InventoryItemIds = new("shop_inventory_ids");
+    public readonly NuiBind<bool> InventorySellable = new("shop_inventory_sellable");
 
     public NuiButton CloseButton = null!;
     public NuiButton BuyButton = null!;
+    public NuiButton SellButton = null!;
 
     public ShopWindowView(NwPlayer player, NpcShop shop)
     {
@@ -64,6 +67,20 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
                 HorizontalAlign = NuiHAlign.Left,
                 VerticalAlign = NuiVAlign.Middle
             })
+            {
+                Width = 360f
+            },
+            new(new NuiButton("Sell")
+            {
+                Id = "shop_sell",
+                Enabled = InventorySellable,
+                Height = 24f,
+                Width = 90f
+            }.Assign(out SellButton))
+            {
+                Width = 100f,
+                VariableSize = false
+            }
         ];
 
         const float elementWidth = 500f;

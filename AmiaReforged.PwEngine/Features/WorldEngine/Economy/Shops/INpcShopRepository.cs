@@ -13,6 +13,7 @@ public interface INpcShopRepository
     IReadOnlyCollection<NpcShop> All(ShopKind? kind = null);
     bool TryConsumeProduct(string shopTag, string productResRef, int quantity);
     void ReturnProduct(string shopTag, string productResRef, int quantity);
+    bool TryStorePlayerProduct(string shopTag, ShopProductRecord product);
     bool TryUpdateNextRestock(string shopTag, DateTime? nextRestockUtc);
     void ApplyRestock(NpcShop shop, IReadOnlyList<(NpcShopProduct Product, int Added)> restocked);
 }

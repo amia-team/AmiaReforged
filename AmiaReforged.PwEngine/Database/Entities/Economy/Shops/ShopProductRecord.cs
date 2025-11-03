@@ -29,6 +29,8 @@ public class ShopProductRecord
 
     public int RestockAmount { get; set; }
 
+    public int? BaseItemType { get; set; }
+
     public bool IsPlayerManaged { get; set; }
 
     public int SortOrder { get; set; }

@@ -135,6 +135,34 @@ public sealed class NpcShopLoader : IDefinitionLoader
             return false;
         }
 
+        if (definition.MarkupPercent < 0)
+        {
+            _failures.Add(new FileLoadResult(ResultType.Fail,
+                "MarkupPercent must not be negative.", fileName));
+            return false;
+        }
+
+        if (definition.AcceptCategories is { Count: > 0 })
+        {
+            HashSet<int> categories = new();
+            foreach (int category in definition.AcceptCategories)
+            {
+                if (category < 0)
+                {
+                    _failures.Add(new FileLoadResult(ResultType.Fail,
+                        "AcceptCategories must contain non-negative integers.", fileName));
+                    return false;
+                }
+
+                if (!categories.Add(category))
+                {
+                    _failures.Add(new FileLoadResult(ResultType.Fail,
+                        "AcceptCategories must not contain duplicate entries.", fileName));
+                    return false;
+                }
+            }
+        }
+
         foreach (NpcShopProductDefinition product in definition.Products)
         {
             if (string.IsNullOrWhiteSpace(product.ResRef))
@@ -157,17 +185,33 @@ public sealed class NpcShopLoader : IDefinitionLoader
                 return false;
             }
 
-            if (product.MaxStock <= 0)
+            bool allowsPlayerStock = product.BaseItemType.HasValue;
+
+            if (!allowsPlayerStock && product.MaxStock <= 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
                     $"Product '{product.ResRef}' must have MaxStock greater than zero.", fileName));
                 return false;
             }
 
-            if (product.RestockAmount <= 0)
+            if (allowsPlayerStock && product.MaxStock < 0)
+            {
+                _failures.Add(new FileLoadResult(ResultType.Fail,
+                    $"Product '{product.ResRef}' must not define a negative MaxStock.", fileName));
+                return false;
+            }
+
+            if (!allowsPlayerStock && product.RestockAmount <= 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
                     $"Product '{product.ResRef}' must have RestockAmount greater than zero.", fileName));
+                return false;
+            }
+
+            if (allowsPlayerStock && product.RestockAmount < 0)
+            {
+                _failures.Add(new FileLoadResult(ResultType.Fail,
+                    $"Product '{product.ResRef}' must not define a negative RestockAmount.", fileName));
                 return false;
             }
 
@@ -178,10 +222,17 @@ public sealed class NpcShopLoader : IDefinitionLoader
                 return false;
             }
 
-            if (product.InitialStock > product.MaxStock)
+            if (product.MaxStock > 0 && product.InitialStock > product.MaxStock)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
                     $"Product '{product.ResRef}' has InitialStock greater than MaxStock.", fileName));
+                return false;
+            }
+
+            if (product.BaseItemType is < 0)
+            {
+                _failures.Add(new FileLoadResult(ResultType.Fail,
+                    $"Product '{product.ResRef}' defines an invalid BaseItemType; expected non-negative integer.", fileName));
                 return false;
             }
 

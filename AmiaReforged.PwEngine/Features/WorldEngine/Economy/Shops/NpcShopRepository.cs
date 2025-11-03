@@ -199,6 +199,31 @@ public sealed class NpcShopRepository : INpcShopRepository
         }
     }
 
+    public bool TryStorePlayerProduct(string shopTag, ShopProductRecord product)
+    {
+        ArgumentNullException.ThrowIfNull(product);
+
+        if (!TryGet(shopTag, out NpcShop? shop) || shop is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            ShopProductRecord persisted = _persistence.UpsertPlayerProductAsync(shop.Id, product, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+
+            shop.UpsertProduct(persisted);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to store player-managed product for shop {Tag} resref {ResRef}.", shopTag, product.ResRef);
+            return false;
+        }
+    }
+
     public bool TryUpdateNextRestock(string shopTag, DateTime? nextRestockUtc)
     {
         if (!TryGet(shopTag, out NpcShop? shop) || shop is null)
@@ -319,6 +344,8 @@ public sealed class NpcShopRepository : INpcShopRepository
             RestockMinMinutes = definition.Restock.MinMinutes,
             RestockMaxMinutes = definition.Restock.MaxMinutes,
             DefinitionHash = hash,
+            MarkupPercent = Math.Max(0, definition.MarkupPercent),
+            AcceptedBaseItemTypesJson = SerializeOrNull(definition.AcceptCategories, jsonOptions),
             VaultBalance = 0,
             Products = new List<ShopProductRecord>()
         };
@@ -345,6 +372,7 @@ public sealed class NpcShopRepository : INpcShopRepository
                     MaxStock = maxStock,
                     RestockAmount = Math.Max(0, product.RestockAmount),
                     SortOrder = sortOrder++,
+                    BaseItemType = product.BaseItemType,
                     IsPlayerManaged = false,
                     LocalVariablesJson = SerializeOrNull(product.LocalVariables, jsonOptions),
                     AppearanceJson = SerializeOrNull(product.Appearance, jsonOptions)

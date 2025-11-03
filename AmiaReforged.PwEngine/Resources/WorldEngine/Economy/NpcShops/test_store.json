@@ -16,12 +16,22 @@
       "InitialStock": 2,
       "MaxStock": 6,
       "RestockAmount": 1,
-      "LocalVariables": [
-      ],
+      "BaseItemType": 43,
+      "LocalVariables": [],
       "Appearance": {
         "ModelType": 0,
         "SimpleModelNumber": 12
       }
+    },
+    {
+      "ResRef": "player_book_stock",
+      "Name": "Consigned Poetry Volume",
+      "Description": "Shelf space reserved for player-sold poetry tomes.",
+      "Price": 40,
+      "InitialStock": 0,
+      "MaxStock": 0,
+      "RestockAmount": 0,
+      "BaseItemType": 43
     }
   ]
 }
