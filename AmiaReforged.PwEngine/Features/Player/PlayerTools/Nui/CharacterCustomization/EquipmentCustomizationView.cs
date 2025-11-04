@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using Anvil.API;
 
@@ -175,7 +175,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                     Children =
                     {
                         new NuiSpacer { Width = 305f },
-                        ImagePlatedLabeledButton("btn_weapon", "Weapon", "Customize Weapon", out WeaponButton, "app_sword", 50f, 50f)
+                        ImagePlatedLabeledButton("btn_weapon", "Main Hand", "Customize Main Hand", out WeaponButton, "app_sword", 50f, 50f)
                     }
                 },
                 new NuiSpacer { Height = 10f },
@@ -262,7 +262,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                     Children =
                     {
                         new NuiSpacer { Width = 120f },
-                        new NuiLabel("Weapon Scale:")
+                        new NuiLabel("Main Hand Scale:")
                         {
                             Width = 120f,
                             Height = 30f,

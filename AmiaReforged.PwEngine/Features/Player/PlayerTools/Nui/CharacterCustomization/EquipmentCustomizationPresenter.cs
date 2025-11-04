@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -303,6 +303,14 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
 
         if (ev.ElementId == View.Cloth1Button.Id)
         {
+            if (_model.CurrentEquipmentType == EquipmentType.Helmet)
+            {
+                _model.SetHelmetColorChannel(2);
+            }
+            else if (_model.CurrentEquipmentType == EquipmentType.Cloak)
+            {
+                _model.SetCloakColorChannel(2);
+            }
             InitializeColorPalette();
             player.SendServerMessage("Cloth 1 color channel selected.", ColorConstants.Cyan);
             return;
@@ -310,6 +318,14 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
 
         if (ev.ElementId == View.Cloth2Button.Id)
         {
+            if (_model.CurrentEquipmentType == EquipmentType.Helmet)
+            {
+                _model.SetHelmetColorChannel(3);
+            }
+            else if (_model.CurrentEquipmentType == EquipmentType.Cloak)
+            {
+                _model.SetCloakColorChannel(3);
+            }
             InitializeColorPalette();
             player.SendServerMessage("Cloth 2 color channel selected.", ColorConstants.Cyan);
             return;
@@ -317,6 +333,14 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
 
         if (ev.ElementId == View.Leather1Button.Id)
         {
+            if (_model.CurrentEquipmentType == EquipmentType.Helmet)
+            {
+                _model.SetHelmetColorChannel(0);
+            }
+            else if (_model.CurrentEquipmentType == EquipmentType.Cloak)
+            {
+                _model.SetCloakColorChannel(0);
+            }
             InitializeColorPalette();
             player.SendServerMessage("Leather 1 color channel selected.", ColorConstants.Cyan);
             return;
@@ -324,6 +348,14 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
 
         if (ev.ElementId == View.Leather2Button.Id)
         {
+            if (_model.CurrentEquipmentType == EquipmentType.Helmet)
+            {
+                _model.SetHelmetColorChannel(1);
+            }
+            else if (_model.CurrentEquipmentType == EquipmentType.Cloak)
+            {
+                _model.SetCloakColorChannel(1);
+            }
             InitializeColorPalette();
             player.SendServerMessage("Leather 2 color channel selected.", ColorConstants.Cyan);
             return;
@@ -331,6 +363,14 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
 
         if (ev.ElementId == View.Metal1Button.Id)
         {
+            if (_model.CurrentEquipmentType == EquipmentType.Helmet)
+            {
+                _model.SetHelmetColorChannel(4);
+            }
+            else if (_model.CurrentEquipmentType == EquipmentType.Cloak)
+            {
+                _model.SetCloakColorChannel(4);
+            }
             InitializeColorPalette(true); // Use metal palette
             player.SendServerMessage("Metal 1 color channel selected.", ColorConstants.Cyan);
             return;
@@ -338,6 +378,14 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
 
         if (ev.ElementId == View.Metal2Button.Id)
         {
+            if (_model.CurrentEquipmentType == EquipmentType.Helmet)
+            {
+                _model.SetHelmetColorChannel(5);
+            }
+            else if (_model.CurrentEquipmentType == EquipmentType.Cloak)
+            {
+                _model.SetCloakColorChannel(5);
+            }
             InitializeColorPalette(true); // Use metal palette
             player.SendServerMessage("Metal 2 color channel selected.", ColorConstants.Cyan);
             return;
@@ -361,11 +409,14 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         if (ev.ElementId == View.CancelButton.Id)
         {
             _model.RevertChanges();
+            UpdateDisplays();
             return;
         }
 
         if (ev.ElementId == View.CloseButton.Id)
         {
+            _model.RevertChanges();
+            _model.ConfirmAndClose();
             Close();
         }
     }
@@ -412,17 +463,25 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.CloakAppearanceText, _model.CloakAppearance.ToString());
     }
 
+    private void UpdateDisplays()
+    {
+        UpdateWeaponDisplay();
+        UpdateBootsDisplay();
+        UpdateHelmetDisplay();
+        UpdateCloakDisplay();
+    }
+
     private void HandleColorSelection(int colorIndex)
     {
         if (_model.CurrentEquipmentType == EquipmentType.Helmet)
         {
-            player.SendServerMessage($"Helmet color set to {colorIndex}.", ColorConstants.Cyan);
-            // TODO: Apply color to helmet
+            _model.SetHelmetColor(colorIndex);
+            UpdateHelmetDisplay();
         }
         else if (_model.CurrentEquipmentType == EquipmentType.Cloak)
         {
-            player.SendServerMessage($"Cloak color set to {colorIndex}.", ColorConstants.Cyan);
-            // TODO: Apply color to cloak
+            _model.SetCloakColor(colorIndex);
+            UpdateCloakDisplay();
         }
     }
 }
