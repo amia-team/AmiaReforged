@@ -1,4 +1,3 @@
-using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques;
 using AmiaReforged.Classes.Monk.Types;
 using AmiaReforged.Classes.Spells;
@@ -26,6 +25,7 @@ public class CastTechniqueService
     private static readonly HashSet<int> SupportedFeatIds =
         TechniqueCooldowns.Keys.Select(x => (int)x).ToHashSet();
     private static string GetCooldownTag(TechniqueType technique) => $"{technique}_cd";
+    private const int MinimumCastTechniqueLevel = 7;
 
     public CastTechniqueService(TechniqueFactory techniqueFactory)
     {
@@ -41,8 +41,8 @@ public class CastTechniqueService
     private void CastBodyTechnique(OnSpellCast castData)
     {
         if (castData.Caster is not NwCreature monk) return;
+        if (monk.IsMonkLevel(MinimumCastTechniqueLevel)) return;
         if (castData.Spell?.FeatReference?.Id is not { } featId || !SupportedFeatIds.Contains(featId)) return;
-        if (monk.GetClassInfo(ClassType.Monk) is null) return;
 
         string techniqueName = castData.Spell.FeatReference.Name.ToString();
         TechniqueType castTechnique = (TechniqueType)castData.Spell.FeatReference.Id;
@@ -65,7 +65,7 @@ public class CastTechniqueService
         techniqueHandler?.HandleCastTechnique(monk, castData);
     }
 
-    private bool TechniqueOnCooldown(NwCreature monk, string cdTag, string techniqueName)
+    private static bool TechniqueOnCooldown(NwCreature monk, string cdTag, string techniqueName)
     {
         Effect? techniqueCd = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == cdTag);
         if (techniqueCd == null) return false;

@@ -16,17 +16,9 @@ public static class StaticBuff
 
         Effect? existingMonkBuff = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag == StaticBuffTag);
 
-        if (existingMonkBuff != null)
-                monk.RemoveEffect(existingMonkBuff);
+        if (existingMonkBuff != null) monk.RemoveEffect(existingMonkBuff);
 
-        bool abilitiesRestricted = AbilityRestricted(monk);
-
-        if (MonkUtils.GetMonkPath(monk) == PathType.FloatingLeaf)
-        {
-            WisdomAttackBonus.AdjustWisdomAttackBonus(monk, abilitiesRestricted);
-        }
-
-        if (abilitiesRestricted) return;
+        if (MonkUtils.AbilityRestricted(monk, "monk abilities")) return;
 
         List<Effect> effectsToLink = [];
 
@@ -100,25 +92,4 @@ public static class StaticBuff
             KiFocus.KiFocus3 => Effect.AttackIncrease(3),
             _ => Effect.AttackIncrease(0)
         };
-
-    private static bool AbilityRestricted(NwCreature monk)
-    {
-        bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
-        bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is BaseItemCategory.Shield;
-        bool hasFocusWithoutUnarmed = monk.GetItemInSlot(InventorySlot.RightHand) is not null
-                                      && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is
-                                          BaseItemCategory.Torches;
-
-        if (monk.IsPlayerControlled(out NwPlayer? player))
-        {
-            if (hasArmor)
-                player.SendServerMessage("Equipping this armor has disabled your monk abilities.");
-            if (hasShield)
-                player.SendServerMessage("Equipping this shield has disabled your monk abilities.");
-            if (hasFocusWithoutUnarmed)
-                player.SendServerMessage("Equipping a focus without being unarmed has disabled your monk abilities.");
-        }
-
-        return hasArmor || hasShield || hasFocusWithoutUnarmed;
-    }
 }

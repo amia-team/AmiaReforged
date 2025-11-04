@@ -119,4 +119,47 @@ public static class MonkUtils
 
         return baseMultiplier;
     }
+
+    public static bool IsMonkLevel(this NwCreature monk, int minLevel) =>
+        NWScript.GetLevelByClass((int)ClassType.Monk, monk) >= minLevel;
+
+    public static bool AbilityRestricted(NwCreature monk, string disabledWhat)
+    {
+        bool hasArmor = monk.HasArmor();
+        bool hasShield = monk.HasShield();
+        bool hasFocusWithWeapon = monk.HasFocusWithWeapon();
+
+        if (!monk.IsPlayerControlled(out NwPlayer? player)) return hasArmor || hasShield || hasFocusWithWeapon;
+
+        if (hasArmor)
+        {
+            player.SendServerMessage($"Equipping this armor has disabled your {disabledWhat}.");
+            return hasArmor;
+        }
+
+        if (hasShield)
+        {
+            player.SendServerMessage($"Equipping this shield has disabled your {disabledWhat}.");
+            return hasShield;
+        }
+
+        if (hasFocusWithWeapon)
+        {
+            player.SendServerMessage($"Equipping a focus while wielding a weapon has disabled your {disabledWhat}.");
+            return hasFocusWithWeapon;
+        }
+
+        return false;
+    }
+
+    private static bool HasArmor(this NwCreature monk) =>
+        monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
+
+    private static bool HasShield(this NwCreature monk) =>
+        monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
+
+    private static bool HasFocusWithWeapon(this NwCreature monk) =>
+        monk.GetItemInSlot(InventorySlot.RightHand) is not null
+        && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is
+            BaseItemCategory.Torches;
 }
