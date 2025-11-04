@@ -13,6 +13,7 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
     private NwItem? _currentArmor;
     private const string BackupDataKey = "ARMOR_CUSTOMIZATION_BACKUP";
 
+    // Chest model validation by AC - ensures models stay within their AC category
     private static readonly Dictionary<int, HashSet<int>> TorsoModelsByAc = new()
     {
         [0] =
@@ -35,96 +36,6 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             14, 21, 23, 37, 53, 57, 60, 61, 62, 65, 70, 71, 72, 90, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
             116, 117, 186, 190, 209, 220, 221, 222, 223, 252
         ] // Full plate
-    };
-
-    private static readonly Dictionary<CreaturePart, HashSet<int>> ValidModelsByPart = new()
-    {
-        [CreaturePart.Neck] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 25, 26, 28, 63, 70, 71, 127, 129,
-            131, 132, 133, 134, 186
-        ],
-        [CreaturePart.Belt] =
-        [
-            0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 31, 32, 37, 39, 40, 41, 42,
-            43, 44, 63, 71, 96, 108, 186, 189, 190, 191
-        ],
-        [CreaturePart.Pelvis] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 63, 157, 186, 190
-        ],
-        [CreaturePart.RightShoulder] =
-        [
-            0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            40, 41, 42, 43, 44, 96, 100, 103, 106, 186, 190
-        ],
-        [CreaturePart.LeftShoulder] =
-        [
-            0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            40, 41, 42, 43, 44, 96, 100, 103, 106, 186, 190
-        ],
-        [CreaturePart.RightBicep] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            31, 32, 33, 34, 35, 36, 37, 38, 63, 186
-        ],
-        [CreaturePart.LeftBicep] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            31, 32, 33, 34, 35, 36, 37, 38, 63, 186
-        ],
-        [CreaturePart.RightForearm] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 63, 186
-        ],
-        [CreaturePart.LeftForearm] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 63, 186
-        ],
-        [CreaturePart.RightHand] = [1, 3, 4, 5, 6, 7, 8, 9, 10, 63, 186],
-        [CreaturePart.LeftHand] = [1, 3, 4, 5, 6, 7, 8, 9, 10, 63, 186],
-        [CreaturePart.RightThigh] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            31, 32, 33, 34, 35, 36, 37, 39, 63, 186, 190
-        ],
-        [CreaturePart.LeftThigh] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            31, 32, 33, 34, 35, 36, 37, 39, 63, 186, 190
-        ],
-        [CreaturePart.RightShin] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            31, 39, 40, 63, 186, 190, 195, 196, 197
-        ],
-        [CreaturePart.LeftShin] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-            31, 39, 40, 63, 186, 190, 195, 196, 197
-        ],
-        [CreaturePart.RightFoot] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 39, 63, 160,
-            186, 195, 196, 197, 198, 199, 200
-        ],
-        [CreaturePart.LeftFoot] =
-        [
-            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 39, 63, 160,
-            186, 195, 196, 197, 198, 199, 200
-        ],
-        [CreaturePart.Robe] =
-        [
-            0, 3, 4, 5, 6, 10, 11, 12, 13, 15, 16, 20, 21, 27, 30, 31, 32, 33, 38, 55, 56, 57, 58, 59, 60, 61, 62, 63,
-            64, 65, 66, 67, 68, 69, 70, 71, 72, 100, 110, 111, 112, 114, 115, 118, 122, 123, 124, 125, 126, 127, 128,
-            135, 143, 145, 147, 152, 154, 159, 164, 166, 167, 168, 182, 183, 186, 187, 188, 189, 190, 191, 192, 200,
-            201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 215, 216, 217, 218, 219, 220, 221, 222,
-            223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243,
-            244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254
-        ]
     };
 
     private void LoadCurrentArmor()
@@ -199,107 +110,15 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
         if (creature == null) return;
 
         CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
-
         int currentModel = _currentArmor.Appearance.GetArmorModel(creaturePart);
-        int newModel;
 
-        if (creaturePart == CreaturePart.Torso)
+        // Use dynamic validation to find next valid model
+        int newModel = GetNextValidArmorModel(creaturePart, currentModel, delta);
+
+        if (newModel == currentModel)
         {
-            int? currentAc = GetArmorClassFromTorsoModel(currentModel);
-
-            if (currentAc.HasValue && TorsoModelsByAc.TryGetValue(currentAc.Value, out HashSet<int>? validModels))
-            {
-                List<int> sortedModels = validModels.OrderBy(m => m).ToList();
-                int currentIndex = sortedModels.IndexOf(currentModel);
-
-                if (currentIndex >= 0)
-                {
-                    if (Math.Abs(delta) == 1)
-                    {
-                        int newIndex = currentIndex + delta;
-                        if (newIndex < 0)
-                            newIndex = sortedModels.Count - 1;
-                        else if (newIndex >= sortedModels.Count)
-                            newIndex = 0;
-
-                        newModel = sortedModels[newIndex];
-                    }
-                    else
-                    {
-                        int targetModel = currentModel + delta;
-
-                        if (delta > 0)
-                        {
-                            newModel = sortedModels.FirstOrDefault(m => m >= targetModel);
-                            if (newModel == 0)
-                                newModel = sortedModels.First();
-                        }
-                        else
-                        {
-                            newModel = sortedModels.LastOrDefault(m => m <= targetModel);
-                            if (newModel == 0)
-                                newModel = sortedModels.Last();
-                        }
-                    }
-                }
-                else
-                {
-                    newModel = sortedModels.FirstOrDefault();
-                }
-            }
-            else
-            {
-                player.SendServerMessage("Could not determine armor class. No change made.", ColorConstants.Orange);
-                return;
-            }
-        }
-        else
-        {
-            if (ValidModelsByPart.TryGetValue(creaturePart, out HashSet<int>? validModels))
-            {
-                List<int> sortedModels = validModels.OrderBy(m => m).ToList();
-                int currentIndex = sortedModels.IndexOf(currentModel);
-
-                if (currentIndex >= 0)
-                {
-                    if (Math.Abs(delta) == 1)
-                    {
-                        int newIndex = currentIndex + delta;
-                        if (newIndex < 0)
-                            newIndex = sortedModels.Count - 1;
-                        else if (newIndex >= sortedModels.Count)
-                            newIndex = 0;
-
-                        newModel = sortedModels[newIndex];
-                    }
-                    else
-                    {
-                        int targetModel = currentModel + delta;
-
-                        if (delta > 0)
-                        {
-                            newModel = sortedModels.FirstOrDefault(m => m >= targetModel);
-                            if (newModel == 0)
-                                newModel = sortedModels.First();
-                        }
-                        else
-                        {
-                            newModel = sortedModels.LastOrDefault(m => m <= targetModel);
-                            if (newModel == 0)
-                                newModel = sortedModels.Last();
-                        }
-                    }
-                }
-                else
-                {
-                    newModel = sortedModels.FirstOrDefault();
-                }
-            }
-            else
-            {
-                player.SendServerMessage("No valid models for this part.", ColorConstants.Orange);
-                return;
-            }
+            // No valid model found
+            return;
         }
 
         NwItem oldArmor = _currentArmor;
@@ -320,6 +139,199 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
         oldArmor.Destroy();
         player.SendServerMessage($"Part model updated to {newModel}.", ColorConstants.Green);
     }
+
+    private int GetNextValidArmorModel(CreaturePart creaturePart, int currentModel, int delta)
+    {
+        if (_currentArmor == null || !_currentArmor.IsValid) return currentModel;
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return currentModel;
+
+        int direction = Math.Sign(delta);
+        int step = Math.Abs(delta);
+        int searchModel = currentModel;
+        int maxModel = 255; // Maximum armor model number
+        int attemptsRemaining = maxModel + 1;
+
+        while (attemptsRemaining > 0)
+        {
+            // Calculate next model to test
+            if (step == 1)
+            {
+                searchModel += direction;
+            }
+            else // step >= 10
+            {
+                searchModel += delta;
+                step = 1;
+            }
+
+            // Handle wraparound
+            if (searchModel > maxModel)
+            {
+                searchModel = 1;
+            }
+            else if (searchModel < 1)
+            {
+                searchModel = maxModel;
+            }
+
+            // If we've wrapped back to starting model, we've tried everything
+            if (searchModel == currentModel && attemptsRemaining < maxModel)
+            {
+                player.SendServerMessage("No other valid models found.", ColorConstants.Orange);
+                return currentModel;
+            }
+
+            // Test if this model is valid
+            if (IsValidArmorModel(creaturePart, searchModel))
+            {
+                return searchModel;
+            }
+
+            attemptsRemaining--;
+        }
+
+        player.SendServerMessage("Could not find a valid armor model.", ColorConstants.Orange);
+        return currentModel;
+    }
+
+    private bool IsValidArmorModel(CreaturePart creaturePart, int modelNumber)
+    {
+        if (_currentArmor == null || !_currentArmor.IsValid) return false;
+
+        // Model 0 is valid for some parts (like belt)
+        if (modelNumber < 0) return false;
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return false;
+
+        // Special handling for chest/torso - must stay within AC category
+        if (creaturePart == CreaturePart.Torso)
+        {
+            int? currentAc = GetArmorAcFromModel(_currentArmor.Appearance.GetArmorModel(CreaturePart.Torso));
+
+            // If we can determine AC, validate the model is in that AC category
+            if (currentAc.HasValue && TorsoModelsByAc.TryGetValue(currentAc.Value, out HashSet<int>? validModels))
+            {
+                // Check if the model number is in the valid set for this AC
+                if (!validModels.Contains(modelNumber))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // Can't determine AC, reject the model to be safe
+                return false;
+            }
+        }
+
+        // Build the armor model filename based on player attributes and body part
+        // Format: p[gender][race][phenotype]_[part][side]###
+        // Example: pfh0_footl020 (human female, phenotype 0, left foot, model 20)
+
+        // Get player attributes
+        string genderLetter = creature.Gender == Gender.Female ? "f" : "m";
+
+        string raceLetter = creature.Race.RacialType switch
+        {
+            RacialType.Halfling => "a",
+            RacialType.Gnome => "a",
+            RacialType.Dwarf => "d",
+            RacialType.Elf => "e",
+            RacialType.Human => "h",
+            RacialType.HalfElf => "h",
+            RacialType.HalfOrc => "o",
+            _ => "h" // Default to human
+        };
+
+        int phenotype = (int)creature.Phenotype;
+
+        // Get part name and side
+        string partName = GetArmorPartName(creaturePart);
+        string sideLetter = GetArmorPartSide(creaturePart);
+
+        if (string.IsNullOrEmpty(partName)) return false;
+
+        // Build the complete model resref
+        string modelResRef = $"p{genderLetter}{raceLetter}{phenotype}_{partName}{sideLetter}{modelNumber:D3}";
+
+        // Check for MDL file
+        string alias = NWScript.ResManGetAliasFor(modelResRef, NWScript.RESTYPE_MDL);
+
+        // Debug logging
+        player.SendServerMessage($"Testing armor: {modelResRef} (MDL) -> alias: '{alias}' -> valid: {!string.IsNullOrEmpty(alias)}", ColorConstants.Gray);
+
+        return !string.IsNullOrEmpty(alias);
+    }
+
+    private int? GetArmorAcFromModel(int modelNumber)
+    {
+        foreach (var kvp in TorsoModelsByAc)
+        {
+            if (kvp.Value.Contains(modelNumber))
+            {
+                return kvp.Key;
+            }
+        }
+        return null;
+    }
+
+    private string GetArmorPartName(CreaturePart part)
+    {
+        return part switch
+        {
+            CreaturePart.RightFoot => "foot",
+            CreaturePart.LeftFoot => "foot",
+            CreaturePart.RightShin => "shin",
+            CreaturePart.LeftShin => "shin",
+            CreaturePart.RightThigh => "leg",
+            CreaturePart.LeftThigh => "leg",
+            CreaturePart.Pelvis => "pelvis",
+            CreaturePart.Torso => "chest",
+            CreaturePart.Belt => "belt",
+            CreaturePart.Neck => "neck",
+            CreaturePart.RightForearm => "fore",
+            CreaturePart.LeftForearm => "fore",
+            CreaturePart.RightBicep => "bicep",
+            CreaturePart.LeftBicep => "bicep",
+            CreaturePart.RightShoulder => "shol",
+            CreaturePart.LeftShoulder => "shol",
+            CreaturePart.RightHand => "hand",
+            CreaturePart.LeftHand => "hand",
+            CreaturePart.Robe => "robe",
+            _ => ""
+        };
+    }
+
+    private string GetArmorPartSide(CreaturePart part)
+    {
+        return part switch
+        {
+            // Left side parts
+            CreaturePart.LeftFoot => "l",
+            CreaturePart.LeftShin => "l",
+            CreaturePart.LeftThigh => "l",
+            CreaturePart.LeftForearm => "l",
+            CreaturePart.LeftBicep => "l",
+            CreaturePart.LeftShoulder => "l",
+            CreaturePart.LeftHand => "l",
+
+            // Right side parts
+            CreaturePart.RightFoot => "r",
+            CreaturePart.RightShin => "r",
+            CreaturePart.RightThigh => "r",
+            CreaturePart.RightForearm => "r",
+            CreaturePart.RightBicep => "r",
+            CreaturePart.RightShoulder => "r",
+            CreaturePart.RightHand => "r",
+
+            // Non-sided parts (no letter)
+            _ => ""
+        };
+    }
+
 
     public void SetArmorPartColor(int colorIndex)
     {
@@ -479,18 +491,6 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
         };
     }
 
-    private int? GetArmorClassFromTorsoModel(int modelIndex)
-    {
-        foreach (KeyValuePair<int, HashSet<int>> kvp in TorsoModelsByAc)
-        {
-            if (kvp.Value.Contains(modelIndex))
-            {
-                return kvp.Key;
-            }
-        }
-
-        return null;
-    }
 
     public void ApplyChanges()
     {
