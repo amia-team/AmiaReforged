@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -495,6 +496,148 @@ public sealed class PlayerStallEventManager
         PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
             snapshot,
             "Price updated.",
+            ColorConstants.Lime);
+
+        await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);
+
+        await PublishSellerSnapshotsAsync(
+            request.StallId,
+            updatedStall,
+            products,
+            request.SessionId).ConfigureAwait(false);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Handles seller requests to change how stall rent is funded.
+    /// </summary>
+    public async Task<PlayerStallSellerOperationResult> RequestUpdateRentSourceAsync(PlayerStallRentSourceRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        SellerSubscription? subscription;
+        lock (_syncRoot)
+        {
+            _sellerSessions.TryGetValue(request.SessionId, out subscription);
+        }
+
+        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        {
+            return PlayerStallSellerOperationResult.Fail(
+                "Your stall session is no longer valid.",
+                ColorConstants.Orange);
+        }
+
+        if (!TryResolvePersonaGuid(request.SellerPersona, out Guid personaGuid))
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't verify your persona for that action.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (!_characters.TryGetPlayer(personaGuid, out NwPlayer? player) || player is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be logged in as that persona to manage the stall.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        Guid? coinhouseAccountId = null;
+
+        if (request.RentFromCoinhouse)
+        {
+            if (!TryResolveCoinhouseTag(stall, out CoinhouseTag coinhouseTag))
+            {
+                PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                    "This stall is not linked to a coinhouse; rent can only use stall earnings.",
+                    ColorConstants.Orange);
+
+                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+                return failure;
+            }
+
+            Guid accountId = PersonaAccountId.ForCoinhouse(request.SellerPersona, coinhouseTag);
+            CoinhouseAccountDto? account = await _coinhouses
+                .GetAccountForAsync(accountId, CancellationToken.None)
+                .ConfigureAwait(false);
+
+            if (account is null)
+            {
+                PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                    "Open or join a coinhouse account in this settlement to enable automatic rent payments.",
+                    ColorConstants.Orange);
+
+                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+                return failure;
+            }
+
+            coinhouseAccountId = account.Id;
+        }
+
+        UpdateStallRentSettingsRequest serviceRequest = new(
+            request.StallId,
+            request.SellerPersona,
+            coinhouseAccountId,
+            !request.RentFromCoinhouse);
+
+        PlayerStallServiceResult serviceResult = await _stallService
+            .UpdateRentSettingsAsync(serviceRequest)
+            .ConfigureAwait(false);
+
+        if (!serviceResult.Success)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                serviceResult.ErrorMessage ?? "Failed to update stall rent settings.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? updatedStall = _shops.GetShopWithMembers(request.StallId);
+        if (updatedStall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        List<StallProduct> products = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
+
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            updatedStall,
+            products,
+            request.SellerPersona,
+            null).ConfigureAwait(false);
+
+        string message = request.RentFromCoinhouse
+            ? "Rent will now use your coinhouse account."
+            : "Rent will now use stall earnings.";
+
+        PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
+            snapshot,
+            message,
             ColorConstants.Lime);
 
         await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);

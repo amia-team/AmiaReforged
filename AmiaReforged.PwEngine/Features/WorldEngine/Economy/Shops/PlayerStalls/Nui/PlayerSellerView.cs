@@ -17,6 +17,12 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<bool> StallNoticeVisible = new("player_stall_seller_notice_visible");
     public readonly NuiBind<string> SellerName = new("player_stall_seller_name");
 
+    public readonly NuiBind<bool> RentToggleVisible = new("player_stall_seller_rent_toggle_visible");
+    public readonly NuiBind<bool> RentToggleEnabled = new("player_stall_seller_rent_toggle_enabled");
+    public readonly NuiBind<string> RentToggleLabel = new("player_stall_seller_rent_toggle_label");
+    public readonly NuiBind<string> RentToggleStatus = new("player_stall_seller_rent_toggle_status");
+    public readonly NuiBind<string> RentToggleTooltip = new("player_stall_seller_rent_toggle_tooltip");
+
     public readonly NuiBind<string> FeedbackText = new("player_stall_seller_feedback_text");
     public readonly NuiBind<bool> FeedbackVisible = new("player_stall_seller_feedback_visible");
     public readonly NuiBind<Color> FeedbackColor = new("player_stall_seller_feedback_color");
@@ -40,6 +46,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
 
     public NuiButton ManageButton = null!;
     public NuiButton UpdatePriceButton = null!;
+    public NuiButton RentToggleButton = null!;
     public NuiButton CloseButton = null!;
 
     public PlayerSellerView(NwPlayer player, PlayerStallSellerWindowConfig config)
@@ -118,6 +125,29 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                     Width = 200f,
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Top
+                },
+                new NuiRow
+                {
+                    Visible = RentToggleVisible,
+                    Children =
+                    [
+                        new NuiLabel(RentToggleStatus)
+                        {
+                            Height = 22f,
+                            Width = 320f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle
+                        },
+                        new NuiSpacer { Width = 12f },
+                        new NuiButton(RentToggleLabel)
+                        {
+                            Id = "player_stall_toggle_rent",
+                            Height = 30f,
+                            Width = 200f,
+                            Enabled = RentToggleEnabled,
+                            Tooltip = RentToggleTooltip
+                        }.Assign(out RentToggleButton)
+                    ]
                 },
                 new NuiSpacer { Height = 8f },
                 new NuiRow

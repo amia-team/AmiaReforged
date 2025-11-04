@@ -27,14 +27,16 @@ public sealed class PlayerStallInitializer
 
     private readonly IPlayerShopRepository _shops;
     private readonly RuntimeCharacterService _characters;
+    private readonly PlayerStallClaimFlow _claimFlow;
 
     private readonly Dictionary<uint, StallRegistration> _registrations = new();
     private readonly HashSet<uint> _wiredPlaceables = new();
 
-    public PlayerStallInitializer(IPlayerShopRepository shops, RuntimeCharacterService characters)
+    public PlayerStallInitializer(IPlayerShopRepository shops, RuntimeCharacterService characters, PlayerStallClaimFlow claimFlow)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _characters = characters ?? throw new ArgumentNullException(nameof(characters));
+        _claimFlow = claimFlow ?? throw new ArgumentNullException(nameof(claimFlow));
 
         NwModule.Instance.OnModuleLoad += HandleModuleLoad;
     }
@@ -356,16 +358,7 @@ public sealed class PlayerStallInitializer
 
     private async Task BeginClaimFlowAsync(NwPlayer player, NwPlaceable placeable, PlayerStall stall, PersonaId personaId)
     {
-        await SendServerMessageAsync(player,
-                "The stall appears to be available. Stall claim UI is not yet implemented.",
-                ColorConstants.Yellow)
-            .ConfigureAwait(false);
-
-        Log.Info("Player {PlayerName} initiated stall claim for stall {StallId} ({Tag}) in area {AreaResRef}.",
-            player.PlayerName,
-            stall.Id,
-            stall.Tag,
-            placeable.Area?.ResRef ?? "<unknown>");
+        await _claimFlow.BeginClaimAsync(player, placeable, stall, personaId).ConfigureAwait(false);
     }
 
     private enum StallRegistrationState

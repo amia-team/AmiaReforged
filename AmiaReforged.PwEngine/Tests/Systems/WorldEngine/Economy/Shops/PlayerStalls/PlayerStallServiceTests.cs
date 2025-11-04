@@ -197,90 +197,90 @@ public class PlayerStallServiceTests
 
         Assert.That(result.Success, Is.False);
         Assert.That(result.Error, Is.EqualTo(PlayerStallError.StallNotFound));
+        Assert.That(_capturedMembers, Is.Empty);
+    }
 
-            [Test]
-            public async Task UpdateRentSettingsAsync_WhenStallMissing_ReturnsNotFound()
-            {
-                PersonaId persona = PersonaId.FromCharacter(CharacterId.New());
-                UpdateStallRentSettingsRequest request = new(
-                    StallId: 9999,
-                    persona,
-                    CoinHouseAccountId: Guid.NewGuid(),
-                    HoldEarningsInStall: false);
+    [Test]
+    public async Task UpdateRentSettingsAsync_WhenStallMissing_ReturnsNotFound()
+    {
+        PersonaId persona = PersonaId.FromCharacter(CharacterId.New());
+        UpdateStallRentSettingsRequest request = new(
+            StallId: 9999,
+            persona,
+            CoinHouseAccountId: Guid.NewGuid(),
+            HoldEarningsInStall: false);
 
-                PlayerStallServiceResult result = await _service.UpdateRentSettingsAsync(request);
+        PlayerStallServiceResult result = await _service.UpdateRentSettingsAsync(request);
 
-                Assert.That(result.Success, Is.False);
-                Assert.That(result.Error, Is.EqualTo(PlayerStallError.StallNotFound));
-            }
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.StallNotFound));
+    }
 
-            [Test]
-            public async Task UpdateRentSettingsAsync_WhenRequestorNotOwner_ReturnsNotOwner()
-            {
-                PersonaId ownerPersona = PersonaId.FromCharacter(CharacterId.New());
-                _persisted.OwnerPersonaId = ownerPersona.ToString();
+    [Test]
+    public async Task UpdateRentSettingsAsync_WhenRequestorNotOwner_ReturnsNotOwner()
+    {
+        PersonaId ownerPersona = PersonaId.FromCharacter(CharacterId.New());
+        _persisted.OwnerPersonaId = ownerPersona.ToString();
 
-                PersonaId otherPersona = PersonaId.FromCharacter(CharacterId.New());
-                UpdateStallRentSettingsRequest request = new(
-                    StallId: _persisted.Id,
-                    otherPersona,
-                    CoinHouseAccountId: Guid.NewGuid(),
-                    HoldEarningsInStall: false);
+        PersonaId otherPersona = PersonaId.FromCharacter(CharacterId.New());
+        UpdateStallRentSettingsRequest request = new(
+            StallId: _persisted.Id,
+            otherPersona,
+            CoinHouseAccountId: Guid.NewGuid(),
+            HoldEarningsInStall: false);
 
-                PlayerStallServiceResult result = await _service.UpdateRentSettingsAsync(request);
+        PlayerStallServiceResult result = await _service.UpdateRentSettingsAsync(request);
 
-                Assert.That(result.Success, Is.False);
-                Assert.That(result.Error, Is.EqualTo(PlayerStallError.NotOwner));
-                Assert.That(_persisted.CoinHouseAccountId, Is.Null);
-            }
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.NotOwner));
+        Assert.That(_persisted.CoinHouseAccountId, Is.Null);
+    }
 
-            [Test]
-            public async Task UpdateRentSettingsAsync_WhenPersistenceFails_ReturnsPersistenceFailure()
-            {
-                PersonaId ownerPersona = PersonaId.FromCharacter(CharacterId.New());
-                _persisted.OwnerPersonaId = ownerPersona.ToString();
+    [Test]
+    public async Task UpdateRentSettingsAsync_WhenPersistenceFails_ReturnsPersistenceFailure()
+    {
+        PersonaId ownerPersona = PersonaId.FromCharacter(CharacterId.New());
+        _persisted.OwnerPersonaId = ownerPersona.ToString();
 
-                _shops
-                    .Setup(r => r.UpdateShop(_persisted.Id, It.IsAny<Action<PlayerStall>>()))
-                    .Returns(false);
+        _shops
+            .Setup(r => r.UpdateShop(_persisted.Id, It.IsAny<Action<PlayerStall>>()))
+            .Returns(false);
 
-                UpdateStallRentSettingsRequest request = new(
-                    StallId: _persisted.Id,
-                    ownerPersona,
-                    CoinHouseAccountId: Guid.NewGuid(),
-                    HoldEarningsInStall: false);
+        UpdateStallRentSettingsRequest request = new(
+            StallId: _persisted.Id,
+            ownerPersona,
+            CoinHouseAccountId: Guid.NewGuid(),
+            HoldEarningsInStall: false);
 
-                PlayerStallServiceResult result = await _service.UpdateRentSettingsAsync(request);
+        PlayerStallServiceResult result = await _service.UpdateRentSettingsAsync(request);
 
-                Assert.That(result.Success, Is.False);
-                Assert.That(result.Error, Is.EqualTo(PlayerStallError.PersistenceFailure));
-                Assert.That(_persisted.CoinHouseAccountId, Is.Null);
-            }
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.PersistenceFailure));
+        Assert.That(_persisted.CoinHouseAccountId, Is.Null);
+    }
 
-            [Test]
-            public async Task UpdateRentSettingsAsync_WhenSuccessful_UpdatesStall()
-            {
-                PersonaId ownerPersona = PersonaId.FromCharacter(CharacterId.New());
-                _persisted.OwnerPersonaId = ownerPersona.ToString();
-                _persisted.HoldEarningsInStall = true;
+    [Test]
+    public async Task UpdateRentSettingsAsync_WhenSuccessful_UpdatesStall()
+    {
+        PersonaId ownerPersona = PersonaId.FromCharacter(CharacterId.New());
+        _persisted.OwnerPersonaId = ownerPersona.ToString();
+        _persisted.HoldEarningsInStall = true;
 
-                Guid coinhouseAccount = Guid.NewGuid();
+        Guid coinhouseAccount = Guid.NewGuid();
 
-                UpdateStallRentSettingsRequest request = new(
-                    StallId: _persisted.Id,
-                    ownerPersona,
-                    CoinHouseAccountId: coinhouseAccount,
-                    HoldEarningsInStall: false);
+        UpdateStallRentSettingsRequest request = new(
+            StallId: _persisted.Id,
+            ownerPersona,
+            CoinHouseAccountId: coinhouseAccount,
+            HoldEarningsInStall: false);
 
-                PlayerStallServiceResult result = await _service.UpdateRentSettingsAsync(request);
+        PlayerStallServiceResult result = await _service.UpdateRentSettingsAsync(request);
 
-                Assert.That(result.Success, Is.True);
-                Assert.That(result.Data, Is.Not.Null);
-                Assert.That(result.Data!["rentFromCoinhouse"], Is.EqualTo(true));
-                Assert.That(_persisted.CoinHouseAccountId, Is.EqualTo(coinhouseAccount));
-                Assert.That(_persisted.HoldEarningsInStall, Is.False);
-            }
-    Assert.That(_capturedMembers, Is.Empty);
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Data, Is.Not.Null);
+        Assert.That(result.Data!["rentFromCoinhouse"], Is.EqualTo(true));
+        Assert.That(_persisted.CoinHouseAccountId, Is.EqualTo(coinhouseAccount));
+        Assert.That(_persisted.HoldEarningsInStall, Is.False);
     }
 
     [Test]
@@ -305,7 +305,7 @@ public class PlayerStallServiceTests
             It.IsAny<long>(),
             It.IsAny<Action<PlayerStall>>(),
             It.IsAny<IEnumerable<PlayerStallMember>>()), Times.Never);
-    Assert.That(_capturedMembers, Is.Empty);
+        Assert.That(_capturedMembers, Is.Empty);
     }
 
     [Test]

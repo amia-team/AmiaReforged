@@ -26,6 +26,10 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>
     private long? _selectedProductId;
     private bool _isProcessing;
     private bool _isClosing;
+    private bool _rentFromCoinhouse;
+    private bool _rentToggleVisible;
+    private bool _rentToggleEnabled;
+    private string _rentToggleTooltip = string.Empty;
 
     public PlayerSellerPresenter(PlayerSellerView view, NwPlayer player, PlayerStallSellerWindowConfig config)
     {
@@ -105,6 +109,12 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>
             return;
         }
 
+        if (eventData.ElementId == View.RentToggleButton.Id)
+        {
+            _ = HandleRentToggleAsync();
+            return;
+        }
+
         if (eventData.ElementId == View.CloseButton.Id)
         {
             RaiseCloseEvent();
@@ -164,7 +174,13 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>
 
         Token().SetBindValue(View.SellerName, FormatSellerName(snapshot.Seller));
 
+    _rentFromCoinhouse = snapshot.RentFromCoinhouse;
+    _rentToggleVisible = snapshot.RentToggleVisible;
+    _rentToggleEnabled = snapshot.RentToggleEnabled;
+    _rentToggleTooltip = snapshot.RentToggleTooltip ?? string.Empty;
+
         ApplyFeedback(snapshot.FeedbackVisible, snapshot.FeedbackMessage, snapshot.FeedbackColor ?? ColorConstants.White);
+    ApplyRentToggleBindings();
 
         List<string> entries = new(snapshot.Products.Count);
         List<string> tooltips = new(snapshot.Products.Count);
@@ -352,6 +368,65 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>
         Token().SetBindValue(View.PriceSaveEnabled, allowEditing);
     }
 
+    private async Task HandleRentToggleAsync()
+    {
+        if (_isClosing || _isProcessing)
+        {
+            return;
+        }
+
+        if (_sessionId is not Guid sessionId)
+        {
+            return;
+        }
+
+        if (!_rentToggleEnabled)
+        {
+            if (!string.IsNullOrWhiteSpace(_rentToggleTooltip))
+            {
+                await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                    _rentToggleTooltip,
+                    ColorConstants.Orange)).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
+        await SetProcessingStateAsync(true).ConfigureAwait(false);
+
+        try
+        {
+            bool targetState = !_rentFromCoinhouse;
+
+            PlayerStallRentSourceRequest request = new(
+                sessionId,
+                _config.StallId,
+                _config.SellerPersona,
+                targetState);
+
+            PlayerStallSellerOperationResult result = await EventManager
+                .RequestUpdateRentSourceAsync(request)
+                .ConfigureAwait(false);
+
+            if (!result.Success)
+            {
+                await HandleOperationResultAsync(result).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error while toggling stall rent source for stall {StallId}.", _config.StallId);
+
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "We couldn't update the rent payment source.",
+                ColorConstants.Red)).ConfigureAwait(false);
+        }
+        finally
+        {
+            await SetProcessingStateAsync(false).ConfigureAwait(false);
+        }
+    }
+
     private PlayerStallSellerProductView? TryGetSelectedProduct()
     {
         if (_selectedProductId is null)
@@ -371,6 +446,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>
 
         _isProcessing = processing;
         await UpdateSelectedProductAsync(_selectedProductId).ConfigureAwait(false);
+        await NwTask.SwitchToMainThread();
+        ApplyRentToggleBindings();
     }
 
     private async Task RequestLatestSnapshotAsync()
@@ -412,6 +489,15 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>
         Token().SetBindValue(View.FeedbackVisible, visible);
         Token().SetBindValue(View.FeedbackText, visible && !string.IsNullOrWhiteSpace(message) ? message! : string.Empty);
         Token().SetBindValue(View.FeedbackColor, color);
+    }
+
+    private void ApplyRentToggleBindings()
+    {
+        Token().SetBindValue(View.RentToggleVisible, _rentToggleVisible);
+        Token().SetBindValue(View.RentToggleEnabled, _rentToggleEnabled && !_isProcessing);
+        Token().SetBindValue(View.RentToggleLabel, FormatRentToggleLabel());
+        Token().SetBindValue(View.RentToggleStatus, FormatRentToggleStatus());
+        Token().SetBindValue(View.RentToggleTooltip, string.IsNullOrWhiteSpace(_rentToggleTooltip) ? string.Empty : _rentToggleTooltip);
     }
 
     private void NotifyError(string message)
@@ -475,6 +561,20 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>
     private static string FormatCurrentPrice(int price)
     {
         return string.Format(CultureInfo.InvariantCulture, "Current price: {0}", FormatPrice(price));
+    }
+
+    private string FormatRentToggleLabel()
+    {
+        return _rentFromCoinhouse
+            ? "Use Stall Earnings"
+            : "Use Coinhouse Account";
+    }
+
+    private string FormatRentToggleStatus()
+    {
+        return _rentFromCoinhouse
+            ? "Rent payments: Coinhouse account"
+            : "Rent payments: Stall earnings";
     }
 
     private static string FormatPrice(int price)
