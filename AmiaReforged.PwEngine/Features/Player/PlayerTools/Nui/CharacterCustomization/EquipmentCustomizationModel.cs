@@ -40,9 +40,10 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     public int BootsTopModel { get; private set; } = 1;
     public int BootsMidModel { get; private set; } = 1;
     public int BootsBotModel { get; private set; } = 1;
-    public int BootsTopColor { get; private set; } = 1;
-    public int BootsMidColor { get; private set; } = 1;
-    public int BootsBotColor { get; private set; } = 1;
+
+    private int _bootsTopModelMax = 255;
+    private int _bootsMidModelMax = 255;
+    private int _bootsBotModelMax = 255;
 
     // Helmet
     public int HelmetAppearance { get; private set; } = 1;
@@ -106,7 +107,21 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         {
             _currentBoots = boots;
             player.SendServerMessage($"Selected boots: {boots.Name}", ColorConstants.Cyan);
-            // TODO: Load boots appearance
+
+            // Get model range from BaseItem (applies to Top, Middle, and Bottom)
+            int modelRange = (int)boots.BaseItem.ModelRangeMax;
+            _bootsTopModelMax = modelRange;
+            _bootsMidModelMax = modelRange;
+            _bootsBotModelMax = modelRange;
+
+
+            // Load current boots appearance using weapon model API
+            BootsTopModel = boots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
+            BootsMidModel = boots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
+            BootsBotModel = boots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+
+
+            // Save backup on first selection
             SaveBackupToPcKey();
         }
         else
@@ -306,34 +321,160 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         oldWeapon.Destroy();
     }
 
+    private int GetNextValidBootsModel(ItemAppearanceWeaponModel modelPart, int currentModel, int delta, int maxModel)
+    {
+        if (_currentBoots == null || !_currentBoots.IsValid) return currentModel;
+        if (maxModel <= 0) return currentModel;
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return currentModel;
+
+        int direction = Math.Sign(delta);
+        int step = Math.Abs(delta);
+        int searchModel = currentModel;
+        int attemptsRemaining = maxModel + 1;
+
+        while (attemptsRemaining > 0)
+        {
+            // Calculate next model to test
+            if (step == 1)
+            {
+                searchModel += direction;
+            }
+            else // step >= 10
+            {
+                searchModel += delta;
+                step = 1;
+            }
+
+            // Handle wraparound
+            if (searchModel > maxModel)
+            {
+                searchModel = 1;
+            }
+            else if (searchModel < 1)
+            {
+                searchModel = maxModel;
+            }
+
+            // If we've wrapped back to starting model, we've tried everything
+            if (searchModel == currentModel && attemptsRemaining < maxModel)
+            {
+                player.SendServerMessage("No other valid models found.", ColorConstants.Orange);
+                return currentModel;
+            }
+
+            // Test if this model is valid
+            if (IsValidBootsModel(modelPart, searchModel, creature))
+            {
+                return searchModel;
+            }
+
+            attemptsRemaining--;
+        }
+
+        player.SendServerMessage("Could not find a valid boots model.", ColorConstants.Orange);
+        return currentModel;
+    }
+
+    private bool IsValidBootsModel(ItemAppearanceWeaponModel modelPart, int modelNumber, NwCreature creature)
+    {
+        if (_currentBoots == null || !_currentBoots.IsValid) return false;
+
+        // Model 0 is always invalid
+        if (modelNumber == 0) return false;
+
+        // Boots use a hardcoded prefix since the game files use "iit_boots" not "it_boots"
+        string itemClass = "iit_boots";
+
+        // Determine which part letter to use
+        string partLetter = modelPart switch
+        {
+            ItemAppearanceWeaponModel.Top => "t",
+            ItemAppearanceWeaponModel.Middle => "m",
+            ItemAppearanceWeaponModel.Bottom => "b",
+            _ => ""
+        };
+
+        // Build the model filename: iit_boots_PART_###
+        // Example: iit_boots_t_017 for boots top model 17
+        string modelResRef = $"{itemClass}_{partLetter}_{modelNumber:D3}";
+
+        // Use NWScript to check if the resource exists
+        string alias = NWScript.ResManGetAliasFor(modelResRef, NWScript.RESTYPE_TGA);
+
+
+        // If alias is not empty, the resource exists
+        return !string.IsNullOrEmpty(alias);
+    }
+
+    private void ApplyBootsChanges()
+    {
+        if (_currentBoots == null || !_currentBoots.IsValid) return;
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
+
+        NwItem oldBoots = _currentBoots;
+
+        // Set boots appearance using weapon model API
+        oldBoots.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)BootsTopModel);
+        oldBoots.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)BootsMidModel);
+        oldBoots.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)BootsBotModel);
+
+        // Unequip, clone, and re-equip to refresh appearance
+        creature.RunUnequip(oldBoots);
+        NwItem newBoots = oldBoots.Clone(creature);
+
+        if (!newBoots.IsValid)
+        {
+            player.SendServerMessage("Failed to refresh boots.", ColorConstants.Red);
+            creature.RunEquip(oldBoots, InventorySlot.Boots);
+            return;
+        }
+
+        creature.RunEquip(newBoots, InventorySlot.Boots);
+        _currentBoots = newBoots;
+        oldBoots.Destroy();
+    }
+
     public void AdjustBootsTopModel(int delta)
     {
-        BootsTopModel = Math.Clamp(BootsTopModel + delta, 1, 4);
+        if (_currentBoots == null || !_currentBoots.IsValid)
+        {
+            player.SendServerMessage("No boots selected.", ColorConstants.Orange);
+            return;
+        }
+
+        BootsTopModel = GetNextValidBootsModel(ItemAppearanceWeaponModel.Top, BootsTopModel, delta, _bootsTopModelMax);
+        ApplyBootsChanges();
+        player.SendServerMessage($"Boots top model set to {BootsTopModel}.", ColorConstants.Green);
     }
 
     public void AdjustBootsMidModel(int delta)
     {
-        BootsMidModel = Math.Clamp(BootsMidModel + delta, 1, 4);
+        if (_currentBoots == null || !_currentBoots.IsValid)
+        {
+            player.SendServerMessage("No boots selected.", ColorConstants.Orange);
+            return;
+        }
+
+        BootsMidModel = GetNextValidBootsModel(ItemAppearanceWeaponModel.Middle, BootsMidModel, delta, _bootsMidModelMax);
+        ApplyBootsChanges();
+        player.SendServerMessage($"Boots middle model set to {BootsMidModel}.", ColorConstants.Green);
     }
 
     public void AdjustBootsBotModel(int delta)
     {
-        BootsBotModel = Math.Clamp(BootsBotModel + delta, 1, 4);
-    }
+        if (_currentBoots == null || !_currentBoots.IsValid)
+        {
+            player.SendServerMessage("No boots selected.", ColorConstants.Orange);
+            return;
+        }
 
-    public void AdjustBootsTopColor(int delta)
-    {
-        BootsTopColor = Math.Clamp(BootsTopColor + delta, 1, 4);
-    }
-
-    public void AdjustBootsMidColor(int delta)
-    {
-        BootsMidColor = Math.Clamp(BootsMidColor + delta, 1, 4);
-    }
-
-    public void AdjustBootsBotColor(int delta)
-    {
-        BootsBotColor = Math.Clamp(BootsBotColor + delta, 1, 4);
+        BootsBotModel = GetNextValidBootsModel(ItemAppearanceWeaponModel.Bottom, BootsBotModel, delta, _bootsBotModelMax);
+        ApplyBootsChanges();
+        player.SendServerMessage($"Boots bottom model set to {BootsBotModel}.", ColorConstants.Green);
     }
 
     public void AdjustHelmetAppearance(int delta)

@@ -22,9 +22,6 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
     public readonly NuiBind<string> BootsTopModelText = new("eq_boots_top_model");
     public readonly NuiBind<string> BootsMidModelText = new("eq_boots_mid_model");
     public readonly NuiBind<string> BootsBotModelText = new("eq_boots_bot_model");
-    public readonly NuiBind<string> BootsTopColorText = new("eq_boots_top_color");
-    public readonly NuiBind<string> BootsMidColorText = new("eq_boots_mid_color");
-    public readonly NuiBind<string> BootsBotColorText = new("eq_boots_bot_color");
 
     public readonly NuiBind<string> HelmetAppearanceText = new("eq_helmet_appearance");
     public readonly NuiBind<string> CloakAppearanceText = new("eq_cloak_appearance");
@@ -68,12 +65,6 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
     public NuiButtonImage BootsBotModelLeftButton = null!;
     public NuiButtonImage BootsBotModelRightButton = null!;
 
-    public NuiButtonImage BootsTopColorLeftButton = null!;
-    public NuiButtonImage BootsTopColorRightButton = null!;
-    public NuiButtonImage BootsMidColorLeftButton = null!;
-    public NuiButtonImage BootsMidColorRightButton = null!;
-    public NuiButtonImage BootsBotColorLeftButton = null!;
-    public NuiButtonImage BootsBotColorRightButton = null!;
 
     public NuiButtonImage HelmetAppearanceLeftButton = null!;
     public NuiButtonImage HelmetAppearanceRightButton = null!;
@@ -179,7 +170,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 307.5f },
+                        new NuiSpacer { Width = 305f },
                         ImagePlatedLabeledButton("btn_weapon", "Weapon", "Customize Weapon", out WeaponButton, "app_sword", 50f, 50f)
                     }
                 },
@@ -240,10 +231,10 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 110f },
+                        new NuiSpacer { Width = 118f },
                         new NuiLabel("Bottom Model:")
                         {
-                            Width = 130f,
+                            Width = 122f,
                             Height = 30f,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
@@ -287,7 +278,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 80f },
+                        new NuiSpacer { Width = 180f },
                         new NuiLabel("Top Model:")
                         {
                             Width = 100f,
@@ -304,35 +295,17 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
-                        ImageButton("btn_boots_top_model_right", "+1", out BootsTopModelRightButton, 30f, 30f, "cc_arrow_r_btn", BootsControlsEnabled),
-                        new NuiSpacer { Width = 40f },
-                        new NuiLabel("Top Color:")
-                        {
-                            Width = 100f,
-                            Height = 30f,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_boots_top_color_left", "-1", out BootsTopColorLeftButton, 30f, 30f, "cc_arrow_l_btn", BootsControlsEnabled),
-                        new NuiLabel(BootsTopColorText)
-                        {
-                            Width = 40f,
-                            Height = 30f,
-                            HorizontalAlign = NuiHAlign.Center,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_boots_top_color_right", "+1", out BootsTopColorRightButton, 30f, 30f, "cc_arrow_r_btn", BootsControlsEnabled)
+                        ImageButton("btn_boots_top_model_right", "+1", out BootsTopModelRightButton, 30f, 30f, "cc_arrow_r_btn", BootsControlsEnabled)
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 80f },
+                        new NuiSpacer { Width = 160f },
                         new NuiLabel("Middle Model:")
                         {
-                            Width = 100f,
+                            Width = 120f,
                             Height = 30f,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
@@ -346,35 +319,17 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
-                        ImageButton("btn_boots_mid_model_right", "+1", out BootsMidModelRightButton, 30f, 30f, "cc_arrow_r_btn", BootsControlsEnabled),
-                        new NuiSpacer { Width = 40f },
-                        new NuiLabel("Middle Color:")
-                        {
-                            Width = 100f,
-                            Height = 30f,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_boots_mid_color_left", "-1", out BootsMidColorLeftButton, 30f, 30f, "cc_arrow_l_btn", BootsControlsEnabled),
-                        new NuiLabel(BootsMidColorText)
-                        {
-                            Width = 40f,
-                            Height = 30f,
-                            HorizontalAlign = NuiHAlign.Center,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_boots_mid_color_right", "+1", out BootsMidColorRightButton, 30f, 30f, "cc_arrow_r_btn", BootsControlsEnabled)
+                        ImageButton("btn_boots_mid_model_right", "+1", out BootsMidModelRightButton, 30f, 30f, "cc_arrow_r_btn", BootsControlsEnabled)
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 80f },
+                        new NuiSpacer { Width = 158f },
                         new NuiLabel("Bottom Model:")
                         {
-                            Width = 100f,
+                            Width = 122f,
                             Height = 30f,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
@@ -388,25 +343,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
-                        ImageButton("btn_boots_bot_model_right", "+1", out BootsBotModelRightButton, 30f, 30f, "cc_arrow_r_btn", BootsControlsEnabled),
-                        new NuiSpacer { Width = 40f },
-                        new NuiLabel("Bottom Color:")
-                        {
-                            Width = 100f,
-                            Height = 30f,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_boots_bot_color_left", "-1", out BootsBotColorLeftButton, 30f, 30f, "cc_arrow_l_btn", BootsControlsEnabled),
-                        new NuiLabel(BootsBotColorText)
-                        {
-                            Width = 40f,
-                            Height = 30f,
-                            HorizontalAlign = NuiHAlign.Center,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        ImageButton("btn_boots_bot_color_right", "+1", out BootsBotColorRightButton, 30f, 30f, "cc_arrow_r_btn", BootsControlsEnabled)
+                        ImageButton("btn_boots_bot_model_right", "+1", out BootsBotModelRightButton, 30f, 30f, "cc_arrow_r_btn", BootsControlsEnabled)
                     }
                 }
             }
@@ -603,7 +540,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 170f },
+                        new NuiSpacer { Width = 180f },
                         new NuiLabel("Select an equipment type to customize.")
                         {
                             Height = 20f,

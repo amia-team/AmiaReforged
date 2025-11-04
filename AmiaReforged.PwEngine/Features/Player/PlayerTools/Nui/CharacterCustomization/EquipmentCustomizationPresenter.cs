@@ -74,9 +74,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.BootsTopModelText, "1");
         Token().SetBindValue(View.BootsMidModelText, "1");
         Token().SetBindValue(View.BootsBotModelText, "1");
-        Token().SetBindValue(View.BootsTopColorText, "1");
-        Token().SetBindValue(View.BootsMidColorText, "1");
-        Token().SetBindValue(View.BootsBotColorText, "1");
 
         Token().SetBindValue(View.HelmetAppearanceText, "1");
         Token().SetBindValue(View.CloakAppearanceText, "1");
@@ -264,48 +261,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             return;
         }
 
-        if (ev.ElementId == View.BootsTopColorLeftButton.Id)
-        {
-            _model.AdjustBootsTopColor(-1);
-            UpdateBootsDisplay();
-            return;
-        }
-
-        if (ev.ElementId == View.BootsTopColorRightButton.Id)
-        {
-            _model.AdjustBootsTopColor(1);
-            UpdateBootsDisplay();
-            return;
-        }
-
-        if (ev.ElementId == View.BootsMidColorLeftButton.Id)
-        {
-            _model.AdjustBootsMidColor(-1);
-            UpdateBootsDisplay();
-            return;
-        }
-
-        if (ev.ElementId == View.BootsMidColorRightButton.Id)
-        {
-            _model.AdjustBootsMidColor(1);
-            UpdateBootsDisplay();
-            return;
-        }
-
-        if (ev.ElementId == View.BootsBotColorLeftButton.Id)
-        {
-            _model.AdjustBootsBotColor(-1);
-            UpdateBootsDisplay();
-            return;
-        }
-
-        if (ev.ElementId == View.BootsBotColorRightButton.Id)
-        {
-            _model.AdjustBootsBotColor(1);
-            UpdateBootsDisplay();
-            return;
-        }
-
         // Helmet Controls
         if (ev.ElementId == View.HelmetAppearanceLeftButton.Id)
         {
@@ -438,9 +393,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.BootsTopModelText, _model.BootsTopModel.ToString());
         Token().SetBindValue(View.BootsMidModelText, _model.BootsMidModel.ToString());
         Token().SetBindValue(View.BootsBotModelText, _model.BootsBotModel.ToString());
-        Token().SetBindValue(View.BootsTopColorText, _model.BootsTopColor.ToString());
-        Token().SetBindValue(View.BootsMidColorText, _model.BootsMidColor.ToString());
-        Token().SetBindValue(View.BootsBotColorText, _model.BootsBotColor.ToString());
     }
 
     private void UpdateHelmetDisplay()
