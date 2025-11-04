@@ -244,9 +244,6 @@ public sealed class CrashingMeteor : IAugmentation
             if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
                 damageAmount /= 2;
 
-            if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
-                damageAmount /= 2;
-
             _ = ApplyAoeDamage(creature, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
         }
     }
