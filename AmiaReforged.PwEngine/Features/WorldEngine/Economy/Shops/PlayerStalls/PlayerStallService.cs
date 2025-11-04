@@ -272,6 +272,49 @@ public sealed class PlayerStallService : IPlayerStallService
         return Task.FromResult(PlayerStallServiceResult.Ok(data));
     }
 
+    public Task<PlayerStallServiceResult> UpdateRentSettingsAsync(UpdateStallRentSettingsRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        PlayerStall? stall = _shops.GetShopById(request.StallId);
+        if (stall is null)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.StallNotFound,
+                $"Stall {request.StallId} was not found."));
+        }
+
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+        string personaId = request.Requestor.ToString();
+
+        PlayerStallDomainResult<Action<PlayerStall>> domainResult = aggregate.TryConfigureRentSettings(
+            personaId,
+            request.CoinHouseAccountId,
+            request.HoldEarningsInStall);
+
+        if (!domainResult.Success)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+        }
+
+        bool updated = _shops.UpdateShop(request.StallId, domainResult.Payload!);
+        if (!updated)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.PersistenceFailure,
+                "Failed to persist stall rent configuration."));
+        }
+
+        IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
+        {
+            ["stallId"] = request.StallId,
+            ["rentFromCoinhouse"] = request.CoinHouseAccountId.HasValue
+        };
+
+        return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
+
     private static bool TryResolvePersonaGuid(PersonaId persona, out Guid guid)
     {
         try

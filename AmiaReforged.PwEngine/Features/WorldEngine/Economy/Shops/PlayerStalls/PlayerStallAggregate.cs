@@ -191,6 +191,32 @@ public sealed class PlayerStallAggregate
         });
     }
 
+    public PlayerStallDomainResult<Action<PlayerStall>> TryConfigureRentSettings(
+        string requestorPersonaId,
+        Guid? coinHouseAccountId,
+        bool holdEarningsInStall)
+    {
+        if (string.IsNullOrWhiteSpace(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<Action<PlayerStall>>.Fail(
+                PlayerStallError.Unauthorized,
+                "A persona is required to update stall rent settings.");
+        }
+
+        if (!IsOwner(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<Action<PlayerStall>>.Fail(
+                PlayerStallError.NotOwner,
+                "Only the owner may change how rent is paid for this stall.");
+        }
+
+        return PlayerStallDomainResult<Action<PlayerStall>>.Ok(stall =>
+        {
+            stall.CoinHouseAccountId = coinHouseAccountId;
+            stall.HoldEarningsInStall = holdEarningsInStall;
+        });
+    }
+
     private bool HasInventoryPrivileges(string personaId)
     {
         if (string.IsNullOrWhiteSpace(personaId))
@@ -205,6 +231,17 @@ public sealed class PlayerStallAggregate
         }
 
         return _snapshot.InventoryPermissions.TryGetValue(personaId, out bool canManage) && canManage;
+    }
+
+    private bool IsOwner(string personaId)
+    {
+        if (string.IsNullOrWhiteSpace(personaId))
+        {
+            return false;
+        }
+
+        return !string.IsNullOrWhiteSpace(_snapshot.OwnerPersonaId) &&
+               string.Equals(_snapshot.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase);
     }
 
     private readonly record struct PlayerStallSnapshot(

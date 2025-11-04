@@ -18,5 +18,7 @@ public enum PlayerStallError
     PlaceableMismatch,
     Unauthorized,
     ProductNotFound,
-    PriceOutOfRange
+    PriceOutOfRange,
+    CoinhouseUnavailable,
+    CoinhouseAccountMissing
 }

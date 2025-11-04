@@ -60,6 +60,15 @@ public sealed record UpdateStallProductPriceRequest(
     int NewPrice);
 
 /// <summary>
+/// Request to update how rent is funded for a player stall.
+/// </summary>
+public sealed record UpdateStallRentSettingsRequest(
+    long StallId,
+    PersonaId Requestor,
+    Guid? CoinHouseAccountId,
+    bool HoldEarningsInStall);
+
+/// <summary>
 /// Service boundary for player stall operations.
 /// </summary>
 public interface IPlayerStallService
@@ -71,6 +80,8 @@ public interface IPlayerStallService
     Task<PlayerStallServiceResult> ListProductAsync(ListStallProductRequest request, CancellationToken cancellationToken = default);
 
     Task<PlayerStallServiceResult> UpdateProductPriceAsync(UpdateStallProductPriceRequest request, CancellationToken cancellationToken = default);
+
+    Task<PlayerStallServiceResult> UpdateRentSettingsAsync(UpdateStallRentSettingsRequest request, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

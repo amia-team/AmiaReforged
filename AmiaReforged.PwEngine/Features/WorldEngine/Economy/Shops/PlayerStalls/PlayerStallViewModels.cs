@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Anvil.API;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
@@ -135,7 +136,11 @@ public sealed record PlayerStallSellerSnapshot(
     string? FeedbackMessage = null,
     Color? FeedbackColor = null,
     bool FeedbackVisible = false,
-    long? SelectedProductId = null);
+    long? SelectedProductId = null,
+    bool RentFromCoinhouse = false,
+    bool RentToggleVisible = false,
+    bool RentToggleEnabled = false,
+    string? RentToggleTooltip = null);
 
 /// <summary>
 /// Window wiring details used when presenting the seller interface.
@@ -194,3 +199,85 @@ public sealed record PlayerStallSellerEventCallbacks(
         _ => Task.CompletedTask,
         _ => Task.CompletedTask);
 }
+
+/// <summary>
+/// Payment option details shown when a player claims a stall.
+/// </summary>
+public sealed record RentStallPaymentOptionViewModel(
+    RentalPaymentMethod Method,
+    string ButtonLabel,
+    bool Visible,
+    bool Enabled,
+    string StatusText,
+    string Tooltip);
+
+/// <summary>
+/// Configuration used to render the stall rent window.
+/// </summary>
+public sealed record RentStallWindowConfig(
+    string Title,
+    string StallName,
+    string StallDescription,
+    string RentCostText,
+    TimeSpan Timeout,
+    RentStallPaymentOptionViewModel? DirectPaymentOption,
+    RentStallPaymentOptionViewModel? CoinhousePaymentOption,
+    Func<RentalPaymentMethod, Task<RentStallSubmissionResult>> OnConfirm)
+{
+    public string? SettlementName { get; init; }
+    public Func<Task>? OnCancel { get; init; }
+    public Func<Task>? OnTimeout { get; init; }
+    public Func<Task>? OnClosed { get; init; }
+}
+
+/// <summary>
+/// Result communicated back to the rent window when the player chooses a payment option.
+/// </summary>
+public sealed record RentStallSubmissionResult(
+    bool Success,
+    string Message,
+    RentStallFeedbackKind FeedbackKind,
+    bool CloseWindow,
+    RentStallPaymentOptionViewModel? DirectOptionUpdate = null,
+    RentStallPaymentOptionViewModel? CoinhouseOptionUpdate = null)
+{
+    public static RentStallSubmissionResult SuccessResult(
+        string message,
+        bool closeWindow = true,
+        RentStallPaymentOptionViewModel? directOptionUpdate = null,
+        RentStallPaymentOptionViewModel? coinhouseOptionUpdate = null) =>
+        new(true, message, RentStallFeedbackKind.Success, closeWindow, directOptionUpdate, coinhouseOptionUpdate);
+
+    public static RentStallSubmissionResult Error(
+        string message,
+        bool closeWindow = false,
+        RentStallPaymentOptionViewModel? directOptionUpdate = null,
+        RentStallPaymentOptionViewModel? coinhouseOptionUpdate = null) =>
+        new(false, message, RentStallFeedbackKind.Error, closeWindow, directOptionUpdate, coinhouseOptionUpdate);
+
+    public static RentStallSubmissionResult Info(
+        string message,
+        bool closeWindow = false,
+        RentStallPaymentOptionViewModel? directOptionUpdate = null,
+        RentStallPaymentOptionViewModel? coinhouseOptionUpdate = null) =>
+        new(false, message, RentStallFeedbackKind.Info, closeWindow, directOptionUpdate, coinhouseOptionUpdate);
+}
+
+/// <summary>
+/// Visual feedback classification for the rent stall window.
+/// </summary>
+public enum RentStallFeedbackKind
+{
+    Info,
+    Success,
+    Error
+}
+
+/// <summary>
+/// Request raised by the seller UI to toggle how rent payments are funded.
+/// </summary>
+public sealed record PlayerStallRentSourceRequest(
+    Guid SessionId,
+    long StallId,
+    PersonaId SellerPersona,
+    bool RentFromCoinhouse);

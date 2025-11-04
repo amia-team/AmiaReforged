@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -26,6 +28,7 @@ public sealed class PlayerStallEventManager
     private readonly IPlayerShopRepository _shops;
     private readonly RuntimeCharacterService _characters;
     private readonly IPlayerStallService _stallService;
+    private readonly ICoinhouseRepository _coinhouses;
     private readonly Dictionary<Guid, BuyerSubscription> _buyerSessions = new();
     private readonly Dictionary<long, HashSet<Guid>> _stallBuyers = new();
     private readonly Dictionary<Guid, SellerSubscription> _sellerSessions = new();
@@ -35,11 +38,13 @@ public sealed class PlayerStallEventManager
     public PlayerStallEventManager(
         IPlayerShopRepository shops,
         RuntimeCharacterService characters,
-        IPlayerStallService stallService)
+        IPlayerStallService stallService,
+        ICoinhouseRepository coinhouses)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _characters = characters ?? throw new ArgumentNullException(nameof(characters));
         _stallService = stallService ?? throw new ArgumentNullException(nameof(stallService));
+        _coinhouses = coinhouses ?? throw new ArgumentNullException(nameof(coinhouses));
     }
 
     /// <summary>
@@ -375,7 +380,7 @@ public sealed class PlayerStallEventManager
     /// <summary>
     /// Returns a fresh seller snapshot for the specified session.
     /// </summary>
-    public Task<PlayerStallSellerOperationResult> RequestSellerSnapshotAsync(Guid sessionId)
+    public async Task<PlayerStallSellerOperationResult> RequestSellerSnapshotAsync(Guid sessionId)
     {
         SellerSubscription? subscription;
 
@@ -386,23 +391,27 @@ public sealed class PlayerStallEventManager
 
         if (subscription is null)
         {
-            return Task.FromResult(PlayerStallSellerOperationResult.Fail(
+            return PlayerStallSellerOperationResult.Fail(
                 "Your stall session is no longer valid.",
-                ColorConstants.Orange));
+                ColorConstants.Orange);
         }
 
         PlayerStall? stall = _shops.GetShopWithMembers(subscription.StallId);
         if (stall is null)
         {
-            return Task.FromResult(PlayerStallSellerOperationResult.Fail(
+            return PlayerStallSellerOperationResult.Fail(
                 "This stall is no longer available.",
-                ColorConstants.Orange));
+                ColorConstants.Orange);
         }
 
         List<StallProduct> products = _shops.ProductsForShop(subscription.StallId) ?? new List<StallProduct>();
-        PlayerStallSellerSnapshot snapshot = BuildSellerSnapshot(stall, products, subscription.Persona, null);
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            stall,
+            products,
+            subscription.Persona,
+            null).ConfigureAwait(false);
 
-        return Task.FromResult(PlayerStallSellerOperationResult.Ok(snapshot));
+        return PlayerStallSellerOperationResult.Ok(snapshot);
     }
 
     /// <summary>
@@ -478,7 +487,11 @@ public sealed class PlayerStallEventManager
 
         List<StallProduct> products = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
 
-        PlayerStallSellerSnapshot snapshot = BuildSellerSnapshot(updatedStall, products, request.SellerPersona, request.ProductId);
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            updatedStall,
+            products,
+            request.SellerPersona,
+            request.ProductId).ConfigureAwait(false);
         PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
             snapshot,
             "Price updated.",
@@ -829,7 +842,11 @@ public sealed class PlayerStallEventManager
 
         foreach ((PlayerStallSellerEventCallbacks callbacks, PersonaId persona) in targets)
         {
-            PlayerStallSellerSnapshot snapshot = BuildSellerSnapshot(stall, products, persona, null);
+            PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+                stall,
+                products,
+                persona,
+                null).ConfigureAwait(false);
 
             try
             {
@@ -872,7 +889,7 @@ public sealed class PlayerStallEventManager
         return results;
     }
 
-    private static PlayerStallSellerSnapshot BuildSellerSnapshot(
+    private async Task<PlayerStallSellerSnapshot> BuildSellerSnapshotAsync(
         PlayerStall stall,
         IReadOnlyList<StallProduct> products,
         PersonaId persona,
@@ -893,7 +910,75 @@ public sealed class PlayerStallEventManager
 
         List<PlayerStallSellerProductView> views = BuildSellerProductViews(products, canAdjustPrice: true);
 
-        return new PlayerStallSellerSnapshot(summary, context, views, null, null, false, selectedProductId);
+        bool rentFromCoinhouse = stall.CoinHouseAccountId.HasValue;
+        bool rentToggleVisible = false;
+        bool rentToggleEnabled = false;
+        string? rentToggleTooltip = null;
+
+        bool isOwner = !string.IsNullOrWhiteSpace(stall.OwnerPersonaId) &&
+                       string.Equals(stall.OwnerPersonaId, persona.ToString(), StringComparison.OrdinalIgnoreCase);
+
+        if (isOwner)
+        {
+            if (TryResolveCoinhouseTag(stall, out CoinhouseTag coinhouseTag))
+            {
+                Guid accountId = PersonaAccountId.ForCoinhouse(persona, coinhouseTag);
+                bool hasAccount = await _coinhouses.GetAccountForAsync(accountId, CancellationToken.None).ConfigureAwait(false) is not null;
+
+                rentToggleVisible = true;
+                rentToggleEnabled = hasAccount;
+                rentToggleTooltip = hasAccount
+                    ? rentFromCoinhouse
+                        ? "Rent is currently charged to your coinhouse account."
+                        : "Enable to charge rent to your coinhouse account instead of stall profits."
+                    : "Open or join a coinhouse account in this settlement to enable automatic rent payments.";
+            }
+            else if (rentFromCoinhouse)
+            {
+                rentToggleVisible = true;
+                rentToggleEnabled = false;
+                rentToggleTooltip = "This stall is not linked to a coinhouse; rent will continue to use stall earnings.";
+            }
+        }
+        else if (rentFromCoinhouse)
+        {
+            rentToggleVisible = true;
+            rentToggleEnabled = false;
+            rentToggleTooltip = "Rent payments are charged to the owner's coinhouse account.";
+        }
+
+        return new PlayerStallSellerSnapshot(
+            summary,
+            context,
+            views,
+            null,
+            null,
+            false,
+            selectedProductId,
+            rentFromCoinhouse,
+            rentToggleVisible,
+            rentToggleEnabled,
+            rentToggleTooltip);
+    }
+
+    private static bool TryResolveCoinhouseTag(PlayerStall stall, out CoinhouseTag tag)
+    {
+        tag = default;
+
+        if (string.IsNullOrWhiteSpace(stall.SettlementTag))
+        {
+            return false;
+        }
+
+        try
+        {
+            tag = CoinhouseTag.Parse(stall.SettlementTag);
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException)
+        {
+            return false;
+        }
     }
 
     private static string ResolveSellerDisplayName(PlayerStall stall, PersonaId persona)

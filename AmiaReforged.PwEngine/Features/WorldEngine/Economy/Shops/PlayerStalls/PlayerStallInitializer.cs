@@ -36,7 +36,6 @@ public sealed class PlayerStallInitializer
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _characters = characters ?? throw new ArgumentNullException(nameof(characters));
 
-        RegisterExistingStalls();
         NwModule.Instance.OnModuleLoad += HandleModuleLoad;
     }
 
