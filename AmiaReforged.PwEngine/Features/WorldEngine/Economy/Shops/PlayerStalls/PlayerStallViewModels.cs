@@ -127,12 +127,25 @@ public sealed record PlayerStallSellerProductView(
     bool CanAdjustPrice);
 
 /// <summary>
+/// Player-held item that can be consigned to the stall.
+/// </summary>
+public sealed record PlayerStallSellerInventoryItemView(
+    string ObjectId,
+    string DisplayName,
+    string ResRef,
+    int Quantity,
+    bool IsStackable,
+    string? Description = null,
+    int? BaseItemType = null);
+
+/// <summary>
 /// Snapshot rendered in the seller window.
 /// </summary>
 public sealed record PlayerStallSellerSnapshot(
     PlayerStallSummary Summary,
     PlayerStallSellerContext Seller,
     IReadOnlyList<PlayerStallSellerProductView> Products,
+    IReadOnlyList<PlayerStallSellerInventoryItemView> Inventory,
     string? FeedbackMessage = null,
     Color? FeedbackColor = null,
     bool FeedbackVisible = false,
@@ -199,6 +212,25 @@ public sealed record PlayerStallSellerEventCallbacks(
         _ => Task.CompletedTask,
         _ => Task.CompletedTask);
 }
+
+/// <summary>
+/// Request raised by the seller UI to list a held item for sale.
+/// </summary>
+public sealed record PlayerStallSellerListItemRequest(
+    Guid SessionId,
+    long StallId,
+    PersonaId SellerPersona,
+    string ItemObjectId,
+    int Price);
+
+/// <summary>
+/// Request raised by the seller UI to reclaim an existing listing.
+/// </summary>
+public sealed record PlayerStallSellerRetrieveProductRequest(
+    Guid SessionId,
+    long StallId,
+    PersonaId SellerPersona,
+    long ProductId);
 
 /// <summary>
 /// Payment option details shown when a player claims a stall.

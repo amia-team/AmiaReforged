@@ -32,6 +32,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     private readonly IPlayerStallOwnerNotifier _notifier;
     private readonly IPlayerStallEventBroadcaster _events;
     private readonly IPlayerStallInventoryCustodian _inventoryCustodian;
+    private readonly ICoinhouseRepository _coinhouses;
 
     private readonly CancellationTokenSource _cts = new();
     private readonly Task _runner;
@@ -42,17 +43,17 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         IPlayerStallOwnerNotifier notifier,
         IPlayerStallEventBroadcaster events,
         IPlayerStallInventoryCustodian inventoryCustodian,
-        bool autoStart = true)
+        ICoinhouseRepository coinhouses
+        )
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _withdrawHandler = withdrawHandler ?? throw new ArgumentNullException(nameof(withdrawHandler));
         _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
         _events = events ?? throw new ArgumentNullException(nameof(events));
         _inventoryCustodian = inventoryCustodian ?? throw new ArgumentNullException(nameof(inventoryCustodian));
+        _coinhouses = coinhouses ?? throw new ArgumentNullException(nameof(coinhouses));
 
-        _runner = autoStart
-            ? Task.Run(() => RunAsync(_cts.Token))
-            : Task.CompletedTask;
+        _runner = Task.Run(() => RunAsync(_cts.Token));
     }
 
     public void Dispose()
@@ -214,7 +215,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 
         if (string.IsNullOrWhiteSpace(stall.SettlementTag))
         {
-            return RentChargeResult.Failed("Coinhouse tag is missing for this stall.");
+            return RentChargeResult.Failed("Coinhouse configuration is missing for this stall.");
         }
 
         if (string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
@@ -223,14 +224,39 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         }
 
         CoinhouseTag coinhouseTag;
-        try
+        string rawTag = stall.SettlementTag.Trim();
+
+        if (int.TryParse(rawTag, NumberStyles.Integer, CultureInfo.InvariantCulture, out int settlementId) && settlementId > 0)
         {
-            coinhouseTag = CoinhouseTag.Parse(stall.SettlementTag);
+            try
+            {
+                SettlementId settlement = SettlementId.Parse(settlementId);
+                var coinhouse = _coinhouses.GetSettlementCoinhouse(settlement);
+                if (coinhouse is null || string.IsNullOrWhiteSpace(coinhouse.Tag))
+                {
+                    Log.Warn("No coinhouse mapped to settlement {SettlementId} while charging rent for stall {StallId}.", settlementId, stall.Id);
+                    return RentChargeResult.Failed("Coinhouse configuration is missing for this stall.");
+                }
+
+                coinhouseTag = CoinhouseTag.Parse(coinhouse.Tag);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex, "Failed to resolve coinhouse for settlement {SettlementId} on stall {StallId}.", settlementId, stall.Id);
+                return RentChargeResult.Failed("Coinhouse configuration is invalid.");
+            }
         }
-        catch (Exception ex)
+        else
         {
-            Log.Warn(ex, "Invalid coinhouse tag '{Tag}' for stall {StallId}.", stall.SettlementTag, stall.Id);
-            return RentChargeResult.Failed("Coinhouse configuration is invalid.");
+            try
+            {
+                coinhouseTag = CoinhouseTag.Parse(rawTag);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex, "Invalid coinhouse tag '{Tag}' for stall {StallId}.", rawTag, stall.Id);
+                return RentChargeResult.Failed("Coinhouse configuration is invalid.");
+            }
         }
 
         PersonaId ownerPersona;

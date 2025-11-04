@@ -1,9 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls.Nui;
+using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -28,15 +33,30 @@ public sealed class PlayerStallInitializer
     private readonly IPlayerShopRepository _shops;
     private readonly RuntimeCharacterService _characters;
     private readonly PlayerStallClaimFlow _claimFlow;
+    private readonly ShopLocationResolver _locationResolver;
+    private readonly RegionIndex _regions;
+    private readonly WindowDirector _windowDirector;
+    private readonly PlayerStallEventManager _eventManager;
 
     private readonly Dictionary<uint, StallRegistration> _registrations = new();
     private readonly HashSet<uint> _wiredPlaceables = new();
 
-    public PlayerStallInitializer(IPlayerShopRepository shops, RuntimeCharacterService characters, PlayerStallClaimFlow claimFlow)
+    public PlayerStallInitializer(
+        IPlayerShopRepository shops,
+        RuntimeCharacterService characters,
+        PlayerStallClaimFlow claimFlow,
+        ShopLocationResolver locationResolver,
+        RegionIndex regions,
+        WindowDirector windowDirector,
+        PlayerStallEventManager eventManager)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _characters = characters ?? throw new ArgumentNullException(nameof(characters));
         _claimFlow = claimFlow ?? throw new ArgumentNullException(nameof(claimFlow));
+        _locationResolver = locationResolver ?? throw new ArgumentNullException(nameof(locationResolver));
+        _regions = regions ?? throw new ArgumentNullException(nameof(regions));
+        _windowDirector = windowDirector ?? throw new ArgumentNullException(nameof(windowDirector));
+        _eventManager = eventManager ?? throw new ArgumentNullException(nameof(eventManager));
 
         NwModule.Instance.OnModuleLoad += HandleModuleLoad;
     }
@@ -117,7 +137,13 @@ public sealed class PlayerStallInitializer
 
         if (matches.Count == 0)
         {
-            return StallRegistration.Misconfigured(dbTag, areaResRef, StallRegistrationState.DatabaseRecordMissing);
+            PlayerStall? seeded = TrySeedStallRecord(placeable, dbTag, areaResRef);
+            if (seeded is null)
+            {
+                return StallRegistration.Misconfigured(dbTag, areaResRef, StallRegistrationState.SeedingFailed);
+            }
+
+            matches = new List<PlayerStall> { seeded };
         }
 
         if (matches.Count > 1)
@@ -133,6 +159,90 @@ public sealed class PlayerStallInitializer
         }
 
         return StallRegistration.Ready(stall.Id, dbTag, areaResRef);
+    }
+
+    private PlayerStall? TrySeedStallRecord(NwPlaceable placeable, string dbTag, string areaResRef)
+    {
+        try
+        {
+            PlayerStall seeded = new()
+            {
+                Tag = dbTag,
+                AreaResRef = areaResRef,
+                SettlementTag = TryResolveSettlementTag(placeable, dbTag, areaResRef),
+                LeaseStartUtc = DateTime.UtcNow,
+                NextRentDueUtc = DateTime.UtcNow,
+                CreatedUtc = DateTime.UtcNow,
+                UpdatedUtc = DateTime.UtcNow,
+                IsActive = true,
+                SuspendedUtc = null,
+                DeactivatedUtc = null
+            };
+
+            _shops.CreateShop(seeded);
+
+            Log.Info("Seeded player stall {Tag} (ID {StallId}) for area {AreaResRef}.", dbTag, seeded.Id, areaResRef);
+            return seeded;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to seed player stall {Tag} for area {AreaResRef}.", dbTag, areaResRef);
+            return null;
+        }
+    }
+
+    private string? TryResolveSettlementTag(NwPlaceable placeable, string dbTag, string areaResRef)
+    {
+        try
+        {
+            string? areaTag = placeable.Area?.Tag;
+            string? areaName = placeable.Area?.Name;
+            string displayName = string.IsNullOrWhiteSpace(placeable.Name) ? dbTag : placeable.Name;
+
+            if (_locationResolver.TryResolve(
+                    dbTag,
+                    displayName,
+                    placeable.Tag,
+                    null,
+                    areaResRef,
+                    areaTag,
+                    areaName,
+                    out ShopLocationMetadata metadata))
+            {
+                if (metadata.SettlementId.Value > 0)
+                {
+                    return metadata.SettlementId.Value.ToString(CultureInfo.InvariantCulture);
+                }
+
+                if (!string.IsNullOrWhiteSpace(metadata.Settlement.Value))
+                {
+                    return metadata.Settlement.Value;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(areaResRef))
+            {
+                try
+                {
+                    AreaTag areaDefinitionTag = new(areaResRef);
+                    if (_regions.TryGetSettlementForArea(areaDefinitionTag, out SettlementId settlement) && settlement.Value > 0)
+                    {
+                        return settlement.Value.ToString(CultureInfo.InvariantCulture);
+                    }
+                }
+                catch (Exception areaEx)
+                {
+                    Log.Debug(areaEx, "Failed parsing area resref {AreaResRef} while resolving settlement for stall {Tag}.", areaResRef, dbTag);
+                }
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to resolve settlement tag while seeding stall {Tag}.", dbTag);
+            return null;
+        }
     }
 
     private void HandleStallUse(PlaceableEvents.OnUsed eventData)
@@ -210,10 +320,7 @@ public sealed class PlayerStallInitializer
 
             if (IsOwnedByCurrentPersona(stall, ownerGuid, personaId))
             {
-                await SendServerMessageAsync(player,
-                        "You already manage this stall.",
-                        ColorConstants.Cyan)
-                    .ConfigureAwait(false);
+                await OpenSellerWindowAsync(player, stall, personaId).ConfigureAwait(false);
                 return;
             }
 
@@ -349,11 +456,51 @@ public sealed class PlayerStallInitializer
                 "This stall shares a database tag with another stall. Please notify a DM.",
             StallRegistrationState.AreaMismatch =>
                 "This stall is registered to a different area. Please notify a DM.",
+            StallRegistrationState.SeedingFailed =>
+                "We couldn't provision this stall automatically. Please notify a DM.",
             _ => "This stall is misconfigured. Please notify a DM."
         };
 
         await SendServerMessageAsync(player, message, ColorConstants.Orange).ConfigureAwait(false);
         await SendFloatingTextAsync(player, message).ConfigureAwait(false);
+    }
+
+    private async Task OpenSellerWindowAsync(NwPlayer player, PlayerStall stall, PersonaId personaId)
+    {
+        PlayerStallSellerSnapshot? snapshot = await _eventManager
+            .BuildSellerSnapshotForAsync(stall.Id, personaId)
+            .ConfigureAwait(false);
+
+        if (snapshot is null)
+        {
+            Log.Warn("Failed to build seller snapshot for stall {StallId} while opening management window.", stall.Id);
+            await SendServerMessageAsync(player,
+                    "We couldn't open the stall management window. Please try again later.",
+                    ColorConstants.Red)
+                .ConfigureAwait(false);
+            return;
+        }
+
+        string title = string.IsNullOrWhiteSpace(snapshot.Summary.StallName)
+            ? "Stall Management"
+            : snapshot.Summary.StallName;
+
+        PlayerStallSellerWindowConfig config = new(
+            stall.Id,
+            personaId,
+            title,
+            snapshot);
+
+        PlayerSellerView view = new(player, config);
+
+        await NwTask.SwitchToMainThread();
+        _windowDirector.CloseWindow(player, typeof(PlayerSellerPresenter));
+        _windowDirector.OpenWindow(view.Presenter);
+
+        await SendServerMessageAsync(player,
+                "Opening stall management window.",
+                ColorConstants.Cyan)
+            .ConfigureAwait(false);
     }
 
     private async Task BeginClaimFlowAsync(NwPlayer player, NwPlaceable placeable, PlayerStall stall, PersonaId personaId)
@@ -368,7 +515,8 @@ public sealed class PlayerStallInitializer
         MissingAreaContext,
         DatabaseRecordMissing,
         DuplicateTag,
-        AreaMismatch
+        AreaMismatch,
+        SeedingFailed
     }
 
     private sealed record StallRegistration(long? StallId, string? DbTag, string? AreaResRef, StallRegistrationState State)

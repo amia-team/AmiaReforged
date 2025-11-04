@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -652,6 +653,436 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         return result;
     }
 
+    /// <summary>
+    /// Handles seller requests to list an inventory item for sale.
+    /// </summary>
+    public async Task<PlayerStallSellerOperationResult> RequestListInventoryItemAsync(PlayerStallSellerListItemRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        SellerSubscription? subscription;
+        lock (_syncRoot)
+        {
+            _sellerSessions.TryGetValue(request.SessionId, out subscription);
+        }
+
+        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        {
+            return PlayerStallSellerOperationResult.Fail(
+                "Your stall session is no longer valid.",
+                ColorConstants.Orange);
+        }
+
+        if (!TryResolvePersonaGuid(request.SellerPersona, out Guid personaGuid))
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't verify your persona for that action.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (!_characters.TryGetPlayer(personaGuid, out NwPlayer? player) || player is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be logged in as that persona to manage the stall.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (request.Price <= 0)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "Listing price must be greater than zero.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        NwCreature? sellerCreature = await ResolveActiveCreatureAsync(player).ConfigureAwait(false);
+        if (sellerCreature is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be possessing your character to list items.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ItemObjectId))
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't locate that inventory item.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        NwItem? item;
+        await NwTask.SwitchToMainThread();
+        try
+        {
+            item = NWScript.StringToObject(request.ItemObjectId).ToNwObject<NwItem>();
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Failed to hydrate inventory item {ObjectId} for stall listing.", request.ItemObjectId);
+            item = null;
+        }
+
+        if (item is null || !item.IsValid)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "That inventory item is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (item.Possessor != sellerCreature)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must hold the item to list it for sale.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (!PlayerStallInventoryPolicy.IsItemAllowed(item))
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "That item cannot be listed for sale.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        string resRef = item.ResRef?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(resRef))
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "That item is missing a valid resource reference.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        string displayName = string.IsNullOrWhiteSpace(item.Name) ? resRef : item.Name.Trim();
+        string? description = string.IsNullOrWhiteSpace(item.Description) ? null : item.Description.Trim();
+        int quantity = Math.Max(item.StackSize, 1);
+        int? baseItemType = item.BaseItem is null ? null : (int)item.BaseItem.ItemType;
+
+        Json serializedItem = NWScript.ObjectToJson(item);
+        string payload = serializedItem.Dump();
+        byte[] itemData = Encoding.UTF8.GetBytes(payload);
+
+        List<StallProduct> existingProducts = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
+        int sortOrder = existingProducts.Count == 0 ? 0 : existingProducts.Max(p => p.SortOrder) + 1;
+        string consignorDisplayName = ResolveSellerDisplayName(stall, request.SellerPersona);
+        DateTime timestamp = DateTime.UtcNow;
+
+        ListStallProductRequest serviceRequest = new(
+            request.StallId,
+            resRef,
+            displayName,
+            description,
+            request.Price,
+            quantity,
+            baseItemType,
+            itemData,
+            request.SellerPersona,
+            consignorDisplayName,
+            null,
+            sortOrder,
+            true,
+            timestamp,
+            timestamp);
+
+        PlayerStallServiceResult serviceResult = await _stallService
+            .ListProductAsync(serviceRequest)
+            .ConfigureAwait(false);
+
+        if (!serviceResult.Success)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                serviceResult.ErrorMessage ?? "Failed to list that item.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        long? newProductId = null;
+        if (serviceResult.Data is not null && serviceResult.Data.TryGetValue("productId", out object? productIdObj))
+        {
+            try
+            {
+                newProductId = Convert.ToInt64(productIdObj, CultureInfo.InvariantCulture);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Failed to parse new product id after listing item on stall {StallId}.", request.StallId);
+            }
+        }
+
+        PlayerStall? updatedStall = _shops.GetShopWithMembers(request.StallId);
+        if (updatedStall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        List<StallProduct> updatedProducts = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
+
+        await NwTask.SwitchToMainThread();
+        if (item.IsValid)
+        {
+            item.Destroy();
+        }
+
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            updatedStall,
+            updatedProducts,
+            request.SellerPersona,
+            newProductId).ConfigureAwait(false);
+
+        string message = string.Format(
+            CultureInfo.InvariantCulture,
+            "Listed {0} for {1:n0} gp.",
+            displayName,
+            request.Price);
+
+        PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
+            snapshot,
+            message,
+            ColorConstants.Lime);
+
+        await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);
+
+        await PublishSellerSnapshotsAsync(
+            request.StallId,
+            updatedStall,
+            updatedProducts,
+            request.SessionId).ConfigureAwait(false);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Handles seller requests to reclaim an existing listing.
+    /// </summary>
+    public async Task<PlayerStallSellerOperationResult> RequestRetrieveProductAsync(PlayerStallSellerRetrieveProductRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        SellerSubscription? subscription;
+        lock (_syncRoot)
+        {
+            _sellerSessions.TryGetValue(request.SessionId, out subscription);
+        }
+
+        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        {
+            return PlayerStallSellerOperationResult.Fail(
+                "Your stall session is no longer valid.",
+                ColorConstants.Orange);
+        }
+
+        if (!TryResolvePersonaGuid(request.SellerPersona, out Guid personaGuid))
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't verify your persona for that action.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (!_characters.TryGetPlayer(personaGuid, out NwPlayer? player) || player is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be logged in as that persona to manage the stall.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        StallProduct? product = _shops.GetProductById(request.StallId, request.ProductId);
+        if (product is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "That listing is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+        PlayerStallDomainResult<bool> domainResult = aggregate.TryReclaimProduct(request.SellerPersona.ToString(), product);
+        if (!domainResult.Success)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                domainResult.ErrorMessage ?? "You cannot manage that listing.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (product.Quantity <= 0)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "That listing no longer has any stock to reclaim.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        NwCreature? sellerCreature = await ResolveActiveCreatureAsync(player).ConfigureAwait(false);
+        if (sellerCreature is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be possessing your character to reclaim listings.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        bool flagged = _shops.UpdateStallAndProduct(request.StallId, product.Id, (persistedStall, persistedProduct) =>
+        {
+            PlayerStallAggregate updateAggregate = PlayerStallAggregate.FromEntity(persistedStall);
+            PlayerStallDomainResult<bool> updateResult = updateAggregate.TryReclaimProduct(request.SellerPersona.ToString(), persistedProduct);
+
+            if (!updateResult.Success)
+            {
+                return false;
+            }
+
+            if (persistedProduct.Quantity <= 0)
+            {
+                return false;
+            }
+
+            if (!persistedProduct.IsActive)
+            {
+                return false;
+            }
+
+            persistedProduct.IsActive = false;
+            return true;
+        });
+
+        if (!flagged)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't update that listing just yet.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        product.IsActive = false;
+
+        NwItem? restoredItem = await StallProductRestorer.RestoreItemAsync(product, sellerCreature).ConfigureAwait(false);
+        if (restoredItem is null)
+        {
+            bool reverted = _shops.UpdateStallAndProduct(request.StallId, product.Id, (persistedStall, persistedProduct) =>
+            {
+                if (persistedProduct.Id != product.Id || persistedProduct.StallId != request.StallId)
+                {
+                    return false;
+                }
+
+                persistedProduct.IsActive = true;
+                return true;
+            });
+
+            if (reverted)
+            {
+                product.IsActive = true;
+            }
+
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't return that item right now.",
+                ColorConstants.Red);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        ApplyReclaimedItemMetadata(restoredItem, stall, product);
+
+        _shops.RemoveProductFromShop(request.StallId, product.Id);
+
+        PlayerStall? updatedStall = _shops.GetShopWithMembers(request.StallId) ?? stall;
+        List<StallProduct> updatedProducts = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
+
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            updatedStall,
+            updatedProducts,
+            request.SellerPersona,
+            null).ConfigureAwait(false);
+
+        string productName = string.IsNullOrWhiteSpace(product.Name) ? product.ResRef : product.Name;
+        string message = string.Format(CultureInfo.InvariantCulture, "Returned {0} to your inventory.", productName);
+
+        PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
+            snapshot,
+            message,
+            ColorConstants.Lime);
+
+        await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);
+
+        await PublishSellerSnapshotsAsync(
+            request.StallId,
+            updatedStall,
+            updatedProducts,
+            request.SessionId).ConfigureAwait(false);
+
+        return result;
+    }
+
     private List<Func<PlayerStallBuyerSnapshot, Task>> CollectSnapshotCallbacks(long stallId)
     {
         List<Func<PlayerStallBuyerSnapshot, Task>> callbacks = new();
@@ -791,6 +1222,35 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         }
 
         buyer.Gold += (uint)amount;
+    }
+
+    private static async Task<NwItem?> TryCreateItemAsync(StallProduct product, NwCreature owner)
+    {
+        await NwTask.SwitchToMainThread();
+
+        if (owner is not { IsValid: true })
+        {
+            return null;
+        }
+
+        Location? location = owner.Location;
+        if (location is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            string jsonText = Encoding.UTF8.GetString(product.ItemData);
+            Json json = Json.Parse(jsonText);
+            NwItem? restored = json.ToNwObject<NwItem>(location, owner);
+            return restored;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to restore player stall item for product {ProductId}.", product.Id);
+            return null;
+        }
     }
 
     private static async Task DestroyItemAsync(NwItem item)
@@ -974,6 +1434,26 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         }
     }
 
+    private static void ApplyReclaimedItemMetadata(NwItem item, PlayerStall stall, StallProduct product)
+    {
+        if (item is not { IsValid: true })
+        {
+            return;
+        }
+
+        string? personaId = !string.IsNullOrWhiteSpace(product.ConsignedByPersonaId)
+            ? product.ConsignedByPersonaId
+            : stall.OwnerPersonaId;
+
+        if (!string.IsNullOrWhiteSpace(personaId))
+        {
+            NWScript.SetLocalString(item, PlayerStallItemLocals.ConsignorPersonaId, personaId);
+        }
+
+        NWScript.SetLocalString(item, PlayerStallItemLocals.SourceStallId, stall.Id.ToString(CultureInfo.InvariantCulture));
+        NWScript.SetLocalString(item, PlayerStallItemLocals.SourceProductId, product.Id.ToString(CultureInfo.InvariantCulture));
+    }
+
     private List<(PlayerStallSellerEventCallbacks Callbacks, PersonaId Persona)> CollectSellerCallbacks(
         long stallId,
         Guid? excludeSessionId)
@@ -1019,6 +1499,21 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         await PublishSellerSnapshotsAsync(stallId, stall, products).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Builds a seller snapshot for the specified stall and persona without registering a live session.
+    /// </summary>
+    public async Task<PlayerStallSellerSnapshot?> BuildSellerSnapshotForAsync(long stallId, PersonaId persona)
+    {
+        PlayerStall? stall = _shops.GetShopWithMembers(stallId);
+        if (stall is null)
+        {
+            return null;
+        }
+
+        List<StallProduct> products = _shops.ProductsForShop(stallId) ?? new List<StallProduct>();
+        return await BuildSellerSnapshotAsync(stall, products, persona, null).ConfigureAwait(false);
+    }
+
     private async Task<PlayerStallSellerSnapshot> BuildSellerSnapshotAsync(
         PlayerStall stall,
         IReadOnlyList<StallProduct> products,
@@ -1038,7 +1533,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         string sellerName = ResolveSellerDisplayName(stall, persona);
         PlayerStallSellerContext context = new(persona, sellerName);
 
-        List<PlayerStallSellerProductView> views = BuildSellerProductViews(products, canAdjustPrice: true);
+    List<PlayerStallSellerProductView> views = BuildSellerProductViews(products, canAdjustPrice: true);
+    IReadOnlyList<PlayerStallSellerInventoryItemView> inventory = await BuildInventoryItemsAsync(persona).ConfigureAwait(false);
 
         bool rentFromCoinhouse = stall.CoinHouseAccountId.HasValue;
         bool rentToggleVisible = false;
@@ -1081,6 +1577,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             summary,
             context,
             views,
+            inventory,
             null,
             null,
             false,
@@ -1091,7 +1588,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             rentToggleTooltip);
     }
 
-    private static bool TryResolveCoinhouseTag(PlayerStall stall, out CoinhouseTag tag)
+    private bool TryResolveCoinhouseTag(PlayerStall stall, out CoinhouseTag tag)
     {
         tag = default;
 
@@ -1100,15 +1597,90 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             return false;
         }
 
+        string raw = stall.SettlementTag.Trim();
+
+        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int settlementId) && settlementId > 0)
+        {
+            try
+            {
+                SettlementId settlement = SettlementId.Parse(settlementId);
+                CoinHouse? coinhouse = _coinhouses.GetSettlementCoinhouse(settlement);
+                if (coinhouse is not null && !string.IsNullOrWhiteSpace(coinhouse.Tag))
+                {
+                    tag = CoinhouseTag.Parse(coinhouse.Tag);
+                    return true;
+                }
+
+                Log.Debug("No coinhouse registered for settlement {SettlementId} while resolving stall {StallId}.", settlementId, stall.Id);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex, "Failed to resolve coinhouse for settlement {SettlementId} on stall {StallId}.", settlementId, stall.Id);
+                return false;
+            }
+        }
+
         try
         {
-            tag = CoinhouseTag.Parse(stall.SettlementTag);
+            tag = CoinhouseTag.Parse(raw);
             return true;
         }
         catch (Exception ex) when (ex is ArgumentException or FormatException)
         {
+            Log.Warn(ex, "Invalid coinhouse tag '{Tag}' for stall {StallId}.", raw, stall.Id);
             return false;
         }
+    }
+
+    private async Task<IReadOnlyList<PlayerStallSellerInventoryItemView>> BuildInventoryItemsAsync(PersonaId persona)
+    {
+        List<PlayerStallSellerInventoryItemView> items = new();
+
+        if (!TryResolvePersonaGuid(persona, out Guid personaGuid))
+        {
+            return items;
+        }
+
+        if (!_characters.TryGetPlayer(personaGuid, out NwPlayer? player) || player is null)
+        {
+            return items;
+        }
+
+        NwCreature? creature = await ResolveActiveCreatureAsync(player).ConfigureAwait(false);
+        if (creature is null)
+        {
+            return items;
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        foreach (NwItem item in creature.Inventory.Items)
+        {
+            if (!PlayerStallInventoryPolicy.IsItemAllowed(item))
+            {
+                continue;
+            }
+
+            string objectId = NWScript.ObjectToString(item);
+            string displayName = string.IsNullOrWhiteSpace(item.Name) ? item.ResRef : item.Name.Trim();
+            string resRef = item.ResRef;
+            int quantity = Math.Max(item.StackSize, 1);
+            bool stackable = quantity > 1;
+            string? description = string.IsNullOrWhiteSpace(item.Description) ? null : item.Description.Trim();
+            int? baseItemType = item.BaseItem is null ? null : (int)item.BaseItem.ItemType;
+
+            items.Add(new PlayerStallSellerInventoryItemView(
+                objectId,
+                displayName,
+                resRef,
+                quantity,
+                stackable,
+                description,
+                baseItemType));
+        }
+
+        return items;
     }
 
     private static string ResolveSellerDisplayName(PlayerStall stall, PersonaId persona)

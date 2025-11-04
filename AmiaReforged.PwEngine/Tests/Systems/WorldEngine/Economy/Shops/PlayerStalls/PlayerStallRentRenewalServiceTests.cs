@@ -4,10 +4,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil.API;
 using Moq;
 using NUnit.Framework;
@@ -22,6 +24,7 @@ public class PlayerStallRentRenewalServiceTests
     private Mock<IPlayerStallOwnerNotifier> _notifier = null!;
     private Mock<IPlayerStallEventBroadcaster> _events = null!;
     private Mock<IPlayerStallInventoryCustodian> _custodian = null!;
+    private Mock<ICoinhouseRepository> _coinhouses = null!;
     private PlayerStallRentRenewalService _service = null!;
     private PlayerStall _stall = null!;
     private List<PlayerStall> _allShops = null!;
@@ -71,13 +74,18 @@ public class PlayerStallRentRenewalServiceTests
         _custodian.Setup(c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        _coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
+        _coinhouses.Setup(c => c.GetSettlementCoinhouse(It.IsAny<SettlementId>()))
+            .Returns((CoinHouse?)null);
+
         _service = new PlayerStallRentRenewalService(
             _shops.Object,
             _withdraw.Object,
             _notifier.Object,
             _events.Object,
             _custodian.Object,
-            autoStart: false);
+            _coinhouses.Object
+            );
     }
 
     [TearDown]

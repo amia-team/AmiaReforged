@@ -1,8 +1,10 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
+﻿using System;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using System.Numerics;
 using Action = System.Action;
 
 namespace AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
@@ -14,6 +16,23 @@ public sealed class WindowDirector : IDisposable
     private readonly Dictionary<NwPlayer, List<IScryPresenter>> _activeWindows = new();
     private readonly Dictionary<NuiWindowToken, List<NuiWindowToken>> _linkedTokens = new();
     private readonly Dictionary<NuiWindowToken, IScryPresenter> _tokens = new();
+    private readonly Dictionary<IScryPresenter, AutoCloseRegistration> _autoCloseWindows = new();
+    private readonly object _autoCloseLock = new();
+
+    [Inject] private Lazy<SchedulerService> SchedulerService { get; init; } = null!;
+
+    private sealed class AutoCloseRegistration
+    {
+        public AutoCloseRegistration(ScheduledTask task, float movementThreshold)
+        {
+            Task = task;
+            MovementThreshold = movementThreshold;
+        }
+
+        public ScheduledTask Task { get; }
+        public Location? InitialLocation { get; set; }
+        public float MovementThreshold { get; }
+    }
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="WindowDirector" /> class.
@@ -33,7 +52,11 @@ public sealed class WindowDirector : IDisposable
     {
         foreach (List<IScryPresenter> windows in _activeWindows.Values)
         {
-            windows.ForEach(w => w.Close());
+            windows.ForEach(w =>
+            {
+                CleanupAutoClose(w);
+                w.Close();
+            });
         }
 
         _activeWindows.Clear();
@@ -58,6 +81,7 @@ public sealed class WindowDirector : IDisposable
                 {
                     Log.Info(message: "Window found, removing.");
                     _tokens.Remove(window.Token());
+                    CleanupAutoClose(window);
                     window.Close();
                     playerWindows?.Remove(window);
                 }
@@ -86,7 +110,11 @@ public sealed class WindowDirector : IDisposable
     /// <param name="obj">The event object containing details about the client leave event.</param>
     private void PurgeWindows(ModuleEvents.OnClientLeave obj)
     {
-        _activeWindows[obj.Player].ForEach(w => w.Close());
+        _activeWindows[obj.Player].ForEach(w =>
+        {
+            CleanupAutoClose(w);
+            w.Close();
+        });
         _activeWindows.Remove(obj.Player);
     }
 
@@ -105,6 +133,7 @@ public sealed class WindowDirector : IDisposable
 
         playerWindows?.Add(window);
         window.Closing += (_, _) => CloseWindow(window.Token().Player, window.GetType());
+        InitializeAutoClose(window);
     }
 
     /// <summary>
@@ -131,6 +160,7 @@ public sealed class WindowDirector : IDisposable
                 _linkedTokens.Remove(t);
             });
 
+            CleanupAutoClose(window);
             window.Close();
             playerWindows?.Remove(window);
             _tokens.Remove(window.Token());
@@ -192,5 +222,112 @@ public sealed class WindowDirector : IDisposable
         SimplePopupView view = new(nwPlayer, outcome, message, title, ignoreButton);
         SimplePopupPresenter presenter = view.Presenter;
         OpenWindow(presenter);
+    }
+
+    private void InitializeAutoClose(IScryPresenter presenter)
+    {
+        if (presenter is not IAutoCloseOnMove autoClose)
+        {
+            return;
+        }
+
+        ScheduledTask task = SchedulerService.Value.ScheduleRepeating(
+            () => PollAutoClose(presenter),
+            autoClose.AutoClosePollInterval);
+
+        AutoCloseRegistration registration = new(task, autoClose.AutoCloseMovementThreshold);
+
+        lock (_autoCloseLock)
+        {
+            _autoCloseWindows[presenter] = registration;
+        }
+    }
+
+    private void PollAutoClose(IScryPresenter presenter)
+    {
+        _ = NwTask.Run(async () =>
+        {
+            await NwTask.SwitchToMainThread();
+
+            if (!TryGetAutoCloseRegistration(presenter, out AutoCloseRegistration? registration) || registration is null)
+            {
+                return;
+            }
+
+            NuiWindowToken token = presenter.Token();
+            NwPlayer player = token.Player;
+
+            if (!player.IsValid)
+            {
+                TriggerAutoClose(presenter);
+                return;
+            }
+
+            NwCreature? creature = player.LoginCreature;
+
+            if (creature is null)
+            {
+                TriggerAutoClose(presenter);
+                return;
+            }
+
+            Location currentLocation = creature.Location;
+
+            Location? initialLocation = registration.InitialLocation;
+
+            if (initialLocation is null)
+            {
+                registration.InitialLocation = currentLocation;
+                return;
+            }
+
+            if (HasPlayerMoved(initialLocation, currentLocation, registration.MovementThreshold))
+            {
+                TriggerAutoClose(presenter);
+            }
+        });
+    }
+
+    private bool TryGetAutoCloseRegistration(IScryPresenter presenter, out AutoCloseRegistration? registration)
+    {
+        lock (_autoCloseLock)
+        {
+            return _autoCloseWindows.TryGetValue(presenter, out registration);
+        }
+    }
+
+    private void TriggerAutoClose(IScryPresenter presenter)
+    {
+        CleanupAutoClose(presenter);
+        presenter.RaiseCloseEvent();
+        presenter.Close();
+    }
+
+    private void CleanupAutoClose(IScryPresenter presenter)
+    {
+        AutoCloseRegistration? registration;
+
+        lock (_autoCloseLock)
+        {
+            if (!_autoCloseWindows.Remove(presenter, out registration))
+            {
+                return;
+            }
+        }
+
+        registration.Task.Cancel();
+    }
+
+    private static bool HasPlayerMoved(Location initialLocation, Location currentLocation, float threshold)
+    {
+        if (!Equals(initialLocation.Area, currentLocation.Area))
+        {
+            return true;
+        }
+
+        Vector3 delta = initialLocation.Position - currentLocation.Position;
+        float thresholdSquared = MathF.Max(threshold, 0f);
+        thresholdSquared *= thresholdSquared;
+        return delta.LengthSquared() > thresholdSquared;
     }
 }

@@ -33,6 +33,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<bool> ProductManageEnabled = new("player_stall_seller_product_manage_enabled");
 
     public readonly NuiBind<bool> DetailVisible = new("player_stall_seller_detail_visible");
+    public readonly NuiBind<bool> DetailPlaceholderVisible = new("player_stall_seller_detail_placeholder_visible");
     public readonly NuiBind<string> SelectedProductName = new("player_stall_seller_selected_name");
     public readonly NuiBind<string> SelectedProductQuantity = new("player_stall_seller_selected_quantity");
     public readonly NuiBind<string> SelectedProductStatus = new("player_stall_seller_selected_status");
@@ -43,10 +44,29 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<string> PriceInput = new("player_stall_seller_price_input");
     public readonly NuiBind<bool> PriceInputEnabled = new("player_stall_seller_price_input_enabled");
     public readonly NuiBind<bool> PriceSaveEnabled = new("player_stall_seller_price_save_enabled");
+    public readonly NuiBind<bool> ProductRetrieveEnabled = new("player_stall_seller_reclaim_enabled");
+
+    public readonly NuiBind<int> InventoryCount = new("player_stall_seller_inventory_count");
+    public readonly NuiBind<string> InventoryEntries = new("player_stall_seller_inventory_entries");
+    public readonly NuiBind<string> InventoryTooltips = new("player_stall_seller_inventory_tooltips");
+    public readonly NuiBind<bool> InventorySelectEnabled = new("player_stall_seller_inventory_select_enabled");
+    public readonly NuiBind<bool> InventoryEmptyVisible = new("player_stall_seller_inventory_empty_visible");
+
+    public readonly NuiBind<bool> InventoryDetailVisible = new("player_stall_seller_inventory_detail_visible");
+    public readonly NuiBind<bool> InventoryDetailPlaceholderVisible = new("player_stall_seller_inventory_detail_placeholder_visible");
+    public readonly NuiBind<string> InventorySelectedName = new("player_stall_seller_inventory_selected_name");
+    public readonly NuiBind<string> InventorySelectedResRef = new("player_stall_seller_inventory_selected_resref");
+    public readonly NuiBind<string> InventorySelectedQuantity = new("player_stall_seller_inventory_selected_quantity");
+    public readonly NuiBind<string> InventoryPriceInput = new("player_stall_seller_inventory_price_input");
+    public readonly NuiBind<bool> InventoryPriceEnabled = new("player_stall_seller_inventory_price_enabled");
+    public readonly NuiBind<bool> InventoryListEnabled = new("player_stall_seller_inventory_list_enabled");
 
     public NuiButton ManageButton = null!;
     public NuiButton UpdatePriceButton = null!;
     public NuiButton RentToggleButton = null!;
+    public NuiButton InventorySelectButton = null!;
+    public NuiButton InventoryListButton = null!;
+    public NuiButton RetrieveProductButton = null!;
     public NuiButton CloseButton = null!;
 
     public PlayerSellerView(NwPlayer player, PlayerStallSellerWindowConfig config)
@@ -63,57 +83,73 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     {
         List<NuiListTemplateCell> productTemplate =
         [
-            new(new NuiLabel(ProductEntries)
-            {
-                HorizontalAlign = NuiHAlign.Left,
-                VerticalAlign = NuiVAlign.Middle,
-                Tooltip = ProductTooltips
-            })
-            {
-                Width = 360f
-            },
-            new(new NuiButton("Manage")
+            new(new NuiButton(ProductEntries)
             {
                 Id = "player_stall_manage",
                 Height = 26f,
-                Width = 90f,
-                Enabled = ProductManageEnabled
+                Enabled = ProductManageEnabled,
+                Tooltip = ProductTooltips
             }.Assign(out ManageButton))
+            {
+                Width = 360f,
+                VariableSize = false
+            }
+        ];
+
+        List<NuiListTemplateCell> inventoryTemplate =
+        [
+            new(new NuiLabel(InventoryEntries)
+            {
+                HorizontalAlign = NuiHAlign.Left,
+                VerticalAlign = NuiVAlign.Middle,
+                Tooltip = InventoryTooltips
+            })
+            {
+                Width = 200f
+            },
+            new(new NuiButton("Select")
+            {
+                Id = "player_stall_inventory_select",
+                Height = 26f,
+                Width = 90f,
+                Enabled = InventorySelectEnabled
+            }.Assign(out InventorySelectButton))
             {
                 Width = 100f,
                 VariableSize = false
             }
         ];
 
-        NuiColumn detailColumn = new()
+        NuiColumn productDetailColumn = new()
         {
+            Visible = DetailVisible,
             Children =
             [
                 new NuiLabel(SelectedProductName)
                 {
                     Height = 24f,
-                    Width = 200f,
+                    Width = 260f,
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Middle
                 },
                 new NuiLabel(SelectedProductStatus)
                 {
                     Height = 20f,
-                    Width = 200f,
+                    Width = 260f,
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Middle
                 },
                 new NuiLabel(SelectedProductQuantity)
                 {
                     Height = 20f,
-                    Width = 200f,
+                    Width = 260f,
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Middle
                 },
                 new NuiLabel(SelectedProductPrice)
                 {
                     Height = 20f,
-                    Width = 200f,
+                    Width = 260f,
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Middle
                 },
@@ -122,7 +158,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                 {
                     Visible = SelectedProductDescriptionVisible,
                     Height = 60f,
-                    Width = 200f,
+                    Width = 260f,
                     HorizontalAlign = NuiHAlign.Left,
                     VerticalAlign = NuiVAlign.Top
                 },
@@ -162,7 +198,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                         },
                         new NuiTextEdit(string.Empty, PriceInput, 9, false)
                         {
-                            Width = 100f,
+                            Width = 120f,
                             Enabled = PriceInputEnabled
                         }
                     ]
@@ -181,13 +217,138 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             Enabled = PriceSaveEnabled
                         }.Assign(out UpdatePriceButton)
                     ]
+                },
+                new NuiSpacer { Height = 6f },
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer(),
+                        new NuiButton("Take Item Back")
+                        {
+                            Id = "player_stall_reclaim_product",
+                            Height = 30f,
+                            Width = 160f,
+                            Enabled = ProductRetrieveEnabled
+                        }.Assign(out RetrieveProductButton)
+                    ]
                 }
+            ]
+        };
+
+        NuiColumn inventoryDetailColumn = new()
+        {
+            Children =
+            [
+                new NuiLabel("List Item")
+                {
+                    Height = 20f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle
+                },
+                new NuiLabel("Select an inventory item.")
+                {
+                    Visible = InventoryDetailPlaceholderVisible,
+                    Height = 20f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = ColorConstants.Orange
+                },
+                new NuiSpacer
+                {
+                    Height = 6f,
+                    Visible = InventoryDetailVisible
+                },
+                new NuiLabel(InventorySelectedName)
+                {
+                    Visible = InventoryDetailVisible,
+                    Height = 20f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle
+                },
+                new NuiLabel(InventorySelectedResRef)
+                {
+                    Visible = InventoryDetailVisible,
+                    Height = 18f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle
+                },
+                new NuiLabel(InventorySelectedQuantity)
+                {
+                    Visible = InventoryDetailVisible,
+                    Height = 18f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle
+                },
+                new NuiSpacer { Height = 6f, Visible = InventoryDetailVisible },
+                new NuiRow
+                {
+                    Visible = InventoryDetailVisible,
+                    Children =
+                    [
+                        new NuiLabel("Price")
+                        {
+                            Width = 80f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle
+                        },
+                        new NuiTextEdit(string.Empty, InventoryPriceInput, 9, false)
+                        {
+                            Width = 120f,
+                            Enabled = InventoryPriceEnabled
+                        }
+                    ]
+                },
+                new NuiSpacer { Height = 6f, Visible = InventoryDetailVisible },
+                new NuiRow
+                {
+                    Visible = InventoryDetailVisible,
+                    Children =
+                    [
+                        new NuiSpacer(),
+                        new NuiButton("List Item")
+                        {
+                            Id = "player_stall_list_inventory_item",
+                            Height = 30f,
+                            Width = 140f,
+                            Enabled = InventoryListEnabled
+                        }.Assign(out InventoryListButton)
+                    ]
+                }
+            ]
+        };
+
+        NuiColumn detailColumn = new()
+        {
+            Children =
+            [
+                new NuiLabel("Edit Listing")
+                {
+                    Visible = DetailVisible,
+                    Height = 20f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle
+                },
+                new NuiLabel("Select a listing to edit it.")
+                {
+                    Visible = DetailPlaceholderVisible,
+                    Height = 20f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle,
+                    ForegroundColor = ColorConstants.Orange
+                },
+                new NuiSpacer
+                {
+                    Height = 6f,
+                    Visible = DetailVisible
+                },
+                productDetailColumn
             ]
         };
 
         NuiColumn root = new()
         {
-            Width = 600f,
+            Width = 720f,
             Children =
             [
                 new NuiLabel(StallTitle)
@@ -224,7 +385,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                     [
                         new NuiColumn
                         {
-                            Width = 360f,
+                            Width = 380f,
                             Children =
                             [
                                 new NuiLabel("Inventory")
@@ -235,7 +396,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                                 },
                                 new NuiList(productTemplate, ProductCount)
                                 {
-                                    Width = 340f,
+                                    Width = 360f,
                                     RowHeight = 26f,
                                     Height = 280f
                                 }
@@ -244,10 +405,63 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                         new NuiSpacer { Width = 12f },
                         new NuiGroup
                         {
-                            Visible = DetailVisible,
                             Border = true,
-                            Width = 220f,
+                            Width = 300f,
                             Element = detailColumn
+                        }
+                    ]
+                },
+                new NuiSpacer { Height = 12f },
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiColumn
+                        {
+                            Width = 380f,
+                            Children =
+                            [
+                                new NuiLabel("Your Items")
+                                {
+                                    Height = 20f,
+                                    HorizontalAlign = NuiHAlign.Left,
+                                    VerticalAlign = NuiVAlign.Middle
+                                },
+                                new NuiGroup
+                                {
+                                    Border = true,
+                                    Height = 260f,
+                                    Width = 360f,
+                                    Element = new NuiColumn
+                                    {
+                                        Children =
+                                        [
+                                            new NuiList(inventoryTemplate, InventoryCount)
+                                            {
+                                                Width = 340f,
+                                                RowHeight = 26f,
+                                                Height = 180f
+                                            },
+                                            new NuiLabel("No eligible items in your inventory.")
+                                            {
+                                                Visible = InventoryEmptyVisible,
+                                                Height = 20f,
+                                                HorizontalAlign = NuiHAlign.Left,
+                                                VerticalAlign = NuiVAlign.Middle,
+                                                ForegroundColor = ColorConstants.Orange
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        new NuiSpacer { Width = 12f },
+                        new NuiGroup
+                        {
+                            Border = true,
+                            Width = 300f,
+                            Height = 260f,
+                            Element = inventoryDetailColumn
                         }
                     ]
                 },

@@ -11,7 +11,7 @@ using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls.Nui;
 
-public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>
+public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAutoCloseOnMove
 {
 	private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 

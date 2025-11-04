@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
@@ -71,7 +72,17 @@ public sealed class PlayerStallClaimFlow
                 return;
             }
 
-            string placeableTag = placeable.Tag ?? stall.Tag;
+            string? stallTag = string.IsNullOrWhiteSpace(stall.Tag) ? null : stall.Tag;
+            string? placeableTag = stallTag ?? placeable.Tag;
+
+            if (string.IsNullOrWhiteSpace(placeableTag))
+            {
+                await SendServerMessageAsync(player,
+                        "This stall is missing a configured tag. Please notify a DM.",
+                        ColorConstants.Red)
+                    .ConfigureAwait(false);
+                return;
+            }
             string areaResRef = placeable.Area?.ResRef ?? stall.AreaResRef;
             string? areaName = placeable.Area?.Name;
             string ownerDisplayName = ResolveOwnerDisplayName(player);
@@ -146,7 +157,7 @@ public sealed class PlayerStallClaimFlow
             Log.Info("Player {PlayerName} initiated stall claim for stall {StallId} ({Tag}) in area {AreaResRef}.",
                 player.PlayerName,
                 stall.Id,
-                stall.Tag,
+                stallTag ?? stall.Tag ?? placeableTag,
                 areaResRef);
         }
         catch (Exception ex)
@@ -563,34 +574,18 @@ public sealed class PlayerStallClaimFlow
         string formattedRent,
         string? settlementName)
     {
-        if (string.IsNullOrWhiteSpace(stall.SettlementTag))
-        {
-            RentStallPaymentOptionViewModel option = CreateCoinhouseOptionModel(
-                settlementName,
-                visible: true,
-                enabled: false,
-                status: "This stall is not linked to a coinhouse yet. Please notify a DM.");
-
-            return (option, null, null);
-        }
-
         CoinhouseTag tag;
-        try
+        if (!TryResolveCoinhouseTag(stall, out tag))
         {
-            tag = CoinhouseTag.Parse(stall.SettlementTag);
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(ex,
-                "Stall {StallId} has an invalid settlement tag value {SettlementTag}.",
-                stall.Id,
-                stall.SettlementTag);
+            string status = string.IsNullOrWhiteSpace(stall.SettlementTag)
+                ? "This stall is not linked to a coinhouse yet. Please notify a DM."
+                : "We couldn't locate the settlement's coinhouse configuration. Please notify a DM.";
 
             RentStallPaymentOptionViewModel option = CreateCoinhouseOptionModel(
                 settlementName,
                 visible: true,
                 enabled: false,
-                status: "The linked coinhouse tag is invalid. Please notify a DM.");
+                status: status);
 
             return (option, null, null);
         }
@@ -812,6 +807,50 @@ public sealed class PlayerStallClaimFlow
 
     private static string DescribeSettlement(string? settlementName) =>
         string.IsNullOrWhiteSpace(settlementName) ? "this settlement" : settlementName;
+
+    private bool TryResolveCoinhouseTag(PlayerStall stall, out CoinhouseTag tag)
+    {
+        tag = default;
+
+        if (string.IsNullOrWhiteSpace(stall.SettlementTag))
+        {
+            return false;
+        }
+
+        string raw = stall.SettlementTag.Trim();
+        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int settlementId) && settlementId > 0)
+        {
+            try
+            {
+                SettlementId settlement = SettlementId.Parse(settlementId);
+                CoinHouse? coinhouse = _coinhouses.GetSettlementCoinhouse(settlement);
+                if (coinhouse is null || string.IsNullOrWhiteSpace(coinhouse.Tag))
+                {
+                    Log.Warn("No coinhouse mapping found for settlement {SettlementId} when resolving stall {StallId}.", settlementId, stall.Id);
+                    return false;
+                }
+
+                tag = CoinhouseTag.Parse(coinhouse.Tag);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex, "Failed to resolve coinhouse for settlement {SettlementId} on stall {StallId}.", settlementId, stall.Id);
+                return false;
+            }
+        }
+
+        try
+        {
+            tag = CoinhouseTag.Parse(raw);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Stall {StallId} has an invalid settlement tag value {SettlementTag}.", stall.Id, raw);
+            return false;
+        }
+    }
 
     private static string BuildCoinhouseReason(string stallName)
     {

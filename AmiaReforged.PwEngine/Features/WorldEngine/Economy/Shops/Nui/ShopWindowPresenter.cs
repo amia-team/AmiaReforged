@@ -17,7 +17,7 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Nui;
 
-public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>
+public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCloseOnMove
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 

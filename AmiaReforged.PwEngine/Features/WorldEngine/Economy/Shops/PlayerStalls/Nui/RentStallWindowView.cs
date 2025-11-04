@@ -176,7 +176,7 @@ public sealed class RentStallWindowView : ScryView<RentStallWindowPresenter>
     }
 }
 
-public sealed class RentStallWindowPresenter : ScryPresenter<RentStallWindowView>
+public sealed class RentStallWindowPresenter : ScryPresenter<RentStallWindowView>, IAutoCloseOnMove
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 

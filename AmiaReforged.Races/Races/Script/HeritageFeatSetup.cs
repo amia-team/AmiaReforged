@@ -26,7 +26,6 @@ public static class HeritageFeatSetup
 
         if (NWScript.GetIsObjectValid(_pckey) != NWScript.TRUE)
         {
-            player.SendServerMessage("The DM needs to give you your PC key back and your rebuild is probably screwed up.");
             return;
         }
 

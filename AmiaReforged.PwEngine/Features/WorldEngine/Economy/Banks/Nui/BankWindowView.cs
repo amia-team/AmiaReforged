@@ -511,7 +511,7 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     }
 }
 
-public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>
+public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCloseOnMove
 {
     private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
     private const string ShareDocumentResRef = "bank_sharedoc";

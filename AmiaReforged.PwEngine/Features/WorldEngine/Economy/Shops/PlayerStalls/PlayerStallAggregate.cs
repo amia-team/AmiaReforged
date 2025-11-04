@@ -191,6 +191,41 @@ public sealed class PlayerStallAggregate
         });
     }
 
+    public PlayerStallDomainResult<bool> TryReclaimProduct(string requestorPersonaId, StallProduct product)
+    {
+        ArgumentNullException.ThrowIfNull(product);
+
+        if (string.IsNullOrWhiteSpace(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<bool>.Fail(
+                PlayerStallError.Unauthorized,
+                "A persona is required to manage stall inventory.");
+        }
+
+        if (!_snapshot.IsActive)
+        {
+            return PlayerStallDomainResult<bool>.Fail(
+                PlayerStallError.StallInactive,
+                "This stall is not currently active.");
+        }
+
+        if (product.StallId != _snapshot.Id)
+        {
+            return PlayerStallDomainResult<bool>.Fail(
+                PlayerStallError.ProductNotFound,
+                "That listing is not registered to this stall.");
+        }
+
+        if (!HasInventoryPrivileges(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<bool>.Fail(
+                PlayerStallError.Unauthorized,
+                "You do not have permission to manage this stall's inventory.");
+        }
+
+        return PlayerStallDomainResult<bool>.Ok(true);
+    }
+
     public PlayerStallDomainResult<Action<PlayerStall>> TryConfigureRentSettings(
         string requestorPersonaId,
         Guid? coinHouseAccountId,
