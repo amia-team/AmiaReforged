@@ -34,6 +34,7 @@ public sealed class PlayerStallClaimFlow
     private readonly WindowDirector _windowDirector;
     private readonly ICoinhouseRepository _coinhouses;
     private readonly IPlayerShopRepository _shops;
+    private readonly ReeveLockupService _lockup;
     private readonly ICommandHandler<ClaimPlayerStallCommand> _claimHandler;
     private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
 
@@ -43,12 +44,14 @@ public sealed class PlayerStallClaimFlow
         WindowDirector windowDirector,
         ICoinhouseRepository coinhouses,
         IPlayerShopRepository shops,
+        ReeveLockupService lockup,
         ICommandHandler<ClaimPlayerStallCommand> claimHandler,
         ICommandHandler<WithdrawGoldCommand> withdrawHandler)
     {
         _windowDirector = windowDirector ?? throw new ArgumentNullException(nameof(windowDirector));
         _coinhouses = coinhouses ?? throw new ArgumentNullException(nameof(coinhouses));
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
+        _lockup = lockup ?? throw new ArgumentNullException(nameof(lockup));
         _claimHandler = claimHandler ?? throw new ArgumentNullException(nameof(claimHandler));
         _withdrawHandler = withdrawHandler ?? throw new ArgumentNullException(nameof(withdrawHandler));
     }
@@ -247,6 +250,20 @@ public sealed class PlayerStallClaimFlow
                 return RentStallSubmissionResult.Error(
                     "This stall was just claimed by another player.",
                     closeWindow: true);
+            }
+
+            int outstanding = await _lockup
+                .CountStoredInventoryAsync(personaId, activeSession.AreaResRef)
+                .ConfigureAwait(false);
+
+            if (outstanding > 0)
+            {
+                string message = BuildOutstandingInventoryMessage(outstanding);
+
+                await SendServerMessageAsync(player, message, ColorConstants.Red)
+                    .ConfigureAwait(false);
+
+                return RentStallSubmissionResult.Error(message);
             }
 
             return method switch
@@ -868,6 +885,16 @@ public sealed class PlayerStallClaimFlow
 
     private static string FormatGold(int amount) =>
         Math.Max(amount, 0).ToString("N0", CultureInfo.InvariantCulture);
+
+    private static string BuildOutstandingInventoryMessage(int outstandingCount)
+    {
+        string itemLabel = outstandingCount == 1 ? "item" : "items";
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "The market reeve is holding {0} {1} for you in this area. Retrieve them before leasing another stall.",
+            outstandingCount,
+            itemLabel);
+    }
 
     private sealed record PendingClaimSession(
         long StallId,

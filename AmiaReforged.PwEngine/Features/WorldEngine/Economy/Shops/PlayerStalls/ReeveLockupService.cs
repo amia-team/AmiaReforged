@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
@@ -16,17 +17,19 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 
-internal interface IReeveLockupRecipient
+public interface IReeveLockupRecipient
 {
     Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken);
 }
+
+public sealed record ReeveLockupItemSummary(long ItemId, string DisplayName, string? ResRef);
 
 /// <summary>
 /// Persists lapsed stall inventory into long-term storage so the market reeve can
 /// restore it for players after restarts or other interruptions.
 /// </summary>
 [ServiceBinding(typeof(ReeveLockupService))]
-internal sealed class ReeveLockupService
+public sealed class ReeveLockupService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -113,27 +116,14 @@ internal sealed class ReeveLockupService
     {
         ArgumentNullException.ThrowIfNull(recipient);
 
-        Guid ownerGuid;
-        try
+        if (!TryResolveStorageContext(persona, areaResRef, out Guid ownerGuid, out Guid engineId))
         {
-            ownerGuid = PersonaId.ToGuid(persona);
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(
-                ex,
-                "Unable to convert persona {Persona} into a storage owner when releasing reeve inventory.",
-                persona);
             return 0;
         }
 
-        Guid engineId = ComputeStorageEngineId(areaResRef);
-
         await using PwEngineContext context = _contextFactory.CreateDbContext();
 
-        List<StoredItem> items = await context.WarehouseItems
-            .Include(i => i.Warehouse)
-            .Where(i => i.Owner == ownerGuid && i.Warehouse != null && i.Warehouse.EngineId == engineId)
+        List<StoredItem> items = await BuildStoredItemsQuery(context, ownerGuid, engineId, trackChanges: true)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -179,6 +169,107 @@ internal sealed class ReeveLockupService
         return restoredCount;
     }
 
+    public async Task<IReadOnlyList<ReeveLockupItemSummary>> ListStoredInventoryAsync(
+        PersonaId persona,
+        string? areaResRef,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryResolveStorageContext(persona, areaResRef, out Guid ownerGuid, out Guid engineId))
+        {
+            return Array.Empty<ReeveLockupItemSummary>();
+        }
+
+        await using PwEngineContext context = _contextFactory.CreateDbContext();
+
+        List<StoredItem> items = await BuildStoredItemsQuery(context, ownerGuid, engineId, trackChanges: false)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (items.Count == 0)
+        {
+            return Array.Empty<ReeveLockupItemSummary>();
+        }
+
+        List<ReeveLockupItemSummary> summaries = new(items.Count);
+
+        foreach (StoredItem item in items)
+        {
+            (string label, string? resRef) = ExtractItemMetadata(item.ItemData);
+            summaries.Add(new ReeveLockupItemSummary(item.Id, label, resRef));
+        }
+
+        return summaries;
+    }
+
+    public async Task<int> CountStoredInventoryAsync(
+        PersonaId persona,
+        string? areaResRef,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryResolveStorageContext(persona, areaResRef, out Guid ownerGuid, out Guid engineId))
+        {
+            return 0;
+        }
+
+        await using PwEngineContext context = _contextFactory.CreateDbContext();
+
+        return await BuildStoredItemsQuery(context, ownerGuid, engineId, trackChanges: false)
+            .CountAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<bool> ReleaseStoredItemAsync(
+        long storedItemId,
+        PersonaId persona,
+        string? areaResRef,
+        IReeveLockupRecipient recipient,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(recipient);
+
+        if (!TryResolveStorageContext(persona, areaResRef, out Guid ownerGuid, out Guid engineId))
+        {
+            return false;
+        }
+
+        await using PwEngineContext context = _contextFactory.CreateDbContext();
+
+        StoredItem? stored = await context.WarehouseItems
+            .Include(i => i.Warehouse)
+            .FirstOrDefaultAsync(
+                i => i.Id == storedItemId &&
+                     i.Owner == ownerGuid &&
+                     i.Warehouse != null &&
+                     i.Warehouse.EngineId == engineId,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (stored is null)
+        {
+            return false;
+        }
+
+        bool restored = await recipient
+            .ReceiveItemAsync(stored.ItemData, persona, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!restored)
+        {
+            return false;
+        }
+
+        context.WarehouseItems.Remove(stored);
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        Log.Info(
+            "Released stored stall item {StoredItemId} from reeve lockup in area '{AreaResRef}' to persona {Persona}.",
+            storedItemId,
+            areaResRef ?? "<unknown>",
+            persona);
+
+        return true;
+    }
+
     private static Guid ComputeStorageEngineId(string? areaResRef)
     {
         string normalized = string.IsNullOrWhiteSpace(areaResRef)
@@ -192,6 +283,46 @@ internal sealed class ReeveLockupService
         hash.AsSpan(0, 16).CopyTo(guidBytes);
 
         return new Guid(guidBytes);
+    }
+
+    private bool TryResolveStorageContext(
+        PersonaId persona,
+        string? areaResRef,
+        out Guid ownerGuid,
+        out Guid engineId)
+    {
+        ownerGuid = Guid.Empty;
+        engineId = Guid.Empty;
+
+        try
+        {
+            ownerGuid = PersonaId.ToGuid(persona);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(
+                ex,
+                "Unable to convert persona {Persona} into a storage owner when accessing reeve inventory.",
+                persona);
+            return false;
+        }
+
+        engineId = ComputeStorageEngineId(areaResRef);
+        return true;
+    }
+
+    private static IQueryable<StoredItem> BuildStoredItemsQuery(
+        PwEngineContext context,
+        Guid ownerGuid,
+        Guid engineId,
+        bool trackChanges)
+    {
+        IQueryable<StoredItem> query = context.WarehouseItems
+            .Include(i => i.Warehouse)
+            .Where(i => i.Owner == ownerGuid && i.Warehouse != null && i.Warehouse.EngineId == engineId)
+            .OrderBy(i => i.Id);
+
+        return trackChanges ? query : query.AsNoTracking();
     }
 
     private static async Task<Storage> EnsureStorageAsync(
@@ -254,6 +385,118 @@ internal sealed class ReeveLockupService
             return false;
         }
     }
+    private static (string Label, string? ResRef) ExtractItemMetadata(byte[] rawItemData)
+    {
+        try
+        {
+            string jsonText = Encoding.UTF8.GetString(rawItemData);
+            using JsonDocument document = JsonDocument.Parse(jsonText);
+            JsonElement root = document.RootElement;
+
+            string? label = TryFindStringValue(root, MetadataNameCandidates) ??
+                            TryFindStringValue(root, MetadataTagCandidates);
+
+            string? resRef = TryFindStringValue(root, MetadataResRefCandidates);
+
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                label = "Stored Item";
+            }
+
+            return (label!, string.IsNullOrWhiteSpace(resRef) ? null : resRef);
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Failed to derive metadata for reeve lockup item payload.");
+            return ("Stored Item", null);
+        }
+    }
+
+    private static string? TryFindStringValue(JsonElement element, IReadOnlyList<string> candidateNames)
+    {
+        foreach (string candidate in candidateNames)
+        {
+            if (TryFindStringValue(element, candidate, out string? value))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool TryFindStringValue(JsonElement element, string targetName, out string? value)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            foreach (JsonProperty property in element.EnumerateObject())
+            {
+                if (string.Equals(property.Name, targetName, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (property.Value.ValueKind == JsonValueKind.String)
+                    {
+                        value = property.Value.GetString();
+                        return true;
+                    }
+
+                    if (TryExtractNestedString(property.Value, out value))
+                    {
+                        return true;
+                    }
+                }
+
+                if (TryFindStringValue(property.Value, targetName, out value))
+                {
+                    return true;
+                }
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement child in element.EnumerateArray())
+            {
+                if (TryFindStringValue(child, targetName, out value))
+                {
+                    return true;
+                }
+            }
+        }
+
+        value = null;
+        return false;
+    }
+
+    private static bool TryExtractNestedString(JsonElement element, out string? value)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            if (element.TryGetProperty("String", out JsonElement stringElement) && stringElement.ValueKind == JsonValueKind.String)
+            {
+                value = stringElement.GetString();
+                return true;
+            }
+
+            if (element.TryGetProperty("Value", out JsonElement valueElement) && valueElement.ValueKind == JsonValueKind.String)
+            {
+                value = valueElement.GetString();
+                return true;
+            }
+
+            if (element.TryGetProperty("Text", out JsonElement textElement) && textElement.ValueKind == JsonValueKind.String)
+            {
+                value = textElement.GetString();
+                return true;
+            }
+        }
+
+        value = null;
+        return false;
+    }
+
+    private static readonly IReadOnlyList<string> MetadataNameCandidates = new[] { "LocalizedName", "DisplayName", "Name", "Label" };
+    private static readonly IReadOnlyList<string> MetadataTagCandidates = new[] { "Tag" };
+    private static readonly IReadOnlyList<string> MetadataResRefCandidates = new[] { "ResRef", "TemplateResRef" };
+
 }
 
 internal sealed class NwReeveLockupRecipient : IReeveLockupRecipient

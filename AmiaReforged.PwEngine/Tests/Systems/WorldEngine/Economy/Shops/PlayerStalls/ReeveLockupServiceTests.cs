@@ -194,7 +194,126 @@ public sealed class ReeveLockupServiceTests
         };
     }
 
-    private static StallProduct CreateProduct(long id, long stallId, string personaId, int quantity)
+    [Test]
+    public async Task ListStoredInventoryAsync_ReturnsSummariesWithMetadata()
+    {
+        string databaseName = nameof(ListStoredInventoryAsync_ReturnsSummariesWithMetadata);
+        InMemoryPwContextFactory factory = new(databaseName);
+        ReeveLockupService service = new(factory);
+
+        Guid consignorGuid = Guid.NewGuid();
+        string personaText = $"Character:{consignorGuid}";
+        PersonaId persona = PersonaId.Parse(personaText);
+        PlayerStall stall = CreateStall(305, "ar_summary", consignorGuid, personaText);
+        byte[] payload = Encoding.UTF8.GetBytes("{\"Name\":{\"String\":\"Longsword\"},\"ResRef\":\"nw_wswmss001\"}");
+        StallProduct product = CreateProduct(501, stall.Id, personaText, quantity: 1, itemData: payload);
+
+        await service.StoreSuspendedInventoryAsync(stall, new[] { product });
+
+        IReadOnlyList<ReeveLockupItemSummary> summaries = await service
+            .ListStoredInventoryAsync(persona, stall.AreaResRef)
+            .ConfigureAwait(false);
+
+        Assert.That(summaries, Has.Count.EqualTo(1));
+        ReeveLockupItemSummary summary = summaries[0];
+        Assert.That(summary.ItemId, Is.GreaterThan(0));
+        Assert.That(summary.DisplayName, Is.EqualTo("Longsword"));
+        Assert.That(summary.ResRef, Is.EqualTo("nw_wswmss001"));
+    }
+
+    [Test]
+    public async Task CountStoredInventoryAsync_ReturnsOutstandingItemCount()
+    {
+        string databaseName = nameof(CountStoredInventoryAsync_ReturnsOutstandingItemCount);
+        InMemoryPwContextFactory factory = new(databaseName);
+        ReeveLockupService service = new(factory);
+
+        Guid consignorGuid = Guid.NewGuid();
+        string personaText = $"Character:{consignorGuid}";
+        PersonaId persona = PersonaId.Parse(personaText);
+        PlayerStall stall = CreateStall(402, "ar_count", consignorGuid, personaText);
+        StallProduct first = CreateProduct(610, stall.Id, personaText, quantity: 1);
+        StallProduct second = CreateProduct(611, stall.Id, personaText, quantity: 1);
+
+        await service.StoreSuspendedInventoryAsync(stall, new[] { first, second });
+
+        int count = await service.CountStoredInventoryAsync(persona, stall.AreaResRef).ConfigureAwait(false);
+
+        Assert.That(count, Is.EqualTo(2));
+    }
+
+    [Test]
+    public async Task ReleaseStoredItemAsync_RemovesSingleEntry()
+    {
+        string databaseName = nameof(ReleaseStoredItemAsync_RemovesSingleEntry);
+        InMemoryPwContextFactory factory = new(databaseName);
+        ReeveLockupService service = new(factory);
+        RecordingRecipient recipient = new();
+
+        Guid consignorGuid = Guid.NewGuid();
+        string personaText = $"Character:{consignorGuid}";
+        PersonaId persona = PersonaId.Parse(personaText);
+        PlayerStall stall = CreateStall(509, "ar_release_single", consignorGuid, personaText);
+        StallProduct first = CreateProduct(710, stall.Id, personaText, quantity: 1);
+        StallProduct second = CreateProduct(711, stall.Id, personaText, quantity: 1);
+
+        await service.StoreSuspendedInventoryAsync(stall, new[] { first, second });
+
+        IReadOnlyList<ReeveLockupItemSummary> summaries = await service
+            .ListStoredInventoryAsync(persona, stall.AreaResRef)
+            .ConfigureAwait(false);
+
+        Assert.That(summaries, Has.Count.EqualTo(2));
+        long targetId = summaries[0].ItemId;
+
+        bool released = await service
+            .ReleaseStoredItemAsync(targetId, persona, stall.AreaResRef, recipient)
+            .ConfigureAwait(false);
+
+        Assert.That(released, Is.True);
+        Assert.That(recipient.Invocations, Is.EqualTo(1));
+
+        int remaining = await service.CountStoredInventoryAsync(persona, stall.AreaResRef).ConfigureAwait(false);
+        Assert.That(remaining, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task ReleaseStoredItemAsync_WhenRecipientRejects_KeepsEntry()
+    {
+        string databaseName = nameof(ReleaseStoredItemAsync_WhenRecipientRejects_KeepsEntry);
+        InMemoryPwContextFactory factory = new(databaseName);
+        ReeveLockupService service = new(factory);
+        RecordingRecipient recipient = new()
+        {
+            ShouldAccept = _ => false
+        };
+
+        Guid consignorGuid = Guid.NewGuid();
+        string personaText = $"Character:{consignorGuid}";
+        PersonaId persona = PersonaId.Parse(personaText);
+        PlayerStall stall = CreateStall(612, "ar_release_reject", consignorGuid, personaText);
+        StallProduct product = CreateProduct(810, stall.Id, personaText, quantity: 1);
+
+        await service.StoreSuspendedInventoryAsync(stall, new[] { product });
+
+        IReadOnlyList<ReeveLockupItemSummary> summaries = await service
+            .ListStoredInventoryAsync(persona, stall.AreaResRef)
+            .ConfigureAwait(false);
+
+        Assert.That(summaries, Has.Count.EqualTo(1));
+
+        bool released = await service
+            .ReleaseStoredItemAsync(summaries[0].ItemId, persona, stall.AreaResRef, recipient)
+            .ConfigureAwait(false);
+
+        Assert.That(released, Is.False);
+        Assert.That(recipient.Invocations, Is.EqualTo(1));
+
+        int remaining = await service.CountStoredInventoryAsync(persona, stall.AreaResRef).ConfigureAwait(false);
+        Assert.That(remaining, Is.EqualTo(1));
+    }
+
+    private static StallProduct CreateProduct(long id, long stallId, string personaId, int quantity, byte[]? itemData = null)
     {
         return new StallProduct
         {
@@ -204,7 +323,7 @@ public sealed class ReeveLockupServiceTests
             Name = $"Item {id}",
             Price = 25,
             Quantity = quantity,
-            ItemData = Encoding.UTF8.GetBytes($"{{\"id\":{id}}}"),
+            ItemData = itemData ?? Encoding.UTF8.GetBytes($"{{\"id\":{id}}}"),
             ConsignedByPersonaId = personaId
         };
     }
