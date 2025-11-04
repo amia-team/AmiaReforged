@@ -1032,6 +1032,21 @@ public sealed class PlayerStallEventManager
         return results;
     }
 
+    /// <summary>
+    /// Forces every seller session to refresh its snapshot for the specified stall.
+    /// </summary>
+    public async Task BroadcastSellerRefreshAsync(long stallId)
+    {
+        PlayerStall? stall = _shops.GetShopWithMembers(stallId);
+        if (stall is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<StallProduct> products = _shops.ProductsForShop(stallId) ?? new List<StallProduct>();
+        await PublishSellerSnapshotsAsync(stallId, stall, products).ConfigureAwait(false);
+    }
+
     private async Task<PlayerStallSellerSnapshot> BuildSellerSnapshotAsync(
         PlayerStall stall,
         IReadOnlyList<StallProduct> products,
