@@ -16,6 +16,11 @@ using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 
+internal interface IReeveLockupRecipient
+{
+    Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken);
+}
+
 /// <summary>
 /// Persists lapsed stall inventory into long-term storage so the market reeve can
 /// restore it for players after restarts or other interruptions.
@@ -103,7 +108,7 @@ internal sealed class ReeveLockupService
     public async Task<int> ReleaseInventoryToPlayerAsync(
         PersonaId persona,
         string? areaResRef,
-        NwCreature recipient,
+        IReeveLockupRecipient recipient,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(recipient);
@@ -144,13 +149,14 @@ internal sealed class ReeveLockupService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            NwItem? restored = await RestoreItemAsync(stored.ItemData, recipient).ConfigureAwait(false);
-            if (restored is null)
+            bool restored = await recipient
+                .ReceiveItemAsync(stored.ItemData, persona, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!restored)
             {
                 continue;
             }
-
-            NWScript.SetLocalString(restored, PlayerStallItemLocals.ConsignorPersonaId, persona.ToString());
 
             delivered.Add(stored);
             restoredCount++;
@@ -214,34 +220,6 @@ internal sealed class ReeveLockupService
         return storage;
     }
 
-    private static async Task<NwItem?> RestoreItemAsync(byte[] itemData, NwCreature owner)
-    {
-        await NwTask.SwitchToMainThread();
-
-        if (owner is not { IsValid: true })
-        {
-            return null;
-        }
-
-        Location? location = owner.Location;
-        if (location is null)
-        {
-            return null;
-        }
-
-        try
-        {
-            string jsonText = Encoding.UTF8.GetString(itemData);
-            Json json = Json.Parse(jsonText);
-            return json.ToNwObject<NwItem>(location, owner);
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(ex, "Failed to restore stored stall item from reeve lockup.");
-            return null;
-        }
-    }
-
     private bool TryResolveOwnerGuid(PlayerStall stall, StallProduct product, out Guid ownerGuid)
     {
         ownerGuid = Guid.Empty;
@@ -273,6 +251,61 @@ internal sealed class ReeveLockupService
                 personaId,
                 product.Id,
                 stall.Id);
+            return false;
+        }
+    }
+}
+
+internal sealed class NwReeveLockupRecipient : IReeveLockupRecipient
+{
+    private static readonly Logger Log = LogManager.GetLogger(nameof(NwReeveLockupRecipient));
+
+    private readonly NwCreature _creature;
+
+    public NwReeveLockupRecipient(NwCreature creature)
+    {
+        _creature = creature ?? throw new ArgumentNullException(nameof(creature));
+    }
+
+    public async Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(rawItemData);
+
+        await NwTask.SwitchToMainThread();
+
+        if (_creature is not { IsValid: true })
+        {
+            return false;
+        }
+
+        Location? location = _creature.Location;
+        if (location is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            string jsonText = Encoding.UTF8.GetString(rawItemData);
+            Json json = Json.Parse(jsonText);
+            NwItem? item = json.ToNwObject<NwItem>(location, _creature);
+            if (item is null)
+            {
+                return false;
+            }
+
+            NWScript.SetLocalString(item, PlayerStallItemLocals.ConsignorPersonaId, persona.ToString());
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to restore stored stall item from reeve lockup.");
             return false;
         }
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
@@ -38,8 +39,8 @@ public sealed class ReeveLockupServiceTests
     public async Task StoreSuspendedInventoryAsync_PersistsOneEntryPerItem()
     {
         string databaseName = nameof(StoreSuspendedInventoryAsync_PersistsOneEntryPerItem);
-        InMemoryPwContextFactory factory = new(databaseName);
-        ReeveLockupService service = new(factory);
+    InMemoryPwContextFactory factory = new(databaseName);
+    ReeveLockupService service = new(factory);
 
         Guid consignorGuid = Guid.NewGuid();
         string personaId = $"Character:{consignorGuid}";
@@ -70,8 +71,8 @@ public sealed class ReeveLockupServiceTests
     public async Task StoreSuspendedInventoryAsync_WhenPersonaMissing_DoesNotPersist()
     {
         string databaseName = nameof(StoreSuspendedInventoryAsync_WhenPersonaMissing_DoesNotPersist);
-        InMemoryPwContextFactory factory = new(databaseName);
-        ReeveLockupService service = new(factory);
+    InMemoryPwContextFactory factory = new(databaseName);
+    ReeveLockupService service = new(factory);
 
         PlayerStall stall = new()
         {
@@ -106,8 +107,8 @@ public sealed class ReeveLockupServiceTests
     public async Task StoreSuspendedInventoryAsync_ReusesStoragePerArea()
     {
         string databaseName = nameof(StoreSuspendedInventoryAsync_ReusesStoragePerArea);
-        InMemoryPwContextFactory factory = new(databaseName);
-        ReeveLockupService service = new(factory);
+    InMemoryPwContextFactory factory = new(databaseName);
+    ReeveLockupService service = new(factory);
 
         Guid consignorGuid = Guid.NewGuid();
         string personaId = $"Character:{consignorGuid}";
@@ -122,6 +123,59 @@ public sealed class ReeveLockupServiceTests
         await using PwEngineContext verificationContext = factory.CreateDbContext();
         Assert.That(await verificationContext.Warehouses.CountAsync(), Is.EqualTo(1));
         Assert.That(await verificationContext.WarehouseItems.CountAsync(), Is.EqualTo(3));
+    }
+
+    [Test]
+    public async Task ReleaseInventoryToPlayerAsync_WhenRestorerSucceeds_RemovesStoredItems()
+    {
+        string databaseName = nameof(ReleaseInventoryToPlayerAsync_WhenRestorerSucceeds_RemovesStoredItems);
+    InMemoryPwContextFactory factory = new(databaseName);
+    RecordingRecipient recipient = new();
+    ReeveLockupService service = new(factory);
+
+        Guid consignorGuid = Guid.NewGuid();
+        string personaText = $"Character:{consignorGuid}";
+        PersonaId persona = PersonaId.Parse(personaText);
+        PlayerStall stall = CreateStall(111, "ar_release", consignorGuid, personaText);
+        StallProduct product = CreateProduct(33, stall.Id, personaText, quantity: 2);
+
+    await service.StoreSuspendedInventoryAsync(stall, new[] { product });
+
+    int restored = await service.ReleaseInventoryToPlayerAsync(persona, stall.AreaResRef, recipient);
+
+    Assert.That(restored, Is.EqualTo(2));
+    Assert.That(recipient.Invocations, Is.EqualTo(2));
+
+        await using PwEngineContext verificationContext = factory.CreateDbContext();
+        Assert.That(await verificationContext.WarehouseItems.CountAsync(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task ReleaseInventoryToPlayerAsync_WhenRestorerFails_KeepsStoredEntries()
+    {
+        string databaseName = nameof(ReleaseInventoryToPlayerAsync_WhenRestorerFails_KeepsStoredEntries);
+        InMemoryPwContextFactory factory = new(databaseName);
+        RecordingRecipient recipient = new()
+        {
+            ShouldAccept = _ => false
+        };
+        ReeveLockupService service = new(factory);
+
+        Guid consignorGuid = Guid.NewGuid();
+        string personaText = $"Character:{consignorGuid}";
+        PersonaId persona = PersonaId.Parse(personaText);
+        PlayerStall stall = CreateStall(222, "ar_release_fail", consignorGuid, personaText);
+        StallProduct product = CreateProduct(44, stall.Id, personaText, quantity: 1);
+
+    await service.StoreSuspendedInventoryAsync(stall, new[] { product });
+
+    int restored = await service.ReleaseInventoryToPlayerAsync(persona, stall.AreaResRef, recipient);
+
+    Assert.That(restored, Is.EqualTo(0));
+    Assert.That(recipient.Invocations, Is.EqualTo(1));
+
+        await using PwEngineContext verificationContext = factory.CreateDbContext();
+        Assert.That(await verificationContext.WarehouseItems.CountAsync(), Is.EqualTo(1));
     }
 
     private static PlayerStall CreateStall(long id, string areaResRef, Guid ownerGuid, string personaId)
@@ -165,5 +219,19 @@ public sealed class ReeveLockupServiceTests
         byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(normalized));
         byte[] guidBytes = hash.Take(16).ToArray();
         return new Guid(guidBytes);
+    }
+
+    private sealed class RecordingRecipient : IReeveLockupRecipient
+    {
+        public int Invocations { get; private set; }
+
+        public Func<byte[], bool>? ShouldAccept { get; set; }
+
+        public Task<bool> ReceiveItemAsync(byte[] rawItemData, PersonaId persona, CancellationToken cancellationToken)
+        {
+            Invocations++;
+            bool result = ShouldAccept?.Invoke(rawItemData) ?? true;
+            return Task.FromResult(result);
+        }
     }
 }
