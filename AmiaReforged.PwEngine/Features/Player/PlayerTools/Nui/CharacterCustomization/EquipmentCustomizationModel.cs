@@ -1,6 +1,4 @@
-﻿using Anvil;
-using Anvil.API;
-using Anvil.Services;
+﻿using Anvil.API;
 using Newtonsoft.Json;
 using NWN.Core;
 
@@ -21,13 +19,11 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     public EquipmentType CurrentEquipmentType { get; private set; } = EquipmentType.None;
 
-    // Current equipped items
     private NwItem? _currentWeapon;
     private NwItem? _currentBoots;
     private NwItem? _currentHelmet;
     private NwItem? _currentCloak;
 
-    // Weapon
     public int WeaponTopModel { get; private set; } = 1;
     public int WeaponMidModel { get; private set; } = 1;
     public int WeaponBotModel { get; private set; } = 1;
@@ -36,7 +32,6 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     private int _weaponMidModelMax = 255;
     private int _weaponBotModelMax = 255;
 
-    // Boots
     public int BootsTopModel { get; private set; } = 1;
     public int BootsMidModel { get; private set; } = 1;
     public int BootsBotModel { get; private set; } = 1;
@@ -45,10 +40,8 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     private int _bootsMidModelMax = 255;
     private int _bootsBotModelMax = 255;
 
-    // Helmet
     public int HelmetAppearance { get; private set; } = 1;
 
-    // Cloak
     public int CloakAppearance { get; private set; } = 1;
 
     public void SelectEquipmentType(EquipmentType type)
@@ -80,18 +73,15 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             _currentWeapon = weapon;
             player.SendServerMessage($"Selected weapon: {weapon.Name}", ColorConstants.Cyan);
 
-            // Get model range from BaseItem (applies to Top, Middle, and Bottom)
             int modelRange = (int)weapon.BaseItem.ModelRangeMax;
             _weaponTopModelMax = modelRange;
             _weaponMidModelMax = modelRange;
             _weaponBotModelMax = modelRange;
 
-            // Load current weapon appearance
             WeaponTopModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
             WeaponMidModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
             WeaponBotModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
 
-            // Save backup on first selection
             SaveBackupToPcKey();
         }
         else
@@ -108,20 +98,15 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             _currentBoots = boots;
             player.SendServerMessage($"Selected boots: {boots.Name}", ColorConstants.Cyan);
 
-            // Get model range from BaseItem (applies to Top, Middle, and Bottom)
             int modelRange = (int)boots.BaseItem.ModelRangeMax;
             _bootsTopModelMax = modelRange;
             _bootsMidModelMax = modelRange;
             _bootsBotModelMax = modelRange;
 
-
-            // Load current boots appearance using weapon model API
             BootsTopModel = boots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
             BootsMidModel = boots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
             BootsBotModel = boots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
 
-
-            // Save backup on first selection
             SaveBackupToPcKey();
         }
         else
@@ -212,22 +197,20 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         int direction = Math.Sign(delta);
         int step = Math.Abs(delta);
         int searchModel = currentModel;
-        int attemptsRemaining = maxModel + 1; // Prevent infinite loops
+        int attemptsRemaining = maxModel + 1;
 
         while (attemptsRemaining > 0)
         {
-            // Calculate next model to test
             if (step == 1)
             {
                 searchModel += direction;
             }
-            else // step >= 10
+            else
             {
                 searchModel += delta;
-                step = 1; // After first jump, continue single steps
+                step = 1;
             }
 
-            // Handle wraparound
             if (searchModel > maxModel)
             {
                 searchModel = 1;
@@ -237,14 +220,12 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 searchModel = maxModel;
             }
 
-            // If we've wrapped back to starting model, we've tried everything
             if (searchModel == currentModel && attemptsRemaining < maxModel)
             {
                 player.SendServerMessage("No other valid models found.", ColorConstants.Orange);
                 return currentModel;
             }
 
-            // Test if this model is valid (not bag model)
             if (IsValidWeaponModel(modelPart, searchModel, creature))
             {
                 return searchModel;
@@ -261,15 +242,12 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     {
         if (_currentWeapon == null || !_currentWeapon.IsValid) return false;
 
-        // Model 0 is always invalid
         if (modelNumber == 0) return false;
 
-        // Get the ItemClass prefix from the BaseItem (e.g., "wswss" for short sword)
         string itemClass = _currentWeapon.BaseItem.ItemClass;
 
         if (string.IsNullOrEmpty(itemClass)) return false;
 
-        // Determine which part letter to use
         string partLetter = modelPart switch
         {
             ItemAppearanceWeaponModel.Top => "t",
@@ -278,15 +256,8 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             _ => ""
         };
 
-        // Build the model filename: itemclass_PART_###
-        // Example: wswss_t_022 for shortsword top model 22
         string modelResRef = $"{itemClass}_{partLetter}_{modelNumber:D3}";
-
-        // Use NWScript to check if the resource exists (ResManGetAliasFor returns empty string if not found)
         string alias = NWScript.ResManGetAliasFor(modelResRef, NWScript.RESTYPE_MDL);
-
-
-        // If alias is not empty, the resource exists
         return !string.IsNullOrEmpty(alias);
     }
 
@@ -299,13 +270,10 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
         NwItem oldWeapon = _currentWeapon;
 
-        // Set weapon appearance
         oldWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)WeaponTopModel);
         oldWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)WeaponMidModel);
         oldWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)WeaponBotModel);
 
-
-        // Unequip, clone, and re-equip to refresh appearance
         creature.RunUnequip(oldWeapon);
         NwItem newWeapon = oldWeapon.Clone(creature);
 
@@ -336,18 +304,16 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
         while (attemptsRemaining > 0)
         {
-            // Calculate next model to test
             if (step == 1)
             {
                 searchModel += direction;
             }
-            else // step >= 10
+            else
             {
                 searchModel += delta;
                 step = 1;
             }
 
-            // Handle wraparound
             if (searchModel > maxModel)
             {
                 searchModel = 1;
@@ -357,14 +323,12 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 searchModel = maxModel;
             }
 
-            // If we've wrapped back to starting model, we've tried everything
             if (searchModel == currentModel && attemptsRemaining < maxModel)
             {
                 player.SendServerMessage("No other valid models found.", ColorConstants.Orange);
                 return currentModel;
             }
 
-            // Test if this model is valid
             if (IsValidBootsModel(modelPart, searchModel, creature))
             {
                 return searchModel;
@@ -381,13 +345,10 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     {
         if (_currentBoots == null || !_currentBoots.IsValid) return false;
 
-        // Model 0 is always invalid
         if (modelNumber == 0) return false;
 
-        // Boots use a hardcoded prefix since the game files use "iit_boots" not "it_boots"
         string itemClass = "iit_boots";
 
-        // Determine which part letter to use
         string partLetter = modelPart switch
         {
             ItemAppearanceWeaponModel.Top => "t",
@@ -396,15 +357,8 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             _ => ""
         };
 
-        // Build the model filename: iit_boots_PART_###
-        // Example: iit_boots_t_017 for boots top model 17
         string modelResRef = $"{itemClass}_{partLetter}_{modelNumber:D3}";
-
-        // Use NWScript to check if the resource exists
         string alias = NWScript.ResManGetAliasFor(modelResRef, NWScript.RESTYPE_TGA);
-
-
-        // If alias is not empty, the resource exists
         return !string.IsNullOrEmpty(alias);
     }
 
@@ -417,12 +371,10 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
         NwItem oldBoots = _currentBoots;
 
-        // Set boots appearance using weapon model API
         oldBoots.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)BootsTopModel);
         oldBoots.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)BootsMidModel);
         oldBoots.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)BootsBotModel);
 
-        // Unequip, clone, and re-equip to refresh appearance
         creature.RunUnequip(oldBoots);
         NwItem newBoots = oldBoots.Clone(creature);
 
@@ -507,7 +459,6 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
 
-        // Revert weapon
         if (CurrentEquipmentType == EquipmentType.Weapon && _currentWeapon != null && _currentWeapon.IsValid)
         {
             creature.RunUnequip(_currentWeapon);
@@ -520,7 +471,6 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 _currentWeapon.Destroy();
                 _currentWeapon = newWeapon;
 
-                // Update model values
                 WeaponTopModel = backupData.WeaponData.TopModel;
                 WeaponMidModel = backupData.WeaponData.MidModel;
                 WeaponBotModel = backupData.WeaponData.BotModel;
@@ -541,7 +491,6 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     {
         var backupData = new EquipmentBackupData();
 
-        // Save weapon data
         if (_currentWeapon != null && _currentWeapon.IsValid)
         {
             backupData.WeaponData = WeaponBackupData.FromItem(_currentWeapon);

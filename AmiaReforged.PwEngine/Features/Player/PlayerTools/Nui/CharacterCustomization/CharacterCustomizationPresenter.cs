@@ -109,10 +109,7 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
 
             try
             {
-                // Open the Equipment Customization window
                 EquipmentCustomizationView equipmentView = new EquipmentCustomizationView(player);
-
-                // Inject dependencies into the presenter
                 InjectionService? injector = AnvilCore.GetService<InjectionService>();
                 if (injector != null)
                 {

@@ -13,7 +13,6 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
     private NwItem? _currentArmor;
     private const string BackupDataKey = "ARMOR_CUSTOMIZATION_BACKUP";
 
-    // Chest model validation by AC - ensures models stay within their AC category
     private static readonly Dictionary<int, HashSet<int>> TorsoModelsByAc = new()
     {
         [0] =
@@ -112,12 +111,10 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
         CreaturePart creaturePart = GetCreaturePart(CurrentArmorPart);
         int currentModel = _currentArmor.Appearance.GetArmorModel(creaturePart);
 
-        // Use dynamic validation to find next valid model
         int newModel = GetNextValidArmorModel(creaturePart, currentModel, delta);
 
         if (newModel == currentModel)
         {
-            // No valid model found
             return;
         }
 
@@ -150,23 +147,21 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
         int direction = Math.Sign(delta);
         int step = Math.Abs(delta);
         int searchModel = currentModel;
-        int maxModel = 255; // Maximum armor model number
+        int maxModel = 255;
         int attemptsRemaining = maxModel + 1;
 
         while (attemptsRemaining > 0)
         {
-            // Calculate next model to test
             if (step == 1)
             {
                 searchModel += direction;
             }
-            else // step >= 10
+            else
             {
                 searchModel += delta;
                 step = 1;
             }
 
-            // Handle wraparound
             if (searchModel > maxModel)
             {
                 searchModel = 1;
@@ -176,14 +171,12 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
                 searchModel = maxModel;
             }
 
-            // If we've wrapped back to starting model, we've tried everything
             if (searchModel == currentModel && attemptsRemaining < maxModel)
             {
                 player.SendServerMessage("No other valid models found.", ColorConstants.Orange);
                 return currentModel;
             }
 
-            // Test if this model is valid
             if (IsValidArmorModel(creaturePart, searchModel))
             {
                 return searchModel;
@@ -200,21 +193,17 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
     {
         if (_currentArmor == null || !_currentArmor.IsValid) return false;
 
-        // Model 0 is valid for some parts (like belt)
         if (modelNumber < 0) return false;
 
         NwCreature? creature = player.ControlledCreature;
         if (creature == null) return false;
 
-        // Special handling for chest/torso - must stay within AC category
         if (creaturePart == CreaturePart.Torso)
         {
             int? currentAc = GetArmorAcFromModel(_currentArmor.Appearance.GetArmorModel(CreaturePart.Torso));
 
-            // If we can determine AC, validate the model is in that AC category
             if (currentAc.HasValue && TorsoModelsByAc.TryGetValue(currentAc.Value, out HashSet<int>? validModels))
             {
-                // Check if the model number is in the valid set for this AC
                 if (!validModels.Contains(modelNumber))
                 {
                     return false;
@@ -222,16 +211,10 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             }
             else
             {
-                // Can't determine AC, reject the model to be safe
                 return false;
             }
         }
 
-        // Build the armor model filename based on player attributes and body part
-        // Format: p[gender][race][phenotype]_[part][side]###
-        // Example: pfh0_footl020 (human female, phenotype 0, left foot, model 20)
-
-        // Get player attributes
         string genderLetter = creature.Gender == Gender.Female ? "f" : "m";
 
         string raceLetter = creature.Race.RacialType switch
@@ -243,26 +226,18 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             RacialType.Human => "h",
             RacialType.HalfElf => "h",
             RacialType.HalfOrc => "o",
-            _ => "h" // Default to human
+            _ => "h"
         };
 
         int phenotype = (int)creature.Phenotype;
 
-        // Get part name and side
         string partName = GetArmorPartName(creaturePart);
         string sideLetter = GetArmorPartSide(creaturePart);
 
         if (string.IsNullOrEmpty(partName)) return false;
 
-        // Build the complete model resref
         string modelResRef = $"p{genderLetter}{raceLetter}{phenotype}_{partName}{sideLetter}{modelNumber:D3}";
-
-        // Check for MDL file
         string alias = NWScript.ResManGetAliasFor(modelResRef, NWScript.RESTYPE_MDL);
-
-        // Debug logging
-        player.SendServerMessage($"Testing armor: {modelResRef} (MDL) -> alias: '{alias}' -> valid: {!string.IsNullOrEmpty(alias)}", ColorConstants.Gray);
-
         return !string.IsNullOrEmpty(alias);
     }
 
@@ -309,7 +284,6 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
     {
         return part switch
         {
-            // Left side parts
             CreaturePart.LeftFoot => "l",
             CreaturePart.LeftShin => "l",
             CreaturePart.LeftThigh => "l",
@@ -318,7 +292,6 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             CreaturePart.LeftShoulder => "l",
             CreaturePart.LeftHand => "l",
 
-            // Right side parts
             CreaturePart.RightFoot => "r",
             CreaturePart.RightShin => "r",
             CreaturePart.RightThigh => "r",
@@ -327,7 +300,6 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             CreaturePart.RightShoulder => "r",
             CreaturePart.RightHand => "r",
 
-            // Non-sided parts (no letter)
             _ => ""
         };
     }

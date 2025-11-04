@@ -96,7 +96,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
 
         Log.Info($"Equipment Customization Event: {ev.ElementId}");
 
-        // Equipment Type Selection
         if (ev.ElementId == View.WeaponButton.Id)
         {
             Log.Info("Weapon button clicked");
@@ -133,7 +132,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             return;
         }
 
-        // Weapon Controls
         if (ev.ElementId == View.WeaponTopModelLeftButton.Id)
         {
             _model.AdjustWeaponTopModel(-1);
@@ -218,7 +216,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             return;
         }
 
-        // Boots Controls
         if (ev.ElementId == View.BootsTopModelLeftButton.Id)
         {
             _model.AdjustBootsTopModel(-1);
@@ -261,7 +258,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             return;
         }
 
-        // Helmet Controls
         if (ev.ElementId == View.HelmetAppearanceLeftButton.Id)
         {
             _model.AdjustHelmetAppearance(-1);
@@ -276,7 +272,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             return;
         }
 
-        // Cloak Controls
         if (ev.ElementId == View.CloakAppearanceLeftButton.Id)
         {
             _model.AdjustCloakAppearance(-1);
@@ -291,7 +286,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             return;
         }
 
-        // Color Channel Selection
         if (ev.ElementId == View.Cloth1Button.Id)
         {
             InitializeColorPalette();
@@ -334,7 +328,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             return;
         }
 
-        // Color Palette (for Helmet/Cloak)
         if (ev.ElementId.StartsWith("btn_color_"))
         {
             if (int.TryParse(ev.ElementId.Substring("btn_color_".Length), out int colorIndex))
@@ -344,7 +337,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             return;
         }
 
-        // Action Buttons
         if (ev.ElementId == View.SaveButton.Id)
         {
             _model.ApplyChanges();
@@ -375,7 +367,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.HelmetControlsEnabled, _model.CurrentEquipmentType == EquipmentType.Helmet);
         Token().SetBindValue(View.CloakControlsEnabled, _model.CurrentEquipmentType == EquipmentType.Cloak);
 
-        // Enable channel buttons only for Helmet or Cloak
         bool isHelmetOrCloak = _model.CurrentEquipmentType == EquipmentType.Helmet ||
                                _model.CurrentEquipmentType == EquipmentType.Cloak;
         Token().SetBindValue(View.ChannelButtonsEnabled, isHelmetOrCloak);

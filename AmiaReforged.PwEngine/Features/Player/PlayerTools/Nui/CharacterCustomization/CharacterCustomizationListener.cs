@@ -44,7 +44,6 @@ public class CharacterCustomizationListener
 
         CharacterCustomizationView view = new CharacterCustomizationView(player);
 
-        // Inject dependencies into the presenter
         InjectionService? injector = AnvilCore.GetService<InjectionService>();
         if (injector != null)
         {
