@@ -97,6 +97,21 @@ public class RuntimeCharacterService
         return _playerKeys.TryGetValue(player, out key);
     }
 
+    public bool TryGetPlayer(Guid key, out NwPlayer? player)
+    {
+        foreach ((NwPlayer candidate, Guid storedKey) in _playerKeys)
+        {
+            if (storedKey == key && candidate is { IsValid: true })
+            {
+                player = candidate;
+                return true;
+            }
+        }
+
+        player = null;
+        return false;
+    }
+
     public RuntimeCharacter? GetRuntimeCharacter(NwCreature creature)
     {
         return _repository.GetById(creature.UUID) as RuntimeCharacter;

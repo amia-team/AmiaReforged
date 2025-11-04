@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Database;
@@ -35,6 +36,13 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
         return ctx.StallProducts
             .Where(p => p.StallId == shopId)
             .ToList();
+    }
+
+    public StallProduct? GetProductById(long stallId, long productId)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        return ctx.StallProducts.SingleOrDefault(p => p.Id == productId && p.StallId == stallId);
     }
 
     public void AddProductToShop(long shopId, StallProduct product)
@@ -158,11 +166,138 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
         }
     }
 
+    public bool UpdateShopWithMembers(long stallId, Action<PlayerStall> updateAction, IEnumerable<PlayerStallMember> members)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+        using var transaction = ctx.Database.BeginTransaction();
+
+        try
+        {
+            PlayerStall? stall = ctx.PlayerStalls.SingleOrDefault(s => s.Id == stallId);
+            if (stall == null)
+            {
+                return false;
+            }
+
+            updateAction(stall);
+            stall.UpdatedUtc = DateTime.UtcNow;
+
+            List<PlayerStallMember> existing = ctx.PlayerStallMembers
+                .Where(m => m.StallId == stallId)
+                .ToList();
+
+            if (existing.Count > 0)
+            {
+                ctx.PlayerStallMembers.RemoveRange(existing);
+            }
+
+            List<PlayerStallMember> newMembers = members?
+                .Select(member =>
+                {
+                    member.StallId = stallId;
+                    return member;
+                })
+                .ToList() ?? new List<PlayerStallMember>();
+
+            if (newMembers.Count > 0)
+            {
+                ctx.PlayerStallMembers.AddRange(newMembers);
+            }
+
+            ctx.SaveChanges();
+            transaction.Commit();
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+            try
+            {
+                transaction.Rollback();
+            }
+            catch (Exception rollbackError)
+            {
+                Log.Warn(rollbackError, "Failed to rollback stall update transaction.");
+            }
+
+            return false;
+        }
+    }
+
+    public bool UpdateStallAndProduct(long stallId, long productId, Func<PlayerStall, StallProduct, bool> updateAction)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+        using var transaction = ctx.Database.BeginTransaction();
+
+        try
+        {
+            PlayerStall? stall = ctx.PlayerStalls.SingleOrDefault(s => s.Id == stallId);
+            if (stall == null)
+            {
+                return false;
+            }
+
+            StallProduct? product = ctx.StallProducts.SingleOrDefault(p => p.Id == productId && p.StallId == stallId);
+            if (product == null)
+            {
+                return false;
+            }
+
+            bool shouldPersist = updateAction(stall, product);
+            if (!shouldPersist)
+            {
+                transaction.Rollback();
+                return false;
+            }
+
+            stall.UpdatedUtc = DateTime.UtcNow;
+            product.UpdatedUtc = DateTime.UtcNow;
+
+            ctx.SaveChanges();
+            transaction.Commit();
+            return true;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e);
+            try
+            {
+                transaction.Rollback();
+            }
+            catch (Exception rollbackError)
+            {
+                Log.Warn(rollbackError, "Failed to rollback stall/product update transaction.");
+            }
+
+            return false;
+        }
+    }
+
+    public bool HasActiveOwnershipInArea(Guid ownerCharacterId, string areaResRef, long excludingStallId)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        return ctx.PlayerStalls.Any(s =>
+            s.AreaResRef == areaResRef &&
+            s.OwnerCharacterId == ownerCharacterId &&
+            s.IsActive &&
+            s.Id != excludingStallId);
+    }
+
     public PlayerStall? GetShopById(long shopId)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
         return ctx.PlayerStalls.Find(shopId);
+    }
+
+    public PlayerStall? GetShopWithMembers(long stallId)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        return ctx.PlayerStalls
+            .Include(s => s.Members)
+            .SingleOrDefault(s => s.Id == stallId);
     }
 
     public List<PlayerStall> AllShops()
@@ -231,6 +366,8 @@ public interface IPlayerShopRepository
 {
     List<StallProduct>? ProductsForShop(long shopId);
 
+    StallProduct? GetProductById(long stallId, long productId);
+
     void AddProductToShop(long shopId, StallProduct product);
 
     void RemoveProductFromShop(long shopId, long productId);
@@ -241,6 +378,7 @@ public interface IPlayerShopRepository
     void DeleteShop(long shopId);
 
     PlayerStall? GetShopById(long shopId);
+    PlayerStall? GetShopWithMembers(long stallId);
     List<PlayerStall> AllShops();
 
     List<PlayerStall> StallsForPlayer(long shopId);
@@ -253,6 +391,12 @@ public interface IPlayerShopRepository
     void AddStall(PlayerStall newStall);
 
     bool UpdateShop(long stallId, Action<PlayerStall> updateAction);
+
+    bool UpdateShopWithMembers(long stallId, Action<PlayerStall> updateAction, IEnumerable<PlayerStallMember> members);
+
+    bool UpdateStallAndProduct(long stallId, long productId, Func<PlayerStall, StallProduct, bool> updateAction);
+
+    bool HasActiveOwnershipInArea(Guid ownerCharacterId, string areaResRef, long excludingStallId);
 
     List<StallTransaction>? TransactionsForShop(long shopId);
     List<StallTransaction>? TransactionsForStallWhenOwnedBy(long shopId, Guid ownerId);

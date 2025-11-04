@@ -29,12 +29,15 @@ public sealed class ClaimPlayerStallCommandHandler : ICommandHandler<ClaimPlayer
 
         ClaimPlayerStallRequest request = new(
             command.StallId,
+            command.AreaResRef,
+            command.PlaceableTag,
             command.OwnerPersona,
             command.OwnerDisplayName,
             command.CoinHouseAccountId,
             command.HoldEarningsInStall,
             command.LeaseStartUtc,
-            command.NextRentDueUtc);
+            command.NextRentDueUtc,
+            command.CoOwners);
 
         return _stallService.ClaimAsync(request, cancellationToken)
             .ContinueWith(task => MapToCommandResult(task.Result), cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 using NUnit.Framework;
@@ -125,6 +126,106 @@ public class PlayerStallAggregateTests
         Assert.That(result.Error, Is.EqualTo(PlayerStallError.StallInactive));
     }
 
+    [Test]
+    public void TryUpdateProductPrice_WhenAuthorized_ReturnsMutation()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.Members = new List<PlayerStallMember>
+        {
+            CreateMember(stall.Id, ownerPersona, canManageInventory: true)
+        };
+
+        StallProduct product = CreateProduct(stall.Id, price: 1_500, productId: 77);
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>> result = aggregate.TryUpdateProductPrice(
+            ownerPersona,
+            product,
+            newPrice: 2_750);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Payload, Is.Not.Null);
+
+        PlayerStall persistedStall = CreateStall();
+        persistedStall.Id = stall.Id;
+        StallProduct persistedProduct = CreateProduct(stall.Id, price: 1_500, productId: 77);
+
+        bool applied = result.Payload!(persistedStall, persistedProduct);
+        Assert.That(applied, Is.True);
+        Assert.That(persistedProduct.Price, Is.EqualTo(2_750));
+    }
+
+    [Test]
+    public void TryUpdateProductPrice_WhenUnauthorized_ReturnsFailure()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.Members = new List<PlayerStallMember>
+        {
+            CreateMember(stall.Id, ownerPersona, canManageInventory: true)
+        };
+
+        StallProduct product = CreateProduct(stall.Id, price: 900, productId: 5);
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>> result = aggregate.TryUpdateProductPrice(
+            requestorPersonaId: "Character:unauthorized",
+            product,
+            newPrice: 1_100);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.Unauthorized));
+    }
+
+    [Test]
+    public void TryUpdateProductPrice_WhenNegative_ReturnsFailure()
+    {
+        PlayerStall stall = CreateStall();
+        string managerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = managerPersona;
+        stall.Members = new List<PlayerStallMember>
+        {
+            CreateMember(stall.Id, managerPersona, canManageInventory: true)
+        };
+
+        StallProduct product = CreateProduct(stall.Id, price: 900, productId: 12);
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>> result = aggregate.TryUpdateProductPrice(
+            managerPersona,
+            product,
+            newPrice: -1);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.PriceOutOfRange));
+    }
+
+    [Test]
+    public void TryUpdateProductPrice_WhenProductNotFromStall_ReturnsFailure()
+    {
+        PlayerStall stall = CreateStall();
+        string managerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = managerPersona;
+        stall.Members = new List<PlayerStallMember>
+        {
+            CreateMember(stall.Id, managerPersona, canManageInventory: true)
+        };
+
+        StallProduct product = CreateProduct(stall.Id + 1, price: 900, productId: 12);
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>> result = aggregate.TryUpdateProductPrice(
+            managerPersona,
+            product,
+            newPrice: 1_200);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.ProductNotFound));
+    }
+
     private static PlayerStall CreateStall()
     {
         return new PlayerStall
@@ -138,6 +239,37 @@ public class PlayerStallAggregateTests
             LeaseStartUtc = DateTime.UtcNow,
             NextRentDueUtc = DateTime.UtcNow.AddDays(1),
             IsActive = true
+        };
+    }
+
+    private static StallProduct CreateProduct(long stallId, int price, long productId)
+    {
+        return new StallProduct
+        {
+            Id = productId,
+            StallId = stallId,
+            ResRef = "resref_test",
+            Name = "Test Product",
+            Description = null,
+            Price = price,
+            Quantity = 1,
+            BaseItemType = null,
+            ItemData = new byte[] { 0x01 }
+        };
+    }
+
+    private static PlayerStallMember CreateMember(long stallId, string personaId, bool canManageInventory)
+    {
+        return new PlayerStallMember
+        {
+            StallId = stallId,
+            PersonaId = personaId,
+            DisplayName = personaId,
+            CanManageInventory = canManageInventory,
+            CanConfigureSettings = false,
+            CanCollectEarnings = false,
+            AddedByPersonaId = personaId,
+            AddedUtc = DateTime.UtcNow
         };
     }
 }

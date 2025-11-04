@@ -1,6 +1,6 @@
 using System;
-using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Commands;
@@ -31,6 +31,8 @@ public class ClaimPlayerStallCommandHandlerTests
     {
         ClaimPlayerStallCommand command = ClaimPlayerStallCommand.Create(
             stallId: 42,
+            areaResRef: "market_area",
+            placeableTag: "stall_42",
             ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
             ownerDisplayName: "Aria Moonwhisper");
 
@@ -57,6 +59,8 @@ public class ClaimPlayerStallCommandHandlerTests
     {
         ClaimPlayerStallCommand command = ClaimPlayerStallCommand.Create(
             stallId: 42,
+            areaResRef: "market_area",
+            placeableTag: "stall_42",
             ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
             ownerDisplayName: "Aria");
 
@@ -77,6 +81,8 @@ public class ClaimPlayerStallCommandHandlerTests
         ClaimPlayerStallRequest? captured = null;
         ClaimPlayerStallCommand command = ClaimPlayerStallCommand.Create(
             stallId: 99,
+            areaResRef: "market_area",
+            placeableTag: "stall_99",
             ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
             ownerDisplayName: "Aria",
             rentInterval: TimeSpan.FromHours(6));
@@ -92,10 +98,52 @@ public class ClaimPlayerStallCommandHandlerTests
         Assert.Multiple(() =>
         {
             Assert.That(captured!.StallId, Is.EqualTo(command.StallId));
+            Assert.That(captured!.AreaResRef, Is.EqualTo(command.AreaResRef));
+            Assert.That(captured!.PlaceableTag, Is.EqualTo(command.PlaceableTag));
             Assert.That(captured!.OwnerPersona, Is.EqualTo(command.OwnerPersona));
             Assert.That(captured!.OwnerDisplayName, Is.EqualTo(command.OwnerDisplayName));
             Assert.That(captured!.NextRentDueUtc, Is.EqualTo(command.NextRentDueUtc));
         });
         _service.Verify(s => s.ClaimAsync(It.IsAny<ClaimPlayerStallRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task HandleAsync_WhenCoOwnersProvided_PassesCollection()
+    {
+        ClaimPlayerStallRequest? captured = null;
+        PlayerStallCoOwnerRequest coOwner = new(
+            Persona: PersonaId.FromCharacter(CharacterId.New()),
+            DisplayName: "Corin",
+            CanManageInventory: true,
+            CanConfigureSettings: false,
+            CanCollectEarnings: true);
+
+        ClaimPlayerStallCommand command = ClaimPlayerStallCommand.Create(
+            stallId: 77,
+            areaResRef: "market_area",
+            placeableTag: "stall_77",
+            ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
+            ownerDisplayName: "Aria",
+            coOwners: new[] { coOwner });
+
+        _service
+            .Setup(s => s.ClaimAsync(It.IsAny<ClaimPlayerStallRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<ClaimPlayerStallRequest, CancellationToken>((req, _) => captured = req)
+            .ReturnsAsync(PlayerStallServiceResult.Ok());
+
+        await _handler.HandleAsync(command);
+
+        Assert.That(captured, Is.Not.Null);
+        Assert.That(captured!.CoOwners, Is.Not.Null);
+        Assert.That(captured!.CoOwners, Has.Count.EqualTo(1));
+        PlayerStallCoOwnerRequest first = captured!.CoOwners!.First();
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.Persona, Is.EqualTo(coOwner.Persona));
+            Assert.That(first.DisplayName, Is.EqualTo("Corin"));
+            Assert.That(first.CanManageInventory, Is.True);
+            Assert.That(first.CanConfigureSettings, Is.False);
+            Assert.That(first.CanCollectEarnings, Is.True);
+        });
     }
 }

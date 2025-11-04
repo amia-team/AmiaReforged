@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Commands;
 
@@ -16,22 +18,38 @@ public sealed record ClaimPlayerStallCommand : ICommand
     public bool HoldEarningsInStall { get; init; }
     public DateTime LeaseStartUtc { get; init; }
     public DateTime NextRentDueUtc { get; init; }
+    public required string AreaResRef { get; init; }
+    public required string PlaceableTag { get; init; }
+    public IReadOnlyCollection<PlayerStallCoOwnerRequest>? CoOwners { get; init; }
 
     /// <summary>
     /// Factory method to create a validated command instance.
     /// </summary>
     public static ClaimPlayerStallCommand Create(
         long stallId,
+        string areaResRef,
+        string placeableTag,
         PersonaId ownerPersona,
         string ownerDisplayName,
         Guid? coinHouseAccountId = null,
         bool holdEarningsInStall = false,
         TimeSpan? rentInterval = null,
-        DateTime? leaseStartUtc = null)
+        DateTime? leaseStartUtc = null,
+        IReadOnlyCollection<PlayerStallCoOwnerRequest>? coOwners = null)
     {
         if (stallId <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(stallId), "Stall id must be a positive value.");
+        }
+
+        if (string.IsNullOrWhiteSpace(areaResRef))
+        {
+            throw new ArgumentException("Area resref is required.", nameof(areaResRef));
+        }
+
+        if (string.IsNullOrWhiteSpace(placeableTag))
+        {
+            throw new ArgumentException("Placeable tag is required.", nameof(placeableTag));
         }
 
         if (string.IsNullOrWhiteSpace(ownerDisplayName))
@@ -55,7 +73,10 @@ public sealed record ClaimPlayerStallCommand : ICommand
             CoinHouseAccountId = coinHouseAccountId,
             HoldEarningsInStall = holdEarningsInStall,
             LeaseStartUtc = leaseStart,
-            NextRentDueUtc = leaseStart + interval
+            NextRentDueUtc = leaseStart + interval,
+            AreaResRef = areaResRef,
+            PlaceableTag = placeableTag,
+            CoOwners = coOwners
         };
     }
 }

@@ -1,0 +1,196 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Anvil.API;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
+
+/// <summary>
+/// Static information describing a stall for presentation.
+/// </summary>
+public sealed record PlayerStallSummary(
+    long StallId,
+    string StallName,
+    string? Description,
+    string? SettlementName,
+    string? Notice);
+
+/// <summary>
+/// Viewer-specific context when inspecting a stall.
+/// </summary>
+public sealed record PlayerStallBuyerContext(
+    PersonaId BuyerPersona,
+    string BuyerDisplayName,
+    int GoldOnHand);
+
+/// <summary>
+/// Product details as shown in the buyer interface.
+/// </summary>
+public sealed record PlayerStallProductView(
+    long ProductId,
+    string DisplayName,
+    int Price,
+    int QuantityAvailable,
+    bool IsSoldOut,
+    bool IsPurchasable,
+    string? Tooltip);
+
+/// <summary>
+/// Snapshot rendered in the buyer window.
+/// </summary>
+public sealed record PlayerStallBuyerSnapshot(
+    PlayerStallSummary Summary,
+    PlayerStallBuyerContext Buyer,
+    IReadOnlyList<PlayerStallProductView> Products,
+    string? FeedbackMessage = null,
+    Color? FeedbackColor = null,
+    bool FeedbackVisible = false);
+
+/// <summary>
+/// Window wiring details used when presenting the buyer interface.
+/// </summary>
+public sealed record PlayerStallBuyerWindowConfig(
+    long StallId,
+    PersonaId BuyerPersona,
+    string Title,
+    PlayerStallBuyerSnapshot InitialSnapshot,
+    string CloseButtonLabel = "Leave Stall");
+
+/// <summary>
+/// Purchase request raised by the buyer presenter.
+/// </summary>
+public sealed record PlayerStallPurchaseRequest(
+    Guid SessionId,
+    long StallId,
+    long ProductId,
+    PersonaId BuyerPersona,
+    int Quantity = 1);
+
+/// <summary>
+/// Result of attempting to purchase an item from a stall.
+/// </summary>
+public sealed record PlayerStallPurchaseResult(
+    bool Success,
+    string? Message,
+    Color? MessageColor,
+    PlayerStallBuyerSnapshot? UpdatedSnapshot)
+{
+    public static PlayerStallPurchaseResult Fail(string message, Color? color = null)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            throw new ArgumentException("Failure result requires a message.", nameof(message));
+        }
+
+        return new PlayerStallPurchaseResult(false, message, color, null);
+    }
+
+    public static PlayerStallPurchaseResult Ok(PlayerStallBuyerSnapshot snapshot, string? message = null, Color? color = null)
+    {
+        return new PlayerStallPurchaseResult(true, message, color, snapshot);
+    }
+}
+
+/// <summary>
+/// Callback delegates registered by a buyer session.
+/// </summary>
+public sealed record PlayerStallBuyerEventCallbacks(
+    Func<PlayerStallBuyerSnapshot, Task> OnSnapshot,
+    Func<PlayerStallPurchaseResult, Task> OnPurchaseResult)
+{
+    public static PlayerStallBuyerEventCallbacks Empty => new(
+        _ => Task.CompletedTask,
+        _ => Task.CompletedTask);
+}
+
+/// <summary>
+/// Seller-specific context for managing a stall.
+/// </summary>
+public sealed record PlayerStallSellerContext(
+    PersonaId SellerPersona,
+    string SellerDisplayName);
+
+/// <summary>
+/// Product details shown in the seller management interface.
+/// </summary>
+public sealed record PlayerStallSellerProductView(
+    long ProductId,
+    string DisplayName,
+    int Price,
+    int QuantityAvailable,
+    bool IsActive,
+    bool IsSoldOut,
+    int SortOrder,
+    string? Tooltip,
+    bool CanAdjustPrice);
+
+/// <summary>
+/// Snapshot rendered in the seller window.
+/// </summary>
+public sealed record PlayerStallSellerSnapshot(
+    PlayerStallSummary Summary,
+    PlayerStallSellerContext Seller,
+    IReadOnlyList<PlayerStallSellerProductView> Products,
+    string? FeedbackMessage = null,
+    Color? FeedbackColor = null,
+    bool FeedbackVisible = false,
+    long? SelectedProductId = null);
+
+/// <summary>
+/// Window wiring details used when presenting the seller interface.
+/// </summary>
+public sealed record PlayerStallSellerWindowConfig(
+    long StallId,
+    PersonaId SellerPersona,
+    string Title,
+    PlayerStallSellerSnapshot InitialSnapshot,
+    string CloseButtonLabel = "Close");
+
+/// <summary>
+/// Price update request raised by the seller presenter.
+/// </summary>
+public sealed record PlayerStallSellerPriceRequest(
+    Guid SessionId,
+    long StallId,
+    long ProductId,
+    PersonaId SellerPersona,
+    int NewPrice);
+
+/// <summary>
+/// Result of attempting a seller-side stall operation.
+/// </summary>
+public sealed record PlayerStallSellerOperationResult(
+    bool Success,
+    string? Message,
+    Color? MessageColor,
+    PlayerStallSellerSnapshot? Snapshot)
+{
+    public static PlayerStallSellerOperationResult Fail(string message, Color? color = null)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            throw new ArgumentException("Failure result requires a message.", nameof(message));
+        }
+
+        return new PlayerStallSellerOperationResult(false, message, color, null);
+    }
+
+    public static PlayerStallSellerOperationResult Ok(PlayerStallSellerSnapshot snapshot, string? message = null, Color? color = null)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        return new PlayerStallSellerOperationResult(true, message, color, snapshot);
+    }
+}
+
+/// <summary>
+/// Callback delegates registered by a seller session.
+/// </summary>
+public sealed record PlayerStallSellerEventCallbacks(
+    Func<PlayerStallSellerSnapshot, Task> OnSnapshot,
+    Func<PlayerStallSellerOperationResult, Task> OnOperationResult)
+{
+    public static PlayerStallSellerEventCallbacks Empty => new(
+        _ => Task.CompletedTask,
+        _ => Task.CompletedTask);
+}

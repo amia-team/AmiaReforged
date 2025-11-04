@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
@@ -134,19 +136,121 @@ public sealed class PlayerStallAggregate
         return PlayerStallDomainResult<StallProduct>.Ok(product);
     }
 
+    public PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>> TryUpdateProductPrice(
+        string requestorPersonaId,
+        StallProduct product,
+        int newPrice)
+    {
+        ArgumentNullException.ThrowIfNull(product);
+
+        if (string.IsNullOrWhiteSpace(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>>.Fail(
+                PlayerStallError.Unauthorized,
+                "A persona is required to update stall inventory.");
+        }
+
+        if (product.StallId != _snapshot.Id)
+        {
+            return PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>>.Fail(
+                PlayerStallError.ProductNotFound,
+                "That product is not registered to this stall.");
+        }
+
+        if (!HasInventoryPrivileges(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>>.Fail(
+                PlayerStallError.Unauthorized,
+                "You do not have permission to manage this stall's inventory.");
+        }
+
+        if (newPrice < 0)
+        {
+            return PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>>.Fail(
+                PlayerStallError.PriceOutOfRange,
+                "Price must be zero or greater.");
+        }
+
+        long productId = product.Id;
+        int sanitizedPrice = newPrice;
+
+        return PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>>.Ok((stall, persistedProduct) =>
+        {
+            if (persistedProduct.Id != productId)
+            {
+                return false;
+            }
+
+            if (persistedProduct.StallId != _snapshot.Id)
+            {
+                return false;
+            }
+
+            persistedProduct.Price = sanitizedPrice;
+            return true;
+        });
+    }
+
+    private bool HasInventoryPrivileges(string personaId)
+    {
+        if (string.IsNullOrWhiteSpace(personaId))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_snapshot.OwnerPersonaId) &&
+            string.Equals(_snapshot.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return _snapshot.InventoryPermissions.TryGetValue(personaId, out bool canManage) && canManage;
+    }
+
     private readonly record struct PlayerStallSnapshot(
         long Id,
         Guid? OwnerCharacterId,
         string? OwnerPersonaId,
-        bool IsActive)
+        bool IsActive,
+        IReadOnlyDictionary<string, bool> InventoryPermissions)
     {
         public static PlayerStallSnapshot From(PlayerStall stall)
         {
+            IReadOnlyDictionary<string, bool> permissions = BuildInventoryPermissions(stall);
+
             return new PlayerStallSnapshot(
                 stall.Id,
                 stall.OwnerCharacterId,
                 stall.OwnerPersonaId,
-                stall.IsActive);
+                stall.IsActive,
+                permissions);
+        }
+
+        private static IReadOnlyDictionary<string, bool> BuildInventoryPermissions(PlayerStall stall)
+        {
+            if (stall.Members is null || stall.Members.Count == 0)
+            {
+                return new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            Dictionary<string, bool> permissions = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (PlayerStallMember member in stall.Members.Where(m => m is not null))
+            {
+                if (member.RevokedUtc.HasValue)
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(member.PersonaId))
+                {
+                    continue;
+                }
+
+                permissions[member.PersonaId] = member.CanManageInventory;
+            }
+
+            return permissions;
         }
     }
 }

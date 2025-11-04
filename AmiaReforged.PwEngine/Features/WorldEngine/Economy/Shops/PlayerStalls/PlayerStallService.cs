@@ -33,11 +33,26 @@ public sealed class PlayerStallService : IPlayerStallService
             return Task.FromResult(PlayerStallServiceResult.Fail(PlayerStallError.StallNotFound, $"Stall {request.StallId} was not found."));
         }
 
+        if (!string.Equals(stall.AreaResRef, request.AreaResRef, StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(stall.Tag, request.PlaceableTag, StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.PlaceableMismatch,
+                "Stall record does not match provided placeable context."));
+        }
+
         if (!TryResolvePersonaGuid(request.OwnerPersona, out Guid ownerGuid))
         {
             return Task.FromResult(PlayerStallServiceResult.Fail(
                 PlayerStallError.PersonaNotGuidBacked,
                 "Owner persona must resolve to a GUID-backed actor."));
+        }
+
+        if (_shops.HasActiveOwnershipInArea(ownerGuid, stall.AreaResRef, stall.Id))
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.OwnershipRuleViolation,
+                "Owner already controls a stall within this area."));
         }
 
         PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
@@ -55,7 +70,8 @@ public sealed class PlayerStallService : IPlayerStallService
             return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
         }
 
-        bool updated = _shops.UpdateShop(request.StallId, domainResult.Payload!);
+        IEnumerable<PlayerStallMember> members = BuildMembers(request);
+        bool updated = _shops.UpdateShopWithMembers(request.StallId, domainResult.Payload!, members);
         if (!updated)
         {
             return Task.FromResult(PlayerStallServiceResult.Fail(
@@ -70,6 +86,53 @@ public sealed class PlayerStallService : IPlayerStallService
         };
 
         return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
+
+    private static IEnumerable<PlayerStallMember> BuildMembers(ClaimPlayerStallRequest request)
+    {
+        List<PlayerStallMember> members = new()
+        {
+            new PlayerStallMember
+            {
+                PersonaId = request.OwnerPersona.ToString(),
+                DisplayName = request.OwnerDisplayName,
+                CanManageInventory = true,
+                CanConfigureSettings = true,
+                CanCollectEarnings = true,
+                AddedByPersonaId = request.OwnerPersona.ToString()
+            }
+        };
+
+        if (request.CoOwners is null || request.CoOwners.Count == 0)
+        {
+            return members;
+        }
+
+        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase)
+        {
+            request.OwnerPersona.ToString()
+        };
+
+        foreach (PlayerStallCoOwnerRequest coOwner in request.CoOwners)
+        {
+            string personaId = coOwner.Persona.ToString();
+            if (!seen.Add(personaId))
+            {
+                continue;
+            }
+
+            members.Add(new PlayerStallMember
+            {
+                PersonaId = personaId,
+                DisplayName = string.IsNullOrWhiteSpace(coOwner.DisplayName) ? personaId : coOwner.DisplayName,
+                CanManageInventory = coOwner.CanManageInventory,
+                CanConfigureSettings = coOwner.CanConfigureSettings,
+                CanCollectEarnings = coOwner.CanCollectEarnings,
+                AddedByPersonaId = request.OwnerPersona.ToString()
+            });
+        }
+
+        return members;
     }
 
     public Task<PlayerStallServiceResult> ReleaseAsync(ReleasePlayerStallRequest request, CancellationToken cancellationToken = default)
@@ -152,6 +215,58 @@ public sealed class PlayerStallService : IPlayerStallService
         {
             ["stallId"] = request.StallId,
             ["productId"] = product.Id
+        };
+
+        return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
+
+    public Task<PlayerStallServiceResult> UpdateProductPriceAsync(UpdateStallProductPriceRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.StallNotFound,
+                $"Stall {request.StallId} was not found."));
+        }
+
+        StallProduct? product = _shops.GetProductById(request.StallId, request.ProductId);
+        if (product is null)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.ProductNotFound,
+                $"Product {request.ProductId} was not found on stall {request.StallId}."));
+        }
+
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+        string personaId = request.Requestor.ToString();
+
+        PlayerStallDomainResult<Func<PlayerStall, StallProduct, bool>> domainResult = aggregate.TryUpdateProductPrice(
+            personaId,
+            product,
+            request.NewPrice);
+
+        if (!domainResult.Success)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+        }
+
+        bool updated = _shops.UpdateStallAndProduct(request.StallId, product.Id, domainResult.Payload!);
+        if (!updated)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.PersistenceFailure,
+                "Failed to update stall product price."));
+        }
+
+        IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
+        {
+            ["stallId"] = request.StallId,
+            ["productId"] = product.Id,
+            ["price"] = Math.Max(0, request.NewPrice)
         };
 
         return Task.FromResult(PlayerStallServiceResult.Ok(data));

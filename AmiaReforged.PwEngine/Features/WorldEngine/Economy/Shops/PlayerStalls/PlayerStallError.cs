@@ -13,5 +13,10 @@ public enum PlayerStallError
     NotOwner,
     StallInactive,
     PersistenceFailure,
-    DescriptorMismatch
+    DescriptorMismatch,
+    OwnershipRuleViolation,
+    PlaceableMismatch,
+    Unauthorized,
+    ProductNotFound,
+    PriceOutOfRange
 }
