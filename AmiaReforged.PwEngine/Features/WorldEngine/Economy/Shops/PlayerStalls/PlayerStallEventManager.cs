@@ -22,7 +22,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 /// Coordinates real-time stall updates between presenters and backend workflows.
 /// </summary>
 [ServiceBinding(typeof(PlayerStallEventManager))]
-public sealed class PlayerStallEventManager
+[ServiceBinding(typeof(IPlayerStallEventBroadcaster))]
+public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 

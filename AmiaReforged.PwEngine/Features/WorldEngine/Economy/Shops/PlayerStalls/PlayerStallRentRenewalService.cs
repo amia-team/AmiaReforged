@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
-using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -25,12 +24,13 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private static readonly TimeSpan BillingInterval = TimeSpan.FromHours(1);
+    private static readonly TimeSpan GracePeriod = TimeSpan.FromHours(1);
     private static readonly TimeSpan RentInterval = TimeSpan.FromDays(1);
 
     private readonly IPlayerShopRepository _shops;
     private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
-    private readonly RuntimeCharacterService _characters;
-    private readonly PlayerStallEventManager _events;
+    private readonly IPlayerStallOwnerNotifier _notifier;
+    private readonly IPlayerStallEventBroadcaster _events;
 
     private readonly CancellationTokenSource _cts = new();
     private readonly Task _runner;
@@ -38,15 +38,18 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     public PlayerStallRentRenewalService(
         IPlayerShopRepository shops,
         ICommandHandler<WithdrawGoldCommand> withdrawHandler,
-        RuntimeCharacterService characters,
-        PlayerStallEventManager events)
+    IPlayerStallOwnerNotifier notifier,
+    IPlayerStallEventBroadcaster events,
+        bool autoStart = true)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _withdrawHandler = withdrawHandler ?? throw new ArgumentNullException(nameof(withdrawHandler));
-        _characters = characters ?? throw new ArgumentNullException(nameof(characters));
+        _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
         _events = events ?? throw new ArgumentNullException(nameof(events));
 
-        _runner = Task.Run(() => RunAsync(_cts.Token));
+        _runner = autoStart
+            ? Task.Run(() => RunAsync(_cts.Token))
+            : Task.CompletedTask;
     }
 
     public void Dispose()
@@ -54,7 +57,10 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         try
         {
             _cts.Cancel();
-            _runner.Wait(TimeSpan.FromSeconds(5));
+            if (!_runner.IsCompleted)
+            {
+                _runner.Wait(TimeSpan.FromSeconds(5));
+            }
         }
         catch (AggregateException ex)
         {
@@ -111,6 +117,8 @@ public sealed class PlayerStallRentRenewalService : IDisposable
             timer.Dispose();
         }
     }
+
+    internal Task RunSingleCycleAsync(CancellationToken token) => ExecuteCycleAsync(token);
 
     private async Task ExecuteCycleAsync(CancellationToken token)
     {
@@ -304,11 +312,32 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 
     private async Task HandleRentFailureAsync(PlayerStall stall, string reason, DateTime utcNow)
     {
+        RentFailureState state = RentFailureState.Unknown;
+
         bool updated = _shops.UpdateShop(stall.Id, entity =>
         {
-            entity.SuspendedUtc ??= utcNow;
+            if (entity.SuspendedUtc is null)
+            {
+                entity.SuspendedUtc = utcNow;
+                entity.IsActive = true;
+                entity.NextRentDueUtc = utcNow + GracePeriod;
+                state = RentFailureState.GracePeriodStarted;
+                return;
+            }
+
+            TimeSpan delinquentDuration = utcNow - entity.SuspendedUtc.Value;
+            if (delinquentDuration < GracePeriod)
+            {
+                entity.IsActive = true;
+                entity.NextRentDueUtc = entity.SuspendedUtc.Value + GracePeriod;
+                state = RentFailureState.GracePeriodContinues;
+                return;
+            }
+
             entity.IsActive = false;
+            entity.DeactivatedUtc ??= utcNow;
             entity.NextRentDueUtc = utcNow + BillingInterval;
+            state = RentFailureState.Suspended;
         });
 
         if (!updated)
@@ -320,32 +349,15 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 
         await _events.BroadcastSellerRefreshAsync(stall.Id).ConfigureAwait(false);
 
-        await NotifyOwnerAsync(stall.OwnerCharacterId, BuildFailureMessage(stall, reason), ColorConstants.Red).ConfigureAwait(false);
+        string message = BuildFailureMessage(stall, reason, state, utcNow);
+        Color color = state == RentFailureState.Suspended ? ColorConstants.Red : ColorConstants.Yellow;
+
+        await NotifyOwnerAsync(stall.OwnerCharacterId, message, color).ConfigureAwait(false);
     }
 
     private Task NotifyOwnerAsync(Guid? ownerCharacterId, string message, Color color)
     {
-        if (ownerCharacterId is null)
-        {
-            return Task.CompletedTask;
-        }
-
-        if (!_characters.TryGetPlayer(ownerCharacterId.Value, out NwPlayer? player) || player is null)
-        {
-            return Task.CompletedTask;
-        }
-
-        return SendServerMessageAsync(player, message, color);
-    }
-
-    private static async Task SendServerMessageAsync(NwPlayer player, string message, Color color)
-    {
-        await NwTask.SwitchToMainThread();
-
-        if (player.IsValid)
-        {
-            player.SendServerMessage(message, color);
-        }
+        return _notifier.NotifyAsync(ownerCharacterId, message, color);
     }
 
     private static DateTime CalculateNextDue(DateTime currentDue, DateTime utcNow)
@@ -409,10 +421,28 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         return string.Format(CultureInfo.InvariantCulture, "Rent of {0:n0} gp for {1} was paid from {2}.", rentAmount, stallName, method);
     }
 
-    private static string BuildFailureMessage(PlayerStall stall, string reason)
+    private static string BuildFailureMessage(PlayerStall stall, string reason, RentFailureState state, DateTime utcNow)
     {
         string stallName = BeautifyLabelOrDefault(stall.Tag, stall.Id);
-        return string.Format(CultureInfo.InvariantCulture, "Rent collection failed for {0}: {1}", stallName, reason);
+        string baseMessage = string.Format(CultureInfo.InvariantCulture, "Rent collection failed for {0}: {1}", stallName, reason);
+
+        return state switch
+        {
+            RentFailureState.GracePeriodStarted => string.Format(
+                CultureInfo.InvariantCulture,
+                "{0} Your stall will suspend if payment isn't received within {1}.",
+                baseMessage,
+                FormatDuration(GracePeriod)),
+            RentFailureState.GracePeriodContinues => string.Format(
+                CultureInfo.InvariantCulture,
+                "{0} Payment is still overdue; automatic suspension begins shortly.",
+                baseMessage),
+            RentFailureState.Suspended => string.Format(
+                CultureInfo.InvariantCulture,
+                "{0} The stall is now suspended until rent is paid.",
+                baseMessage),
+            _ => baseMessage
+        };
     }
 
     private static string BeautifyLabelOrDefault(string? tag, long stallId)
@@ -448,5 +478,31 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         None,
         CoinhouseAccount,
         StallEscrow
+    }
+
+    private enum RentFailureState
+    {
+        Unknown,
+        GracePeriodStarted,
+        GracePeriodContinues,
+        Suspended
+    }
+
+    private static string FormatDuration(TimeSpan duration)
+    {
+        if (duration.TotalHours >= 1)
+        {
+            double hours = Math.Round(duration.TotalHours);
+            return string.Format(CultureInfo.InvariantCulture, "{0:n0} hour{1}", hours, Math.Abs(hours - 1d) < double.Epsilon ? string.Empty : "s");
+        }
+
+        if (duration.TotalMinutes >= 1)
+        {
+            double minutes = Math.Round(duration.TotalMinutes);
+            return string.Format(CultureInfo.InvariantCulture, "{0:n0} minute{1}", minutes, Math.Abs(minutes - 1d) < double.Epsilon ? string.Empty : "s");
+        }
+
+        double seconds = Math.Round(duration.TotalSeconds);
+        return string.Format(CultureInfo.InvariantCulture, "{0:n0} second{1}", seconds, Math.Abs(seconds - 1d) < double.Epsilon ? string.Empty : "s");
     }
 }
