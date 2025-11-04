@@ -25,9 +25,9 @@ internal sealed class ReeveLockupService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private readonly PwContextFactory _contextFactory;
+    private readonly IDbContextFactory<PwEngineContext> _contextFactory;
 
-    public ReeveLockupService(PwContextFactory contextFactory)
+    public ReeveLockupService(IDbContextFactory<PwEngineContext> contextFactory)
     {
         _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
     }
