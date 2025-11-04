@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -70,6 +70,7 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.WeaponTopModelText, "1");
         Token().SetBindValue(View.WeaponMidModelText, "1");
         Token().SetBindValue(View.WeaponBotModelText, "1");
+        Token().SetBindValue(View.WeaponScaleText, "100%");
 
         Token().SetBindValue(View.BootsTopModelText, "1");
         Token().SetBindValue(View.BootsMidModelText, "1");
@@ -212,6 +213,20 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         if (ev.ElementId == View.WeaponBotModelRight10Button.Id)
         {
             _model.AdjustWeaponBotModel(10);
+            UpdateWeaponDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.WeaponScaleMinusButton.Id)
+        {
+            _model.AdjustWeaponScale(-5);
+            UpdateWeaponDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.WeaponScalePlusButton.Id)
+        {
+            _model.AdjustWeaponScale(5);
             UpdateWeaponDisplay();
             return;
         }
@@ -377,6 +392,7 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         Token().SetBindValue(View.WeaponTopModelText, _model.WeaponTopModel.ToString());
         Token().SetBindValue(View.WeaponMidModelText, _model.WeaponMidModel.ToString());
         Token().SetBindValue(View.WeaponBotModelText, _model.WeaponBotModel.ToString());
+        Token().SetBindValue(View.WeaponScaleText, $"{_model.WeaponScale}%");
     }
 
     private void UpdateBootsDisplay()

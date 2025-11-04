@@ -27,6 +27,12 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     public int WeaponTopModel { get; private set; } = 1;
     public int WeaponMidModel { get; private set; } = 1;
     public int WeaponBotModel { get; private set; } = 1;
+    public int WeaponScale { get; private set; } = 100;
+
+    private const int MinWeaponScale = 80;
+    private const int MaxWeaponScale = 120;
+
+    private bool _onlyScaleChanged;
 
     private int _weaponTopModelMax = 255;
     private int _weaponMidModelMax = 255;
@@ -81,6 +87,9 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             WeaponTopModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
             WeaponMidModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
             WeaponBotModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+
+            VisualTransform transform = weapon.VisualTransform;
+            WeaponScale = (int)(transform.Scale * 100);
 
             SaveBackupToPcKey();
         }
@@ -155,6 +164,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             return;
         }
 
+        _onlyScaleChanged = false;
         WeaponTopModel = GetNextValidWeaponModel(ItemAppearanceWeaponModel.Top, WeaponTopModel, delta, _weaponTopModelMax);
         ApplyWeaponChanges();
         player.SendServerMessage($"Weapon top model set to {WeaponTopModel}.", ColorConstants.Green);
@@ -168,6 +178,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             return;
         }
 
+        _onlyScaleChanged = false;
         WeaponMidModel = GetNextValidWeaponModel(ItemAppearanceWeaponModel.Middle, WeaponMidModel, delta, _weaponMidModelMax);
         ApplyWeaponChanges();
         player.SendServerMessage($"Weapon middle model set to {WeaponMidModel}.", ColorConstants.Green);
@@ -181,9 +192,42 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             return;
         }
 
+        _onlyScaleChanged = false;
         WeaponBotModel = GetNextValidWeaponModel(ItemAppearanceWeaponModel.Bottom, WeaponBotModel, delta, _weaponBotModelMax);
         ApplyWeaponChanges();
         player.SendServerMessage($"Weapon bottom model set to {WeaponBotModel}.", ColorConstants.Green);
+    }
+
+    public void AdjustWeaponScale(int delta)
+    {
+        if (_currentWeapon == null || !_currentWeapon.IsValid)
+        {
+            player.SendServerMessage("No weapon selected.", ColorConstants.Orange);
+            return;
+        }
+
+        int newScale = WeaponScale + delta;
+
+        // Check if trying to go beyond limits and give feedback
+        if (newScale < MinWeaponScale)
+        {
+            player.SendServerMessage($"This item cannot be scaled lower than {MinWeaponScale}%.", ColorConstants.Orange);
+            return;
+        }
+
+        if (newScale > MaxWeaponScale)
+        {
+            player.SendServerMessage($"This item cannot be scaled higher than {MaxWeaponScale}%.", ColorConstants.Orange);
+            return;
+        }
+
+        _onlyScaleChanged = true;
+        WeaponScale = newScale;
+        ApplyWeaponChanges();
+
+        int percentDiff = WeaponScale - 100;
+        string sign = percentDiff > 0 ? "+" : "";
+        player.SendServerMessage($"Weapon scale set to {WeaponScale}% ({sign}{percentDiff}%).", ColorConstants.Green);
     }
 
     private int GetNextValidWeaponModel(ItemAppearanceWeaponModel modelPart, int currentModel, int delta, int maxModel)
@@ -268,25 +312,40 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
 
-        NwItem oldWeapon = _currentWeapon;
+        NwItem currentWeapon = _currentWeapon;
 
-        oldWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)WeaponTopModel);
-        oldWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)WeaponMidModel);
-        oldWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)WeaponBotModel);
+        // Apply visual transform scale - this doesn't require unequip/re-equip
+        float scaleValue = WeaponScale / 100f;
+        NWScript.SetObjectVisualTransform(currentWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
 
-        creature.RunUnequip(oldWeapon);
-        NwItem newWeapon = oldWeapon.Clone(creature);
+        // If only scale changed, we don't need to unequip/clone/re-equip
+        if (_onlyScaleChanged)
+        {
+            return;
+        }
+
+        // Model changes require unequip/clone/re-equip
+        currentWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)WeaponTopModel);
+        currentWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)WeaponMidModel);
+        currentWeapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)WeaponBotModel);
+
+        creature.RunUnequip(currentWeapon);
+        NwItem newWeapon = currentWeapon.Clone(creature);
 
         if (!newWeapon.IsValid)
         {
             player.SendServerMessage("Failed to refresh weapon.", ColorConstants.Red);
-            creature.RunEquip(oldWeapon, InventorySlot.RightHand);
+            creature.RunEquip(currentWeapon, InventorySlot.RightHand);
             return;
         }
 
         creature.RunEquip(newWeapon, InventorySlot.RightHand);
+
+        // Re-apply scale after cloning
+        NWScript.SetObjectVisualTransform(newWeapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
+
         _currentWeapon = newWeapon;
-        oldWeapon.Destroy();
+        currentWeapon.Destroy();
     }
 
     private int GetNextValidBootsModel(ItemAppearanceWeaponModel modelPart, int currentModel, int delta, int maxModel)
@@ -474,6 +533,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 WeaponTopModel = backupData.WeaponData.TopModel;
                 WeaponMidModel = backupData.WeaponData.MidModel;
                 WeaponBotModel = backupData.WeaponData.BotModel;
+                WeaponScale = backupData.WeaponData.Scale;
 
                 player.SendServerMessage("Weapon customization reverted to last save point.", ColorConstants.Cyan);
             }
@@ -552,14 +612,20 @@ public class WeaponBackupData
     public int TopModel { get; set; }
     public int MidModel { get; set; }
     public int BotModel { get; set; }
+    public int Scale { get; set; } = 100;
 
     public static WeaponBackupData FromItem(NwItem weapon)
     {
+        VisualTransform transform = weapon.VisualTransform;
+        int scale;
+        scale = (int)(transform.Scale * 100);
+
         return new WeaponBackupData
         {
             TopModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top),
             MidModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle),
-            BotModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom)
+            BotModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom),
+            Scale = scale
         };
     }
 
@@ -568,6 +634,9 @@ public class WeaponBackupData
         weapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Top, (byte)TopModel);
         weapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Middle, (byte)MidModel);
         weapon.Appearance.SetWeaponModel(ItemAppearanceWeaponModel.Bottom, (byte)BotModel);
+
+        float scaleValue = Scale / 100f;
+        NWScript.SetObjectVisualTransform(weapon, NWScript.OBJECT_VISUAL_TRANSFORM_SCALE, scaleValue);
     }
 }
 

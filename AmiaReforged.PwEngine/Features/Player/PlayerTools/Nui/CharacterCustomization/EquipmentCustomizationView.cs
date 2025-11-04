@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using Anvil.API;
 
@@ -18,6 +18,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
     public readonly NuiBind<string> WeaponTopModelText = new("eq_weapon_top_model");
     public readonly NuiBind<string> WeaponMidModelText = new("eq_weapon_mid_model");
     public readonly NuiBind<string> WeaponBotModelText = new("eq_weapon_bot_model");
+    public readonly NuiBind<string> WeaponScaleText = new("eq_weapon_scale");
 
     public readonly NuiBind<string> BootsTopModelText = new("eq_boots_top_model");
     public readonly NuiBind<string> BootsMidModelText = new("eq_boots_mid_model");
@@ -57,6 +58,9 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
     public NuiButtonImage WeaponMidModelRight10Button = null!;
     public NuiButtonImage WeaponBotModelLeft10Button = null!;
     public NuiButtonImage WeaponBotModelRight10Button = null!;
+
+    public NuiButtonImage WeaponScaleMinusButton = null!;
+    public NuiButtonImage WeaponScalePlusButton = null!;
 
     public NuiButtonImage BootsTopModelLeftButton = null!;
     public NuiButtonImage BootsTopModelRightButton = null!;
@@ -251,6 +255,31 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                         },
                         ImageButton("btn_weapon_bot_model_right", "+1", out WeaponBotModelRightButton, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled),
                         ImageButton("btn_weapon_bot_model_right10", "+10", out WeaponBotModelRight10Button, 30f, 30f, "cc_arrow_r_btn", WeaponControlsEnabled)
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 120f },
+                        new NuiLabel("Weapon Scale:")
+                        {
+                            Width = 120f,
+                            Height = 30f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiSpacer { Width = 30f },
+                        ImageButton("btn_weapon_scale_minus", "-5%", out WeaponScaleMinusButton, 30f, 30f, "ui_btn_sm_min", WeaponControlsEnabled),
+                        new NuiLabel(WeaponScaleText)
+                        {
+                            Width = 50f,
+                            Height = 30f,
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        ImageButton("btn_weapon_scale_plus", "+5%", out WeaponScalePlusButton, 30f, 30f, "ui_btn_sm_plus", WeaponControlsEnabled)
                     }
                 }
             }
