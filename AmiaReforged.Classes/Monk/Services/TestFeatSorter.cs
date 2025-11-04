@@ -64,7 +64,6 @@ public class TestFeatSorter
     {
         HashSet<NwFeat?> oldFeats =
         [
-            NwFeat.FromFeatType(Feat.StunningFist),
             NwFeat.FromFeatType(Feat.MonkEndurance),
             NwFeat.FromFeatType(Feat.MonkAcBonus),
             NwFeat.FromFeatType(Feat.WholenessOfBody),
@@ -103,6 +102,18 @@ public class TestFeatSorter
 
         switch (monkLevel)
         {
+            // remove Stunning Fist only on level 2 monk so it can be taken again later
+            case 2:
+            {
+                foreach (NwFeat feat in monk.Feats)
+                {
+                    if (feat.FeatType is not Feat.StunningFist) continue;
+                    monk.RemoveFeat(feat, true);
+                    player.SendServerMessage($"Feat {feat.Name} was removed.");
+                }
+
+                break;
+            }
             // remove KD/IKD for Fighting Style selection
             case 6:
             {
