@@ -14,6 +14,7 @@ namespace AmiaReforged.Classes.Monk.Augmentations;
 public sealed class CrashingMeteor : IAugmentation
 {
     private const string MeteorKiShoutTag = nameof(PathType.CrashingMeteor) + nameof(TechniqueType.KiShout);
+    private static readonly Effect UseReflexVfx = Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse);
     public PathType PathType => PathType.CrashingMeteor;
 
     public void ApplyAttackAugmentation(NwCreature monk, OnCreatureAttack attackData)
@@ -169,9 +170,9 @@ public sealed class CrashingMeteor : IAugmentation
             SavingThrowResult savingThrowResult =
                 creature.RollSavingThrow(SavingThrow.Reflex, meteor.Dc, meteor.SaveType, monk);
 
-            if ((hasEvasion || hasImprovedEvasion) &&  savingThrowResult == SavingThrowResult.Success)
+            if ((hasEvasion || hasImprovedEvasion) && savingThrowResult == SavingThrowResult.Success)
             {
-                creature.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
+                creature.ApplyEffect(EffectDuration.Instant, UseReflexVfx);
                 continue;
             }
 
@@ -219,41 +220,34 @@ public sealed class CrashingMeteor : IAugmentation
                      ObjectTypes.Creature | ObjectTypes.Door | ObjectTypes.Placeable))
         {
             int damageAmount = Random.Shared.Roll(6, meteor.DiceAmount);
-            if (nwObject is not NwCreature creatureInShape)
+            if (nwObject is not NwCreature creature)
             {
                 _ = ApplyAoeDamage(nwObject, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
                 continue;
             }
-            if (monk.IsReactionTypeFriendly(creatureInShape)) continue;
+            if (monk.IsReactionTypeFriendly(creature)) continue;
 
-            CreatureEvents.OnSpellCastAt.Signal(monk, creatureInShape, NwSpell.FromSpellType(Spell.Fireball)!);
+            CreatureEvents.OnSpellCastAt.Signal(monk, creature, NwSpell.FromSpellType(Spell.Fireball)!);
 
-            bool hasEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.Evasion)!);
-            bool hasImprovedEvasion = creatureInShape.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
+            bool hasEvasion = creature.KnowsFeat(NwFeat.FromFeatType(Feat.Evasion)!);
+            bool hasImprovedEvasion = creature.KnowsFeat(NwFeat.FromFeatType(Feat.ImprovedEvasion)!);
 
             SavingThrowResult savingThrowResult =
-                creatureInShape.RollSavingThrow(SavingThrow.Reflex, meteor.Dc, meteor.SaveType, monk);
+                creature.RollSavingThrow(SavingThrow.Reflex, meteor.Dc, meteor.SaveType, monk);
+
+            if ((hasEvasion || hasImprovedEvasion) && savingThrowResult == SavingThrowResult.Success)
+            {
+                creature.ApplyEffect(EffectDuration.Instant, UseReflexVfx);
+                continue;
+            }
 
             if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
                 damageAmount /= 2;
 
-            Effect damageEffect = Effect.LinkEffects(
-                Effect.Damage(damageAmount, meteor.DamageType),
-                Effect.VisualEffect(meteor.DamageVfx));
+            if (hasImprovedEvasion || savingThrowResult == SavingThrowResult.Success)
+                damageAmount /= 2;
 
-            if (savingThrowResult == SavingThrowResult.Failure)
-            {
-                creatureInShape.ApplyEffect(EffectDuration.Instant, damageEffect);
-                continue;
-            }
-
-            if (hasEvasion || hasImprovedEvasion)
-            {
-                creatureInShape.ApplyEffect(EffectDuration.Instant, Effect.VisualEffect(VfxType.ImpReflexSaveThrowUse));
-                continue;
-            }
-
-            _ = ApplyAoeDamage(creatureInShape, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
+            _ = ApplyAoeDamage(creature, monk, damageAmount, meteor.DamageType, meteor.DamageVfx);
         }
     }
 
