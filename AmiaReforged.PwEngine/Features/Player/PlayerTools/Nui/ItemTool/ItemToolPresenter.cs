@@ -11,7 +11,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
     private NuiWindow? _window;
     private readonly ItemToolModel _model;
 
-    // Modal tokens so we can close them programmatically
     private NuiWindowToken? _nameModalToken;
     private NuiWindowToken? _descModalToken;
 
@@ -30,7 +29,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(520f, 140f, 615f, 500f),
+            Geometry = new NuiRect(520f, 140f, 635f, 550f),
             Resizable = false
         };
     }
@@ -49,13 +48,11 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         _player.TryCreateNuiWindow(_window, out _token);
 
-        // Initial bind state
         Token().SetBindValue(View.ValidObjectSelected, false);
         Token().SetBindValue(View.Name, "");
         Token().SetBindValue(View.Description, "");
         Token().SetBindValue(View.DescPlaceholder, "");
 
-        // Don't watch main window binds - we don't do live updates in main window
         Token().SetBindWatch(View.Name, false);
         Token().SetBindWatch(View.Description, false);
 
@@ -80,7 +77,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == View.SaveButton.Id)
         {
-            // Save and clear any initial value locals
             ApplyChanges(true);
             _model.ClearInitials();
             _descModalToken?.Close();
@@ -90,7 +86,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == View.CancelButton.Id)
         {
-            // Revert if any and clear, then close
             _model.RevertNameToInitial();
             _model.RevertDescToInitial();
             _model.ClearInitials();
@@ -107,7 +102,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == "ind_edit_name")
         {
-            // Capture initial name and set buffer BEFORE creating modal
             _model.EnsureInitialNameCaptured();
             Token().SetBindValue(View.EditNameBuffer, _model.GetInitialNameOrCurrent());
 
@@ -123,7 +117,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
         if (ev.ElementId == "ind_edit_desc")
         {
-            // Capture initial desc and set buffer BEFORE creating modal
             _model.EnsureInitialDescCaptured();
             Token().SetBindValue(View.EditDescBuffer, _model.GetInitialDescOrCurrent());
 
@@ -238,7 +231,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
     private void OnNewSelection()
     {
-        // Capture initial values immediately on selection so Discard/Cancel can always revert.
         _model.EnsureInitialNameCaptured();
         _model.EnsureInitialDescCaptured();
         UpdateFromModel();
@@ -250,7 +242,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
     {
         NwItem? item = _model.Selected;
         Token().SetBindValue(View.ValidObjectSelected, item != null);
-        // Always show the same placeholder for Description in the main window
         Token().SetBindValue(View.DescPlaceholder, item != null ? "Edit to View" : "");
 
         Token().SetBindValue(View.ValidObjectSelected, _model.HasSelected);
@@ -267,7 +258,6 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
         Token().SetBindValue(View.Name, _model.Selected!.Name);
         Token().SetBindValue(View.Description, _model.Selected!.Description);
 
-        // Icon controls: only visible when allowed by base type
         bool iconAllowed = _model.IsIconAllowed(out int current, out int max);
         Token().SetBindValue(View.IconControlsVisible, iconAllowed);
         Token().SetBindValue(View.IconInfo, iconAllowed ? $"Icon: {current} / {max}" : "Icon: —");

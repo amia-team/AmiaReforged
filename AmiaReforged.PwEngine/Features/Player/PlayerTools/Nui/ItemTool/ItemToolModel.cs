@@ -15,11 +15,9 @@ internal sealed class ItemToolModel(NwPlayer player)
     public delegate void NewSelectionHandler();
     public event NewSelectionHandler? OnNewSelection;
 
-    // Local variable keys for initial values (persist across CopyItemAndModify)
     private const string InitialNameKey = "item_tool_initial_name";
     private const string InitialDescKey = "item_tool_initial_desc";
 
-    // --- Selection ---
     public void EnterTargetingMode()
     {
         player.EnterTargetMode(OnTargetItem, new TargetModeSettings { ValidTargets = ObjectTypes.Item });
@@ -51,7 +49,6 @@ internal sealed class ItemToolModel(NwPlayer player)
             return;
         }
 
-        // Check ownership - item must be possessed by the player
         if (item.Possessor != player.ControlledCreature)
         {
             player.SendServerMessage("You can only modify items in your own inventory.", ColorConstants.Red);
@@ -68,18 +65,17 @@ internal sealed class ItemToolModel(NwPlayer player)
         OnNewSelection?.Invoke();
     }
 
-    // --- Initial value helpers ---
     public void EnsureInitialNameCaptured()
     {
         if (Selected is null) return;
         LocalVariableString v = Selected.GetObjectVariable<LocalVariableString>(InitialNameKey);
-        if (!v.HasValue) v.Value = Selected.Name; // Name is non-null per annotations
+        if (!v.HasValue) v.Value = Selected.Name;
     }
     public void EnsureInitialDescCaptured()
     {
         if (Selected is null) return;
         LocalVariableString v = Selected.GetObjectVariable<LocalVariableString>(InitialDescKey);
-        if (!v.HasValue) v.Value = Selected.Description; // Description is non-null per annotations
+        if (!v.HasValue) v.Value = Selected.Description;
     }
     public string GetInitialNameOrCurrent()
     {
@@ -141,7 +137,6 @@ internal sealed class ItemToolModel(NwPlayer player)
         newValue = 0; maxValue = 0;
         if (Selected is null) return IconAdjustResult.NoSelection;
 
-        // Check if this item type supports model changes
         if (!ItemModelValidation.SupportsModelChanges(Selected))
             return IconAdjustResult.NotAllowedType;
 
@@ -156,43 +151,101 @@ internal sealed class ItemToolModel(NwPlayer player)
             return IconAdjustResult.Success;
         }
 
-        // Get all valid indices for this item type
-        List<int> validIndices = ItemModelValidation.GetValidIndices(Selected).ToList();
-        if (validIndices.Count == 0)
-            return IconAdjustResult.NotAllowedType;
+        int candidate = GetNextValidItemModel(current, delta, maxValue);
 
-        // Find current index in the valid list (or closest)
-        int currentIndex = validIndices.IndexOf(current);
-        if (currentIndex == -1)
+        if (candidate == current)
         {
-            // Current model isn't in valid list; find closest
-            currentIndex = validIndices.FindIndex(x => x >= current);
-            if (currentIndex == -1) currentIndex = validIndices.Count - 1;
+            return IconAdjustResult.NoValidModel;
         }
 
-        // Calculate new index with wrapping
-        int newIndex = currentIndex + delta;
-        while (newIndex < 0) newIndex += validIndices.Count;
-        while (newIndex >= validIndices.Count) newIndex -= validIndices.Count;
+        NwCreature? creature = player.ControlledCreature;
+        InventorySlot? equippedSlot = null;
 
-        int candidate = validIndices[newIndex];
+        if (creature != null)
+        {
+            foreach (InventorySlot slot in Enum.GetValues<InventorySlot>())
+            {
+                if (creature.GetItemInSlot(slot) == Selected)
+                {
+                    equippedSlot = slot;
+                    break;
+                }
+            }
 
-        // Verify the candidate is valid according to our dictionary
-        if (!ItemModelValidation.IsValidModelIndex(Selected, candidate))
-            return IconAdjustResult.NoValidModel;
+            if (equippedSlot.HasValue)
+            {
+                creature.RunUnequip(Selected);
+            }
+        }
 
-        // Apply the model change
         uint copy = NWScript.CopyItemAndModify(Selected, (int)ItemAppearanceType.SimpleModel, 0, candidate, 1);
         if (NWScript.GetIsObjectValid(copy) == 1)
         {
             NWScript.DestroyObject(Selected);
             Selected = copy.ToNwObject<NwItem>();
+
+            if (creature != null && equippedSlot.HasValue && Selected != null)
+            {
+                creature.RunEquip(Selected, equippedSlot.Value);
+            }
+
             newValue = candidate;
             return IconAdjustResult.Success;
         }
 
-        // Copy failed for some reason
+        if (creature != null && equippedSlot.HasValue && Selected != null)
+        {
+            creature.RunEquip(Selected, equippedSlot.Value);
+        }
+
         newValue = current;
         return IconAdjustResult.NoValidModel;
+    }
+
+    private int GetNextValidItemModel(int currentModel, int delta, int maxModel)
+    {
+        if (Selected == null || !Selected.IsValid) return currentModel;
+        if (maxModel <= 0) return currentModel;
+
+        int direction = Math.Sign(delta);
+        int step = Math.Abs(delta);
+        int searchModel = currentModel;
+        int attemptsRemaining = maxModel + 1;
+
+        while (attemptsRemaining > 0)
+        {
+            if (step == 1)
+            {
+                searchModel += direction;
+            }
+            else
+            {
+                searchModel += delta;
+                step = 1;
+            }
+
+            if (searchModel > maxModel)
+            {
+                searchModel = 1;
+            }
+            else if (searchModel < 1)
+            {
+                searchModel = maxModel;
+            }
+
+            if (searchModel == currentModel && attemptsRemaining < maxModel)
+            {
+                return currentModel;
+            }
+
+            if (ItemModelValidation.IsValidModelIndex(Selected, searchModel))
+            {
+                return searchModel;
+            }
+
+            attemptsRemaining--;
+        }
+
+        return currentModel;
     }
 }

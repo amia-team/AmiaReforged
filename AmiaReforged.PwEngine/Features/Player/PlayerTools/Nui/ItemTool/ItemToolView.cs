@@ -6,12 +6,12 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ItemTool;
 
 public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
 {
-    private const float WindowW = 650f;
-    private const float WindowH = 455f;
+    private const float WindowW = 750f;
+    private const float WindowH = 500f;
     private const float HeaderW = 600f;
     private const float HeaderH = 100f;
-    private const float HeaderTopPad = 6f;
-    private const float HeaderLeftPad = 0f;
+    private const float HeaderTopPad = 0f;
+    private const float HeaderLeftPad = 5f;
 
     public override ItemToolPresenter Presenter { get; protected set; }
 
@@ -22,7 +22,6 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
     public readonly NuiBind<string> IconInfo            = new("ind_icon_info");
     public readonly NuiBind<string> DescPlaceholder = new("item_desc_placeholder");
 
-    // Edit modals (same pattern as DM view)
     public readonly NuiBind<string> EditNameBuffer = new("edit_name_buf_ind");
     public readonly NuiBind<string> EditDescBuffer = new("edit_desc_buf_ind");
 
@@ -34,7 +33,6 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
     public NuiButtonImage IconPlus10       = null!;
     public NuiButtonImage IconMinus10      = null!;
 
-    // IToolWindow
     public string Title => "Item Tool";
     public string Id => "item_tool";
     public string CategoryTag => "Items";
@@ -72,7 +70,6 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
             Tooltip = ""
         }.Assign(out logicalButton);
 
-        // Transparent label below the image button
         return new NuiColumn
         {
             Children =
@@ -89,14 +86,10 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
 
     private NuiElement BuildHeaderOverlay()
     {
-        // LEFT-ALIGNED header image
         return new NuiRow
         {
             Width = 0f, Height = 0f, Children = new List<NuiElement>(),
-            DrawList = new()
-            {
-                new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))
-            }
+            DrawList = [new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))]
         };
     }
 
@@ -137,7 +130,6 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
             }
         };
 
-        // Column only; no Group ⇒ no panel background
         return new NuiColumn { Children = { nameRow, descRow } };
     }
 
@@ -159,14 +151,11 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
         {
             Width = 0f, Height = 0f,
             Children = new List<NuiElement>(),
-            DrawList = new()
-            {
-                new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))
-            }
+            DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))]
         };
 
         NuiElement headerOverlay = BuildHeaderOverlay();
-        NuiSpacer headerSpacer = new NuiSpacer { Height = HeaderH + HeaderTopPad + 6f };
+        NuiSpacer headerSpacer = new NuiSpacer { Height = 85f};
         NuiSpacer spacer8 = new NuiSpacer { Height = 8f };
 
         NuiRow selectRow = new NuiRow
@@ -193,6 +182,32 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
                 bgLayer,
                 headerOverlay,
                 headerSpacer,
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 40f },
+                        new NuiLabel("Select a simple item to modify. Equipped items will remain equipped.")
+                        {
+                            Height = 10f,
+                            Width = 560f,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("(Modify armor, boots, helm, and cloak appearances in the crafting menu NUI.)")
+                        {
+                            Height = 20f,
+                            Width = 560f,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    }
+                },
                 selectRow,
                 spacer8,
                 BuildBasicProps(),
@@ -204,7 +219,6 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
         };
     }
 
-    // Optional: provide small modal layouts if you want to open them from the presenter
     public NuiWindow BuildEditNameModal()
     {
         NuiColumn layout = new NuiColumn
@@ -215,10 +229,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
                 new NuiRow
                 {
                     Width = 0f, Height = 0f,
-                    DrawList = new()
-                    {
-                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))
-                    }
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))]
                 },
                 new NuiLabel("Edit Name"){ Height=18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) },
                 new NuiTextEdit("Name", EditNameBuffer, 100, false) { Height = 32f },
@@ -251,10 +262,7 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
                 new NuiRow
                 {
                     Width = 0f, Height = 0f,
-                    DrawList = new()
-                    {
-                        new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))
-                    }
+                    DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, 420f, 250f))]
                 },
                 new NuiLabel("Edit Description"){ Height=18f, HorizontalAlign = NuiHAlign.Center, ForegroundColor = new Color(30, 20, 12) },
                 new NuiTextEdit("Description", EditDescBuffer, 5000, true) { Height = 160f },
