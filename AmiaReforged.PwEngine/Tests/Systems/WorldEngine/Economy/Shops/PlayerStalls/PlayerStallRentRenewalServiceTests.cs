@@ -21,6 +21,7 @@ public class PlayerStallRentRenewalServiceTests
     private Mock<ICommandHandler<WithdrawGoldCommand>> _withdraw = null!;
     private Mock<IPlayerStallOwnerNotifier> _notifier = null!;
     private Mock<IPlayerStallEventBroadcaster> _events = null!;
+    private Mock<IPlayerStallInventoryCustodian> _custodian = null!;
     private PlayerStallRentRenewalService _service = null!;
     private PlayerStall _stall = null!;
     private List<PlayerStall> _allShops = null!;
@@ -66,11 +67,16 @@ public class PlayerStallRentRenewalServiceTests
         _events.Setup(e => e.BroadcastSellerRefreshAsync(It.IsAny<long>()))
             .Returns(Task.CompletedTask);
 
+        _custodian = new Mock<IPlayerStallInventoryCustodian>(MockBehavior.Strict);
+        _custodian.Setup(c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         _service = new PlayerStallRentRenewalService(
             _shops.Object,
             _withdraw.Object,
             _notifier.Object,
             _events.Object,
+            _custodian.Object,
             autoStart: false);
     }
 
@@ -98,6 +104,7 @@ public class PlayerStallRentRenewalServiceTests
         Assert.That(color, Is.EqualTo(ColorConstants.Yellow));
         StringAssert.Contains("will suspend", message);
         _events.Verify(e => e.BroadcastSellerRefreshAsync(_stall.Id), Times.Once);
+    _custodian.Verify(c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -119,6 +126,9 @@ public class PlayerStallRentRenewalServiceTests
         Assert.That(_capturedNotifications, Has.Count.EqualTo(1));
         Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Red));
         StringAssert.Contains("now suspended", _capturedNotifications[0].Message);
+    StringAssert.Contains("market reeve", _capturedNotifications[0].Message);
+    StringAssert.Contains(_stall.OwnerPersonaId, _capturedNotifications[0].Message);
+    _custodian.Verify(c => c.TransferInventoryToMarketReeveAsync(_stall, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -148,6 +158,7 @@ public class PlayerStallRentRenewalServiceTests
         Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Orange));
         StringAssert.Contains("Rent of", _capturedNotifications[0].Message);
         _withdraw.Verify(w => w.HandleAsync(It.IsAny<WithdrawGoldCommand>(), It.IsAny<CancellationToken>()), Times.Once);
+    _custodian.Verify(c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private static PlayerStall CreateStall()

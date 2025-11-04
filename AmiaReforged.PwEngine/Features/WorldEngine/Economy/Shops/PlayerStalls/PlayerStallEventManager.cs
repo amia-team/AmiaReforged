@@ -268,7 +268,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         try
         {
-            deliveredItem = await TryCreateItemAsync(product, buyerCreature).ConfigureAwait(false);
+            deliveredItem = await StallProductRestorer.RestoreItemAsync(product, buyerCreature).ConfigureAwait(false);
             if (deliveredItem is null)
             {
                 if (paymentCaptured)
@@ -791,35 +791,6 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         }
 
         buyer.Gold += (uint)amount;
-    }
-
-    private static async Task<NwItem?> TryCreateItemAsync(StallProduct product, NwCreature owner)
-    {
-        await NwTask.SwitchToMainThread();
-
-        if (owner is not { IsValid: true })
-        {
-            return null;
-        }
-
-        Location? location = owner.Location;
-        if (location is null)
-        {
-            return null;
-        }
-
-        try
-        {
-            string jsonText = Encoding.UTF8.GetString(product.ItemData);
-            Json json = Json.Parse(jsonText);
-            NwItem? restored = json.ToNwObject<NwItem>(location, owner);
-            return restored;
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(ex, "Failed to restore player stall item for product {ProductId}.", product.Id);
-            return null;
-        }
     }
 
     private static async Task DestroyItemAsync(NwItem item)

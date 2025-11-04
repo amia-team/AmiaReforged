@@ -31,6 +31,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
     private readonly IPlayerStallOwnerNotifier _notifier;
     private readonly IPlayerStallEventBroadcaster _events;
+    private readonly IPlayerStallInventoryCustodian _inventoryCustodian;
 
     private readonly CancellationTokenSource _cts = new();
     private readonly Task _runner;
@@ -38,14 +39,16 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     public PlayerStallRentRenewalService(
         IPlayerShopRepository shops,
         ICommandHandler<WithdrawGoldCommand> withdrawHandler,
-    IPlayerStallOwnerNotifier notifier,
-    IPlayerStallEventBroadcaster events,
+        IPlayerStallOwnerNotifier notifier,
+        IPlayerStallEventBroadcaster events,
+        IPlayerStallInventoryCustodian inventoryCustodian,
         bool autoStart = true)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _withdrawHandler = withdrawHandler ?? throw new ArgumentNullException(nameof(withdrawHandler));
         _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
         _events = events ?? throw new ArgumentNullException(nameof(events));
+        _inventoryCustodian = inventoryCustodian ?? throw new ArgumentNullException(nameof(inventoryCustodian));
 
         _runner = autoStart
             ? Task.Run(() => RunAsync(_cts.Token))
@@ -344,6 +347,10 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         {
             Log.Warn("Failed to persist rent failure state for stall {StallId}.", stall.Id);
         }
+        else if (state == RentFailureState.Suspended)
+        {
+            await _inventoryCustodian.TransferInventoryToMarketReeveAsync(stall).ConfigureAwait(false);
+        }
 
         Log.Warn("Rent charge failed for stall {StallId}: {Reason}", stall.Id, reason);
 
@@ -439,10 +446,24 @@ public sealed class PlayerStallRentRenewalService : IDisposable
                 baseMessage),
             RentFailureState.Suspended => string.Format(
                 CultureInfo.InvariantCulture,
-                "{0} The stall is now suspended until rent is paid.",
-                baseMessage),
+                "{0} The stall is now suspended until rent is paid. {1}",
+                baseMessage,
+                BuildSuspensionFollowUp(stall)),
             _ => baseMessage
         };
+    }
+
+    private static string BuildSuspensionFollowUp(PlayerStall stall)
+    {
+        if (string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
+        {
+            return "Any remaining inventory has been moved to the market reeve for safekeeping.";
+        }
+
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "Any remaining inventory has been moved to the market reeve; provide persona ID {0} to reclaim it.",
+            stall.OwnerPersonaId);
     }
 
     private static string BeautifyLabelOrDefault(string? tag, long stallId)
