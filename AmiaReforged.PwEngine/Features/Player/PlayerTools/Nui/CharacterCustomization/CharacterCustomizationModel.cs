@@ -217,16 +217,35 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
 
         string genderLetter = creature.Gender == Gender.Female ? "f" : "m";
 
-        string raceLetter = creature.Race.RacialType switch
+        // Get race letter from appearance.2da instead of racial type
+        // This handles cases where creatures use different appearance models (e.g., elf using human model)
+        // Also handles mounted appearances (482-495)
+        int appearanceId = creature.Appearance.RowIndex;
+
+        string raceLetter = appearanceId switch
         {
-            RacialType.Halfling => "a",
-            RacialType.Gnome => "a",
-            RacialType.Dwarf => "d",
-            RacialType.Elf => "e",
-            RacialType.Human => "h",
-            RacialType.HalfElf => "h",
-            RacialType.HalfOrc => "o",
-            _ => "h"
+            0 => "d",    // Dwarf
+            1 => "e",    // Elf
+            2 => "a",    // Gnome
+            3 => "a",    // Halfling
+            4 => "h",    // Half-Elf
+            5 => "o",    // Half-Orc
+            6 => "h",    // Human
+            482 => "d",  // Dwarf (mounted)
+            483 => "d",  // Dwarf (mounted)
+            484 => "e",  // Elf (mounted)
+            485 => "e",  // Elf (mounted)
+            486 => "a",  // Gnome (mounted)
+            487 => "a",  // Gnome (mounted)
+            488 => "a",  // Halfling (mounted)
+            489 => "a",  // Halfling (mounted)
+            490 => "h",  // Half-Elf (mounted)
+            491 => "h",  // Half-Elf (mounted)
+            492 => "o",  // Half-Orc (mounted)
+            493 => "o",  // Half-Orc (mounted)
+            494 => "h",  // Human (mounted)
+            495 => "h",  // Human (mounted)
+            _ => "h"     // Default to human for unknown appearances
         };
 
         int phenotype = (int)creature.Phenotype;

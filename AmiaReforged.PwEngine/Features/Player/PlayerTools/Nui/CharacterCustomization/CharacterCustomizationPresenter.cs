@@ -141,8 +141,32 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
 
         if (ev.ElementId == View.AppearanceButton.Id)
         {
-            _model.SetMode(CustomizationMode.Appearance);
-            UpdateModeDisplay();
+            player.SendServerMessage("Appearance button clicked - attempting to open window...", ColorConstants.Cyan);
+
+            try
+            {
+                AppearanceCustomizationView appearanceView = new AppearanceCustomizationView(player);
+                InjectionService? injector = AnvilCore.GetService<InjectionService>();
+                if (injector != null)
+                {
+                    injector.Inject(appearanceView.Presenter);
+                }
+
+                if (WindowDirector?.Value != null)
+                {
+                    WindowDirector.Value.OpenWindow(appearanceView.Presenter);
+                    player.SendServerMessage("Appearance window opened successfully!", ColorConstants.Green);
+                }
+                else
+                {
+                    player.SendServerMessage("ERROR: WindowDirector is null!", ColorConstants.Red);
+                }
+            }
+            catch (Exception ex)
+            {
+                player.SendServerMessage($"ERROR opening appearance window: {ex.Message}", ColorConstants.Red);
+            }
+
             return;
         }
 
