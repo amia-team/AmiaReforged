@@ -30,6 +30,8 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
     public NuiButton RefreshButton = null!;
     public NuiButton SelectExistingButton = null!;
     public NuiButton SpawnButton = null!;
+    public NuiButton SaveButton = null!;
+    public NuiButton DiscardButton = null!;
 
     public readonly NuiBind<int> BlueprintCount = new("plc_bp_count");
     public readonly NuiBind<string> BlueprintNames = new("plc_bp_names");
@@ -40,6 +42,30 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
     public readonly NuiBind<string> SelectedLocation = new("plc_selected_location");
 
     public readonly NuiBind<string> StatusMessage = new("plc_status_message");
+
+    public readonly NuiBind<float> PositionX = new("plc_pos_x");
+    public readonly NuiBind<float> PositionY = new("plc_pos_y");
+    public readonly NuiBind<float> PositionZ = new("plc_pos_z");
+    public readonly NuiBind<string> PositionXString = new("plc_pos_x_str");
+    public readonly NuiBind<string> PositionYString = new("plc_pos_y_str");
+    public readonly NuiBind<string> PositionZString = new("plc_pos_z_str");
+
+    public readonly NuiBind<float> TransformX = new("plc_trans_x");
+    public readonly NuiBind<float> TransformY = new("plc_trans_y");
+    public readonly NuiBind<float> TransformZ = new("plc_trans_z");
+    public readonly NuiBind<string> TransformXString = new("plc_trans_x_str");
+    public readonly NuiBind<string> TransformYString = new("plc_trans_y_str");
+    public readonly NuiBind<string> TransformZString = new("plc_trans_z_str");
+
+    public readonly NuiBind<float> RotationX = new("plc_rot_x");
+    public readonly NuiBind<float> RotationY = new("plc_rot_y");
+    public readonly NuiBind<float> RotationZ = new("plc_rot_z");
+    public readonly NuiBind<string> RotationXString = new("plc_rot_x_str");
+    public readonly NuiBind<string> RotationYString = new("plc_rot_y_str");
+    public readonly NuiBind<string> RotationZString = new("plc_rot_z_str");
+
+    public readonly NuiBind<float> Scale = new("plc_scale");
+    public readonly NuiBind<string> ScaleString = new("plc_scale_str");
 
     public override NuiLayout RootLayout()
     {
@@ -93,7 +119,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                 {
                     RowHeight = 36f,
                     Width = 0f,
-                    Height = 260f
+                    Height = 180f
                 },
                 new NuiGroup
                 {
@@ -123,6 +149,98 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                         ]
                     }
                 },
+                new NuiGroup
+                {
+                    Border = true,
+                    Height = 320f,
+                    Enabled = SelectionAvailable,
+                    Element = new NuiColumn
+                    {
+                        Children =
+                        [
+                            new NuiLabel("Position")
+                            {
+                                Height = 18f,
+                                HorizontalAlign = NuiHAlign.Center
+                            },
+                            BuildVectorRow("X", PositionXString, PositionX, -100f, 100f, "pos_x_slider"),
+                            BuildVectorRow("Y", PositionYString, PositionY, -100f, 100f, "pos_y_slider"),
+                            BuildVectorRow("Z", PositionZString, PositionZ, -100f, 100f, "pos_z_slider"),
+                            new NuiSpacer
+                            {
+                                Height = 6f
+                            },
+                            new NuiLabel("Visual Translation")
+                            {
+                                Height = 18f,
+                                HorizontalAlign = NuiHAlign.Center
+                            },
+                            BuildVectorRow("X", TransformXString, TransformX, -10f, 10f, "trans_x_slider"),
+                            BuildVectorRow("Y", TransformYString, TransformY, -10f, 10f, "trans_y_slider"),
+                            BuildVectorRow("Z", TransformZString, TransformZ, -10f, 10f, "trans_z_slider"),
+                            new NuiSpacer
+                            {
+                                Height = 6f
+                            },
+                            new NuiLabel("Visual Rotation")
+                            {
+                                Height = 18f,
+                                HorizontalAlign = NuiHAlign.Center
+                            },
+                            BuildVectorRow("X", RotationXString, RotationX, -360f, 360f, "rot_x_slider"),
+                            BuildVectorRow("Y", RotationYString, RotationY, -360f, 360f, "rot_y_slider"),
+                            BuildVectorRow("Z", RotationZString, RotationZ, -360f, 360f, "rot_z_slider"),
+                            new NuiSpacer
+                            {
+                                Height = 6f
+                            },
+                            new NuiRow
+                            {
+                                Height = 40f,
+                                Children =
+                                [
+                                    new NuiLabel("Scale")
+                                    {
+                                        Width = 40f,
+                                        VerticalAlign = NuiVAlign.Middle,
+                                        HorizontalAlign = NuiHAlign.Center
+                                    },
+                                    new NuiTextEdit("0", ScaleString, 10, false)
+                                    {
+                                        Width = 80f,
+                                        Enabled = SelectionAvailable
+                                    },
+                                    new NuiSliderFloat(Scale, 0f, 10f)
+                                    {
+                                        Width = 220f,
+                                        Enabled = SelectionAvailable,
+                                        Id = "scale_slider"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                },
+                new NuiRow
+                {
+                    Height = 42f,
+                    Enabled = SelectionAvailable,
+                    Children =
+                    [
+                        new NuiButton("Save Changes")
+                        {
+                            Id = "btn_save",
+                            Height = 32f,
+                            Width = 140f
+                        }.Assign(out SaveButton),
+                        new NuiButton("Discard Changes")
+                        {
+                            Id = "btn_discard",
+                            Height = 32f,
+                            Width = 140f
+                        }.Assign(out DiscardButton)
+                    ]
+                },
                 new NuiButton("Recover Selected")
                 {
                     Id = "btn_recover",
@@ -133,6 +251,33 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                 {
                     Height = 18f,
                     ForegroundColor = ColorConstants.Orange
+                }
+            ]
+        };
+    }
+
+    private static NuiRow BuildVectorRow(string label, NuiBind<string> stringBind, NuiBind<float> floatBind,
+        float minimum, float maximum, string sliderId)
+    {
+        return new NuiRow
+        {
+            Height = 38f,
+            Children =
+            [
+                new NuiLabel(label)
+                {
+                    Width = 24f,
+                    VerticalAlign = NuiVAlign.Middle,
+                    HorizontalAlign = NuiHAlign.Center
+                },
+                new NuiTextEdit("0", stringBind, 16, false)
+                {
+                    Width = 80f
+                },
+                new NuiSliderFloat(floatBind, minimum, maximum)
+                {
+                    Width = 220f,
+                    Id = sliderId
                 }
             ]
         };

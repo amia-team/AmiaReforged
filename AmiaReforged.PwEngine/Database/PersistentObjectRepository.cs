@@ -79,6 +79,23 @@ public class PersistentObjectRepository(PwContextFactory factory) : IPersistentO
         return;
     }
 
+    public async Task<PersistentObject?> GetObject(long id)
+    {
+        await using PwEngineContext context = factory.CreateDbContext();
+
+        try
+        {
+            return await context.PersistentObjects
+                .Include(po => po.Location)
+                .FirstOrDefaultAsync(po => po.Id == id);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            return null;
+        }
+    }
+
     public bool AreaHasPersistentObjects(string areaResRef)
     {
         using PwEngineContext context = factory.CreateDbContext();
@@ -116,6 +133,7 @@ public interface IPersistentObjectRepository
 {
     Task SaveObject(PersistentObject obj);
     Task DeleteObject(long id);
+    Task<PersistentObject?> GetObject(long id);
 
     List<PersistentObject> GetObjectsForArea(string areaResRef);
     bool AreaHasPersistentObjects(string areaResRef);

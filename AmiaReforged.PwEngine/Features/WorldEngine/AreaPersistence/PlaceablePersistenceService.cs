@@ -104,6 +104,21 @@ public class PlaceablePersistenceService
         await SavePlaceables(area, persistenceMode);
     }
 
+    public async Task<PersistentObject?> GetPersistentObjectAsync(NwPlaceable placeable)
+    {
+        await NwTask.SwitchToMainThread();
+
+        LocalVariableInt dbVar = placeable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt);
+        long id = dbVar.Value;
+
+        if (id <= 0)
+        {
+            return null;
+        }
+
+        return await _objectRepository.GetObject(id);
+    }
+
     private async Task SavePlaceables(NwArea area, ObjectPersistenceMode persistenceMode)
     {
         IEnumerable<NwPlaceable> placeables = area.FindObjectsOfTypeInArea<NwPlaceable>();
