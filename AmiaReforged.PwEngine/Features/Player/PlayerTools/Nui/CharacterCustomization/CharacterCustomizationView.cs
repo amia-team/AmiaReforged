@@ -7,7 +7,7 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.CharacterCustomi
 public sealed class CharacterCustomizationView : ScryView<CharacterCustomizationPresenter>, IToolWindow
 {
     private const float WindowW = 700f;
-    private const float WindowH = 720f;
+    private const float WindowH = 800f;
     private const float HeaderW = 600f;
     private const float HeaderH = 100f;
     private const float HeaderTopPad = 8f;
