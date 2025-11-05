@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -26,8 +27,8 @@ public class CharacterRegistrationService
     private void RegisterNewCharacter(AreaEvents.OnEnter obj)
     {
         NwGameObject creature = obj.EnteringObject;
-    if (!creature.IsLoginPlayerCharacter(out NwPlayer? player)) return;
-        if (player?.LoginCreature is null) return;
+        if (!creature.IsLoginPlayerCharacter(out NwPlayer? player)) return;
+        if (player.LoginCreature is null) return;
         if (player.IsDM) return;
 
         Guid pcKey = _runtimeCharacterService.GetPlayerKey(player);
@@ -40,15 +41,25 @@ public class CharacterRegistrationService
         }
 
         PersistedCharacter? character = _characterRepository.GetByGuid(pcKey);
+        string personaIdString = CharacterId.From(pcKey).ToPersonaId().ToString();
 
-        if (character is not null) return;
+        if (character is not null)
+        {
+            if (string.IsNullOrWhiteSpace(character.PersonaIdString))
+            {
+                _characterRepository.UpdatePersonaId(character.Id, personaIdString);
+            }
+
+            return;
+        }
 
         PersistedCharacter newCharacter = new()
         {
             Id = pcKey,
             FirstName = player.LoginCreature.OriginalFirstName,
             LastName = player.LoginCreature.OriginalLastName,
-            CdKey = player.CDKey
+            CdKey = player.CDKey,
+            PersonaIdString = personaIdString
         };
 
         _characterRepository.AddCharacter(newCharacter);

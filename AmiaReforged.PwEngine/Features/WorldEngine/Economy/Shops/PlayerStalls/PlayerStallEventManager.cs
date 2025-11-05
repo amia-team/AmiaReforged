@@ -250,8 +250,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             return PlayerStallPurchaseResult.Fail("Bulk purchases are not yet supported.", ColorConstants.Orange);
         }
 
-        int unitPrice = Math.Max(product.Price, 0);
-        int totalPrice = unitPrice * quantity;
+    int unitPrice = Math.Max(product.Price, 0);
+    int totalPrice = unitPrice * quantity;
+    bool productWillBeDepleted = product.Quantity - quantity <= 0;
 
         bool paymentCaptured = false;
 
@@ -341,6 +342,11 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 FeeAmount = 0,
                 OccurredAtUtc = now
             });
+
+            if (productWillBeDepleted)
+            {
+                _shops.RemoveProductFromShop(stall.Id, product.Id);
+            }
 
             PlayerStall? refreshedStall = _shops.GetShopWithMembers(stall.Id) ?? stall;
             List<StallProduct> refreshedProducts = _shops.ProductsForShop(stall.Id) ?? new List<StallProduct>();

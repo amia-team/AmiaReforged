@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Nui;
+using AmiaReforged.PwEngine.Features.WorldEngine.Sanitization;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -13,6 +14,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 public sealed class ShopkeeperService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private const string ShopWindowFlagPrefix = "engine_npc_shop_window_";
 
     private readonly INpcShopRepository _shops;
     private readonly WindowDirector _windowDirector;
@@ -95,7 +97,7 @@ public sealed class ShopkeeperService
             return;
         }
 
-        NwPlayer? player = ResolvePlayer(npc);
+        NwPlayer? player = ResolvePlayer(eventData, npc, shop);
         if (player is null)
         {
             return;
@@ -104,17 +106,38 @@ public sealed class ShopkeeperService
         OpenShopWindow(player, shop, npc);
     }
 
-    private NwPlayer? ResolvePlayer(NwCreature npc)
+    private NwPlayer? ResolvePlayer(CreatureEvents.OnConversation eventData, NwCreature npc, NpcShop shop)
     {
+        string flagKey = BuildShopWindowFlagKey(shop.Tag);
+
+        NwPlayer? speaker = eventData.PlayerSpeaker;
+        if (IsEligibleSpeaker(speaker, flagKey))
+        {
+            return speaker;
+        }
+
+        NwPlayer? fallback = speaker;
+
         foreach (NwCreature candidate in npc.GetNearestCreatures(CreatureTypeFilter.Perception(PerceptionType.Seen)))
         {
             if (candidate.IsLoginPlayerCharacter(out NwPlayer? player))
             {
-                return player;
+                fallback ??= player;
+
+                NwCreature? windowCreature = ResolveWindowCreature(player);
+                if (windowCreature is null)
+                {
+                    return player;
+                }
+
+                if (!HasActiveShopWindow(windowCreature, flagKey))
+                {
+                    return player;
+                }
             }
         }
 
-        return null;
+        return fallback;
     }
 
     private void OpenShopWindow(NwPlayer player, NpcShop shop, NwCreature shopkeeper)
@@ -122,6 +145,14 @@ public sealed class ShopkeeperService
         if (!player.IsValid)
         {
             return;
+        }
+
+        string flagKey = BuildShopWindowFlagKey(shop.Tag);
+        NwCreature? occupant = ResolveWindowCreature(player);
+
+        if (occupant is { IsValid: true } && HasActiveShopWindow(occupant, flagKey))
+        {
+            ClearShopWindowFlag(occupant, flagKey);
         }
 
         _windowDirector.CloseWindow(player, typeof(ShopWindowPresenter));
@@ -148,11 +179,84 @@ public sealed class ShopkeeperService
         }
 
         ShopWindowView view = new(player, shop);
+
+        IScryPresenter.PresenterClosedEventHandler? closingHandler = null;
+
+        if (occupant is { IsValid: true })
+        {
+            closingHandler = (_, _) =>
+            {
+                if (occupant.IsValid)
+                {
+                    ClearShopWindowFlag(occupant, flagKey);
+                }
+
+                view.Presenter.Closing -= closingHandler;
+            };
+
+            view.Presenter.Closing += closingHandler;
+        }
+
         _windowDirector.OpenWindow(view.Presenter);
+
+        if (occupant is { IsValid: true } && view.Presenter.Token().Token != 0)
+        {
+            SetShopWindowFlag(occupant, flagKey);
+        }
+        else if (closingHandler is not null)
+        {
+            view.Presenter.Closing -= closingHandler;
+        }
 
         string message = string.IsNullOrWhiteSpace(displayName)
             ? "Browsing merchant wares."
             : $"Browsing {displayName}.";
         player.SendServerMessage(message, ColorConstants.Cyan);
+    }
+
+    private static string BuildShopWindowFlagKey(string shopTag)
+    {
+        return LocalVariableKeyUtility.BuildKey(ShopWindowFlagPrefix, shopTag);
+    }
+
+    private static NwCreature? ResolveWindowCreature(NwPlayer player)
+    {
+        return player.ControlledCreature ?? player.LoginCreature;
+    }
+
+    private static bool IsEligibleSpeaker(NwPlayer? player, string flagKey)
+    {
+        if (player is null || !player.IsValid)
+        {
+            return false;
+        }
+
+        NwCreature? creature = ResolveWindowCreature(player);
+        if (creature is null)
+        {
+            return true;
+        }
+
+        return !HasActiveShopWindow(creature, flagKey);
+    }
+
+    private static bool HasActiveShopWindow(NwCreature creature, string flagKey)
+    {
+        LocalVariableInt marker = creature.GetObjectVariable<LocalVariableInt>(flagKey);
+        return marker.HasValue && marker.Value != 0;
+    }
+
+    private static void SetShopWindowFlag(NwCreature creature, string flagKey)
+    {
+        creature.GetObjectVariable<LocalVariableInt>(flagKey).Value = 1;
+    }
+
+    private static void ClearShopWindowFlag(NwCreature creature, string flagKey)
+    {
+        LocalVariableInt marker = creature.GetObjectVariable<LocalVariableInt>(flagKey);
+        if (marker.HasValue)
+        {
+            marker.Delete();
+        }
     }
 }

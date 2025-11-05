@@ -29,8 +29,12 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
     private readonly List<NwItem> _inventoryItems = new();
     private readonly List<NpcShopProduct?> _inventoryProducts = new();
     private readonly List<int> _inventoryBuyPrices = new();
+    private readonly List<NwItem> _identifyTargets = new();
+    private int _identifyAllCost;
     private bool _shopkeeperResolved;
     private NwCreature? _shopkeeper;
+
+    private const int IdentifyCostPerItem = 100;
 
     public ShopWindowPresenter(ShopWindowView view, NwPlayer player, NpcShop shop)
     {
@@ -118,6 +122,8 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
         Token().SetBindValues(View.InventoryItemIds, inventoryItemIds);
         Token().SetBindValues(View.InventorySellable, inventorySellable);
         Token().SetBindValue(View.InventoryCount, inventoryEntries.Count);
+        Token().SetBindValue(View.IdentifyButtonLabel, BuildIdentifyButtonLabel());
+        Token().SetBindValue(View.IdentifyButtonEnabled, _identifyTargets.Count > 0);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -142,6 +148,12 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
             }
 
             _ = HandlePurchaseAsync(rowIndex);
+            return;
+        }
+
+        if (eventData.ElementId == View.IdentifyAllButton.Id)
+        {
+            _ = HandleIdentifyAllAsync();
             return;
         }
 
@@ -199,6 +211,17 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
             : string.Format(CultureInfo.InvariantCulture, "Restock in {0:0.#} minutes.", remaining.TotalMinutes);
 
         return formatted;
+    }
+
+    private string BuildIdentifyButtonLabel()
+    {
+        if (_identifyTargets.Count == 0)
+        {
+            return "Identify All (100 gp each)";
+        }
+
+        string costLabel = string.Format(CultureInfo.InvariantCulture, "{0:N0} gp", _identifyAllCost);
+        return $"Identify All ({costLabel})";
     }
 
     private List<string> BuildProductEntries(NwCreature? buyer, out List<bool> purchasable, out List<string> tooltips)
@@ -413,6 +436,68 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
         await NotifyAsync(message, ColorConstants.Lime, refresh: true);
     }
 
+    private async Task HandleIdentifyAllAsync()
+    {
+        NwCreature? buyer = ResolveActiveBuyer();
+        if (buyer is null)
+        {
+            await NotifyAsync("You are not possessing a creature.", ColorConstants.Orange, refresh: true);
+            return;
+        }
+
+        List<NwItem> candidates = GatherIdentifyCandidates(buyer);
+        if (candidates.Count == 0)
+        {
+            await NotifyAsync("You have nothing that needs identification.", ColorConstants.Orange, refresh: true);
+            return;
+        }
+
+        int totalCost = candidates.Count * IdentifyCostPerItem;
+        bool paymentCaptured = false;
+
+        if (totalCost > 0)
+        {
+            bool paymentTaken = await TryWithdrawGoldAsync(buyer, totalCost);
+            if (!paymentTaken)
+            {
+                string costLabel = string.Format(CultureInfo.InvariantCulture, "{0:N0} gp", totalCost);
+                await NotifyAsync($"You need {costLabel} to identify those items.", ColorConstants.Orange,
+                    refresh: true);
+                return;
+            }
+
+            paymentCaptured = true;
+        }
+
+        try
+        {
+            await IdentifyItemsAsync(candidates);
+
+            string costLabel = string.Format(CultureInfo.InvariantCulture, "{0:N0} gp", totalCost);
+            string message = string.Format(
+                CultureInfo.InvariantCulture,
+                "The merchant identified {0} item{1} for {2}.",
+                candidates.Count,
+                candidates.Count == 1 ? string.Empty : "s",
+                costLabel);
+
+            await NotifyAsync(message, ColorConstants.Lime, refresh: true);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to identify items for player {PlayerName} in shop {ShopTag}.",
+                _player.PlayerName, _shop.Tag);
+
+            if (paymentCaptured && totalCost > 0)
+            {
+                await RefundGoldAsync(buyer, totalCost);
+            }
+
+            await NotifyAsync("The merchant was unable to complete the identification.", ColorConstants.Orange,
+                refresh: true);
+        }
+    }
+
     private static string BuildPurchaseMessage(string itemName, int price)
     {
         if (price <= 0)
@@ -458,6 +543,8 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
         _inventoryItems.Clear();
         _inventoryProducts.Clear();
         _inventoryBuyPrices.Clear();
+        _identifyTargets.Clear();
+        _identifyAllCost = 0;
 
         if (creature == null)
         {
@@ -475,6 +562,11 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
             string itemName = string.IsNullOrWhiteSpace(item.Name) ? item.ResRef : item.Name;
             int stack = item.StackSize;
             string stackInfo = stack > 1 ? $" x{stack}" : string.Empty;
+
+            if (NeedsIdentification(item))
+            {
+                _identifyTargets.Add(item);
+            }
 
             if (TryGetSellProduct(item, acceptedTypes, out NpcShopProduct? product) && product is not null)
             {
@@ -503,6 +595,8 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
             itemIds.Add(string.Empty);
             sellable.Add(false);
         }
+
+        _identifyAllCost = _identifyTargets.Count * IdentifyCostPerItem;
 
         return entries;
     }
@@ -711,6 +805,60 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
         {
             Log.Debug(ex, "Failed to map item {ResRef} to shop product.", resRef);
             return null;
+        }
+    }
+
+    private static List<NwItem> GatherIdentifyCandidates(NwCreature creature)
+    {
+        List<NwItem> items = new();
+
+        foreach (NwItem item in creature.Inventory.Items)
+        {
+            if (NeedsIdentification(item))
+            {
+                items.Add(item);
+            }
+        }
+
+        return items;
+    }
+
+    private static bool NeedsIdentification(NwItem item)
+    {
+        if (item is null || !item.IsValid)
+        {
+            return false;
+        }
+
+        try
+        {
+            return !item.Identified;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static async Task IdentifyItemsAsync(IEnumerable<NwItem> items)
+    {
+        await NwTask.SwitchToMainThread();
+
+        foreach (NwItem item in items)
+        {
+            if (item is null || !item.IsValid)
+            {
+                continue;
+            }
+
+            try
+            {
+                item.Identified = true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Failed to identify item {ItemResRef}.", item.ResRef);
+            }
         }
     }
 

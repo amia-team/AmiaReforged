@@ -64,17 +64,43 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
     public void RemoveProductFromShop(long shopId, long productId)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
+        using var transaction = ctx.Database.BeginTransaction();
 
         try
         {
             StallProduct? product = ctx.StallProducts.SingleOrDefault(p => p.Id == productId && p.StallId == shopId);
-            if (product == null) return;
+            if (product == null)
+            {
+                return;
+            }
+
+            List<StallTransaction> relatedTransactions = ctx.StallTransactions
+                .Where(t => t.StallProductId == productId)
+                .ToList();
+
+            if (relatedTransactions.Count > 0)
+            {
+                foreach (StallTransaction transactionRecord in relatedTransactions)
+                {
+                    transactionRecord.StallProductId = null;
+                }
+            }
+
             ctx.StallProducts.Remove(product);
             ctx.SaveChanges();
+            transaction.Commit();
         }
         catch (Exception e)
         {
             Log.Error(e);
+            try
+            {
+                transaction.Rollback();
+            }
+            catch (Exception rollbackError)
+            {
+                Log.Warn(rollbackError, "Failed to rollback stall product removal transaction.");
+            }
         }
     }
 

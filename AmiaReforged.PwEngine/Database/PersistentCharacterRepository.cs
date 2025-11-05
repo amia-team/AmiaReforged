@@ -1,3 +1,4 @@
+using System;
 using AmiaReforged.PwEngine.Database.Entities;
 using Anvil.Services;
 
@@ -20,6 +21,24 @@ public class PersistentCharacterRepository : IPersistentCharacterRepository
     {
         using PwEngineContext context = _factory.CreateDbContext();
         context.Characters.Add(character);
+        context.SaveChanges();
+    }
+
+    public void UpdatePersonaId(Guid characterId, string personaIdString)
+    {
+        using PwEngineContext context = _factory.CreateDbContext();
+        PersistedCharacter? entity = context.Characters.FirstOrDefault(c => c.Id == characterId);
+        if (entity is null)
+        {
+            return;
+        }
+
+        if (string.Equals(entity.PersonaIdString, personaIdString, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        entity.PersonaIdString = personaIdString;
         context.SaveChanges();
     }
 
@@ -71,6 +90,7 @@ public interface IPersistentCharacterRepository
     List<PersistedCharacter> GetCharacters();
     List<PersistedCharacter> GetCharactersByCdKey(string cdKey);
     PersistedCharacter? GetByGuid(Guid id);
+    void UpdatePersonaId(Guid characterId, string personaIdString);
     void ChangeCharacterOwner(PersistedCharacter character, string cdKey);
     void DeleteCharacter(PersistedCharacter character);
     void SaveChanges();

@@ -277,6 +277,21 @@ public sealed class PlayerStallInitializer
                 return;
             }
 
+            string playerName = string.Empty;
+            try
+            {
+                playerName = player.PlayerName ?? string.Empty;
+            }
+            catch
+            {
+                playerName = string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(playerName))
+            {
+                playerName = player.LoginCreature.Name ?? player.CDKey ?? "<unknown>";
+            }
+
             StallRegistration registration = await ResolveRegistrationAsync(placeable).ConfigureAwait(false);
 
             if (registration.State != StallRegistrationState.Ready)
@@ -288,6 +303,8 @@ public sealed class PlayerStallInitializer
             PlayerStall? stall = await Task.Run(() =>
                 _shops.GetShopById(registration.StallId!.Value)).ConfigureAwait(false);
 
+            await NwTask.SwitchToMainThread();
+
             if (stall is null)
             {
                 Log.Warn("Player stall record {Tag} disappeared before interaction.", registration.DbTag);
@@ -297,7 +314,7 @@ public sealed class PlayerStallInitializer
                 return;
             }
 
-            if (!TryResolvePersonas(player, out PersonaId playerPersonaId, out PersonaId characterPersonaId, out Guid ownerGuid))
+            if (!TryResolvePersonas(player, playerName, out PersonaId playerPersonaId, out PersonaId characterPersonaId, out Guid ownerGuid))
             {
                 await SendServerMessageAsync(player,
                     "We couldn't verify your persona for stall leasing. Please relog and try again.",
@@ -470,6 +487,7 @@ public sealed class PlayerStallInitializer
 
     private bool TryResolvePersonas(
         NwPlayer player,
+        string playerNameForLog,
         out PersonaId playerPersonaId,
         out PersonaId characterPersonaId,
         out Guid ownerGuid)
@@ -482,7 +500,7 @@ public sealed class PlayerStallInitializer
         if (string.IsNullOrWhiteSpace(cdKey))
         {
             Log.Warn("Failed to resolve CD key for player {PlayerName} while handling stall interaction.",
-                player.PlayerName);
+                playerNameForLog);
             return false;
         }
 
@@ -494,14 +512,14 @@ public sealed class PlayerStallInitializer
         {
             Log.Warn(ex, "Failed to convert CD key {CdKey} into player persona for player {PlayerName}.",
                 cdKey,
-                player.PlayerName);
+                playerNameForLog);
             return false;
         }
 
         if (!_characters.TryGetPlayerKey(player, out Guid key) || key == Guid.Empty)
         {
             Log.Warn("Failed to resolve persistent key for player {PlayerName} while handling stall interaction.",
-                player.PlayerName);
+                playerNameForLog);
             return false;
         }
 
@@ -516,7 +534,7 @@ public sealed class PlayerStallInitializer
         {
             Log.Warn(ex, "Failed to convert key {PlayerKey} into PersonaId for player {PlayerName}.",
                 key,
-                player.PlayerName);
+                playerNameForLog);
             return false;
         }
     }

@@ -19,10 +19,13 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
     public readonly NuiBind<string> InventoryEntries = new("shop_inventory_entries");
     public readonly NuiBind<string> InventoryItemIds = new("shop_inventory_ids");
     public readonly NuiBind<bool> InventorySellable = new("shop_inventory_sellable");
+    public readonly NuiBind<string> IdentifyButtonLabel = new("shop_identify_label");
+    public readonly NuiBind<bool> IdentifyButtonEnabled = new("shop_identify_enabled");
 
     public NuiButton CloseButton = null!;
     public NuiButton BuyButton = null!;
     public NuiButton SellButton = null!;
+    public NuiButton IdentifyAllButton = null!;
 
     public ShopWindowView(NwPlayer player, NpcShop shop)
     {
@@ -128,6 +131,14 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
                     RowHeight = 24f,
                     Height = 160f
                 },
+                new NuiSpacer { Height = 6f },
+                new NuiButton(IdentifyButtonLabel)
+                {
+                    Id = "shop_identify_all",
+                    Height = 30f,
+                    Width = 160f,
+                    Enabled = IdentifyButtonEnabled
+                }.Assign(out IdentifyAllButton),
                 new NuiSpacer { Height = 8f },
                 new NuiButton("Leave Counter")
                 {

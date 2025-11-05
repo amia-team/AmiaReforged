@@ -107,6 +107,14 @@ public class PersonaDescriptorServiceTests
             return character;
         }
 
+        public void UpdatePersonaId(Guid characterId, string personaIdString)
+        {
+            if (_characters.TryGetValue(characterId, out PersistedCharacter? character))
+            {
+                character.PersonaIdString = personaIdString;
+            }
+        }
+
         public List<PersistedCharacter> GetCharactersByCdKey(string cdKey)
         {
             return _characters.Values.Where(c => string.Equals(c.CdKey, cdKey, StringComparison.OrdinalIgnoreCase)).ToList();
