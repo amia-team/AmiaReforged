@@ -83,6 +83,40 @@ public sealed class AppearanceCustomizationModel(NwPlayer player)
     public string CurrentPortrait { get; private set; } = "";
     public string NewPortrait { get; private set; } = "";
 
+    // Tattoo properties
+    private int CurrentTattooPart { get; set; } = 0; // Index into TattooParts array (Left Bicep is default)
+    public readonly int[] TattooModels = new int[9]; // Model for each tattoo part (public so Presenter can read for display)
+    private static readonly int[] TattooParts =
+    [
+        NWScript.CREATURE_PART_LEFT_BICEP,
+        NWScript.CREATURE_PART_LEFT_FOREARM,
+        NWScript.CREATURE_PART_LEFT_SHIN,
+        NWScript.CREATURE_PART_LEFT_THIGH,
+        NWScript.CREATURE_PART_RIGHT_BICEP,
+        NWScript.CREATURE_PART_RIGHT_FOREARM,
+        NWScript.CREATURE_PART_RIGHT_SHIN,
+        NWScript.CREATURE_PART_RIGHT_THIGH,
+        NWScript.CREATURE_PART_TORSO
+    ];
+    private static readonly string[] TattooPartNames =
+    [
+        "Left Bicep",
+        "Left Forearm",
+        "Left Shin",
+        "Left Thigh",
+        "Right Bicep",
+        "Right Forearm",
+        "Right Shin",
+        "Right Thigh",
+        "Torso"
+    ];
+
+    // Color channel properties (0 = Tattoo1, 1 = Tattoo2, 2 = Hair)
+    public int CurrentColorChannel { get; private set; } = 0;
+    public int Tattoo1Color { get; private set; } = 0;
+    public int Tattoo2Color { get; private set; } = 0;
+    public int HairColor { get; private set; } = 0;
+
     public void LoadInitialValues()
     {
         NwCreature? creature = player.ControlledCreature;
@@ -102,6 +136,17 @@ public sealed class AppearanceCustomizationModel(NwPlayer player)
         // Load portrait
         CurrentPortrait = creature.PortraitResRef;
         NewPortrait = CurrentPortrait;
+
+        // Load tattoo models for all parts
+        for (int i = 0; i < TattooParts.Length; i++)
+        {
+            TattooModels[i] = NWScript.GetCreatureBodyPart(TattooParts[i], creature);
+        }
+
+        // Load tattoo and hair colors
+        Tattoo1Color = NWScript.GetColor(creature, NWScript.COLOR_CHANNEL_TATTOO_1);
+        Tattoo2Color = NWScript.GetColor(creature, NWScript.COLOR_CHANNEL_TATTOO_2);
+        HairColor = NWScript.GetColor(creature, NWScript.COLOR_CHANNEL_HAIR);
 
         // Save ALL initial values as restore point
         SaveBackupToPcKey();
@@ -157,6 +202,118 @@ public sealed class AppearanceCustomizationModel(NwPlayer player)
         CurrentPortrait = resref;
         NewPortrait = resref;
         player.SendServerMessage($"Portrait changed to {resref}.", ColorConstants.Green);
+    }
+
+    public void SelectColorChannel(int channel)
+    {
+        CurrentColorChannel = channel;
+        string channelName = channel switch
+        {
+            0 => "Tattoo 1",
+            1 => "Tattoo 2",
+            2 => "Hair",
+            _ => "Unknown"
+        };
+        player.SendServerMessage($"Selected {channelName} color channel.", ColorConstants.Cyan);
+    }
+
+    public void SetColor(int colorIndex)
+    {
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
+
+        switch (CurrentColorChannel)
+        {
+            case 0: // Tattoo 1
+                Tattoo1Color = colorIndex;
+                NWScript.SetColor(creature, NWScript.COLOR_CHANNEL_TATTOO_1, colorIndex);
+                player.SendServerMessage($"Tattoo 1 color set to {colorIndex}.", ColorConstants.Green);
+                break;
+            case 1: // Tattoo 2
+                Tattoo2Color = colorIndex;
+                NWScript.SetColor(creature, NWScript.COLOR_CHANNEL_TATTOO_2, colorIndex);
+                player.SendServerMessage($"Tattoo 2 color set to {colorIndex}.", ColorConstants.Green);
+                break;
+            case 2: // Hair
+                HairColor = colorIndex;
+                NWScript.SetColor(creature, NWScript.COLOR_CHANNEL_HAIR, colorIndex);
+                player.SendServerMessage($"Hair color set to {colorIndex}.", ColorConstants.Green);
+                break;
+        }
+    }
+
+    public void SelectTattoo()
+    {
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
+
+        // Load current tattoo models for all parts
+        for (int i = 0; i < TattooParts.Length; i++)
+        {
+            TattooModels[i] = NWScript.GetCreatureBodyPart(TattooParts[i], creature);
+        }
+
+        CurrentTattooPart = 0; // Default to Left Bicep
+        player.SendServerMessage("Selected tattoos. Use part selector to choose which body part to customize.", ColorConstants.Cyan);
+    }
+
+    public string GetCurrentTattooPartName()
+    {
+        return TattooPartNames[CurrentTattooPart];
+    }
+
+    public int GetCurrentTattooPartIndex()
+    {
+        return CurrentTattooPart;
+    }
+
+    public int GetCurrentTattooModel()
+    {
+        return TattooModels[CurrentTattooPart];
+    }
+
+    public void CycleTattooPart(int direction)
+    {
+        CurrentTattooPart += direction;
+
+        if (CurrentTattooPart < 0)
+            CurrentTattooPart = TattooParts.Length - 1;
+        else if (CurrentTattooPart >= TattooParts.Length)
+            CurrentTattooPart = 0;
+
+        player.SendServerMessage($"Selected {TattooPartNames[CurrentTattooPart]}. Current model: {TattooModels[CurrentTattooPart]}", ColorConstants.Cyan);
+    }
+
+    public void AdjustTattooModel(int delta)
+    {
+        int currentModel = TattooModels[CurrentTattooPart];
+
+        // Only cycle between models 1 and 2 (all races only have 2 tattoo options for now)
+        int newModel;
+        if (delta > 0) // Going forward
+        {
+            newModel = currentModel == 1 ? 2 : 1;
+        }
+        else // Going backward
+        {
+            newModel = currentModel == 2 ? 1 : 2;
+        }
+
+        TattooModels[CurrentTattooPart] = newModel;
+        ApplyTattooChanges();
+
+        player.SendServerMessage($"{TattooPartNames[CurrentTattooPart]} tattoo model set to {newModel}.", ColorConstants.Green);
+    }
+
+    private void ApplyTattooChanges()
+    {
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
+
+        int partType = TattooParts[CurrentTattooPart];
+        int model = TattooModels[CurrentTattooPart];
+
+        NWScript.SetCreatureBodyPart(partType, model, creature);
     }
 
     public void SelectHead()
@@ -455,6 +612,38 @@ public sealed class AppearanceCustomizationModel(NwPlayer player)
             NewPortrait = backupData.Portrait;
             player.SendServerMessage("Portrait reverted to last save point.", ColorConstants.Cyan);
         }
+
+        // Revert Tattoos
+        if (backupData.TattooModels != null && backupData.TattooModels.Length == TattooParts.Length)
+        {
+            for (int i = 0; i < TattooParts.Length; i++)
+            {
+                TattooModels[i] = backupData.TattooModels[i];
+                NWScript.SetCreatureBodyPart(TattooParts[i], TattooModels[i], creature);
+            }
+            player.SendServerMessage("Tattoos reverted to last save point.", ColorConstants.Cyan);
+        }
+
+        // Revert Colors
+        if (backupData.Tattoo1Color.HasValue)
+        {
+            Tattoo1Color = backupData.Tattoo1Color.Value;
+            NWScript.SetColor(creature, NWScript.COLOR_CHANNEL_TATTOO_1, Tattoo1Color);
+        }
+        if (backupData.Tattoo2Color.HasValue)
+        {
+            Tattoo2Color = backupData.Tattoo2Color.Value;
+            NWScript.SetColor(creature, NWScript.COLOR_CHANNEL_TATTOO_2, Tattoo2Color);
+        }
+        if (backupData.HairColor.HasValue)
+        {
+            HairColor = backupData.HairColor.Value;
+            NWScript.SetColor(creature, NWScript.COLOR_CHANNEL_HAIR, HairColor);
+        }
+        if (backupData.Tattoo1Color.HasValue || backupData.Tattoo2Color.HasValue || backupData.HairColor.HasValue)
+        {
+            player.SendServerMessage("Colors reverted to last save point.", ColorConstants.Cyan);
+        }
     }
 
     public void ConfirmAndClose()
@@ -470,7 +659,11 @@ public sealed class AppearanceCustomizationModel(NwPlayer player)
             HeadModel = HeadModel,
             Scale = Scale,
             Soundset = CurrentSoundset,
-            Portrait = CurrentPortrait
+            Portrait = CurrentPortrait,
+            TattooModels = (int[])TattooModels.Clone(),
+            Tattoo1Color = Tattoo1Color,
+            Tattoo2Color = Tattoo2Color,
+            HairColor = HairColor
         };
 
         string json = JsonConvert.SerializeObject(backupData);
@@ -518,5 +711,9 @@ public class AppearanceBackupData
     public float? Scale { get; set; }
     public int? Soundset { get; set; }
     public string? Portrait { get; set; }
+    public int[]? TattooModels { get; set; }
+    public int? Tattoo1Color { get; set; }
+    public int? Tattoo2Color { get; set; }
+    public int? HairColor { get; set; }
 }
 

@@ -23,8 +23,8 @@ public sealed class AppearanceCustomizationPresenter(AppearanceCustomizationView
     {
         NuiWindow window = new NuiWindow(View.RootLayout(), "Appearance Customization")
         {
-            Geometry = new NuiRect(50f, 50f, 700f, 900f),
-            Resizable = true
+            Geometry = new NuiRect(50f, 50f, 700f, 800f),
+            Resizable = false
         };
 
         if (!player.TryCreateNuiWindow(window, out _token))
@@ -59,12 +59,43 @@ public sealed class AppearanceCustomizationPresenter(AppearanceCustomizationView
         Token().SetBindValue(View.VoicesetConfirmEnabled, true);
         Token().SetBindValue(View.PortraitConfirmEnabled, true);
 
-        // Load all initial appearance values (head, scale, voiceset, portrait)
+        // Initialize tattoo controls
+        Token().SetBindValue(View.TattooControlsEnabled, false);
+        Token().SetBindValue(View.TattooPartName, "");
+        Token().SetBindValue(View.TattooModelText, "1");
+        for (int i = 0; i < 9; i++)
+        {
+            Token().SetBindValue(View.TattooPartVisible[i], false);
+        }
+
+        // Enable channel selection buttons
+        Token().SetBindValue(View.ChannelButtonsEnabled, true);
+
+        // Initialize color palette (default to Tattoo1 channel)
+        Token().SetBindValue(View.CurrentColorChannel, 0);
+        InitializeColorPalettes();
+
+        // Load all initial appearance values (head, scale, voiceset, portrait, tattoos, colors)
         _model.LoadInitialValues();
         UpdateHeadDisplay();
         UpdateScaleDisplay();
         UpdateVoicesetDisplay();
         UpdatePortraitDisplay();
+    }
+
+    private void InitializeColorPalettes()
+    {
+        // Initialize tattoo color palette (cloth/leather colors)
+        for (int i = 0; i < 176; i++)
+        {
+            Token().SetBindValue(View.TattooColorResRef[i], $"cc_color_{i}");
+        }
+
+        // Initialize hair color palette (hair colors)
+        for (int i = 0; i < 176; i++)
+        {
+            Token().SetBindValue(View.HairColorResRef[i], $"cc_color_h_{i}");
+        }
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
@@ -165,6 +196,77 @@ public sealed class AppearanceCustomizationPresenter(AppearanceCustomizationView
             return;
         }
 
+        if (ev.ElementId == View.TattooButton.Id)
+        {
+            _model.SelectTattoo();
+            Token().SetBindValue(View.TattooControlsEnabled, true);
+            UpdateTattooDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.TattooPartLeftButton.Id)
+        {
+            _model.CycleTattooPart(-1);
+            UpdateTattooDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.TattooPartRightButton.Id)
+        {
+            _model.CycleTattooPart(1);
+            UpdateTattooDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.TattooModelLeftButton.Id)
+        {
+            _model.AdjustTattooModel(-1);
+            UpdateTattooDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.TattooModelRightButton.Id)
+        {
+            _model.AdjustTattooModel(1);
+            UpdateTattooDisplay();
+            return;
+        }
+
+        // Channel selection buttons
+        if (ev.ElementId == View.Tattoo1Button.Id)
+        {
+            _model.SelectColorChannel(0);
+            Token().SetBindValue(View.CurrentColorChannel, 0);
+            UpdateColorPaletteDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.Tattoo2Button.Id)
+        {
+            _model.SelectColorChannel(1);
+            Token().SetBindValue(View.CurrentColorChannel, 1);
+            UpdateColorPaletteDisplay();
+            return;
+        }
+
+        if (ev.ElementId == View.HairButton.Id)
+        {
+            _model.SelectColorChannel(2);
+            Token().SetBindValue(View.CurrentColorChannel, 2);
+            UpdateColorPaletteDisplay();
+            return;
+        }
+
+        // Color palette buttons
+        if (ev.ElementId.StartsWith("btn_app_color_"))
+        {
+            if (int.TryParse(ev.ElementId.Replace("btn_app_color_", ""), out int colorIndex))
+            {
+                _model.SetColor(colorIndex);
+            }
+            return;
+        }
+
         if (ev.ElementId == View.SaveButton.Id)
         {
             _model.ApplyChanges();
@@ -178,6 +280,7 @@ public sealed class AppearanceCustomizationPresenter(AppearanceCustomizationView
             UpdateScaleDisplay();
             UpdateVoicesetDisplay();
             UpdatePortraitDisplay();
+            UpdateTattooDisplay();
             return;
         }
 
@@ -241,6 +344,43 @@ public sealed class AppearanceCustomizationPresenter(AppearanceCustomizationView
         else
         {
             Token().SetBindValue(View.PortraitResRef, "gui_po_nwnlogo_");
+        }
+    }
+
+    private void UpdateTattooDisplay()
+    {
+        // Update part name display
+        Token().SetBindValue(View.TattooPartName, _model.GetCurrentTattooPartName());
+
+        // Update model number display
+        Token().SetBindValue(View.TattooModelText, _model.GetCurrentTattooModel().ToString());
+
+        // Update visibility for all tattoo parts - show ONLY the currently selected part (always visible so player can see which part they're working on)
+        int currentPartIndex = _model.GetCurrentTattooPartIndex();
+        for (int i = 0; i < 9; i++)
+        {
+            // Show only the currently selected part (always show it, even if model = 1 "no tattoo")
+            Token().SetBindValue(View.TattooPartVisible[i], i == currentPartIndex);
+        }
+    }
+
+    private void UpdateColorPaletteDisplay()
+    {
+        // Switch color palette images based on selected channel
+        // Channels 0 and 1 (Tattoo1, Tattoo2) use cloth/leather palette
+        // Channel 2 (Hair) uses hair palette
+        int currentChannel = Token().GetBindValue(View.CurrentColorChannel);
+
+        for (int i = 0; i < 176; i++)
+        {
+            if (currentChannel == 2) // Hair channel
+            {
+                Token().SetBindValue(View.TattooColorResRef[i], $"cc_color_h_{i}");
+            }
+            else // Tattoo channels
+            {
+                Token().SetBindValue(View.TattooColorResRef[i], $"cc_color_{i}");
+            }
         }
     }
 }
