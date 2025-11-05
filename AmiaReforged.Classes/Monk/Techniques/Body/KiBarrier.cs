@@ -9,7 +9,7 @@ namespace AmiaReforged.Classes.Monk.Techniques.Body;
 [ServiceBinding(typeof(ITechnique))]
 public class KiBarrier(AugmentationFactory augmentationFactory) : ITechnique
 {
-    private const string KiBarrierTag = "kibarrier";
+    private const string KiBarrierTag = nameof(TechniqueType.KiBarrier);
     public TechniqueType TechniqueType => TechniqueType.KiBarrier;
 
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
