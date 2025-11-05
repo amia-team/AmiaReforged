@@ -17,6 +17,8 @@ public sealed class NpcShopRepository : INpcShopRepository
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
+    public event EventHandler<NpcShopChangedEventArgs>? ShopChanged;
+
     private readonly Dictionary<string, NpcShop> _shops = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _shopkeeperToShop = new(StringComparer.OrdinalIgnoreCase);
     private readonly IShopItemBlacklist _blacklist;
@@ -129,6 +131,9 @@ public sealed class NpcShopRepository : INpcShopRepository
             return false;
         }
 
+        ConsignedItemData? resultItem = null;
+        bool success = false;
+
         lock (shop.SyncRoot)
         {
             NpcShopProduct? product = shop.FindProduct(productResRef);
@@ -169,10 +174,10 @@ public sealed class NpcShopRepository : INpcShopRepository
                         return false;
                     }
 
-                    consumedItem = new ConsignedItemData(vaultItem.ItemData, vaultItem.Quantity, vaultItem.ItemName, vaultItem.ResRef);
+                    resultItem = new ConsignedItemData(vaultItem.ItemData, vaultItem.Quantity, vaultItem.ItemName, vaultItem.ResRef);
                 }
 
-                return true;
+                success = true;
             }
             catch (Exception ex)
             {
@@ -181,6 +186,15 @@ public sealed class NpcShopRepository : INpcShopRepository
                 return false;
             }
         }
+
+        if (!success)
+        {
+            return false;
+        }
+
+        consumedItem = resultItem;
+        RaiseShopChanged(shop, NpcShopChangeKind.StockChanged);
+        return true;
     }
 
     public void ReturnProduct(string shopTag, string productResRef, int quantity, ConsignedItemData? consignedItem = null)
@@ -195,6 +209,8 @@ public sealed class NpcShopRepository : INpcShopRepository
             return;
         }
 
+        bool updated = false;
+
         lock (shop.SyncRoot)
         {
             NpcShopProduct? product = shop.FindProduct(productResRef);
@@ -204,6 +220,7 @@ public sealed class NpcShopRepository : INpcShopRepository
             }
 
             product.ReturnToStock(quantity);
+            updated = true;
 
             try
             {
@@ -229,6 +246,11 @@ public sealed class NpcShopRepository : INpcShopRepository
                 Log.Error(ex, "Failed to persist stock return for shop {Tag} product {ResRef}.", shop.Tag, product.ResRef);
             }
         }
+
+        if (updated)
+        {
+            RaiseShopChanged(shop, NpcShopChangeKind.StockChanged);
+        }
     }
 
     public bool TryStorePlayerProduct(string shopTag, ShopProductRecord product, ConsignedItemData consignedItem)
@@ -240,6 +262,8 @@ public sealed class NpcShopRepository : INpcShopRepository
         {
             return false;
         }
+
+        bool success = false;
 
         try
         {
@@ -254,13 +278,21 @@ public sealed class NpcShopRepository : INpcShopRepository
                 .GetResult();
 
             shop.UpsertProduct(persisted);
-            return true;
+            success = true;
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Failed to store player-managed product for shop {Tag} resref {ResRef}.", shopTag, product.ResRef);
+            success = false;
+        }
+
+        if (!success)
+        {
             return false;
         }
+
+        RaiseShopChanged(shop, NpcShopChangeKind.ProductsChanged);
+        return true;
     }
 
     public bool TryUpdateNextRestock(string shopTag, DateTime? nextRestockUtc)
@@ -269,6 +301,8 @@ public sealed class NpcShopRepository : INpcShopRepository
         {
             return false;
         }
+
+        bool success = false;
 
         lock (shop.SyncRoot)
         {
@@ -280,14 +314,22 @@ public sealed class NpcShopRepository : INpcShopRepository
                 _persistence.UpdateNextRestockAsync(shop.Id, effective, CancellationToken.None)
                     .GetAwaiter()
                     .GetResult();
-                return true;
+                success = true;
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to persist restock update for shop {Tag}.", shop.Tag);
-                return false;
+                success = false;
             }
         }
+
+        if (!success)
+        {
+            return false;
+        }
+
+        RaiseShopChanged(shop, NpcShopChangeKind.MetadataChanged);
+        return true;
     }
 
     public void ApplyRestock(NpcShop shop, IReadOnlyList<(NpcShopProduct Product, int Added)> restocked)
@@ -299,6 +341,8 @@ public sealed class NpcShopRepository : INpcShopRepository
         {
             return;
         }
+
+        bool updated = false;
 
         lock (shop.SyncRoot)
         {
@@ -314,12 +358,18 @@ public sealed class NpcShopRepository : INpcShopRepository
                     _persistence.ReturnStockAsync(shop.Id, product.ResRef, added, CancellationToken.None)
                         .GetAwaiter()
                         .GetResult();
+                    updated = true;
                 }
                 catch (Exception ex)
                 {
                     Log.Error(ex, "Failed to persist restock for shop {Tag} product {ResRef}.", shop.Tag, product.ResRef);
                 }
             }
+        }
+
+        if (updated)
+        {
+            RaiseShopChanged(shop, NpcShopChangeKind.StockChanged);
         }
     }
 
@@ -363,6 +413,18 @@ public sealed class NpcShopRepository : INpcShopRepository
         catch (Exception ex)
         {
             Log.Error(ex, "Failed to materialize runtime shop for tag {Tag}.", record.Tag);
+        }
+    }
+
+    private void RaiseShopChanged(NpcShop shop, NpcShopChangeKind changeKind)
+    {
+        try
+        {
+            ShopChanged?.Invoke(this, new NpcShopChangedEventArgs(shop, changeKind));
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "NPC shop change observers threw an exception for shop {Tag}.", shop.Tag);
         }
     }
 

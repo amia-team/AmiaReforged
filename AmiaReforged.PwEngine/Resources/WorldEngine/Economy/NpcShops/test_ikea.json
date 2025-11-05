@@ -1,0 +1,51 @@
+{
+  "Tag": "ztest_ikea",
+  "DisplayName": "Poetry Store",
+  "ShopkeeperTag": "ikea_shopkeep",
+  "Description": "A shop of shitty flatpack furniture.",
+  "Restock": {
+    "MinMinutes": 2,
+    "MaxMinutes": 12
+  },
+  "Products": [
+    {
+      "ResRef": "furniturespawn",
+      "Name": "Packed Table",
+      "Description": "A nice little table",
+      "Price": 125,
+      "InitialStock": 12,
+      "MaxStock": 20,
+      "RestockAmount": 3,
+      "BaseItemType": 74,
+      "LocalVariables": [
+        {
+          "Name": "is_plc",
+          "Type": "Int",
+          "Value": 1
+        },
+        {
+          "Name": "plc_resref",
+          "Type": "String",
+          "Value": "furniturespawn"
+        },
+        {
+          "Name": "plc_name",
+          "Type": "String",
+          "Value": "Packed Table"
+        },
+        {
+          "Name": "plc_appearance",
+          "Type": "Int",
+          "Value": 12
+        }
+      ],
+      "Appearance": {
+        "ModelType": 0,
+        "SimpleModelNumber": 12
+      }
+    }
+  ],
+  "AcceptCategories": [
+  ],
+  "MarkupPercent": 25
+}

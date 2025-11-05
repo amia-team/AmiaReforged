@@ -52,6 +52,13 @@
           "Name": "Poetry Store",
           "Type": "Shop",
           "Description": "A quaint little shop filled with books of poetry from various authors."
+        },
+        {
+          "ResRef": "ztest_ikea",
+          "Tag": "ztest_ikea",
+          "Name": "IKEA",
+          "Type": "Shop",
+          "Description": "A quaint little shop filled with books of poetry from various authors."
         }
       ]
     },

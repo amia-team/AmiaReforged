@@ -9,6 +9,16 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 
 public sealed class NpcShop
 {
+    private static readonly JsonSerializerOptions LocalVariableJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
+    private static readonly JsonSerializerOptions AppearanceJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private readonly Dictionary<string, NpcShopProduct> _productsByResref = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, List<NpcShopProduct>> _productsByBaseItemType = new();
     private readonly HashSet<int> _acceptedBaseItemTypes = new();
@@ -263,7 +273,7 @@ public sealed class NpcShop
 
         try
         {
-            JsonLocalVariableDefinition[]? definitions = JsonSerializer.Deserialize<JsonLocalVariableDefinition[]>(json);
+            JsonLocalVariableDefinition[]? definitions = JsonSerializer.Deserialize<JsonLocalVariableDefinition[]>(json, LocalVariableJsonOptions);
             if (definitions is null || definitions.Length == 0)
             {
                 return Array.Empty<NpcShopLocalVariable>();
@@ -292,7 +302,7 @@ public sealed class NpcShop
 
         try
         {
-            SimpleModelAppearanceDefinition? definition = JsonSerializer.Deserialize<SimpleModelAppearanceDefinition>(json);
+            SimpleModelAppearanceDefinition? definition = JsonSerializer.Deserialize<SimpleModelAppearanceDefinition>(json, AppearanceJsonOptions);
             return definition == null ? null : new SimpleModelAppearance(definition.ModelType, definition.SimpleModelNumber);
         }
         catch

@@ -5,6 +5,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 
 public interface INpcShopRepository
 {
+    event EventHandler<NpcShopChangedEventArgs>? ShopChanged;
     void Reload();
     void Upsert(NpcShopDefinition definition);
     void Upsert(ShopRecord record);

@@ -33,6 +33,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
     private int _identifyAllCost;
     private bool _shopkeeperResolved;
     private NwCreature? _shopkeeper;
+    private bool _listeningForUpdates;
 
     private const int IdentifyCostPerItem = 100;
 
@@ -86,6 +87,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
         try
         {
             UpdateView();
+            RegisterForRepositoryUpdates();
         }
         catch (Exception ex)
         {
@@ -171,6 +173,8 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
 
     public override void Close()
     {
+        UnregisterFromRepositoryUpdates();
+
         try
         {
             _token.Close();
@@ -530,6 +534,76 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
         catch (Exception ex)
         {
             Log.Debug(ex, "Refreshing NPC shop view failed for player {PlayerName}.", _player.PlayerName);
+        }
+    }
+
+    private void RegisterForRepositoryUpdates()
+    {
+        if (_listeningForUpdates)
+        {
+            return;
+        }
+
+        ShopRepository.Value.ShopChanged += HandleShopChanged;
+        Closing += HandleClosing;
+        _listeningForUpdates = true;
+    }
+
+    private void UnregisterFromRepositoryUpdates()
+    {
+        if (!_listeningForUpdates)
+        {
+            return;
+        }
+
+        ShopRepository.Value.ShopChanged -= HandleShopChanged;
+        Closing -= HandleClosing;
+        _listeningForUpdates = false;
+    }
+
+    private void HandleShopChanged(object? sender, NpcShopChangedEventArgs args)
+    {
+        if (!string.Equals(args.Shop.Tag, _shop.Tag, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        switch (args.ChangeKind)
+        {
+            case NpcShopChangeKind.StockChanged:
+            case NpcShopChangeKind.ProductsChanged:
+            case NpcShopChangeKind.MetadataChanged:
+                _ = RefreshAsync();
+                break;
+        }
+    }
+
+    private void HandleClosing(IScryPresenter sender, EventArgs eventArgs)
+    {
+        UnregisterFromRepositoryUpdates();
+    }
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            await NwTask.SwitchToMainThread();
+
+            if (!_player.IsValid)
+            {
+                return;
+            }
+
+            if (_token.Token == 0)
+            {
+                return;
+            }
+
+            UpdateView();
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Failed to refresh NPC shop view for player {PlayerName}.", _player.PlayerName);
         }
     }
 

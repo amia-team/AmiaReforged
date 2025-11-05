@@ -11,5 +11,7 @@ public interface IToolWindow
     public string Title { get; }
     public string CategoryTag { get; }
 
+    public bool ShouldListForPlayer(NwPlayer player) => ListInPlayerTools;
+
     public IScryPresenter ForPlayer(NwPlayer player);
 }

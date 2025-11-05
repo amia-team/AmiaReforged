@@ -35,12 +35,15 @@ public class PlayerToolsModel
         foreach (Type type in assembly.GetTypes()
                      .Where(t => interfaceType.IsAssignableFrom(t) && t is { IsInterface: false, IsAbstract: false }))
         {
-            if (Activator.CreateInstance(type, _player) is IToolWindow { ListInPlayerTools: true } window)
+            if (Activator.CreateInstance(type, _player) is not IToolWindow window)
             {
-                if (window.RequiresPersistedCharacter && !CharacterIsPersisted) continue;
-
-                windows.Add(window);
+                continue;
             }
+
+            if (window.RequiresPersistedCharacter && !CharacterIsPersisted) continue;
+            if (!window.ShouldListForPlayer(_player)) continue;
+
+            windows.Add(window);
         }
 
         return windows

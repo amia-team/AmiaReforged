@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Anvil.API;
 using Anvil.Services;
+using NLog;
 using NWN.Core;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
@@ -52,6 +53,16 @@ public sealed class NpcShopItemFactory : INpcShopItemFactory
         if (item is null)
         {
             return null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(product.DisplayName))
+        {
+            item.Name = product.DisplayName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(product.Description))
+        {
+            item.Description = product.Description;
         }
 
         NwItemLocalVariableWriter localWriter = new(item);
