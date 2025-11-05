@@ -65,6 +65,8 @@ public sealed class FightingStylePresenter(FightingStyleView view, NwPlayer play
             monk.AddFeat(feat, 6);
         }
 
+        RaiseCloseEvent();
+
         player.FloatingTextString($"Added feats {featsToAdd[0].Name} and {featsToAdd[1].Name}", false);
     }
 
