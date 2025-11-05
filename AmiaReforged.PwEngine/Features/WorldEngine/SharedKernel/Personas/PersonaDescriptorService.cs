@@ -68,6 +68,7 @@ public sealed class PersonaDescriptorService : IPersonaDescriptorService
         return persona switch
         {
             CharacterPersona character => ResolveCharacterOwner(character.CharacterId),
+            PlayerPersona player => new[] { player.CdKey },
             _ => EmptyOwners
         };
     }

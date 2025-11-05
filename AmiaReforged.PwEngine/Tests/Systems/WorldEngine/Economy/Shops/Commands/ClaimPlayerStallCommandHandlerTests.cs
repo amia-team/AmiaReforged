@@ -18,12 +18,14 @@ public class ClaimPlayerStallCommandHandlerTests
 {
     private Mock<IPlayerStallService> _service = null!;
     private ClaimPlayerStallCommandHandler _handler = null!;
+    private PersonaId _playerPersona;
 
     [SetUp]
     public void SetUp()
     {
         _service = new Mock<IPlayerStallService>();
         _handler = new ClaimPlayerStallCommandHandler(_service.Object);
+        _playerPersona = PersonaId.FromPlayerCdKey("TESTPLAYER");
     }
 
     [Test]
@@ -33,6 +35,7 @@ public class ClaimPlayerStallCommandHandlerTests
             stallId: 42,
             areaResRef: "market_area",
             placeableTag: "stall_42",
+            ownerPlayerPersona: _playerPersona,
             ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
             ownerDisplayName: "Aria Moonwhisper");
 
@@ -61,6 +64,7 @@ public class ClaimPlayerStallCommandHandlerTests
             stallId: 42,
             areaResRef: "market_area",
             placeableTag: "stall_42",
+            ownerPlayerPersona: _playerPersona,
             ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
             ownerDisplayName: "Aria");
 
@@ -83,6 +87,7 @@ public class ClaimPlayerStallCommandHandlerTests
             stallId: 99,
             areaResRef: "market_area",
             placeableTag: "stall_99",
+            ownerPlayerPersona: _playerPersona,
             ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
             ownerDisplayName: "Aria",
             rentInterval: TimeSpan.FromHours(6));
@@ -101,6 +106,7 @@ public class ClaimPlayerStallCommandHandlerTests
             Assert.That(captured!.AreaResRef, Is.EqualTo(command.AreaResRef));
             Assert.That(captured!.PlaceableTag, Is.EqualTo(command.PlaceableTag));
             Assert.That(captured!.OwnerPersona, Is.EqualTo(command.OwnerPersona));
+            Assert.That(captured!.OwnerPlayerPersona, Is.EqualTo(command.OwnerPlayerPersona));
             Assert.That(captured!.OwnerDisplayName, Is.EqualTo(command.OwnerDisplayName));
             Assert.That(captured!.NextRentDueUtc, Is.EqualTo(command.NextRentDueUtc));
         });
@@ -122,6 +128,7 @@ public class ClaimPlayerStallCommandHandlerTests
             stallId: 77,
             areaResRef: "market_area",
             placeableTag: "stall_77",
+            ownerPlayerPersona: _playerPersona,
             ownerPersona: PersonaId.FromCharacter(CharacterId.New()),
             ownerDisplayName: "Aria",
             coOwners: new[] { coOwner });

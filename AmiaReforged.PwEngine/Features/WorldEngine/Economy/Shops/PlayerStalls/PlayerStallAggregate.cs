@@ -38,6 +38,7 @@ public sealed class PlayerStallAggregate
         {
             stall.OwnerCharacterId = ownerCharacterId;
             stall.OwnerPersonaId = options.OwnerPersonaId;
+            stall.OwnerPlayerPersonaId = options.OwnerPlayerPersonaId;
             stall.OwnerDisplayName = options.OwnerDisplayName;
             stall.CoinHouseAccountId = options.CoinHouseAccountId;
             stall.HoldEarningsInStall = options.HoldEarningsInStall;
@@ -61,7 +62,9 @@ public sealed class PlayerStallAggregate
                 "Requestor persona is required to release a stall.");
         }
 
-        bool isOwned = _snapshot.OwnerCharacterId.HasValue || !string.IsNullOrWhiteSpace(_snapshot.OwnerPersonaId);
+    bool isOwned = _snapshot.OwnerCharacterId.HasValue ||
+               !string.IsNullOrWhiteSpace(_snapshot.OwnerPersonaId) ||
+               !string.IsNullOrWhiteSpace(_snapshot.OwnerPlayerPersonaId);
         if (!isOwned && !force)
         {
             return PlayerStallDomainResult<Action<PlayerStall>>.Fail(
@@ -69,10 +72,16 @@ public sealed class PlayerStallAggregate
                 "Stall is not currently owned.");
         }
 
-        bool isOwner = string.Equals(
-            _snapshot.OwnerPersonaId,
-            requestorPersonaId,
-            StringComparison.OrdinalIgnoreCase);
+        bool isOwner = (!string.IsNullOrWhiteSpace(_snapshot.OwnerPersonaId) &&
+                         string.Equals(
+                             _snapshot.OwnerPersonaId,
+                             requestorPersonaId,
+                             StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(_snapshot.OwnerPlayerPersonaId) &&
+                         string.Equals(
+                             _snapshot.OwnerPlayerPersonaId,
+                             requestorPersonaId,
+                             StringComparison.OrdinalIgnoreCase));
 
         if (!isOwner && !force)
         {
@@ -85,6 +94,7 @@ public sealed class PlayerStallAggregate
         {
             stall.OwnerCharacterId = null;
             stall.OwnerPersonaId = null;
+            stall.OwnerPlayerPersonaId = null;
             stall.OwnerDisplayName = null;
             stall.CoinHouseAccountId = null;
             stall.HoldEarningsInStall = false;
@@ -373,14 +383,26 @@ public sealed class PlayerStallAggregate
             return false;
         }
 
-        return !string.IsNullOrWhiteSpace(_snapshot.OwnerPersonaId) &&
-               string.Equals(_snapshot.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(_snapshot.OwnerPersonaId) &&
+            string.Equals(_snapshot.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_snapshot.OwnerPlayerPersonaId) &&
+            string.Equals(_snapshot.OwnerPlayerPersonaId, personaId, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private readonly record struct PlayerStallSnapshot(
         long Id,
         Guid? OwnerCharacterId,
-        string? OwnerPersonaId,
+    string? OwnerPersonaId,
+    string? OwnerPlayerPersonaId,
         bool IsActive,
         int EscrowBalance,
         bool HoldEarningsInStall,
@@ -398,6 +420,7 @@ public sealed class PlayerStallAggregate
                 stall.Id,
                 stall.OwnerCharacterId,
                 stall.OwnerPersonaId,
+                stall.OwnerPlayerPersonaId,
                 stall.IsActive,
                 Math.Max(0, stall.EscrowBalance),
                 stall.HoldEarningsInStall,
@@ -420,6 +443,14 @@ public sealed class PlayerStallAggregate
                 inventory[owner] = true;
                 collection[owner] = true;
                 settings[owner] = true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId))
+            {
+                string ownerPlayer = stall.OwnerPlayerPersonaId;
+                inventory[ownerPlayer] = true;
+                collection[ownerPlayer] = true;
+                settings[ownerPlayer] = true;
             }
 
             if (stall.Members is not null && stall.Members.Count > 0)

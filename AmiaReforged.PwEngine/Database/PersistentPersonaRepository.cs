@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
@@ -28,6 +31,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
             persona = personaId.Type switch
             {
+                PersonaType.Player => ResolvePlayer(ctx, personaId),
                 PersonaType.Character => ResolveCharacter(ctx, personaId),
                 PersonaType.Organization => ResolveOrganization(ctx, personaId),
                 PersonaType.Coinhouse => ResolveCoinhouse(ctx, personaId),
@@ -64,6 +68,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
             return personaId.Type switch
             {
+                PersonaType.Player => ExistsPlayer(ctx, personaId),
                 PersonaType.Character => ExistsCharacter(ctx, personaId),
                 PersonaType.Organization => ExistsOrganization(ctx, personaId),
                 PersonaType.Coinhouse => ExistsCoinhouse(ctx, personaId),
@@ -88,6 +93,7 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
             return personaId.Type switch
             {
+                PersonaType.Player => GetPlayerDisplayName(ctx, personaId),
                 PersonaType.Character => GetCharacterDisplayName(ctx, personaId),
                 PersonaType.Organization => GetOrganizationDisplayName(ctx, personaId),
                 PersonaType.Coinhouse => GetCoinhouseDisplayName(ctx, personaId),
@@ -123,6 +129,9 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
             {
                 switch (group.Key)
                 {
+                    case PersonaType.Player:
+                        ResolvePlayers(ctx, group.ToList(), result);
+                        break;
                     case PersonaType.Character:
                         ResolveCharacters(ctx, group.ToList(), result);
                         break;
@@ -146,6 +155,84 @@ public class PersistentPersonaRepository(PwContextFactory factory) : IPersonaRep
 
         return result;
     }
+
+    #region Player Resolution
+
+    private PlayerPersona? ResolvePlayer(PwEngineContext ctx, PersonaId personaId)
+    {
+        string cdKey = personaId.Value;
+
+        PlayerPersonaRecord? record = ctx.PlayerPersonas.FirstOrDefault(p =>
+            string.Equals(p.CdKey, cdKey, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(p.PersonaIdString, personaId.ToString(), StringComparison.OrdinalIgnoreCase));
+
+        if (record is null)
+            return null;
+
+        return new PlayerPersona
+        {
+            Id = PersonaId.FromPlayerCdKey(record.CdKey),
+            Type = PersonaType.Player,
+            DisplayName = record.DisplayName,
+            CdKey = record.CdKey,
+            CreatedUtc = record.CreatedUtc,
+            UpdatedUtc = record.UpdatedUtc,
+            LastSeenUtc = record.LastSeenUtc
+        };
+    }
+
+    private bool ExistsPlayer(PwEngineContext ctx, PersonaId personaId)
+    {
+        string cdKey = personaId.Value;
+
+        return ctx.PlayerPersonas.Any(p =>
+            string.Equals(p.CdKey, cdKey, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(p.PersonaIdString, personaId.ToString(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string? GetPlayerDisplayName(PwEngineContext ctx, PersonaId personaId)
+    {
+        string cdKey = personaId.Value;
+
+        return ctx.PlayerPersonas
+            .Where(p => string.Equals(p.CdKey, cdKey, StringComparison.OrdinalIgnoreCase))
+            .Select(p => p.DisplayName)
+            .FirstOrDefault();
+    }
+
+    private void ResolvePlayers(PwEngineContext ctx, List<PersonaId> personaIds, Dictionary<PersonaId, Persona> result)
+    {
+        List<string> cdKeys = personaIds
+            .Select(p => p.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (cdKeys.Count == 0)
+            return;
+
+        List<PlayerPersonaRecord> records = ctx.PlayerPersonas
+            .Where(p => cdKeys.Contains(p.CdKey))
+            .ToList();
+
+        foreach (PlayerPersonaRecord record in records)
+        {
+            PersonaId personaId = PersonaId.FromPlayerCdKey(record.CdKey);
+            PlayerPersona persona = new PlayerPersona
+            {
+                Id = personaId,
+                Type = PersonaType.Player,
+                DisplayName = record.DisplayName,
+                CdKey = record.CdKey,
+                CreatedUtc = record.CreatedUtc,
+                UpdatedUtc = record.UpdatedUtc,
+                LastSeenUtc = record.LastSeenUtc
+            };
+
+            result[personaId] = persona;
+        }
+    }
+
+    #endregion
 
     #region Character Resolution
 

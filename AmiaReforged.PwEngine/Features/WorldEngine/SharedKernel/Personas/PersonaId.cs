@@ -24,6 +24,12 @@ public readonly record struct PersonaId
     }
 
     /// <summary>
+    /// Creates a PersonaId from a player CD key.
+    /// </summary>
+    public static PersonaId FromPlayerCdKey(string cdKey) =>
+        new(PersonaType.Player, NormalizePlayerCdKey(cdKey));
+
+    /// <summary>
     /// Creates a PersonaId from a character ID.
     /// </summary>
     public static PersonaId FromCharacter(CharacterId characterId) =>
@@ -85,7 +91,11 @@ public readonly record struct PersonaId
         if (!Enum.TryParse<PersonaType>(parts[0], true, out PersonaType type))
             throw new ArgumentException($"Invalid PersonaType: {parts[0]}", nameof(value));
 
-        return new PersonaId(type, parts[1]);
+        string idValue = type == PersonaType.Player
+            ? NormalizePlayerCdKey(parts[1])
+            : parts[1];
+
+        return new PersonaId(type, idValue);
     }
 
     /// <summary>
@@ -97,5 +107,13 @@ public readonly record struct PersonaId
     /// Implicit conversion to string for database storage.
     /// </summary>
     public static implicit operator string(PersonaId personaId) => personaId.ToString();
+
+    public static string NormalizePlayerCdKey(string cdKey)
+    {
+        if (string.IsNullOrWhiteSpace(cdKey))
+            throw new ArgumentException("Player CD key cannot be empty", nameof(cdKey));
+
+        return cdKey.Trim().ToUpperInvariant();
+    }
 }
 

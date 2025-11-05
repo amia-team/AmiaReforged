@@ -6,6 +6,11 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 public enum PersonaType
 {
     /// <summary>
+    /// A player account identified by CD key.
+    /// </summary>
+    Player,
+
+    /// <summary>
     /// A player character.
     /// </summary>
     Character,

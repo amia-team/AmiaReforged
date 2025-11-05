@@ -13,6 +13,7 @@ public sealed record ClaimPlayerStallCommand : ICommand
 {
     public required long StallId { get; init; }
     public required PersonaId OwnerPersona { get; init; }
+    public required PersonaId OwnerPlayerPersona { get; init; }
     public required string OwnerDisplayName { get; init; }
     public Guid? CoinHouseAccountId { get; init; }
     public bool HoldEarningsInStall { get; init; }
@@ -29,6 +30,7 @@ public sealed record ClaimPlayerStallCommand : ICommand
         long stallId,
         string areaResRef,
         string placeableTag,
+        PersonaId ownerPlayerPersona,
         PersonaId ownerPersona,
         string ownerDisplayName,
         Guid? coinHouseAccountId = null,
@@ -69,6 +71,7 @@ public sealed record ClaimPlayerStallCommand : ICommand
         {
             StallId = stallId,
             OwnerPersona = ownerPersona,
+            OwnerPlayerPersona = ownerPlayerPersona,
             OwnerDisplayName = ownerDisplayName.Trim(),
             CoinHouseAccountId = coinHouseAccountId,
             HoldEarningsInStall = holdEarningsInStall,

@@ -59,6 +59,7 @@ public sealed class PlayerStallService : IPlayerStallService
         PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
         PlayerStallClaimOptions options = new(
             request.OwnerPersona.ToString(),
+            request.OwnerPlayerPersona.ToString(),
             request.OwnerDisplayName,
             request.CoinHouseAccountId,
             request.HoldEarningsInStall,
@@ -157,9 +158,10 @@ public sealed class PlayerStallService : IPlayerStallService
             PlayerStallError error = domainResult.Error;
             string message = domainResult.ErrorMessage ?? "Failed to update stall rent settings.";
 
-            if (error == PlayerStallError.Unauthorized && !string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
+            if (error == PlayerStallError.Unauthorized &&
+                (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId) || !string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId)))
             {
-                bool isOwner = string.Equals(stall.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase);
+                bool isOwner = MatchesOwnerPersona(stall, personaId);
                 bool isActiveMember = stall.Members?.Any(member =>
                     member is not null &&
                     !member.RevokedUtc.HasValue &&
@@ -317,9 +319,10 @@ public sealed class PlayerStallService : IPlayerStallService
             PlayerStallError error = domainResult.Error;
             string message = domainResult.ErrorMessage ?? "Failed to update stall rent settings.";
 
-            if (error == PlayerStallError.Unauthorized && !string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
+            if (error == PlayerStallError.Unauthorized &&
+                (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId) || !string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId)))
             {
-                bool isOwner = string.Equals(stall.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase);
+                bool isOwner = MatchesOwnerPersona(stall, personaId);
                 bool isActiveMember = stall.Members?.Any(member =>
                     member is not null &&
                     !member.RevokedUtc.HasValue &&
@@ -424,5 +427,27 @@ public sealed class PlayerStallService : IPlayerStallService
             guid = Guid.Empty;
             return false;
         }
+    }
+
+    private static bool MatchesOwnerPersona(PlayerStall stall, string personaId)
+    {
+        if (string.IsNullOrWhiteSpace(personaId))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId) &&
+            string.Equals(stall.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId) &&
+            string.Equals(stall.OwnerPlayerPersonaId, personaId, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
     }
 }

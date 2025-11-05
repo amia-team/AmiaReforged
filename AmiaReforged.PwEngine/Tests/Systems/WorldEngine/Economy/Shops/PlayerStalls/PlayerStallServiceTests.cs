@@ -21,6 +21,7 @@ public class PlayerStallServiceTests
     private List<PlayerStallMember> _capturedMembers = null!;
     private StallProduct _persistedProduct = null!;
     private int _updateStallAndProductCalls;
+    private PersonaId _playerPersona;
 
     [SetUp]
     public void SetUp()
@@ -47,6 +48,7 @@ public class PlayerStallServiceTests
         };
         _persisted.Inventory.Add(_persistedProduct);
         _updateStallAndProductCalls = 0;
+    _playerPersona = PersonaId.FromPlayerCdKey("TESTPLAYER");
 
         _shops
             .Setup(r => r.GetShopById(It.IsAny<long>()))
@@ -145,6 +147,7 @@ public class PlayerStallServiceTests
             _persisted.AreaResRef,
             _persisted.Tag,
             persona,
+            _playerPersona,
             "Aria Moonwhisper",
             coinHouseAccount,
             HoldEarningsInStall: true,
@@ -187,6 +190,7 @@ public class PlayerStallServiceTests
             "market_area",
             "stall_999",
             PersonaId.FromCharacter(CharacterId.New()),
+            _playerPersona,
             "Aria",
             null,
             HoldEarningsInStall: false,
@@ -291,6 +295,7 @@ public class PlayerStallServiceTests
             _persisted.AreaResRef,
             _persisted.Tag,
             PersonaId.FromSystem("stall-daemon"),
+            _playerPersona,
             "Daemon",
             null,
             HoldEarningsInStall: false,
@@ -316,6 +321,7 @@ public class PlayerStallServiceTests
             AreaResRef: "wrong_area",
             PlaceableTag: _persisted.Tag,
             OwnerPersona: PersonaId.FromCharacter(CharacterId.New()),
+            OwnerPlayerPersona: _playerPersona,
             OwnerDisplayName: "Aria",
             CoinHouseAccountId: null,
             HoldEarningsInStall: false,
@@ -337,6 +343,7 @@ public class PlayerStallServiceTests
             AreaResRef: _persisted.AreaResRef,
             PlaceableTag: "different_tag",
             OwnerPersona: PersonaId.FromCharacter(CharacterId.New()),
+            OwnerPlayerPersona: _playerPersona,
             OwnerDisplayName: "Aria",
             CoinHouseAccountId: null,
             HoldEarningsInStall: false,
@@ -362,6 +369,7 @@ public class PlayerStallServiceTests
             _persisted.AreaResRef,
             _persisted.Tag,
             PersonaId.FromCharacter(CharacterId.New()),
+            _playerPersona,
             "Aria",
             null,
             HoldEarningsInStall: false,
@@ -395,6 +403,7 @@ public class PlayerStallServiceTests
             _persisted.AreaResRef,
             _persisted.Tag,
             owner,
+            _playerPersona,
             "Aria",
             null,
             HoldEarningsInStall: false,

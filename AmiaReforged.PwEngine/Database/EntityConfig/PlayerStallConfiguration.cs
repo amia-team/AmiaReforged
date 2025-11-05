@@ -31,6 +31,10 @@ public sealed class PlayerStallConfiguration : IEntityTypeConfiguration<PlayerSt
             .HasColumnName("owner_persona_id")
             .HasMaxLength(256);
 
+        builder.Property(s => s.OwnerPlayerPersonaId)
+            .HasColumnName("owner_player_persona_id")
+            .HasMaxLength(256);
+
         builder.Property(s => s.OwnerDisplayName)
             .HasColumnName("owner_display_name")
             .HasMaxLength(255);
@@ -90,6 +94,11 @@ public sealed class PlayerStallConfiguration : IEntityTypeConfiguration<PlayerSt
             .IsUnique()
             .HasFilter("owner_persona_id IS NOT NULL")
             .HasDatabaseName("player_stalls_owner_area_idx");
+
+        builder.HasIndex(s => new { s.OwnerPlayerPersonaId, s.AreaResRef })
+            .IsUnique()
+            .HasFilter("owner_player_persona_id IS NOT NULL")
+            .HasDatabaseName("player_stalls_owner_player_area_idx");
 
         builder.HasMany(s => s.Inventory)
             .WithOne(i => i.Stall)

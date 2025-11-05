@@ -32,6 +32,7 @@ public sealed class ClaimPlayerStallCommandHandler : ICommandHandler<ClaimPlayer
             command.AreaResRef,
             command.PlaceableTag,
             command.OwnerPersona,
+            command.OwnerPlayerPersona,
             command.OwnerDisplayName,
             command.CoinHouseAccountId,
             command.HoldEarningsInStall,

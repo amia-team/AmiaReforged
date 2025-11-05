@@ -14,6 +14,7 @@ public sealed record ClaimPlayerStallRequest(
     string AreaResRef,
     string PlaceableTag,
     PersonaId OwnerPersona,
+    PersonaId OwnerPlayerPersona,
     string OwnerDisplayName,
     Guid? CoinHouseAccountId,
     bool HoldEarningsInStall,

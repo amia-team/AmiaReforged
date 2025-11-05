@@ -17,6 +17,7 @@ public class PlayerStallAggregateTests
         Guid ownerGuid = Guid.NewGuid();
         PlayerStallClaimOptions options = new(
             OwnerPersonaId: $"Character:{ownerGuid}",
+            OwnerPlayerPersonaId: "Player:TEST",
             OwnerDisplayName: "Aria Moonwhisper",
             CoinHouseAccountId: Guid.NewGuid(),
             HoldEarningsInStall: true,
@@ -35,6 +36,7 @@ public class PlayerStallAggregateTests
         {
             Assert.That(persisted.OwnerCharacterId, Is.EqualTo(ownerGuid));
             Assert.That(persisted.OwnerPersonaId, Is.EqualTo(options.OwnerPersonaId));
+            Assert.That(persisted.OwnerPlayerPersonaId, Is.EqualTo(options.OwnerPlayerPersonaId));
             Assert.That(persisted.OwnerDisplayName, Is.EqualTo(options.OwnerDisplayName));
             Assert.That(persisted.CoinHouseAccountId, Is.EqualTo(options.CoinHouseAccountId));
             Assert.That(persisted.HoldEarningsInStall, Is.True);
@@ -56,6 +58,7 @@ public class PlayerStallAggregateTests
 
         PlayerStallDomainResult<Action<PlayerStall>> result = aggregate.TryClaim(Guid.NewGuid(), new PlayerStallClaimOptions(
             OwnerPersonaId: "Character:another",
+            OwnerPlayerPersonaId: "Player:ANOTHER",
             OwnerDisplayName: "Different",
             CoinHouseAccountId: null,
             HoldEarningsInStall: false,

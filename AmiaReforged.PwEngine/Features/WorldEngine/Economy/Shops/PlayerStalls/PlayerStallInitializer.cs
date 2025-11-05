@@ -297,7 +297,7 @@ public sealed class PlayerStallInitializer
                 return;
             }
 
-            if (!TryResolvePersona(player, out PersonaId personaId, out Guid ownerGuid))
+            if (!TryResolvePersonas(player, out PersonaId playerPersonaId, out PersonaId characterPersonaId, out Guid ownerGuid))
             {
                 await SendServerMessageAsync(player,
                     "We couldn't verify your persona for stall leasing. Please relog and try again.",
@@ -305,12 +305,12 @@ public sealed class PlayerStallInitializer
                 return;
             }
 
-            bool ownsStall = IsOwnedByCurrentPersona(stall, ownerGuid, personaId);
+            bool ownsStall = IsOwnedByCurrentPersona(stall, ownerGuid, playerPersonaId, characterPersonaId);
             bool stallHasOwner = StallHasOwner(stall);
 
             if (ownsStall)
             {
-                if (IsPersonaUsingDifferentCharacter(stall, player, personaId))
+                if (IsPersonaUsingDifferentCharacter(stall, player, playerPersonaId, characterPersonaId))
                 {
                     string ownerName = string.IsNullOrWhiteSpace(stall.OwnerDisplayName)
                         ? "another character"
@@ -326,7 +326,7 @@ public sealed class PlayerStallInitializer
                     return;
                 }
 
-                await OpenSellerWindowAsync(player, stall, personaId).ConfigureAwait(false);
+                await OpenSellerWindowAsync(player, stall, characterPersonaId).ConfigureAwait(false);
                 return;
             }
 
@@ -344,7 +344,7 @@ public sealed class PlayerStallInitializer
                     return;
                 }
 
-                await OpenBuyerWindowAsync(player, stall, personaId).ConfigureAwait(false);
+                await OpenBuyerWindowAsync(player, stall, characterPersonaId).ConfigureAwait(false);
                 return;
             }
 
@@ -360,7 +360,7 @@ public sealed class PlayerStallInitializer
                 return;
             }
 
-            await BeginClaimFlowAsync(player, placeable, stall, personaId).ConfigureAwait(false);
+            await BeginClaimFlowAsync(player, placeable, stall, characterPersonaId, playerPersonaId).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -388,16 +388,29 @@ public sealed class PlayerStallInitializer
             : StallRegistration.Misconfigured(null, placeable.Area?.ResRef, StallRegistrationState.MissingLocalTag);
     }
 
-    private static bool IsOwnedByCurrentPersona(PlayerStall stall, Guid ownerGuid, PersonaId personaId)
+    private static bool IsOwnedByCurrentPersona(
+        PlayerStall stall,
+        Guid ownerGuid,
+        PersonaId playerPersonaId,
+        PersonaId characterPersonaId)
     {
         if (stall.OwnerCharacterId.HasValue && stall.OwnerCharacterId.Value == ownerGuid)
         {
             return true;
         }
 
-        if (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
+        string playerPersonaKey = playerPersonaId.ToString();
+        if (!string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId) &&
+            string.Equals(stall.OwnerPlayerPersonaId, playerPersonaKey, StringComparison.OrdinalIgnoreCase))
         {
-            return string.Equals(stall.OwnerPersonaId, personaId.ToString(), StringComparison.OrdinalIgnoreCase);
+            return true;
+        }
+
+        string characterPersonaKey = characterPersonaId.ToString();
+        if (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId) &&
+            string.Equals(stall.OwnerPersonaId, characterPersonaKey, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
         }
 
         return false;
@@ -406,7 +419,8 @@ public sealed class PlayerStallInitializer
     private static bool StallHasOwner(PlayerStall stall)
     {
         bool hasCharacterOwner = stall.OwnerCharacterId.HasValue && stall.OwnerCharacterId.Value != Guid.Empty;
-        bool hasPersonaOwner = !string.IsNullOrWhiteSpace(stall.OwnerPersonaId);
+        bool hasPersonaOwner = !string.IsNullOrWhiteSpace(stall.OwnerPersonaId) ||
+                                !string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId);
         return hasCharacterOwner || hasPersonaOwner;
     }
 
@@ -415,22 +429,32 @@ public sealed class PlayerStallInitializer
         return stall.IsActive && !stall.SuspendedUtc.HasValue;
     }
 
-    private static bool IsPersonaUsingDifferentCharacter(PlayerStall stall, NwPlayer player, PersonaId personaId)
+    private static bool IsPersonaUsingDifferentCharacter(
+        PlayerStall stall,
+        NwPlayer player,
+        PersonaId playerPersonaId,
+        PersonaId characterPersonaId)
     {
         if (player.LoginCreature is null || !player.LoginCreature.IsValid)
         {
             return false;
         }
 
-        if (string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
+        if (string.IsNullOrWhiteSpace(stall.OwnerPlayerPersonaId))
         {
             return false;
         }
 
-        string personaKey = personaId.ToString();
-        if (!string.Equals(stall.OwnerPersonaId, personaKey, StringComparison.OrdinalIgnoreCase))
+        string playerPersonaKey = playerPersonaId.ToString();
+        if (!string.Equals(stall.OwnerPlayerPersonaId, playerPersonaKey, StringComparison.OrdinalIgnoreCase))
         {
-            return false;
+            // Fallback to legacy character persona matching for safety.
+            string characterPersonaKey = characterPersonaId.ToString();
+            if (string.IsNullOrWhiteSpace(stall.OwnerPersonaId) ||
+                !string.Equals(stall.OwnerPersonaId, characterPersonaKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
         }
 
         string? ownerName = stall.OwnerDisplayName;
@@ -444,10 +468,35 @@ public sealed class PlayerStallInitializer
         return !string.Equals(ownerName.Trim(), currentName.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
-    private bool TryResolvePersona(NwPlayer player, out PersonaId personaId, out Guid ownerGuid)
+    private bool TryResolvePersonas(
+        NwPlayer player,
+        out PersonaId playerPersonaId,
+        out PersonaId characterPersonaId,
+        out Guid ownerGuid)
     {
-        personaId = default;
+        playerPersonaId = default;
+        characterPersonaId = default;
         ownerGuid = Guid.Empty;
+
+        string cdKey = player.CDKey ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(cdKey))
+        {
+            Log.Warn("Failed to resolve CD key for player {PlayerName} while handling stall interaction.",
+                player.PlayerName);
+            return false;
+        }
+
+        try
+        {
+            playerPersonaId = PersonaId.FromPlayerCdKey(cdKey);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to convert CD key {CdKey} into player persona for player {PlayerName}.",
+                cdKey,
+                player.PlayerName);
+            return false;
+        }
 
         if (!_characters.TryGetPlayerKey(player, out Guid key) || key == Guid.Empty)
         {
@@ -460,7 +509,7 @@ public sealed class PlayerStallInitializer
         {
             CharacterId characterId = CharacterId.From(key);
             ownerGuid = characterId.Value;
-            personaId = PersonaId.FromCharacter(characterId);
+            characterPersonaId = PersonaId.FromCharacter(characterId);
             return true;
         }
         catch (Exception ex)
@@ -591,9 +640,14 @@ public sealed class PlayerStallInitializer
             .ConfigureAwait(false);
     }
 
-    private async Task BeginClaimFlowAsync(NwPlayer player, NwPlaceable placeable, PlayerStall stall, PersonaId personaId)
+    private async Task BeginClaimFlowAsync(
+        NwPlayer player,
+        NwPlaceable placeable,
+        PlayerStall stall,
+        PersonaId characterPersonaId,
+        PersonaId playerPersonaId)
     {
-        await _claimFlow.BeginClaimAsync(player, placeable, stall, personaId).ConfigureAwait(false);
+        await _claimFlow.BeginClaimAsync(player, placeable, stall, characterPersonaId, playerPersonaId).ConfigureAwait(false);
     }
 
     private enum StallRegistrationState

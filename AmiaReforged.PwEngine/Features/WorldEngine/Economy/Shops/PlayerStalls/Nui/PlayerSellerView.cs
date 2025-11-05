@@ -92,6 +92,8 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     {
         Presenter = new PlayerSellerPresenter(this, player, config);
 
+
+
         InjectionService injector = AnvilCore.GetService<InjectionService>()!;
         injector.Inject(Presenter);
     }

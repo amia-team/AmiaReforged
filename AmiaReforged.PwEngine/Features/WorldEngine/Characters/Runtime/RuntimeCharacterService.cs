@@ -1,21 +1,28 @@
+using System;
 using AmiaReforged.Core.UserInterface;
+using AmiaReforged.PwEngine.Database;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
 using NWN.Core.NWNX;
+using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 
 [ServiceBinding(typeof(RuntimeCharacterService))]
 public class RuntimeCharacterService
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     private readonly ICharacterRepository _repository;
+    private readonly IPersistentPlayerPersonaRepository _playerPersonas;
     private readonly Dictionary<NwPlayer, Guid> _playerKeys = new();
 
-    public RuntimeCharacterService(ICharacterRepository repository)
+    public RuntimeCharacterService(ICharacterRepository repository, IPersistentPlayerPersonaRepository playerPersonas)
     {
         _repository = repository;
+        _playerPersonas = playerPersonas;
         NwModule.Instance.OnAcquireItem += ReCache;
         NwModule.Instance.OnClientEnter += Register;
         NwModule.Instance.OnClientLeave += Unregister;
@@ -24,6 +31,7 @@ public class RuntimeCharacterService
     private void Unregister(ModuleEvents.OnClientLeave obj)
     {
         if (obj.Player.IsDM) return;
+        TouchPlayerPersona(obj.Player);
         _playerKeys.Remove(obj.Player);
         if (obj.Player.LoginCreature == null) return;
 
@@ -37,6 +45,8 @@ public class RuntimeCharacterService
         if (objItem is null) return;
         if (objItem.Tag != "ds_pckey") return;
         if (!obj.AcquiredBy.IsPlayerControlled(out NwPlayer? player)) return;
+
+    ObservePlayerPersona(player);
 
         Guid key = PcKeyUtils.GetPcKey(player);
 
@@ -53,6 +63,8 @@ public class RuntimeCharacterService
     private void Register(ModuleEvents.OnClientEnter obj)
     {
         if (obj.Player.IsDM) return;
+
+        ObservePlayerPersona(obj.Player);
 
         Guid key = PcKeyUtils.GetPcKey(obj.Player);
 
@@ -85,6 +97,54 @@ public class RuntimeCharacterService
     private void SetIsCached(NwCreature playerLoginCreature)
     {
         NWScript.SetLocalInt(playerLoginCreature, WorldConstants.PcCachedLvar, NWScript.TRUE);
+    }
+
+    private void ObservePlayerPersona(NwPlayer player)
+    {
+        if (player is not { IsValid: true })
+        {
+            return;
+        }
+
+        string cdKey = player.CDKey ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(cdKey))
+        {
+            return;
+        }
+
+        string displayName = string.IsNullOrWhiteSpace(player.PlayerName) ? cdKey : player.PlayerName;
+
+        try
+        {
+            _playerPersonas.Upsert(cdKey, displayName, DateTime.UtcNow);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to persist player persona for CD key {CdKey}.", cdKey);
+        }
+    }
+
+    private void TouchPlayerPersona(NwPlayer player)
+    {
+        if (player is not { IsValid: true })
+        {
+            return;
+        }
+
+        string cdKey = player.CDKey ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(cdKey))
+        {
+            return;
+        }
+
+        try
+        {
+            _playerPersonas.Touch(cdKey, DateTime.UtcNow);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Failed to mark player persona activity for CD key {CdKey}.", cdKey);
+        }
     }
 
     public Guid GetPlayerKey(NwPlayer player)

@@ -60,7 +60,8 @@ public sealed class PlayerStallClaimFlow
         NwPlayer player,
         NwPlaceable placeable,
         PlayerStall stall,
-        PersonaId personaId)
+        PersonaId characterPersonaId,
+        PersonaId playerPersonaId)
     {
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(placeable);
@@ -101,7 +102,7 @@ public sealed class PlayerStallClaimFlow
 
             RentStallPaymentOptionViewModel? directOption = BuildDirectOption(availableGold, rentCost, formattedRent);
             (RentStallPaymentOptionViewModel? coinhouseOption, CoinhouseTag? coinhouseTag, Guid? coinhouseAccountId) =
-                await BuildCoinhouseOptionAsync(stall, personaId, rentCost, formattedRent, settlementName)
+                await BuildCoinhouseOptionAsync(stall, characterPersonaId, rentCost, formattedRent, settlementName)
                     .ConfigureAwait(false);
 
             if (directOption is null && coinhouseOption is null)
@@ -113,7 +114,7 @@ public sealed class PlayerStallClaimFlow
                 return;
             }
 
-            RemoveSession(personaId);
+            RemoveSession(characterPersonaId);
 
             RentStallWindowConfig config = new(
                 Title: stallName,
@@ -123,15 +124,17 @@ public sealed class PlayerStallClaimFlow
                 Timeout: ClaimConfirmationTimeout,
                 DirectPaymentOption: directOption,
                 CoinhousePaymentOption: coinhouseOption,
-                OnConfirm: method => ProcessSelectionAsync(player, personaId, method))
+                OnConfirm: method => ProcessSelectionAsync(player, characterPersonaId, method))
             {
                 SettlementName = settlementName,
-                OnCancel = () => OnRentWindowCancelledAsync(personaId),
-                OnTimeout = () => OnRentWindowTimedOutAsync(player, personaId, stallName),
-                OnClosed = () => OnRentWindowClosedAsync(personaId)
+                OnCancel = () => OnRentWindowCancelledAsync(characterPersonaId),
+                OnTimeout = () => OnRentWindowTimedOutAsync(player, characterPersonaId, stallName),
+                OnClosed = () => OnRentWindowClosedAsync(characterPersonaId)
             };
 
             PendingClaimSession session = new(
+                characterPersonaId,
+                playerPersonaId,
                 stall.Id,
                 placeableTag,
                 areaResRef,
@@ -149,7 +152,7 @@ public sealed class PlayerStallClaimFlow
 
             await NwTask.SwitchToMainThread();
             _windowDirector.CloseWindow(player, typeof(RentStallWindowPresenter));
-            _activeSessions[personaId] = session;
+            _activeSessions[characterPersonaId] = session;
             _windowDirector.OpenWindow(view.Presenter);
 
             await SendServerMessageAsync(player,
@@ -179,12 +182,12 @@ public sealed class PlayerStallClaimFlow
 
     private async Task<RentStallSubmissionResult> ProcessSelectionAsync(
         NwPlayer player,
-        PersonaId personaId,
+        PersonaId characterPersonaId,
         RentalPaymentMethod method)
     {
         try
         {
-            if (!_activeSessions.TryGetValue(personaId, out PendingClaimSession? session))
+            if (!_activeSessions.TryGetValue(characterPersonaId, out PendingClaimSession? session))
             {
                 await SendServerMessageAsync(player,
                         "The leasing offer has expired. Interact with the stall again to restart the claim.",
@@ -200,7 +203,7 @@ public sealed class PlayerStallClaimFlow
 
             if (DateTimeOffset.UtcNow - activeSession.CreatedAt > ClaimConfirmationTimeout)
             {
-                RemoveSession(personaId);
+                RemoveSession(characterPersonaId);
                 await SendServerMessageAsync(player,
                         "The leasing offer has expired. Interact with the stall again to restart.",
                         ColorConstants.Orange)
@@ -214,7 +217,7 @@ public sealed class PlayerStallClaimFlow
             PlayerStall? latest = await Task.Run(() => _shops.GetShopById(activeSession.StallId)).ConfigureAwait(false);
             if (latest is null)
             {
-                RemoveSession(personaId);
+                RemoveSession(characterPersonaId);
                 await SendServerMessageAsync(player,
                         "We couldn't load the stall record. Please try again later.",
                         ColorConstants.Red)
@@ -228,7 +231,7 @@ public sealed class PlayerStallClaimFlow
             if (!string.Equals(latest.AreaResRef, activeSession.AreaResRef, StringComparison.OrdinalIgnoreCase) ||
                 !string.Equals(latest.Tag, activeSession.PlaceableTag, StringComparison.OrdinalIgnoreCase))
             {
-                RemoveSession(personaId);
+                RemoveSession(characterPersonaId);
                 await SendServerMessageAsync(player,
                         "The stall configuration has changed. Please notify a DM if this persists.",
                         ColorConstants.Orange)
@@ -241,7 +244,7 @@ public sealed class PlayerStallClaimFlow
 
             if (!IsStallAvailable(latest))
             {
-                RemoveSession(personaId);
+                RemoveSession(characterPersonaId);
                 await SendServerMessageAsync(player,
                         "Someone else has already claimed this stall.",
                         ColorConstants.Orange)
@@ -253,7 +256,7 @@ public sealed class PlayerStallClaimFlow
             }
 
             int outstanding = await _lockup
-                .CountStoredInventoryAsync(personaId, activeSession.AreaResRef)
+                .CountStoredInventoryAsync(characterPersonaId, activeSession.AreaResRef)
                 .ConfigureAwait(false);
 
             if (outstanding > 0)
@@ -268,9 +271,9 @@ public sealed class PlayerStallClaimFlow
 
             return method switch
             {
-                RentalPaymentMethod.OutOfPocket => await HandleDirectPaymentAsync(player, personaId, activeSession, latest)
+                RentalPaymentMethod.OutOfPocket => await HandleDirectPaymentAsync(player, activeSession, latest)
                     .ConfigureAwait(false),
-                RentalPaymentMethod.CoinhouseAccount => await HandleCoinhousePaymentAsync(player, personaId, activeSession, latest)
+                RentalPaymentMethod.CoinhouseAccount => await HandleCoinhousePaymentAsync(player, activeSession, latest)
                     .ConfigureAwait(false),
                 _ => RentStallSubmissionResult.Error("Unsupported payment method.")
             };
@@ -279,7 +282,7 @@ public sealed class PlayerStallClaimFlow
         {
             Log.Error(ex,
                 "Unexpected error while processing stall claim selection for persona {PersonaId}.",
-                personaId);
+                characterPersonaId);
 
             await SendServerMessageAsync(player,
                     "Something went wrong while processing the stall claim. Please try again.",
@@ -293,7 +296,6 @@ public sealed class PlayerStallClaimFlow
 
     private async Task<RentStallSubmissionResult> HandleDirectPaymentAsync(
         NwPlayer player,
-        PersonaId personaId,
         PendingClaimSession session,
         PlayerStall stall)
     {
@@ -330,19 +332,17 @@ public sealed class PlayerStallClaimFlow
                 directOptionUpdate: directUpdate);
         }
 
-        return await CompleteClaimAsync(
-                player,
-                personaId,
-                session,
-                stall,
-                RentalPaymentMethod.OutOfPocket,
-                holdEarningsInStall: true)
+    return await CompleteClaimAsync(
+        player,
+        session,
+        stall,
+        RentalPaymentMethod.OutOfPocket,
+        holdEarningsInStall: true)
             .ConfigureAwait(false);
     }
 
     private async Task<RentStallSubmissionResult> HandleCoinhousePaymentAsync(
         NwPlayer player,
-        PersonaId personaId,
         PendingClaimSession session,
         PlayerStall stall)
     {
@@ -354,7 +354,7 @@ public sealed class PlayerStallClaimFlow
 
         if (session.CoinhouseTag is null)
         {
-            RemoveSession(personaId);
+            RemoveSession(session.CharacterPersonaId);
             await SendServerMessageAsync(player,
                     "This stall is missing coinhouse configuration. Please notify a DM.",
                     ColorConstants.Red)
@@ -400,7 +400,7 @@ public sealed class PlayerStallClaimFlow
         try
         {
             WithdrawGoldCommand command = WithdrawGoldCommand.Create(
-                personaId,
+                session.CharacterPersonaId,
                 session.CoinhouseTag.Value,
                 session.RentCost.Value,
                 reason);
@@ -411,7 +411,7 @@ public sealed class PlayerStallClaimFlow
         {
             Log.Error(ex,
                 "Failed to withdraw stall rent via coinhouse for persona {PersonaId} at {CoinhouseTag}.",
-                personaId,
+                session.CharacterPersonaId,
                 session.CoinhouseTag.Value);
 
             withdrawalResult = CommandResult.Fail("The coinhouse could not process the withdrawal.");
@@ -436,7 +436,6 @@ public sealed class PlayerStallClaimFlow
 
         return await CompleteClaimAsync(
                 player,
-                personaId,
                 session,
                 stall,
                 RentalPaymentMethod.CoinhouseAccount,
@@ -446,7 +445,6 @@ public sealed class PlayerStallClaimFlow
 
     private async Task<RentStallSubmissionResult> CompleteClaimAsync(
         NwPlayer player,
-        PersonaId personaId,
         PendingClaimSession session,
         PlayerStall stall,
         RentalPaymentMethod method,
@@ -460,7 +458,8 @@ public sealed class PlayerStallClaimFlow
                 stall.Id,
                 session.AreaResRef,
                 session.PlaceableTag,
-                personaId,
+                session.PlayerPersonaId,
+                session.CharacterPersonaId,
                 session.OwnerDisplayName,
                 method == RentalPaymentMethod.CoinhouseAccount ? session.CoinhouseAccountId : null,
                 holdEarningsInStall,
@@ -502,7 +501,7 @@ public sealed class PlayerStallClaimFlow
                     coinhouseOptionUpdate: coinhouseUpdate);
             }
 
-            RemoveSession(personaId);
+            RemoveSession(session.CharacterPersonaId);
 
             string formattedRent = FormatGold(session.RentCost.Value);
             await SendServerMessageAsync(player,
@@ -529,7 +528,7 @@ public sealed class PlayerStallClaimFlow
 
             Log.Info(
                 "Persona {PersonaId} claimed stall {StallId} ({Tag}) via {Method} payment.",
-                personaId,
+                session.CharacterPersonaId,
                 stall.Id,
                 stall.Tag,
                 method);
@@ -543,14 +542,14 @@ public sealed class PlayerStallClaimFlow
             Log.Error(ex,
                 "Failed to finalize stall claim for stall {StallId} and persona {PersonaId}.",
                 stall.Id,
-                personaId);
+                session.CharacterPersonaId);
 
             if (method == RentalPaymentMethod.OutOfPocket)
             {
                 await TryReturnGoldAsync(player, session.RentCost).ConfigureAwait(false);
             }
 
-            RemoveSession(personaId);
+            RemoveSession(session.CharacterPersonaId);
 
             await SendServerMessageAsync(player,
                     "We couldn't finalize the stall claim. Please try again or contact a DM.",
@@ -586,7 +585,7 @@ public sealed class PlayerStallClaimFlow
 
     private async Task<(RentStallPaymentOptionViewModel? Option, CoinhouseTag? Tag, Guid? AccountId)> BuildCoinhouseOptionAsync(
         PlayerStall stall,
-        PersonaId personaId,
+        PersonaId characterPersonaId,
         GoldAmount rentCost,
         string formattedRent,
         string? settlementName)
@@ -607,7 +606,7 @@ public sealed class PlayerStallClaimFlow
             return (option, null, null);
         }
 
-        Guid accountId = PersonaAccountId.ForCoinhouse(personaId, tag);
+    Guid accountId = PersonaAccountId.ForCoinhouse(characterPersonaId, tag);
         CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId).ConfigureAwait(false);
 
         if (account is null)
@@ -663,29 +662,29 @@ public sealed class PlayerStallClaimFlow
         return $"You need {FormatGold(shortfall)} more gold on hand.";
     }
 
-    private void RemoveSession(PersonaId personaId)
+    private void RemoveSession(PersonaId characterPersonaId)
     {
-        _activeSessions.TryRemove(personaId, out _);
+        _activeSessions.TryRemove(characterPersonaId, out _);
     }
 
-    private Task OnRentWindowCancelledAsync(PersonaId personaId)
+    private Task OnRentWindowCancelledAsync(PersonaId characterPersonaId)
     {
-        RemoveSession(personaId);
+        RemoveSession(characterPersonaId);
         return Task.CompletedTask;
     }
 
-    private async Task OnRentWindowTimedOutAsync(NwPlayer player, PersonaId personaId, string stallName)
+    private async Task OnRentWindowTimedOutAsync(NwPlayer player, PersonaId characterPersonaId, string stallName)
     {
-        RemoveSession(personaId);
+        RemoveSession(characterPersonaId);
         await SendServerMessageAsync(player,
                 $"The leasing offer for {stallName} has expired.",
                 ColorConstants.Orange)
             .ConfigureAwait(false);
     }
 
-    private Task OnRentWindowClosedAsync(PersonaId personaId)
+    private Task OnRentWindowClosedAsync(PersonaId characterPersonaId)
     {
-        RemoveSession(personaId);
+        RemoveSession(characterPersonaId);
         return Task.CompletedTask;
     }
 
@@ -897,6 +896,8 @@ public sealed class PlayerStallClaimFlow
     }
 
     private sealed record PendingClaimSession(
+        PersonaId CharacterPersonaId,
+        PersonaId PlayerPersonaId,
         long StallId,
         string PlaceableTag,
         string AreaResRef,

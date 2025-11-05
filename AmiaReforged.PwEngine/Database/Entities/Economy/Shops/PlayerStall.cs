@@ -37,6 +37,9 @@ public class PlayerStall
     [MaxLength(256)]
     public string? OwnerPersonaId { get; set; }
 
+    [MaxLength(256)]
+    public string? OwnerPlayerPersonaId { get; set; }
+
     [MaxLength(255)]
     public string? OwnerDisplayName { get; set; }
 
