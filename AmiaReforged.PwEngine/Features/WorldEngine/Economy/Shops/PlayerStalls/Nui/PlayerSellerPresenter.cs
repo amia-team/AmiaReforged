@@ -41,6 +41,16 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private bool _rentToggleVisible;
     private bool _rentToggleEnabled;
     private string _rentToggleTooltip = string.Empty;
+    private bool _holdEarningsInStall;
+    private bool _holdToggleVisible;
+    private bool _holdToggleEnabled;
+    private string _holdToggleTooltip = string.Empty;
+    private string _holdToggleLabel = "Hold profits in stall escrow";
+    private int _escrowBalance;
+    private bool _earningsVisible;
+    private bool _withdrawEnabled;
+    private bool _withdrawAllEnabled;
+    private string _earningsTooltip = string.Empty;
     private PlayerStallSellerOperationResult? _lastOperationResult;
 
     [Inject] private PlayerStallEventManager EventManager { get; init; } = null!;
@@ -51,7 +61,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     {
         _window = new NuiWindow(View.RootLayout(), _config.Title)
         {
-            Geometry = new NuiRect(90f, 70f, 920f, 520f),
+            Geometry = new NuiRect(90f, 70f, 920f, 920f),
             Resizable = false
         };
     }
@@ -73,8 +83,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         _ = ApplySnapshotAsync(_config.InitialSnapshot);
 
         PlayerStallSellerEventCallbacks callbacks = new(
-            snapshot => ApplySnapshotAsync(snapshot),
-            result => HandleOperationResultAsync(result));
+            ApplySnapshotAsync,
+            HandleOperationResultAsync);
 
         try
         {
@@ -91,11 +101,17 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         }
 
         _ = RequestLatestSnapshotAsync();
-
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
+        if (eventData.ElementId == PlayerSellerView.HoldEarningsToggleId &&
+            eventData.EventType == NuiEventType.Click)
+        {
+            _ = HandleHoldEarningsToggleAsync();
+            return;
+        }
+
         if (eventData.EventType != NuiEventType.Click)
         {
             return;
@@ -116,6 +132,18 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         if (eventData.ElementId == View.RentToggleButton.Id)
         {
             _ = HandleRentToggleAsync();
+            return;
+        }
+
+        if (eventData.ElementId == View.WithdrawProfitsButton.Id)
+        {
+            _ = HandleWithdrawProfitsAsync(false);
+            return;
+        }
+
+        if (eventData.ElementId == View.WithdrawAllProfitsButton.Id)
+        {
+            _ = HandleWithdrawProfitsAsync(true);
             return;
         }
 
@@ -150,7 +178,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             return;
         }
 
-    _isClosing = true;
+        _isClosing = true;
 
         try
         {
@@ -206,13 +234,29 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
         Token().SetBindValue(View.SellerName, FormatSellerName(snapshot.Seller));
 
-    _rentFromCoinhouse = snapshot.RentFromCoinhouse;
-    _rentToggleVisible = snapshot.RentToggleVisible;
-    _rentToggleEnabled = snapshot.RentToggleEnabled;
-    _rentToggleTooltip = snapshot.RentToggleTooltip ?? string.Empty;
+        _rentFromCoinhouse = snapshot.RentFromCoinhouse;
+        _rentToggleVisible = snapshot.RentToggleVisible;
+        _rentToggleEnabled = snapshot.RentToggleEnabled;
+        _rentToggleTooltip = snapshot.RentToggleTooltip ?? string.Empty;
+        _holdEarningsInStall = snapshot.HoldEarningsInStall;
+        _holdToggleVisible = snapshot.HoldEarningsToggleVisible;
+        _holdToggleEnabled = snapshot.HoldEarningsToggleEnabled;
+        _holdToggleTooltip = snapshot.HoldEarningsToggleTooltip ?? string.Empty;
+        _holdToggleLabel = string.IsNullOrWhiteSpace(snapshot.HoldEarningsToggleLabel)
+            ? "Hold profits in stall escrow"
+            : snapshot.HoldEarningsToggleLabel!;
+        _escrowBalance = Math.Max(0, snapshot.EscrowBalance);
+        _earningsVisible = snapshot.EarningsRowVisible;
+        _withdrawEnabled = snapshot.WithdrawEnabled;
+        _withdrawAllEnabled = snapshot.WithdrawAllEnabled;
+        _earningsTooltip = snapshot.EarningsTooltip ?? string.Empty;
 
-        ApplyFeedback(snapshot.FeedbackVisible, snapshot.FeedbackMessage, snapshot.FeedbackColor ?? ColorConstants.White);
-    ApplyRentToggleBindings();
+        ApplyFeedback(snapshot.FeedbackVisible, snapshot.FeedbackMessage,
+            snapshot.FeedbackColor ?? ColorConstants.White);
+        ApplyRentToggleBindings();
+        ApplyHoldEarningsBindings();
+        ApplyEarningsBindings();
+        Token().SetBindValue(View.EarningsWithdrawInput, string.Empty);
 
         List<string> entries = new(snapshot.Products.Count);
         List<string> tooltips = new(snapshot.Products.Count);
@@ -229,6 +273,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValues(View.ProductTooltips, tooltips);
         Token().SetBindValues(View.ProductManageEnabled, managementEnabled);
         Token().SetBindValue(View.ProductCount, entries.Count);
+        Token().SetBindValue(View.ProductEmptyVisible, entries.Count == 0);
 
         _inventoryItems.Clear();
         if (snapshot.Inventory is not null)
@@ -254,7 +299,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValue(View.InventoryEmptyVisible, inventoryEntries.Count == 0);
 
         string? targetInventoryId = _selectedInventoryItemId;
-        if (targetInventoryId is not null && !_inventoryItems.Any(i => string.Equals(i.ObjectId, targetInventoryId, StringComparison.Ordinal)))
+        if (targetInventoryId is not null &&
+            !_inventoryItems.Any(i => string.Equals(i.ObjectId, targetInventoryId, StringComparison.Ordinal)))
         {
             targetInventoryId = null;
         }
@@ -438,8 +484,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         bool allowEditing = product.CanAdjustPrice && !_isProcessing;
         Token().SetBindValue(View.PriceInputEnabled, allowEditing);
         Token().SetBindValue(View.PriceSaveEnabled, allowEditing);
-    bool allowRetrieve = allowEditing && !product.IsSoldOut;
-    Token().SetBindValue(View.ProductRetrieveEnabled, allowRetrieve);
+        bool allowRetrieve = allowEditing && !product.IsSoldOut;
+        Token().SetBindValue(View.ProductRetrieveEnabled, allowRetrieve);
     }
 
     private async Task HandleRentToggleAsync()
@@ -501,6 +547,127 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         }
     }
 
+    private async Task HandleHoldEarningsToggleAsync()
+    {
+        if (_isClosing || _isProcessing)
+        {
+            return;
+        }
+
+        if (_sessionId is not Guid sessionId)
+        {
+            return;
+        }
+
+        bool desired = Token().GetBindValue(View.HoldEarningsChecked);
+        if (desired == _holdEarningsInStall)
+        {
+            return;
+        }
+
+        await SetProcessingStateAsync(true).ConfigureAwait(false);
+
+        try
+        {
+            PlayerStallHoldEarningsRequest request = new(
+                sessionId,
+                _config.StallId,
+                _config.SellerPersona,
+                desired);
+
+            PlayerStallSellerOperationResult result = await EventManager
+                .RequestUpdateHoldEarningsAsync(request)
+                .ConfigureAwait(false);
+
+            await HandleOperationResultAsync(result).ConfigureAwait(false);
+
+            if (!result.Success)
+            {
+                await NwTask.SwitchToMainThread();
+                Token().SetBindValue(View.HoldEarningsChecked, _holdEarningsInStall);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error while updating hold earnings for stall {StallId}.", _config.StallId);
+
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "We couldn't update how stall profits are handled.",
+                ColorConstants.Red)).ConfigureAwait(false);
+
+            await NwTask.SwitchToMainThread();
+            Token().SetBindValue(View.HoldEarningsChecked, _holdEarningsInStall);
+        }
+        finally
+        {
+            await SetProcessingStateAsync(false).ConfigureAwait(false);
+        }
+    }
+
+    private async Task HandleWithdrawProfitsAsync(bool withdrawAll)
+    {
+        if (_isClosing || _isProcessing)
+        {
+            return;
+        }
+
+        if (_sessionId is not Guid sessionId)
+        {
+            return;
+        }
+
+        int? requestedAmount = null;
+
+        if (!withdrawAll)
+        {
+            string? rawAmount = Token().GetBindValue(View.EarningsWithdrawInput);
+            if (!TryParseWithdrawalAmount(rawAmount, out int parsedAmount))
+            {
+                await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                    "Enter a valid withdrawal amount greater than zero.",
+                    ColorConstants.Orange)).ConfigureAwait(false);
+                return;
+            }
+
+            requestedAmount = parsedAmount;
+        }
+
+        await SetProcessingStateAsync(true).ConfigureAwait(false);
+
+        try
+        {
+            PlayerStallWithdrawRequest request = new(
+                sessionId,
+                _config.StallId,
+                _config.SellerPersona,
+                requestedAmount);
+
+            PlayerStallSellerOperationResult result = await EventManager
+                .RequestWithdrawEarningsAsync(request)
+                .ConfigureAwait(false);
+
+            await HandleOperationResultAsync(result).ConfigureAwait(false);
+
+            if (result.Success)
+            {
+                await NwTask.SwitchToMainThread();
+                Token().SetBindValue(View.EarningsWithdrawInput, string.Empty);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error while withdrawing stall earnings for stall {StallId}.", _config.StallId);
+
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "We couldn't withdraw stall earnings.",
+                ColorConstants.Red)).ConfigureAwait(false);
+        }
+        finally
+        {
+            await SetProcessingStateAsync(false).ConfigureAwait(false);
+        }
+    }
+
     private PlayerStallSellerProductView? TryGetSelectedProduct()
     {
         if (_selectedProductId is null)
@@ -518,7 +685,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             return null;
         }
 
-        return _inventoryItems.FirstOrDefault(item => string.Equals(item.ObjectId, _selectedInventoryItemId, StringComparison.Ordinal));
+        return _inventoryItems.FirstOrDefault(item =>
+            string.Equals(item.ObjectId, _selectedInventoryItemId, StringComparison.Ordinal));
     }
 
     private async Task SetProcessingStateAsync(bool processing)
@@ -533,6 +701,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         await UpdateSelectedInventoryItemAsync(_selectedInventoryItemId).ConfigureAwait(false);
         await NwTask.SwitchToMainThread();
         ApplyRentToggleBindings();
+        ApplyHoldEarningsBindings();
+        ApplyEarningsBindings();
         ApplyInventoryListBindings();
     }
 
@@ -560,7 +730,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         else
         {
             Token().SetBindValue(View.InventorySelectedName, item.DisplayName);
-            Token().SetBindValue(View.InventorySelectedResRef, string.Format(CultureInfo.InvariantCulture, "ResRef: {0}", item.ResRef));
+            Token().SetBindValue(View.InventorySelectedResRef,
+                string.Format(CultureInfo.InvariantCulture, "ResRef: {0}", item.ResRef));
             Token().SetBindValue(View.InventorySelectedQuantity, item.IsStackable
                 ? string.Format(CultureInfo.InvariantCulture, "Stack size: {0:n0}", Math.Max(1, item.Quantity))
                 : "Stack size: 1");
@@ -801,7 +972,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private void ApplyFeedback(bool visible, string? message, Color color)
     {
         Token().SetBindValue(View.FeedbackVisible, visible);
-        Token().SetBindValue(View.FeedbackText, visible && !string.IsNullOrWhiteSpace(message) ? message! : string.Empty);
+        Token().SetBindValue(View.FeedbackText,
+            visible && !string.IsNullOrWhiteSpace(message) ? message! : string.Empty);
         Token().SetBindValue(View.FeedbackColor, color);
     }
 
@@ -811,7 +983,29 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValue(View.RentToggleEnabled, _rentToggleEnabled && !_isProcessing);
         Token().SetBindValue(View.RentToggleLabel, FormatRentToggleLabel());
         Token().SetBindValue(View.RentToggleStatus, FormatRentToggleStatus());
-        Token().SetBindValue(View.RentToggleTooltip, string.IsNullOrWhiteSpace(_rentToggleTooltip) ? string.Empty : _rentToggleTooltip);
+        Token().SetBindValue(View.RentToggleTooltip,
+            string.IsNullOrWhiteSpace(_rentToggleTooltip) ? string.Empty : _rentToggleTooltip);
+    }
+
+    private void ApplyHoldEarningsBindings()
+    {
+        Token().SetBindValue(View.HoldEarningsVisible, _holdToggleVisible);
+        Token().SetBindValue(View.HoldEarningsEnabled, _holdToggleEnabled && !_isProcessing);
+        Token().SetBindValue(View.HoldEarningsChecked, _holdEarningsInStall);
+        Token().SetBindValue(View.HoldEarningsTooltip,
+            string.IsNullOrWhiteSpace(_holdToggleTooltip) ? string.Empty : _holdToggleTooltip);
+        Token().SetBindValue(View.HoldEarningsLabel, BuildHoldEarningsPlaceholderText());
+    }
+
+    private void ApplyEarningsBindings()
+    {
+        Token().SetBindValue(View.EarningsRowVisible, _earningsVisible);
+        Token().SetBindValue(View.EarningsBalanceText, FormatEarningsBalance(_escrowBalance));
+        Token().SetBindValue(View.EarningsTooltip,
+            string.IsNullOrWhiteSpace(_earningsTooltip) ? string.Empty : _earningsTooltip);
+        Token().SetBindValue(View.EarningsWithdrawEnabled, _withdrawEnabled && !_isProcessing);
+        Token().SetBindValue(View.EarningsWithdrawAllEnabled, _withdrawAllEnabled && !_isProcessing);
+        Token().SetBindValue(View.EarningsInputEnabled, _withdrawEnabled && !_isProcessing);
     }
 
     private void NotifyError(string message)
@@ -891,9 +1085,48 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             : "Rent payments: Stall earnings";
     }
 
+    private string BuildHoldEarningsPlaceholderText()
+    {
+        string label = string.IsNullOrWhiteSpace(_holdToggleLabel)
+            ? "Hold profits in stall escrow"
+            : _holdToggleLabel;
+        string state = _holdEarningsInStall ? "on" : "off";
+
+        return string.Format(CultureInfo.InvariantCulture, "{0} [{1}]", label, state);
+    }
+
+    private static string FormatEarningsBalance(int amount)
+    {
+        return string.Format(CultureInfo.InvariantCulture, "Available: {0:n0} gp", Math.Max(0, amount));
+    }
+
     private static string FormatPrice(int price)
     {
         return string.Format(CultureInfo.InvariantCulture, "{0:n0} gp", Math.Max(0, price));
+    }
+
+    private static bool TryParseWithdrawalAmount(string? text, out int value)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            value = 0;
+            return false;
+        }
+
+        if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
+        {
+            value = 0;
+            return false;
+        }
+
+        if (parsed <= 0)
+        {
+            value = 0;
+            return false;
+        }
+
+        value = parsed;
+        return true;
     }
 
     private static bool TryParsePrice(string? text, out int value)

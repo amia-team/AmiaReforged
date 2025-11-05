@@ -153,7 +153,17 @@ public sealed record PlayerStallSellerSnapshot(
     bool RentFromCoinhouse = false,
     bool RentToggleVisible = false,
     bool RentToggleEnabled = false,
-    string? RentToggleTooltip = null);
+    string? RentToggleTooltip = null,
+    bool HoldEarningsInStall = false,
+    bool HoldEarningsToggleVisible = false,
+    bool HoldEarningsToggleEnabled = false,
+    string? HoldEarningsToggleTooltip = null,
+    string? HoldEarningsToggleLabel = null,
+    int EscrowBalance = 0,
+    bool EarningsRowVisible = false,
+    bool WithdrawEnabled = false,
+    bool WithdrawAllEnabled = false,
+    string? EarningsTooltip = null);
 
 /// <summary>
 /// Window wiring details used when presenting the seller interface.
@@ -313,3 +323,21 @@ public sealed record PlayerStallRentSourceRequest(
     long StallId,
     PersonaId SellerPersona,
     bool RentFromCoinhouse);
+
+/// <summary>
+/// Request raised by the seller UI to update how stall earnings are retained.
+/// </summary>
+public sealed record PlayerStallHoldEarningsRequest(
+    Guid SessionId,
+    long StallId,
+    PersonaId SellerPersona,
+    bool HoldEarningsInStall);
+
+/// <summary>
+/// Request raised by the seller UI to withdraw stall escrow.
+/// </summary>
+public sealed record PlayerStallWithdrawRequest(
+    Guid SessionId,
+    long StallId,
+    PersonaId SellerPersona,
+    int? RequestedAmount);

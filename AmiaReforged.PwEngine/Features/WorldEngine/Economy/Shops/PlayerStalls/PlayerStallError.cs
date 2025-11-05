@@ -20,5 +20,7 @@ public enum PlayerStallError
     ProductNotFound,
     PriceOutOfRange,
     CoinhouseUnavailable,
-    CoinhouseAccountMissing
+    CoinhouseAccountMissing,
+    InvalidWithdrawalAmount,
+    InsufficientEscrow
 }

@@ -654,6 +654,353 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     }
 
     /// <summary>
+    /// Handles seller requests to update whether stall earnings are retained in escrow.
+    /// </summary>
+    public async Task<PlayerStallSellerOperationResult> RequestUpdateHoldEarningsAsync(PlayerStallHoldEarningsRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        SellerSubscription? subscription;
+        lock (_syncRoot)
+        {
+            _sellerSessions.TryGetValue(request.SessionId, out subscription);
+        }
+
+        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        {
+            return PlayerStallSellerOperationResult.Fail(
+                "Your stall session is no longer valid.",
+                ColorConstants.Orange);
+        }
+
+        if (!TryResolvePersonaGuid(request.SellerPersona, out Guid personaGuid))
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't verify your persona for that action.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (!_characters.TryGetPlayer(personaGuid, out NwPlayer? player) || player is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be logged in as that persona to manage the stall.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        string personaId = request.SellerPersona.ToString();
+
+        bool canConfigure = string.Equals(stall.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase);
+
+        if (!canConfigure && stall.Members is not null)
+        {
+            foreach (PlayerStallMember member in stall.Members.Where(m => m is not null))
+            {
+                if (member.RevokedUtc.HasValue)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(member.PersonaId, personaId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                canConfigure = member.CanConfigureSettings;
+                break;
+            }
+        }
+
+        if (!canConfigure)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You do not have permission to change how this stall handles earnings.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (!request.HoldEarningsInStall)
+        {
+            if (!TryResolveCoinhouseTag(stall, out _))
+            {
+                PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                    "This stall is not linked to a coinhouse; profits must remain in escrow.",
+                    ColorConstants.Orange);
+
+                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+                return failure;
+            }
+
+            if (stall.CoinHouseAccountId is null)
+            {
+                PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                    "Link your coinhouse account in this settlement to automatically deposit profits.",
+                    ColorConstants.Orange);
+
+                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+                return failure;
+            }
+        }
+
+        UpdateStallRentSettingsRequest serviceRequest = new(
+            request.StallId,
+            request.SellerPersona,
+            stall.CoinHouseAccountId,
+            request.HoldEarningsInStall);
+
+        PlayerStallServiceResult serviceResult = await _stallService
+            .UpdateRentSettingsAsync(serviceRequest)
+            .ConfigureAwait(false);
+
+        if (!serviceResult.Success)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                serviceResult.ErrorMessage ?? "Failed to update stall earnings handling.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? updatedStall = _shops.GetShopWithMembers(request.StallId);
+        if (updatedStall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        List<StallProduct> products = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
+
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            updatedStall,
+            products,
+            request.SellerPersona,
+            null).ConfigureAwait(false);
+
+        string message = request.HoldEarningsInStall
+            ? "Stall profits will now remain in escrow until you withdraw them."
+            : "Stall profits will now deposit to your coinhouse account as sales complete.";
+
+        PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
+            snapshot,
+            message,
+            ColorConstants.Lime);
+
+        await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);
+
+        await PublishSellerSnapshotsAsync(
+            request.StallId,
+            updatedStall,
+            products,
+            request.SessionId).ConfigureAwait(false);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Handles seller requests to withdraw stall earnings.
+    /// </summary>
+    public async Task<PlayerStallSellerOperationResult> RequestWithdrawEarningsAsync(PlayerStallWithdrawRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        SellerSubscription? subscription;
+        lock (_syncRoot)
+        {
+            _sellerSessions.TryGetValue(request.SessionId, out subscription);
+        }
+
+        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        {
+            return PlayerStallSellerOperationResult.Fail(
+                "Your stall session is no longer valid.",
+                ColorConstants.Orange);
+        }
+
+        if (!TryResolvePersonaGuid(request.SellerPersona, out Guid personaGuid))
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't verify your persona for that action.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (!_characters.TryGetPlayer(personaGuid, out NwPlayer? player) || player is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be logged in as that persona to manage the stall.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        NwCreature? sellerCreature = await ResolveActiveCreatureAsync(player).ConfigureAwait(false);
+        if (sellerCreature is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be possessing your character to withdraw earnings.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        string personaId = request.SellerPersona.ToString();
+        bool canCollect = string.Equals(stall.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase);
+
+        if (!canCollect && stall.Members is not null)
+        {
+            foreach (PlayerStallMember member in stall.Members.Where(m => m is not null))
+            {
+                if (member.RevokedUtc.HasValue)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(member.PersonaId, personaId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                canCollect = member.CanCollectEarnings;
+                break;
+            }
+        }
+
+        if (!canCollect)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You do not have permission to withdraw stall earnings.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (request.RequestedAmount is int requestedAmount && requestedAmount <= 0)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "Withdrawal amount must be greater than zero.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        WithdrawStallEarningsRequest serviceRequest = new(
+            request.StallId,
+            request.SellerPersona,
+            request.RequestedAmount);
+
+        PlayerStallServiceResult serviceResult = await _stallService
+            .WithdrawEarningsAsync(serviceRequest)
+            .ConfigureAwait(false);
+
+        if (!serviceResult.Success)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                serviceResult.ErrorMessage ?? "Failed to withdraw stall earnings.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (serviceResult.Data is not { } data ||
+            !data.TryGetValue("amount", out object? amountObject) ||
+            amountObject is not int amount ||
+            amount <= 0)
+        {
+            Log.Warn("Withdrawal response for stall {StallId} did not include a valid amount.", request.StallId);
+
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't determine how much gold to withdraw.",
+                ColorConstants.Red);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        bool wasPartial = data.TryGetValue("partial", out object? partialObject) && partialObject is bool partial && partial;
+
+        PlayerStall? updatedStall = _shops.GetShopWithMembers(request.StallId);
+        if (updatedStall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        await RefundGoldAsync(sellerCreature, amount).ConfigureAwait(false);
+
+        List<StallProduct> products = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
+
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            updatedStall,
+            products,
+            request.SellerPersona,
+            null).ConfigureAwait(false);
+
+        string message = wasPartial
+            ? string.Format(CultureInfo.InvariantCulture, "Withdrew {0:n0} gp (limited to available stall earnings).", amount)
+            : string.Format(CultureInfo.InvariantCulture, "Withdrew {0:n0} gp from stall earnings.", amount);
+
+        PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
+            snapshot,
+            message,
+            ColorConstants.Lime);
+
+        await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);
+
+        await PublishSellerSnapshotsAsync(
+            request.StallId,
+            updatedStall,
+            products,
+            request.SessionId).ConfigureAwait(false);
+
+        return result;
+    }
+
+    /// <summary>
     /// Handles seller requests to list an inventory item for sale.
     /// </summary>
     public async Task<PlayerStallSellerOperationResult> RequestListInventoryItemAsync(PlayerStallSellerListItemRequest request)
@@ -1514,6 +1861,29 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         return await BuildSellerSnapshotAsync(stall, products, persona, null).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Builds a buyer snapshot for the specified stall and persona without registering a live session.
+    /// </summary>
+    public async Task<PlayerStallBuyerSnapshot?> BuildBuyerSnapshotForAsync(long stallId, PersonaId persona, NwPlayer player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+
+        PlayerStall? stall = _shops.GetShopWithMembers(stallId);
+        if (stall is null)
+        {
+            return null;
+        }
+
+        NwCreature? creature = await ResolveActiveCreatureAsync(player).ConfigureAwait(false);
+        if (creature is null)
+        {
+            return null;
+        }
+
+        List<StallProduct> products = _shops.ProductsForShop(stallId) ?? new List<StallProduct>();
+        return await BuildSnapshotAsync(stall, products, persona, player, creature).ConfigureAwait(false);
+    }
+
     private async Task<PlayerStallSellerSnapshot> BuildSellerSnapshotAsync(
         PlayerStall stall,
         IReadOnlyList<StallProduct> products,
@@ -1533,27 +1903,71 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         string sellerName = ResolveSellerDisplayName(stall, persona);
         PlayerStallSellerContext context = new(persona, sellerName);
 
-    List<PlayerStallSellerProductView> views = BuildSellerProductViews(products, canAdjustPrice: true);
-    IReadOnlyList<PlayerStallSellerInventoryItemView> inventory = await BuildInventoryItemsAsync(persona).ConfigureAwait(false);
+        List<PlayerStallSellerProductView> views = BuildSellerProductViews(products, canAdjustPrice: true);
+        IReadOnlyList<PlayerStallSellerInventoryItemView> inventory = await BuildInventoryItemsAsync(persona).ConfigureAwait(false);
 
         bool rentFromCoinhouse = stall.CoinHouseAccountId.HasValue;
         bool rentToggleVisible = false;
         bool rentToggleEnabled = false;
         string? rentToggleTooltip = null;
 
+        bool holdToggleVisible = false;
+        bool holdToggleEnabled = false;
+        string holdToggleLabel = "Hold profits in stall escrow";
+        string? holdToggleTooltip = null;
+
+        int escrowBalance = Math.Max(0, stall.EscrowBalance);
+        bool earningsRowVisible = false;
+        bool withdrawEnabled = false;
+        bool withdrawAllEnabled = false;
+        string? earningsTooltip = null;
+
+        string personaId = persona.ToString();
+
         bool isOwner = !string.IsNullOrWhiteSpace(stall.OwnerPersonaId) &&
-                       string.Equals(stall.OwnerPersonaId, persona.ToString(), StringComparison.OrdinalIgnoreCase);
+                       string.Equals(stall.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase);
+
+        bool canCollect = isOwner;
+        bool canConfigure = isOwner;
+
+        if (!isOwner && stall.Members is not null && stall.Members.Count > 0)
+        {
+            foreach (PlayerStallMember member in stall.Members.Where(m => m is not null))
+            {
+                if (member.RevokedUtc.HasValue)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(member.PersonaId, personaId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                canCollect = member.CanCollectEarnings;
+                canConfigure = member.CanConfigureSettings;
+                break;
+            }
+        }
+
+        bool hasCoinhouseLink = TryResolveCoinhouseTag(stall, out CoinhouseTag coinhouseTag);
+        bool hasCoinhouseAccount = false;
+
+        if (hasCoinhouseLink)
+        {
+            Guid accountId = PersonaAccountId.ForCoinhouse(persona, coinhouseTag);
+            hasCoinhouseAccount = await _coinhouses
+                .GetAccountForAsync(accountId, CancellationToken.None)
+                .ConfigureAwait(false) is not null;
+        }
 
         if (isOwner)
         {
-            if (TryResolveCoinhouseTag(stall, out CoinhouseTag coinhouseTag))
+            if (hasCoinhouseLink)
             {
-                Guid accountId = PersonaAccountId.ForCoinhouse(persona, coinhouseTag);
-                bool hasAccount = await _coinhouses.GetAccountForAsync(accountId, CancellationToken.None).ConfigureAwait(false) is not null;
-
                 rentToggleVisible = true;
-                rentToggleEnabled = hasAccount;
-                rentToggleTooltip = hasAccount
+                rentToggleEnabled = hasCoinhouseAccount;
+                rentToggleTooltip = hasCoinhouseAccount
                     ? rentFromCoinhouse
                         ? "Rent is currently charged to your coinhouse account."
                         : "Enable to charge rent to your coinhouse account instead of stall profits."
@@ -1573,6 +1987,40 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             rentToggleTooltip = "Rent payments are charged to the owner's coinhouse account.";
         }
 
+        bool holdEarnings = stall.HoldEarningsInStall;
+
+        holdToggleVisible = canConfigure && (hasCoinhouseLink || rentFromCoinhouse);
+        if (holdToggleVisible)
+        {
+            if (!hasCoinhouseLink && rentFromCoinhouse)
+            {
+                holdToggleEnabled = false;
+                holdToggleTooltip = "This stall is not linked to a coinhouse; profits will remain in escrow.";
+            }
+            else
+            {
+                holdToggleEnabled = hasCoinhouseAccount;
+                holdToggleTooltip = holdToggleEnabled
+                    ? holdEarnings
+                        ? "Profits remain in stall escrow until you withdraw them."
+                        : "Profits will deposit to your coinhouse account automatically."
+                    : "Link your coinhouse account in this settlement to change this option.";
+            }
+        }
+
+        earningsRowVisible = canCollect;
+        withdrawEnabled = canCollect && escrowBalance > 0;
+        withdrawAllEnabled = withdrawEnabled;
+
+        if (!canCollect)
+        {
+            earningsTooltip = "You do not have permission to withdraw stall earnings.";
+        }
+        else if (escrowBalance <= 0)
+        {
+            earningsTooltip = "No earnings are currently available to withdraw.";
+        }
+
         return new PlayerStallSellerSnapshot(
             summary,
             context,
@@ -1585,7 +2033,17 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             rentFromCoinhouse,
             rentToggleVisible,
             rentToggleEnabled,
-            rentToggleTooltip);
+            rentToggleTooltip,
+            holdEarnings,
+            holdToggleVisible,
+            holdToggleEnabled,
+            holdToggleTooltip,
+            holdToggleLabel,
+            escrowBalance,
+            earningsRowVisible,
+            withdrawEnabled,
+            withdrawAllEnabled,
+            earningsTooltip);
     }
 
     private bool TryResolveCoinhouseTag(PlayerStall stall, out CoinhouseTag tag)

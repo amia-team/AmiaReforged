@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
@@ -67,7 +68,7 @@ public sealed class PlayerStallService : IPlayerStallService
         PlayerStallDomainResult<Action<PlayerStall>> domainResult = aggregate.TryClaim(ownerGuid, options);
         if (!domainResult.Success)
         {
-            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage ?? "Failed to update stall rent settings."));
         }
 
         IEnumerable<PlayerStallMember> members = BuildMembers(request);
@@ -153,7 +154,25 @@ public sealed class PlayerStallService : IPlayerStallService
         PlayerStallDomainResult<Action<PlayerStall>> domainResult = aggregate.TryRelease(personaId, request.Force, releasedUtc);
         if (!domainResult.Success)
         {
-            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+            PlayerStallError error = domainResult.Error;
+            string message = domainResult.ErrorMessage ?? "Failed to update stall rent settings.";
+
+            if (error == PlayerStallError.Unauthorized && !string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
+            {
+                bool isOwner = string.Equals(stall.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase);
+                bool isActiveMember = stall.Members?.Any(member =>
+                    member is not null &&
+                    !member.RevokedUtc.HasValue &&
+                    string.Equals(member.PersonaId, personaId, StringComparison.OrdinalIgnoreCase)) == true;
+
+                if (!isOwner && !isActiveMember)
+                {
+                    error = PlayerStallError.NotOwner;
+                    message = "Only the stall owner may change rent settings.";
+                }
+            }
+
+            return Task.FromResult(PlayerStallServiceResult.Fail(error, message));
         }
 
         bool updated = _shops.UpdateShop(request.StallId, domainResult.Payload!);
@@ -295,7 +314,25 @@ public sealed class PlayerStallService : IPlayerStallService
 
         if (!domainResult.Success)
         {
-            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+            PlayerStallError error = domainResult.Error;
+            string message = domainResult.ErrorMessage ?? "Failed to update stall rent settings.";
+
+            if (error == PlayerStallError.Unauthorized && !string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
+            {
+                bool isOwner = string.Equals(stall.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase);
+                bool isActiveMember = stall.Members?.Any(member =>
+                    member is not null &&
+                    !member.RevokedUtc.HasValue &&
+                    string.Equals(member.PersonaId, personaId, StringComparison.OrdinalIgnoreCase)) == true;
+
+                if (!isOwner && !isActiveMember)
+                {
+                    error = PlayerStallError.NotOwner;
+                    message = "Only the stall owner may change rent settings.";
+                }
+            }
+
+            return Task.FromResult(PlayerStallServiceResult.Fail(error, message));
         }
 
         bool updated = _shops.UpdateShop(request.StallId, domainResult.Payload!);
@@ -310,6 +347,51 @@ public sealed class PlayerStallService : IPlayerStallService
         {
             ["stallId"] = request.StallId,
             ["rentFromCoinhouse"] = request.CoinHouseAccountId.HasValue
+        };
+
+        return Task.FromResult(PlayerStallServiceResult.Ok(data));
+    }
+
+    public Task<PlayerStallServiceResult> WithdrawEarningsAsync(WithdrawStallEarningsRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        PlayerStall? stall = _shops.GetShopById(request.StallId);
+        if (stall is null)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.StallNotFound,
+                $"Stall {request.StallId} was not found."));
+        }
+
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+        string personaId = request.Requestor.ToString();
+
+        PlayerStallDomainResult<PlayerStallWithdrawal> domainResult = aggregate.TryWithdrawEarnings(
+            personaId,
+            request.RequestedAmount);
+
+        if (!domainResult.Success)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(domainResult.Error, domainResult.ErrorMessage!));
+        }
+
+        PlayerStallWithdrawal withdrawal = domainResult.Payload!;
+
+        bool updated = _shops.UpdateShop(request.StallId, withdrawal.Apply);
+        if (!updated)
+        {
+            return Task.FromResult(PlayerStallServiceResult.Fail(
+                PlayerStallError.PersistenceFailure,
+                "Failed to persist stall earnings withdrawal."));
+        }
+
+        IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
+        {
+            ["stallId"] = request.StallId,
+            ["amount"] = withdrawal.Amount,
+            ["partial"] = withdrawal.WasPartial
         };
 
         return Task.FromResult(PlayerStallServiceResult.Ok(data));

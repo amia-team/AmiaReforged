@@ -305,22 +305,46 @@ public sealed class PlayerStallInitializer
                 return;
             }
 
-            if (IsOwnedByDifferentPersona(stall, ownerGuid, personaId))
-            {
-                string ownerName = string.IsNullOrWhiteSpace(stall.OwnerDisplayName)
-                    ? "another proprietor"
-                    : stall.OwnerDisplayName!;
+            bool ownsStall = IsOwnedByCurrentPersona(stall, ownerGuid, personaId);
+            bool stallHasOwner = StallHasOwner(stall);
 
-                await SendServerMessageAsync(player,
-                        $"This stall is already operated by {ownerName}.",
-                        ColorConstants.Orange)
-                    .ConfigureAwait(false);
+            if (ownsStall)
+            {
+                if (IsPersonaUsingDifferentCharacter(stall, player, personaId))
+                {
+                    string ownerName = string.IsNullOrWhiteSpace(stall.OwnerDisplayName)
+                        ? "another character"
+                        : stall.OwnerDisplayName!;
+
+                    await SendServerMessageAsync(player,
+                            $"Your persona already operates this stall as {ownerName}. Swap to that character to manage it.",
+                            ColorConstants.Orange)
+                        .ConfigureAwait(false);
+                    await SendFloatingTextAsync(player,
+                            "You cannot interact with this stall on this character.")
+                        .ConfigureAwait(false);
+                    return;
+                }
+
+                await OpenSellerWindowAsync(player, stall, personaId).ConfigureAwait(false);
                 return;
             }
 
-            if (IsOwnedByCurrentPersona(stall, ownerGuid, personaId))
+            if (stallHasOwner)
             {
-                await OpenSellerWindowAsync(player, stall, personaId).ConfigureAwait(false);
+                if (!IsStallOpen(stall))
+                {
+                    await SendServerMessageAsync(player,
+                            "This stall is currently closed to customers.",
+                            ColorConstants.Orange)
+                        .ConfigureAwait(false);
+                    await SendFloatingTextAsync(player,
+                            "The stall appears to be closed.")
+                        .ConfigureAwait(false);
+                    return;
+                }
+
+                await OpenBuyerWindowAsync(player, stall, personaId).ConfigureAwait(false);
                 return;
             }
 
@@ -379,19 +403,45 @@ public sealed class PlayerStallInitializer
         return false;
     }
 
-    private static bool IsOwnedByDifferentPersona(PlayerStall stall, Guid ownerGuid, PersonaId personaId)
+    private static bool StallHasOwner(PlayerStall stall)
     {
-        if (stall.OwnerCharacterId.HasValue)
+        bool hasCharacterOwner = stall.OwnerCharacterId.HasValue && stall.OwnerCharacterId.Value != Guid.Empty;
+        bool hasPersonaOwner = !string.IsNullOrWhiteSpace(stall.OwnerPersonaId);
+        return hasCharacterOwner || hasPersonaOwner;
+    }
+
+    private static bool IsStallOpen(PlayerStall stall)
+    {
+        return stall.IsActive && !stall.SuspendedUtc.HasValue;
+    }
+
+    private static bool IsPersonaUsingDifferentCharacter(PlayerStall stall, NwPlayer player, PersonaId personaId)
+    {
+        if (player.LoginCreature is null || !player.LoginCreature.IsValid)
         {
-            return stall.OwnerCharacterId.Value != ownerGuid;
+            return false;
         }
 
-        if (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
+        if (string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
         {
-            return !string.Equals(stall.OwnerPersonaId, personaId.ToString(), StringComparison.OrdinalIgnoreCase);
+            return false;
         }
 
-        return false;
+        string personaKey = personaId.ToString();
+        if (!string.Equals(stall.OwnerPersonaId, personaKey, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        string? ownerName = stall.OwnerDisplayName;
+        string? currentName = player.LoginCreature.Name;
+
+        if (string.IsNullOrWhiteSpace(ownerName) || string.IsNullOrWhiteSpace(currentName))
+        {
+            return false;
+        }
+
+        return !string.Equals(ownerName.Trim(), currentName.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
     private bool TryResolvePersona(NwPlayer player, out PersonaId personaId, out Guid ownerGuid)
@@ -463,6 +513,44 @@ public sealed class PlayerStallInitializer
 
         await SendServerMessageAsync(player, message, ColorConstants.Orange).ConfigureAwait(false);
         await SendFloatingTextAsync(player, message).ConfigureAwait(false);
+    }
+
+    private async Task OpenBuyerWindowAsync(NwPlayer player, PlayerStall stall, PersonaId personaId)
+    {
+        PlayerStallBuyerSnapshot? snapshot = await _eventManager
+            .BuildBuyerSnapshotForAsync(stall.Id, personaId, player)
+            .ConfigureAwait(false);
+
+        if (snapshot is null)
+        {
+            Log.Warn("Failed to build buyer snapshot for stall {StallId} while opening storefront.", stall.Id);
+            await SendServerMessageAsync(player,
+                    "We couldn't open the stall storefront. Please try again later.",
+                    ColorConstants.Red)
+                .ConfigureAwait(false);
+            return;
+        }
+
+        string title = string.IsNullOrWhiteSpace(snapshot.Summary.StallName)
+            ? "Market Stall"
+            : snapshot.Summary.StallName;
+
+        PlayerStallBuyerWindowConfig config = new(
+            stall.Id,
+            personaId,
+            title,
+            snapshot);
+
+        PlayerBuyerView view = new(player, config);
+
+        await NwTask.SwitchToMainThread();
+        _windowDirector.CloseWindow(player, typeof(PlayerBuyerPresenter));
+        _windowDirector.OpenWindow(view.Presenter);
+
+        await SendServerMessageAsync(player,
+                "Opening stall storefront.",
+                ColorConstants.Cyan)
+            .ConfigureAwait(false);
     }
 
     private async Task OpenSellerWindowAsync(NwPlayer player, PlayerStall stall, PersonaId personaId)

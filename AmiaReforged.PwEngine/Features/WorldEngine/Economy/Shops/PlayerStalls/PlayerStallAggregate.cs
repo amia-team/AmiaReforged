@@ -238,11 +238,11 @@ public sealed class PlayerStallAggregate
                 "A persona is required to update stall rent settings.");
         }
 
-        if (!IsOwner(requestorPersonaId))
+        if (!HasSettingsPrivileges(requestorPersonaId))
         {
             return PlayerStallDomainResult<Action<PlayerStall>>.Fail(
-                PlayerStallError.NotOwner,
-                "Only the owner may change how rent is paid for this stall.");
+                PlayerStallError.Unauthorized,
+                "You do not have permission to change how this stall handles rent.");
         }
 
         return PlayerStallDomainResult<Action<PlayerStall>>.Ok(stall =>
@@ -252,6 +252,75 @@ public sealed class PlayerStallAggregate
         });
     }
 
+    public PlayerStallDomainResult<PlayerStallWithdrawal> TryWithdrawEarnings(
+        string requestorPersonaId,
+        int? requestedAmount)
+    {
+        if (string.IsNullOrWhiteSpace(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<PlayerStallWithdrawal>.Fail(
+                PlayerStallError.Unauthorized,
+                "A persona is required to withdraw stall earnings.");
+        }
+
+        if (!_snapshot.IsActive)
+        {
+            return PlayerStallDomainResult<PlayerStallWithdrawal>.Fail(
+                PlayerStallError.StallInactive,
+                "This stall is not currently active.");
+        }
+
+        if (!HasCollectionPrivileges(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<PlayerStallWithdrawal>.Fail(
+                PlayerStallError.Unauthorized,
+                "You do not have permission to withdraw earnings from this stall.");
+        }
+
+        int available = Math.Max(0, _snapshot.EscrowBalance);
+        if (available <= 0)
+        {
+            return PlayerStallDomainResult<PlayerStallWithdrawal>.Fail(
+                PlayerStallError.InsufficientEscrow,
+                "There are no earnings available to withdraw.");
+        }
+
+        int amount;
+        bool requestedPartial = false;
+
+        if (requestedAmount is null)
+        {
+            amount = available;
+        }
+        else
+        {
+            if (requestedAmount.Value <= 0)
+            {
+                return PlayerStallDomainResult<PlayerStallWithdrawal>.Fail(
+                    PlayerStallError.InvalidWithdrawalAmount,
+                    "Withdrawal amount must be greater than zero.");
+            }
+
+            amount = Math.Min(requestedAmount.Value, available);
+            requestedPartial = amount < requestedAmount.Value;
+        }
+
+        if (amount <= 0)
+        {
+            return PlayerStallDomainResult<PlayerStallWithdrawal>.Fail(
+                PlayerStallError.InvalidWithdrawalAmount,
+                "Withdrawal amount must be greater than zero.");
+        }
+
+        int sanitizedAmount = amount;
+        bool wasPartial = requestedAmount.HasValue && requestedPartial;
+
+        return PlayerStallDomainResult<PlayerStallWithdrawal>.Ok(new PlayerStallWithdrawal(stall =>
+        {
+            stall.EscrowBalance = Math.Max(0, stall.EscrowBalance - sanitizedAmount);
+        }, sanitizedAmount, wasPartial));
+    }
+
     private bool HasInventoryPrivileges(string personaId)
     {
         if (string.IsNullOrWhiteSpace(personaId))
@@ -259,13 +328,42 @@ public sealed class PlayerStallAggregate
             return false;
         }
 
-        if (!string.IsNullOrWhiteSpace(_snapshot.OwnerPersonaId) &&
-            string.Equals(_snapshot.OwnerPersonaId, personaId, StringComparison.OrdinalIgnoreCase))
+        if (IsOwner(personaId))
         {
             return true;
         }
 
         return _snapshot.InventoryPermissions.TryGetValue(personaId, out bool canManage) && canManage;
+    }
+
+    private bool HasCollectionPrivileges(string personaId)
+    {
+        if (string.IsNullOrWhiteSpace(personaId))
+        {
+            return false;
+        }
+
+        if (IsOwner(personaId))
+        {
+            return true;
+        }
+
+        return _snapshot.CollectionPermissions.TryGetValue(personaId, out bool canCollect) && canCollect;
+    }
+
+    private bool HasSettingsPrivileges(string personaId)
+    {
+        if (string.IsNullOrWhiteSpace(personaId))
+        {
+            return false;
+        }
+
+        if (IsOwner(personaId))
+        {
+            return true;
+        }
+
+        return _snapshot.SettingsPermissions.TryGetValue(personaId, out bool canConfigure) && canConfigure;
     }
 
     private bool IsOwner(string personaId)
@@ -284,45 +382,82 @@ public sealed class PlayerStallAggregate
         Guid? OwnerCharacterId,
         string? OwnerPersonaId,
         bool IsActive,
-        IReadOnlyDictionary<string, bool> InventoryPermissions)
+        int EscrowBalance,
+        bool HoldEarningsInStall,
+        IReadOnlyDictionary<string, bool> InventoryPermissions,
+        IReadOnlyDictionary<string, bool> CollectionPermissions,
+        IReadOnlyDictionary<string, bool> SettingsPermissions)
     {
         public static PlayerStallSnapshot From(PlayerStall stall)
         {
-            IReadOnlyDictionary<string, bool> permissions = BuildInventoryPermissions(stall);
+            (IReadOnlyDictionary<string, bool> inventory,
+                IReadOnlyDictionary<string, bool> collection,
+                IReadOnlyDictionary<string, bool> settings) = BuildMemberPermissions(stall);
 
             return new PlayerStallSnapshot(
                 stall.Id,
                 stall.OwnerCharacterId,
                 stall.OwnerPersonaId,
                 stall.IsActive,
-                permissions);
+                Math.Max(0, stall.EscrowBalance),
+                stall.HoldEarningsInStall,
+                inventory,
+                collection,
+                settings);
         }
 
-        private static IReadOnlyDictionary<string, bool> BuildInventoryPermissions(PlayerStall stall)
+        private static (IReadOnlyDictionary<string, bool> Inventory,
+            IReadOnlyDictionary<string, bool> Collection,
+            IReadOnlyDictionary<string, bool> Settings) BuildMemberPermissions(PlayerStall stall)
         {
-            if (stall.Members is null || stall.Members.Count == 0)
+            Dictionary<string, bool> inventory = new(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, bool> collection = new(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, bool> settings = new(StringComparer.OrdinalIgnoreCase);
+
+            if (!string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
             {
-                return new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                string owner = stall.OwnerPersonaId;
+                inventory[owner] = true;
+                collection[owner] = true;
+                settings[owner] = true;
             }
 
-            Dictionary<string, bool> permissions = new(StringComparer.OrdinalIgnoreCase);
-
-            foreach (PlayerStallMember member in stall.Members.Where(m => m is not null))
+            if (stall.Members is not null && stall.Members.Count > 0)
             {
-                if (member.RevokedUtc.HasValue)
+                foreach (PlayerStallMember member in stall.Members.Where(m => m is not null))
                 {
-                    continue;
-                }
+                    if (member.RevokedUtc.HasValue)
+                    {
+                        continue;
+                    }
 
-                if (string.IsNullOrWhiteSpace(member.PersonaId))
-                {
-                    continue;
-                }
+                    if (string.IsNullOrWhiteSpace(member.PersonaId))
+                    {
+                        continue;
+                    }
 
-                permissions[member.PersonaId] = member.CanManageInventory;
+                    string persona = member.PersonaId;
+
+                    if (member.CanManageInventory)
+                    {
+                        inventory[persona] = true;
+                    }
+
+                    if (member.CanCollectEarnings)
+                    {
+                        collection[persona] = true;
+                    }
+
+                    if (member.CanConfigureSettings)
+                    {
+                        settings[persona] = true;
+                    }
+                }
             }
 
-            return permissions;
+            return (inventory, collection, settings);
         }
     }
 }
+
+public sealed record PlayerStallWithdrawal(Action<PlayerStall> Apply, int Amount, bool WasPartial);

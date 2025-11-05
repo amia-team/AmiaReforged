@@ -69,6 +69,14 @@ public sealed record UpdateStallRentSettingsRequest(
     bool HoldEarningsInStall);
 
 /// <summary>
+/// Request to withdraw available earnings from a player stall escrow account.
+/// </summary>
+public sealed record WithdrawStallEarningsRequest(
+    long StallId,
+    PersonaId Requestor,
+    int? RequestedAmount);
+
+/// <summary>
 /// Service boundary for player stall operations.
 /// </summary>
 public interface IPlayerStallService
@@ -82,6 +90,8 @@ public interface IPlayerStallService
     Task<PlayerStallServiceResult> UpdateProductPriceAsync(UpdateStallProductPriceRequest request, CancellationToken cancellationToken = default);
 
     Task<PlayerStallServiceResult> UpdateRentSettingsAsync(UpdateStallRentSettingsRequest request, CancellationToken cancellationToken = default);
+
+    Task<PlayerStallServiceResult> WithdrawEarningsAsync(WithdrawStallEarningsRequest request, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
