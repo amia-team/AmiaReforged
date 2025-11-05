@@ -26,7 +26,7 @@
         {
           "Name": "plc_resref",
           "Type": "String",
-          "Value": "furniturespawn"
+          "Value": "ds_spear"
         },
         {
           "Name": "plc_name",

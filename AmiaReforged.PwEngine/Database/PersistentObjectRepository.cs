@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Database.Entities;
 using Anvil.Services;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Database;
@@ -23,6 +24,7 @@ public class PersistentObjectRepository(PwContextFactory factory) : IPersistentO
             else
             {
                 context.Entry(existing).CurrentValues.SetValues(obj);
+                existing.Location = obj.Location;
             }
 
             await context.SaveChangesAsync();
@@ -40,6 +42,7 @@ public class PersistentObjectRepository(PwContextFactory factory) : IPersistentO
         try
         {
             return context.PersistentObjects
+                .Include(po => po.Location)
                 .Where(po => po.Location != null && po.Location.AreaResRef == areaResRef)
                 .ToList();
         }
@@ -50,20 +53,30 @@ public class PersistentObjectRepository(PwContextFactory factory) : IPersistentO
         }
     }
 
-    public Task DeleteObject(PersistentObject obj)
+    public async Task DeleteObject(long id)
     {
-        using PwEngineContext context = factory.CreateDbContext();
+        await using PwEngineContext context = factory.CreateDbContext();
 
         try
         {
-            context.PersistentObjects.Remove(obj);
+            PersistentObject? entity = await context.PersistentObjects
+                .Include(p => p.Location)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (entity is null)
+            {
+                return;
+            }
+
+            context.PersistentObjects.Remove(entity);
+            await context.SaveChangesAsync();
         }
         catch (Exception ex)
         {
             Log.Error(ex);
         }
 
-        return Task.CompletedTask;
+        return;
     }
 
     public bool AreaHasPersistentObjects(string areaResRef)
@@ -102,7 +115,7 @@ public class PersistentObjectRepository(PwContextFactory factory) : IPersistentO
 public interface IPersistentObjectRepository
 {
     Task SaveObject(PersistentObject obj);
-    Task DeleteObject(PersistentObject obj);
+    Task DeleteObject(long id);
 
     List<PersistentObject> GetObjectsForArea(string areaResRef);
     bool AreaHasPersistentObjects(string areaResRef);

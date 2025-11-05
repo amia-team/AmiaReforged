@@ -12,7 +12,7 @@ internal enum PlaceablePersistenceMode
 
 internal static class PlaceablePersistenceModeExtensions
 {
-    private const string SaveModeVariable = "save_mode";
+    private const string SaveModeVariable = "saved_mode";
 
     public static PlaceablePersistenceMode GetPlaceablePersistenceMode(this NwArea area)
     {

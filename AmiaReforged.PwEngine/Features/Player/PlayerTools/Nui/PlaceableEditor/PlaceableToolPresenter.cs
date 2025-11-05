@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WorldEngine.AreaPersistence;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -10,6 +12,8 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.PlaceableEditor;
 
 public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 {
+    private const string PersistPlcLocalInt = "persist_plc";
+
     private readonly NwPlayer _player;
     private readonly PlaceableToolModel _model;
     private List<PlaceableBlueprint> _blueprints = new();
@@ -28,6 +32,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     }
 
     public override PlaceableToolView View { get; }
+
+    [Inject] private Lazy<PlaceablePersistenceService> PersistenceService { get; init; } = null!;
 
     public override NuiWindowToken Token() => _token;
 
@@ -107,6 +113,12 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             eventData.ArrayIndex < _blueprints.Count)
         {
             BeginSpawn(_blueprints[eventData.ArrayIndex]);
+            return;
+        }
+
+        if (eventData.ElementId == View.RecoverButton.Id)
+        {
+            RecoverSelectedPlaceable();
         }
     }
 
@@ -184,6 +196,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             // Ignore invalid appearance rows and keep the default.
         }
 
+        MarkPersistent(placeable);
+        _ = PersistSpawnedPlaceable(placeable);
+
         _player.SendServerMessage($"Spawned placeable '{placeable.Name}'.", ColorConstants.Green);
         UpdateSelection(placeable);
         Token().SetBindValue(View.StatusMessage,
@@ -244,5 +259,88 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         Token().SetBindValue(View.SelectedName, placeable.Name);
         Token().SetBindValue(View.SelectedLocation,
             $"{placeable.Position.X:F2}, {placeable.Position.Y:F2}, {placeable.Position.Z:F2}");
+    }
+
+    private void RecoverSelectedPlaceable()
+    {
+        if (_lastSelection is null || !_lastSelection.IsValid)
+        {
+            Token().SetBindValue(View.StatusMessage, "No placeable selected to recover.");
+            return;
+        }
+
+        NwPlaceable placeable = _lastSelection;
+        Token().SetBindValue(View.StatusMessage, $"Recovering '{placeable.Name}'...");
+
+        _ = NwTask.Run(async () =>
+        {
+            try
+            {
+                await PersistenceService.Value.DeletePlaceableAsync(placeable);
+            }
+            catch (Exception ex)
+            {
+                await NwTask.SwitchToMainThread();
+                Token().SetBindValue(View.StatusMessage,
+                    $"Failed to recover '{placeable.Name}': {ex.Message}");
+                return;
+            }
+
+            await NwTask.SwitchToMainThread();
+
+            if (placeable.IsValid)
+            {
+                placeable.Destroy();
+            }
+
+            if (!Token().Player.IsValid)
+            {
+                return;
+            }
+
+            Token().SetBindValue(View.StatusMessage, $"Recovered '{placeable.Name}'.");
+            UpdateSelection(null);
+        });
+    }
+
+    private static void MarkPersistent(NwPlaceable placeable)
+    {
+        LocalVariableInt persistVar = placeable.GetObjectVariable<LocalVariableInt>(PersistPlcLocalInt);
+        persistVar.Value = 1;
+    }
+
+    private Task PersistSpawnedPlaceable(NwPlaceable placeable)
+    {
+        return NwTask.Run(async () =>
+        {
+            try
+            {
+                await PersistenceService.Value.SaveSinglePlaceable(placeable);
+                await NwTask.SwitchToMainThread();
+
+                if (!Token().Player.IsValid)
+                {
+                    return;
+                }
+
+                if (placeable.IsValid)
+                {
+                    Token().SetBindValue(View.StatusMessage,
+                        $"Spawned '{placeable.Name}' and saved to persistence.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await NwTask.SwitchToMainThread();
+
+                if (!Token().Player.IsValid)
+                {
+                    return;
+                }
+
+                Token().SetBindValue(View.StatusMessage,
+                    $"Spawned '{placeable.Name}', but failed to save: {ex.Message}");
+            }
+        });
     }
 }

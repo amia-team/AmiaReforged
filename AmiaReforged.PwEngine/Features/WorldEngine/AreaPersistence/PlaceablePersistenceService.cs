@@ -24,10 +24,7 @@ public class PlaceablePersistenceService
 
         foreach (NwArea area in NwModule.Instance.Areas)
         {
-            if (objectRepository.AreaHasPersistentObjects(area.ResRef))
-            {
-                RespawnPlcs(area);
-            }
+            RespawnPlcs(area);
         }
     }
 
@@ -35,6 +32,11 @@ public class PlaceablePersistenceService
     {
         List<PersistentObject> persistentObjects = _objectRepository.GetObjectsForArea(area.ResRef)
             .Where(o => o.Type == (int)ObjectTypes.Placeable).ToList();
+
+        if (persistentObjects.Count == 0)
+        {
+            return;
+        }
 
         foreach (PersistentObject obj in persistentObjects)
         {
@@ -89,6 +91,8 @@ public class PlaceablePersistenceService
         }
 
         await _objectRepository.SaveObject(persistentObject);
+        await NwTask.SwitchToMainThread();
+        placeable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt).Value = (int)persistentObject.Id;
     }
 
     public async Task SaveAreaPlaceables(NwArea area)
@@ -144,6 +148,8 @@ public class PlaceablePersistenceService
             }
 
             await _objectRepository.SaveObject(persistentObject);
+            await NwTask.SwitchToMainThread();
+            nwPlaceable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt).Value = (int)persistentObject.Id;
         }
 
         return;
@@ -154,6 +160,22 @@ public class PlaceablePersistenceService
             LocalVariableInt isJobSystemPlcVar = plc.GetObjectVariable<LocalVariableInt>(PersistPlcLocalInt);
             return isJobSystemPlcVar.Value == 0;
         }
+    }
+
+    public async Task DeletePlaceableAsync(NwPlaceable placeable)
+    {
+        await NwTask.SwitchToMainThread();
+
+        LocalVariableInt dbVar = placeable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt);
+        long id = dbVar.Value;
+        if (id <= 0)
+        {
+            return;
+        }
+
+        await _objectRepository.DeleteObject(id);
+        await NwTask.SwitchToMainThread();
+        dbVar.Delete();
     }
 }
 
