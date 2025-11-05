@@ -26,7 +26,7 @@ public class CharacterRegistrationService
     private void RegisterNewCharacter(AreaEvents.OnEnter obj)
     {
         NwGameObject creature = obj.EnteringObject;
-        if (creature.IsLoginPlayerCharacter(out NwPlayer? player)) return;
+    if (!creature.IsLoginPlayerCharacter(out NwPlayer? player)) return;
         if (player?.LoginCreature is null) return;
         if (player.IsDM) return;
 
