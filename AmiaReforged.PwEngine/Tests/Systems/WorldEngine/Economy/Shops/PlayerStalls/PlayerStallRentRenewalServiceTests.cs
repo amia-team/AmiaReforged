@@ -21,6 +21,7 @@ public class PlayerStallRentRenewalServiceTests
 {
     private Mock<IPlayerShopRepository> _shops = null!;
     private Mock<ICommandHandler<WithdrawGoldCommand>> _withdraw = null!;
+    private Mock<ICommandHandler<DepositGoldCommand>> _deposit = null!;
     private Mock<IPlayerStallOwnerNotifier> _notifier = null!;
     private Mock<IPlayerStallEventBroadcaster> _events = null!;
     private Mock<IPlayerStallInventoryCustodian> _custodian = null!;
@@ -41,6 +42,8 @@ public class PlayerStallRentRenewalServiceTests
         _shops.Setup(r => r.AllShops()).Returns(() => new List<PlayerStall>(_allShops));
         _shops.Setup(r => r.GetShopById(It.IsAny<long>()))
             .Returns<long>(id => id == _stall.Id ? _stall : null);
+        _shops.Setup(r => r.ProductsForShop(It.IsAny<long>()))
+            .Returns<long>(id => id == _stall.Id ? _stall.Inventory : null);
         _shops.Setup(r => r.UpdateShop(It.IsAny<long>(), It.IsAny<Action<PlayerStall>>()))
             .Returns<long, Action<PlayerStall>>((id, action) =>
             {
@@ -55,6 +58,10 @@ public class PlayerStallRentRenewalServiceTests
 
         _withdraw = new Mock<ICommandHandler<WithdrawGoldCommand>>(MockBehavior.Strict);
         _withdraw.Setup(h => h.HandleAsync(It.IsAny<WithdrawGoldCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CommandResult.Ok());
+
+        _deposit = new Mock<ICommandHandler<DepositGoldCommand>>(MockBehavior.Strict);
+        _deposit.Setup(h => h.HandleAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommandResult.Ok());
 
         _notifier = new Mock<IPlayerStallOwnerNotifier>(MockBehavior.Strict);
@@ -81,6 +88,7 @@ public class PlayerStallRentRenewalServiceTests
         _service = new PlayerStallRentRenewalService(
             _shops.Object,
             _withdraw.Object,
+            _deposit.Object,
             _notifier.Object,
             _events.Object,
             _custodian.Object,
@@ -177,6 +185,80 @@ public class PlayerStallRentRenewalServiceTests
     _custodian.Verify(c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Test]
+    public async Task RunSingleCycleAsync_WhenStallEmptyFor2Hours_ReleasesStallWithRefund()
+    {
+        // Set up a stall that has been empty for 2+ hours
+        _stall.UpdatedUtc = DateTime.UtcNow.AddHours(-3);
+        _stall.Inventory.Clear(); // Empty inventory
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddHours(20); // 20 hours until next rent
+        _stall.CoinHouseAccountId = Guid.NewGuid();
+        _stall.SettlementTag = "market_square";
+        Guid originalOwner = _stall.OwnerCharacterId!.Value;
+        string originalPersona = _stall.OwnerPersonaId!;
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify stall was released
+        Assert.That(_stall.OwnerCharacterId, Is.Null);
+        Assert.That(_stall.OwnerPersonaId, Is.Null);
+        Assert.That(_stall.OwnerPlayerPersonaId, Is.Null);
+        Assert.That(_stall.OwnerDisplayName, Is.Null);
+        Assert.That(_stall.CoinHouseAccountId, Is.Null);
+        Assert.That(_stall.HoldEarningsInStall, Is.False);
+        Assert.That(_stall.IsActive, Is.False);
+        Assert.That(_stall.DeactivatedUtc, Is.Not.Null);
+        Assert.That(_stall.SuspendedUtc, Is.Not.Null);
+
+        // Verify notification was sent
+        Assert.That(_capturedNotifications, Has.Count.EqualTo(1));
+        Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Orange));
+        StringAssert.Contains("released due to", _capturedNotifications[0].Message);
+        StringAssert.Contains("prorated refund", _capturedNotifications[0].Message);
+
+        // Verify refund was attempted to coinhouse
+        _deposit.Verify(d => d.HandleAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenStallHasInventory_DoesNotRelease()
+    {
+        // Set up a stall that has been empty for 2+ hours but has inventory
+        _stall.UpdatedUtc = DateTime.UtcNow.AddHours(-3);
+        _stall.Inventory.Add(new StallProduct
+        {
+            Id = 1,
+            StallId = _stall.Id,
+            ResRef = "test_item",
+            Name = "Test Item",
+            Price = 100,
+            Quantity = 1,
+            ItemData = new byte[] { 1, 2, 3 }
+        });
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddHours(20);
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify stall was NOT released
+        Assert.That(_stall.OwnerCharacterId, Is.Not.Null);
+        Assert.That(_stall.IsActive, Is.True);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenStallEmptyButNotLongEnough_DoesNotRelease()
+    {
+        // Set up a stall that has been empty for less than 2 hours
+        _stall.UpdatedUtc = DateTime.UtcNow.AddMinutes(-30);
+        _stall.Inventory.Clear();
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddHours(20);
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify stall was NOT released
+        Assert.That(_stall.OwnerCharacterId, Is.Not.Null);
+        Assert.That(_stall.IsActive, Is.True);
+    }
+
     private static PlayerStall CreateStall()
     {
         Guid ownerGuid = Guid.NewGuid();
@@ -195,6 +277,7 @@ public class PlayerStallRentRenewalServiceTests
             LastRentPaidUtc = DateTime.UtcNow.AddDays(-1),
             EscrowBalance = 0,
             LifetimeNetEarnings = 0,
+            UpdatedUtc = DateTime.UtcNow,
             LedgerEntries = new List<PlayerStallLedgerEntry>(),
             Inventory = new List<StallProduct>(),
             Members = new List<PlayerStallMember>(),

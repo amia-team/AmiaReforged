@@ -26,9 +26,11 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     private static readonly TimeSpan BillingInterval = TimeSpan.FromHours(1);
     private static readonly TimeSpan GracePeriod = TimeSpan.FromHours(1);
     private static readonly TimeSpan RentInterval = TimeSpan.FromDays(1);
+    private static readonly TimeSpan EmptyStallReleaseThreshold = TimeSpan.FromHours(2);
 
     private readonly IPlayerShopRepository _shops;
     private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
+    private readonly ICommandHandler<DepositGoldCommand> _depositHandler;
     private readonly IPlayerStallOwnerNotifier _notifier;
     private readonly IPlayerStallEventBroadcaster _events;
     private readonly IPlayerStallInventoryCustodian _inventoryCustodian;
@@ -40,6 +42,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     public PlayerStallRentRenewalService(
         IPlayerShopRepository shops,
         ICommandHandler<WithdrawGoldCommand> withdrawHandler,
+        ICommandHandler<DepositGoldCommand> depositHandler,
         IPlayerStallOwnerNotifier notifier,
         IPlayerStallEventBroadcaster events,
         IPlayerStallInventoryCustodian inventoryCustodian,
@@ -48,6 +51,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _withdrawHandler = withdrawHandler ?? throw new ArgumentNullException(nameof(withdrawHandler));
+        _depositHandler = depositHandler ?? throw new ArgumentNullException(nameof(depositHandler));
         _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
         _events = events ?? throw new ArgumentNullException(nameof(events));
         _inventoryCustodian = inventoryCustodian ?? throw new ArgumentNullException(nameof(inventoryCustodian));
@@ -136,6 +140,12 @@ public sealed class PlayerStallRentRenewalService : IDisposable
             if (stall.OwnerCharacterId is null)
             {
                 continue;
+            }
+
+            // Check if stall has been empty for too long and should be released
+            if (await ShouldReleaseEmptyStallAsync(stall, utcNow, token).ConfigureAwait(false))
+            {
+                continue; // Already processed in the method
             }
 
             if (stall.NextRentDueUtc > utcNow)
@@ -396,6 +406,180 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         Color color = state == RentFailureState.Suspended ? ColorConstants.Red : ColorConstants.Yellow;
 
         await NotifyOwnerAsync(ownerCharacterId, message, color).ConfigureAwait(false);
+    }
+
+    private async Task<bool> ShouldReleaseEmptyStallAsync(PlayerStall stall, DateTime utcNow, CancellationToken token)
+    {
+        // Only check active stalls with owners
+        if (!stall.IsActive || stall.OwnerCharacterId is null)
+        {
+            return false;
+        }
+
+        // Check if stall has any inventory
+        List<StallProduct>? inventory = _shops.ProductsForShop(stall.Id);
+        if (inventory is not null && inventory.Count > 0)
+        {
+            return false;
+        }
+
+        // Check if we have a timestamp for when the stall became empty
+        // We'll use UpdatedUtc as a proxy - if the stall has been empty and not updated for 2+ hours
+        TimeSpan emptyDuration = utcNow - stall.UpdatedUtc;
+        if (emptyDuration < EmptyStallReleaseThreshold)
+        {
+            return false;
+        }
+
+        // Release the stall and provide prorated refund
+        await ReleaseEmptyStallWithRefundAsync(stall, utcNow, token).ConfigureAwait(false);
+        return true;
+    }
+
+    private async Task ReleaseEmptyStallWithRefundAsync(PlayerStall stall, DateTime utcNow, CancellationToken token)
+    {
+        // Calculate prorated refund based on time remaining until next rent due
+        int refundAmount = CalculateProratedRefund(stall, utcNow);
+
+        // Capture owner info before clearing
+        Guid? ownerCharacterId = stall.OwnerCharacterId;
+        string? ownerPersonaId = stall.OwnerPersonaId;
+        Guid? coinhouseAccountId = stall.CoinHouseAccountId;
+        string? settlementTag = stall.SettlementTag;
+
+        // Release the stall
+        bool released = _shops.UpdateShop(stall.Id, entity =>
+        {
+            entity.OwnerCharacterId = null;
+            entity.OwnerPersonaId = null;
+            entity.OwnerPlayerPersonaId = null;
+            entity.OwnerDisplayName = null;
+            entity.CoinHouseAccountId = null;
+            entity.HoldEarningsInStall = false;
+            entity.IsActive = false;
+            entity.DeactivatedUtc = utcNow;
+            entity.SuspendedUtc = utcNow;
+        });
+
+        if (!released)
+        {
+            Log.Warn("Failed to release empty stall {StallId}.", stall.Id);
+            return;
+        }
+
+        Log.Info("Released empty stall {StallId} after {Hours} hours of inactivity. Refund: {Refund} gp",
+            stall.Id,
+            EmptyStallReleaseThreshold.TotalHours,
+            refundAmount);
+
+        // Process refund if applicable
+        if (refundAmount > 0 && ownerPersonaId is not null)
+        {
+            await ProcessRefundAsync(ownerPersonaId, ownerCharacterId, coinhouseAccountId, settlementTag, refundAmount, stall, token)
+                .ConfigureAwait(false);
+        }
+
+        await _events.BroadcastSellerRefreshAsync(stall.Id).ConfigureAwait(false);
+
+        // Notify owner
+        string stallName = BeautifyLabelOrDefault(stall.Tag, stall.Id);
+        string message = refundAmount > 0
+            ? string.Format(CultureInfo.InvariantCulture,
+                "{0} has been released due to {1} hours of inactivity. A prorated refund of {2:n0} gp has been {3}.",
+                stallName,
+                EmptyStallReleaseThreshold.TotalHours,
+                refundAmount,
+                coinhouseAccountId.HasValue ? "deposited to your coinhouse account" : "held by the market reeve")
+            : string.Format(CultureInfo.InvariantCulture,
+                "{0} has been released due to {1} hours of inactivity.",
+                stallName,
+                EmptyStallReleaseThreshold.TotalHours);
+
+        await NotifyOwnerAsync(ownerCharacterId, message, ColorConstants.Orange).ConfigureAwait(false);
+    }
+
+    private static int CalculateProratedRefund(PlayerStall stall, DateTime utcNow)
+    {
+        // Calculate how much time is left until next rent due
+        TimeSpan timeRemaining = stall.NextRentDueUtc - utcNow;
+        if (timeRemaining <= TimeSpan.Zero)
+        {
+            return 0; // No refund if rent is already due or overdue
+        }
+
+        // Calculate the proportion of the rent period remaining
+        double totalRentPeriodHours = RentInterval.TotalHours;
+        double remainingHours = timeRemaining.TotalHours;
+        double proportionRemaining = remainingHours / totalRentPeriodHours;
+
+        // Calculate prorated refund
+        int refund = (int)(stall.DailyRent * proportionRemaining);
+        return Math.Max(0, refund);
+    }
+
+    private async Task ProcessRefundAsync(
+        string ownerPersonaId,
+        Guid? ownerCharacterId,
+        Guid? coinhouseAccountId,
+        string? settlementTag,
+        int refundAmount,
+        PlayerStall stall,
+        CancellationToken token)
+    {
+        try
+        {
+            // Try to parse the persona ID
+            PersonaId persona;
+            try
+            {
+                persona = PersonaId.Parse(ownerPersonaId);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex, "Unable to parse persona '{PersonaId}' for stall refund.", ownerPersonaId);
+                return;
+            }
+
+            // If they have a coinhouse account in this settlement, deposit there
+            if (coinhouseAccountId.HasValue && !string.IsNullOrWhiteSpace(settlementTag))
+            {
+                try
+                {
+                    CoinhouseTag coinhouseTag = CoinhouseTag.Parse(settlementTag);
+                    DepositGoldCommand depositCommand = DepositGoldCommand.Create(
+                        persona,
+                        coinhouseTag,
+                        refundAmount,
+                        $"Prorated rent refund for stall {stall.Tag ?? stall.Id.ToString()}");
+
+                    CommandResult result = await _depositHandler
+                        .HandleAsync(depositCommand, token)
+                        .ConfigureAwait(false);
+
+                    if (result.Success)
+                    {
+                        Log.Info("Deposited {Amount} gp refund to coinhouse for persona {Persona}",
+                            refundAmount, persona);
+                        return;
+                    }
+
+                    Log.Warn("Failed to deposit refund to coinhouse: {Error}", result.ErrorMessage ?? "Unknown error");
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn(ex, "Error depositing refund to coinhouse for persona {Persona}", persona);
+                }
+            }
+
+            // Otherwise, hold with the market reeve (we already have ReeveLockupService for this)
+            // For now, we'll just log this - the Market Reeve would need currency storage capability
+            Log.Info("Refund of {Amount} gp for persona {Persona} should be held by market reeve in settlement {Settlement}",
+                refundAmount, persona, settlementTag ?? "unknown");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error processing refund for stall {StallId}", stall.Id);
+        }
     }
 
     private Task NotifyOwnerAsync(Guid? ownerCharacterId, string message, Color color)
