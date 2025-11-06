@@ -11,13 +11,6 @@ namespace AmiaReforged.Core.Services;
 [ServiceBinding(typeof(CooldownNotifier))]
 public class CooldownNotifier
 {
-    private static readonly Dictionary<string, string> CooldownEffectsByTag = new()
-    {
-        ["divine_wrath_cd"] = "Divine Wrath",
-        ["blinding_speed_cd"] = "Blinding Speed",
-        ["wlk_summon_cd"] = "Warlock Summon"
-    };
-
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public CooldownNotifier()
@@ -31,10 +24,9 @@ public class CooldownNotifier
     {
         if (eventData.Object is not NwCreature creature) return;
         if (!creature.IsPlayerControlled(out NwPlayer? player)) return;
-        if (eventData.Effect.Tag is not { } tag) return;
-        if (!CooldownEffectsByTag.TryGetValue(tag, out string? effectName)) return;
+        if (eventData.Effect.Tag is not { } tag || !tag.EndsWith("_cd")) return;
 
-        effectName = eventData.Effect.Spell?.Name.ToString() ?? effectName;
+        string effectName = eventData.Effect.Spell?.Name.ToString() ?? "Unknown";
 
         string abilityAvailableMessage = $"{effectName} is available!".ColorString(ColorConstants.Lime);
 
