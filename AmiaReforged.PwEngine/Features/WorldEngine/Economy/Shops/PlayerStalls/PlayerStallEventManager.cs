@@ -284,8 +284,11 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             }
 
             DateTime now = DateTime.UtcNow;
-            int escrowAmount = totalPrice;
-            int depositAmount = 0;
+            int saleProceeds = totalPrice;
+            int escrowPortion = 0;
+            int depositPortion = 0;
+            Guid? depositAccountId = null;
+            bool localEscrowUpdated = false;
 
             bool updated = _shops.UpdateStallAndProduct(stall.Id, product.Id, (persistedStall, persistedProduct) =>
             {
@@ -304,13 +307,15 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 persistedStall.LifetimeGrossSales += totalPrice;
                 persistedStall.LifetimeNetEarnings += totalPrice;
 
-                if (persistedStall.HoldEarningsInStall || persistedStall.CoinHouseAccountId is null)
+                if (persistedStall.HoldEarningsInStall || !persistedStall.CoinHouseAccountId.HasValue)
                 {
-                    persistedStall.EscrowBalance += escrowAmount;
+                    escrowPortion = saleProceeds;
+                    persistedStall.EscrowBalance += saleProceeds;
                 }
                 else
                 {
-                    persistedStall.EscrowBalance += escrowAmount;
+                    depositPortion = saleProceeds;
+                    depositAccountId = persistedStall.CoinHouseAccountId;
                 }
 
                 return true;
@@ -331,6 +336,42 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 return PlayerStallPurchaseResult.Fail("Another buyer just claimed that item.", ColorConstants.Orange);
             }
 
+            if (depositPortion > 0 && depositAccountId is Guid accountId)
+            {
+                int attemptedDeposit = depositPortion;
+                bool depositSucceeded = await TryDepositToCoinhouseAccountAsync(stall, accountId, attemptedDeposit).ConfigureAwait(false);
+
+                if (!depositSucceeded)
+                {
+                    bool escrowPersisted = _shops.UpdateShop(stall.Id, persisted =>
+                    {
+                        persisted.EscrowBalance += attemptedDeposit;
+                    });
+
+                    if (!escrowPersisted)
+                    {
+                        Log.Error("Failed to move stall proceeds into escrow after coinhouse deposit failure for stall {StallId}.", stall.Id);
+                    }
+                    else
+                    {
+                        escrowPortion += attemptedDeposit;
+                        stall.EscrowBalance += attemptedDeposit;
+                        localEscrowUpdated = true;
+                    }
+
+                    depositPortion = 0;
+                }
+            }
+
+            if (escrowPortion > 0 && !localEscrowUpdated)
+            {
+                stall.EscrowBalance += escrowPortion;
+                localEscrowUpdated = true;
+            }
+
+            stall.LifetimeGrossSales += totalPrice;
+            stall.LifetimeNetEarnings += totalPrice;
+
             StallTransaction transaction = new()
             {
                 StallId = stall.Id,
@@ -339,8 +380,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 BuyerDisplayName = await ResolveBuyerDisplayNameAsync(buyerCreature, player).ConfigureAwait(false),
                 Quantity = quantity,
                 GrossAmount = totalPrice,
-                EscrowAmount = escrowAmount,
-                DepositAmount = depositAmount,
+                EscrowAmount = escrowPortion,
+                DepositAmount = depositPortion,
                 FeeAmount = 0,
                 OccurredAtUtc = now
             };
@@ -354,8 +395,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 request.BuyerPersona,
                 quantity,
                 totalPrice,
-                escrowAmount,
-                depositAmount,
+                escrowPortion,
+                depositPortion,
                 now);
 
             _shops.AddLedgerEntry(saleLedgerEntry);
@@ -617,11 +658,13 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             coinhouseAccountId = account.Id;
         }
 
+        bool holdEarningsInStall = stall.HoldEarningsInStall;
+
         UpdateStallRentSettingsRequest serviceRequest = new(
             request.StallId,
             request.SellerPersona,
             coinhouseAccountId,
-            !request.RentFromCoinhouse);
+            holdEarningsInStall);
 
         PlayerStallServiceResult serviceResult = await _stallService
             .UpdateRentSettingsAsync(serviceRequest)
@@ -2179,6 +2222,43 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             OccurredUtc = occurredUtc,
             MetadataJson = JsonSerializer.Serialize(metadata)
         };
+    }
+
+    private async Task<bool> TryDepositToCoinhouseAccountAsync(PlayerStall stall, Guid accountId, int amount)
+    {
+        if (amount <= 0)
+        {
+            return true;
+        }
+
+        try
+        {
+            CoinhouseAccountDto? account = await _coinhouses
+                .GetAccountForAsync(accountId, CancellationToken.None)
+                .ConfigureAwait(false);
+
+            if (account is null)
+            {
+                Log.Warn("Coinhouse account {AccountId} not found while depositing {Amount} gp for stall {StallId}.", accountId, amount, stall.Id);
+                return false;
+            }
+
+            DateTime timestamp = DateTime.UtcNow;
+
+            CoinhouseAccountDto updatedAccount = account with
+            {
+                Debit = account.Debit + amount,
+                LastAccessedAt = timestamp
+            };
+
+            await _coinhouses.SaveAccountAsync(updatedAccount, CancellationToken.None).ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to deposit {Amount} gp from stall {StallId} into coinhouse account {AccountId}.", amount, stall.Id, accountId);
+            return false;
+        }
     }
 
     private bool TryResolveCoinhouseTag(PlayerStall stall, out CoinhouseTag tag)

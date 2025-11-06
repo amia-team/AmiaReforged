@@ -108,9 +108,9 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
-        if (eventData.ElementId == PlayerSellerView.HoldEarningsToggleId &&
-            eventData.EventType == NuiEventType.Click)
+        if (eventData.ElementId == PlayerSellerView.HoldEarningsToggleId && eventData.EventType == NuiEventType.MouseDown)
         {
+            Log.Info($"Woop {eventData.EventType}");
             _ = HandleHoldEarningsToggleAsync();
             return;
         }
@@ -581,13 +581,16 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
     private async Task HandleHoldEarningsToggleAsync()
     {
+        Log.Info("Checkbox clicked");
         if (_isClosing || _isProcessing)
         {
+            Log.Info($"Is closing: {_isClosing}, is processing: {_isProcessing}");
             return;
         }
 
         if (_sessionId is not Guid sessionId)
         {
+            Log.Info($"Invalid session ID: {_sessionId}");
             return;
         }
 
