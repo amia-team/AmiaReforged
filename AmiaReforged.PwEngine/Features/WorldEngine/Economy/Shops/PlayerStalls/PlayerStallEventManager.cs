@@ -760,9 +760,11 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             return failure;
         }
 
+        Guid? coinhouseAccountId = stall.CoinHouseAccountId;
+
         if (!request.HoldEarningsInStall)
         {
-            if (!TryResolveCoinhouseTag(stall, out _))
+            if (!TryResolveCoinhouseTag(stall, out CoinhouseTag coinhouseTag))
             {
                 PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
                     "This stall is not linked to a coinhouse; profits must remain in escrow.",
@@ -772,21 +774,28 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 return failure;
             }
 
-            if (stall.CoinHouseAccountId is null)
+            Guid accountId = PersonaAccountId.ForCoinhouse(request.SellerPersona, coinhouseTag);
+            CoinhouseAccountDto? account = await _coinhouses
+                .GetAccountForAsync(accountId, CancellationToken.None)
+                .ConfigureAwait(false);
+
+            if (account is null)
             {
                 PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
-                    "Link your coinhouse account in this settlement to automatically deposit profits.",
+                    "Open or join a coinhouse account in this settlement to automatically deposit profits.",
                     ColorConstants.Orange);
 
                 await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
                 return failure;
             }
+
+            coinhouseAccountId = account.Id;
         }
 
         UpdateStallRentSettingsRequest serviceRequest = new(
             request.StallId,
             request.SellerPersona,
-            stall.CoinHouseAccountId,
+            coinhouseAccountId,
             request.HoldEarningsInStall);
 
         PlayerStallServiceResult serviceResult = await _stallService
