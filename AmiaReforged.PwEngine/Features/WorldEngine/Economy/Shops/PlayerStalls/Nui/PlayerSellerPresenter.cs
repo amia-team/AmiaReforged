@@ -314,11 +314,14 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
         foreach (PlayerStallLedgerEntryView entry in _ledgerEntries)
         {
-            (string timestampDisplay, DateTimeOffset localTime) = FormatLedgerTimestamp(entry);
+            string timestampDisplay = FormatLedgerTimestamp(entry);
+            string amountDisplay = FormatLedgerAmount(entry.Amount, entry.Currency);
+            string descriptionDisplay = entry.Description ?? string.Empty;
+
             ledgerTimestamps.Add(timestampDisplay);
-            ledgerAmounts.Add(FormatLedgerAmount(entry.Amount, entry.Currency));
-            ledgerDescriptions.Add(entry.Description ?? string.Empty);
-            ledgerTooltips.Add(BuildLedgerTooltip(entry, timestampDisplay, localTime));
+            ledgerAmounts.Add(amountDisplay);
+            ledgerDescriptions.Add(descriptionDisplay);
+            ledgerTooltips.Add(BuildLedgerTooltip(timestampDisplay, amountDisplay, descriptionDisplay));
         }
 
         Token().SetBindValues(View.LedgerTimestampEntries, ledgerTimestamps);
@@ -770,16 +773,15 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         ApplyInventorySelectionBindings();
     }
 
-    private (string Display, DateTimeOffset LocalTime) FormatLedgerTimestamp(PlayerStallLedgerEntryView entry)
+    private string FormatLedgerTimestamp(PlayerStallLedgerEntryView entry)
     {
-        HarptosDateTime harptos = ConvertToHarptos(entry.OccurredUtc, out DateTimeOffset localTime);
-        string display = harptos.ToDisplayString();
-        return (display, localTime);
+        HarptosDateTime harptos = ConvertToHarptos(entry.OccurredUtc);
+        return harptos.ToDisplayString();
     }
 
-    private HarptosDateTime ConvertToHarptos(DateTime occurredUtc, out DateTimeOffset localTime)
+    private HarptosDateTime ConvertToHarptos(DateTime occurredUtc)
     {
-        localTime = NormalizeToLocal(occurredUtc);
+        DateTimeOffset localTime = NormalizeToLocal(occurredUtc);
         return HarptosTimeService.Convert(localTime);
     }
 
@@ -801,19 +803,26 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     return string.Format(CultureInfo.InvariantCulture, "{0:+#,##0;-#,##0;0} {1}", amount, unit);
     }
 
-    private string BuildLedgerTooltip(PlayerStallLedgerEntryView entry, string harptosDisplay, DateTimeOffset localTime)
+    private static string BuildLedgerTooltip(string timestampText, string amountText, string descriptionText)
     {
-        string type = entry.EntryType.ToString();
-        string realTimestamp = localTime.ToString("O", CultureInfo.InvariantCulture);
-        string harptosLine = string.Format(CultureInfo.InvariantCulture, "Harptos: {0}", harptosDisplay);
-        string realLine = string.Format(CultureInfo.InvariantCulture, "Real: {0}", realTimestamp);
+        List<string> parts = new(3);
 
-        if (string.IsNullOrWhiteSpace(entry.MetadataJson))
+        if (!string.IsNullOrWhiteSpace(timestampText))
         {
-            return string.Format(CultureInfo.InvariantCulture, "{0}\n{1}\n{2}", type, harptosLine, realLine);
+            parts.Add(timestampText);
         }
 
-        return string.Format(CultureInfo.InvariantCulture, "{0}\n{1}\n{2}\n{3}", type, harptosLine, realLine, entry.MetadataJson);
+        if (!string.IsNullOrWhiteSpace(amountText))
+        {
+            parts.Add(amountText);
+        }
+
+        if (!string.IsNullOrWhiteSpace(descriptionText))
+        {
+            parts.Add(descriptionText);
+        }
+
+        return parts.Count == 0 ? string.Empty : string.Join(" | ", parts);
     }
 
     private void ApplyInventoryListBindings()
