@@ -41,6 +41,28 @@ public sealed class PersistentRentablePropertyRepository(IDbContextFactory<PwEng
         }
     }
 
+    public async Task<RentablePropertySnapshot?> GetSnapshotByInternalNameAsync(
+        string internalName,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await using PwEngineContext ctx = factory.CreateDbContext();
+
+            RentablePropertyRecord? entity = await ctx.RentableProperties
+                .Include(p => p.Residents)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.InternalName == internalName, cancellationToken);
+
+            return entity is null ? null : ToSnapshot(entity);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load rentable property by internal name {InternalName}", internalName);
+            throw;
+        }
+    }
+
     public async Task PersistRentalAsync(
         RentablePropertySnapshot snapshot,
         CancellationToken cancellationToken = default)

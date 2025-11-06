@@ -46,7 +46,7 @@ public class RuntimeCharacterService
         if (objItem.Tag != "ds_pckey") return;
         if (!obj.AcquiredBy.IsPlayerControlled(out NwPlayer? player)) return;
 
-    ObservePlayerPersona(player);
+        ObservePlayerPersona(player);
 
         Guid key = PcKeyUtils.GetPcKey(player);
 

@@ -62,7 +62,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(320f, 80f, 520f, 760f),
+            Geometry = new NuiRect(320f, 80f, 520f, 820f),
             Resizable = false
         };
 
@@ -776,6 +776,10 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
             Token().SetBindValue(View.Scale, data.Transform.Scale);
 
+            // Convert orientation from radians to degrees for display
+            float orientationDegrees = (_pendingOrientation ?? 0f) * (180f / MathF.PI);
+            Token().SetBindValue(View.Orientation, orientationDegrees);
+
             Token().SetBindValue(View.PositionXString,
                 data.Position.Position.X.ToString(CultureInfo.InvariantCulture));
             Token().SetBindValue(View.PositionYString,
@@ -798,6 +802,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 data.Transform.Rotation.Z.ToString(CultureInfo.InvariantCulture));
 
             Token().SetBindValue(View.ScaleString, data.Transform.Scale.ToString(CultureInfo.InvariantCulture));
+            Token().SetBindValue(View.OrientationString, orientationDegrees.ToString(CultureInfo.InvariantCulture));
         });
     }
 
@@ -843,6 +848,10 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
         float scale = Token().GetBindValue(View.Scale);
 
+        // Convert orientation from degrees to radians
+        float orientationDegrees = Token().GetBindValue(View.Orientation);
+        float orientationRadians = orientationDegrees * (MathF.PI / 180f);
+
         PlaceableData baseline = _pendingSnapshot ?? PlaceableDataFactory.From(_lastSelection);
         PlaceableData updated = baseline with
         {
@@ -851,7 +860,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         };
 
         _pendingSnapshot = updated;
-        _pendingOrientation = _lastSelection.Location.Rotation;
+        _pendingOrientation = orientationRadians;
 
         ApplyDataToPlaceable(_lastSelection, updated, _pendingOrientation);
 
@@ -894,6 +903,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         Token().SetBindValue(View.RotationZ, 0f);
 
         Token().SetBindValue(View.Scale, 1f);
+        Token().SetBindValue(View.Orientation, 0f);
 
         Token().SetBindValue(View.PositionXString, "0");
         Token().SetBindValue(View.PositionYString, "0");
@@ -905,6 +915,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         Token().SetBindValue(View.RotationYString, "0");
         Token().SetBindValue(View.RotationZString, "0");
         Token().SetBindValue(View.ScaleString, "1");
+        Token().SetBindValue(View.OrientationString, "0");
     }
 
     private void ClearEditFields()
@@ -1012,6 +1023,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
         Token().SetBindWatch(View.Scale, enable);
         Token().SetBindWatch(View.ScaleString, enable);
+        
+        Token().SetBindWatch(View.Orientation, enable);
+        Token().SetBindWatch(View.OrientationString, enable);
     }
 
     private void WithWatchDisabled(Action action)
@@ -1077,7 +1091,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                elementId.Equals(View.RotationX.Key, StringComparison.OrdinalIgnoreCase) ||
                elementId.Equals(View.RotationY.Key, StringComparison.OrdinalIgnoreCase) ||
                elementId.Equals(View.RotationZ.Key, StringComparison.OrdinalIgnoreCase) ||
-               elementId.Equals(View.Scale.Key, StringComparison.OrdinalIgnoreCase);
+               elementId.Equals(View.Scale.Key, StringComparison.OrdinalIgnoreCase) ||
+               elementId.Equals(View.Orientation.Key, StringComparison.OrdinalIgnoreCase);
     }
 
     private void SyncNumericToString(string elementId)
@@ -1104,6 +1119,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         Sync(View.RotationY, View.RotationYString);
         Sync(View.RotationZ, View.RotationZString);
         Sync(View.Scale, View.ScaleString);
+        Sync(View.Orientation, View.OrientationString);
     }
 
     private bool TryHandleNumericTextPair(string elementId)
@@ -1140,7 +1156,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                Handle(View.RotationX, View.RotationXString) ||
                Handle(View.RotationY, View.RotationYString) ||
                Handle(View.RotationZ, View.RotationZString) ||
-               Handle(View.Scale, View.ScaleString);
+               Handle(View.Scale, View.ScaleString) ||
+               Handle(View.Orientation, View.OrientationString);
     }
 
     private static string SanitizeNumericString(string input)

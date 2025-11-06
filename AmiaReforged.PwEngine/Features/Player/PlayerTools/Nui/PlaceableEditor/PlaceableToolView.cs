@@ -71,6 +71,9 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
     public readonly NuiBind<float> Scale = new("player_plc_scale");
     public readonly NuiBind<string> ScaleString = new("player_plc_scale_str");
 
+    public readonly NuiBind<float> Orientation = new("player_plc_orientation");
+    public readonly NuiBind<string> OrientationString = new("player_plc_orientation_str");
+
     public override NuiLayout RootLayout()
     {
         return new NuiColumn
@@ -214,7 +217,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
         return new NuiGroup
         {
             Border = true,
-            Height = 320f,
+            Height = 380f,
             Width = ContentWidth,
             Element = new NuiColumn
             {
@@ -228,6 +231,13 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                     BuildVectorRow("X", PositionXString, PositionX, -100f, 100f, "player_plc_pos_x_slider"),
                     BuildVectorRow("Y", PositionYString, PositionY, -100f, 100f, "player_plc_pos_y_slider"),
                     BuildVectorRow("Z", PositionZString, PositionZ, -100f, 100f, "player_plc_pos_z_slider"),
+                    new NuiSpacer { Height = SectionSpacing },
+                    new NuiLabel("Orientation (Degrees)")
+                    {
+                        Height = 18f,
+                        HorizontalAlign = NuiHAlign.Center
+                    },
+                    BuildOrientationRow(),
                     new NuiSpacer { Height = SectionSpacing },
                     new NuiLabel("Visual Translation")
                     {
@@ -276,6 +286,34 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                     Width = ContentWidth - 160f,
                     Enabled = SelectionAvailable,
                     Id = "player_plc_scale_slider"
+                }
+            }
+        };
+    }
+
+    private NuiRow BuildOrientationRow()
+    {
+        return new NuiRow
+        {
+            Height = 40f,
+            Children =
+            {
+                new NuiLabel("°")
+                {
+                    Width = 40f,
+                    VerticalAlign = NuiVAlign.Middle,
+                    HorizontalAlign = NuiHAlign.Center
+                },
+                new NuiTextEdit("0", OrientationString, 10, false)
+                {
+                    Width = 100f,
+                    Enabled = SelectionAvailable
+                },
+                new NuiSliderFloat(Orientation, 0f, 360f)
+                {
+                    Width = ContentWidth - 160f,
+                    Enabled = SelectionAvailable,
+                    Id = "player_plc_orientation_slider"
                 }
             }
         };
