@@ -37,6 +37,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
     public readonly NuiBind<bool> HelmetControlsEnabled = new("eq_helmet_controls_enabled");
     public readonly NuiBind<bool> CloakControlsEnabled = new("eq_cloak_controls_enabled");
     public readonly NuiBind<bool> ChannelButtonsEnabled = new("eq_channel_buttons_enabled");
+    public readonly NuiBind<bool> AlwaysEnabled = new("eq_always_enabled");
 
     public readonly NuiBind<string>[] ColorResRef = new NuiBind<string>[176];
 
@@ -101,14 +102,21 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
     private static NuiElement ImageButton(string id, string tooltip, out NuiButtonImage logicalButton,
         float width, float height, string resRef, NuiBind<bool>? enabled = null)
     {
+        // If no enabled bind is provided, button will use the bind from the calling context
+        // For equipment type buttons, we want them always enabled
         NuiButtonImage btn = new NuiButtonImage(resRef)
         {
             Id = id,
             Width = width,
             Height = height,
-            Tooltip = tooltip,
-            Enabled = enabled ?? new NuiBind<bool>("true")
+            Tooltip = tooltip
         }.Assign(out logicalButton);
+
+        if (enabled != null)
+        {
+            btn.Enabled = enabled;
+        }
+
         return btn;
     }
 
@@ -174,8 +182,22 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 305f },
-                        ImagePlatedLabeledButton("btn_weapon", "Main Hand", "Customize Main Hand", out WeaponButton, "app_sword", 50f, 50f)
+                        new NuiSpacer { Width = 310f },
+                        ImageButton("btn_weapon", "Customize Main Hand", out WeaponButton, 50f, 50f, "app_sword")
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 292.5f },
+                        new NuiLabel("Main Hand")
+                        {
+                            Width = 90f,
+                            Height = 18f,
+                            HorizontalAlign = NuiHAlign.Center,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
                     }
                 },
                 new NuiSpacer { Height = 10f },
@@ -183,7 +205,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 140f },
+                        new NuiSpacer { Width = 144f },
                         new NuiLabel("Top Model:")
                         {
                             Width = 100f,
@@ -209,7 +231,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 120f },
+                        new NuiSpacer { Width = 124f },
                         new NuiLabel("Middle Model:")
                         {
                             Width = 120f,
@@ -235,7 +257,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 118f },
+                        new NuiSpacer { Width = 122f },
                         new NuiLabel("Bottom Model:")
                         {
                             Width = 122f,
@@ -261,7 +283,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 120f },
+                        new NuiSpacer { Width = 119f },
                         new NuiLabel("Main Hand Scale:")
                         {
                             Width = 120f,
@@ -269,11 +291,11 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
-                        new NuiSpacer { Width = 30f },
+                        new NuiSpacer { Width = 40f },
                         ImageButton("btn_weapon_scale_minus", "-5%", out WeaponScaleMinusButton, 30f, 30f, "ui_btn_sm_min", WeaponControlsEnabled),
                         new NuiLabel(WeaponScaleText)
                         {
-                            Width = 50f,
+                            Width = 40f,
                             Height = 30f,
                             HorizontalAlign = NuiHAlign.Center,
                             VerticalAlign = NuiVAlign.Middle,

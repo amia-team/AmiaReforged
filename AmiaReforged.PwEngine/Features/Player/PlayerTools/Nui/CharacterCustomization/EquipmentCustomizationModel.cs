@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿﻿using Anvil.API;
 using Newtonsoft.Json;
 using NWN.Core;
 
@@ -75,27 +75,67 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
     }
 
-    private void LoadWeaponData()
+    // Called when window first opens to load ALL equipment and save initial backup
+    public void InitializeAllEquipment()
     {
-        NwItem? weapon = player.ControlledCreature?.GetItemInSlot(InventorySlot.RightHand);
-        if (weapon != null && weapon.IsValid)
-        {
-            _currentWeapon = weapon;
-            player.SendServerMessage($"Selected main hand item: {weapon.Name}", ColorConstants.Cyan);
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
 
-            int modelRange = (int)weapon.BaseItem.ModelRangeMax;
+        // Load all equipment references
+        _currentWeapon = creature.GetItemInSlot(InventorySlot.RightHand);
+        _currentBoots = creature.GetItemInSlot(InventorySlot.Boots);
+        _currentHelmet = creature.GetItemInSlot(InventorySlot.Head);
+        _currentCloak = creature.GetItemInSlot(InventorySlot.Cloak);
+
+        // Load current values for all equipped items
+        if (_currentWeapon != null && _currentWeapon.IsValid)
+        {
+            int modelRange = (int)_currentWeapon.BaseItem.ModelRangeMax;
             _weaponTopModelMax = modelRange;
             _weaponMidModelMax = modelRange;
             _weaponBotModelMax = modelRange;
 
-            WeaponTopModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
-            WeaponMidModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
-            WeaponBotModel = weapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+            WeaponTopModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
+            WeaponMidModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
+            WeaponBotModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
 
-            VisualTransform transform = weapon.VisualTransform;
+            VisualTransform transform = _currentWeapon.VisualTransform;
             WeaponScale = (int)(transform.Scale * 100);
+        }
 
-            SaveBackupToPcKey();
+        if (_currentBoots != null && _currentBoots.IsValid)
+        {
+            int modelRange = (int)_currentBoots.BaseItem.ModelRangeMax;
+            _bootsTopModelMax = modelRange;
+            _bootsMidModelMax = modelRange;
+            _bootsBotModelMax = modelRange;
+
+            BootsTopModel = _currentBoots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
+            BootsMidModel = _currentBoots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
+            BootsBotModel = _currentBoots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+        }
+
+        if (_currentHelmet != null && _currentHelmet.IsValid)
+        {
+            _helmetAppearanceMax = (int)_currentHelmet.BaseItem.ModelRangeMax;
+            HelmetAppearance = NWScript.GetItemAppearance(_currentHelmet, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
+        }
+
+        if (_currentCloak != null && _currentCloak.IsValid)
+        {
+            _cloakAppearanceMax = 86;
+            CloakAppearance = NWScript.GetItemAppearance(_currentCloak, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
+        }
+
+        // Save initial backup of ALL equipment
+        SaveBackupToPcKey();
+    }
+
+    private void LoadWeaponData()
+    {
+        if (_currentWeapon != null && _currentWeapon.IsValid)
+        {
+            player.SendServerMessage($"Selected main hand item: {_currentWeapon.Name}", ColorConstants.Cyan);
         }
         else
         {
@@ -105,22 +145,9 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     private void LoadBootsData()
     {
-        NwItem? boots = player.ControlledCreature?.GetItemInSlot(InventorySlot.Boots);
-        if (boots != null && boots.IsValid)
+        if (_currentBoots != null && _currentBoots.IsValid)
         {
-            _currentBoots = boots;
-            player.SendServerMessage($"Selected boots: {boots.Name}", ColorConstants.Cyan);
-
-            int modelRange = (int)boots.BaseItem.ModelRangeMax;
-            _bootsTopModelMax = modelRange;
-            _bootsMidModelMax = modelRange;
-            _bootsBotModelMax = modelRange;
-
-            BootsTopModel = boots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
-            BootsMidModel = boots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
-            BootsBotModel = boots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
-
-            SaveBackupToPcKey();
+            player.SendServerMessage($"Selected boots: {_currentBoots.Name}", ColorConstants.Cyan);
         }
         else
         {
@@ -130,14 +157,9 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     private void LoadHelmetData()
     {
-        NwItem? helmet = player.ControlledCreature?.GetItemInSlot(InventorySlot.Head);
-        if (helmet != null && helmet.IsValid)
+        if (_currentHelmet != null && _currentHelmet.IsValid)
         {
-            _currentHelmet = helmet;
-            player.SendServerMessage($"Selected helmet: {helmet.Name}", ColorConstants.Cyan);
-            _helmetAppearanceMax = (int)helmet.BaseItem.ModelRangeMax;
-            HelmetAppearance = NWScript.GetItemAppearance(helmet, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
-            SaveBackupToPcKey();
+            player.SendServerMessage($"Selected helmet: {_currentHelmet.Name}", ColorConstants.Cyan);
         }
         else
         {
@@ -147,15 +169,9 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     private void LoadCloakData()
     {
-        NwItem? cloak = player.ControlledCreature?.GetItemInSlot(InventorySlot.Cloak);
-        if (cloak != null && cloak.IsValid)
+        if (_currentCloak != null && _currentCloak.IsValid)
         {
-            _currentCloak = cloak;
-            player.SendServerMessage($"Selected cloak: {cloak.Name}", ColorConstants.Cyan);
-            _cloakAppearanceMax = 86;
-            CloakAppearance = NWScript.GetItemAppearance(cloak, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
-            player.SendServerMessage($"Current cloak appearance: {CloakAppearance}", ColorConstants.Gray);
-            SaveBackupToPcKey();
+            player.SendServerMessage($"Selected cloak: {_currentCloak.Name}", ColorConstants.Cyan);
         }
         else
         {
@@ -758,7 +774,8 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     public void ApplyChanges()
     {
-        SaveBackupToPcKey();
+        // Force save the current state as the new backup point
+        ForceSaveBackup();
         player.SendServerMessage(
             "Equipment customization saved! You can continue editing or click Revert to return to this save point.",
             ColorConstants.Green);
@@ -776,7 +793,10 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
 
-        if (CurrentEquipmentType == EquipmentType.Weapon && _currentWeapon != null && _currentWeapon.IsValid && backupData.WeaponData != null)
+        bool anyReverted = false;
+
+        // Revert ALL equipment types, not just the currently selected one
+        if (_currentWeapon != null && _currentWeapon.IsValid && backupData.WeaponData != null)
         {
             creature.RunUnequip(_currentWeapon);
             NwItem newWeapon = _currentWeapon.Clone(creature);
@@ -793,16 +813,15 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 WeaponBotModel = backupData.WeaponData.BotModel;
                 WeaponScale = backupData.WeaponData.Scale;
 
-                player.SendServerMessage("Weapon customization reverted to last save point.", ColorConstants.Cyan);
+                anyReverted = true;
             }
             else
             {
                 creature.RunEquip(_currentWeapon, InventorySlot.RightHand);
-                player.SendServerMessage("Failed to revert weapon changes.", ColorConstants.Red);
             }
         }
 
-        if (CurrentEquipmentType == EquipmentType.Boots && _currentBoots != null && _currentBoots.IsValid && backupData.BootsData != null)
+        if (_currentBoots != null && _currentBoots.IsValid && backupData.BootsData != null)
         {
             creature.RunUnequip(_currentBoots);
             NwItem newBoots = _currentBoots.Clone(creature);
@@ -818,16 +837,15 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 BootsMidModel = backupData.BootsData.MidModel;
                 BootsBotModel = backupData.BootsData.BotModel;
 
-                player.SendServerMessage("Boots customization reverted to last save point.", ColorConstants.Cyan);
+                anyReverted = true;
             }
             else
             {
                 creature.RunEquip(_currentBoots, InventorySlot.Boots);
-                player.SendServerMessage("Failed to revert boots changes.", ColorConstants.Red);
             }
         }
 
-        if (CurrentEquipmentType == EquipmentType.Helmet && _currentHelmet != null && _currentHelmet.IsValid && backupData.HelmetData != null)
+        if (_currentHelmet != null && _currentHelmet.IsValid && backupData.HelmetData != null)
         {
             uint copy = NWScript.CopyItemAndModify(_currentHelmet, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, backupData.HelmetData.Appearance, 1);
             if (NWScript.GetIsObjectValid(copy) == 1)
@@ -852,15 +870,11 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
                 HelmetAppearance = backupData.HelmetData.Appearance;
 
-                player.SendServerMessage("Helmet customization reverted to last save point.", ColorConstants.Cyan);
-            }
-            else
-            {
-                player.SendServerMessage("Failed to revert helmet changes.", ColorConstants.Red);
+                anyReverted = true;
             }
         }
 
-        if (CurrentEquipmentType == EquipmentType.Cloak && _currentCloak != null && _currentCloak.IsValid && backupData.CloakData != null)
+        if (_currentCloak != null && _currentCloak.IsValid && backupData.CloakData != null)
         {
             uint copy = NWScript.CopyItemAndModify(_currentCloak, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, backupData.CloakData.Appearance, 1);
             if (NWScript.GetIsObjectValid(copy) == 1)
@@ -885,12 +899,17 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
                 CloakAppearance = backupData.CloakData.Appearance;
 
-                player.SendServerMessage("Cloak customization reverted to last save point.", ColorConstants.Cyan);
+                anyReverted = true;
             }
-            else
-            {
-                player.SendServerMessage("Failed to revert cloak changes.", ColorConstants.Red);
-            }
+        }
+
+        if (anyReverted)
+        {
+            player.SendServerMessage("All equipment customizations reverted to last save point.", ColorConstants.Cyan);
+        }
+        else
+        {
+            player.SendServerMessage("No equipment changes to revert.", ColorConstants.Orange);
         }
     }
 
@@ -898,6 +917,12 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     {
         ClearBackupFromPcKey();
         player.SendServerMessage("Equipment customization confirmed!", ColorConstants.Green);
+    }
+
+    // Force save backup regardless of flag state (used when Save button is clicked)
+    private void ForceSaveBackup()
+    {
+        SaveBackupToPcKey();
     }
 
     private void SaveBackupToPcKey()

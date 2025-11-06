@@ -1,7 +1,6 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
-using Anvil.Services;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.CharacterCustomization;
@@ -16,9 +15,6 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
     private readonly EquipmentCustomizationModel _model = new(player);
     private NuiWindowToken _token;
     private bool _initializing;
-
-    [Inject] private Lazy<WindowDirector> WindowDirector { get; set; } = null!;
-
     public override NuiWindowToken Token() => _token;
 
     public override void Create()
@@ -37,6 +33,7 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         {
             InitializeColorPalette();
             InitializeBindValues();
+            _model.InitializeAllEquipment(); // Load all equipment and save initial backup
         }
         finally
         {
@@ -56,6 +53,8 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
 
     private void InitializeBindValues()
     {
+        Token().SetBindValue(View.AlwaysEnabled, true);
+
         Token().SetBindValue(View.WeaponSelected, false);
         Token().SetBindValue(View.BootsSelected, false);
         Token().SetBindValue(View.HelmetSelected, false);
