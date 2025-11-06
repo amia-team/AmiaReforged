@@ -591,11 +591,20 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             return;
         }
 
-        bool desired = Token().GetBindValue(View.HoldEarningsChecked);
-        if (desired == _holdEarningsInStall)
+        if (!_holdToggleEnabled)
         {
+            if (!string.IsNullOrWhiteSpace(_holdToggleTooltip))
+            {
+                await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                    _holdToggleTooltip,
+                    ColorConstants.Orange)).ConfigureAwait(false);
+            }
+
+            await NwTask.SwitchToMainThread();
+            Token().SetBindValue(View.HoldEarningsChecked, _holdEarningsInStall);
             return;
         }
+        bool desired = !_holdEarningsInStall;
 
         await SetProcessingStateAsync(true).ConfigureAwait(false);
 
