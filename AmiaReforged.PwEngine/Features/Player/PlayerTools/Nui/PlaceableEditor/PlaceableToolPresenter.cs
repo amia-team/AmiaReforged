@@ -590,12 +590,13 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private void LoadSelectionState(NwPlaceable placeable)
     {
-        Trace($"LoadSelectionState started for {placeable.Name} (valid={placeable.IsValid}).");
-        Token().SetBindValue(View.StatusMessage, $"Selected '{placeable.Name}'. Loading persisted state...");
+        string placeableName = placeable.Name;
+        Trace($"LoadSelectionState started for {placeableName} (valid={placeable.IsValid}).");
+        Token().SetBindValue(View.StatusMessage, $"Selected '{placeableName}'. Loading persisted state...");
 
         _ = NwTask.Run(async () =>
         {
-            Trace($"LoadSelectionState async query starting for {placeable.Name}.");
+            Trace($"LoadSelectionState async query starting for {placeableName}.");
             PersistentObject? persisted = null;
             try
             {
@@ -614,7 +615,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 return;
             }
 
-            Trace($"LoadSelectionState continuing on main thread for {placeable.Name}.");
+            Trace($"LoadSelectionState continuing on main thread for {placeableName}.");
             await NwTask.SwitchToMainThread();
 
             if (!Token().Player.IsValid || _lastSelection != placeable || !_lastSelection.IsValid)
