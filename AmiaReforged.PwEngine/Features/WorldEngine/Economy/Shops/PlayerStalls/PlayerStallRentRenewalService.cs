@@ -342,6 +342,9 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     private async Task HandleRentFailureAsync(PlayerStall stall, string reason, DateTime utcNow)
     {
         RentFailureState state = RentFailureState.Unknown;
+        // Capture owner info before it gets cleared for the notification message
+        Guid? ownerCharacterId = stall.OwnerCharacterId;
+        string? ownerPersonaId = stall.OwnerPersonaId;
 
         bool updated = _shops.UpdateShop(stall.Id, entity =>
         {
@@ -363,6 +366,13 @@ public sealed class PlayerStallRentRenewalService : IDisposable
                 return;
             }
 
+            // Release ownership when grace period expires so stall can be claimed by others
+            entity.OwnerCharacterId = null;
+            entity.OwnerPersonaId = null;
+            entity.OwnerPlayerPersonaId = null;
+            entity.OwnerDisplayName = null;
+            entity.CoinHouseAccountId = null;
+            entity.HoldEarningsInStall = false;
             entity.IsActive = false;
             entity.DeactivatedUtc ??= utcNow;
             entity.NextRentDueUtc = utcNow + BillingInterval;
@@ -382,10 +392,10 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 
         await _events.BroadcastSellerRefreshAsync(stall.Id).ConfigureAwait(false);
 
-        string message = BuildFailureMessage(stall, reason, state, utcNow);
+        string message = BuildFailureMessage(stall, reason, state, utcNow, ownerPersonaId);
         Color color = state == RentFailureState.Suspended ? ColorConstants.Red : ColorConstants.Yellow;
 
-        await NotifyOwnerAsync(stall.OwnerCharacterId, message, color).ConfigureAwait(false);
+        await NotifyOwnerAsync(ownerCharacterId, message, color).ConfigureAwait(false);
     }
 
     private Task NotifyOwnerAsync(Guid? ownerCharacterId, string message, Color color)
@@ -454,7 +464,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         return string.Format(CultureInfo.InvariantCulture, "Rent of {0:n0} gp for {1} was paid from {2}.", rentAmount, stallName, method);
     }
 
-    private static string BuildFailureMessage(PlayerStall stall, string reason, RentFailureState state, DateTime utcNow)
+    private static string BuildFailureMessage(PlayerStall stall, string reason, RentFailureState state, DateTime utcNow, string? ownerPersonaId)
     {
         string stallName = BeautifyLabelOrDefault(stall.Tag, stall.Id);
         string baseMessage = string.Format(CultureInfo.InvariantCulture, "Rent collection failed for {0}: {1}", stallName, reason);
@@ -474,14 +484,14 @@ public sealed class PlayerStallRentRenewalService : IDisposable
                 CultureInfo.InvariantCulture,
                 "{0} The stall is now suspended until rent is paid. {1}",
                 baseMessage,
-                BuildSuspensionFollowUp(stall)),
+                BuildSuspensionFollowUp(ownerPersonaId)),
             _ => baseMessage
         };
     }
 
-    private static string BuildSuspensionFollowUp(PlayerStall stall)
+    private static string BuildSuspensionFollowUp(string? ownerPersonaId)
     {
-        if (string.IsNullOrWhiteSpace(stall.OwnerPersonaId))
+        if (string.IsNullOrWhiteSpace(ownerPersonaId))
         {
             return "Any remaining inventory has been moved to the market reeve for safekeeping.";
         }
@@ -489,7 +499,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         return string.Format(
             CultureInfo.InvariantCulture,
             "Any remaining inventory has been moved to the market reeve; provide persona ID {0} to reclaim it.",
-            stall.OwnerPersonaId);
+            ownerPersonaId);
     }
 
     private static string BeautifyLabelOrDefault(string? tag, long stallId)

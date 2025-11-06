@@ -125,17 +125,25 @@ public class PlayerStallRentRenewalServiceTests
         _stall.IsActive = true;
         _stall.EscrowBalance = 0;
         _stall.CoinHouseAccountId = null;
+        string originalOwnerPersonaId = _stall.OwnerPersonaId!;
 
         await _service.RunSingleCycleAsync(CancellationToken.None);
 
         Assert.That(_stall.IsActive, Is.False);
         Assert.That(_stall.DeactivatedUtc, Is.Not.Null);
         Assert.That(_stall.NextRentDueUtc, Is.GreaterThan(DateTime.UtcNow));
+        // Verify ownership is cleared so stall can be claimed by others
+        Assert.That(_stall.OwnerCharacterId, Is.Null);
+        Assert.That(_stall.OwnerPersonaId, Is.Null);
+        Assert.That(_stall.OwnerPlayerPersonaId, Is.Null);
+        Assert.That(_stall.OwnerDisplayName, Is.Null);
+        Assert.That(_stall.CoinHouseAccountId, Is.Null);
+        Assert.That(_stall.HoldEarningsInStall, Is.False);
         Assert.That(_capturedNotifications, Has.Count.EqualTo(1));
         Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Red));
         StringAssert.Contains("now suspended", _capturedNotifications[0].Message);
     StringAssert.Contains("market reeve", _capturedNotifications[0].Message);
-    StringAssert.Contains(_stall.OwnerPersonaId, _capturedNotifications[0].Message);
+    StringAssert.Contains(originalOwnerPersonaId, _capturedNotifications[0].Message);
     _custodian.Verify(c => c.TransferInventoryToMarketReeveAsync(_stall, It.IsAny<CancellationToken>()), Times.Once);
     }
 
