@@ -38,6 +38,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     private float? _savedOrientation;
     private float? _pendingOrientation;
     private bool _hasUnsavedChanges;
+    private bool _selectionEditable;
 
     private readonly HashSet<string> _watchBlacklist = new(StringComparer.OrdinalIgnoreCase);
     private bool _watchersEnabled;
@@ -341,10 +342,29 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Token().SetBindValue(View.SelectedName, "No placeable selected");
             Token().SetBindValue(View.SelectedLocation, string.Empty);
             ClearEditFields();
+            _selectionEditable = false;
             return;
         }
 
         ToggleBindWatch(false);
+
+        if (!CanPlayerEdit(placeable, out string? denialReason))
+        {
+            _selectionEditable = false;
+
+            Token().SetBindValue(View.SelectionAvailable, false);
+            Token().SetBindValue(View.SelectedName, placeable.Name);
+            Token().SetBindValue(View.SelectedLocation,
+                $"{placeable.Position.X:F2}, {placeable.Position.Y:F2}, {placeable.Position.Z:F2}");
+
+            ClearEditFields();
+
+            string status = denialReason ?? "You do not have permission to edit this placeable.";
+            Token().SetBindValue(View.StatusMessage, status);
+            return;
+        }
+
+        _selectionEditable = true;
 
         Token().SetBindValue(View.SelectionAvailable, true);
         Token().SetBindValue(View.SelectedName, placeable.Name);
@@ -362,6 +382,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         if (_lastSelection is null || !_lastSelection.IsValid)
         {
             Token().SetBindValue(View.StatusMessage, "No placeable selected to recover.");
+            return;
+        }
+
+        if (!EnsureSelectionEditable("recover"))
+        {
             return;
         }
 
@@ -411,6 +436,12 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
+        if (!_selectionEditable)
+        {
+            Trace("HandleWatch ignored; selection not editable.");
+            return;
+        }
+
         string? elementId = eventData.ElementId;
         if (string.IsNullOrWhiteSpace(elementId) || IsBlacklisted(elementId))
         {
@@ -453,6 +484,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         if (_lastSelection is null || !_lastSelection.IsValid)
         {
             Token().SetBindValue(View.StatusMessage, "No placeable selected to save.");
+            return;
+        }
+
+        if (!EnsureSelectionEditable("save changes to"))
+        {
             return;
         }
 
@@ -509,6 +545,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         if (_lastSelection is null || !_lastSelection.IsValid)
         {
             Token().SetBindValue(View.StatusMessage, "No placeable selected to discard.");
+            return;
+        }
+
+        if (!EnsureSelectionEditable("discard changes to"))
+        {
             return;
         }
 
@@ -768,6 +809,12 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
+        if (!_selectionEditable)
+        {
+            Trace("ApplyPendingData ignored; selection not editable.");
+            return;
+        }
+
         DateTime now = DateTime.UtcNow;
         if (now - _lastApplyAt < LiveApplyThrottle)
         {
@@ -868,6 +915,64 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         _savedOrientation = null;
         _pendingOrientation = null;
         _hasUnsavedChanges = false;
+    }
+
+    private bool EnsureSelectionEditable(string actionDescription)
+    {
+        if (_selectionEditable)
+        {
+            return true;
+        }
+
+        if (_lastSelection is { IsValid: true } placeable)
+        {
+            Token().SetBindValue(View.StatusMessage,
+                $"You do not have permission to {actionDescription} '{placeable.Name}'.");
+        }
+        else
+        {
+            Token().SetBindValue(View.StatusMessage, "No placeable selected.");
+        }
+
+        return false;
+    }
+
+    private bool CanPlayerEdit(NwPlaceable placeable, out string? denialReason)
+    {
+        denialReason = null;
+
+        if (_player.IsDM)
+        {
+            return true;
+        }
+
+        Guid playerId = PcKeyUtils.GetPcKey(_player);
+        if (playerId == Guid.Empty)
+        {
+            denialReason = "Unable to determine your character key; cannot edit placeables.";
+            return false;
+        }
+
+        LocalVariableString ownerVar = placeable.GetObjectVariable<LocalVariableString>(CharacterIdLocalString);
+        if (!ownerVar.HasValue || string.IsNullOrWhiteSpace(ownerVar.Value))
+        {
+            denialReason = $"'{placeable.Name}' is not assigned to any character and cannot be edited.";
+            return false;
+        }
+
+        if (!Guid.TryParse(ownerVar.Value, out Guid ownerId))
+        {
+            denialReason = $"'{placeable.Name}' has invalid ownership data.";
+            return false;
+        }
+
+        if (ownerId != playerId)
+        {
+            denialReason = $"You do not own '{placeable.Name}'.";
+            return false;
+        }
+
+        return true;
     }
 
     private void ToggleBindWatch(bool enable)
