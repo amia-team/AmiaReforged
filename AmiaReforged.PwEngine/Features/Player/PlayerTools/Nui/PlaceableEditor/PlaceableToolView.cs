@@ -232,7 +232,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                     BuildVectorRow("Y", PositionYString, PositionY, -100f, 100f, "player_plc_pos_y_slider"),
                     BuildVectorRow("Z", PositionZString, PositionZ, -100f, 100f, "player_plc_pos_z_slider"),
                     new NuiSpacer { Height = SectionSpacing },
-                    new NuiLabel("Orientation (Degrees)")
+                    new NuiLabel("Orientation")
                     {
                         Height = 18f,
                         HorizontalAlign = NuiHAlign.Center
@@ -298,7 +298,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
             Height = 40f,
             Children =
             {
-                new NuiLabel("°")
+                new NuiLabel("deg")
                 {
                     Width = 40f,
                     VerticalAlign = NuiVAlign.Middle,
@@ -309,7 +309,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                     Width = 100f,
                     Enabled = SelectionAvailable
                 },
-                new NuiSliderFloat(Orientation, 0f, 360f)
+                new NuiSliderFloat(Orientation, 0, 360)
                 {
                     Width = ContentWidth - 160f,
                     Enabled = SelectionAvailable,

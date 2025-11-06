@@ -158,7 +158,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         if (eventData.ElementId == View.SpawnButton.Id && eventData.ArrayIndex >= 0 &&
             eventData.ArrayIndex < _blueprints.Count)
         {
-            Trace($"HandleClick dispatching BeginSpawn() for index={eventData.ArrayIndex} resref={_blueprints[eventData.ArrayIndex].ResRef}.");
+            Trace(
+                $"HandleClick dispatching BeginSpawn() for index={eventData.ArrayIndex} resref={_blueprints[eventData.ArrayIndex].ResRef}.");
             BeginSpawn(_blueprints[eventData.ArrayIndex]);
             return;
         }
@@ -256,8 +257,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
-    placeable.Name = blueprint.DisplayName;
-    EnsureCharacterAssociation(placeable);
+        placeable.Name = blueprint.DisplayName;
+        EnsureCharacterAssociation(placeable);
 
         try
         {
@@ -269,7 +270,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             // Ignore invalid appearance rows and keep the default.
         }
 
-    MarkPersistent(placeable);
+        MarkPersistent(placeable);
         _ = PersistSpawnedPlaceable(placeable);
 
         _player.SendServerMessage($"Spawned placeable '{placeable.Name}'.", ColorConstants.Green);
@@ -293,7 +294,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private void HandleSelectTarget(ModuleEvents.OnPlayerTarget targetData)
     {
-        Trace($"HandleSelectTarget triggered; targetObject={targetData.TargetObject?.Name ?? "<null>"} position={targetData.TargetPosition}.");
+        Trace(
+            $"HandleSelectTarget triggered; targetObject={targetData.TargetObject?.Name ?? "<null>"} position={targetData.TargetPosition}.");
 
         NwPlaceable? placeable = targetData.TargetObject as NwPlaceable;
         if (placeable == null)
@@ -445,7 +447,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         string? elementId = eventData.ElementId;
         if (string.IsNullOrWhiteSpace(elementId) || IsBlacklisted(elementId))
         {
-            Trace($"HandleWatch ignored; elementId empty={string.IsNullOrWhiteSpace(elementId)} blacklisted={IsBlacklisted(elementId)}");
+            Trace(
+                $"HandleWatch ignored; elementId empty={string.IsNullOrWhiteSpace(elementId)} blacklisted={IsBlacklisted(elementId)}");
             return;
         }
 
@@ -500,9 +503,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
-    Token().SetBindValue(View.StatusMessage, $"Saving '{placeable.Name}'...");
-    EnsureCharacterAssociation(placeable);
-    MarkPersistent(placeable);
+        Token().SetBindValue(View.StatusMessage, $"Saving '{placeable.Name}'...");
+        EnsureCharacterAssociation(placeable);
+        MarkPersistent(placeable);
 
         _ = NwTask.Run(async () =>
         {
@@ -776,9 +779,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
             Token().SetBindValue(View.Scale, data.Transform.Scale);
 
-            // Convert orientation from radians to degrees for display
-            float orientationDegrees = (_pendingOrientation ?? 0f) * (180f / MathF.PI);
-            Token().SetBindValue(View.Orientation, orientationDegrees);
+            // Raw radians - no conversion
+            float orientationRadians = _pendingOrientation ?? 0f;
+            Token().SetBindValue(View.Orientation, orientationRadians);
 
             Token().SetBindValue(View.PositionXString,
                 data.Position.Position.X.ToString(CultureInfo.InvariantCulture));
@@ -802,7 +805,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 data.Transform.Rotation.Z.ToString(CultureInfo.InvariantCulture));
 
             Token().SetBindValue(View.ScaleString, data.Transform.Scale.ToString(CultureInfo.InvariantCulture));
-            Token().SetBindValue(View.OrientationString, orientationDegrees.ToString(CultureInfo.InvariantCulture));
+            Token().SetBindValue(View.OrientationString, orientationRadians.ToString(CultureInfo.InvariantCulture));
         });
     }
 
@@ -848,9 +851,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
         float scale = Token().GetBindValue(View.Scale);
 
-        // Convert orientation from degrees to radians
-        float orientationDegrees = Token().GetBindValue(View.Orientation);
-        float orientationRadians = orientationDegrees * (MathF.PI / 180f);
+        // Raw radians - no conversion
+        float orientationRadians = Token().GetBindValue(View.Orientation);
 
         PlaceableData baseline = _pendingSnapshot ?? PlaceableDataFactory.From(_lastSelection);
         PlaceableData updated = baseline with
@@ -878,9 +880,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         placeable.VisualTransform.Rotation = data.Transform.Rotation;
         placeable.VisualTransform.Scale = data.Transform.Scale;
 
-        if (orientation.HasValue && placeable.Area is not null)
+        if (placeable.Area is not null)
         {
-            placeable.Location = Location.Create(placeable.Area, data.Position.Position, orientation.Value);
+            // Raw radians - Location.Create expects radians
+            float facingRadians = orientation ?? placeable.Location.Rotation;
+            placeable.Location = Location.Create(placeable.Area, data.Position.Position, facingRadians);
         }
         else
         {
@@ -1023,7 +1027,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
         Token().SetBindWatch(View.Scale, enable);
         Token().SetBindWatch(View.ScaleString, enable);
-        
+
         Token().SetBindWatch(View.Orientation, enable);
         Token().SetBindWatch(View.OrientationString, enable);
     }
