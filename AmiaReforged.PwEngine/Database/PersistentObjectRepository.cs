@@ -24,7 +24,18 @@ public class PersistentObjectRepository(PwContextFactory factory) : IPersistentO
             else
             {
                 context.Entry(existing).CurrentValues.SetValues(obj);
-                existing.Location = obj.Location;
+
+                if (obj.Location is not null)
+                {
+                    if (existing.Location is null)
+                    {
+                        existing.Location = obj.Location;
+                    }
+                    else
+                    {
+                        context.Entry(existing.Location).CurrentValues.SetValues(obj.Location);
+                    }
+                }
             }
 
             await context.SaveChangesAsync();
@@ -66,6 +77,11 @@ public class PersistentObjectRepository(PwContextFactory factory) : IPersistentO
             if (entity is null)
             {
                 return;
+            }
+
+            if (entity.Location is not null)
+            {
+                context.Set<SavedLocation>().Remove(entity.Location);
             }
 
             context.PersistentObjects.Remove(entity);

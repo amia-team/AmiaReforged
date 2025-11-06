@@ -1,3 +1,4 @@
+using System;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using Anvil.API;
@@ -14,6 +15,7 @@ public class PlaceablePersistenceService
     private const string SavedModeLocalInt = "saved_mode";
     private const string DatabaseIdLocalInt = "db_id";
     private const string PersistPlcLocalInt = "persist_plc";
+    private const string CharacterIdLocalString = "character_id";
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly IPersistentObjectRepository _objectRepository;
@@ -52,6 +54,7 @@ public class PlaceablePersistenceService
             }
 
             NWScript.SetLocalInt(plc, DatabaseIdLocalInt, (int)obj.Id);
+            ApplyCharacterAssociation(plc, obj.CharacterId);
             plc.Location = l;
         }
     }
@@ -67,10 +70,13 @@ public class PlaceablePersistenceService
             return;
         }
 
+        Guid? characterId = ExtractCharacterId(placeable);
+
         PersistentObject persistentObject = new PersistentObject
         {
             Type = (int)ObjectTypes.Placeable,
             Serialized = placeable.Serialize() ?? Array.Empty<byte>(),
+            CharacterId = characterId,
             Location = new SavedLocation
             {
                 AreaResRef = area.ResRef,
@@ -142,10 +148,13 @@ public class PlaceablePersistenceService
                 continue;
             }
 
+            Guid? characterId = ExtractCharacterId(nwPlaceable);
+
             PersistentObject persistentObject = new PersistentObject
             {
                 Type = (int)ObjectTypes.Placeable,
                 Serialized = serialized,
+                CharacterId = characterId,
                 Location = new SavedLocation
                 {
                     AreaResRef = area.ResRef,
@@ -191,6 +200,41 @@ public class PlaceablePersistenceService
         await _objectRepository.DeleteObject(id);
         await NwTask.SwitchToMainThread();
         dbVar.Delete();
+        LocalVariableString characterVar = placeable.GetObjectVariable<LocalVariableString>(CharacterIdLocalString);
+        if (!string.IsNullOrEmpty(characterVar.Value))
+        {
+            characterVar.Delete();
+        }
+
+        if (placeable.IsValid)
+        {
+            placeable.Destroy();
+        }
+    }
+
+    private static Guid? ExtractCharacterId(NwGameObject placeable)
+    {
+        LocalVariableString characterVar = placeable.GetObjectVariable<LocalVariableString>(CharacterIdLocalString);
+        if (Guid.TryParse(characterVar.Value, out Guid parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
+    private static void ApplyCharacterAssociation(NwPlaceable placeable, Guid? characterId)
+    {
+        LocalVariableString characterVar = placeable.GetObjectVariable<LocalVariableString>(CharacterIdLocalString);
+
+        if (characterId.HasValue && characterId.Value != Guid.Empty)
+        {
+            characterVar.Value = characterId.Value.ToString();
+        }
+        else if (!string.IsNullOrEmpty(characterVar.Value))
+        {
+            characterVar.Delete();
+        }
     }
 }
 

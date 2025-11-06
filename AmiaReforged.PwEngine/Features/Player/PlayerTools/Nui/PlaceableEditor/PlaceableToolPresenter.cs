@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.DungeonMaster.PlcEdit;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
@@ -21,6 +22,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private const bool TraceEnabled = false;
     private const string PersistPlcLocalInt = "persist_plc";
+    private const string CharacterIdLocalString = "character_id";
 
     private readonly NwPlayer _player;
     private readonly PlaceableToolModel _model;
@@ -253,7 +255,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
-        placeable.Name = blueprint.DisplayName;
+    placeable.Name = blueprint.DisplayName;
+    EnsureCharacterAssociation(placeable);
 
         try
         {
@@ -265,7 +268,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             // Ignore invalid appearance rows and keep the default.
         }
 
-        MarkPersistent(placeable);
+    MarkPersistent(placeable);
         _ = PersistSpawnedPlaceable(placeable);
 
         _player.SendServerMessage($"Spawned placeable '{placeable.Name}'.", ColorConstants.Green);
@@ -461,8 +464,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
-        Token().SetBindValue(View.StatusMessage, $"Saving '{placeable.Name}'...");
-        MarkPersistent(placeable);
+    Token().SetBindValue(View.StatusMessage, $"Saving '{placeable.Name}'...");
+    EnsureCharacterAssociation(placeable);
+    MarkPersistent(placeable);
 
         _ = NwTask.Run(async () =>
         {
@@ -1072,6 +1076,18 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         }
 
         return new string(buffer.ToArray());
+    }
+
+    private void EnsureCharacterAssociation(NwPlaceable placeable)
+    {
+        Guid characterId = PcKeyUtils.GetPcKey(_player);
+        if (characterId == Guid.Empty)
+        {
+            return;
+        }
+
+        LocalVariableString characterVar = placeable.GetObjectVariable<LocalVariableString>(CharacterIdLocalString);
+        characterVar.Value = characterId.ToString();
     }
 
     private static void MarkPersistent(NwPlaceable placeable)
