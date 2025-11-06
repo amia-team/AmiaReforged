@@ -19,6 +19,7 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.PlaceableEditor;
 public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private const bool TraceEnabled = false;
     private const string PersistPlcLocalInt = "persist_plc";
 
     private readonly NwPlayer _player;
@@ -1116,6 +1117,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private void Trace(string message)
     {
+        if (!TraceEnabled)
+        {
+            return;
+        }
+
         string playerName = _player?.PlayerName ?? "<unknown>";
         Log.Info($"[PlaceableToolPresenter][Player={playerName}] {message}");
     }
