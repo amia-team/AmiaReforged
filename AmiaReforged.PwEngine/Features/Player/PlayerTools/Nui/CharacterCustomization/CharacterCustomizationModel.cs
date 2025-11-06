@@ -308,7 +308,6 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             CreaturePart.LeftThigh => "l",
             CreaturePart.LeftForearm => "l",
             CreaturePart.LeftBicep => "l",
-            CreaturePart.LeftShoulder => "l",
             CreaturePart.LeftHand => "l",
 
             CreaturePart.RightFoot => "r",
@@ -316,7 +315,6 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             CreaturePart.RightThigh => "r",
             CreaturePart.RightForearm => "r",
             CreaturePart.RightBicep => "r",
-            CreaturePart.RightShoulder => "r",
             CreaturePart.RightHand => "r",
 
             _ => ""
