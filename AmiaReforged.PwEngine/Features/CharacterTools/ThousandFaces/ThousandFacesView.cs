@@ -1,10 +1,11 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.WindowingSystem;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
+using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ThousandFaces;
+namespace AmiaReforged.PwEngine.Features.CharacterTools.ThousandFaces;
 
-public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolWindow
+public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>
 {
     private const float WindowW = 700f;
     private const float WindowH = 800f;
@@ -26,6 +27,9 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
     public readonly NuiBind<int> AppearanceModelInput = new("tf_appearance_model_input");
 
     public readonly NuiBind<string> ScaleText = new("tf_scale");
+
+    public readonly NuiBind<string> TempNameText = new("tf_temp_name");
+    public readonly NuiBind<bool> TempNameConfirmEnabled = new("tf_temp_name_confirm_enabled");
 
     public readonly NuiBind<string> CurrentSoundsetText = new("tf_current_soundset");
     public readonly NuiBind<string> NewSoundsetText = new("tf_new_soundset");
@@ -63,6 +67,10 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
     public NuiButtonImage ScaleIncrease10Button = null!;
     public NuiButtonImage ScaleMaxButton = null!;
 
+    public NuiTextEdit TempNameInputField = null!;
+    public NuiButtonImage TempNameConfirmButton = null!;
+    public NuiButtonImage RestoreNameButton = null!;
+
     public NuiTextEdit SoundsetInputField = null!;
     public NuiButtonImage SoundsetConfirmButton = null!;
 
@@ -78,14 +86,8 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
     public NuiButtonImage DiscardButton = null!;
     public NuiButtonImage CancelButton = null!;
 
-    public string Title => "One Thousand Faces";
-    public string Id => "thousand_faces";
-    public string CategoryTag => "Appearance";
-    public bool ListInPlayerTools => true;
-    public bool RequiresPersistedCharacter => false;
-    public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 
-    public ThousandFacesView(NwPlayer player)
+    public ThousandFacesView(NwPlayer player, PlayerNameOverrideService playerNameOverrideService)
     {
         // Initialize skin color binds
         for (int i = 0; i < 176; i++)
@@ -105,7 +107,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
             TattooColorResRef[i] = new NuiBind<string>($"tf_tattoo_color_resref_{i}");
         }
 
-        Presenter = new ThousandFacesPresenter(this, player);
+        Presenter = new ThousandFacesPresenter(this, player, playerNameOverrideService);
     }
 
     public override NuiLayout RootLayout()
@@ -181,6 +183,10 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
 
                 // Appearance section
                 BuildAppearanceSection(),
+                new NuiSpacer { Height = 10f },
+
+                // Temporary Name section
+                BuildTempNameSection(),
                 new NuiSpacer { Height = 10f },
 
                 // Scale section
@@ -494,6 +500,53 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                         new NuiButton("5") { Id = "btn_appearance_halforc", Width = 30f, Height = 30f, Tooltip = "Half-Orc" },
                         new NuiSpacer { Width = 5f },
                         new NuiButton("6") { Id = "btn_appearance_human", Width = 30f, Height = 30f, Tooltip = "Human" }
+                    }
+                }
+            }
+        };
+    }
+
+    private NuiElement BuildTempNameSection()
+    {
+        return new NuiColumn
+        {
+            Children =
+            {
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 285f },
+                        new NuiLabel("Temporary Name")
+                        {
+                            Height = 20f,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    }
+                },
+                new NuiSpacer { Height = 5f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 190f },
+                        new NuiTextEdit("Enter a temporary name...", TempNameText, 50, false)
+                        {
+                            Width = 300f,
+                            Height = 30f,
+                            Tooltip = "Enter a temporary name"
+                        }.Assign(out TempNameInputField),
+                        new NuiSpacer { Width = 10f },
+                        ImageButton("btn_tempname_confirm", "Set temporary name", out TempNameConfirmButton, 30f, 30f, "ui_btn_sm_check", TempNameConfirmEnabled)
+                    }
+                },
+                new NuiSpacer { Height = 5f },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 270f },
+                        new NuiButton("Restore Name") { Id = "btn_restore_name", Width = 150f, Height = 30f, Tooltip = "Restore Original Name" }
                     }
                 }
             }

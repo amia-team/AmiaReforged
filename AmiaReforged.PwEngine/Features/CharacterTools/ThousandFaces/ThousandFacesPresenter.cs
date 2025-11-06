@@ -1,15 +1,16 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
-namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ThousandFaces;
+namespace AmiaReforged.PwEngine.Features.CharacterTools.ThousandFaces;
 
-public sealed class ThousandFacesPresenter(ThousandFacesView view, NwPlayer player)
+public sealed class ThousandFacesPresenter(ThousandFacesView view, NwPlayer player, PlayerNameOverrideService playerNameOverrideService)
     : ScryPresenter<ThousandFacesView>
 {
     public override ThousandFacesView View { get; } = view;
 
-    private readonly ThousandFacesModel _model = new(player);
+    private readonly ThousandFacesModel _model = new(player, playerNameOverrideService);
     private NuiWindowToken _token;
     private bool _initializing;
 
@@ -55,12 +56,13 @@ public sealed class ThousandFacesPresenter(ThousandFacesView view, NwPlayer play
         // Enable soundset and portrait confirm buttons
         Token().SetBindValue(View.SoundsetConfirmEnabled, true);
         Token().SetBindValue(View.PortraitConfirmEnabled, true);
+        Token().SetBindValue(View.TempNameConfirmEnabled, true);
 
         // Initialize color palettes
         InitializeColorPalettes();
 
-        // Set default color channel to skin
-        Token().SetBindValue(View.CurrentColorChannel, 0);
+        // Set default color channel to hair
+        Token().SetBindValue(View.CurrentColorChannel, 1);
 
         // Load all initial values from model
         _model.LoadInitialValues();
@@ -74,6 +76,7 @@ public sealed class ThousandFacesPresenter(ThousandFacesView view, NwPlayer play
         // Clear the input fields for soundset and portrait (leave them empty for player input)
         Token().SetBindValue(View.NewSoundsetText, "");
         Token().SetBindValue(View.NewPortraitText, "");
+        Token().SetBindValue(View.TempNameText, "");
     }
 
     private void InitializeColorPalettes()
@@ -220,6 +223,20 @@ public sealed class ThousandFacesPresenter(ThousandFacesView view, NwPlayer play
             case "btn_scale_max":
                 _model.SetScale(1.2f); // MaxScale
                 UpdateScaleDisplay();
+                break;
+
+            // Temporary Name controls
+            case "btn_tempname_confirm":
+                string tempName = Token().GetBindValue(View.TempNameText) ?? "";
+                if (!string.IsNullOrWhiteSpace(tempName))
+                {
+                    _model.SetTemporaryName(tempName);
+                    Token().SetBindValue(View.TempNameText, ""); // Clear the input field after successful change
+                }
+                break;
+            case "btn_restore_name":
+                _model.RestoreOriginalName();
+                Token().SetBindValue(View.TempNameText, ""); // Clear the input field
                 break;
 
             // Soundset controls

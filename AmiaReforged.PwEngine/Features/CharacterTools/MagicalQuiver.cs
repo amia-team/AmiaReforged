@@ -1,11 +1,9 @@
-﻿using AmiaReforged.Core.UserInterface;
-using Anvil.API;
+﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
-using Microsoft.IdentityModel.Tokens;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Features.CharacterCustomization;
+namespace AmiaReforged.PwEngine.Features.CharacterTools;
 
 [ServiceBinding(typeof(MagicalQuiver))]
 public class MagicalQuiver

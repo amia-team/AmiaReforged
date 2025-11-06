@@ -1,21 +1,23 @@
-﻿using Anvil;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using Anvil;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
-using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 
-namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ThousandFaces;
+namespace AmiaReforged.PwEngine.Features.CharacterTools.ThousandFaces;
 
 [ServiceBinding(typeof(ThousandFacesListener))]
 public class ThousandFacesListener
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private readonly WindowDirector _windowDirector;
+    private readonly PlayerNameOverrideService _playerNameOverrideService;
 
-    public ThousandFacesListener(WindowDirector windowDirector)
+    public ThousandFacesListener(WindowDirector windowDirector, PlayerNameOverrideService playerNameOverrideService)
     {
         _windowDirector = windowDirector;
+        _playerNameOverrideService = playerNameOverrideService;
         Log.Info(message: "ThousandFacesListener initialized.");
     }
 
@@ -42,7 +44,7 @@ public class ThousandFacesListener
 
         Log.Info($"Opening One Thousand Faces for player: {player.PlayerName}");
 
-        ThousandFacesView view = new ThousandFacesView(player);
+        ThousandFacesView view = new ThousandFacesView(player, _playerNameOverrideService);
 
         InjectionService? injector = AnvilCore.GetService<InjectionService>();
         if (injector != null)

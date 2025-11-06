@@ -1,10 +1,12 @@
 ﻿using Anvil.API;
+using Anvil.Services;
 using Newtonsoft.Json;
 using NWN.Core;
+using NWN.Core.NWNX;
 
-namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ThousandFaces;
+namespace AmiaReforged.PwEngine.Features.CharacterTools.ThousandFaces;
 
-public sealed class ThousandFacesModel(NwPlayer player)
+public sealed class ThousandFacesModel(NwPlayer player, PlayerNameOverrideService playerNameOverrideService)
 {
     private const string BackupDataKey = "THOUSAND_FACES_BACKUP";
 
@@ -30,7 +32,7 @@ public sealed class ThousandFacesModel(NwPlayer player)
     public string NewPortrait { get; private set; } = "";
 
     // Color properties
-    private int CurrentColorChannel { get; set; } // 0=Skin, 1=Hair, 2=Tattoo1, 3=Tattoo2
+    private int CurrentColorChannel { get; set; } = 1; // 0=Skin, 1=Hair, 2=Tattoo1, 3=Tattoo2 (default: Hair)
     public int SkinColor { get; private set; }
     public int HairColor { get; private set; }
     public int TattooColor1 { get; private set; }
@@ -327,6 +329,49 @@ public sealed class ThousandFacesModel(NwPlayer player)
         SetScale(Scale + delta);
     }
 
+    public void SetTemporaryName(string tempName)
+    {
+        if (string.IsNullOrWhiteSpace(tempName))
+        {
+            player.SendServerMessage("Please enter a temporary name.", ColorConstants.Orange);
+            return;
+        }
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null)
+        {
+            player.SendServerMessage("Error: Could not get controlled creature.", ColorConstants.Red);
+            return;
+        }
+
+        // Use PlayerNameOverrideService to set the player name override
+        // This changes the player name shown in chat, etc., but NOT the character name
+        var nameOverride = new PlayerNameOverride(tempName, player.PlayerName);
+
+        player.SendServerMessage($"Attempting to set temporary name to: {tempName}", ColorConstants.Cyan);
+        RenamePlugin.SetPCNameOverride(player.LoginCreature, tempName);
+        //playerNameOverrideService.SetPlayerNameOverride(player, nameOverride);
+        player.SendServerMessage($"Temporary name set to: {tempName}", ColorConstants.Green);
+        player.SendServerMessage($"Current player name: {player.PlayerName}", ColorConstants.Yellow);
+    }
+
+    public void RestoreOriginalName()
+    {
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null)
+        {
+            player.SendServerMessage("Error: Could not get controlled creature.", ColorConstants.Red);
+            return;
+        }
+
+        player.SendServerMessage($"Attempting to restore original name...", ColorConstants.Cyan);
+        // Use PlayerNameOverrideService to clear the player name override
+        RenamePlugin.ClearPCNameOverride(player.LoginCreature);
+        //playerNameOverrideService.ClearPlayerNameOverride(player);
+        player.SendServerMessage("Original name restored.", ColorConstants.Green);
+        player.SendServerMessage($"Current player name: {player.PlayerName}", ColorConstants.Yellow);
+    }
+
     public void SetSoundset(int soundsetId)
     {
         NwCreature? creature = player.ControlledCreature;
@@ -454,6 +499,9 @@ public sealed class ThousandFacesModel(NwPlayer player)
         creature.SetColor(ColorChannel.Hair, backup.HairColor);
         creature.SetColor(ColorChannel.Tattoo1, backup.TattooColor1);
         creature.SetColor(ColorChannel.Tattoo2, backup.TattooColor2);
+
+        // Restore original player name by clearing override
+        playerNameOverrideService.ClearPlayerNameOverride(player);
 
         // Don't delete backup - keep it for next revert
     }
