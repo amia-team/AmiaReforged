@@ -41,7 +41,7 @@ public class CastTechniqueService
     private void CastBodyTechnique(OnSpellCast castData)
     {
         if (castData.Caster is not NwCreature monk) return;
-        if (monk.IsMonkLevel(MinimumCastTechniqueLevel)) return;
+        if (!monk.IsMonkLevel(MinimumCastTechniqueLevel)) return;
         if (castData.Spell?.FeatReference?.Id is not { } featId || !SupportedFeatIds.Contains(featId)) return;
 
         string techniqueName = castData.Spell.FeatReference.Name.ToString();
