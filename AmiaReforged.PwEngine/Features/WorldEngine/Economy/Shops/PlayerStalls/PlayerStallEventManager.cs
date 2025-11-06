@@ -2121,11 +2121,29 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             ? string.Format(CultureInfo.InvariantCulture, " x{0:n0}", Math.Max(1, quantity))
             : string.Empty;
 
+        string buyerName = string.IsNullOrWhiteSpace(transaction.BuyerDisplayName)
+            ? buyerPersona.ToString()
+            : transaction.BuyerDisplayName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(buyerName))
+        {
+            buyerName = buyerName
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Trim();
+        }
+
+        if (string.IsNullOrWhiteSpace(buyerName))
+        {
+            buyerName = "Unknown buyer";
+        }
+
         string description = string.Format(
             CultureInfo.InvariantCulture,
-            "Sold {0}{1} for {2:n0} gp.",
+            "Sold {0}{1} to {2} for {3:n0} gp.",
             productName,
             quantityFragment,
+            buyerName,
             Math.Max(0, totalPrice));
 
         var metadata = new
@@ -2135,6 +2153,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             productName,
             quantity = Math.Max(1, quantity),
             buyerPersona = buyerPersona.ToString(),
+            buyerName,
             grossAmount = Math.Max(0, totalPrice),
             escrowAmount = Math.Max(0, escrowAmount),
             depositAmount = Math.Max(0, depositAmount)
