@@ -386,6 +386,39 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
             Log.Error(e);
         }
     }
+
+    public IReadOnlyList<PlayerStallLedgerEntry> GetLedgerEntries(long stallId, int maxEntries)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        IQueryable<PlayerStallLedgerEntry> query = ctx.PlayerStallLedgerEntries
+            .AsNoTracking()
+            .Where(entry => entry.StallId == stallId)
+            .OrderByDescending(entry => entry.OccurredUtc)
+            .ThenByDescending(entry => entry.Id);
+
+        if (maxEntries > 0)
+        {
+            query = query.Take(maxEntries);
+        }
+
+        return query.ToList();
+    }
+
+    public void AddLedgerEntry(PlayerStallLedgerEntry entry)
+    {
+        using PwEngineContext ctx = factory.CreateDbContext();
+
+        try
+        {
+            ctx.PlayerStallLedgerEntries.Add(entry);
+            ctx.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to persist player stall ledger entry for stall {StallId}.", entry.StallId);
+        }
+    }
 }
 
 public interface IPlayerShopRepository
@@ -427,4 +460,6 @@ public interface IPlayerShopRepository
     List<StallTransaction>? TransactionsForShop(long shopId);
     List<StallTransaction>? TransactionsForStallWhenOwnedBy(long shopId, Guid ownerId);
     void SaveTransaction(StallTransaction transaction);
+    IReadOnlyList<PlayerStallLedgerEntry> GetLedgerEntries(long stallId, int maxEntries);
+    void AddLedgerEntry(PlayerStallLedgerEntry entry);
 }

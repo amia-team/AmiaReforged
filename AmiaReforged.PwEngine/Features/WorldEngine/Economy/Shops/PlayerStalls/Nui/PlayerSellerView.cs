@@ -37,6 +37,12 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<bool> EarningsWithdrawEnabled = new("player_stall_seller_earnings_withdraw_enabled");
     public readonly NuiBind<bool> EarningsWithdrawAllEnabled = new("player_stall_seller_earnings_withdraw_all_enabled");
 
+    public readonly NuiBind<int> LedgerCount = new("player_stall_seller_ledger_count");
+    public readonly NuiBind<string> LedgerTimestampEntries = new("player_stall_seller_ledger_timestamps");
+    public readonly NuiBind<string> LedgerAmountEntries = new("player_stall_seller_ledger_amounts");
+    public readonly NuiBind<string> LedgerDescriptionEntries = new("player_stall_seller_ledger_descriptions");
+    public readonly NuiBind<string> LedgerTooltipEntries = new("player_stall_seller_ledger_tooltips");
+
     public readonly NuiBind<string> FeedbackText = new("player_stall_seller_feedback_text");
     public readonly NuiBind<bool> FeedbackVisible = new("player_stall_seller_feedback_visible");
     public readonly NuiBind<Color> FeedbackColor = new("player_stall_seller_feedback_color");
@@ -139,6 +145,34 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                 Width = 100f,
                 VariableSize = false
             }
+        ];
+
+        List<NuiListTemplateCell> ledgerTemplate =
+        [
+            new(new NuiLabel(LedgerTimestampEntries)
+            {
+                Height = 20f,
+                Width = 120f,
+                HorizontalAlign = NuiHAlign.Left,
+                VerticalAlign = NuiVAlign.Middle,
+                Tooltip = LedgerTooltipEntries
+            }),
+            new(new NuiLabel(LedgerAmountEntries)
+            {
+                Height = 20f,
+                Width = 80f,
+                HorizontalAlign = NuiHAlign.Right,
+                VerticalAlign = NuiVAlign.Middle,
+                Tooltip = LedgerTooltipEntries
+            }),
+            new(new NuiLabel(LedgerDescriptionEntries)
+            {
+                Height = 20f,
+                Width = 280f,
+                HorizontalAlign = NuiHAlign.Left,
+                VerticalAlign = NuiVAlign.Middle,
+                Tooltip = LedgerTooltipEntries
+            })
         ];
 
         NuiColumn productDetailColumn = new()
@@ -561,6 +595,33 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             Tooltip = EarningsTooltip
                         }.Assign(out WithdrawAllProfitsButton)
                     ]
+                },
+                new NuiSpacer { Height = 12f },
+                new NuiGroup
+                {
+                    Border = true,
+                    Width = 760f,
+                    Height = 220f,
+                    Element = new NuiColumn
+                    {
+                        Children =
+                        [
+                            new NuiSpacer { Height = 4f },
+                            new NuiLabel("Recent Ledger Entries")
+                            {
+                                Height = 20f,
+                                HorizontalAlign = NuiHAlign.Left,
+                                VerticalAlign = NuiVAlign.Middle
+                            },
+                            new NuiSpacer { Height = 6f },
+                            new NuiList(ledgerTemplate, LedgerCount)
+                            {
+                                Width = 720f,
+                                Height = 170f,
+                                RowHeight = 22f
+                            }
+                        ]
+                    }
                 },
                 new NuiSpacer { Height = 12f },
                 new NuiLabel(FeedbackText)

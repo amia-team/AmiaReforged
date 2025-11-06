@@ -29,6 +29,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private readonly PlayerStallSellerWindowConfig _config;
     private readonly List<PlayerStallSellerProductView> _products = new();
     private readonly List<PlayerStallSellerInventoryItemView> _inventoryItems = new();
+    private readonly List<PlayerStallLedgerEntryView> _ledgerEntries = new();
 
     private NuiWindowToken _token;
     private NuiWindow? _window;
@@ -297,6 +298,31 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValues(View.InventorySelectEnabled, inventoryEnabled);
         Token().SetBindValue(View.InventoryCount, inventoryEntries.Count);
         Token().SetBindValue(View.InventoryEmptyVisible, inventoryEntries.Count == 0);
+
+        _ledgerEntries.Clear();
+        if (snapshot.LedgerEntries is not null)
+        {
+            _ledgerEntries.AddRange(snapshot.LedgerEntries);
+        }
+
+        List<string> ledgerTimestamps = new(_ledgerEntries.Count);
+        List<string> ledgerAmounts = new(_ledgerEntries.Count);
+        List<string> ledgerDescriptions = new(_ledgerEntries.Count);
+        List<string> ledgerTooltips = new(_ledgerEntries.Count);
+
+        foreach (PlayerStallLedgerEntryView entry in _ledgerEntries)
+        {
+            ledgerTimestamps.Add(FormatLedgerTimestamp(entry.OccurredUtc));
+            ledgerAmounts.Add(FormatLedgerAmount(entry.Amount, entry.Currency));
+            ledgerDescriptions.Add(entry.Description ?? string.Empty);
+            ledgerTooltips.Add(BuildLedgerTooltip(entry));
+        }
+
+        Token().SetBindValues(View.LedgerTimestampEntries, ledgerTimestamps);
+        Token().SetBindValues(View.LedgerAmountEntries, ledgerAmounts);
+        Token().SetBindValues(View.LedgerDescriptionEntries, ledgerDescriptions);
+        Token().SetBindValues(View.LedgerTooltipEntries, ledgerTooltips);
+        Token().SetBindValue(View.LedgerCount, ledgerTimestamps.Count);
 
         string? targetInventoryId = _selectedInventoryItemId;
         if (targetInventoryId is not null &&
@@ -739,6 +765,30 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         }
 
         ApplyInventorySelectionBindings();
+    }
+
+    private static string FormatLedgerTimestamp(DateTime utc)
+    {
+        return utc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatLedgerAmount(int amount, string currency)
+    {
+        string unit = string.IsNullOrWhiteSpace(currency) ? "gp" : currency;
+    return string.Format(CultureInfo.InvariantCulture, "{0:+#,##0;-#,##0;0} {1}", amount, unit);
+    }
+
+    private static string BuildLedgerTooltip(PlayerStallLedgerEntryView entry)
+    {
+        string type = entry.EntryType.ToString();
+        string timestamp = entry.OccurredUtc.ToLocalTime().ToString("O", CultureInfo.InvariantCulture);
+
+        if (string.IsNullOrWhiteSpace(entry.MetadataJson))
+        {
+            return string.Format(CultureInfo.InvariantCulture, "{0}\n{1}", type, timestamp);
+        }
+
+        return string.Format(CultureInfo.InvariantCulture, "{0}\n{1}\n{2}", type, timestamp, entry.MetadataJson);
     }
 
     private void ApplyInventoryListBindings()

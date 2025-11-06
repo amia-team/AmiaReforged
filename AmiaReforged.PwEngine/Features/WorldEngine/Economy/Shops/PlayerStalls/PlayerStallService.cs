@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
@@ -390,6 +392,8 @@ public sealed class PlayerStallService : IPlayerStallService
                 "Failed to persist stall earnings withdrawal."));
         }
 
+        RecordWithdrawalLedgerEntry(request, withdrawal);
+
         IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
         {
             ["stallId"] = request.StallId,
@@ -449,5 +453,47 @@ public sealed class PlayerStallService : IPlayerStallService
         }
 
         return false;
+    }
+
+    private void RecordWithdrawalLedgerEntry(WithdrawStallEarningsRequest request, PlayerStallWithdrawal withdrawal)
+    {
+        PlayerStallLedgerEntry entry = new()
+        {
+            StallId = request.StallId,
+            EntryType = PlayerStallLedgerEntryType.Withdrawal,
+            Amount = -Math.Max(0, withdrawal.Amount),
+            Currency = "gp",
+            Description = BuildWithdrawalDescription(withdrawal.Amount, request.Requestor, withdrawal.WasPartial),
+            OccurredUtc = DateTime.UtcNow,
+            MetadataJson = BuildWithdrawalMetadata(request, withdrawal)
+        };
+
+        _shops.AddLedgerEntry(entry);
+    }
+
+    private static string BuildWithdrawalDescription(int amount, PersonaId persona, bool wasPartial)
+    {
+        string personaLabel = persona.ToString();
+        string basis = wasPartial ? "Partial withdrawal" : "Withdrawal";
+
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "{0} of {1:n0} gp by {2}",
+            basis,
+            Math.Max(0, amount),
+            string.IsNullOrWhiteSpace(personaLabel) ? "unknown persona" : personaLabel);
+    }
+
+    private static string BuildWithdrawalMetadata(WithdrawStallEarningsRequest request, PlayerStallWithdrawal withdrawal)
+    {
+        var metadata = new
+        {
+            persona = request.Requestor.ToString(),
+            withdrawnAmount = Math.Max(0, withdrawal.Amount),
+            requestedAmount = request.RequestedAmount,
+            partial = withdrawal.WasPartial
+        };
+
+        return JsonSerializer.Serialize(metadata);
     }
 }

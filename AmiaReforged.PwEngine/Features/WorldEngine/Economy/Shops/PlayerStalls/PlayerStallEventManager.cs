@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
@@ -27,6 +28,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+    private const int LedgerEntryLimit = 25;
 
     private readonly IPlayerShopRepository _shops;
     private readonly RuntimeCharacterService _characters;
@@ -329,7 +331,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 return PlayerStallPurchaseResult.Fail("Another buyer just claimed that item.", ColorConstants.Orange);
             }
 
-            _shops.SaveTransaction(new StallTransaction
+            StallTransaction transaction = new()
             {
                 StallId = stall.Id,
                 StallProductId = product.Id,
@@ -341,7 +343,22 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 DepositAmount = depositAmount,
                 FeeAmount = 0,
                 OccurredAtUtc = now
-            });
+            };
+
+            _shops.SaveTransaction(transaction);
+
+            PlayerStallLedgerEntry saleLedgerEntry = BuildSaleLedgerEntry(
+                stall.Id,
+                product,
+                transaction,
+                request.BuyerPersona,
+                quantity,
+                totalPrice,
+                escrowAmount,
+                depositAmount,
+                now);
+
+            _shops.AddLedgerEntry(saleLedgerEntry);
 
             if (productWillBeDepleted)
             {
@@ -2027,6 +2044,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             earningsTooltip = "No earnings are currently available to withdraw.";
         }
 
+        IReadOnlyList<PlayerStallLedgerEntryView> ledgerEntries = BuildLedgerViews(stall.Id);
+
         return new PlayerStallSellerSnapshot(
             summary,
             context,
@@ -2049,7 +2068,89 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             earningsRowVisible,
             withdrawEnabled,
             withdrawAllEnabled,
-            earningsTooltip);
+        earningsTooltip,
+        ledgerEntries);
+    }
+
+    private IReadOnlyList<PlayerStallLedgerEntryView> BuildLedgerViews(long stallId)
+    {
+        IReadOnlyList<PlayerStallLedgerEntry> entries = _shops.GetLedgerEntries(stallId, LedgerEntryLimit);
+        if (entries.Count == 0)
+        {
+            return Array.Empty<PlayerStallLedgerEntryView>();
+        }
+
+        List<PlayerStallLedgerEntryView> views = new(entries.Count);
+
+        foreach (PlayerStallLedgerEntry entry in entries)
+        {
+            string currency = string.IsNullOrWhiteSpace(entry.Currency) ? "gp" : entry.Currency!;
+
+            views.Add(new PlayerStallLedgerEntryView(
+                entry.Id,
+                entry.OccurredUtc,
+                entry.EntryType,
+                entry.Amount,
+                currency,
+                entry.Description,
+                entry.StallTransactionId,
+                entry.MetadataJson));
+        }
+
+        return views;
+    }
+
+    private static PlayerStallLedgerEntry BuildSaleLedgerEntry(
+        long stallId,
+        StallProduct product,
+        StallTransaction transaction,
+        PersonaId buyerPersona,
+        int quantity,
+        int totalPrice,
+        int escrowAmount,
+        int depositAmount,
+        DateTime occurredUtc)
+    {
+        string productName = string.IsNullOrWhiteSpace(product.Name) ? product.ResRef : product.Name;
+        if (string.IsNullOrWhiteSpace(productName))
+        {
+            productName = "Unnamed item";
+        }
+
+        string quantityFragment = quantity > 1
+            ? string.Format(CultureInfo.InvariantCulture, " x{0:n0}", Math.Max(1, quantity))
+            : string.Empty;
+
+        string description = string.Format(
+            CultureInfo.InvariantCulture,
+            "Sold {0}{1} for {2:n0} gp.",
+            productName,
+            quantityFragment,
+            Math.Max(0, totalPrice));
+
+        var metadata = new
+        {
+            transactionId = transaction.Id,
+            productId = product.Id,
+            productName,
+            quantity = Math.Max(1, quantity),
+            buyerPersona = buyerPersona.ToString(),
+            grossAmount = Math.Max(0, totalPrice),
+            escrowAmount = Math.Max(0, escrowAmount),
+            depositAmount = Math.Max(0, depositAmount)
+        };
+
+        return new PlayerStallLedgerEntry
+        {
+            StallId = stallId,
+            EntryType = PlayerStallLedgerEntryType.SaleGross,
+            Amount = Math.Max(0, totalPrice),
+            Currency = "gp",
+            Description = description,
+            StallTransactionId = transaction.Id,
+            OccurredUtc = occurredUtc,
+            MetadataJson = JsonSerializer.Serialize(metadata)
+        };
     }
 
     private bool TryResolveCoinhouseTag(PlayerStall stall, out CoinhouseTag tag)

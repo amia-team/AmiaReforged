@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using Anvil.API;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -163,7 +164,8 @@ public sealed record PlayerStallSellerSnapshot(
     bool EarningsRowVisible = false,
     bool WithdrawEnabled = false,
     bool WithdrawAllEnabled = false,
-    string? EarningsTooltip = null);
+    string? EarningsTooltip = null,
+    IReadOnlyList<PlayerStallLedgerEntryView>? LedgerEntries = null);
 
 /// <summary>
 /// Window wiring details used when presenting the seller interface.
@@ -341,3 +343,16 @@ public sealed record PlayerStallWithdrawRequest(
     long StallId,
     PersonaId SellerPersona,
     int? RequestedAmount);
+
+/// <summary>
+/// Normalized ledger entry presented in stall management interfaces.
+/// </summary>
+public sealed record PlayerStallLedgerEntryView(
+    long EntryId,
+    DateTime OccurredUtc,
+    PlayerStallLedgerEntryType EntryType,
+    int Amount,
+    string Currency,
+    string? Description,
+    long? TransactionId,
+    string? MetadataJson);
