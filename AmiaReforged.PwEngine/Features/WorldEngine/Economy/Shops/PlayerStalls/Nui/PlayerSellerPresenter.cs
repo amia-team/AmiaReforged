@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
+using AmiaReforged.PwEngine.Features.WorldEngine.Time;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -55,6 +56,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private PlayerStallSellerOperationResult? _lastOperationResult;
 
     [Inject] private PlayerStallEventManager EventManager { get; init; } = null!;
+    [Inject] private IHarptosTimeService HarptosTimeService { get; init; } = null!;
 
     public override NuiWindowToken Token() => _token;
 
@@ -312,10 +314,11 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
         foreach (PlayerStallLedgerEntryView entry in _ledgerEntries)
         {
-            ledgerTimestamps.Add(FormatLedgerTimestamp(entry.OccurredUtc));
+            (string timestampDisplay, DateTimeOffset localTime) = FormatLedgerTimestamp(entry);
+            ledgerTimestamps.Add(timestampDisplay);
             ledgerAmounts.Add(FormatLedgerAmount(entry.Amount, entry.Currency));
             ledgerDescriptions.Add(entry.Description ?? string.Empty);
-            ledgerTooltips.Add(BuildLedgerTooltip(entry));
+            ledgerTooltips.Add(BuildLedgerTooltip(entry, timestampDisplay, localTime));
         }
 
         Token().SetBindValues(View.LedgerTimestampEntries, ledgerTimestamps);
@@ -767,9 +770,29 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         ApplyInventorySelectionBindings();
     }
 
-    private static string FormatLedgerTimestamp(DateTime utc)
+    private (string Display, DateTimeOffset LocalTime) FormatLedgerTimestamp(PlayerStallLedgerEntryView entry)
     {
-        return utc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+        HarptosDateTime harptos = ConvertToHarptos(entry.OccurredUtc, out DateTimeOffset localTime);
+        string display = harptos.ToDisplayString();
+        return (display, localTime);
+    }
+
+    private HarptosDateTime ConvertToHarptos(DateTime occurredUtc, out DateTimeOffset localTime)
+    {
+        localTime = NormalizeToLocal(occurredUtc);
+        return HarptosTimeService.Convert(localTime);
+    }
+
+    private static DateTimeOffset NormalizeToLocal(DateTime occurredUtc)
+    {
+        DateTime universal = occurredUtc.Kind switch
+        {
+            DateTimeKind.Utc => occurredUtc,
+            DateTimeKind.Local => occurredUtc.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(occurredUtc, DateTimeKind.Utc)
+        };
+
+        return new DateTimeOffset(universal, TimeSpan.Zero).ToLocalTime();
     }
 
     private static string FormatLedgerAmount(int amount, string currency)
@@ -778,17 +801,19 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     return string.Format(CultureInfo.InvariantCulture, "{0:+#,##0;-#,##0;0} {1}", amount, unit);
     }
 
-    private static string BuildLedgerTooltip(PlayerStallLedgerEntryView entry)
+    private string BuildLedgerTooltip(PlayerStallLedgerEntryView entry, string harptosDisplay, DateTimeOffset localTime)
     {
         string type = entry.EntryType.ToString();
-        string timestamp = entry.OccurredUtc.ToLocalTime().ToString("O", CultureInfo.InvariantCulture);
+        string realTimestamp = localTime.ToString("O", CultureInfo.InvariantCulture);
+        string harptosLine = string.Format(CultureInfo.InvariantCulture, "Harptos: {0}", harptosDisplay);
+        string realLine = string.Format(CultureInfo.InvariantCulture, "Real: {0}", realTimestamp);
 
         if (string.IsNullOrWhiteSpace(entry.MetadataJson))
         {
-            return string.Format(CultureInfo.InvariantCulture, "{0}\n{1}", type, timestamp);
+            return string.Format(CultureInfo.InvariantCulture, "{0}\n{1}\n{2}", type, harptosLine, realLine);
         }
 
-        return string.Format(CultureInfo.InvariantCulture, "{0}\n{1}\n{2}", type, timestamp, entry.MetadataJson);
+        return string.Format(CultureInfo.InvariantCulture, "{0}\n{1}\n{2}\n{3}", type, harptosLine, realLine, entry.MetadataJson);
     }
 
     private void ApplyInventoryListBindings()
