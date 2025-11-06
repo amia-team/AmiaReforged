@@ -12,10 +12,12 @@ public sealed record HarptosDateTime(
 {
     public bool IsFestival => Festival.HasValue;
 
-    public string ToDisplayString(CultureInfo? culture = null)
+    public string ToDisplayString(CultureInfo? culture = null, bool useDiegeticTime = false, bool includeTime = true)
     {
         culture ??= CultureInfo.InvariantCulture;
-        string timePortion = TimeOfDay.ToString("HH:mm", culture);
+        string timePortion = useDiegeticTime
+            ? TimeOfDayNames.FormatTimeOfDay(TimeOfDay, includeTime: includeTime)
+            : TimeOfDay.ToString("HH:mm", culture);
 
         string datePortion = IsFestival
             ? string.Format(culture, "{0}, {1} DR", Festival!.Value.GetDisplayName(), Year)

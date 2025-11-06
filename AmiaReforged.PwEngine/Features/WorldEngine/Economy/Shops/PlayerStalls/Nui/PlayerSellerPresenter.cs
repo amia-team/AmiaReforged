@@ -788,7 +788,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private string FormatLedgerTimestamp(PlayerStallLedgerEntryView entry)
     {
         HarptosDateTime harptos = ConvertToHarptos(entry.OccurredUtc);
-        return harptos.ToDisplayString();
+        return harptos.ToDisplayString(useDiegeticTime: true, includeTime: false);
     }
 
     private HarptosDateTime ConvertToHarptos(DateTime occurredUtc)
