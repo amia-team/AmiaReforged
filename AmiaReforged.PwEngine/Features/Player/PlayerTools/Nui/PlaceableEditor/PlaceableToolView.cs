@@ -271,7 +271,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                     Width = 100f,
                     Enabled = SelectionAvailable
                 },
-                new NuiSliderFloat(Scale, 0f, 10f)
+                new NuiSliderFloat(Scale, 0.001f, 3.0f)
                 {
                     Width = ContentWidth - 160f,
                     Enabled = SelectionAvailable,
