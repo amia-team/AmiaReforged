@@ -59,6 +59,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>
     public NuiButtonImage AppearanceModelRight10Button = null!;
     public NuiButtonImage AppearanceModelSetButton = null!;
     public NuiTextEdit AppearanceModelInputField = null!;
+    public NuiButtonImage SwapGenderButton = null!;
 
     public NuiButtonImage ScaleMinButton = null!;
     public NuiButtonImage ScaleDecrease10Button = null!;
@@ -500,6 +501,16 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>
                         new NuiButton("5") { Id = "btn_appearance_halforc", Width = 30f, Height = 30f, Tooltip = "Half-Orc" },
                         new NuiSpacer { Width = 5f },
                         new NuiButton("6") { Id = "btn_appearance_human", Width = 30f, Height = 30f, Tooltip = "Human" }
+                    }
+                },
+                new NuiSpacer { Height = 5f },
+                // Swap Gender button
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 270f },
+                        new NuiButton("Swap Gender") { Id = "btn_swap_gender", Width = 150f, Height = 30f, Tooltip = "Swap Gender" }
                     }
                 }
             }

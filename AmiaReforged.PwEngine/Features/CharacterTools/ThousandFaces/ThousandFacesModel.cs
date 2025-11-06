@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.Services;
 using Newtonsoft.Json;
 using NWN.Core;
@@ -246,6 +246,23 @@ public sealed class ThousandFacesModel(NwPlayer player, PlayerNameOverrideServic
         int.TryParse(racialTypeStr, out int racialType);
 
         player.SendServerMessage($"Appearance changed to {newAppearance} (RACIALTYPE: {racialType}).", ColorConstants.Green);
+    }
+
+    public void SwapGender()
+    {
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
+
+        // Get current gender
+        Gender currentGender = creature.Gender;
+
+        // Swap between Male (1) and Female (2)
+        Gender newGender = currentGender == Gender.Male ? Gender.Female : Gender.Male;
+
+        // Set the new gender
+        creature.Gender = newGender;
+
+        player.SendServerMessage($"Gender swapped to {newGender}.", ColorConstants.Green);
     }
 
     private int FindNextValidAppearance(int currentAppearance, int delta)

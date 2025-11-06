@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -196,6 +196,12 @@ public sealed class ThousandFacesPresenter(ThousandFacesView view, NwPlayer play
                 break;
             case "btn_appearance_human":
                 _model.SetAppearance(6);
+                UpdateAppearanceDisplay();
+                break;
+
+            // Swap Gender control
+            case "btn_swap_gender":
+                _model.SwapGender();
                 UpdateAppearanceDisplay();
                 break;
 
