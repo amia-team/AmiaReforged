@@ -56,8 +56,12 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
     public NuiButtonImage AppearanceModelSetButton = null!;
     public NuiTextEdit AppearanceModelInputField = null!;
 
+    public NuiButtonImage ScaleMinButton = null!;
+    public NuiButtonImage ScaleDecrease10Button = null!;
     public NuiButtonImage ScaleDecreaseButton = null!;
     public NuiButtonImage ScaleIncreaseButton = null!;
+    public NuiButtonImage ScaleIncrease10Button = null!;
+    public NuiButtonImage ScaleMaxButton = null!;
 
     public NuiTextEdit SoundsetInputField = null!;
     public NuiButtonImage SoundsetConfirmButton = null!;
@@ -153,7 +157,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 200f },
+                        new NuiSpacer { Width = 220f },
                         new NuiLabel("1000 Faces: Choose a Modification")
                         {
                             Height = 25f,
@@ -188,7 +192,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 235f },
+                        new NuiSpacer { Width = 290f },
                         new NuiLabel("Change Colors")
                         {
                             Height = 20f,
@@ -220,7 +224,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 290f },
+                        new NuiSpacer { Width = 325f },
                         new NuiLabel("Head")
                         {
                             Height = 20f,
@@ -233,7 +237,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 120f },
+                        new NuiSpacer { Width = 130f },
                         new NuiLabel("Head Model:")
                         {
                             Width = 120f,
@@ -275,7 +279,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 285f },
+                        new NuiSpacer { Width = 315f },
                         new NuiLabel("Soundset")
                         {
                             Height = 20f,
@@ -341,7 +345,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 290f },
+                        new NuiSpacer { Width = 320f },
                         new NuiLabel("Portrait")
                         {
                             Height = 20f,
@@ -429,7 +433,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 280f },
+                        new NuiSpacer { Width = 305f },
                         new NuiLabel("Appearance")
                         {
                             Height = 20f,
@@ -442,14 +446,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 100f },
-                        new NuiLabel("Appearance:")
-                        {
-                            Width = 120f,
-                            Height = 30f,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
+                        new NuiSpacer { Width = 247.5f },
                         ImageButton("btn_appearance_left10", "-10", out AppearanceModelLeft10Button, 30f, 30f, "ui_btn_sm_min10"),
                         ImageButton("btn_appearance_left", "-1", out AppearanceModelLeftButton, 30f, 30f, "ui_btn_sm_min1"),
                         new NuiLabel(AppearanceModelText)
@@ -462,12 +459,41 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                         },
                         ImageButton("btn_appearance_right", "+1", out AppearanceModelRightButton, 30f, 30f, "ui_btn_sm_plus1"),
                         ImageButton("btn_appearance_right10", "+10", out AppearanceModelRight10Button, 30f, 30f, "ui_btn_sm_plus10"),
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 312.5f },
                         new NuiTextEdit("", AppearanceModelText, 10, false)
                         {
                             Width = 60f,
                             Height = 30f
                         }.Assign(out AppearanceModelInputField),
                         ImageButton("btn_appearance_set", "Set appearance to specific number", out AppearanceModelSetButton, 30f, 30f, "ui_btn_sm_check")
+                    }
+                },
+                new NuiSpacer { Height = 5f },
+                // Base race quick revert buttons
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 210f },
+                        new NuiButton("0") { Id = "btn_appearance_dwarf", Width = 30f, Height = 30f, Tooltip = "Dwarf" },
+                        new NuiSpacer { Width = 5f },
+                        new NuiButton("1") { Id = "btn_appearance_elf", Width = 30f, Height = 30f, Tooltip = "Elf" },
+                        new NuiSpacer { Width = 5f },
+                        new NuiButton("2") { Id = "btn_appearance_gnome", Width = 30f, Height = 30f, Tooltip = "Gnome" },
+                        new NuiSpacer { Width = 5f },
+                        new NuiButton("3") { Id = "btn_appearance_halfling", Width = 30f, Height = 30f, Tooltip = "Halfling" },
+                        new NuiSpacer { Width = 5f },
+                        new NuiButton("4") { Id = "btn_appearance_halfelf", Width = 30f, Height = 30f, Tooltip = "Half-Elf" },
+                        new NuiSpacer { Width = 5f },
+                        new NuiButton("5") { Id = "btn_appearance_halforc", Width = 30f, Height = 30f, Tooltip = "Half-Orc" },
+                        new NuiSpacer { Width = 5f },
+                        new NuiButton("6") { Id = "btn_appearance_human", Width = 30f, Height = 30f, Tooltip = "Human" }
                     }
                 }
             }
@@ -484,7 +510,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 270f },
+                        new NuiSpacer { Width = 300f },
                         new NuiLabel("Visual Scale")
                         {
                             Height = 20f,
@@ -497,7 +523,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 180f },
+                        new NuiSpacer { Width = 130f },
                         new NuiLabel("Scale:")
                         {
                             Width = 80f,
@@ -505,16 +531,20 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
+                        ImageButton("btn_scale_min", "Set to minimum scale", out ScaleMinButton, 30f, 30f, "cc_arrow_l_btn"),
+                        ImageButton("btn_scale_decrease10", "-10%", out ScaleDecrease10Button, 30f, 30f, "ui_btn_sm_min10"),
                         ImageButton("btn_scale_decrease", "-2%", out ScaleDecreaseButton, 30f, 30f, "ui_btn_sm_min"),
                         new NuiLabel(ScaleText)
                         {
-                            Width = 80f,
+                            Width = 50f,
                             Height = 30f,
                             HorizontalAlign = NuiHAlign.Center,
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         },
-                        ImageButton("btn_scale_increase", "+2%", out ScaleIncreaseButton, 30f, 30f, "ui_btn_sm_plus")
+                        ImageButton("btn_scale_increase", "+2%", out ScaleIncreaseButton, 30f, 30f, "ui_btn_sm_plus"),
+                        ImageButton("btn_scale_increase10", "+10%", out ScaleIncrease10Button, 30f, 30f, "ui_btn_sm_plus10"),
+                        ImageButton("btn_scale_max", "Set to maximum scale", out ScaleMaxButton, 30f, 30f, "cc_arrow_r_btn")
                     }
                 }
             }
@@ -523,7 +553,7 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
 
     private NuiElement BuildColorChannelButtons()
     {
-        const float leftPad = 250f;
+        const float leftPad = 252.5f;
 
         return new NuiColumn
         {
@@ -534,9 +564,9 @@ public sealed class ThousandFacesView : ScryView<ThousandFacesPresenter>, IToolW
                     Children =
                     {
                         new NuiSpacer { Width = leftPad },
-                        ImageButton("btn_skin", "Skin", out SkinButton, 35f, 35f, "ui_btn_skin"),
-                        new NuiSpacer { Width = 5f },
                         ImageButton("btn_hair", "Hair", out HairButton, 35f, 35f, "ui_btn_hair"),
+                        new NuiSpacer { Width = 5f },
+                        ImageButton("btn_skin", "Skin", out SkinButton, 35f, 35f, "ui_btn_skin"),
                         new NuiSpacer { Width = 5f },
                         ImageButton("btn_tattoo1", "Tattoo 1", out Tattoo1Button, 35f, 35f, "ui_btn_tat1"),
                         new NuiSpacer { Width = 5f },

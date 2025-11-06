@@ -15,11 +15,11 @@ public sealed class ThousandFacesModel(NwPlayer player)
     private readonly int _headModelMax = 255;
 
     public int AppearanceType { get; private set; }
-    private readonly int _appearanceTypeMax = 2000;
+    private readonly int _appearanceTypeMax = 2118;
 
     public float Scale { get; private set; } = 1.0f;
-    private const float MinScale = 0.9f;  // 90%
-    private const float MaxScale = 1.1f;  // 110%
+    private const float MinScale = 0.4f;
+    private const float MaxScale = 1.2f;
 
     public int CurrentSoundset { get; private set; }
     public string CurrentSoundsetResRef { get; private set; } = "";

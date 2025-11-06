@@ -166,13 +166,59 @@ public sealed class ThousandFacesPresenter(ThousandFacesView view, NwPlayer play
                 }
                 break;
 
+            // Base race appearance buttons
+            case "btn_appearance_dwarf":
+                _model.SetAppearance(0);
+                UpdateAppearanceDisplay();
+                break;
+            case "btn_appearance_elf":
+                _model.SetAppearance(1);
+                UpdateAppearanceDisplay();
+                break;
+            case "btn_appearance_gnome":
+                _model.SetAppearance(2);
+                UpdateAppearanceDisplay();
+                break;
+            case "btn_appearance_halfling":
+                _model.SetAppearance(3);
+                UpdateAppearanceDisplay();
+                break;
+            case "btn_appearance_halfelf":
+                _model.SetAppearance(4);
+                UpdateAppearanceDisplay();
+                break;
+            case "btn_appearance_halforc":
+                _model.SetAppearance(5);
+                UpdateAppearanceDisplay();
+                break;
+            case "btn_appearance_human":
+                _model.SetAppearance(6);
+                UpdateAppearanceDisplay();
+                break;
+
             // Scale controls
+            case "btn_scale_min":
+                _model.SetScale(0.4f); // MinScale
+                UpdateScaleDisplay();
+                break;
+            case "btn_scale_decrease10":
+                _model.ModifyScale(-0.10f);
+                UpdateScaleDisplay();
+                break;
             case "btn_scale_decrease":
                 _model.ModifyScale(-0.02f);
                 UpdateScaleDisplay();
                 break;
             case "btn_scale_increase":
                 _model.ModifyScale(0.02f);
+                UpdateScaleDisplay();
+                break;
+            case "btn_scale_increase10":
+                _model.ModifyScale(0.10f);
+                UpdateScaleDisplay();
+                break;
+            case "btn_scale_max":
+                _model.SetScale(1.2f); // MaxScale
                 UpdateScaleDisplay();
                 break;
 
