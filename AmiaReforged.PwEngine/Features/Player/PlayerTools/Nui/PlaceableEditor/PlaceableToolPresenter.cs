@@ -11,12 +11,14 @@ using AmiaReforged.PwEngine.Features.WorldEngine.AreaPersistence;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using NLog;
 using Action = System.Action;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.PlaceableEditor;
 
 public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private const string PersistPlcLocalInt = "persist_plc";
 
     private readonly NwPlayer _player;
@@ -59,6 +61,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Geometry = new NuiRect(320f, 80f, 520f, 760f),
             Resizable = false
         };
+
+        Trace("InitBefore executed; window stub prepared.");
     }
 
     public override void Create()
@@ -76,13 +80,18 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
         _player.TryCreateNuiWindow(_window, out _token);
 
-    InitializeBinds();
-    RefreshBlueprints();
-    UpdateSelection(null);
+        Trace("Create invoked; TryCreateNuiWindow completed.");
+
+        InitializeBinds();
+        RefreshBlueprints();
+        UpdateSelection(null);
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
     {
+        Trace(
+            $"ProcessEvent type={eventData.EventType} element={eventData.ElementId ?? "<null>"} index={eventData.ArrayIndex} watchers={_watchersEnabled} selectionValid={_lastSelection?.IsValid ?? false}");
+
         switch (eventData.EventType)
         {
             case NuiEventType.Click:
@@ -98,15 +107,17 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     {
         _blueprints.Clear();
         _pendingSpawn = null;
-    _lastSelection = null;
-    _savedSnapshot = null;
-    _pendingSnapshot = null;
-    _token.Close();
+        _lastSelection = null;
+        _savedSnapshot = null;
+        _pendingSnapshot = null;
+        _token.Close();
     }
 
     private void InitializeBinds()
     {
         ToggleBindWatch(false);
+
+        Trace("InitializeBinds called; reset message and blueprint binds.");
 
         Token().SetBindValue(View.StatusMessage,
             "Select a blueprint to spawn or pick an existing placeable. Use the sliders to preview changes, then Save or Discard.");
@@ -119,19 +130,23 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
         ResetEditFields();
 
-        ToggleBindWatch(true);
+        // Leave watchers disabled until a selection is active to avoid idle watch spam.
     }
 
     private void HandleClick(ModuleEvents.OnNuiEvent eventData)
     {
+        Trace($"HandleClick received element={eventData.ElementId ?? "<null>"} arrayIndex={eventData.ArrayIndex}");
+
         if (eventData.ElementId == View.RefreshButton.Id)
         {
+            Trace("HandleClick dispatching RefreshBlueprints().");
             RefreshBlueprints();
             return;
         }
 
         if (eventData.ElementId == View.SelectExistingButton.Id)
         {
+            Trace("HandleClick dispatching BeginSelectExisting().");
             BeginSelectExisting();
             return;
         }
@@ -139,24 +154,28 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         if (eventData.ElementId == View.SpawnButton.Id && eventData.ArrayIndex >= 0 &&
             eventData.ArrayIndex < _blueprints.Count)
         {
+            Trace($"HandleClick dispatching BeginSpawn() for index={eventData.ArrayIndex} resref={_blueprints[eventData.ArrayIndex].ResRef}.");
             BeginSpawn(_blueprints[eventData.ArrayIndex]);
             return;
         }
 
         if (eventData.ElementId == View.SaveButton.Id)
         {
+            Trace("HandleClick dispatching SaveSelectedPlaceable().");
             SaveSelectedPlaceable();
             return;
         }
 
         if (eventData.ElementId == View.DiscardButton.Id)
         {
+            Trace("HandleClick dispatching DiscardChanges().");
             DiscardChanges();
             return;
         }
 
         if (eventData.ElementId == View.RecoverButton.Id)
         {
+            Trace("HandleClick dispatching RecoverSelectedPlaceable().");
             RecoverSelectedPlaceable();
         }
     }
@@ -177,6 +196,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private void BeginSpawn(PlaceableBlueprint blueprint)
     {
+        Trace($"BeginSpawn starting for blueprint name={blueprint.DisplayName} resref={blueprint.ResRef}.");
         _pendingSpawn = blueprint;
         Token().SetBindValue(View.StatusMessage, $"Target a location to spawn '{blueprint.DisplayName}'.");
 
@@ -190,13 +210,18 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private void HandleSpawnTarget(ModuleEvents.OnPlayerTarget targetData)
     {
+        Trace("HandleSpawnTarget invoked.");
+
         if (_pendingSpawn is null)
         {
+            Trace("HandleSpawnTarget exiting; pending spawn is null.");
             return;
         }
 
         PlaceableBlueprint blueprint = _pendingSpawn;
         _pendingSpawn = null;
+
+        Trace($"HandleSpawnTarget using pending blueprint name={blueprint.DisplayName} resref={blueprint.ResRef}.");
 
         NwArea? area = targetData.TargetObject switch
         {
@@ -206,6 +231,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
         if (area == null)
         {
+            Trace("HandleSpawnTarget failed; resolved area null.");
             Token().SetBindValue(View.StatusMessage, "Unable to determine a valid area for spawn.");
             return;
         }
@@ -216,9 +242,12 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             _ => Location.Create(area, targetData.TargetPosition, _player.ControlledCreature?.Location?.Rotation ?? 0f)
         };
 
+        Trace($"HandleSpawnTarget resolved location area={area.Name} position={location?.Position ?? Vector3.Zero}.");
+
         NwPlaceable? placeable = NwPlaceable.Create(blueprint.ResRef, location);
         if (placeable == null)
         {
+            Trace("HandleSpawnTarget failed; NwPlaceable.Create returned null.");
             Token().SetBindValue(View.StatusMessage, $"Failed to create placeable '{blueprint.DisplayName}'.");
             return;
         }
@@ -246,6 +275,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private void BeginSelectExisting()
     {
+        Trace("BeginSelectExisting invoked.");
         Token().SetBindValue(View.StatusMessage, "Target a placeable (or the ground near it) to select.");
 
         _player.EnterTargetMode(HandleSelectTarget,
@@ -258,26 +288,35 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private void HandleSelectTarget(ModuleEvents.OnPlayerTarget targetData)
     {
+        Trace($"HandleSelectTarget triggered; targetObject={targetData.TargetObject?.Name ?? "<null>"} position={targetData.TargetPosition}.");
+
         NwPlaceable? placeable = targetData.TargetObject as NwPlaceable;
         if (placeable == null)
         {
+            Trace("HandleSelectTarget did not find placeable directly; attempting nearest lookup.");
             NwArea? area = _player.ControlledCreature?.Area;
             if (area == null)
             {
+                Trace("HandleSelectTarget aborting; player area null.");
                 Token().SetBindValue(View.StatusMessage, "No placeable found.");
                 return;
             }
 
             Location location = Location.Create(area, targetData.TargetPosition, 0f);
             placeable = location.GetNearestObjectsByType<NwPlaceable>().FirstOrDefault();
+            Trace(placeable == null
+                ? "HandleSelectTarget nearest lookup failed to find placeable."
+                : $"HandleSelectTarget nearest lookup found {placeable.Name}.");
         }
 
         if (placeable == null)
         {
+            Trace("HandleSelectTarget giving up; no placeable found.");
             Token().SetBindValue(View.StatusMessage, "No placeable found at that location.");
             return;
         }
 
+        Trace($"HandleSelectTarget succeeded; updating selection to {placeable.Name}.");
         UpdateSelection(placeable);
         Token().SetBindValue(View.StatusMessage, $"Selected '{placeable.Name}'.");
     }
@@ -286,8 +325,14 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     {
         _lastSelection = placeable;
 
+        Trace(placeable == null
+            ? "UpdateSelection(null) invoked; disabling watchers and clearing binds."
+            : $"UpdateSelection({placeable.Name}) invoked; placeable valid={placeable.IsValid}");
+
         if (placeable == null)
         {
+            ToggleBindWatch(false);
+
             Token().SetBindValue(View.SelectionAvailable, false);
             Token().SetBindValue(View.SelectedName, "No placeable selected");
             Token().SetBindValue(View.SelectedLocation, string.Empty);
@@ -295,11 +340,15 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             return;
         }
 
+        ToggleBindWatch(false);
+
         Token().SetBindValue(View.SelectionAvailable, true);
         Token().SetBindValue(View.SelectedName, placeable.Name);
         Token().SetBindValue(View.SelectedLocation,
             $"{placeable.Position.X:F2}, {placeable.Position.Y:F2}, {placeable.Position.Z:F2}");
         _pendingOrientation = placeable.Location.Rotation;
+
+        ToggleBindWatch(true);
 
         LoadSelectionState(placeable);
     }
@@ -329,6 +378,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                     Token().SetBindValue(View.StatusMessage,
                         $"Failed to recover '{placeable.Name}': {ex.Message}");
                 }
+
                 return;
             }
 
@@ -353,25 +403,43 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     {
         if (_lastSelection is null || !_lastSelection.IsValid)
         {
+            Trace($"HandleWatch ignored; selection invalid. element={eventData.ElementId ?? "<null>"}");
             return;
         }
 
         string? elementId = eventData.ElementId;
         if (string.IsNullOrWhiteSpace(elementId) || IsBlacklisted(elementId))
         {
+            Trace($"HandleWatch ignored; elementId empty={string.IsNullOrWhiteSpace(elementId)} blacklisted={IsBlacklisted(elementId)}");
             return;
         }
 
-        SyncNumericToString(elementId);
+        bool shouldApply = false;
 
-        if (TryHandleNumericTextPair(elementId))
-        {
-            ApplyPendingData();
-            return;
-        }
+        Trace(
+            $"HandleWatch processing element={elementId} selection={_lastSelection.Name} watchersEnabled={_watchersEnabled}");
 
-        if (IsNumericSliderBind(elementId))
+        WithWatchDisabled(() =>
         {
+            SyncNumericToString(elementId);
+
+            if (TryHandleNumericTextPair(elementId))
+            {
+                Trace($"HandleWatch updated numeric/text pair for {elementId}.");
+                shouldApply = true;
+                return;
+            }
+
+            if (IsNumericSliderBind(elementId))
+            {
+                Trace($"HandleWatch detected slider update for {elementId}.");
+                shouldApply = true;
+            }
+        });
+
+        if (shouldApply)
+        {
+            Trace($"HandleWatch scheduling ApplyPendingData for {elementId}.");
             ApplyPendingData();
         }
     }
@@ -409,6 +477,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                     Token().SetBindValue(View.StatusMessage,
                         $"Failed to save '{placeable.Name}': {ex.Message}");
                 }
+
                 return;
             }
 
@@ -456,6 +525,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                     Token().SetBindValue(View.StatusMessage,
                         $"Failed to load persisted state: {ex.Message}");
                 }
+
                 return;
             }
 
@@ -515,10 +585,12 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private void LoadSelectionState(NwPlaceable placeable)
     {
+        Trace($"LoadSelectionState started for {placeable.Name} (valid={placeable.IsValid}).");
         Token().SetBindValue(View.StatusMessage, $"Selected '{placeable.Name}'. Loading persisted state...");
 
         _ = NwTask.Run(async () =>
         {
+            Trace($"LoadSelectionState async query starting for {placeable.Name}.");
             PersistentObject? persisted = null;
             try
             {
@@ -526,19 +598,23 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             }
             catch (Exception ex)
             {
+                Trace($"LoadSelectionState persistence query threw: {ex.Message}");
                 await NwTask.SwitchToMainThread();
                 if (Token().Player.IsValid)
                 {
                     Token().SetBindValue(View.StatusMessage,
                         $"Failed to query persistence: {ex.Message}");
                 }
+
                 return;
             }
 
+            Trace($"LoadSelectionState continuing on main thread for {placeable.Name}.");
             await NwTask.SwitchToMainThread();
 
             if (!Token().Player.IsValid || _lastSelection != placeable || !_lastSelection.IsValid)
             {
+                Trace("LoadSelectionState aborting; player/token invalid or selection changed.");
                 return;
             }
 
@@ -551,19 +627,26 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
             if (persisted != null)
             {
+                Trace($"LoadSelectionState found persisted snapshot for {placeable.Name}; building data.");
                 PlaceableData? persistedData = await BuildDataFromPersistentObject(persisted);
+                Trace(persistedData is null
+                    ? "LoadSelectionState persisted data build returned null."
+                    : "LoadSelectionState persisted data build succeeded.");
                 await NwTask.SwitchToMainThread();
 
                 if (!Token().Player.IsValid || _lastSelection != placeable || !_lastSelection.IsValid)
                 {
+                    Trace("LoadSelectionState aborting after persisted build; selection changed or invalid.");
                     return;
                 }
 
                 if (persistedData is not null)
                 {
+                    Trace("LoadSelectionState applying persisted snapshot to selection.");
                     savedData = persistedData;
                     if (persisted.Location is not null && placeable.Area is not null)
                     {
+                        Trace("LoadSelectionState teleporting placeable to persisted location.");
                         orientation = persisted.Location.Orientation;
                         Vector3 savedPosition = new(persisted.Location.X, persisted.Location.Y, persisted.Location.Z);
                         placeable.Location = Location.Create(placeable.Area, savedPosition, orientation);
@@ -576,6 +659,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 }
                 else
                 {
+                    Trace("LoadSelectionState falling back to current state due to missing persisted snapshot.");
                     Token().SetBindValue(View.StatusMessage,
                         $"Selected '{placeable.Name}'. Unable to read persisted snapshot, using current state.");
                 }
@@ -586,6 +670,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             _hasUnsavedChanges = false;
 
             PushDataToView(_pendingSnapshot ?? savedData);
+            Trace("LoadSelectionState pushed data to view.");
             Token().SetBindValue(View.StatusMessage,
                 $"Selected '{placeable.Name}'. Adjust sliders then Save to persist.");
         });
@@ -673,16 +758,20 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     {
         if (_lastSelection is null || !_lastSelection.IsValid)
         {
+            Trace("ApplyPendingData aborted; selection invalid.");
             return;
         }
 
         DateTime now = DateTime.UtcNow;
         if (now - _lastApplyAt < LiveApplyThrottle)
         {
+            Trace($"ApplyPendingData throttled; delta={(now - _lastApplyAt).TotalMilliseconds:F2}ms.");
             return;
         }
 
         _lastApplyAt = now;
+
+        Trace("ApplyPendingData executing transform update.");
 
         Vector3 position = new(
             Token().GetBindValue(View.PositionX),
@@ -777,6 +866,16 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     private void ToggleBindWatch(bool enable)
     {
+        bool previouslyEnabled = _watchersEnabled;
+        if (previouslyEnabled == enable)
+        {
+            Trace($"ToggleBindWatch called; state unchanged (enable={enable}).");
+        }
+        else
+        {
+            Trace($"ToggleBindWatch switching {previouslyEnabled} -> {enable}.");
+        }
+
         _watchersEnabled = enable;
 
         Token().SetBindWatch(View.PositionX, enable);
@@ -809,6 +908,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         bool wasEnabled = _watchersEnabled;
         if (wasEnabled)
         {
+            Trace("WithWatchDisabled temporarily disabling watchers.");
             ToggleBindWatch(false);
         }
 
@@ -820,6 +920,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         {
             if (wasEnabled)
             {
+                Trace("WithWatchDisabled restoring watchers.");
                 ToggleBindWatch(true);
             }
         }
@@ -1011,5 +1112,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                     $"Spawned '{placeable.Name}', but failed to save: {ex.Message}");
             }
         });
+    }
+
+    private void Trace(string message)
+    {
+        string playerName = _player?.PlayerName ?? "<unknown>";
+        Log.Info($"[PlaceableToolPresenter][Player={playerName}] {message}");
     }
 }
