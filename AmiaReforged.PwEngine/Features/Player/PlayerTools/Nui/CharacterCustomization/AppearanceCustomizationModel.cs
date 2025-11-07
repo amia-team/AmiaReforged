@@ -58,7 +58,7 @@ public sealed class AppearanceCustomizationModel(NwPlayer player)
         ["pfo"] = [],
         ["pmo"] = [],
         ["pfh"] = [144],
-        ["pmh"] = [129, 130, 131, 132, 143, 145, 146, 149, 150, 162]
+        ["pmh"] = [124, 129, 130, 131, 132, 143, 145, 146, 149, 150, 162]
     };
 
     // Additional blocked heads for Phenotype 0 only (these are in addition to the primary blocks above)
