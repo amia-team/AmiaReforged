@@ -98,6 +98,27 @@ public sealed class PersistentRentablePropertyRepository(IDbContextFactory<PwEng
         }
     }
 
+    public async Task<List<RentablePropertySnapshot>> GetAllPropertiesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await using PwEngineContext ctx = factory.CreateDbContext();
+
+            List<RentablePropertyRecord> entities = await ctx.RentableProperties
+                .Include(p => p.Residents)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return entities.Select(ToSnapshot).ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load all rentable properties");
+            throw;
+        }
+    }
+
     private static RentablePropertySnapshot ToSnapshot(RentablePropertyRecord entity)
     {
         RentablePropertyDefinition definition = new(

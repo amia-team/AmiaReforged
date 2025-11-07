@@ -10,4 +10,6 @@ public interface IRentablePropertyRepository
     Task<RentablePropertySnapshot?> GetSnapshotByInternalNameAsync(string internalName, CancellationToken cancellationToken = default);
 
     Task PersistRentalAsync(RentablePropertySnapshot snapshot, CancellationToken cancellationToken = default);
+
+    Task<List<RentablePropertySnapshot>> GetAllPropertiesAsync(CancellationToken cancellationToken = default);
 }
