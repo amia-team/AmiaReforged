@@ -9,6 +9,7 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private string? _originalBio;
 
     public CharacterBiographyPresenter(CharacterBiographyView toolView, NwPlayer player)
     {
@@ -24,7 +25,7 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(500f, 100f, 470, 560f),
+            Geometry = new NuiRect(500f, 100f, 670, 590f),
             Resizable = false
         };
     }
@@ -47,6 +48,7 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
         _player.TryCreateNuiWindow(_window, out _token);
 
         string? characterBio = Token().Player.LoginCreature?.Description;
+        _originalBio = characterBio;
         Token().SetBindValue(View.CharacterBiography!, characterBio);
     }
 
@@ -69,7 +71,10 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
     {
         if (eventData.ElementId == View.SaveButton.Id)
             SaveCharacterBiography();
-        else if (eventData.ElementId == View.DiscardButton.Id) DiscardCharacterBiography();
+        else if (eventData.ElementId == View.DiscardButton.Id)
+            DiscardChanges();
+        else if (eventData.ElementId == View.CancelButton.Id)
+            CancelAndClose();
     }
 
     private void SaveCharacterBiography()
@@ -77,15 +82,31 @@ public class CharacterBiographyPresenter : ScryPresenter<CharacterBiographyView>
         string? characterBio = Token().GetBindValue(View.CharacterBiography);
 
         NwCreature? character = Token().Player.LoginCreature;
-        if (character != null && characterBio != null) character.Description = characterBio;
+        if (character != null && characterBio != null)
+        {
+            character.Description = characterBio;
+            _originalBio = characterBio; // Update original bio after saving
+        }
 
-        RaiseCloseEvent();
         Token().Player.ExportCharacter();
-        Token().Close();
+        Token().Player.SendServerMessage("Biography saved successfully.", ColorConstants.Green);
     }
 
-    private void DiscardCharacterBiography()
+    private void DiscardChanges()
     {
+        // Revert to original bio without closing the window
+        Token().SetBindValue(View.CharacterBiography!, _originalBio);
+        Token().Player.SendServerMessage("Changes discarded.", ColorConstants.Orange);
+    }
+
+    private void CancelAndClose()
+    {
+        // Revert to original bio and close the window
+        NwCreature? character = Token().Player.LoginCreature;
+        if (character != null && _originalBio != null)
+        {
+            character.Description = _originalBio;
+        }
         Close();
     }
 }
