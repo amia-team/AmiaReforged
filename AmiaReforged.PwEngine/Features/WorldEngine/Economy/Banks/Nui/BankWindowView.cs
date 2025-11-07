@@ -75,7 +75,6 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
 
     public NuiButton DepositButton = null!;
     public NuiButton WithdrawButton = null!;
-    public NuiButton ConfirmDepositButton = null!;
     public NuiButton ViewHistoryButton = null!;
     public NuiButton CloseAccountButton = null!;
     public NuiButton DoneButton = null!;
@@ -257,33 +256,13 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                     ]
                 },
                 // Accounts and transactions
-                new NuiRow
+                new NuiLabel("Your Accounts")
                 {
-                    // Height = StandardRowHeight + 2f,
-                    Children =
-                    [
-                        new NuiLabel("Your Accounts")
-                        {
-                            Width = 220f,
-                            HorizontalAlign = NuiHAlign.Left,
-                            VerticalAlign = NuiVAlign.Middle
-                        },
-                        new NuiSpacer(),
-                        new NuiButton("Deposit")
-                        {
-                            Id = "bank_btn_deposit",
-                            Width = StandardButtonWidth,
-                            Height = StandardButtonHeight
-                        }.Assign(out DepositButton),
-                        new NuiButton("Withdraw")
-                        {
-                            Id = "bank_btn_withdraw",
-                            Width = StandardButtonWidth,
-                            Height = StandardButtonHeight
-                        }.Assign(out WithdrawButton)
-                    ]
+                    Height = 26f,
+                    HorizontalAlign = NuiHAlign.Left,
+                    VerticalAlign = NuiVAlign.Middle
                 },
-                BuildMainContent(accountRowTemplate, holdingRowTemplate, inventoryRowTemplate, pendingRowTemplate)
+                BuildMainContent(accountRowTemplate, holdingRowTemplate, pendingRowTemplate)
             ]
         };
     }
@@ -313,26 +292,24 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     private NuiElement BuildMainContent(
         IReadOnlyList<NuiListTemplateCell> accountRowTemplate,
         IReadOnlyList<NuiListTemplateCell> holdingRowTemplate,
-        IReadOnlyList<NuiListTemplateCell> inventoryRowTemplate,
         IReadOnlyList<NuiListTemplateCell> pendingRowTemplate)
     {
         NuiColumn leftColumn = new()
         {
-            Width = 280f,
             Children =
             [
                 new NuiList(accountRowTemplate, AccountEntryCount)
                 {
                     RowHeight = 32f,
                     Height = 110f,
-                    Width = 260f
+                    Width = ContentWidth
                 },
                 new NuiSpacer { Height = 6f },
                 new NuiList(holdingRowTemplate, HoldingCount)
                 {
                     RowHeight = 30f,
                     Height = 100f,
-                    Width = 260f
+                    Width = ContentWidth
                 },
                 new NuiSpacer { Height = 4f },
                 new NuiLabel(BalanceText)
@@ -350,7 +327,7 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                 new NuiSpacer { Height = 8f },
                 new NuiRow
                 {
-                    Height = 36f,
+                    // Height = 36f,
                     Children =
                     [
                         new NuiLabel("Deposit")
@@ -379,10 +356,18 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                         },
                         new NuiTextEdit("", DepositAmountText, 9, false)
                         {
-                            Width = 170f
-                        }
+                            Width = 140f
+                        },
+                        new NuiSpacer { Width = 10f },
+                        new NuiButton("Deposit")
+                        {
+                            Id = "bank_btn_deposit",
+                            Width = StandardButtonWidth,
+                            Height = StandardButtonHeight
+                        }.Assign(out DepositButton)
                     ]
                 },
+                new NuiSpacer { Height = 6f },
                 new NuiRow
                 {
                     Height = 36f,
@@ -414,8 +399,15 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                         },
                         new NuiTextEdit("", WithdrawAmountText, 9, false)
                         {
-                            Width = 170f
-                        }
+                            Width = 140f
+                        },
+                        new NuiSpacer { Width = 10f },
+                        new NuiButton("Withdraw")
+                        {
+                            Id = "bank_btn_withdraw",
+                            Width = StandardButtonWidth,
+                            Height = StandardButtonHeight
+                        }.Assign(out WithdrawButton)
                     ]
                 },
                 new NuiSpacer { Height = 8f },
@@ -464,44 +456,12 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                 {
                     RowHeight = 28f,
                     Height = 90f,
-                    Width = 260f
+                    Width = ContentWidth
                 }
             ]
         };
 
-        NuiColumn rightColumn = new()
-        {
-            Width = 330f,
-            Children =
-            [
-                new NuiLabel("Items to Deposit:")
-                {
-                    Height = 22f
-                },
-                new NuiList(inventoryRowTemplate, InventoryItemCount)
-                {
-                    RowHeight = 30f,
-                    Height = 220f,
-                    Width = 310f
-                },
-                new NuiSpacer { Height = 8f },
-                new NuiButton("Confirm Deposit")
-                {
-                    Id = "bank_btn_confirm_deposit",
-                    Height = 34f
-                }.Assign(out ConfirmDepositButton)
-            ]
-        };
-
-        return new NuiRow
-        {
-            Children =
-            [
-                leftColumn,
-                new NuiSpacer { Width = 18f },
-                rightColumn
-            ]
-        };
+        return leftColumn;
     }
 
     private NuiElement BuildSecondaryActions()
@@ -644,12 +604,12 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                     [
                         new NuiColumn
                         {
-                            Width = 330f,
                             Children =
                             [
                                 new NuiLabel("Your Inventory (click item to store)")
                                 {
                                     Height = 22f,
+                                    Width = 330f,
                                     HorizontalAlign = NuiHAlign.Left,
                                     VerticalAlign = NuiVAlign.Middle
                                 },
@@ -664,12 +624,12 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                         new NuiSpacer { Width = 12f },
                         new NuiColumn
                         {
-                            Width = 330f,
                             Children =
                             [
                                 new NuiLabel("Stored Items (click to withdraw)")
                                 {
                                     Height = 22f,
+                                    Width = 330f,
                                     HorizontalAlign = NuiHAlign.Left,
                                     VerticalAlign = NuiVAlign.Middle
                                 },
@@ -1014,10 +974,6 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
                 break;
             case "bank_btn_withdraw":
                 _ = HandleWithdrawAsync();
-                break;
-            case "bank_btn_confirm_deposit":
-                Token().Player.SendServerMessage("Confirming deposits will be implemented in the next iteration.",
-                    ColorConstants.White);
                 break;
             case "bank_btn_view_history":
                 Token().Player.SendServerMessage("Ledger history will be available in a future update.",
