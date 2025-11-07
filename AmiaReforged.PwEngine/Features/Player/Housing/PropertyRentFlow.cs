@@ -569,7 +569,8 @@ public sealed class PropertyRentFlow
         return CreateDirectOptionModel(visible: true, enabled: hasDirectFunds, status);
     }
 
-    private static RentPropertyPaymentOptionViewModel CreateDirectOptionModel(bool visible, bool enabled, string status) =>
+    private static RentPropertyPaymentOptionViewModel
+        CreateDirectOptionModel(bool visible, bool enabled, string status) =>
         new(RentalPaymentMethod.OutOfPocket, "Pay from Pockets", visible, enabled, status, status);
 
     private static string BuildDirectShortfallMessage(GoldAmount rentCost, GoldAmount availableGold)
@@ -625,7 +626,7 @@ public sealed class PropertyRentFlow
         string status)
     {
         string label = !string.IsNullOrWhiteSpace(settlementName)
-            ? $"Pay via {settlementName} Coinhouse"
+            ? $"Pay via Coinhouse"
             : "Pay from Coinhouse";
 
         return new RentPropertyPaymentOptionViewModel(
