@@ -16,6 +16,11 @@ public enum StorageLocationType
     ForeclosedItems,
     
     /// <summary>
+    /// Personal item storage at banks - paid storage with upgradeable capacity.
+    /// </summary>
+    PersonalStorage,
+    
+    /// <summary>
     /// Bank vault storage at coinhouses (future feature).
     /// </summary>
     CoinhouseVault
