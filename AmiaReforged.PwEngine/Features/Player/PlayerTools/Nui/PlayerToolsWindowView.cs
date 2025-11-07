@@ -7,7 +7,7 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui;
 public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
 {
     private const float WindowW = 680f;
-    private const float WindowH = 600f;
+    private const float WindowH = 680f;
     private const float HeaderW = 620f;
     private const float HeaderH = 100f;
     private const float HeaderTopPad = 0f;
@@ -20,6 +20,7 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
     // Dynamic row binds
     public readonly List<NuiBind<string>> ToolNameBinds = new();
     public readonly List<NuiBind<bool>> ToolVisibleBinds = new();
+    public readonly List<NuiBind<bool>> ToolEnabledBinds = new();
 
     // Store buttons for each window row
     public List<NuiButtonImage> OpenWindowButtons = new();
@@ -52,21 +53,24 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
         NuiElement headerOverlay = BuildHeaderOverlay();
         NuiSpacer headerSpacer = new NuiSpacer { Height = 85f };
 
-        // Create dynamic rows for tools (we'll build up to 10 rows to accommodate most scenarios)
+        // Create dynamic rows for tools (we'll build up to 20 rows to accommodate all tools)
         List<NuiElement> toolRows = new();
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 20; i++)
         {
             NuiBind<string> toolNameBind = new($"tool_name_{i}");
             NuiBind<bool> toolVisibleBind = new($"tool_visible_{i}");
+            NuiBind<bool> toolEnabledBind = new($"tool_enabled_{i}");
 
             ToolNameBinds.Add(toolNameBind);
             ToolVisibleBinds.Add(toolVisibleBind);
+            ToolEnabledBinds.Add(toolEnabledBind);
 
             NuiButtonImage openButton;
 
             NuiRow toolRow = new()
             {
                 Height = 40f,
+                Visible = toolVisibleBind,
                 Children =
                 {
                     new NuiSpacer { Width = 40f },
@@ -76,7 +80,7 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
                         Width = 35f,
                         Height = 35f,
                         Tooltip = "Open Tool",
-                        Visible = toolVisibleBind
+                        Enabled = toolEnabledBind
                     }.Assign(out openButton),
                     new NuiSpacer { Width = 10f },
                     new NuiLabel(toolNameBind)

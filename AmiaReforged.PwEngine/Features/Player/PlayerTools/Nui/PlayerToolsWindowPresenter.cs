@@ -34,7 +34,7 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
     {
         _window = new NuiWindow(View.RootLayout(), title: "Player Tools")
         {
-            Geometry = new NuiRect(0f, 100f, 680f, 600f),
+            Geometry = new NuiRect(0f, 100f, 680f, 680f),
             Resizable = false
         };
     }
@@ -76,18 +76,20 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
         Model.SetSearchTerm(string.Empty);
         Model.RefreshWindowList();
 
-        // Populate the dynamic rows (up to 10)
-        for (int i = 0; i < 10; i++)
+        // Populate the dynamic rows (up to 20)
+        for (int i = 0; i < 20; i++)
         {
             if (i < Model.VisibleWindows.Count)
             {
                 Token().SetBindValue(View.ToolNameBinds[i], Model.VisibleWindows[i].Title);
                 Token().SetBindValue(View.ToolVisibleBinds[i], true);
+                Token().SetBindValue(View.ToolEnabledBinds[i], Model.EnabledWindowIndices.Contains(i));
             }
             else
             {
                 Token().SetBindValue(View.ToolNameBinds[i], string.Empty);
                 Token().SetBindValue(View.ToolVisibleBinds[i], false);
+                Token().SetBindValue(View.ToolEnabledBinds[i], false);
             }
         }
     }
@@ -109,7 +111,8 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
         {
             string indexStr = eventData.ElementId.Replace("btn_opentool_", "");
             if (int.TryParse(indexStr, out int index) &&
-                index >= 0 && index < Model.VisibleWindows.Count)
+                index >= 0 && index < Model.VisibleWindows.Count &&
+                Model.EnabledWindowIndices.Contains(index))
             {
                 IToolWindow window = Model.VisibleWindows[index];
                 IScryPresenter toolWindow = window.ForPlayer(Token().Player);

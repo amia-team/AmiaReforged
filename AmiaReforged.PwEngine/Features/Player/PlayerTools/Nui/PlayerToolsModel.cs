@@ -16,6 +16,7 @@ public class PlayerToolsModel
     }
 
     public List<IToolWindow> VisibleWindows { get; private set; } = new();
+    public HashSet<int> EnabledWindowIndices { get; private set; } = new();
     public bool CharacterIsPersisted { get; set; }
 
     private List<IToolWindow> GetVisibleWindows()
@@ -28,7 +29,7 @@ public class PlayerToolsModel
 
     private List<IToolWindow> GetAvailableWindows()
     {
-        List<IToolWindow> windows = new();
+        List<(IToolWindow window, bool isEnabled)> windowsWithStatus = new();
         Assembly assembly = Assembly.GetExecutingAssembly();
         Type interfaceType = typeof(IToolWindow);
 
@@ -40,15 +41,39 @@ public class PlayerToolsModel
                 continue;
             }
 
-            if (window.RequiresPersistedCharacter && !CharacterIsPersisted) continue;
-            if (!window.ShouldListForPlayer(_player)) continue;
+            // Skip tools that explicitly don't want to be listed
+            if (!window.ListInPlayerTools)
+                continue;
 
-            windows.Add(window);
+            // Add all tools but track which ones are enabled
+            bool isEnabled = true;
+
+            if (window.RequiresPersistedCharacter && !CharacterIsPersisted)
+                isEnabled = false;
+
+            if (!window.ShouldListForPlayer(_player))
+                isEnabled = false;
+
+            windowsWithStatus.Add((window, isEnabled));
         }
 
-        return windows
-            .OrderBy<IToolWindow, string>(w => w.Title ?? string.Empty)
+        // Sort by title
+        var sortedWindows = windowsWithStatus
+            .OrderBy(w => w.window.Title)
             .ToList();
+
+        // Build the final list and enabled indices
+        List<IToolWindow> windows = new();
+        EnabledWindowIndices.Clear();
+
+        for (int i = 0; i < sortedWindows.Count; i++)
+        {
+            windows.Add(sortedWindows[i].window);
+            if (sortedWindows[i].isEnabled)
+                EnabledWindowIndices.Add(i);
+        }
+
+        return windows;
     }
 
 
