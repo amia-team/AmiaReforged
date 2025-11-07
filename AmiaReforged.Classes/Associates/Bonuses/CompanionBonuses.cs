@@ -163,7 +163,7 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
             Effects: Effect.LinkEffects(
                 Effect.Concealment(50),
                 Effect.Ultravision(),
-                Effect.DamageIncrease(6, DamageType.Bludgeoning)
+                Effect.DamageIncrease(DamageBonus.Plus6, DamageType.Bludgeoning)
             )
         ),
         AnimalCompanionCreatureType.Bear => new EpicCompanionBonus
@@ -173,7 +173,7 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
             DexterityBonus: 6,
             HpBonus: 300,
             Effects: Effect.LinkEffects(
-                Effect.DamageIncrease(10, DamageType.Bludgeoning),
+                Effect.DamageIncrease(DamageBonus.Plus10, DamageType.Bludgeoning),
                 Effect.SkillIncrease(Skill.Discipline!, 50)
             )
         ),
@@ -183,7 +183,7 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
             ConstitutionBonus: 6,
             DexterityBonus: 6,
             HpBonus: 200,
-            Effects: Effect.DamageIncrease(10, DamageType.Bludgeoning)
+            Effects: Effect.DamageIncrease(DamageBonus.Plus10, DamageType.Bludgeoning)
         ),
         AnimalCompanionCreatureType.Hawk => new EpicCompanionBonus
         (
@@ -197,7 +197,7 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
                 Effect.Immunity(ImmunityType.Entangle),
                 Effect.Immunity(ImmunityType.Slow),
                 Effect.Immunity(ImmunityType.MovementSpeedDecrease),
-                Effect.DamageIncrease(5, DamageType.Piercing)
+                Effect.DamageIncrease(DamageBonus.Plus5, DamageType.Piercing)
             )
         ),
         AnimalCompanionCreatureType.Panther => new EpicCompanionBonus
@@ -219,7 +219,7 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
             DexterityBonus: 6,
             HpBonus: 200,
             Effects: Effect.LinkEffects(
-                Effect.DamageIncrease(5, DamageType.Piercing),
+                Effect.DamageIncrease(DamageBonus.Plus5, DamageType.Piercing),
                 Effect.DamageIncrease(DamageBonus.Plus2d6, DamageType.Acid)
             )
         ),
@@ -229,7 +229,7 @@ public class CompanionBonuses(NwCreature owner, NwCreature associate)
             ConstitutionBonus: 10,
             DexterityBonus: 10,
             HpBonus: 200,
-            Effects: Effect.DamageIncrease(10, DamageType.Bludgeoning)
+            Effects: Effect.DamageIncrease(DamageBonus.Plus10, DamageType.Bludgeoning)
         ),
         AnimalCompanionCreatureType.DireRat => new EpicCompanionBonus
         (
