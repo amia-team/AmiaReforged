@@ -29,6 +29,15 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
     public PlayerToolsWindowView(NwPlayer player)
     {
         Presenter = new PlayerToolsWindowPresenter(this, player);
+
+        // Initialize bind lists with 20 entries
+        for (int i = 0; i < 20; i++)
+        {
+            ToolNameBinds.Add(new NuiBind<string>($"tool_name_{i}"));
+            ToolVisibleBinds.Add(new NuiBind<bool>($"tool_visible_{i}"));
+            ToolEnabledBinds.Add(new NuiBind<bool>($"tool_enabled_{i}"));
+            ToolDisabledTooltipBinds.Add(new NuiBind<string>($"tool_disabled_tooltip_{i}"));
+        }
     }
 
     public override PlayerToolsWindowPresenter Presenter { get; protected set; }
@@ -54,18 +63,15 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
         NuiElement headerOverlay = BuildHeaderOverlay();
         NuiSpacer headerSpacer = new NuiSpacer { Height = 85f };
 
+        // Create dynamic rows for tools (we'll build up to 20 rows to accommodate all tools)
         List<NuiElement> toolRows = new();
-        for (int i = 0; i < 15; i++)
+        for (int i = 0; i < 20; i++)
         {
-            NuiBind<string> toolNameBind = new($"tool_name_{i}");
-            NuiBind<bool> toolVisibleBind = new($"tool_visible_{i}");
-            NuiBind<bool> toolEnabledBind = new($"tool_enabled_{i}");
-            NuiBind<string> toolDisabledTooltipBind = new($"tool_disabled_tooltip_{i}");
-
-            ToolNameBinds.Add(toolNameBind);
-            ToolVisibleBinds.Add(toolVisibleBind);
-            ToolEnabledBinds.Add(toolEnabledBind);
-            ToolDisabledTooltipBinds.Add(toolDisabledTooltipBind);
+            // Use the pre-initialized binds from the constructor
+            NuiBind<string> toolNameBind = ToolNameBinds[i];
+            NuiBind<bool> toolVisibleBind = ToolVisibleBinds[i];
+            NuiBind<bool> toolEnabledBind = ToolEnabledBinds[i];
+            NuiBind<string> toolDisabledTooltipBind = ToolDisabledTooltipBinds[i];
 
             NuiButtonImage openButton;
 
