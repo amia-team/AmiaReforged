@@ -23,6 +23,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     private const bool TraceEnabled = false;
     private const string PersistPlcLocalInt = "persist_plc";
     private const string CharacterIdLocalString = "character_id";
+    private const string SourceItemDataLocalString = "source_item_data";
 
     private readonly NwPlayer _player;
     private readonly PlaceableToolModel _model;
@@ -62,8 +63,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(320f, 80f, 520f, 820f),
-            Resizable = false
+            Geometry = new NuiRect(320f, 80f, 590f, 820f)
         };
 
         Trace("InitBefore executed; window stub prepared.");
@@ -259,6 +259,19 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
         placeable.Name = blueprint.DisplayName;
         EnsureCharacterAssociation(placeable);
+
+        // Store serialized source item data on the placeable for later persistence
+        if (blueprint.SourceItem is not null && blueprint.SourceItem.IsValid)
+        {
+            byte[]? itemSerialized = blueprint.SourceItem.Serialize();
+            if (itemSerialized is not null && itemSerialized.Length > 0)
+            {
+                // Store as base64 string in local variable so it persists with the placeable
+                string base64Data = Convert.ToBase64String(itemSerialized);
+                placeable.GetObjectVariable<LocalVariableString>(SourceItemDataLocalString).Value = base64Data;
+                Trace($"Stored source item data ({itemSerialized.Length} bytes) for placeable {placeable.Name}");
+            }
+        }
 
         try
         {

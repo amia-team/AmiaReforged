@@ -72,11 +72,15 @@ public class PlaceablePersistenceService
 
         Guid? characterId = ExtractCharacterId(placeable);
 
+        // Extract source item data if present
+        byte[]? sourceItemData = ExtractSourceItemData(placeable);
+
         PersistentObject persistentObject = new PersistentObject
         {
             Type = (int)ObjectTypes.Placeable,
             Serialized = placeable.Serialize() ?? Array.Empty<byte>(),
             CharacterId = characterId,
+            SourceItemData = sourceItemData,
             Location = new SavedLocation
             {
                 AreaResRef = area.ResRef,
@@ -150,11 +154,15 @@ public class PlaceablePersistenceService
 
             Guid? characterId = ExtractCharacterId(nwPlaceable);
 
+            // Extract source item data if present
+            byte[]? sourceItemData = ExtractSourceItemData(nwPlaceable);
+
             PersistentObject persistentObject = new PersistentObject
             {
                 Type = (int)ObjectTypes.Placeable,
                 Serialized = serialized,
                 CharacterId = characterId,
+                SourceItemData = sourceItemData,
                 Location = new SavedLocation
                 {
                     AreaResRef = area.ResRef,
@@ -221,6 +229,24 @@ public class PlaceablePersistenceService
         }
 
         return null;
+    }
+
+    private static byte[]? ExtractSourceItemData(NwGameObject placeable)
+    {
+        LocalVariableString sourceItemVar = placeable.GetObjectVariable<LocalVariableString>("source_item_data");
+        if (string.IsNullOrWhiteSpace(sourceItemVar.Value))
+        {
+            return null;
+        }
+
+        try
+        {
+            return Convert.FromBase64String(sourceItemVar.Value);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static void ApplyCharacterAssociation(NwPlaceable placeable, Guid? characterId)

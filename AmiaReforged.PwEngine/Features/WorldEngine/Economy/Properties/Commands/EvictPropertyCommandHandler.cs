@@ -296,18 +296,30 @@ public sealed class EvictPropertyCommandHandler : ICommandHandler<EvictPropertyC
     private string? ResolveAreaResRefForProperty(string internalName)
     {
         // POI.Name matches InternalName by convention
-        // Find the settlement containing this POI
-        if (!_regionIndex.TryGetSettlementForPointOfInterest(internalName, out SettlementId settlementId))
+        // Since we only have the POI Name (InternalName), we need to search all regions and their POIs
+        IReadOnlyList<RegionDefinition> allRegions = _regionIndex.All();
+        
+        foreach (RegionDefinition region in allRegions)
         {
-            return null;
+            foreach (AreaDefinition area in region.Areas)
+            {
+                if (area.PlacesOfInterest is not { Count: > 0 })
+                {
+                    continue;
+                }
+                
+                PlaceOfInterest? poi = area.PlacesOfInterest.FirstOrDefault(p => 
+                    string.Equals(p.Name, internalName, StringComparison.OrdinalIgnoreCase));
+                
+                if (poi is not null)
+                {
+                    // The area ResRef is stored in POI.ResRef
+                    return poi.ResRef;
+                }
+            }
         }
 
-        // Get all POIs for this settlement
-        IReadOnlyList<PlaceOfInterest> pois = _regionIndex.GetPointsOfInterestForSettlement(settlementId);
-        PlaceOfInterest? poi = pois.FirstOrDefault(p => p.Name == internalName);
-
-        // The area ResRef is stored in POI.ResRef
-        return poi?.ResRef;
+        return null;
     }
 
     private static Guid? ResolveCharacterId(PersonaId? personaId)

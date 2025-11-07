@@ -18,27 +18,33 @@ public class PlayerHouseService
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private const string HouseDoorTag = "db_house_door";
+    private const string HouseSignTag = "house_sign";
     private const string TargetAreaTagLocalString = "target_area_tag";
 
     private readonly RuntimeCharacterService _characters;
     private readonly PropertyMetadataResolver _metadataResolver;
     private readonly PropertyDefinitionSynchronizer _definitionSynchronizer;
     private readonly PropertyRentFlow _rentFlow;
+    private readonly PropertyRentPaymentFlow _rentPaymentFlow;
 
     private readonly HashSet<uint> _registeredDoorIds = new();
+    private readonly HashSet<uint> _registeredSignIds = new();
 
     public PlayerHouseService(
         RuntimeCharacterService characters,
         PropertyMetadataResolver metadataResolver,
         PropertyDefinitionSynchronizer definitionSynchronizer,
-        PropertyRentFlow rentFlow)
+        PropertyRentFlow rentFlow,
+        PropertyRentPaymentFlow rentPaymentFlow)
     {
         _characters = characters;
         _metadataResolver = metadataResolver;
         _definitionSynchronizer = definitionSynchronizer;
         _rentFlow = rentFlow;
+        _rentPaymentFlow = rentPaymentFlow;
 
         BindHouseDoors();
+        BindHouseSigns();
         NwModule.Instance.OnModuleLoad += RegisterNewHouses;
     }
 
@@ -55,11 +61,25 @@ public class PlayerHouseService
         }
     }
 
+    private void BindHouseSigns()
+    {
+        IEnumerable<NwPlaceable> signs = NwObject.FindObjectsWithTag<NwPlaceable>(HouseSignTag);
+
+        foreach (NwPlaceable sign in signs)
+        {
+            if (_registeredSignIds.Add(sign.ObjectId))
+            {
+                sign.OnUsed += HandleHouseSignInteraction;
+            }
+        }
+    }
+
     private async void RegisterNewHouses(ModuleEvents.OnModuleLoad obj)
     {
         try
         {
             BindHouseDoors();
+            BindHouseSigns();
             await EnsureHouseDefinitionsAsync();
         }
         catch (Exception ex)
@@ -166,6 +186,111 @@ public class PlayerHouseService
             catch (Exception nested)
             {
                 Log.Error(nested, "Failed to send error feedback to player during housing interaction.");
+            }
+        }
+    }
+
+    [SuppressMessage("ReSharper", "AsyncVoidMethod")]
+    private async void HandleHouseSignInteraction(PlaceableEvents.OnUsed obj)
+    {
+        if (!obj.UsedBy.IsPlayerControlled(out NwPlayer? player))
+        {
+            return;
+        }
+
+        try
+        {
+            if (!TryResolvePersona(player, out PersonaId personaId))
+            {
+                await ShowFloatingTextAsync(player, "We couldn't verify your identity. Please relog and try again.");
+                return;
+            }
+
+            string? targetAreaTag =
+                obj.Placeable.GetObjectVariable<LocalVariableString>(TargetAreaTagLocalString).Value;
+
+            if (string.IsNullOrWhiteSpace(targetAreaTag))
+            {
+                Log.Warn("House sign {SignTag} is missing the {LocalVar} local variable.", obj.Placeable.Tag,
+                    TargetAreaTagLocalString);
+                await ShowFloatingTextAsync(player, "This sign is not configured. Please notify a DM.");
+                return;
+            }
+
+            NwArea? area = FindAreaByTag(targetAreaTag);
+            if (area is null)
+            {
+                Log.Error("Failed to locate area with tag {AreaTag} for house sign {SignTag}.", targetAreaTag,
+                    obj.Placeable.Tag);
+                await ShowFloatingTextAsync(player,
+                    "The property for this sign could not be located. Please notify a DM.");
+                return;
+            }
+
+            PropertyAreaMetadata metadata;
+            try
+            {
+                if (!_metadataResolver.TryCapture(area, out metadata))
+                {
+                    Log.Warn("Area {AreaTag} did not resolve to a configured property via region metadata.",
+                        area.Tag);
+                    await ShowFloatingTextAsync(player,
+                        "This property is not registered in the housing system. Please notify a DM.");
+                    return;
+                }
+            }
+            catch (Exception metaEx)
+            {
+                Log.Error(metaEx, "Failed to capture metadata for housing area {AreaTag}.", area.Tag);
+                await ShowFloatingTextAsync(player, "This property is not configured correctly. Please notify a DM.");
+                return;
+            }
+
+            PropertyId propertyId = _definitionSynchronizer.ResolvePropertyId(metadata);
+
+            RentablePropertySnapshot? snapshot = await EnsurePropertySnapshotAsync(propertyId, metadata);
+            if (snapshot is null)
+            {
+                await ShowFloatingTextAsync(player,
+                    "The housing record for this property could not be loaded. Please try again later.");
+                return;
+            }
+
+            // Check if this property has an active rental and the player is the tenant
+            if (snapshot.OccupancyStatus == PropertyOccupancyStatus.Rented &&
+                snapshot.ActiveRental is not null &&
+                snapshot.ActiveRental.Tenant.Equals(personaId))
+            {
+                PropertyRentFlow.RentOfferPresentation presentation = ResolvePropertyPresentation(metadata);
+
+                await _rentPaymentFlow.HandleRentPaymentRequestAsync(
+                        player,
+                        personaId,
+                        propertyId,
+                        snapshot,
+                        presentation.DisplayName,
+                        presentation.Description,
+                        presentation.SettlementName)
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            // Player is not the tenant
+            await ShowFloatingTextAsync(player,
+                "You can only pay rent for properties you are currently renting.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Unexpected error while handling house sign interaction for sign {SignTag}.",
+                obj.Placeable.Tag);
+
+            try
+            {
+                await ShowFloatingTextAsync(player, "Housing system encountered an error. Please try again shortly.");
+            }
+            catch (Exception nested)
+            {
+                Log.Error(nested, "Failed to send error feedback to player during sign interaction.");
             }
         }
     }
