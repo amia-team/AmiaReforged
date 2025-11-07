@@ -59,7 +59,7 @@ public sealed class ReeveLockupService
 
         await using PwEngineContext context = _contextFactory.CreateDbContext();
 
-        Storage storage = await EnsureStorageAsync(context, stall.AreaResRef, cancellationToken).ConfigureAwait(false);
+        Database.Entities.Storage storage = await EnsureStorageAsync(context, stall.AreaResRef, cancellationToken).ConfigureAwait(false);
 
         int storedCount = 0;
 
@@ -325,14 +325,14 @@ public sealed class ReeveLockupService
         return trackChanges ? query : query.AsNoTracking();
     }
 
-    private static async Task<Storage> EnsureStorageAsync(
+    private static async Task<Database.Entities.Storage> EnsureStorageAsync(
         PwEngineContext context,
         string? areaResRef,
         CancellationToken cancellationToken)
     {
         Guid engineId = ComputeStorageEngineId(areaResRef);
 
-        Storage? existing = await context.Warehouses
+        Database.Entities.Storage? existing = await context.Warehouses
             .FirstOrDefaultAsync(w => w.EngineId == engineId, cancellationToken)
             .ConfigureAwait(false);
 
@@ -341,10 +341,11 @@ public sealed class ReeveLockupService
             return existing;
         }
 
-        Storage storage = new()
+        Database.Entities.Storage storage = new()
         {
             EngineId = engineId,
-            Capacity = -1
+            Capacity = -1,
+            StorageType = "PlayerInventory"  // Default to PlayerInventory as per database schema
         };
 
         await context.Warehouses.AddAsync(storage, cancellationToken).ConfigureAwait(false);

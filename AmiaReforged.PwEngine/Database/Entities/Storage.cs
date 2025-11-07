@@ -16,4 +16,17 @@ public class Storage
     ///  The maximum number of items this storage can hold. -1 is unlimited.
     /// </summary>
     public int Capacity { get; set; } = -1;
+
+    /// <summary>
+    /// The type of storage: PlayerInventory, ForeclosedItems, CoinhouseVault, etc.
+    /// </summary>
+    [MaxLength(50)]
+    public required string StorageType { get; set; } = "PlayerInventory";
+
+    /// <summary>
+    /// Location key for storage types that are tied to a specific location.
+    /// Format: "{type}:{identifier}" (e.g., "coinhouse:cordor_coinhouse")
+    /// </summary>
+    [MaxLength(255)]
+    public string? LocationKey { get; set; }
 }

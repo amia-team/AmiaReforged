@@ -1,0 +1,22 @@
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage;
+
+/// <summary>
+/// Represents the different types of storage locations in the system.
+/// </summary>
+public enum StorageLocationType
+{
+    /// <summary>
+    /// Standard player inventory storage (future feature).
+    /// </summary>
+    PlayerInventory,
+    
+    /// <summary>
+    /// Items from foreclosed/evicted properties stored at coinhouses.
+    /// </summary>
+    ForeclosedItems,
+    
+    /// <summary>
+    /// Bank vault storage at coinhouses (future feature).
+    /// </summary>
+    CoinhouseVault
+}
