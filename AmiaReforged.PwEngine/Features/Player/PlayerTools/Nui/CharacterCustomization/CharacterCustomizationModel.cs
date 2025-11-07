@@ -651,6 +651,13 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             return;
         }
 
+        // Check if the player owns the target item
+        if (targetItem.Possessor != null && targetItem.Possessor.ObjectId != player.ControlledCreature?.ObjectId)
+        {
+            player.SendServerMessage("That item doesn't belong to you. Select an item from your inventory.", ColorConstants.Orange);
+            return;
+        }
+
         if (targetItem.BaseItem.ItemType != BaseItemType.Armor)
         {
             player.SendServerMessage("Selected item is not armor.", ColorConstants.Orange);

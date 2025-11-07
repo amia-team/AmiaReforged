@@ -1,4 +1,4 @@
-﻿﻿﻿using Anvil.API;
+﻿using Anvil.API;
 using Newtonsoft.Json;
 using NWN.Core;
 
@@ -1008,6 +1008,31 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             return;
         }
 
+        // Check if the player owns the target item
+        if (targetItem.Possessor != null && targetItem.Possessor.ObjectId != player.ControlledCreature?.ObjectId)
+        {
+            player.SendServerMessage("That item doesn't belong to you. Select an item from your inventory.", ColorConstants.Orange);
+            return;
+        }
+
+        // Get the currently equipped weapon to check its item class
+        NwItem? currentWeapon = creature.GetItemInSlot(InventorySlot.RightHand);
+        if (currentWeapon == null || !currentWeapon.IsValid)
+        {
+            player.SendServerMessage("No weapon currently equipped.", ColorConstants.Orange);
+            return;
+        }
+
+        string currentWeaponClass = currentWeapon.BaseItem.ItemClass;
+        string targetItemClass = targetItem.BaseItem.ItemClass;
+
+        // Check if the target weapon class matches the current weapon class
+        if (currentWeaponClass != targetItemClass)
+        {
+            player.SendServerMessage($"Selected weapon type ({targetItemClass}) does not match equipped weapon type ({currentWeaponClass}).", ColorConstants.Orange);
+            return;
+        }
+
         // Clone the target item and apply the backup appearance to the clone
         NwItem weaponClone = targetItem.Clone(creature);
 
@@ -1033,6 +1058,13 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         if (bootsBackup == null)
         {
             player.SendServerMessage("No boots appearance backup found.", ColorConstants.Orange);
+            return;
+        }
+
+        // Check if the player owns the target item
+        if (targetItem.Possessor != null && targetItem.Possessor.ObjectId != player.ControlledCreature?.ObjectId)
+        {
+            player.SendServerMessage("That item doesn't belong to you. Select an item from your inventory.", ColorConstants.Orange);
             return;
         }
 
@@ -1069,6 +1101,13 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         if (helmetBackup == null)
         {
             player.SendServerMessage("No helmet appearance backup found.", ColorConstants.Orange);
+            return;
+        }
+
+        // Check if the player owns the target item
+        if (targetItem.Possessor != null && targetItem.Possessor.ObjectId != player.ControlledCreature?.ObjectId)
+        {
+            player.SendServerMessage("That item doesn't belong to you. Select an item from your inventory.", ColorConstants.Orange);
             return;
         }
 
@@ -1115,6 +1154,13 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         if (cloakBackup == null)
         {
             player.SendServerMessage("No cloak appearance backup found.", ColorConstants.Orange);
+            return;
+        }
+
+        // Check if the player owns the target item
+        if (targetItem.Possessor != null && targetItem.Possessor.ObjectId != player.ControlledCreature?.ObjectId)
+        {
+            player.SendServerMessage("That item doesn't belong to you. Select an item from your inventory.", ColorConstants.Orange);
             return;
         }
 
