@@ -14,9 +14,9 @@ public class WildMagicService(WildMagicEffects wildMagicEffects)
     // leaving a 1% chance for adverse wild magic and 1% chance for epic wild magic
     private static readonly Dictionary<KiFocus, (int weak, int moderate, int strong)> KiFocusChances = new()
     {
-        { KiFocus.KiFocus1, (56, 33, 9) },
+        { KiFocus.KiFocus1, (55, 33, 10) },
         { KiFocus.KiFocus2, (43, 40, 15) },
-        { KiFocus.KiFocus3, (32, 33, 33) },
+        { KiFocus.KiFocus3, (33, 33, 32) },
     };
 
     private static readonly Color[] RainbowColors =
