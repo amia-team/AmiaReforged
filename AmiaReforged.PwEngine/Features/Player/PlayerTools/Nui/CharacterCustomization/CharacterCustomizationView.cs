@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using Anvil.API;
 
@@ -53,6 +53,9 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public NuiButtonImage Leather2Button = null!;
     public NuiButtonImage Metal1Button = null!;
     public NuiButtonImage Metal2Button = null!;
+
+    public NuiButtonImage CopyToOtherSideButton = null!;
+    public NuiButtonImage CopyAppearanceButton = null!;
 
     public string Title => "Character Customization";
     public string Id => "char_customization";
@@ -174,6 +177,21 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 {
                     Children =
                     {
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Change your armor's appearance. Save changes to use Revert and Copy features.")
+                        {
+                            Width = 600f,
+                            Height = 35f,
+                            HorizontalAlign = NuiHAlign.Center,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
                         new NuiSpacer { Width = 142.5f },
                         ImageButton("btn_part_left", "Previous Part", out PartLeftButton, 35f, 35f, "cc_arrow_l_btn"),
                         new NuiLabel(PartName)
@@ -285,6 +303,27 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
         };
     }
 
+    private NuiElement BuildCopyButtons()
+    {
+        return new NuiColumn
+        {
+            Visible = ArmorModeActive,
+            Children =
+            {
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 280f },
+                        ImageButton("btn_copy_to_other_side", "Copy current part to other side", out CopyToOtherSideButton, 50f, 50f, "app_copy_side"),
+                        new NuiSpacer { Width = 10f },
+                        ImageButton("btn_copy_appearance", "Copy appearance to other armor (Save first)", out CopyAppearanceButton, 50f, 50f, "app_copy")
+                    }
+                }
+            }
+        };
+    }
+
     private NuiElement BuildMaterialSelector()
     {
         const float leftPad = 207.5f;
@@ -374,7 +413,7 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
         };
     }
 
-    private static NuiElement Divider(float thickness = 1f, byte alpha = 48)
+    private static NuiElement Divider(float thickness = 2f, byte alpha = 48)
     {
         return new NuiRow
         {
@@ -431,6 +470,8 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
                 BuildArmorBodyVisualization(),
                 new NuiSpacer { Height = 270f },
                 BuildModelSelector(),
+                new NuiSpacer { Height = 5f },
+                BuildCopyButtons(),
                 new NuiSpacer { Height = 20f },
                 new NuiRow
                 {

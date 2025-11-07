@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
@@ -306,10 +306,31 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
             return;
         }
 
-        if (ev.ElementId == View.ConfirmButton.Id)
+        if (ev.ElementId == View.ConfirmButton?.Id)
         {
             _model.ConfirmAndClose();
             Close();
+        }
+
+        if (ev.ElementId == View.CopyToOtherSideButton?.Id)
+        {
+            _model.CopyToOtherSide();
+            return;
+        }
+
+        if (ev.ElementId == View.CopyAppearanceButton?.Id)
+        {
+            player.SendServerMessage("Select an armor in your inventory to copy the appearance to.", ColorConstants.Cyan);
+            player.EnterTargetMode(OnArmorCopyTargetSelected);
+            return;
+        }
+    }
+
+    private void OnArmorCopyTargetSelected(ModuleEvents.OnPlayerTarget target)
+    {
+        if (target.TargetObject is NwItem targetItem)
+        {
+            _model.CopyAppearanceToItem(targetItem);
         }
     }
 

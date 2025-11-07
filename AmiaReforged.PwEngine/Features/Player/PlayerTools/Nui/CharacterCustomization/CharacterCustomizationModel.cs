@@ -1,4 +1,5 @@
 ﻿using Anvil.API;
+using Anvil.API.Events;
 using Newtonsoft.Json;
 using NWN.Core;
 
@@ -536,6 +537,177 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
     {
         ClearBackupFromPcKey();
         player.SendServerMessage("Armor customization confirmed!", ColorConstants.Green);
+    }
+
+    public void CopyToOtherSide()
+    {
+        if (CurrentMode != CustomizationMode.Armor)
+        {
+            player.SendServerMessage("Not in armor customization mode.", ColorConstants.Orange);
+            return;
+        }
+
+        if (_currentArmor == null || !_currentArmor.IsValid)
+        {
+            player.SendServerMessage("No armor equipped to modify.", ColorConstants.Orange);
+            return;
+        }
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null)
+        {
+            player.SendServerMessage("No controlled creature found.", ColorConstants.Red);
+            return;
+        }
+
+        // Map of left/right pairs
+        Dictionary<int, int> sideMapping = new()
+        {
+            [0] = 1,   // Right Foot <-> Left Foot
+            [1] = 0,   // Left Foot <-> Right Foot
+            [2] = 3,   // Right Shin <-> Left Shin
+            [3] = 2,   // Left Shin <-> Right Shin
+            [4] = 5,   // Right Thigh <-> Left Thigh
+            [5] = 4,   // Left Thigh <-> Right Thigh
+            [10] = 11, // Right Forearm <-> Left Forearm
+            [11] = 10, // Left Forearm <-> Right Forearm
+            [12] = 13, // Right Bicep <-> Left Bicep
+            [13] = 12, // Left Bicep <-> Right Bicep
+            [14] = 15, // Right Shoulder <-> Left Shoulder
+            [15] = 14, // Left Shoulder <-> Right Shoulder
+            [16] = 17, // Right Hand <-> Left Hand
+            [17] = 16  // Left Hand <-> Right Hand
+        };
+
+        if (!sideMapping.ContainsKey(CurrentArmorPart))
+        {
+            player.SendServerMessage("Current part doesn't have an opposite side.", ColorConstants.Orange);
+            return;
+        }
+
+        int oppositePart = sideMapping[CurrentArmorPart];
+        CreaturePart sourcePart = GetCreaturePart(CurrentArmorPart);
+        CreaturePart targetPart = GetCreaturePart(oppositePart);
+
+        string[] partNames =
+        [
+            "Right Foot", "Left Foot", "Right Shin", "Left Shin",
+            "Right Thigh", "Left Thigh", "Pelvis", "Torso", "Belt", "Neck",
+            "Right Forearm", "Left Forearm", "Right Bicep", "Left Bicep",
+            "Right Shoulder", "Left Shoulder", "Right Hand", "Left Hand", "Robe"
+        ];
+
+        string sourceName = CurrentArmorPart < partNames.Length ? partNames[CurrentArmorPart] : "Unknown";
+        string targetName = oppositePart < partNames.Length ? partNames[oppositePart] : "Unknown";
+
+        player.SendServerMessage($"Copying {sourceName} to {targetName}...", ColorConstants.Cyan);
+
+        NwItem oldArmor = _currentArmor;
+
+        // Copy model
+        int sourceModel = oldArmor.Appearance.GetArmorModel(sourcePart);
+        oldArmor.Appearance.SetArmorModel(targetPart, (byte)sourceModel);
+        player.SendServerMessage($"Model copied: {sourceModel}", ColorConstants.Gray);
+
+        // Copy all color channels
+        ItemAppearanceArmorColor[] colorChannels =
+        [
+            ItemAppearanceArmorColor.Leather1, ItemAppearanceArmorColor.Leather2,
+            ItemAppearanceArmorColor.Cloth1, ItemAppearanceArmorColor.Cloth2,
+            ItemAppearanceArmorColor.Metal1, ItemAppearanceArmorColor.Metal2
+        ];
+
+        foreach (var channel in colorChannels)
+        {
+            int sourceColor = oldArmor.Appearance.GetArmorPieceColor(sourcePart, channel);
+            oldArmor.Appearance.SetArmorPieceColor(targetPart, channel, (byte)sourceColor);
+        }
+
+        player.SendServerMessage("Colors copied.", ColorConstants.Gray);
+
+        // Refresh armor
+        creature.RunUnequip(oldArmor);
+        NwItem newArmor = oldArmor.Clone(creature);
+
+        if (!newArmor.IsValid)
+        {
+            player.SendServerMessage("Failed to refresh armor.", ColorConstants.Red);
+            creature.RunEquip(oldArmor, InventorySlot.Chest);
+            return;
+        }
+
+        creature.RunEquip(newArmor, InventorySlot.Chest);
+        _currentArmor = newArmor;
+        oldArmor.Destroy();
+
+        player.SendServerMessage($"Successfully copied {sourceName} appearance to {targetName}.", ColorConstants.Green);
+    }
+
+    public void CopyAppearanceToItem(NwItem targetItem)
+    {
+        if (!targetItem.IsValid)
+        {
+            player.SendServerMessage("Invalid item selected.", ColorConstants.Orange);
+            return;
+        }
+
+        if (targetItem.BaseItem.ItemType != BaseItemType.Armor)
+        {
+            player.SendServerMessage("Selected item is not armor.", ColorConstants.Orange);
+            return;
+        }
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
+
+        var backupData = LoadBackupFromPcKey();
+        if (backupData == null)
+        {
+            player.SendServerMessage("No backup appearance found. Save changes first.", ColorConstants.Orange);
+            return;
+        }
+
+        // Get the AC value of the current armor to prevent AC changes
+        if (_currentArmor == null || !_currentArmor.IsValid)
+        {
+            player.SendServerMessage("No armor equipped.", ColorConstants.Orange);
+            return;
+        }
+
+        int? currentAc = GetArmorAcFromModel(_currentArmor.Appearance.GetArmorModel(CreaturePart.Torso));
+        if (!currentAc.HasValue)
+        {
+            player.SendServerMessage("Could not determine armor AC.", ColorConstants.Orange);
+            return;
+        }
+
+        // Check AC compatibility
+        int? targetAc = GetArmorAcFromModel(targetItem.Appearance.GetArmorModel(CreaturePart.Torso));
+        if (!targetAc.HasValue)
+        {
+            player.SendServerMessage("Could not determine target armor AC.", ColorConstants.Orange);
+            return;
+        }
+
+        if (targetAc.Value != currentAc.Value)
+        {
+            player.SendServerMessage($"Cannot copy appearance - AC mismatch. Current armor is AC {currentAc.Value}, target is AC {targetAc.Value}.", ColorConstants.Orange);
+            return;
+        }
+
+        // Clone the target item and apply backup appearance
+        NwItem clonedTarget = targetItem.Clone(creature);
+
+        if (clonedTarget.IsValid)
+        {
+            backupData.ApplyToItem(clonedTarget);
+            targetItem.Destroy();
+            player.SendServerMessage($"Copied appearance to {clonedTarget.Name}.", ColorConstants.Green);
+        }
+        else
+        {
+            player.SendServerMessage("Failed to copy appearance.", ColorConstants.Red);
+        }
     }
 
     private void SaveBackupToPcKey()
