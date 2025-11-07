@@ -21,6 +21,7 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
     public readonly List<NuiBind<string>> ToolNameBinds = new();
     public readonly List<NuiBind<bool>> ToolVisibleBinds = new();
     public readonly List<NuiBind<bool>> ToolEnabledBinds = new();
+    public readonly List<NuiBind<string>> ToolDisabledTooltipBinds = new();
 
     // Store buttons for each window row
     public List<NuiButtonImage> OpenWindowButtons = new();
@@ -53,17 +54,18 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
         NuiElement headerOverlay = BuildHeaderOverlay();
         NuiSpacer headerSpacer = new NuiSpacer { Height = 85f };
 
-        // Create dynamic rows for tools (we'll build up to 20 rows to accommodate all tools)
         List<NuiElement> toolRows = new();
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 15; i++)
         {
             NuiBind<string> toolNameBind = new($"tool_name_{i}");
             NuiBind<bool> toolVisibleBind = new($"tool_visible_{i}");
             NuiBind<bool> toolEnabledBind = new($"tool_enabled_{i}");
+            NuiBind<string> toolDisabledTooltipBind = new($"tool_disabled_tooltip_{i}");
 
             ToolNameBinds.Add(toolNameBind);
             ToolVisibleBinds.Add(toolVisibleBind);
             ToolEnabledBinds.Add(toolEnabledBind);
+            ToolDisabledTooltipBinds.Add(toolDisabledTooltipBind);
 
             NuiButtonImage openButton;
 
@@ -80,7 +82,8 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
                         Width = 35f,
                         Height = 35f,
                         Tooltip = "Open Tool",
-                        Enabled = toolEnabledBind
+                        Enabled = toolEnabledBind,
+                        DisabledTooltip = toolDisabledTooltipBind
                     }.Assign(out openButton),
                     new NuiSpacer { Width = 10f },
                     new NuiLabel(toolNameBind)

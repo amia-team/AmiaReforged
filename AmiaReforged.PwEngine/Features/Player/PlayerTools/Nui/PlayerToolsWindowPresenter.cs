@@ -76,7 +76,6 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
         Model.SetSearchTerm(string.Empty);
         Model.RefreshWindowList();
 
-        // Populate the dynamic rows (up to 20)
         for (int i = 0; i < 20; i++)
         {
             if (i < Model.VisibleWindows.Count)
@@ -84,12 +83,18 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
                 Token().SetBindValue(View.ToolNameBinds[i], Model.VisibleWindows[i].Title);
                 Token().SetBindValue(View.ToolVisibleBinds[i], true);
                 Token().SetBindValue(View.ToolEnabledBinds[i], Model.EnabledWindowIndices.Contains(i));
+
+                string disabledTooltip = Model.DisabledReasons.TryGetValue(i, out string reason)
+                    ? reason
+                    : string.Empty;
+                Token().SetBindValue(View.ToolDisabledTooltipBinds[i], disabledTooltip);
             }
             else
             {
                 Token().SetBindValue(View.ToolNameBinds[i], string.Empty);
                 Token().SetBindValue(View.ToolVisibleBinds[i], false);
                 Token().SetBindValue(View.ToolEnabledBinds[i], false);
+                Token().SetBindValue(View.ToolDisabledTooltipBinds[i], string.Empty);
             }
         }
     }

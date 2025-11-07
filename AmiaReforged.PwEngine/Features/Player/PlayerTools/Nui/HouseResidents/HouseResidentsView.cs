@@ -167,5 +167,17 @@ public sealed class HouseResidentsView : ScryView<HouseResidentsPresenter>, IToo
         return houseVar.HasValue && houseVar.Value == 1;
     }
 
+    public string GetDisabledReason(NwPlayer player)
+    {
+        NwArea? area = player.ControlledCreature?.Area;
+        if (area == null)
+            return "You are not in a valid area.";
+
+        if (ShouldListForPlayer(player) == false)
+            return "This area is not a house.";
+
+        return string.Empty;
+    }
+
     public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 }

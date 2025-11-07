@@ -13,5 +13,7 @@ public interface IToolWindow
 
     public bool ShouldListForPlayer(NwPlayer player) => ListInPlayerTools;
 
+    public string GetDisabledReason(NwPlayer player) => string.Empty;
+
     public IScryPresenter ForPlayer(NwPlayer player);
 }

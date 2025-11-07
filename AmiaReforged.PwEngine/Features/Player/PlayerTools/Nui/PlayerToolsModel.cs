@@ -17,6 +17,7 @@ public class PlayerToolsModel
 
     public List<IToolWindow> VisibleWindows { get; private set; } = new();
     public HashSet<int> EnabledWindowIndices { get; private set; } = new();
+    public Dictionary<int, string> DisabledReasons { get; private set; } = new();
     public bool CharacterIsPersisted { get; set; }
 
     private List<IToolWindow> GetVisibleWindows()
@@ -29,7 +30,7 @@ public class PlayerToolsModel
 
     private List<IToolWindow> GetAvailableWindows()
     {
-        List<(IToolWindow window, bool isEnabled)> windowsWithStatus = new();
+        List<(IToolWindow window, bool isEnabled, string disabledReason)> windowsWithStatus = new();
         Assembly assembly = Assembly.GetExecutingAssembly();
         Type interfaceType = typeof(IToolWindow);
 
@@ -47,14 +48,23 @@ public class PlayerToolsModel
 
             // Add all tools but track which ones are enabled
             bool isEnabled = true;
+            string disabledReason = string.Empty;
 
             if (window.RequiresPersistedCharacter && !CharacterIsPersisted)
+            {
                 isEnabled = false;
-
-            if (!window.ShouldListForPlayer(_player))
+                disabledReason = "You must complete character creation first.";
+            }
+            else if (!window.ShouldListForPlayer(_player))
+            {
                 isEnabled = false;
+                string customReason = window.GetDisabledReason(_player);
+                disabledReason = !string.IsNullOrEmpty(customReason)
+                    ? customReason
+                    : "This tool is not available to your character.";
+            }
 
-            windowsWithStatus.Add((window, isEnabled));
+            windowsWithStatus.Add((window, isEnabled, disabledReason));
         }
 
         // Sort by title
@@ -65,12 +75,15 @@ public class PlayerToolsModel
         // Build the final list and enabled indices
         List<IToolWindow> windows = new();
         EnabledWindowIndices.Clear();
+        DisabledReasons.Clear();
 
         for (int i = 0; i < sortedWindows.Count; i++)
         {
             windows.Add(sortedWindows[i].window);
             if (sortedWindows[i].isEnabled)
                 EnabledWindowIndices.Add(i);
+            else
+                DisabledReasons[i] = sortedWindows[i].disabledReason;
         }
 
         return windows;

@@ -384,5 +384,18 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
         return mode != PlaceablePersistenceMode.None;
     }
 
+    public string GetDisabledReason(NwPlayer player)
+    {
+        NwArea? area = player.ControlledCreature?.Area;
+        if (area == null)
+            return "You must be in a valid area to use this tool.";
+
+        PlaceablePersistenceMode mode = area.GetPlaceablePersistenceMode();
+        if (mode == PlaceablePersistenceMode.None)
+            return "Placeable manipulation is not allowed in this area.";
+
+        return string.Empty;
+    }
+
     public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 }
