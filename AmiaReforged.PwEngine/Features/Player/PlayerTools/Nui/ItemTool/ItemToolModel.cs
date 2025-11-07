@@ -2,6 +2,7 @@
 using Anvil.API.Events;
 using Anvil.Services;
 using NWN.Core;
+using YamlDotNet.Serialization;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ItemTool;
 
@@ -20,7 +21,7 @@ internal sealed class ItemToolModel(NwPlayer player)
 
     public void EnterTargetingMode()
     {
-        player.EnterTargetMode(OnTargetItem, new TargetModeSettings { ValidTargets = ObjectTypes.Item });
+        player.EnterTargetMode(OnTargetItem, new TargetModeSettings { ValidTargets = ObjectTypes.Item});
     }
     private static readonly HashSet<string> BarredResrefs = new(StringComparer.OrdinalIgnoreCase)
     {

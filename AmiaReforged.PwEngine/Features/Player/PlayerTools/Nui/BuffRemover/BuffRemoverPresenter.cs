@@ -50,7 +50,7 @@ public class BuffRemoverPresenter : ScryPresenter<BuffRemoverView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(400, 400, 670f, 520f),
+            Geometry = new NuiRect(0, 100, 670f, 520f),
             Resizable = false
         };
     }

@@ -1,4 +1,4 @@
-﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using Anvil.API;
 
@@ -57,11 +57,11 @@ public sealed class CharacterCustomizationView : ScryView<CharacterCustomization
     public NuiButtonImage CopyToOtherSideButton = null!;
     public NuiButtonImage CopyAppearanceButton = null!;
 
-    public string Title => "Character Customization";
+    public string Title => "Player Crafting and Customization";
     public string Id => "char_customization";
     public string CategoryTag => "Appearance";
-    public bool ListInPlayerTools => true;
-    public bool RequiresPersistedCharacter => false;
+    public bool ListInPlayerTools => false;
+    public bool RequiresPersistedCharacter => true;
     public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 
     public CharacterCustomizationView(NwPlayer player)
