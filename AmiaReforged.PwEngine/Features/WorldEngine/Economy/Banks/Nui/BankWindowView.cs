@@ -103,10 +103,9 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     public NuiButton StoreItemButton = null!;
     public NuiButton WithdrawStoredItemButton = null!;
 
-    // Tab control
-    public NuiBind<bool> ShowBankingTab = new("bank_show_banking_tab");
-    public NuiBind<bool> ShowStorageTab = new("bank_show_storage_tab");
-    public NuiBind<bool> ShowAdminTab = new("bank_show_admin_tab");
+    // Window buttons
+    public NuiButton OpenStorageWindowButton = null!;
+    public NuiButton OpenAdminWindowButton = null!;
 
     public BankWindowView(NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -180,62 +179,32 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
             [
                 BuildHeader(),
                 new NuiSpacer { Height = StandardSpacing },
-                // Tab selector
+                // Quick access buttons for other windows
                 new NuiRow
                 {
                     Height = StandardButtonHeight,
                     Children =
                     [
-                        new NuiButton("Banking")
+                        new NuiButton("Open Storage")
                         {
-                            Id = "bank_tab_banking",
+                            Id = "bank_btn_open_storage",
+                            Width = TabButtonWidth + 20f,
+                            Height = StandardButtonHeight - 4f
+                        }.Assign(out OpenStorageWindowButton),
+                        new NuiSpacer { Width = 10f },
+                        new NuiButton("Open Admin")
+                        {
+                            Id = "bank_btn_open_admin",
                             Width = TabButtonWidth,
                             Height = StandardButtonHeight - 4f
-                        },
-                        new NuiButton("Storage")
-                        {
-                            Id = "bank_tab_storage",
-                            Width = TabButtonWidth,
-                            Height = StandardButtonHeight - 4f
-                        },
-                        new NuiButton("Admin")
-                        {
-                            Id = "bank_tab_admin",
-                            Width = TabButtonWidth,
-                            Height = StandardButtonHeight - 4f
-                        },
+                        }.Assign(out OpenAdminWindowButton),
                         new NuiSpacer()
                     ]
                 },
                 new NuiSpacer { Height = StandardSpacing },
-                // Tab 0: Banking
-                new NuiColumn
-                {
-                    Visible = ShowBankingTab,
-                    Children =
-                    [
-                        BuildBankingTab(accountRowTemplate, holdingRowTemplate, inventoryRowTemplate,
-                            pendingRowTemplate)
-                    ]
-                },
-                // Tab 1: Storage
-                new NuiColumn
-                {
-                    Visible = ShowStorageTab,
-                    Children =
-                    [
-                        BuildStorageTab(storedItemRowTemplate, inventoryRowTemplate, foreclosedRowTemplate)
-                    ]
-                },
-                // Tab 2: Admin
-                new NuiColumn
-                {
-                    Visible = ShowAdminTab,
-                    Children =
-                    [
-                        BuildAdminTab()
-                    ]
-                },
+                // Banking content
+                BuildBankingTab(accountRowTemplate, holdingRowTemplate, inventoryRowTemplate,
+                    pendingRowTemplate),
                 new NuiSpacer(),
                 BuildFooterButtons()
             ]
@@ -315,250 +284,6 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
                     ]
                 },
                 BuildMainContent(accountRowTemplate, holdingRowTemplate, inventoryRowTemplate, pendingRowTemplate)
-            ]
-        };
-    }
-
-    private NuiElement BuildStorageTab(
-        IReadOnlyList<NuiListTemplateCell> storedItemRowTemplate,
-        IReadOnlyList<NuiListTemplateCell> inventoryRowTemplate,
-        IReadOnlyList<NuiListTemplateCell> foreclosedRowTemplate)
-    {
-        const float storageListHeight = 320f;
-        const float labelHeight = 22f;
-        const float actualListHeight = storageListHeight - labelHeight - 8f;
-
-        return new NuiColumn
-        {
-            Children =
-            [
-                // Personal Storage section
-                new NuiLabel("Personal Storage")
-                {
-                    Height = 26f,
-                    HorizontalAlign = NuiHAlign.Left
-                },
-                new NuiRow
-                {
-                    // Height = StandardRowHeight - 8f,
-                    Children =
-                    [
-                        new NuiLabel(PersonalStorageCapacityText)
-                        {
-                            Width = ContentWidth - StandardButtonWidth - 20f,
-                            HorizontalAlign = NuiHAlign.Left,
-                            VerticalAlign = NuiVAlign.Middle
-                        },
-                        new NuiSpacer(),
-                        new NuiButton("Upgrade")
-                        {
-                            Id = "bank_btn_upgrade_storage",
-                            Width = StandardButtonWidth,
-                            Height = 26f,
-                            Visible = CanUpgradeStorage
-                        }.Assign(out UpgradeStorageButton)
-                    ]
-                },
-                new NuiLabel(UpgradeStorageCostText)
-                {
-                    Height = 20f,
-                    Visible = CanUpgradeStorage,
-                    HorizontalAlign = NuiHAlign.Left
-                },
-                new NuiSpacer { Height = StandardSpacing - 2f },
-                new NuiRow
-                {
-                    Height = storageListHeight,
-                    Children =
-                    [
-                        new NuiColumn
-                        {
-                            Width = HalfWidth,
-                            Children =
-                            [
-                                new NuiLabel("Your Inventory (click to store)")
-                                {
-                                    Height = labelHeight,
-                                    HorizontalAlign = NuiHAlign.Left
-                                },
-                                new NuiList(inventoryRowTemplate, InventoryItemCount)
-                                {
-                                    RowHeight = 28f,
-                                    Height = actualListHeight
-                                }
-                            ]
-                        },
-                        new NuiSpacer { Width = 12f },
-                        new NuiColumn
-                        {
-                            Width = HalfWidth,
-                            Children =
-                            [
-                                new NuiLabel("Stored Items (click to withdraw)")
-                                {
-                                    Height = labelHeight,
-                                    HorizontalAlign = NuiHAlign.Left
-                                },
-                                new NuiList(storedItemRowTemplate, PersonalStorageItemCount)
-                                {
-                                    RowHeight = 28f,
-                                    Height = actualListHeight
-                                }
-                            ]
-                        }
-                    ]
-                },
-                new NuiSpacer { Height = 12f },
-                // Foreclosed items section
-                new NuiColumn
-                {
-                    Visible = HasForeclosedItems,
-                    Children =
-                    [
-                        new NuiLabel("Foreclosed Items")
-                        {
-                            Height = 26f,
-                            HorizontalAlign = NuiHAlign.Left
-                        },
-                        new NuiRow
-                        {
-                            // Height = 150f,
-                            Children =
-                            [
-                                new NuiList(foreclosedRowTemplate, ForeclosedItemCount)
-                                {
-                                    RowHeight = 28f,
-                                    Width = 500f,
-                                    Height = 140f
-                                },
-                                new NuiSpacer { Width = 12f },
-                                new NuiButton("Reclaim")
-                                {
-                                    Id = "bank_btn_reclaim_foreclosed",
-                                    Width = 100f,
-                                    Height = 32f
-                                }.Assign(out ReclaimForeclosedItemsButton)
-                            ]
-                        }
-                    ]
-                }
-            ]
-        };
-    }
-
-    private NuiElement BuildAdminTab()
-    {
-        return new NuiColumn
-        {
-            Children =
-            [
-                new NuiLabel("Account Management")
-                {
-                    Height = 26f,
-                    HorizontalAlign = NuiHAlign.Left
-                },
-                new NuiSpacer { Height = 8f },
-                new NuiRow
-                {
-                    // Height = 40f,
-                    Children =
-                    [
-                        new NuiButton("View History")
-                        {
-                            Id = "bank_btn_view_history",
-                            Width = 150f,
-                            Height = 32f
-                        }.Assign(out ViewHistoryButton),
-                        new NuiSpacer { Width = 12f },
-                        new NuiButton("Close Account")
-                        {
-                            Id = "bank_btn_close_account",
-                            Width = 150f,
-                            Height = 32f
-                        }.Assign(out CloseAccountButton)
-                    ]
-                },
-                new NuiSpacer { Height = 24f },
-                // Organization section
-                new NuiColumn
-                {
-                    Visible = IsOrganizationLeader,
-                    Children =
-                    [
-                        new NuiLabel("Organization Banking")
-                        {
-                            // Height = 26f,
-                            HorizontalAlign = NuiHAlign.Left
-                        },
-                        new NuiRow
-                        {
-                            Height = 36f,
-                            Children =
-                            [
-                                new NuiButton("Open Org Account")
-                                {
-                                    Id = "bank_btn_open_organization",
-                                    Width = 180f,
-                                    Height = 32f
-                                }.Assign(out OpenOrganizationAccountButton),
-                                new NuiSpacer { Width = 12f },
-                                new NuiLabel(OrganizationEligibilityStatus)
-                                {
-                                    HorizontalAlign = NuiHAlign.Left,
-                                    VerticalAlign = NuiVAlign.Middle
-                                }
-                            ]
-                        }
-                    ]
-                },
-                new NuiSpacer { Height = 24f },
-                // Share tools
-                new NuiColumn
-                {
-                    Visible = ShowShareTools,
-                    Children =
-                    [
-                        new NuiLabel("Share Documents")
-                        {
-                            Height = 26f,
-                            HorizontalAlign = NuiHAlign.Left
-                        },
-                        new NuiLabel(ShareInstructions)
-                        {
-                            Height = 22f,
-                            HorizontalAlign = NuiHAlign.Left
-                        },
-                        new NuiRow
-                        {
-                            Height = 36f,
-                            Children =
-                            [
-                                new NuiCombo
-                                {
-                                    Width = 260f,
-                                    Height = 32f,
-                                    Entries = OrganizationAccountEntries,
-                                    Selected = OrganizationAccountSelection
-                                },
-                                new NuiSpacer { Width = 12f },
-                                new NuiCombo
-                                {
-                                    Width = 220f,
-                                    Height = 32f,
-                                    Entries = ShareTypeEntries,
-                                    Selected = ShareTypeSelection
-                                },
-                                new NuiSpacer { Width = 12f },
-                                new NuiButton("Issue")
-                                {
-                                    Id = "bank_btn_issue_share",
-                                    Width = 100f,
-                                    Height = 32f
-                                }.Assign(out IssueShareDocumentButton)
-                            ]
-                        }
-                    ]
-                }
             ]
         };
     }
@@ -1214,11 +939,6 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         Token().SetBindValue(View.ShareTypeSelection, Model.SelectedShareType);
         Token().SetBindValue(View.ShareInstructions, Model.ShareInstructions);
 
-        // Initialize tabs (Banking tab shown by default)
-        Token().SetBindValue(View.ShowBankingTab, true);
-        Token().SetBindValue(View.ShowStorageTab, false);
-        Token().SetBindValue(View.ShowAdminTab, false);
-
         // Update foreclosed items display
         bool hasForeclosedItems = _foreclosedItems.Count > 0;
         Token().SetBindValue(View.HasForeclosedItems, hasForeclosedItems);
@@ -1277,20 +997,11 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
 
         switch (obj.ElementId)
         {
-            case "bank_tab_banking":
-                Token().SetBindValue(View.ShowBankingTab, true);
-                Token().SetBindValue(View.ShowStorageTab, false);
-                Token().SetBindValue(View.ShowAdminTab, false);
+            case "bank_btn_open_storage":
+                OpenStorageWindow();
                 break;
-            case "bank_tab_storage":
-                Token().SetBindValue(View.ShowBankingTab, false);
-                Token().SetBindValue(View.ShowStorageTab, true);
-                Token().SetBindValue(View.ShowAdminTab, false);
-                break;
-            case "bank_tab_admin":
-                Token().SetBindValue(View.ShowBankingTab, false);
-                Token().SetBindValue(View.ShowStorageTab, false);
-                Token().SetBindValue(View.ShowAdminTab, true);
+            case "bank_btn_open_admin":
+                OpenAdminWindow();
                 break;
             case "bank_btn_open_personal":
                 _ = HandleOpenPersonalAccountAsync();
@@ -2570,5 +2281,17 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
                 message: "Failed to withdraw item due to an unexpected error.",
                 ColorConstants.Orange);
         }
+    }
+
+    private void OpenStorageWindow()
+    {
+        BankStorageWindowView storageWindow = new(_player, _coinhouseTag, _bankDisplayName);
+        storageWindow.Presenter.Create();
+    }
+
+    private void OpenAdminWindow()
+    {
+        BankAdminWindowView adminWindow = new(_player, _coinhouseTag, _bankDisplayName);
+        adminWindow.Presenter.Create();
     }
 }
