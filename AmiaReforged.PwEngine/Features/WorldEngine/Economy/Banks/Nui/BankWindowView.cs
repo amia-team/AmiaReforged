@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
@@ -11,6 +12,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -67,10 +69,14 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
     public NuiButton OpenPersonalAccountButton = null!;
     public NuiButton OpenOrganizationAccountButton = null!;
     public NuiButton IssueShareDocumentButton = null!;
+    public NuiButton ReclaimForeclosedItemsButton = null!;
 
     public NuiBind<bool> ShowPersonalAccountActions = new("bank_show_personal_actions");
     public NuiBind<bool> IsOrganizationLeader = new("bank_is_org_leader");
     public NuiBind<bool> ShowShareTools = new("bank_show_share_tools");
+    public NuiBind<bool> HasForeclosedItems = new("bank_has_foreclosed_items");
+    public NuiBind<int> ForeclosedItemCount = new("bank_foreclosed_item_count");
+    public NuiBind<string> ForeclosedItemLabels = new("bank_foreclosed_item_labels");
 
     public BankWindowView(NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -457,24 +463,74 @@ public sealed class BankWindowView : ScryView<BankWindowPresenter>
 
     private NuiElement BuildSecondaryActions()
     {
-        return new NuiRow
+        List<NuiListTemplateCell> foreclosedRowTemplate =
+        [
+            new(new NuiLabel(ForeclosedItemLabels)
+            {
+                HorizontalAlign = NuiHAlign.Left,
+                VerticalAlign = NuiVAlign.Middle
+            })
+        ];
+
+        return new NuiColumn
         {
-            Height = 40f,
             Children =
             [
-                new NuiButton("View History")
+                new NuiRow
                 {
-                    Id = "bank_btn_view_history",
-                    Width = 150f,
-                    Height = 32f
-                }.Assign(out ViewHistoryButton),
-                new NuiSpacer(),
-                new NuiButton("Close Account")
+                    Height = 26f,
+                    Visible = HasForeclosedItems,
+                    Children =
+                    [
+                        new NuiLabel("Foreclosed Items Available")
+                        {
+                            Width = 260f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle
+                        }
+                    ]
+                },
+                new NuiRow
                 {
-                    Id = "bank_btn_close_account",
-                    Width = 150f,
-                    Height = 32f
-                }.Assign(out CloseAccountButton)
+                    Visible = HasForeclosedItems,
+                    Children =
+                    [
+                        new NuiList(foreclosedRowTemplate, ForeclosedItemCount)
+                        {
+                            RowHeight = 28f,
+                            Height = 120f,
+                            Width = 400f
+                        },
+                        new NuiSpacer { Width = 12f },
+                        new NuiButton("Reclaim Item")
+                        {
+                            Id = "bank_btn_reclaim_foreclosed",
+                            Width = 160f,
+                            Height = 32f
+                        }.Assign(out ReclaimForeclosedItemsButton)
+                    ]
+                },
+                new NuiSpacer { Height = 6f },
+                new NuiRow
+                {
+                    Height = 40f,
+                    Children =
+                    [
+                        new NuiButton("View History")
+                        {
+                            Id = "bank_btn_view_history",
+                            Width = 150f,
+                            Height = 32f
+                        }.Assign(out ViewHistoryButton),
+                        new NuiSpacer(),
+                        new NuiButton("Close Account")
+                        {
+                            Id = "bank_btn_close_account",
+                            Width = 150f,
+                            Height = 32f
+                        }.Assign(out CloseAccountButton)
+                    ]
+                }
             ]
         };
     }
@@ -538,6 +594,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
     private BankAccountModel? _model;
     private NuiWindowToken _token;
     private NuiWindow? _window;
+    private List<StoredItem> _foreclosedItems = [];
 
     public BankWindowPresenter(BankWindowView view, NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -552,24 +609,28 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
     [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
 
     [Inject]
-    private Lazy<IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?>> AccountQueryHandler { get; init; } = null!;
+    private Lazy<IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?>> AccountQueryHandler
+    {
+        get;
+        init;
+    } = null!;
+
     [Inject]
-    private Lazy<IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult>> EligibilityQueryHandler { get; init; } = null!;
+    private Lazy<IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult>>
+        EligibilityQueryHandler { get; init; } = null!;
 
     [Inject]
     private Lazy<ICommandHandler<OpenCoinhouseAccountCommand>> OpenAccountCommandHandler { get; init; } = null!;
 
-    [Inject]
-    private Lazy<ICommandHandler<DepositGoldCommand>> DepositCommandHandler { get; init; } = null!;
+    [Inject] private Lazy<ICommandHandler<DepositGoldCommand>> DepositCommandHandler { get; init; } = null!;
 
-    [Inject]
-    private Lazy<ICommandHandler<WithdrawGoldCommand>> WithdrawCommandHandler { get; init; } = null!;
+    [Inject] private Lazy<ICommandHandler<WithdrawGoldCommand>> WithdrawCommandHandler { get; init; } = null!;
 
-    [Inject]
-    private Lazy<IBankAccessEvaluator> BankAccessEvaluator { get; init; } = null!;
+    [Inject] private Lazy<IBankAccessEvaluator> BankAccessEvaluator { get; init; } = null!;
 
-    [Inject]
-    private WindowDirector WindowDirector { get; init; } = null!;
+    [Inject] private Lazy<IForeclosureStorageService> ForeclosureStorageService { get; init; } = null!;
+
+    [Inject] private WindowDirector WindowDirector { get; init; } = null!;
 
     private BankAccountModel Model => _model ??= new BankAccountModel(
         AccountQueryHandler.Value,
@@ -629,6 +690,9 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         {
             Model.SetIdentity(persona, _coinhouseTag, _bankDisplayName);
             await Model.LoadAsync();
+
+            // Load foreclosed items for this character
+            await LoadForeclosedItemsAsync(playerKey);
         }
         catch (Exception ex)
         {
@@ -700,12 +764,22 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         bool showPersonalActions = !Model.AccountExists;
         Token().SetBindValue(View.ShowPersonalAccountActions, showPersonalActions);
 
-    bool showOrganizationActions = Model.OrganizationEligibility.Any(option => !option.AlreadyHasAccount);
+        bool showOrganizationActions = Model.OrganizationEligibility.Any(option => !option.AlreadyHasAccount);
         Token().SetBindValue(View.IsOrganizationLeader, showOrganizationActions);
         Token().SetBindValue(View.ShowShareTools, Model.ShouldShowShareTools);
         Token().SetBindValue(View.ShareTypeEntries, Model.ShareTypeOptions);
         Token().SetBindValue(View.ShareTypeSelection, Model.SelectedShareType);
         Token().SetBindValue(View.ShareInstructions, Model.ShareInstructions);
+
+        // Update foreclosed items display
+        bool hasForeclosedItems = _foreclosedItems.Count > 0;
+        Token().SetBindValue(View.HasForeclosedItems, hasForeclosedItems);
+        Token().SetBindValue(View.ForeclosedItemCount, _foreclosedItems.Count);
+
+        List<string> foreclosedLabels = _foreclosedItems
+            .Select((item, index) => $"[{index + 1}] Foreclosed item (ID: {item.Id})")
+            .ToList();
+        Token().SetBindValues(View.ForeclosedItemLabels, foreclosedLabels);
 
         if (Model.AccountExists)
         {
@@ -757,6 +831,9 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
                 break;
             case "bank_btn_issue_share":
                 _ = HandleIssueShareDocumentAsync();
+                break;
+            case "bank_btn_reclaim_foreclosed":
+                _ = HandleReclaimForeclosedItemAsync();
                 break;
             case "bank_btn_done":
             case "bank_btn_cancel":
@@ -1204,7 +1281,8 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
             NWScript.SetLocalInt(document, ShareDocumentLocals.HolderRoleId, (int)holderRole);
             NWScript.SetLocalString(document, ShareDocumentLocals.Issuer, issuerName);
             NWScript.SetLocalString(document, ShareDocumentLocals.DocumentId, documentId.ToString());
-            NWScript.SetLocalString(document, ShareDocumentLocals.IssuedAt, issuedAt.ToString("o", CultureInfo.InvariantCulture));
+            NWScript.SetLocalString(document, ShareDocumentLocals.IssuedAt,
+                issuedAt.ToString("o", CultureInfo.InvariantCulture));
             NWScript.SetLocalString(document, ShareDocumentLocals.BankName, Model.BankTitle);
 
             creature.AcquireItem(document);
@@ -1213,7 +1291,8 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
                 message: $"A {documentName} has been added to your inventory.",
                 ColorConstants.White);
 
-            Log.Info("Issued bank share document {DocumentId} for account {AccountId} ({ShareType}) at coinhouse {Coinhouse}.",
+            Log.Info(
+                "Issued bank share document {DocumentId} for account {AccountId} ({ShareType}) at coinhouse {Coinhouse}.",
                 documentId, accountId, shareType, Model.Coinhouse.Value ?? "(unknown)");
         }
         catch (Exception ex)
@@ -1249,7 +1328,8 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         string summary = Model.ShareRoleSummary(shareType);
         string coinhouseTag = Model.Coinhouse.Value ?? "Unspecified";
 
-        return $"{Model.BankTitle}\nShare Role: {roleName}\nScope: {summary}\nCoinhouse: {coinhouseTag}\nAccount Reference: {accountId}\nDocument: {documentId}\nIssuer: {issuerName}\nIssued (UTC): {issuedAt.ToString("g", CultureInfo.InvariantCulture)}\n\nPresent this parchment at the banker to register the share.";
+        return
+            $"{Model.BankTitle}\nShare Role: {roleName}\nScope: {summary}\nCoinhouse: {coinhouseTag}\nAccount Reference: {accountId}\nDocument: {documentId}\nIssuer: {issuerName}\nIssued (UTC): {issuedAt.ToString("g", CultureInfo.InvariantCulture)}\n\nPresent this parchment at the banker to register the share.";
     }
 
     private async Task HandleDepositAsync()
@@ -1506,5 +1586,130 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         }
 
         return true;
+    }
+
+    private async Task LoadForeclosedItemsAsync(Guid characterId)
+    {
+        try
+        {
+            _foreclosedItems = await ForeclosureStorageService.Value.GetForeclosedItemsAsync(
+                _coinhouseTag,
+                characterId);
+
+            Log.Info("Loaded {Count} foreclosed items for character {CharacterId} at coinhouse {Coinhouse}",
+                _foreclosedItems.Count, characterId, _coinhouseTag.Value);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load foreclosed items for character {CharacterId} at coinhouse {Coinhouse}",
+                characterId, _coinhouseTag.Value);
+            _foreclosedItems = [];
+        }
+    }
+
+    private async Task HandleReclaimForeclosedItemAsync()
+    {
+        if (_foreclosedItems.Count == 0)
+        {
+            await NwTask.SwitchToMainThread();
+            Token().Player.SendServerMessage(
+                message: "You have no foreclosed items to reclaim at this coinhouse.",
+                ColorConstants.White);
+            return;
+        }
+
+        // For simplicity, we'll reclaim all items at once
+        // In a more sophisticated UI, you'd let players select which items to reclaim
+
+        await NwTask.SwitchToMainThread();
+
+        NwCreature? creature = _player.LoginCreature;
+        if (creature is null)
+        {
+            Token().Player.SendServerMessage(
+                message: "You must be possessing a character to reclaim items.",
+                ColorConstants.Orange);
+            return;
+        }
+
+        int reclaimedCount = 0;
+        int failedCount = 0;
+        List<long> itemsToRemove = [];
+
+        foreach (StoredItem storedItem in _foreclosedItems)
+        {
+            try
+            {
+                // Deserialize the item
+                NwItem? item = NwItem.Deserialize(storedItem.ItemData);
+
+                if (item is null)
+                {
+                    Log.Warn("Failed to deserialize foreclosed item {ItemId} for player {PlayerName}",
+                        storedItem.Id, _player.PlayerName);
+                    failedCount++;
+                    continue;
+                }
+
+                // Give item to player
+                creature.AcquireItem(item);
+
+                itemsToRemove.Add(storedItem.Id);
+                reclaimedCount++;
+
+                Log.Info("Player {PlayerName} reclaimed foreclosed item {ItemId} from coinhouse {Coinhouse}",
+                    _player.PlayerName, storedItem.Id, _coinhouseTag.Value);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error reclaiming foreclosed item {ItemId} for player {PlayerName}",
+                    storedItem.Id, _player.PlayerName);
+                failedCount++;
+            }
+        }
+
+        // Remove successfully reclaimed items from storage
+        foreach (long itemId in itemsToRemove)
+        {
+            try
+            {
+                await ForeclosureStorageService.Value.RemoveForeclosedItemAsync(itemId);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to remove foreclosed item {ItemId} from storage", itemId);
+            }
+        }
+
+        await NwTask.SwitchToMainThread();
+
+        if (reclaimedCount > 0)
+        {
+            string message = reclaimedCount == 1
+                ? "Reclaimed 1 foreclosed item."
+                : $"Reclaimed {reclaimedCount} foreclosed items.";
+
+            if (failedCount > 0)
+            {
+                message += $" ({failedCount} items could not be recovered.)";
+            }
+
+            Token().Player.SendServerMessage(message, ColorConstants.White);
+        }
+        else
+        {
+            Token().Player.SendServerMessage(
+                message: "No items could be reclaimed. Please contact a DM if this persists.",
+                ColorConstants.Orange);
+        }
+
+        // Reload foreclosed items and update view
+        Guid playerKey = CharacterService.Value.GetPlayerKey(_player);
+        if (playerKey != Guid.Empty)
+        {
+            await LoadForeclosedItemsAsync(playerKey);
+            await NwTask.SwitchToMainThread();
+            UpdateView();
+        }
     }
 }
