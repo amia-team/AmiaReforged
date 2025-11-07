@@ -6,14 +6,23 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui;
 
 public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
 {
+    private const float WindowW = 680f;
+    private const float WindowH = 600f;
+    private const float HeaderW = 620f;
+    private const float HeaderH = 100f;
+    private const float HeaderTopPad = 0f;
+    private const float HeaderLeftPad = 25f;
+
     // Value binds.
-    public readonly NuiBind<string> Search = new(key: "search_val");
     public readonly NuiBind<int> WindowCount = new(key: "window_count");
     public readonly NuiBind<string> WindowNames = new(key: "win_names");
-    public NuiButtonImage OpenWindowButton = null!;
 
-    // Buttons.
-    public NuiButtonImage SearchButton = null!;
+    // Dynamic row binds
+    public readonly List<NuiBind<string>> ToolNameBinds = new();
+    public readonly List<NuiBind<bool>> ToolVisibleBinds = new();
+
+    // Store buttons for each window row
+    public List<NuiButtonImage> OpenWindowButtons = new();
 
     public PlayerToolsWindowView(NwPlayer player)
     {
@@ -22,49 +31,93 @@ public sealed class PlayerToolsWindowView : ScryView<PlayerToolsWindowPresenter>
 
     public override PlayerToolsWindowPresenter Presenter { get; protected set; }
 
+    private NuiElement BuildHeaderOverlay()
+    {
+        return new NuiRow
+        {
+            Width = 0f, Height = 0f, Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))]
+        };
+    }
+
     public override NuiLayout RootLayout()
     {
-        List<NuiListTemplateCell> rowTemplate =
-        [
-            new(new NuiButtonImage(resRef: "dm_goto")
-            {
-                Id = "btn_openwin",
-                Aspect = 1f,
-                Tooltip = "Open Window"
-            }.Assign(out OpenWindowButton))
-            {
-                VariableSize = false,
-                Width = 35f
-            },
+        NuiRow bgLayer = new NuiRow
+        {
+            Width = 0f, Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))]
+        };
 
-            new(new NuiLabel(WindowNames)
+        NuiElement headerOverlay = BuildHeaderOverlay();
+        NuiSpacer headerSpacer = new NuiSpacer { Height = 85f };
+
+        // Create dynamic rows for tools (we'll build up to 10 rows to accommodate most scenarios)
+        List<NuiElement> toolRows = new();
+        for (int i = 0; i < 10; i++)
+        {
+            NuiBind<string> toolNameBind = new($"tool_name_{i}");
+            NuiBind<bool> toolVisibleBind = new($"tool_visible_{i}");
+
+            ToolNameBinds.Add(toolNameBind);
+            ToolVisibleBinds.Add(toolVisibleBind);
+
+            NuiButtonImage openButton;
+
+            NuiRow toolRow = new()
             {
-                VerticalAlign = NuiVAlign.Middle
-            })
-        ];
+                Height = 40f,
+                Children =
+                {
+                    new NuiSpacer { Width = 40f },
+                    new NuiButtonImage("cc_arrow_r_btn")
+                    {
+                        Id = $"btn_opentool_{i}",
+                        Width = 35f,
+                        Height = 35f,
+                        Tooltip = "Open Tool",
+                        Visible = toolVisibleBind
+                    }.Assign(out openButton),
+                    new NuiSpacer { Width = 10f },
+                    new NuiLabel(toolNameBind)
+                    {
+                        Width = 520f,
+                        Height = 35f,
+                        VerticalAlign = NuiVAlign.Middle,
+                        HorizontalAlign = NuiHAlign.Left,
+                        ForegroundColor = new Color(30, 20, 12)
+                    },
+                    new NuiSpacer { Width = 40f }
+                }
+            };
+
+            OpenWindowButtons.Add(openButton);
+            toolRows.Add(toolRow);
+        }
 
         NuiColumn root = new()
         {
             Children =
             [
+                bgLayer,
+                headerOverlay,
+                headerSpacer,
+                new NuiSpacer { Height = 20f },
                 new NuiRow
                 {
-                    Height = 40f,
                     Children =
-                    [
-                        new NuiTextEdit(label: "Search for tools...", Search, 255, false),
-                        new NuiButtonImage(resRef: "isk_search")
+                    {
+                        new NuiSpacer { Width = 270f },
+                        new NuiLabel ("Player Tools")
                         {
-                            Id = "btn_search",
-                            Aspect = 1f
-                        }.Assign(out SearchButton)
-                    ]
+                            Height = 10f,
+                            Width = 100f,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    }
                 },
-
-                new NuiList(rowTemplate, WindowCount)
-                {
-                    RowHeight = 35f
-                }
+                new NuiSpacer { Height = 20f },
+                .. toolRows
             ]
         };
 

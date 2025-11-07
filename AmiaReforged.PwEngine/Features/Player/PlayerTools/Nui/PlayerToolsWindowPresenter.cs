@@ -34,7 +34,8 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
     {
         _window = new NuiWindow(View.RootLayout(), title: "Player Tools")
         {
-            Geometry = new NuiRect(0f, 100f, 400f, 600f)
+            Geometry = new NuiRect(0f, 100f, 680f, 600f),
+            Resizable = false
         };
     }
 
@@ -67,20 +68,28 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
                     "You haven't gone through the entry area yet. You'll want to do this if you want access to all functionality.",
                     false);
 
-        Token().SetBindValue(View.Search, string.Empty);
         RefreshWindowList();
     }
 
     private void RefreshWindowList()
     {
-        string search = Token().GetBindValue(View.Search)!;
-
-        Model.SetSearchTerm(search);
+        Model.SetSearchTerm(string.Empty);
         Model.RefreshWindowList();
 
-        List<string> windowNames = Model.VisibleWindows.Select(view => view.Title).ToList();
-        Token().SetBindValues(View.WindowNames, windowNames);
-        Token().SetBindValue(View.WindowCount, Model.VisibleWindows.Count);
+        // Populate the dynamic rows (up to 10)
+        for (int i = 0; i < 10; i++)
+        {
+            if (i < Model.VisibleWindows.Count)
+            {
+                Token().SetBindValue(View.ToolNameBinds[i], Model.VisibleWindows[i].Title);
+                Token().SetBindValue(View.ToolVisibleBinds[i], true);
+            }
+            else
+            {
+                Token().SetBindValue(View.ToolNameBinds[i], string.Empty);
+                Token().SetBindValue(View.ToolVisibleBinds[i], false);
+            }
+        }
     }
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent eventData)
@@ -95,16 +104,17 @@ public sealed class PlayerToolsWindowPresenter : ScryPresenter<PlayerToolsWindow
 
     private void HandleButtonClick(ModuleEvents.OnNuiEvent eventData)
     {
-        if (eventData.ElementId == View.SearchButton.Id)
+        // Check if it's one of the open tool buttons
+        if (eventData.ElementId.StartsWith("btn_opentool_"))
         {
-            RefreshWindowList();
-        }
-        else if (eventData.ElementId == View.OpenWindowButton.Id &&
-                 eventData.ArrayIndex >= 0 && eventData.ArrayIndex < Model.VisibleWindows.Count)
-        {
-            IToolWindow window = Model.VisibleWindows[eventData.ArrayIndex];
-            IScryPresenter toolWindow = window.ForPlayer(Token().Player);
-            WindowDirector.Value.OpenWindow(toolWindow);
+            string indexStr = eventData.ElementId.Replace("btn_opentool_", "");
+            if (int.TryParse(indexStr, out int index) &&
+                index >= 0 && index < Model.VisibleWindows.Count)
+            {
+                IToolWindow window = Model.VisibleWindows[index];
+                IScryPresenter toolWindow = window.ForPlayer(Token().Player);
+                WindowDirector.Value.OpenWindow(toolWindow);
+            }
         }
     }
 
