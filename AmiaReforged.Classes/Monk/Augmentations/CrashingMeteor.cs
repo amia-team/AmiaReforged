@@ -1,7 +1,6 @@
 using AmiaReforged.Classes.Monk.Constants;
-using AmiaReforged.Classes.Monk.Techniques.Body;
-using AmiaReforged.Classes.Monk.Techniques.Martial;
-using AmiaReforged.Classes.Monk.Techniques.Spirit;
+using AmiaReforged.Classes.Monk.Techniques.Attack;
+using AmiaReforged.Classes.Monk.Techniques.Cast;
 using AmiaReforged.Classes.Monk.Types;
 using Anvil.API;
 using Anvil.API.Events;

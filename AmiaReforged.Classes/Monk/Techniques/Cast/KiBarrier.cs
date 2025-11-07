@@ -4,7 +4,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.Classes.Monk.Techniques.Body;
+namespace AmiaReforged.Classes.Monk.Techniques.Cast;
 
 [ServiceBinding(typeof(ITechnique))]
 public class KiBarrier(AugmentationFactory augmentationFactory) : ITechnique

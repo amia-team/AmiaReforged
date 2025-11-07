@@ -4,7 +4,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.Classes.Monk.Techniques.Martial;
+namespace AmiaReforged.Classes.Monk.Techniques.Attack;
 
 [ServiceBinding(typeof(ITechnique))]
 public class EagleStrike(AugmentationFactory augmentationFactory) : ITechnique

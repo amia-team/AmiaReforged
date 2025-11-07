@@ -9,47 +9,47 @@ using NWN.Core.NWNX;
 
 namespace AmiaReforged.Classes.Monk.Services;
 
-[ServiceBinding(typeof(MartialTechniqueService))]
-public class MartialTechniqueService
+[ServiceBinding(typeof(AttackTechniqueService))]
+public class AttackTechniqueService
 {
     private readonly TechniqueFactory _techniqueFactory;
 
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private readonly Effect _martialCooldownEffect = Effect.VisualEffect(VfxType.None);
+    private readonly Effect _attackCooldownEffect = Effect.VisualEffect(VfxType.None);
 
     private static readonly NwFeat? StunningStrikeFeat = NwFeat.FromFeatId(MonkFeat.StunningStrike);
 
-    private const string MartialCooldownTag = "martialtechnique_cd";
-    private const string MartialTechnique = "martial_technique";
-    private const string StunningTag = nameof(TechniqueType.StunningStrike);
-    private const string EagleTag = nameof(TechniqueType.EagleStrike);
-    private const string AxiomaticTag = nameof(TechniqueType.AxiomaticStrike);
+    private const string AttackCooldownTag = "attack_technique_cooldown";
+    private const string AttackTechnique = "attack_technique";
+    private const string StunningTag = nameof(TechniqueType.StunningStrike) + "self";
+    private const string EagleTag = nameof(TechniqueType.EagleStrike) + "self";
+    private const string AxiomaticTag = nameof(TechniqueType.AxiomaticStrike) + "self";
     private const string EagleStrikeCounter = "eagle_strike_counter";
 
-    public MartialTechniqueService(TechniqueFactory techniqueFactory)
+    public AttackTechniqueService(TechniqueFactory techniqueFactory)
     {
         _techniqueFactory = techniqueFactory;
 
-        _martialCooldownEffect.SubType = EffectSubType.Unyielding;
-        _martialCooldownEffect.Tag = MartialCooldownTag;
+        _attackCooldownEffect.SubType = EffectSubType.Unyielding;
+        _attackCooldownEffect.Tag = AttackCooldownTag;
 
         string environment = UtilPlugin.GetEnvironmentVariable(sVarname: "SERVER_MODE");
         if (environment == "live") return;
 
-        NwModule.Instance.OnUseFeat += MartialTechniqueUseFeat;
-        NwModule.Instance.OnCombatRoundStart += EnterMartialTechnique;
+        NwModule.Instance.OnUseFeat += AttackTechniqueUseFeat;
+        NwModule.Instance.OnCombatRoundStart += EnterAttackTechnique;
         NwModule.Instance.OnCreatureAttack += OnHitApplyAxiomatic;
         NwModule.Instance.OnCreatureDamage += OnDamageApplyTechnique;
-        NwModule.Instance.OnEffectApply += CueMartialTechniqueActivated;
-        NwModule.Instance.OnEffectRemove += CueMartialTechniqueDeactivated;
-        Log.Info(message: "Monk Martial Technique Service initialized.");
+        NwModule.Instance.OnEffectApply += CueAttackTechniqueActivated;
+        NwModule.Instance.OnEffectRemove += CueAttackTechniqueDeactivated;
+        Log.Info(message: "Monk Attack Technique Service initialized.");
     }
 
     /// <summary>
-    ///     Sets a martial technique for activation on next combat round, or instantly if out of combat
+    ///     Sets a attack technique for activation on next combat round, or instantly if out of combat
     /// </summary>
-    private void MartialTechniqueUseFeat(OnUseFeat eventData)
+    private void AttackTechniqueUseFeat(OnUseFeat eventData)
     {
         if (eventData.Feat.Id is not (MonkFeat.StunningStrike or MonkFeat.EagleStrike or MonkFeat.AxiomaticStrike))
             return;
@@ -58,9 +58,9 @@ public class MartialTechniqueService
         NwFeat feat = eventData.Feat;
         NwCreature monk = eventData.Creature;
 
-        if (PreventMartialTechnique(monk, feat.Name.ToString())) return;
+        if (PreventAttackTechnique(monk, feat.Name.ToString())) return;
 
-        // If monk is in combat, queue martial technique change for next combat round
+        // If monk is in combat, queue attack technique change for next combat round
         if (monk.IsInCombat)
         {
             QueueTechnique(monk, feat.Id);
@@ -71,7 +71,7 @@ public class MartialTechniqueService
 
     private static void QueueTechnique(NwCreature monk, int featId)
     {
-        LocalVariableInt queuedTechnique = monk.GetObjectVariable<LocalVariableInt>(MartialTechnique);
+        LocalVariableInt queuedTechnique = monk.GetObjectVariable<LocalVariableInt>(AttackTechnique);
 
         queuedTechnique.Value = featId;
     }
@@ -85,7 +85,7 @@ public class MartialTechniqueService
         // If the old technique was the same as the new one, we're just toggling it off.
         if (activeTechnique is { Tag: { } tag } && tag == newTechniqueTag)
         {
-            monk.RemoveEffect(activeTechnique!);
+            monk.RemoveEffect(activeTechnique);
             return;
         }
 
@@ -100,14 +100,14 @@ public class MartialTechniqueService
     }
 
     /// <summary>
-    ///     On combat round start switches into the active martial technique
+    ///     On combat round start switches into the active attack technique
     /// </summary>
-    private void EnterMartialTechnique(OnCombatRoundStart eventData)
+    private void EnterAttackTechnique(OnCombatRoundStart eventData)
     {
         if (!eventData.Creature.KnowsFeat(StunningStrikeFeat!)) return;
 
         NwCreature monk = eventData.Creature;
-        LocalVariableInt queuedTechnique = monk.GetObjectVariable<LocalVariableInt>(MartialTechnique);
+        LocalVariableInt queuedTechnique = monk.GetObjectVariable<LocalVariableInt>(AttackTechnique);
 
         Effect? activeTechnique = GetActiveTechniqueEffect(monk);
 
@@ -120,7 +120,7 @@ public class MartialTechniqueService
             ActivateTechnique(monk, queuedTechnique.Value);
             queuedTechnique.Delete();
         }
-        else if (activeTechnique != null && PreventMartialTechnique(monk, activeTechnique.Tag))
+        else if (activeTechnique != null && PreventAttackTechnique(monk, activeTechnique.Tag))
         {
             monk.RemoveEffect(activeTechnique);
             return;
@@ -143,7 +143,7 @@ public class MartialTechniqueService
 
         foreach (Effect effect in monk.ActiveEffects)
         {
-            if (effect.Tag is MartialCooldownTag) return;
+            if (effect.Tag is AttackCooldownTag) return;
             if (effect.Tag is not AxiomaticTag) continue;
 
             ITechnique? axiomaticTechniqueHandler = _techniqueFactory.GetTechnique(TechniqueType.AxiomaticStrike);
@@ -157,7 +157,7 @@ public class MartialTechniqueService
         if (damageData.DamagedBy is not NwCreature monk || !monk.KnowsFeat(StunningStrikeFeat!)) return;
         if (!monk.ActiveEffects.Any(effect => effect.Tag is StunningTag or EagleTag))
             return;
-        if (monk.ActiveEffects.Any(effect => effect.Tag is MartialCooldownTag))
+        if (monk.ActiveEffects.Any(effect => effect.Tag is AttackCooldownTag))
             return;
 
         string? techniqueTag = GetActiveTechniqueEffect(monk)?.Tag;
@@ -176,7 +176,7 @@ public class MartialTechniqueService
         switch (techniqueTag)
         {
             case StunningTag:
-                monk.ApplyEffect(EffectDuration.Permanent, _martialCooldownEffect);
+                monk.ApplyEffect(EffectDuration.Permanent, _attackCooldownEffect);
                 break;
 
             case EagleTag:
@@ -184,15 +184,15 @@ public class MartialTechniqueService
                 eagleStrikeCounter.Value++;
 
                 if (eagleStrikeCounter.Value == 2)
-                    monk.ApplyEffect(EffectDuration.Permanent, _martialCooldownEffect);
+                    monk.ApplyEffect(EffectDuration.Permanent, _attackCooldownEffect);
                 break;
         }
     }
 
     /// <summary>
-    ///     Cues the activation of the martial technique with a floaty text
+    ///     Cues the activation of the attack technique with a floaty text
     /// </summary>
-    private static void CueMartialTechniqueActivated(OnEffectApply eventData)
+    private static void CueAttackTechniqueActivated(OnEffectApply eventData)
     {
         if (!eventData.Object.IsPlayerControlled(out NwPlayer? player) ||
             eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
@@ -201,9 +201,9 @@ public class MartialTechniqueService
     }
 
     /// <summary>
-    ///     Cues the deactivation of the martial technique with a floaty text
+    ///     Cues the deactivation of the attack technique with a floaty text
     /// </summary>
-    private static void CueMartialTechniqueDeactivated(OnEffectRemove eventData)
+    private static void CueAttackTechniqueDeactivated(OnEffectRemove eventData)
     {
         if (!eventData.Object.IsPlayerControlled(out NwPlayer? player) ||
             eventData.Effect.Tag is not (StunningTag or EagleTag or AxiomaticTag)) return;
@@ -222,7 +222,7 @@ public class MartialTechniqueService
         };
     }
 
-    private static bool PreventMartialTechnique(NwCreature monk, string? techniqueName)
+    private static bool PreventAttackTechnique(NwCreature monk, string? techniqueName)
     {
         bool hasArmor = monk.GetItemInSlot(InventorySlot.Chest)?.BaseACValue > 0;
         bool hasShield = monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category == BaseItemCategory.Shield;
@@ -255,7 +255,7 @@ public class MartialTechniqueService
 
     private static void ResetTechniqueCooldownAndCounter(NwCreature monk)
     {
-        Effect? techniqueCdEffect = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is MartialCooldownTag);
+        Effect? techniqueCdEffect = monk.ActiveEffects.FirstOrDefault(effect => effect.Tag is AttackCooldownTag);
 
         if (techniqueCdEffect != null)
             monk.RemoveEffect(techniqueCdEffect);

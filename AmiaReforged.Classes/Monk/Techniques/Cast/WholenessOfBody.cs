@@ -4,12 +4,12 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
-namespace AmiaReforged.Classes.Monk.Techniques.Body;
+namespace AmiaReforged.Classes.Monk.Techniques.Cast;
 
 [ServiceBinding(typeof(ITechnique))]
-public class EmptyBody(AugmentationFactory augmentationFactory) : ITechnique
+public class WholenessOfBody(AugmentationFactory augmentationFactory) : ITechnique
 {
-    public TechniqueType TechniqueType => TechniqueType.EmptyBody;
+    public TechniqueType TechniqueType => TechniqueType.WholenessOfBody;
 
     public void HandleCastTechnique(NwCreature monk, OnSpellCast castData)
     {
@@ -20,25 +20,22 @@ public class EmptyBody(AugmentationFactory augmentationFactory) : ITechnique
         if (augmentation != null)
             augmentation.ApplyCastAugmentation(monk, TechniqueType, castData);
         else
-            DoEmptyBody(monk);
+            DoWholenessOfBody(monk);
     }
 
     /// <summary>
-    ///     The monk is given 50% concealment for rounds per monk level. Each use depletes a Body Ki Point.
+    ///     The monk can heal damage equal to twice their class level. Each use depletes a Body Ki Point.
     /// </summary>
-    public static void DoEmptyBody(NwCreature monk)
+    public static void DoWholenessOfBody(NwCreature monk)
     {
         byte monkLevel = monk.GetClassInfo(ClassType.Monk)?.Level ?? 0;
+        int healAmount = monkLevel * 2;
+        Effect wholenessEffect = Effect.Heal(healAmount);
 
-        Effect emptyBodyEffect = Effect.LinkEffects(
-            Effect.Concealment(50),
-            Effect.VisualEffect(VfxType.DurInvisibility),
-            Effect.VisualEffect(VfxType.DurCessatePositive));
+        Effect wholenessVfx = Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f);
 
-        emptyBodyEffect.SubType = EffectSubType.Supernatural;
-        TimeSpan effectDuration = NwTimeSpan.FromRounds(monkLevel);
-
-        monk.ApplyEffect(EffectDuration.Temporary, emptyBodyEffect, effectDuration);
+        monk.ApplyEffect(EffectDuration.Instant, wholenessEffect);
+        monk.ApplyEffect(EffectDuration.Instant, wholenessVfx);
     }
 
     public void HandleAttackTechnique(NwCreature monk, OnCreatureAttack attackData) { }
