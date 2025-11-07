@@ -1,8 +1,11 @@
+using Anvil.Services;
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
 
 /// <summary>
 /// Centralizes property rental rules so they can be tested outside of NWN concerns.
 /// </summary>
+[ServiceBinding(typeof(PropertyRentalPolicy))]
 public sealed class PropertyRentalPolicy
 {
     public RentalDecision Evaluate(RentPropertyRequest request, RentablePropertySnapshot property,

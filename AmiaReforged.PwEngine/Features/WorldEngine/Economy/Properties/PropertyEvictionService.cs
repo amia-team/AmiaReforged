@@ -19,7 +19,7 @@ public sealed class PropertyEvictionService : IDisposable
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     private static readonly TimeSpan EvictionCheckInterval = TimeSpan.FromHours(1);
-    private static readonly TimeSpan InitialDelay = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan InitialDelay = TimeSpan.FromSeconds(30); // Run 30 seconds after server starts
 
     private readonly IRentablePropertyRepository _repository;
     private readonly ICommandHandler<EvictPropertyCommand> _evictCommandHandler;
@@ -77,6 +77,10 @@ public sealed class PropertyEvictionService : IDisposable
 
     private async Task RunAsync(CancellationToken token)
     {
+        Log.Info("Property eviction service starting. Initial delay: {InitialDelay}, Check interval: {CheckInterval}",
+            InitialDelay,
+            EvictionCheckInterval);
+
         try
         {
             // Give the server time to finish bootstrapping before the first eviction check
@@ -84,8 +88,11 @@ public sealed class PropertyEvictionService : IDisposable
         }
         catch (TaskCanceledException)
         {
+            Log.Info("Property eviction service cancelled during initial delay.");
             return;
         }
+
+        Log.Info("Property eviction service initial delay complete. Starting periodic checks.");
 
         PeriodicTimer timer = new(EvictionCheckInterval);
 
@@ -123,19 +130,42 @@ public sealed class PropertyEvictionService : IDisposable
         DateTimeOffset evaluationTime = _timeProvider();
         List<RentablePropertySnapshot> properties = await _repository.GetAllPropertiesAsync(token).ConfigureAwait(false);
 
-        Log.Debug("Evaluating {PropertyCount} properties for eviction eligibility.", properties.Count);
+        Log.Info("Eviction cycle starting. Evaluating {PropertyCount} properties for eviction eligibility at {EvaluationTime}.", 
+            properties.Count, 
+            evaluationTime);
 
         int evictionCount = 0;
         foreach (RentablePropertySnapshot property in properties)
         {
             token.ThrowIfCancellationRequested();
 
+            Log.Info("Evaluating property {PropertyId} ({InternalName}): Status={Status}, HasRental={HasRental}",
+                property.Definition.Id,
+                property.Definition.InternalName,
+                property.OccupancyStatus,
+                property.ActiveRental != null);
+
             if (!ShouldEvaluateProperty(property))
             {
+                Log.Info("Skipping property {PropertyId} - not eligible for evaluation (Status={Status}, HasRental={HasRental})",
+                    property.Definition.Id,
+                    property.OccupancyStatus,
+                    property.ActiveRental != null);
                 continue;
             }
 
-            if (!IsEligibleForEviction(property, evaluationTime))
+            bool eligible = IsEligibleForEviction(property, evaluationTime);
+            
+            Log.Info("Property {PropertyId} ({InternalName}): Eligible={Eligible}, " +
+                     "NextDue={NextDue}, LastSeen={LastSeen}, GraceDays={GraceDays}",
+                property.Definition.Id,
+                property.Definition.InternalName,
+                eligible,
+                property.ActiveRental?.NextPaymentDueDate,
+                property.ActiveRental?.LastOccupantSeenUtc,
+                property.Definition.EvictionGraceDays);
+
+            if (!eligible)
             {
                 continue;
             }
@@ -147,6 +177,10 @@ public sealed class PropertyEvictionService : IDisposable
         if (evictionCount > 0)
         {
             Log.Info("Evicted {EvictionCount} properties during this cycle.", evictionCount);
+        }
+        else
+        {
+            Log.Info("No properties were evicted during this cycle.");
         }
     }
 

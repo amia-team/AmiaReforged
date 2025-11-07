@@ -84,6 +84,10 @@ public sealed class EvictPropertyCommandHandler : ICommandHandler<EvictPropertyC
     {
         try
         {
+            Log.Info("Starting placeable deletion for property {InternalName}, tenant {Tenant}.",
+                property.Definition.InternalName,
+                property.CurrentTenant);
+
             // Resolve the area ResRef from the property's internal name via RegionIndex
             string? areaResRef = ResolveAreaResRefForProperty(property.Definition.InternalName);
             if (areaResRef is null)
@@ -92,6 +96,10 @@ public sealed class EvictPropertyCommandHandler : ICommandHandler<EvictPropertyC
                     property.Definition.InternalName);
                 return;
             }
+
+            Log.Info("Resolved area ResRef {AreaResRef} for property {InternalName}.",
+                areaResRef,
+                property.Definition.InternalName);
 
             // Get the character ID from the tenant persona
             Guid? characterId = ResolveCharacterId(property.CurrentTenant);
@@ -102,6 +110,10 @@ public sealed class EvictPropertyCommandHandler : ICommandHandler<EvictPropertyC
                     property.Definition.InternalName);
                 return;
             }
+
+            Log.Info("Resolved character ID {CharacterId} from tenant {Tenant}.",
+                characterId.Value,
+                property.CurrentTenant);
 
             // Delete all placeables for this character in this area
             await DeletePlaceablesForCharacterInAreaAsync(
@@ -166,47 +178,50 @@ public sealed class EvictPropertyCommandHandler : ICommandHandler<EvictPropertyC
         Guid characterId,
         CancellationToken cancellationToken)
     {
-        // Get all placeables for this area
-        List<PersistentObject> areaObjects = _objectRepository.GetObjectsForArea(areaResRef)
+        Log.Info("Deleting ALL placeables in area {AreaResRef} for evicted property...",
+            areaResRef);
+
+        // Get all placeables for this area (not filtering by character)
+        List<PersistentObject> areaPlaceables = _objectRepository.GetObjectsForArea(areaResRef)
             .Where(o => o.Type == (int)ObjectTypes.Placeable)
             .ToList();
 
-        // Filter by character ID
-        List<PersistentObject> characterPlaceables = areaObjects
-            .Where(o => o.CharacterId == characterId)
-            .ToList();
+        Log.Info("Found {TotalCount} placeables in area {AreaResRef} to delete.",
+            areaPlaceables.Count,
+            areaResRef);
 
-        if (characterPlaceables.Count == 0)
+        if (areaPlaceables.Count == 0)
         {
-            Log.Debug("No placeables found for character {CharacterId} in area {AreaResRef}.",
-                characterId,
+            Log.Info("No placeables found in area {AreaResRef}.",
                 areaResRef);
             return;
         }
 
-        Log.Info("Deleting {Count} placeables for character {CharacterId} in area {AreaResRef}.",
-            characterPlaceables.Count,
-            characterId,
-            areaResRef);
-
         // Delete each placeable
-        foreach (PersistentObject plc in characterPlaceables)
+        foreach (PersistentObject plc in areaPlaceables)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             try
             {
+                Log.Info("Deleting placeable DB ID {DbId} from area {AreaResRef}.",
+                    plc.Id,
+                    areaResRef);
+
                 // Delete from database
                 await _objectRepository.DeleteObject(plc.Id).ConfigureAwait(false);
+
+                Log.Info("Deleted placeable {PlaceableId} from database. Now attempting in-game destruction...",
+                    plc.Id);
 
                 // Try to destroy the in-game object if it exists
                 await TryDestroyPlaceableInGameAsync(plc, areaResRef).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                Log.Warn(ex, "Failed to delete placeable {PlaceableId} for character {CharacterId}.",
+                Log.Error(ex, "Failed to delete placeable {PlaceableId} from area {AreaResRef}.",
                     plc.Id,
-                    characterId);
+                    areaResRef);
             }
         }
     }
@@ -217,20 +232,36 @@ public sealed class EvictPropertyCommandHandler : ICommandHandler<EvictPropertyC
 
         try
         {
+            Log.Info("Attempting to destroy in-game placeable {PlaceableId} in area {AreaResRef}.",
+                plc.Id,
+                areaResRef);
+
             // Find the area
             NwArea? area = NwModule.Instance.Areas.FirstOrDefault(a => a.ResRef == areaResRef);
             if (area is null)
             {
+                Log.Warn("Area {AreaResRef} not found in game - cannot destroy placeable {PlaceableId}.",
+                    areaResRef,
+                    plc.Id);
                 return;
             }
 
+            Log.Info("Found area {AreaResRef}, searching for placeable with DB ID {DbId}...",
+                areaResRef,
+                plc.Id);
+
             // Find the placeable with matching database ID
             const string DatabaseIdLocalInt = "db_id";
+            bool found = false;
             foreach (NwPlaceable placeable in area.FindObjectsOfTypeInArea<NwPlaceable>())
             {
                 LocalVariableInt dbVar = placeable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt);
                 if (dbVar.Value == plc.Id)
                 {
+                    Log.Info("Found in-game placeable with DB ID {DbId}, tag: {Tag}, destroying...",
+                        plc.Id,
+                        placeable.Tag ?? "<no tag>");
+
                     // Clear local variables
                     dbVar.Delete();
                     
@@ -244,15 +275,30 @@ public sealed class EvictPropertyCommandHandler : ICommandHandler<EvictPropertyC
                     if (placeable.IsValid)
                     {
                         placeable.Destroy();
+                        Log.Info("Successfully destroyed in-game placeable {PlaceableId}.",
+                            plc.Id);
+                    }
+                    else
+                    {
+                        Log.Warn("Placeable {PlaceableId} was not valid, could not destroy.",
+                            plc.Id);
                     }
                     
+                    found = true;
                     break;
                 }
+            }
+
+            if (!found)
+            {
+                Log.Warn("No in-game placeable found with DB ID {DbId} in area {AreaResRef}.",
+                    plc.Id,
+                    areaResRef);
             }
         }
         catch (Exception ex)
         {
-            Log.Debug(ex, "Failed to destroy in-game placeable {PlaceableId}.", plc.Id);
+            Log.Error(ex, "Failed to destroy in-game placeable {PlaceableId}.", plc.Id);
         }
     }
 }
