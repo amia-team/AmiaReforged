@@ -36,10 +36,12 @@ public sealed class BankStorageWindowView : ScryView<BankStorageWindowPresenter>
     public readonly NuiBind<string> StorageCapacityText = new("storage_capacity");
     public readonly NuiBind<int> StorageItemCount = new("storage_item_count");
     public readonly NuiBind<string> StorageItemLabels = new("storage_item_labels");
+    public readonly NuiBind<string> StorageItemTooltips = new("storage_item_tooltips");
     public readonly NuiBind<bool> CanUpgradeStorage = new("can_upgrade_storage");
     public readonly NuiBind<string> UpgradeCostText = new("upgrade_cost");
     public readonly NuiBind<int> InventoryItemCount = new("inventory_item_count");
     public readonly NuiBind<string> InventoryItemLabels = new("inventory_item_labels");
+    public readonly NuiBind<string> InventoryItemTooltips = new("inventory_item_tooltips");
 
     public override BankStorageWindowPresenter Presenter { get; protected set; }
 
@@ -58,7 +60,8 @@ public sealed class BankStorageWindowView : ScryView<BankStorageWindowPresenter>
             new(new NuiButton(StorageItemLabels)
             {
                 Id = "storage_item_withdraw",
-                Height = 26f
+                Height = 26f,
+                Tooltip = StorageItemTooltips
             })
         ];
 
@@ -67,7 +70,8 @@ public sealed class BankStorageWindowView : ScryView<BankStorageWindowPresenter>
             new(new NuiButton(InventoryItemLabels)
             {
                 Id = "storage_item_store",
-                Height = 26f
+                Height = 26f,
+                Tooltip = InventoryItemTooltips
             })
         ];
 
@@ -270,7 +274,8 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
 
             Token().SetBindValue(View.StorageCapacityText, $"Storage: {_storedItems.Count} / {_storageCapacity} slots used");
             Token().SetBindValue(View.StorageItemCount, _storedItems.Count);
-            Token().SetBindValue(View.StorageItemLabels, string.Join("\n", _storedItems.Select(i => i.Name ?? "Unknown Item")));
+            Token().SetBindValues(View.StorageItemLabels, _storedItems.Select(i => i.Name ?? "Unknown Item").ToList());
+            Token().SetBindValues(View.StorageItemTooltips, _storedItems.Select(i => i.Description ?? "No description").ToList());
 
             // Check if can upgrade
             bool canUpgrade = _storageCapacity < 100;
@@ -287,7 +292,8 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             {
                 _inventoryItems = _player.ControlledCreature.Inventory.Items.Where(i => i.IsValid && !string.IsNullOrEmpty(i.Name)).ToList();
                 Token().SetBindValue(View.InventoryItemCount, _inventoryItems.Count);
-                Token().SetBindValue(View.InventoryItemLabels, string.Join("\n", _inventoryItems.Select(i => i.Name)));
+                Token().SetBindValues(View.InventoryItemLabels, _inventoryItems.Select(i => i.Name).ToList());
+                Token().SetBindValues(View.InventoryItemTooltips, _inventoryItems.Select(i => i.Description ?? "No description").ToList());
             }
         }
         catch (Exception ex)
