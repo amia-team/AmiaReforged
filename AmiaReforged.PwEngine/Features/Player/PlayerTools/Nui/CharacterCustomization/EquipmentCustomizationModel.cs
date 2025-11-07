@@ -15,7 +15,10 @@ public enum EquipmentType
 
 public sealed class EquipmentCustomizationModel(NwPlayer player)
 {
-    private const string BackupDataKey = "EQUIPMENT_CUSTOMIZATION_BACKUP";
+    private const string WeaponBackupKey = "EQUIPMENT_CUSTOMIZATION_WEAPON_BACKUP";
+    private const string BootsBackupKey = "EQUIPMENT_CUSTOMIZATION_BOOTS_BACKUP";
+    private const string HelmetBackupKey = "EQUIPMENT_CUSTOMIZATION_HELMET_BACKUP";
+    private const string CloakBackupKey = "EQUIPMENT_CUSTOMIZATION_CLOAK_BACKUP";
 
     public EquipmentType CurrentEquipmentType { get; private set; } = EquipmentType.None;
 
@@ -58,18 +61,61 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
     {
         CurrentEquipmentType = type;
 
+        // Reload the current item from inventory (player may have equipped something new)
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
+
         switch (type)
         {
             case EquipmentType.Weapon:
+                _currentWeapon = creature.GetItemInSlot(InventorySlot.RightHand);
+                if (_currentWeapon != null && _currentWeapon.IsValid)
+                {
+                    int modelRange = (int)_currentWeapon.BaseItem.ModelRangeMax;
+                    _weaponTopModelMax = modelRange;
+                    _weaponMidModelMax = modelRange;
+                    _weaponBotModelMax = modelRange;
+
+                    WeaponTopModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
+                    WeaponMidModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
+                    WeaponBotModel = _currentWeapon.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+
+                    VisualTransform transform = _currentWeapon.VisualTransform;
+                    WeaponScale = (int)(transform.Scale * 100);
+                }
                 LoadWeaponData();
                 break;
             case EquipmentType.Boots:
+                _currentBoots = creature.GetItemInSlot(InventorySlot.Boots);
+                if (_currentBoots != null && _currentBoots.IsValid)
+                {
+                    int modelRange = (int)_currentBoots.BaseItem.ModelRangeMax;
+                    _bootsTopModelMax = modelRange;
+                    _bootsMidModelMax = modelRange;
+                    _bootsBotModelMax = modelRange;
+
+                    BootsTopModel = _currentBoots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Top);
+                    BootsMidModel = _currentBoots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Middle);
+                    BootsBotModel = _currentBoots.Appearance.GetWeaponModel(ItemAppearanceWeaponModel.Bottom);
+                }
                 LoadBootsData();
                 break;
             case EquipmentType.Helmet:
+                _currentHelmet = creature.GetItemInSlot(InventorySlot.Head);
+                if (_currentHelmet != null && _currentHelmet.IsValid)
+                {
+                    _helmetAppearanceMax = (int)_currentHelmet.BaseItem.ModelRangeMax;
+                    HelmetAppearance = NWScript.GetItemAppearance(_currentHelmet, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
+                }
                 LoadHelmetData();
                 break;
             case EquipmentType.Cloak:
+                _currentCloak = creature.GetItemInSlot(InventorySlot.Cloak);
+                if (_currentCloak != null && _currentCloak.IsValid)
+                {
+                    _cloakAppearanceMax = 86;
+                    CloakAppearance = NWScript.GetItemAppearance(_currentCloak, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
+                }
                 LoadCloakData();
                 break;
         }
@@ -127,8 +173,8 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             CloakAppearance = NWScript.GetItemAppearance(_currentCloak, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0);
         }
 
-        // Save initial backup of ALL equipment
-        SaveBackupToPcKey();
+        // Save initial backup of ALL equipment separately
+        SaveAllBackupsToPcKey();
     }
 
     private void LoadWeaponData()
@@ -774,8 +820,8 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     public void ApplyChanges()
     {
-        // Force save the current state as the new backup point
-        ForceSaveBackup();
+        // Force save the current state as the new backup point for ALL equipment
+        SaveAllBackupsToPcKey();
         player.SendServerMessage(
             "Equipment customization saved! You can continue editing or click Revert to return to this save point.",
             ColorConstants.Green);
@@ -783,35 +829,35 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     public void RevertChanges()
     {
-        var backupData = LoadBackupFromPcKey();
-        if (backupData == null)
-        {
-            player.SendServerMessage("No changes to revert.", ColorConstants.Orange);
-            return;
-        }
-
         NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
 
         bool anyReverted = false;
 
-        // Revert ALL equipment types, not just the currently selected one
-        if (_currentWeapon != null && _currentWeapon.IsValid && backupData.WeaponData != null)
+        // Reload current items from inventory in case player swapped items
+        _currentWeapon = creature.GetItemInSlot(InventorySlot.RightHand);
+        _currentBoots = creature.GetItemInSlot(InventorySlot.Boots);
+        _currentHelmet = creature.GetItemInSlot(InventorySlot.Head);
+        _currentCloak = creature.GetItemInSlot(InventorySlot.Cloak);
+
+        // Revert weapon if backup exists and item is equipped
+        var weaponBackup = LoadWeaponBackupFromPcKey();
+        if (_currentWeapon != null && _currentWeapon.IsValid && weaponBackup != null)
         {
             creature.RunUnequip(_currentWeapon);
             NwItem newWeapon = _currentWeapon.Clone(creature);
 
             if (newWeapon.IsValid)
             {
-                backupData.WeaponData.ApplyToItem(newWeapon);
+                weaponBackup.ApplyToItem(newWeapon);
                 creature.RunEquip(newWeapon, InventorySlot.RightHand);
                 _currentWeapon.Destroy();
                 _currentWeapon = newWeapon;
 
-                WeaponTopModel = backupData.WeaponData.TopModel;
-                WeaponMidModel = backupData.WeaponData.MidModel;
-                WeaponBotModel = backupData.WeaponData.BotModel;
-                WeaponScale = backupData.WeaponData.Scale;
+                WeaponTopModel = weaponBackup.TopModel;
+                WeaponMidModel = weaponBackup.MidModel;
+                WeaponBotModel = weaponBackup.BotModel;
+                WeaponScale = weaponBackup.Scale;
 
                 anyReverted = true;
             }
@@ -821,21 +867,23 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             }
         }
 
-        if (_currentBoots != null && _currentBoots.IsValid && backupData.BootsData != null)
+        // Revert boots if backup exists and item is equipped
+        var bootsBackup = LoadBootsBackupFromPcKey();
+        if (_currentBoots != null && _currentBoots.IsValid && bootsBackup != null)
         {
             creature.RunUnequip(_currentBoots);
             NwItem newBoots = _currentBoots.Clone(creature);
 
             if (newBoots.IsValid)
             {
-                backupData.BootsData.ApplyToItem(newBoots);
+                bootsBackup.ApplyToItem(newBoots);
                 creature.RunEquip(newBoots, InventorySlot.Boots);
                 _currentBoots.Destroy();
                 _currentBoots = newBoots;
 
-                BootsTopModel = backupData.BootsData.TopModel;
-                BootsMidModel = backupData.BootsData.MidModel;
-                BootsBotModel = backupData.BootsData.BotModel;
+                BootsTopModel = bootsBackup.TopModel;
+                BootsMidModel = bootsBackup.MidModel;
+                BootsBotModel = bootsBackup.BotModel;
 
                 anyReverted = true;
             }
@@ -845,9 +893,11 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
             }
         }
 
-        if (_currentHelmet != null && _currentHelmet.IsValid && backupData.HelmetData != null)
+        // Revert helmet if backup exists and item is equipped
+        var helmetBackup = LoadHelmetBackupFromPcKey();
+        if (_currentHelmet != null && _currentHelmet.IsValid && helmetBackup != null)
         {
-            uint copy = NWScript.CopyItemAndModify(_currentHelmet, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, backupData.HelmetData.Appearance, 1);
+            uint copy = NWScript.CopyItemAndModify(_currentHelmet, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, helmetBackup.Appearance, 1);
             if (NWScript.GetIsObjectValid(copy) == 1)
             {
                 NwItem? helmetCopy = copy.ToNwObject<NwItem>();
@@ -855,7 +905,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 for (int i = 0; i < 6; i++)
                 {
                     int colorType = NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + i;
-                    uint colorCopy = NWScript.CopyItemAndModify(helmetCopy, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, backupData.HelmetData.Colors[i], 1);
+                    uint colorCopy = NWScript.CopyItemAndModify(helmetCopy, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, helmetBackup.Colors[i], 1);
                     if (NWScript.GetIsObjectValid(colorCopy) == 1)
                     {
                         if (helmetCopy != null && helmetCopy.IsValid) NWScript.DestroyObject(helmetCopy);
@@ -868,15 +918,17 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 _currentHelmet = helmetCopy;
                 if (_currentHelmet != null) creature.RunEquip(_currentHelmet, InventorySlot.Head);
 
-                HelmetAppearance = backupData.HelmetData.Appearance;
+                HelmetAppearance = helmetBackup.Appearance;
 
                 anyReverted = true;
             }
         }
 
-        if (_currentCloak != null && _currentCloak.IsValid && backupData.CloakData != null)
+        // Revert cloak if backup exists and item is equipped
+        var cloakBackup = LoadCloakBackupFromPcKey();
+        if (_currentCloak != null && _currentCloak.IsValid && cloakBackup != null)
         {
-            uint copy = NWScript.CopyItemAndModify(_currentCloak, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, backupData.CloakData.Appearance, 1);
+            uint copy = NWScript.CopyItemAndModify(_currentCloak, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, cloakBackup.Appearance, 1);
             if (NWScript.GetIsObjectValid(copy) == 1)
             {
                 NwItem? cloakCopy = copy.ToNwObject<NwItem>();
@@ -884,7 +936,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 for (int i = 0; i < 6; i++)
                 {
                     int colorType = NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + i;
-                    uint colorCopy = NWScript.CopyItemAndModify(cloakCopy, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, backupData.CloakData.Colors[i], 1);
+                    uint colorCopy = NWScript.CopyItemAndModify(cloakCopy, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, cloakBackup.Colors[i], 1);
                     if (NWScript.GetIsObjectValid(colorCopy) == 1)
                     {
                         if (cloakCopy != null && cloakCopy.IsValid) NWScript.DestroyObject(cloakCopy);
@@ -897,7 +949,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
                 _currentCloak = cloakCopy;
                 if (_currentCloak != null) creature.RunEquip(_currentCloak, InventorySlot.Cloak);
 
-                CloakAppearance = backupData.CloakData.Appearance;
+                CloakAppearance = cloakBackup.Appearance;
 
                 anyReverted = true;
             }
@@ -915,66 +967,243 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     public void ConfirmAndClose()
     {
-        ClearBackupFromPcKey();
+        ClearAllBackupsFromPcKey();
         player.SendServerMessage("Equipment customization confirmed!", ColorConstants.Green);
     }
 
-    // Force save backup regardless of flag state (used when Save button is clicked)
-    private void ForceSaveBackup()
+    public void CopyAppearanceToItem(NwItem targetItem, EquipmentType equipmentType)
     {
-        SaveBackupToPcKey();
+        if (!targetItem.IsValid)
+        {
+            player.SendServerMessage("Invalid item selected.", ColorConstants.Orange);
+            return;
+        }
+
+        NwCreature? creature = player.ControlledCreature;
+        if (creature == null) return;
+
+        switch (equipmentType)
+        {
+            case EquipmentType.Weapon:
+                CopyWeaponAppearance(targetItem, creature);
+                break;
+            case EquipmentType.Boots:
+                CopyBootsAppearance(targetItem, creature);
+                break;
+            case EquipmentType.Helmet:
+                CopyHelmetAppearance(targetItem, creature);
+                break;
+            case EquipmentType.Cloak:
+                CopyCloakAppearance(targetItem, creature);
+                break;
+        }
     }
 
-    private void SaveBackupToPcKey()
+    private void CopyWeaponAppearance(NwItem targetItem, NwCreature creature)
     {
-        var backupData = new EquipmentBackupData();
+        var weaponBackup = LoadWeaponBackupFromPcKey();
+        if (weaponBackup == null)
+        {
+            player.SendServerMessage("No weapon appearance backup found.", ColorConstants.Orange);
+            return;
+        }
 
+        // Clone the target item and apply the backup appearance to the clone
+        NwItem weaponClone = targetItem.Clone(creature);
+
+        if (weaponClone.IsValid)
+        {
+            // Apply the backup appearance to the cloned item
+            weaponBackup.ApplyToItem(weaponClone);
+
+            // Destroy the original item
+            targetItem.Destroy();
+
+            player.SendServerMessage($"Copied weapon appearance to {weaponClone.Name}.", ColorConstants.Green);
+        }
+        else
+        {
+            player.SendServerMessage("Failed to copy weapon appearance.", ColorConstants.Red);
+        }
+    }
+
+    private void CopyBootsAppearance(NwItem targetItem, NwCreature creature)
+    {
+        var bootsBackup = LoadBootsBackupFromPcKey();
+        if (bootsBackup == null)
+        {
+            player.SendServerMessage("No boots appearance backup found.", ColorConstants.Orange);
+            return;
+        }
+
+        // Check if it's boots by checking the item class
+        string itemClass = targetItem.BaseItem.ItemClass;
+        if (itemClass != "it_boots")
+        {
+            player.SendServerMessage("Selected item is not boots.", ColorConstants.Orange);
+            return;
+        }
+
+        // Clone the target item and apply the backup appearance to the clone
+        NwItem bootsClone = targetItem.Clone(creature);
+
+        if (bootsClone.IsValid)
+        {
+            // Apply the backup appearance to the cloned item
+            bootsBackup.ApplyToItem(bootsClone);
+
+            // Destroy the original item
+            targetItem.Destroy();
+
+            player.SendServerMessage($"Copied boots appearance to {bootsClone.Name}.", ColorConstants.Green);
+        }
+        else
+        {
+            player.SendServerMessage("Failed to copy boots appearance.", ColorConstants.Red);
+        }
+    }
+
+    private void CopyHelmetAppearance(NwItem targetItem, NwCreature creature)
+    {
+        var helmetBackup = LoadHelmetBackupFromPcKey();
+        if (helmetBackup == null)
+        {
+            player.SendServerMessage("No helmet appearance backup found.", ColorConstants.Orange);
+            return;
+        }
+
+        // Check if it's a helmet by checking item class
+        string itemClass = targetItem.BaseItem.ItemClass;
+        if (itemClass != "helm")
+        {
+            player.SendServerMessage("Selected item is not a helmet.", ColorConstants.Orange);
+            return;
+        }
+
+        // Apply the backup appearance using CopyItemAndModify
+        uint copy = NWScript.CopyItemAndModify(targetItem, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, helmetBackup.Appearance, 1);
+        if (NWScript.GetIsObjectValid(copy) == 1)
+        {
+            NwItem? helmetCopy = copy.ToNwObject<NwItem>();
+
+            // Apply all color channels
+            for (int i = 0; i < 6; i++)
+            {
+                int colorType = NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + i;
+                uint colorCopy = NWScript.CopyItemAndModify(helmetCopy, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, helmetBackup.Colors[i], 1);
+                if (NWScript.GetIsObjectValid(colorCopy) == 1)
+                {
+                    if (helmetCopy != null && helmetCopy.IsValid) NWScript.DestroyObject(helmetCopy);
+                    helmetCopy = colorCopy.ToNwObject<NwItem>();
+                }
+            }
+
+            // Destroy the original target item and keep the modified copy
+            NWScript.DestroyObject(targetItem);
+
+            player.SendServerMessage($"Copied helmet appearance to {helmetCopy?.Name ?? "helmet"}.", ColorConstants.Green);
+        }
+        else
+        {
+            player.SendServerMessage("Failed to copy helmet appearance.", ColorConstants.Red);
+        }
+    }
+
+    private void CopyCloakAppearance(NwItem targetItem, NwCreature creature)
+    {
+        var cloakBackup = LoadCloakBackupFromPcKey();
+        if (cloakBackup == null)
+        {
+            player.SendServerMessage("No cloak appearance backup found.", ColorConstants.Orange);
+            return;
+        }
+
+        // Check if it's a cloak by checking item class
+        string itemClass = targetItem.BaseItem.ItemClass;
+        if (itemClass != "cloak")
+        {
+            player.SendServerMessage("Selected item is not a cloak.", ColorConstants.Orange);
+            return;
+        }
+
+        // Apply the backup appearance using CopyItemAndModify
+        uint copy = NWScript.CopyItemAndModify(targetItem, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, cloakBackup.Appearance, 1);
+        if (NWScript.GetIsObjectValid(copy) == 1)
+        {
+            NwItem? cloakCopy = copy.ToNwObject<NwItem>();
+
+            // Apply all color channels
+            for (int i = 0; i < 6; i++)
+            {
+                int colorType = NWScript.ITEM_APPR_ARMOR_COLOR_LEATHER1 + i;
+                uint colorCopy = NWScript.CopyItemAndModify(cloakCopy, NWScript.ITEM_APPR_TYPE_ARMOR_COLOR, colorType, cloakBackup.Colors[i], 1);
+                if (NWScript.GetIsObjectValid(colorCopy) == 1)
+                {
+                    if (cloakCopy != null && cloakCopy.IsValid) NWScript.DestroyObject(cloakCopy);
+                    cloakCopy = colorCopy.ToNwObject<NwItem>();
+                }
+            }
+
+            // Destroy the original target item and keep the modified copy
+            NWScript.DestroyObject(targetItem);
+
+            player.SendServerMessage($"Copied cloak appearance to {cloakCopy?.Name ?? "cloak"}.", ColorConstants.Green);
+        }
+        else
+        {
+            player.SendServerMessage("Failed to copy cloak appearance.", ColorConstants.Red);
+        }
+    }
+
+    private void SaveAllBackupsToPcKey()
+    {
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        if (pcKey == null || !pcKey.IsValid) return;
+
+        // Save weapon backup
         if (_currentWeapon != null && _currentWeapon.IsValid)
         {
-            backupData.WeaponData = WeaponBackupData.FromItem(_currentWeapon);
+            var weaponBackup = WeaponBackupData.FromItem(_currentWeapon);
+            string json = JsonConvert.SerializeObject(weaponBackup);
+            NWScript.SetLocalString(pcKey, WeaponBackupKey, json);
         }
 
+        // Save boots backup
         if (_currentBoots != null && _currentBoots.IsValid)
         {
-            backupData.BootsData = BootsBackupData.FromItem(_currentBoots);
+            var bootsBackup = BootsBackupData.FromItem(_currentBoots);
+            string json = JsonConvert.SerializeObject(bootsBackup);
+            NWScript.SetLocalString(pcKey, BootsBackupKey, json);
         }
 
+        // Save helmet backup
         if (_currentHelmet != null && _currentHelmet.IsValid)
         {
-            backupData.HelmetData = HelmetBackupData.FromItem(_currentHelmet);
+            var helmetBackup = HelmetBackupData.FromItem(_currentHelmet);
+            string json = JsonConvert.SerializeObject(helmetBackup);
+            NWScript.SetLocalString(pcKey, HelmetBackupKey, json);
         }
 
+        // Save cloak backup
         if (_currentCloak != null && _currentCloak.IsValid)
         {
-            backupData.CloakData = CloakBackupData.FromItem(_currentCloak);
-        }
-
-        string json = JsonConvert.SerializeObject(backupData);
-
-        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
-        if (pcKey != null && pcKey.IsValid)
-        {
-            NWScript.SetLocalString(pcKey, BackupDataKey, json);
+            var cloakBackup = CloakBackupData.FromItem(_currentCloak);
+            string json = JsonConvert.SerializeObject(cloakBackup);
+            NWScript.SetLocalString(pcKey, CloakBackupKey, json);
         }
     }
 
-    private EquipmentBackupData? LoadBackupFromPcKey()
+    private WeaponBackupData? LoadWeaponBackupFromPcKey()
     {
         NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
-        if (pcKey == null || !pcKey.IsValid)
-        {
-            return null;
-        }
+        if (pcKey == null || !pcKey.IsValid) return null;
 
-        string json = NWScript.GetLocalString(pcKey, BackupDataKey);
-        if (string.IsNullOrEmpty(json))
-        {
-            return null;
-        }
+        string json = NWScript.GetLocalString(pcKey, WeaponBackupKey);
+        if (string.IsNullOrEmpty(json)) return null;
 
         try
         {
-            return JsonConvert.DeserializeObject<EquipmentBackupData>(json);
+            return JsonConvert.DeserializeObject<WeaponBackupData>(json);
         }
         catch
         {
@@ -982,22 +1211,71 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
     }
 
-    private void ClearBackupFromPcKey()
+    private BootsBackupData? LoadBootsBackupFromPcKey()
+    {
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        if (pcKey == null || !pcKey.IsValid) return null;
+
+        string json = NWScript.GetLocalString(pcKey, BootsBackupKey);
+        if (string.IsNullOrEmpty(json)) return null;
+
+        try
+        {
+            return JsonConvert.DeserializeObject<BootsBackupData>(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private HelmetBackupData? LoadHelmetBackupFromPcKey()
+    {
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        if (pcKey == null || !pcKey.IsValid) return null;
+
+        string json = NWScript.GetLocalString(pcKey, HelmetBackupKey);
+        if (string.IsNullOrEmpty(json)) return null;
+
+        try
+        {
+            return JsonConvert.DeserializeObject<HelmetBackupData>(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private CloakBackupData? LoadCloakBackupFromPcKey()
+    {
+        NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
+        if (pcKey == null || !pcKey.IsValid) return null;
+
+        string json = NWScript.GetLocalString(pcKey, CloakBackupKey);
+        if (string.IsNullOrEmpty(json)) return null;
+
+        try
+        {
+            return JsonConvert.DeserializeObject<CloakBackupData>(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void ClearAllBackupsFromPcKey()
     {
         NwItem? pcKey = player.LoginCreature?.FindItemWithTag("ds_pckey");
         if (pcKey != null && pcKey.IsValid)
         {
-            NWScript.DeleteLocalString(pcKey, BackupDataKey);
+            NWScript.DeleteLocalString(pcKey, WeaponBackupKey);
+            NWScript.DeleteLocalString(pcKey, BootsBackupKey);
+            NWScript.DeleteLocalString(pcKey, HelmetBackupKey);
+            NWScript.DeleteLocalString(pcKey, CloakBackupKey);
         }
     }
-}
-
-public class EquipmentBackupData
-{
-    public WeaponBackupData? WeaponData { get; set; }
-    public BootsBackupData? BootsData { get; set; }
-    public HelmetBackupData? HelmetData { get; set; }
-    public CloakBackupData? CloakData { get; set; }
 }
 
 public class WeaponBackupData

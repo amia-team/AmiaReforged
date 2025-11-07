@@ -92,6 +92,15 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
     {
         if (_initializing) return;
+
+        // Handle window close event (X button)
+        if (ev.EventType == NuiEventType.Close)
+        {
+            _model.RevertChanges();
+            _model.ConfirmAndClose();
+            return;
+        }
+
         if (ev.EventType != NuiEventType.Click) return;
 
         Log.Info($"Equipment Customization Event: {ev.ElementId}");
@@ -129,6 +138,35 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
             _model.SelectEquipmentType(EquipmentType.Cloak);
             UpdateEquipmentTypeDisplay();
             UpdateCloakDisplay();
+            return;
+        }
+
+        // Copy button handlers
+        if (ev.ElementId == View.WeaponCopyButton.Id)
+        {
+            player.SendServerMessage("Select an item in your inventory to copy the weapon appearance to.", ColorConstants.Cyan);
+            player.EnterTargetMode(OnWeaponCopyTargetSelected);
+            return;
+        }
+
+        if (ev.ElementId == View.BootsCopyButton.Id)
+        {
+            player.SendServerMessage("Select an item in your inventory to copy the boots appearance to.", ColorConstants.Cyan);
+            player.EnterTargetMode(OnBootsCopyTargetSelected);
+            return;
+        }
+
+        if (ev.ElementId == View.HelmetCopyButton.Id)
+        {
+            player.SendServerMessage("Select an item in your inventory to copy the helmet appearance to.", ColorConstants.Cyan);
+            player.EnterTargetMode(OnHelmetCopyTargetSelected);
+            return;
+        }
+
+        if (ev.ElementId == View.CloakCopyButton.Id)
+        {
+            player.SendServerMessage("Select an item in your inventory to copy the cloak appearance to.", ColorConstants.Cyan);
+            player.EnterTargetMode(OnCloakCopyTargetSelected);
             return;
         }
 
@@ -481,6 +519,38 @@ public sealed class EquipmentCustomizationPresenter(EquipmentCustomizationView v
         {
             _model.SetCloakColor(colorIndex);
             UpdateCloakDisplay();
+        }
+    }
+
+    private void OnWeaponCopyTargetSelected(ModuleEvents.OnPlayerTarget target)
+    {
+        if (target.TargetObject is NwItem targetItem)
+        {
+            _model.CopyAppearanceToItem(targetItem, EquipmentType.Weapon);
+        }
+    }
+
+    private void OnBootsCopyTargetSelected(ModuleEvents.OnPlayerTarget target)
+    {
+        if (target.TargetObject is NwItem targetItem)
+        {
+            _model.CopyAppearanceToItem(targetItem, EquipmentType.Boots);
+        }
+    }
+
+    private void OnHelmetCopyTargetSelected(ModuleEvents.OnPlayerTarget target)
+    {
+        if (target.TargetObject is NwItem targetItem)
+        {
+            _model.CopyAppearanceToItem(targetItem, EquipmentType.Helmet);
+        }
+    }
+
+    private void OnCloakCopyTargetSelected(ModuleEvents.OnPlayerTarget target)
+    {
+        if (target.TargetObject is NwItem targetItem)
+        {
+            _model.CopyAppearanceToItem(targetItem, EquipmentType.Cloak);
         }
     }
 }

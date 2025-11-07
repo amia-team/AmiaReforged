@@ -46,6 +46,11 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
     public NuiButtonImage HelmetButton = null!;
     public NuiButtonImage CloakButton = null!;
 
+    public NuiButtonImage WeaponCopyButton = null!;
+    public NuiButtonImage BootsCopyButton = null!;
+    public NuiButtonImage HelmetCopyButton = null!;
+    public NuiButtonImage CloakCopyButton = null!;
+
     public NuiButtonImage WeaponTopModelLeftButton = null!;
     public NuiButtonImage WeaponTopModelRightButton = null!;
     public NuiButtonImage WeaponMidModelLeftButton = null!;
@@ -182,15 +187,24 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 310f },
-                        ImageButton("btn_weapon", "Customize Main Hand", out WeaponButton, 50f, 50f, "app_sword")
+                        new NuiSpacer { Width = 307.5f },
+                        ImageButton("btn_weapon", "Customize Main Hand", out WeaponButton, 50f, 50f, "app_sword"),
+                        new NuiSpacer { Width = 5f},
+                        new NuiColumn
+                        {
+                            Children =
+                            {
+                                new NuiSpacer { Height = 10f },
+                                ImageButton("btn_weapon_copy", "Copy Appearance", out WeaponCopyButton, 30f, 30f, "app_copy")
+                            }
+                        }
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 292.5f },
+                        new NuiSpacer { Width = 290f },
                         new NuiLabel("Main Hand")
                         {
                             Width = 90f,
@@ -205,7 +219,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 144f },
+                        new NuiSpacer { Width = 142f },
                         new NuiLabel("Top Model:")
                         {
                             Width = 100f,
@@ -231,7 +245,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 124f },
+                        new NuiSpacer { Width = 122f },
                         new NuiLabel("Middle Model:")
                         {
                             Width = 120f,
@@ -257,7 +271,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 122f },
+                        new NuiSpacer { Width = 120f },
                         new NuiLabel("Bottom Model:")
                         {
                             Width = 122f,
@@ -283,7 +297,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 119f },
+                        new NuiSpacer { Width = 117f },
                         new NuiLabel("Main Hand Scale:")
                         {
                             Width = 120f,
@@ -321,7 +335,30 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                     Children =
                     {
                         new NuiSpacer { Width = 307.5f },
-                        ImagePlatedLabeledButton("btn_boots", "Boots", "Customize Boots", out BootsButton, "app_boot", 50f, 50f)
+                        ImageButton("btn_boots", "Customize Boots", out BootsButton, 50f, 50f, "app_boot"),
+                        new NuiSpacer { Width = 5f },
+                        new NuiColumn
+                        {
+                            Children =
+                            {
+                                new NuiSpacer { Height = 10f },
+                                ImageButton("btn_boots_copy", "Copy Appearance", out BootsCopyButton, 30f, 30f, "app_copy")
+                            }
+                        }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 290f },
+                        new NuiLabel("Boots")
+                        {
+                            Width = 90f,
+                            Height = 18f,
+                            HorizontalAlign = NuiHAlign.Center,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
                     }
                 },
                 new NuiSpacer { Height = 10f },
@@ -329,7 +366,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 180f },
+                        new NuiSpacer { Width = 176f },
                         new NuiLabel("Top Model:")
                         {
                             Width = 100f,
@@ -353,7 +390,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 160f },
+                        new NuiSpacer { Width = 156f },
                         new NuiLabel("Middle Model:")
                         {
                             Width = 120f,
@@ -377,7 +414,7 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 158f },
+                        new NuiSpacer { Width = 154f },
                         new NuiLabel("Bottom Model:")
                         {
                             Width = 122f,
@@ -413,14 +450,37 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                     Children =
                     {
                         new NuiSpacer { Width = 307.5f },
-                        ImagePlatedLabeledButton("btn_helmet", "Helmet", "Customize Helmet", out HelmetButton, "app_helmet", 50f, 50f)
+                        ImageButton("btn_helmet", "Customize Helmet", out HelmetButton, 50f, 50f, "app_helmet"),
+                        new NuiSpacer { Width = 5f },
+                        new NuiColumn
+                        {
+                            Children =
+                            {
+                                new NuiSpacer { Height = 10f },
+                                ImageButton("btn_helmet_copy", "Copy Appearance", out HelmetCopyButton, 30f, 30f, "app_copy")
+                            }
+                        }
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 130f },
+                        new NuiSpacer { Width = 290f },
+                        new NuiLabel("Helmet")
+                        {
+                            Width = 90f,
+                            Height = 18f,
+                            HorizontalAlign = NuiHAlign.Center,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 126f },
                         new NuiLabel("Helmet Appearance:")
                         {
                             Width = 150f,
@@ -445,14 +505,37 @@ public sealed class EquipmentCustomizationView : ScryView<EquipmentCustomization
                     Children =
                     {
                         new NuiSpacer { Width = 307.5f },
-                        ImagePlatedLabeledButton("btn_cloak", "Cloak", "Customize Cloak", out CloakButton, "app_cloak", 50f, 50f)
+                        ImageButton("btn_cloak", "Customize Cloak", out CloakButton, 50f, 50f, "app_cloak"),
+                        new NuiSpacer { Width = 5f },
+                        new NuiColumn
+                        {
+                            Children =
+                            {
+                                new NuiSpacer { Height = 10f },
+                                ImageButton("btn_cloak_copy", "Copy Appearance", out CloakCopyButton, 30f, 30f, "app_copy")
+                            }
+                        }
                     }
                 },
                 new NuiRow
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 140f },
+                        new NuiSpacer { Width = 290f },
+                        new NuiLabel("Cloak")
+                        {
+                            Width = 90f,
+                            Height = 18f,
+                            HorizontalAlign = NuiHAlign.Center,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    }
+                },
+                new NuiRow
+                {
+                    Children =
+                    {
+                        new NuiSpacer { Width = 136f },
                         new NuiLabel("Cloak Appearance:")
                         {
                             Width = 140f,

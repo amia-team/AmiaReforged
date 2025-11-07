@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;
@@ -84,6 +84,15 @@ public sealed class CharacterCustomizationPresenter(CharacterCustomizationView v
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
     {
         if (_initializing) return;
+
+        // Handle window close event (X button)
+        if (ev.EventType == NuiEventType.Close)
+        {
+            _model.RevertChanges();
+            _model.ConfirmAndClose();
+            return;
+        }
+
         if (ev.EventType != NuiEventType.Click) return;
 
         if (ev.ElementId == View.ArmorButton.Id)

@@ -1,4 +1,4 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
 
@@ -101,6 +101,13 @@ public sealed class AppearanceCustomizationPresenter(AppearanceCustomizationView
     public override void ProcessEvent(ModuleEvents.OnNuiEvent ev)
     {
         if (_initializing) return;
+
+        // Handle window close event (X button)
+        if (ev.EventType == NuiEventType.Close)
+        {
+            _model.RevertChanges();
+            return;
+        }
 
         if (ev.EventType == NuiEventType.Click)
         {
