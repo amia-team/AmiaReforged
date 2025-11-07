@@ -13,4 +13,11 @@ public class PersistentObject
     public Guid? CharacterId { get; set; }
     public long LocationId { get; set; }
     [ForeignKey("LocationId")] public SavedLocation? Location { get; set; }
+    
+    /// <summary>
+    /// Serialized item data for the original item that was placed as furniture.
+    /// Null for non-furniture placeables or system-placed objects.
+    /// Used to recover items when properties are foreclosed.
+    /// </summary>
+    public byte[]? SourceItemData { get; set; }
 }
