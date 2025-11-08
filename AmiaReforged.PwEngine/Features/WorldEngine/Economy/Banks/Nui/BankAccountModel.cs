@@ -359,7 +359,6 @@ public sealed class BankAccountModel
     private void SeedDefaultCombos()
     {
         DepositModeOptions.Add(new NuiComboEntry("Gold Coins", 0));
-        DepositModeOptions.Add(new NuiComboEntry("Inventory Item", 1));
         DepositModeOptions.Add(new NuiComboEntry("Letter of Credit", 2));
 
         WithdrawModeOptions.Add(new NuiComboEntry("Gold Coins", 0));
