@@ -46,6 +46,9 @@ public class CraftSpell(OnSpellCast eventData, NwSpell spell, NwItem targetItem)
         if (!caster.IsPlayerControlled(out NwPlayer? player)) return;
         if (eventData.Item != null) return;
 
+        // Validate ClassIndex is within bounds
+        if (eventData.ClassIndex < 0 || eventData.ClassIndex >= caster.Classes.Count) return;
+
         if (targetItem.BaseItem.ItemType is not
             (BaseItemType.BlankScroll or BaseItemType.BlankWand or BaseItemType.BlankPotion)) return;
 

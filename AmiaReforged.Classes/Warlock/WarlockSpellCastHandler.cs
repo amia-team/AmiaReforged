@@ -35,6 +35,11 @@ public class WarlockSpellCastHandler
             return;
         if(player.LoginCreature is null) return;
         if (eventData.Spell is not { } spell) return;
+
+        // Validate ClassIndex is within bounds
+        if (eventData.ClassIndex < 0 || eventData.ClassIndex >= warlock.Classes.Count)
+            return;
+
         if (spell.Id != EldritchBlastId && warlock.Classes[eventData.ClassIndex].Class != WarlockConstants.WarlockClass)
             return;
 
@@ -71,6 +76,10 @@ public class WarlockSpellCastHandler
     private void OnInvocationInterrupt(OnSpellInterrupt eventData)
     {
         if (eventData.InterruptedCaster is not NwCreature warlock) return;
+
+        // Validate ClassIndex is within bounds
+        if (eventData.ClassIndex < 0 || eventData.ClassIndex >= warlock.Classes.Count) return;
+
         if (warlock.Classes[eventData.ClassIndex].Class != WarlockConstants.WarlockClass) return;
 
         WarlockSpells.ResetWarlockInvocations(eventData.InterruptedCaster);
