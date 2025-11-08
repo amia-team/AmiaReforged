@@ -36,7 +36,8 @@ public sealed record PlayerStallProductView(
     int QuantityAvailable,
     bool IsSoldOut,
     bool IsPurchasable,
-    string? Tooltip);
+    string? Tooltip,
+    string? OriginalName = null);
 
 /// <summary>
 /// Snapshot rendered in the buyer window.

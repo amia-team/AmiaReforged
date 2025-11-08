@@ -3,10 +3,12 @@ using AmiaReforged.PwEngine.Features.Crafting.Models.PropertyValidationRules;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Features.NwObjectHelpers;
+using AmiaReforged.PwEngine.Features.Player.PlayerTools.Services;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry.GenericWindows;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge;
 
@@ -53,6 +55,8 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
     /// Indicates whether the Mythal Forge creation process is currently active.
     /// </summary>
     private bool _creating;
+
+    [Inject] private Lazy<IRenameItemService> RenameService { get; init; } = null!;
 
     /// <summary>
     /// Represents the token used to manage the Nui window associated with the Mythal Forge view.
@@ -312,7 +316,14 @@ public sealed class MythalForgePresenter : ScryPresenter<MythalForgeView>
             return true;
         }
 
-        Model.Item.Name = newName;
+        // Use rename service with business rules
+        RenameItemResult result = RenameService.Value.RenameItem(Model.Item, newName, _player);
+        if (!result.IsSuccess)
+        {
+            _player.SendServerMessage(message: result.ErrorMessage ?? "Failed to rename item.", ColorConstants.Orange);
+            return true;
+        }
+
         return false;
     }
 

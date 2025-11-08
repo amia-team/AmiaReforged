@@ -49,7 +49,8 @@ public sealed record ListStallProductRequest(
     int SortOrder,
     bool IsActive,
     DateTime ListedUtc,
-    DateTime UpdatedUtc);
+    DateTime UpdatedUtc,
+    string? OriginalName = null);
 
 /// <summary>
 /// Request to update the configured price for a stall product.

@@ -129,6 +129,7 @@ public sealed class PlayerStallAggregate
             StallId = descriptor.StallId,
             ResRef = descriptor.ResRef,
             Name = descriptor.Name,
+            OriginalName = descriptor.OriginalName,
             Description = descriptor.Description,
             Price = descriptor.Price,
             Quantity = descriptor.Quantity,

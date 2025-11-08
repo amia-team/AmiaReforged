@@ -1,6 +1,8 @@
-﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+﻿using AmiaReforged.PwEngine.Features.Player.PlayerTools.Services;
+using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using Anvil.API;
 using Anvil.API.Events;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ItemTool;
 
@@ -9,17 +11,17 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
     private readonly NwPlayer _player;
     private NuiWindowToken _token;
     private NuiWindow? _window;
-    private readonly ItemToolModel _model;
+    private ItemToolModel? _model;
 
     private NuiWindowToken? _nameModalToken;
     private NuiWindowToken? _descModalToken;
+
+    [Inject] private Lazy<IRenameItemService> RenameService { get; init; } = null!;
 
     public ItemToolPresenter(ItemToolView view, NwPlayer player)
     {
         View = view;
         _player = player;
-        _model = new ItemToolModel(player);
-        _model.OnNewSelection += OnNewSelection;
     }
 
     public override ItemToolView View { get; }
@@ -27,6 +29,10 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
     public override void InitBefore()
     {
+        // Initialize model after DI
+        _model = new ItemToolModel(_player, RenameService.Value);
+        _model.OnNewSelection += OnNewSelection;
+        
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
             Geometry = new NuiRect(0f, 100f, 635f, 550f),
@@ -69,6 +75,8 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
     private void HandleClick(ModuleEvents.OnNuiEvent ev)
     {
+        if (_model == null) return;
+        
         if (ev.ElementId == View.SelectItemButton.Id)
         {
             _model.EnterTargetingMode();
@@ -198,7 +206,7 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
     private void ApplyChanges(bool showMessage)
     {
-        if (!_model.HasSelected) return;
+        if (_model == null || !_model.HasSelected) return;
 
         string? name = Token().GetBindValue(View.Name);
         string? desc = Token().GetBindValue(View.Description);
@@ -211,6 +219,8 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
     private void TryAdjustIcon(int delta)
     {
+        if (_model == null) return;
+        
         IconAdjustResult result = _model.TryAdjustIcon(delta, out int newValue, out int maxValue);
         switch (result)
         {
@@ -231,6 +241,8 @@ public sealed class ItemToolPresenter : ScryPresenter<ItemToolView>
 
     private void OnNewSelection()
     {
+        if (_model == null) return;
+        
         _model.EnsureInitialNameCaptured();
         _model.EnsureInitialDescCaptured();
         UpdateFromModel();

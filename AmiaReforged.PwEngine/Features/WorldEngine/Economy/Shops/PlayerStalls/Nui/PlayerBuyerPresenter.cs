@@ -166,12 +166,22 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 					: string.Empty;
 
 			string statusSuffix = string.IsNullOrWhiteSpace(status) ? string.Empty : " " + status;
+			
+			// Display original name if different from current name
+			string originalNameSuffix = string.Empty;
+			if (!string.IsNullOrWhiteSpace(product.OriginalName) && 
+			    !string.Equals(product.OriginalName, product.DisplayName, StringComparison.OrdinalIgnoreCase))
+			{
+				originalNameSuffix = string.Format(CultureInfo.InvariantCulture, " (Originally: {0})", product.OriginalName);
+			}
+			
 			string entry = string.Format(
 				CultureInfo.InvariantCulture,
-				"{0} - {1}{2}",
+				"{0} - {1}{2}{3}",
 				product.DisplayName,
 				FormatPrice(product.Price),
-				statusSuffix);
+				statusSuffix,
+				originalNameSuffix);
 
 			entries.Add(entry);
 			tooltips.Add(string.IsNullOrWhiteSpace(product.Tooltip) ? string.Empty : product.Tooltip!);

@@ -39,4 +39,5 @@ public sealed record PlayerStallProductDescriptor(
     int SortOrder,
     bool IsActive,
     DateTime ListedUtc,
-    DateTime UpdatedUtc);
+    DateTime UpdatedUtc,
+    string? OriginalName = null);

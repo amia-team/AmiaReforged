@@ -1,6 +1,7 @@
 ﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
+using AmiaReforged.PwEngine.Features.Player.PlayerTools.Services;
 using NWN.Core;
 using YamlDotNet.Serialization;
 
@@ -8,7 +9,7 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ItemTool;
 
 public enum IconAdjustResult { Success, NotAllowedType, NoSelection, NoValidModel }
 
-internal sealed class ItemToolModel(NwPlayer player)
+internal sealed class ItemToolModel(NwPlayer player, IRenameItemService renameService)
 {
     public NwItem? Selected { get; private set; }
     public bool HasSelected => Selected != null;
@@ -114,7 +115,18 @@ internal sealed class ItemToolModel(NwPlayer player)
     public void UpdateBasic(string name, string description)
     {
         if (Selected is null) return;
-        Selected.Name = name;
+        
+        // Use the rename service for name changes
+        if (Selected.Name != name)
+        {
+            RenameItemResult result = renameService.RenameItem(Selected, name, player);
+            if (!result.IsSuccess)
+            {
+                player.SendServerMessage($"Failed to rename item: {result.ErrorMessage}", ColorConstants.Orange);
+                return;
+            }
+        }
+        
         Selected.Description = description;
     }
 

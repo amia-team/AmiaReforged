@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.Player.PlayerTools.Services;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -34,6 +35,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     private readonly RuntimeCharacterService _characters;
     private readonly IPlayerStallService _stallService;
     private readonly ICoinhouseRepository _coinhouses;
+    private readonly IRenameItemService _renameService;
     private readonly Dictionary<Guid, BuyerSubscription> _buyerSessions = new();
     private readonly Dictionary<long, HashSet<Guid>> _stallBuyers = new();
     private readonly Dictionary<Guid, SellerSubscription> _sellerSessions = new();
@@ -44,12 +46,14 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         IPlayerShopRepository shops,
         RuntimeCharacterService characters,
         IPlayerStallService stallService,
-        ICoinhouseRepository coinhouses)
+        ICoinhouseRepository coinhouses,
+        IRenameItemService renameService)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _characters = characters ?? throw new ArgumentNullException(nameof(characters));
         _stallService = stallService ?? throw new ArgumentNullException(nameof(stallService));
         _coinhouses = coinhouses ?? throw new ArgumentNullException(nameof(coinhouses));
+        _renameService = renameService ?? throw new ArgumentNullException(nameof(renameService));
     }
 
     /// <summary>
@@ -1215,6 +1219,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         int quantity = Math.Max(item.StackSize, 1);
         int? baseItemType = item.BaseItem is null ? null : (int)item.BaseItem.ItemType;
 
+        // Capture original item name using rename service
+        string? originalName = _renameService.GetOriginalName(item);
+
         Json serializedItem = NWScript.ObjectToJson(item);
         string payload = serializedItem.Dump();
         byte[] itemData = Encoding.UTF8.GetBytes(payload);
@@ -1239,7 +1246,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             sortOrder,
             true,
             timestamp,
-            timestamp);
+            timestamp,
+            originalName);
 
         PlayerStallServiceResult serviceResult = await _stallService
             .ListProductAsync(serviceRequest)
@@ -1791,7 +1799,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                 Math.Max(0, product.Quantity),
                 soldOut,
                 purchasable,
-                tooltip));
+                tooltip,
+                product.OriginalName));
         }
 
         return views;

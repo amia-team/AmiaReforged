@@ -23,6 +23,9 @@ public class StallProduct
     [MaxLength(255)]
     public required string Name { get; set; }
 
+    [MaxLength(255)]
+    public string? OriginalName { get; set; }
+
     public string? Description { get; set; }
 
     /// <summary>
