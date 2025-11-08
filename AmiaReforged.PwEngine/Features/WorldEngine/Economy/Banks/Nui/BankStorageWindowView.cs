@@ -195,6 +195,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
 
     [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
     [Inject] private Lazy<IBankStorageService> BankStorage { get; init; } = null!;
+    [Inject] private Lazy<IBankStorageItemBlacklist> StorageBlacklist { get; init; } = null!;
 
     public BankStorageWindowPresenter(BankStorageWindowView view, NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -297,7 +298,24 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             // Load inventory items
             if (_player.ControlledCreature != null)
             {
-                _inventoryItems = _player.ControlledCreature.Inventory.Items.Where(i => i.IsValid && !string.IsNullOrEmpty(i.Name)).ToList();
+                List<NwItem> inventoryItems = _player.ControlledCreature.Inventory.Items
+                    .Where(i => i.IsValid && !string.IsNullOrEmpty(i.Name))
+                    .ToList();
+
+                IBankStorageItemBlacklist blacklist = StorageBlacklist.Value;
+                _inventoryItems = inventoryItems
+                    .Where(i => !blacklist.IsBlacklisted(i.ResRef))
+                    .ToList();
+
+                int filteredCount = inventoryItems.Count - _inventoryItems.Count;
+                if (filteredCount > 0)
+                {
+                    Log.Debug("Filtered {Filtered} inventory items from bank storage view for character {CharacterId} at bank {Bank}",
+                        filteredCount,
+                        characterId,
+                        _coinhouseTag.Value);
+                }
+
                 Token().SetBindValue(View.InventoryItemCount, _inventoryItems.Count);
                 Token().SetBindValues(View.InventoryItemLabels, _inventoryItems.Select(i => i.Name).ToList());
                 Token().SetBindValues(View.InventoryItemTooltips, _inventoryItems.Select(i => i.Description ?? "No description").ToList());
@@ -329,36 +347,47 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             }
 
             int cost = capacityInfo.NextUpgradeCost ?? 0;
-            uint playerGold = _player.ControlledCreature?.Gold ?? 0;
+
+            await NwTask.SwitchToMainThread();
+            NwCreature? controlledCreature = _player.ControlledCreature;
+
+            if (controlledCreature == null)
+            {
+                Token().Player.SendServerMessage("You must possess your character to upgrade storage.", ColorConstants.Orange);
+                return;
+            }
+
+            uint playerGold = controlledCreature.Gold;
 
             if (playerGold < cost)
             {
-                await NwTask.SwitchToMainThread();
                 Token().Player.SendServerMessage($"You need {cost:N0} gp to upgrade storage. You have {playerGold:N0} gp.", ColorConstants.Orange);
                 return;
             }
 
-            // Deduct gold
-            await NwTask.WaitUntilValueChanged(() => _player.ControlledCreature);
-            if (_player.ControlledCreature != null)
-            {
-                _player.ControlledCreature.Gold -= (uint)cost;
-            }
+            uint deduction = (uint)cost;
+            controlledCreature.Gold -= deduction;
 
             // Upgrade storage using facade service
             CommandResult result = await BankStorage.Value.UpgradeStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
 
-            await NwTask.SwitchToMainThread();
-            
             if (result.Success)
             {
                 int newCapacity = (int)result.Data["NewCapacity"];
+                await NwTask.SwitchToMainThread();
                 Token().Player.SendServerMessage($"Storage upgraded! New capacity: {newCapacity} slots.", ColorConstants.Green);
                 // Reload data
                 await LoadStorageDataAsync();
             }
             else
             {
+                await NwTask.SwitchToMainThread();
+
+                if (controlledCreature.IsValid)
+                {
+                    controlledCreature.Gold += deduction;
+                }
+
                 Token().Player.SendServerMessage(result.ErrorMessage ?? "Upgrade failed", ColorConstants.Orange);
             }
         }
@@ -384,6 +413,14 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             {
                 await NwTask.SwitchToMainThread();
                 Token().Player.SendServerMessage("Item is no longer valid.", ColorConstants.Orange);
+                await LoadStorageDataAsync();
+                return;
+            }
+
+            if (StorageBlacklist.Value.IsBlacklisted(item.ResRef))
+            {
+                await NwTask.SwitchToMainThread();
+                Token().Player.SendServerMessage("That item cannot be stored in the bank.", ColorConstants.Orange);
                 await LoadStorageDataAsync();
                 return;
             }
