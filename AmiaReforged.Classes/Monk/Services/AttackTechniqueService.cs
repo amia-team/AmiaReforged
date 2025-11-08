@@ -22,9 +22,9 @@ public class AttackTechniqueService
 
     private const string AttackCooldownTag = "attack_technique_cooldown";
     private const string AttackTechnique = "attack_technique";
-    private const string StunningTag = nameof(TechniqueType.StunningStrike) + "self";
-    private const string EagleTag = nameof(TechniqueType.EagleStrike) + "self";
-    private const string AxiomaticTag = nameof(TechniqueType.AxiomaticStrike) + "self";
+    private const string StunningTag = nameof(TechniqueType.StunningStrike);
+    private const string EagleTag = nameof(TechniqueType.EagleStrike);
+    private const string AxiomaticTag = nameof(TechniqueType.AxiomaticStrike);
     private const string EagleStrikeCounter = "eagle_strike_counter";
 
     public AttackTechniqueService(TechniqueFactory techniqueFactory)
