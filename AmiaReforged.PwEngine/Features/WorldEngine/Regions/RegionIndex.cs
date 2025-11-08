@@ -73,6 +73,81 @@ public class RegionIndex(IRegionRepository regions)
         return regions.TryGetSettlementForPointOfInterest(poiResRef, out settlementId);
     }
 
+    /// <summary>
+    /// Retrieves a Point of Interest directly by its ResRef.
+    /// O(1) lookup - significantly faster than querying all POIs for a settlement.
+    /// </summary>
+    public bool TryGetPointOfInterest(string poiResRef, out PlaceOfInterest poi)
+    {
+        return regions.TryGetPointOfInterestByResRef(poiResRef, out poi);
+    }
+
+    /// <summary>
+    /// Retrieves all Points of Interest matching a specific tag.
+    /// Useful for querying related POIs or named locations.
+    /// </summary>
+    public IReadOnlyList<PlaceOfInterest> GetPointsOfInterestByTag(string tag)
+    {
+        return regions.GetPointsOfInterestByTag(tag);
+    }
+
+    /// <summary>
+    /// Retrieves all Points of Interest of a specific type (e.g., all shops, all banks).
+    /// Avoids scanning all regions/areas - uses optimized type index.
+    /// </summary>
+    public IReadOnlyList<PlaceOfInterest> GetPointsOfInterestByType(PoiType type)
+    {
+        return regions.GetPointsOfInterestByType(type);
+    }
+
+    /// <summary>
+    /// Retrieves all Points of Interest within a specific area.
+    /// Useful for spatial/area-scoped queries.
+    /// </summary>
+    public IReadOnlyList<PlaceOfInterest> GetPointsOfInterestForArea(AreaTag areaTag)
+    {
+        return regions.GetPointsOfInterestForArea(areaTag);
+    }
+
+    /// <summary>
+    /// Retrieves complete location information for a POI in a single query.
+    /// Returns POI data along with its Settlement, Region, and Area context.
+    /// Replaces the anti-pattern: get settlement → get all POIs → filter by ResRef.
+    /// Performance: O(1) - single dictionary lookup vs O(M) scan + filter.
+    /// </summary>
+    public PoiLocationInfo? GetPoiLocationInfo(string poiResRef)
+    {
+        return regions.GetPoiLocationInfo(poiResRef);
+    }
+
+    /// <summary>
+    /// Convenience method that resolves either a POI ResRef or Area Tag to a settlement.
+    /// Tries POI lookup first (most common case), then falls back to area lookup.
+    /// </summary>
+    public SettlementId? ResolveSettlement(string poiResRefOrAreaTag)
+    {
+        // Try POI first (fast path for most use cases)
+        if (regions.TryGetSettlementForPointOfInterest(poiResRefOrAreaTag, out SettlementId settlement))
+        {
+            return settlement;
+        }
+
+        // Fallback to area lookup
+        try
+        {
+            if (regions.TryGetSettlementForArea(new AreaTag(poiResRefOrAreaTag), out settlement))
+            {
+                return settlement;
+            }
+        }
+        catch (ArgumentException)
+        {
+            // Invalid area tag format
+        }
+
+        return null;
+    }
+
     private static List<AreaDefinition> CloneAreas(IEnumerable<AreaDefinition> areas)
     {
         List<AreaDefinition> copy = new();

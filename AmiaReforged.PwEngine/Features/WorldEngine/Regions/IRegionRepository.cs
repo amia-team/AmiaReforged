@@ -9,13 +9,24 @@ public interface IRegionRepository
     bool Exists(RegionTag tag);
     List<RegionDefinition> All();
 
-    // New queries to support settlement-region mapping
+    // Settlement-region mapping queries
     bool TryGetRegionBySettlement(SettlementId settlementId, out RegionDefinition? region);
     IReadOnlyCollection<SettlementId> GetSettlements(RegionTag regionTag);
     bool TryGetSettlementForArea(AreaTag areaTag, out SettlementId settlementId);
     IReadOnlyList<AreaDefinition> GetAreasForSettlement(SettlementId settlementId);
+
+    // Legacy POI queries (settlement-based)
     IReadOnlyList<PlaceOfInterest> GetPointsOfInterest(SettlementId settlementId);
     bool TryGetSettlementForPointOfInterest(string poiResRef, out SettlementId settlementId);
+
+    // Direct POI queries (optimized - O(1) or O(k))
+    bool TryGetPointOfInterestByResRef(string poiResRef, out PlaceOfInterest poi);
+    IReadOnlyList<PlaceOfInterest> GetPointsOfInterestByTag(string tag);
+    IReadOnlyList<PlaceOfInterest> GetPointsOfInterestByType(PoiType type);
+    IReadOnlyList<PlaceOfInterest> GetPointsOfInterestForArea(AreaTag areaTag);
+
+    // Composite query - returns POI with full location context in single O(1) operation
+    PoiLocationInfo? GetPoiLocationInfo(string poiResRef);
 
     // Clear all regions and indexes (used on reload)
     void Clear();

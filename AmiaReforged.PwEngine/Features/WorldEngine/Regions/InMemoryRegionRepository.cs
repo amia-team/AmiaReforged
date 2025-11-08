@@ -8,6 +8,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 [ServiceBinding(typeof(IRegionRepository))]
 public class InMemoryRegionRepository : IRegionRepository
 {
+    // Region aggregates and core indexes
     private readonly Dictionary<string, RegionDefinition> _regions = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, string> _settlementToRegionTag = new();
     private readonly Dictionary<string, int> _areaToSettlement = new(StringComparer.OrdinalIgnoreCase);
@@ -15,6 +16,15 @@ public class InMemoryRegionRepository : IRegionRepository
     private readonly Dictionary<int, List<PlaceOfInterest>> _settlementToPois = new();
     private readonly Dictionary<string, int> _poiToSettlement = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, HashSet<int>> _regionToSettlements = new(StringComparer.OrdinalIgnoreCase);
+
+    // Optimized POI indexes for O(1) direct lookups
+    private readonly Dictionary<string, PlaceOfInterest> _poiByResRef = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<string>> _poiByTag = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<PoiType, List<string>> _poiByType = new();
+    private readonly Dictionary<string, List<string>> _poiByArea = new(StringComparer.OrdinalIgnoreCase);
+
+    // Composite location cache for single-query resolution
+    private readonly Dictionary<string, PoiLocationInfo> _poiLocationCache = new(StringComparer.OrdinalIgnoreCase);
 
     public void Add(RegionDefinition definition)
     {
@@ -110,6 +120,74 @@ public class InMemoryRegionRepository : IRegionRepository
         return false;
     }
 
+    public bool TryGetPointOfInterestByResRef(string poiResRef, out PlaceOfInterest poi)
+    {
+        poi = default;
+        return _poiByResRef.TryGetValue(poiResRef, out poi!);
+    }
+
+    public IReadOnlyList<PlaceOfInterest> GetPointsOfInterestByTag(string tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag) || !_poiByTag.TryGetValue(tag, out List<string>? poiResRefs))
+        {
+            return Array.Empty<PlaceOfInterest>();
+        }
+
+        List<PlaceOfInterest> result = new(poiResRefs.Count);
+        foreach (string resRef in poiResRefs)
+        {
+            if (_poiByResRef.TryGetValue(resRef, out PlaceOfInterest poi))
+            {
+                result.Add(poi);
+            }
+        }
+
+        return result;
+    }
+
+    public IReadOnlyList<PlaceOfInterest> GetPointsOfInterestByType(PoiType type)
+    {
+        if (type == PoiType.Undefined || !_poiByType.TryGetValue(type, out List<string>? poiResRefs))
+        {
+            return Array.Empty<PlaceOfInterest>();
+        }
+
+        List<PlaceOfInterest> result = new(poiResRefs.Count);
+        foreach (string resRef in poiResRefs)
+        {
+            if (_poiByResRef.TryGetValue(resRef, out PlaceOfInterest poi))
+            {
+                result.Add(poi);
+            }
+        }
+
+        return result;
+    }
+
+    public IReadOnlyList<PlaceOfInterest> GetPointsOfInterestForArea(AreaTag areaTag)
+    {
+        if (!_poiByArea.TryGetValue(areaTag.Value, out List<string>? poiResRefs))
+        {
+            return Array.Empty<PlaceOfInterest>();
+        }
+
+        List<PlaceOfInterest> result = new(poiResRefs.Count);
+        foreach (string resRef in poiResRefs)
+        {
+            if (_poiByResRef.TryGetValue(resRef, out PlaceOfInterest poi))
+            {
+                result.Add(poi);
+            }
+        }
+
+        return result;
+    }
+
+    public PoiLocationInfo? GetPoiLocationInfo(string poiResRef)
+    {
+        return _poiLocationCache.TryGetValue(poiResRef, out PoiLocationInfo? info) ? info : null;
+    }
+
     public void Clear()
     {
         _regions.Clear();
@@ -119,6 +197,13 @@ public class InMemoryRegionRepository : IRegionRepository
         _settlementToPois.Clear();
         _poiToSettlement.Clear();
         _regionToSettlements.Clear();
+
+        // Clear optimized indexes
+        _poiByResRef.Clear();
+        _poiByTag.Clear();
+        _poiByType.Clear();
+        _poiByArea.Clear();
+        _poiLocationCache.Clear();
     }
 
     private void RebuildIndexes()
@@ -129,6 +214,13 @@ public class InMemoryRegionRepository : IRegionRepository
         _settlementToPois.Clear();
         _poiToSettlement.Clear();
         _regionToSettlements.Clear();
+
+        // Clear optimized indexes
+        _poiByResRef.Clear();
+        _poiByTag.Clear();
+        _poiByType.Clear();
+        _poiByArea.Clear();
+        _poiLocationCache.Clear();
 
         foreach ((string regionKey, RegionDefinition region) in _regions)
         {
@@ -161,18 +253,24 @@ public class InMemoryRegionRepository : IRegionRepository
                                 if (!string.IsNullOrWhiteSpace(poi.ResRef))
                                 {
                                     _poiToSettlement[poi.ResRef] = settlement.Value;
+
+                                    // Build optimized indexes
+                                    IndexPoi(poi, settlement, region.Tag, area.ResRef);
                                 }
                             }
                         }
                     }
                     else if (area.PlacesOfInterest is { Count: > 0 })
                     {
-                        // POIs without linked settlements are ignored for settlement lookups but remain discoverable via area data.
+                        // POIs without linked settlements are still indexed for direct lookup
                         foreach (PlaceOfInterest poi in area.PlacesOfInterest)
                         {
                             if (!string.IsNullOrWhiteSpace(poi.ResRef))
                             {
                                 _poiToSettlement[poi.ResRef] = 0;
+
+                                // Index POI without settlement context
+                                IndexPoi(poi, null, region.Tag, area.ResRef);
                             }
                         }
                     }
@@ -184,6 +282,49 @@ public class InMemoryRegionRepository : IRegionRepository
                 _regionToSettlements[regionKey] = regionSettlements;
             }
         }
+    }
+
+    /// <summary>
+    /// Indexes a single POI across all optimized lookup structures.
+    /// Encapsulates the indexing logic for maintainability.
+    /// </summary>
+    private void IndexPoi(PlaceOfInterest poi, SettlementId? settlement, RegionTag region, AreaTag area)
+    {
+        // Index by ResRef (primary key for O(1) lookup)
+        _poiByResRef[poi.ResRef] = poi;
+
+        // Index by Tag (for tag-based queries)
+        if (!string.IsNullOrWhiteSpace(poi.Tag))
+        {
+            if (!_poiByTag.TryGetValue(poi.Tag, out List<string>? tagList))
+            {
+                tagList = new List<string>();
+                _poiByTag[poi.Tag] = tagList;
+            }
+            tagList.Add(poi.ResRef);
+        }
+
+        // Index by Type (for type-based queries)
+        if (poi.Type != PoiType.Undefined)
+        {
+            if (!_poiByType.TryGetValue(poi.Type, out List<string>? typeList))
+            {
+                typeList = new List<string>();
+                _poiByType[poi.Type] = typeList;
+            }
+            typeList.Add(poi.ResRef);
+        }
+
+        // Index by Area (for area-scoped queries)
+        if (!_poiByArea.TryGetValue(area.Value, out List<string>? areaList))
+        {
+            areaList = new List<string>();
+            _poiByArea[area.Value] = areaList;
+        }
+        areaList.Add(poi.ResRef);
+
+        // Build composite location info for single-query resolution
+        _poiLocationCache[poi.ResRef] = new PoiLocationInfo(poi, settlement, region, area);
     }
 
     private static IReadOnlyList<AreaDefinition> CloneAreas(IEnumerable<AreaDefinition> source)
