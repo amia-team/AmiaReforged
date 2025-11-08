@@ -48,8 +48,8 @@ public static class MonkUtils
     ///     DC 10 + monk level / 3 + wisdom modifier
     /// </summary>
     /// <returns>The monk ability DC</returns>
-    public static int CalculateMonkDc(NwCreature monk) => 10 + monk.GetClassInfo(ClassType.Monk)?.Level ?? 0 / 3 +
-                                                          monk.GetAbilityModifier(Ability.Wisdom);
+    public static int CalculateMonkDc(NwCreature monk)
+        => 10 + NWScript.GetLevelByClass((int)ClassType.Monk, monk) / 3 + monk.GetAbilityModifier(Ability.Wisdom);
 
     /// <summary>
     ///     Resizes a vfx to your desired size
