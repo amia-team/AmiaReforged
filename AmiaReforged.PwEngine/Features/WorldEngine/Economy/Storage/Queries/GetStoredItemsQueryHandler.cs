@@ -1,11 +1,13 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
+using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage.Queries;
 
+[ServiceBinding(typeof(IQueryHandler<GetStoredItemsQuery, List<StoredItemDto>>))]
 public class GetStoredItemsQueryHandler : IQueryHandler<GetStoredItemsQuery, List<StoredItemDto>>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

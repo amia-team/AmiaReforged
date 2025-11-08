@@ -1,10 +1,12 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
+using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage.Queries;
 
+[ServiceBinding(typeof(IQueryHandler<GetStorageCapacityQuery, GetStorageCapacityResult>))]
 public class GetStorageCapacityQueryHandler : IQueryHandler<GetStorageCapacityQuery, GetStorageCapacityResult>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

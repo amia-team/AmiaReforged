@@ -1,10 +1,12 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage.Commands;
 
+[ServiceBinding(typeof(ICommandHandler<UpgradeStorageCapacityCommand>))]
 public class UpgradeStorageCapacityCommandHandler : ICommandHandler<UpgradeStorageCapacityCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

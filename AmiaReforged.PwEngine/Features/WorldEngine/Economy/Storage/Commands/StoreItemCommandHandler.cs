@@ -1,11 +1,13 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage.Commands;
 
+[ServiceBinding(typeof(ICommandHandler<StoreItemCommand>))]
 public class StoreItemCommandHandler : ICommandHandler<StoreItemCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -42,7 +44,7 @@ public class StoreItemCommandHandler : ICommandHandler<StoreItemCommand>
 
             _context.Warehouses.Add(storage);
             await _context.SaveChangesAsync(cancellationToken);
-            
+
             Log.Info($"Created new personal storage for character {request.CharacterId} " +
                      $"at bank '{request.CoinhouseTag}' with 10 slots.");
         }
