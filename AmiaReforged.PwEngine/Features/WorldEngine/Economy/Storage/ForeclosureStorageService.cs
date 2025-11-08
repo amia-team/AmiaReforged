@@ -99,15 +99,26 @@ public class ForeclosureStorageService : IForeclosureStorageService
     {
         string locationKey = BuildLocationKey(coinhouseTag);
 
+        // First, get the warehouse for this location
+        Database.Entities.Storage? warehouse = await _context.Warehouses
+            .FirstOrDefaultAsync(w => w.LocationKey == locationKey
+                                     && w.StorageType == nameof(StorageLocationType.ForeclosedItems),
+                cancellationToken);
+
+        // If no warehouse exists, return empty list
+        if (warehouse == null)
+        {
+            Log.Info($"No foreclosure storage found at coinhouse '{coinhouseTag}' - returning empty list.");
+            return new List<StoredItem>();
+        }
+
+        // Now get items directly by warehouse ID and owner
         List<StoredItem> items = await _context.WarehouseItems
-            .Where(item => item.Owner == characterId
-                           && item.Warehouse != null
-                           && item.Warehouse.StorageType == nameof(StorageLocationType.ForeclosedItems)
-                           && item.Warehouse.LocationKey == locationKey)
+            .Where(item => item.WarehouseId == warehouse.Id && item.Owner == characterId)
             .ToListAsync(cancellationToken);
 
         Log.Info($"Retrieved {items.Count} foreclosed items for character {characterId} " +
-                         $"at coinhouse '{coinhouseTag}'.");
+                         $"at coinhouse '{coinhouseTag}' (Warehouse ID: {warehouse.Id}).");
 
         return items;
     }
@@ -120,11 +131,21 @@ public class ForeclosureStorageService : IForeclosureStorageService
     {
         string locationKey = BuildLocationKey(coinhouseTag);
 
+        // First, get the warehouse for this location
+        Database.Entities.Storage? warehouse = await _context.Warehouses
+            .FirstOrDefaultAsync(w => w.LocationKey == locationKey
+                                     && w.StorageType == nameof(StorageLocationType.ForeclosedItems),
+                cancellationToken);
+
+        // If no warehouse exists, no items can exist
+        if (warehouse == null)
+        {
+            return false;
+        }
+
+        // Check if items exist for this warehouse and owner
         bool hasItems = await _context.WarehouseItems
-            .AnyAsync(item => item.Owner == characterId
-                              && item.Warehouse != null
-                              && item.Warehouse.StorageType == nameof(StorageLocationType.ForeclosedItems)
-                              && item.Warehouse.LocationKey == locationKey,
+            .AnyAsync(item => item.WarehouseId == warehouse.Id && item.Owner == characterId,
                 cancellationToken);
 
         Log.Info($"Character {characterId} " +

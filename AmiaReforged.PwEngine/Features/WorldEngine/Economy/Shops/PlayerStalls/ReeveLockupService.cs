@@ -80,7 +80,7 @@ public sealed class ReeveLockupService
                 {
                     ItemData = product.ItemData.ToArray(),
                     Owner = ownerGuid,
-                    Warehouse = storage
+                    WarehouseId = storage.Id
                 };
 
                 await context.WarehouseItems.AddAsync(entry, cancellationToken).ConfigureAwait(false);

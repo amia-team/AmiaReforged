@@ -2242,12 +2242,12 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
     private void OpenStorageWindow()
     {
         BankStorageWindowView storageWindow = new(_player, _coinhouseTag, _bankDisplayName);
-        storageWindow.Presenter.Create();
+        WindowDirector.OpenWindow(storageWindow.Presenter);
     }
 
     private void OpenAdminWindow()
     {
         BankAdminWindowView adminWindow = new(_player, _coinhouseTag, _bankDisplayName);
-        adminWindow.Presenter.Create();
+        WindowDirector.OpenWindow(adminWindow.Presenter);
     }
 }

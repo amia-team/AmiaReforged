@@ -117,15 +117,27 @@ public class PersonalStorageService : IPersonalStorageService
     {
         string locationKey = BuildLocationKey(coinhouseTag, characterId);
 
+        // First, get the warehouse for this location and character
+        Database.Entities.Storage? warehouse = await _context.Warehouses
+            .FirstOrDefaultAsync(w => w.LocationKey == locationKey
+                                     && w.StorageType == nameof(StorageLocationType.PersonalStorage)
+                                     && w.OwnerId == characterId,
+                cancellationToken);
+
+        // If no warehouse exists, return empty list
+        if (warehouse == null)
+        {
+            Log.Debug($"No storage found for character {characterId} at bank '{coinhouseTag}'.");
+            return new List<StoredItem>();
+        }
+
+        // Now get items directly by warehouse ID
         List<StoredItem> items = await _context.WarehouseItems
-            .Where(item => item.Owner == characterId
-                           && item.Warehouse != null
-                           && item.Warehouse.StorageType == nameof(StorageLocationType.PersonalStorage)
-                           && item.Warehouse.LocationKey == locationKey)
+            .Where(item => item.WarehouseId == warehouse.Id)
             .ToListAsync(cancellationToken);
 
         Log.Debug($"Retrieved {items.Count} stored items for character {characterId} " +
-                  $"at bank '{coinhouseTag}'.");
+                  $"at bank '{coinhouseTag}' (Warehouse ID: {warehouse.Id}).");
 
         return items;
     }

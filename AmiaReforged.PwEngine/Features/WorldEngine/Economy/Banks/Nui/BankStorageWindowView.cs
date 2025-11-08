@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil;
 using Anvil.API;
@@ -188,12 +190,16 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
-    private List<StoredItem> _storedItems = [];
+    private List<StoredItemDto> _storedItems = [];
     private List<NwItem> _inventoryItems = [];
     private int _storageCapacity = 10;
 
-    [Inject] private Lazy<IPersonalStorageService> PersonalStorageService { get; init; } = null!;
     [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
+    [Inject] private Lazy<ICommandHandler<StoreItemCommand>> StoreItemHandler { get; init; } = null!;
+    [Inject] private Lazy<ICommandHandler<WithdrawItemCommand>> WithdrawItemHandler { get; init; } = null!;
+    [Inject] private Lazy<ICommandHandler<UpgradeStorageCapacityCommand>> UpgradeStorageHandler { get; init; } = null!;
+    [Inject] private Lazy<IQueryHandler<GetStoredItemsQuery, List<StoredItemDto>>> GetStoredItemsHandler { get; init; } = null!;
+    [Inject] private Lazy<IQueryHandler<GetStorageCapacityQuery, GetStorageCapacityResult>> GetStorageCapacityHandler { get; init; } = null!;
 
     public BankStorageWindowPresenter(BankStorageWindowView view, NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -233,25 +239,31 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
 
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
     {
+        Log.Info($"Storage window event: Type={obj.EventType}, ElementId={obj.ElementId}, ArrayIndex={obj.ArrayIndex}");
+        
         if (obj.EventType != NuiEventType.Click) return;
 
         switch (obj.ElementId)
         {
             case "storage_btn_upgrade":
+                Log.Info("Upgrade button clicked");
                 _ = HandleUpgradeStorageAsync();
                 break;
             case "storage_btn_close":
+                Log.Info("Close button clicked");
                 Close();
                 break;
             case "storage_item_store":
                 if (obj.ArrayIndex >= 0)
                 {
+                    Log.Info($"Store item clicked: index={obj.ArrayIndex}");
                     _ = HandleStoreItemAsync(obj.ArrayIndex);
                 }
                 break;
             case "storage_item_withdraw":
                 if (obj.ArrayIndex >= 0)
                 {
+                    Log.Info($"Withdraw item clicked: index={obj.ArrayIndex}");
                     _ = HandleWithdrawItemAsync(obj.ArrayIndex);
                 }
                 break;
@@ -265,10 +277,14 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             Guid characterId = CharacterService.Value.GetPlayerKey(_player);
             if (characterId == Guid.Empty) return;
 
-            // Load stored items
-            _storedItems = await PersonalStorageService.Value.GetStoredItemsAsync(_coinhouseTag, characterId, CancellationToken.None);
-            var capacityInfo = await PersonalStorageService.Value.GetStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
-            _storageCapacity = capacityInfo.Capacity;
+            // Load stored items using query
+            GetStoredItemsQuery itemsQuery = new(_coinhouseTag, characterId);
+            _storedItems = await GetStoredItemsHandler.Value.HandleAsync(itemsQuery, CancellationToken.None);
+
+            // Load capacity using query
+            GetStorageCapacityQuery capacityQuery = new(_coinhouseTag, characterId);
+            GetStorageCapacityResult capacityInfo = await GetStorageCapacityHandler.Value.HandleAsync(capacityQuery, CancellationToken.None);
+            _storageCapacity = capacityInfo.TotalCapacity;
 
             await NwTask.SwitchToMainThread();
 
@@ -278,13 +294,12 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             Token().SetBindValues(View.StorageItemTooltips, _storedItems.Select(i => i.Description ?? "No description").ToList());
 
             // Check if can upgrade
-            bool canUpgrade = _storageCapacity < 100;
+            bool canUpgrade = capacityInfo.CanUpgrade;
             Token().SetBindValue(View.CanUpgradeStorage, canUpgrade);
 
             if (canUpgrade)
             {
-                int cost = PersonalStorageService.Value.CalculateUpgradeCost(_storageCapacity);
-                Token().SetBindValue(View.UpgradeCostText, $"Upgrade to {_storageCapacity + 10} slots: {cost:N0} gp");
+                Token().SetBindValue(View.UpgradeCostText, $"Upgrade to {_storageCapacity + 10} slots: {capacityInfo.NextUpgradeCost:N0} gp");
             }
 
             // Load inventory items
@@ -311,14 +326,18 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             Guid characterId = CharacterService.Value.GetPlayerKey(_player);
             if (characterId == Guid.Empty) return;
 
-            if (_storageCapacity >= 100)
+            // Get current capacity
+            GetStorageCapacityQuery capacityQuery = new(_coinhouseTag, characterId);
+            GetStorageCapacityResult capacityInfo = await GetStorageCapacityHandler.Value.HandleAsync(capacityQuery, CancellationToken.None);
+
+            if (!capacityInfo.CanUpgrade)
             {
                 await NwTask.SwitchToMainThread();
                 Token().Player.SendServerMessage("Your storage is already at maximum capacity.", ColorConstants.White);
                 return;
             }
 
-            int cost = PersonalStorageService.Value.CalculateUpgradeCost(_storageCapacity);
+            int cost = capacityInfo.NextUpgradeCost ?? 0;
             uint playerGold = _player.ControlledCreature?.Gold ?? 0;
 
             if (playerGold < cost)
@@ -335,14 +354,23 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
                 _player.ControlledCreature.Gold -= (uint)cost;
             }
 
-            // Upgrade storage
-            await PersonalStorageService.Value.UpgradeStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
+            // Upgrade storage using command
+            UpgradeStorageCapacityCommand command = new(_coinhouseTag, characterId);
+            CommandResult result = await UpgradeStorageHandler.Value.HandleAsync(command, CancellationToken.None);
 
             await NwTask.SwitchToMainThread();
-            Token().Player.SendServerMessage($"Storage upgraded! New capacity: {_storageCapacity + 10} slots.", ColorConstants.Green);
-
-            // Reload data
-            await LoadStorageDataAsync();
+            
+            if (result.Success)
+            {
+                int newCapacity = (int)result.Data["NewCapacity"];
+                Token().Player.SendServerMessage($"Storage upgraded! New capacity: {newCapacity} slots.", ColorConstants.Green);
+                // Reload data
+                await LoadStorageDataAsync();
+            }
+            else
+            {
+                Token().Player.SendServerMessage(result.ErrorMessage ?? "Upgrade failed", ColorConstants.Orange);
+            }
         }
         catch (Exception ex)
         {
@@ -356,10 +384,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
     {
         try
         {
-            if (itemIndex < 0 || itemIndex >= _inventoryItems.Count)
-            {
-                return;
-            }
+            if (itemIndex < 0 || itemIndex >= _inventoryItems.Count) return;
 
             Guid characterId = CharacterService.Value.GetPlayerKey(_player);
             if (characterId == Guid.Empty) return;
@@ -373,20 +398,14 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
                 return;
             }
 
-            // Check if storage is full
-            if (_storedItems.Count >= _storageCapacity)
-            {
-                await NwTask.SwitchToMainThread();
-                Token().Player.SendServerMessage($"Storage is full ({_storageCapacity} slots). Upgrade to store more items.", ColorConstants.Orange);
-                return;
-            }
-
             // Serialize item
             byte[] itemData = item.Serialize();
             string itemName = item.Name ?? "Unknown Item";
+            string itemDescription = item.Description ?? "";
 
-            // Store item
-            var result = await PersonalStorageService.Value.StoreItemAsync(_coinhouseTag, characterId, itemName, itemData, CancellationToken.None);
+            // Store item using command
+            StoreItemCommand command = new(_coinhouseTag, characterId, itemName, itemDescription, itemData);
+            CommandResult result = await StoreItemHandler.Value.HandleAsync(command, CancellationToken.None);
 
             await NwTask.SwitchToMainThread();
 
@@ -394,14 +413,14 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             {
                 // Destroy original item
                 item.Destroy();
-                Token().Player.SendServerMessage($"Stored: {itemName}", ColorConstants.Green);
-
+                string message = result.Data.ContainsKey("Message") ? (string)result.Data["Message"] : $"Stored: {itemName}";
+                Token().Player.SendServerMessage(message, ColorConstants.Green);
                 // Reload data
                 await LoadStorageDataAsync();
             }
             else
             {
-                Token().Player.SendServerMessage(result.Message ?? "Failed to store item.", ColorConstants.Orange);
+                Token().Player.SendServerMessage(result.ErrorMessage ?? "Failed to store item", ColorConstants.Orange);
             }
         }
         catch (Exception ex)
@@ -416,44 +435,43 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
     {
         try
         {
-            if (itemIndex < 0 || itemIndex >= _storedItems.Count)
-            {
-                return;
-            }
+            if (itemIndex < 0 || itemIndex >= _storedItems.Count) return;
 
             Guid characterId = CharacterService.Value.GetPlayerKey(_player);
             if (characterId == Guid.Empty) return;
 
-            StoredItem storedItem = _storedItems[itemIndex];
+            StoredItemDto storedItem = _storedItems[itemIndex];
 
-            // Withdraw item (this returns the item data and removes it from storage)
-            StoredItem? withdrawnItem = await PersonalStorageService.Value.WithdrawItemAsync(storedItem.Id, characterId, CancellationToken.None);
+            // Withdraw item using command
+            WithdrawItemCommand command = new(storedItem.ItemId, characterId);
+            CommandResult result = await WithdrawItemHandler.Value.HandleAsync(command, CancellationToken.None);
 
             await NwTask.SwitchToMainThread();
 
-            if (withdrawnItem != null && withdrawnItem.ItemData != null)
+            if (result.Success && result.Data.ContainsKey("ItemData"))
             {
+                byte[] itemData = (byte[])result.Data["ItemData"];
+                string itemName = (string)result.Data["ItemName"];
+                
                 // Deserialize and create item in player's inventory
-                NwItem? deserializedItem = NwItem.Deserialize(withdrawnItem.ItemData);
+                NwItem? deserializedItem = NwItem.Deserialize(itemData);
 
-                if (deserializedItem != null && deserializedItem.IsValid && _player.ControlledCreature != null)
+                if (deserializedItem != null && _player.ControlledCreature != null)
                 {
-                    // Give item to player
                     _player.ControlledCreature.AcquireItem(deserializedItem);
-
-                    Token().Player.SendServerMessage($"Retrieved: {storedItem.Name ?? "Unknown Item"}", ColorConstants.Green);
-
-                    // Reload data
-                    await LoadStorageDataAsync();
+                    Token().Player.SendServerMessage($"Withdrew: {itemName}", ColorConstants.Green);
                 }
                 else
                 {
-                    Token().Player.SendServerMessage("Failed to deserialize item.", ColorConstants.Orange);
+                    Token().Player.SendServerMessage("Failed to create item from storage data.", ColorConstants.Orange);
                 }
+
+                // Reload data
+                await LoadStorageDataAsync();
             }
             else
             {
-                Token().Player.SendServerMessage("Failed to withdraw item from storage.", ColorConstants.Orange);
+                Token().Player.SendServerMessage(result.ErrorMessage ?? "Failed to withdraw item", ColorConstants.Orange);
             }
         }
         catch (Exception ex)

@@ -21,6 +21,11 @@ public class StoredItem
     /// </summary>
     public string? Description { get; set; }
 
-    public long? WarehouseId { get; set; }
-    [ForeignKey(nameof(WarehouseId))] public Storage? Warehouse { get; set; }
+    /// <summary>
+    /// The warehouse this item belongs to. Every stored item must belong to a warehouse.
+    /// </summary>
+    public required long WarehouseId { get; set; }
+    
+    [ForeignKey(nameof(WarehouseId))] 
+    public Storage? Warehouse { get; set; }
 }
