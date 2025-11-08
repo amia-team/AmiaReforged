@@ -1492,7 +1492,7 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.Property<Guid>("Owner")
                         .HasColumnType("uuid");
 
-                    b.Property<long?>("WarehouseId")
+                    b.Property<long>("WarehouseId")
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
@@ -1769,7 +1769,9 @@ namespace AmiaReforged.PwEngine.Migrations
                 {
                     b.HasOne("AmiaReforged.PwEngine.Database.Entities.Storage", "Warehouse")
                         .WithMany("Items")
-                        .HasForeignKey("WarehouseId");
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Warehouse");
                 });

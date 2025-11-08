@@ -4,10 +4,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using Anvil;
 using Anvil.API;
@@ -195,11 +194,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
     private int _storageCapacity = 10;
 
     [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
-    [Inject] private Lazy<ICommandHandler<StoreItemCommand>> StoreItemHandler { get; init; } = null!;
-    [Inject] private Lazy<ICommandHandler<WithdrawItemCommand>> WithdrawItemHandler { get; init; } = null!;
-    [Inject] private Lazy<ICommandHandler<UpgradeStorageCapacityCommand>> UpgradeStorageHandler { get; init; } = null!;
-    [Inject] private Lazy<IQueryHandler<GetStoredItemsQuery, List<StoredItemDto>>> GetStoredItemsHandler { get; init; } = null!;
-    [Inject] private Lazy<IQueryHandler<GetStorageCapacityQuery, GetStorageCapacityResult>> GetStorageCapacityHandler { get; init; } = null!;
+    [Inject] private Lazy<IBankStorageService> BankStorage { get; init; } = null!;
 
     public BankStorageWindowPresenter(BankStorageWindowView view, NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
     {
@@ -277,13 +272,10 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             Guid characterId = CharacterService.Value.GetPlayerKey(_player);
             if (characterId == Guid.Empty) return;
 
-            // Load stored items using query
-            GetStoredItemsQuery itemsQuery = new(_coinhouseTag, characterId);
-            _storedItems = await GetStoredItemsHandler.Value.HandleAsync(itemsQuery, CancellationToken.None);
-
-            // Load capacity using query
-            GetStorageCapacityQuery capacityQuery = new(_coinhouseTag, characterId);
-            GetStorageCapacityResult capacityInfo = await GetStorageCapacityHandler.Value.HandleAsync(capacityQuery, CancellationToken.None);
+            // Load stored items and capacity using facade service
+            _storedItems = await BankStorage.Value.GetStoredItemsAsync(_coinhouseTag, characterId, CancellationToken.None);
+            
+            GetStorageCapacityResult capacityInfo = await BankStorage.Value.GetStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
             _storageCapacity = capacityInfo.TotalCapacity;
 
             await NwTask.SwitchToMainThread();
@@ -327,8 +319,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             if (characterId == Guid.Empty) return;
 
             // Get current capacity
-            GetStorageCapacityQuery capacityQuery = new(_coinhouseTag, characterId);
-            GetStorageCapacityResult capacityInfo = await GetStorageCapacityHandler.Value.HandleAsync(capacityQuery, CancellationToken.None);
+            GetStorageCapacityResult capacityInfo = await BankStorage.Value.GetStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
 
             if (!capacityInfo.CanUpgrade)
             {
@@ -354,9 +345,8 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
                 _player.ControlledCreature.Gold -= (uint)cost;
             }
 
-            // Upgrade storage using command
-            UpgradeStorageCapacityCommand command = new(_coinhouseTag, characterId);
-            CommandResult result = await UpgradeStorageHandler.Value.HandleAsync(command, CancellationToken.None);
+            // Upgrade storage using facade service
+            CommandResult result = await BankStorage.Value.UpgradeStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
 
             await NwTask.SwitchToMainThread();
             
@@ -403,9 +393,8 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             string itemName = item.Name ?? "Unknown Item";
             string itemDescription = item.Description ?? "";
 
-            // Store item using command
-            StoreItemCommand command = new(_coinhouseTag, characterId, itemName, itemDescription, itemData);
-            CommandResult result = await StoreItemHandler.Value.HandleAsync(command, CancellationToken.None);
+            // Store item using facade service
+            CommandResult result = await BankStorage.Value.StoreItemAsync(_coinhouseTag, characterId, itemName, itemDescription, itemData, CancellationToken.None);
 
             await NwTask.SwitchToMainThread();
 
@@ -442,9 +431,8 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
 
             StoredItemDto storedItem = _storedItems[itemIndex];
 
-            // Withdraw item using command
-            WithdrawItemCommand command = new(storedItem.ItemId, characterId);
-            CommandResult result = await WithdrawItemHandler.Value.HandleAsync(command, CancellationToken.None);
+            // Withdraw item using facade service
+            CommandResult result = await BankStorage.Value.WithdrawItemAsync(storedItem.ItemId, characterId, CancellationToken.None);
 
             await NwTask.SwitchToMainThread();
 
