@@ -126,7 +126,7 @@ public sealed class SplinteredChalice : IAugmentation
 
     private static void WholenessAoe(NwCreature monk, MonkCondition condition)
     {
-        if (monk.Location == null) return;
+        if (monk.Location == null || !monk.IsInCombat) return;
 
         int diceAmount = MonkUtils.GetKiFocus(monk) switch
         {

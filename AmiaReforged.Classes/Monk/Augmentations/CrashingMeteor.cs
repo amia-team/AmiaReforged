@@ -212,7 +212,7 @@ public sealed class CrashingMeteor : IAugmentation
     {
         WholenessOfBody.DoWholenessOfBody(monk);
 
-        if (monk.Location == null) return;
+        if (monk.Location == null || !monk.IsInCombat) return;
 
         monk.ApplyEffect(EffectDuration.Instant, meteor.AoeVfx);
         foreach (NwGameObject nwObject in monk.Location.GetObjectsInShape(Shape.Sphere, RadiusSize.Large, true,
