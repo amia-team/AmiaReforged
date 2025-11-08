@@ -9,7 +9,7 @@ namespace AmiaReforged.Core.Services;
 /// This just gives the player a floaty text when the cooldown is over
 /// </summary>
 [ServiceBinding(typeof(CooldownNotifier))]
-public class CooldownNotifier
+public partial class CooldownNotifier
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
@@ -43,13 +43,32 @@ public class CooldownNotifier
         // Remove the "_cd" suffix
         tag = tag[..^3];
 
-        // split by underscores
+        // Split by underscores first
         string[] words = tag.Split('_');
-        // capitalize each word and lowercase the rest of the word
-        IEnumerable<string> formattedWords = words.Select(word => char.ToUpper(word[0]) + word[1..].ToLower());
-        // join words with spaces
+
+        // Process each word to handle camel casing and capitalization
+        IEnumerable<string> formattedWords = words.SelectMany(word =>
+            // Match capitalized segments within the word to handle camel casing
+            MyRegex().Matches(word)
+                .Select(match => match.Value)
+        ).Select(part =>
+        {
+            // Capitalize the first letter of the word, and make the rest lowercase
+            string formattedWord = char.ToUpper(part[0]) + part[1..].ToLower();
+
+            if (formattedWord == "Of")
+            {
+                formattedWord = "of";
+            }
+
+            return formattedWord;
+        });
+
+        // Join words with spaces and return
         return string.Join(" ", formattedWords);
     }
 
+    [System.Text.RegularExpressions.GeneratedRegex("([A-Z][a-z]*)|([a-z]+)")]
+    private static partial System.Text.RegularExpressions.Regex MyRegex();
 }
 
