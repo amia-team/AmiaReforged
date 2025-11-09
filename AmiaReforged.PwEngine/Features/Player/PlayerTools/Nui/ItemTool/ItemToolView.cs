@@ -1,6 +1,8 @@
 ﻿using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WindowingSystem;
+using Anvil;
 using Anvil.API;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.ItemTool;
 
@@ -43,6 +45,9 @@ public sealed class ItemToolView : ScryView<ItemToolPresenter>, IToolWindow
     public ItemToolView(NwPlayer player)
     {
         Presenter = new ItemToolPresenter(this, player);
+
+        InjectionService injector = AnvilCore.GetService<InjectionService>()!;
+        injector.Inject(Presenter);
     }
 
     private static NuiElement ImageButton(string id, string tooltip, out NuiButtonImage logicalButton,

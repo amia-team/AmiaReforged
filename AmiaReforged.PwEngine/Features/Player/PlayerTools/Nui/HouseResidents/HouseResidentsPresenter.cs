@@ -7,6 +7,7 @@ using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using Anvil.API;
@@ -39,6 +40,7 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
     [Inject] private Lazy<GetPropertyByPoiQueryHandler> PropertyQueryHandler { get; init; } = null!;
     [Inject] private Lazy<IRentablePropertyRepository> PropertyRepository { get; init; } = null!;
     [Inject] private Lazy<RuntimeCharacterService> CharacterService { get; init; } = null!;
+    [Inject] private Lazy<RegionIndex> RegionIndex { get; init; } = null!;
 
     public override NuiWindowToken Token() => _token;
 
@@ -129,7 +131,24 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
             // Use the area's ResRef to look up the POI and associated property
             string areaResRef = area.ResRef;
 
-            // Query the property using CQRS pattern
+            // Step 1: Verify this is actually a House POI using RegionIndex
+            if (!RegionIndex.Value.TryGetPointOfInterest(areaResRef, out PlaceOfInterest poi))
+            {
+                Token().SetBindValue(View.StatusMessage, "This area is not registered as a point of interest.");
+                _hasLeaseControl = false;
+                Token().SetBindValue(View.HasLeaseControl, false);
+                return;
+            }
+
+            if (poi.Type != PoiType.House)
+            {
+                Token().SetBindValue(View.StatusMessage, $"This location is a {poi.Type}, not a House.");
+                _hasLeaseControl = false;
+                Token().SetBindValue(View.HasLeaseControl, false);
+                return;
+            }
+
+            // Step 2: Query the property using CQRS pattern
             RentablePropertySnapshot? snapshot = await PropertyQueryHandler.Value.HandleAsync(
                 new GetPropertyByPoiQuery(areaResRef));
 
@@ -138,7 +157,7 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
 
             if (snapshot == null)
             {
-                Token().SetBindValue(View.StatusMessage, "This area is not linked to a rentable property.");
+                Token().SetBindValue(View.StatusMessage, "This house is not registered as a rentable property.");
                 _hasLeaseControl = false;
                 Token().SetBindValue(View.HasLeaseControl, false);
                 return;
@@ -146,6 +165,7 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
 
             _currentPropertyId = snapshot.Definition.Id;
 
+            // Step 3: Verify player identity
             if (!CharacterService.Value.TryGetPlayerKey(_player, out Guid playerCharacterId))
             {
                 Token().SetBindValue(View.StatusMessage, "Unable to determine your character key.");
@@ -156,14 +176,16 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
 
             PersonaId playerPersona = PersonaId.FromCharacter(new CharacterId(playerCharacterId));
 
-            // Check if player is the tenant or owner
-            _hasLeaseControl = (snapshot.CurrentTenant != null && snapshot.CurrentTenant.Value.Equals(playerPersona)) ||
-                              (snapshot.CurrentOwner != null && snapshot.CurrentOwner.Value.Equals(playerPersona)) ||
-                              _player.IsDM;
+            // Step 4: Authorization check - only tenant, owner, or DM can manage residents
+            bool isTenant = snapshot.CurrentTenant != null && snapshot.CurrentTenant.Value.Equals(playerPersona);
+            bool isOwner = snapshot.CurrentOwner != null && snapshot.CurrentOwner.Value.Equals(playerPersona);
+            bool isDM = _player.IsDM;
+
+            _hasLeaseControl = isTenant || isOwner || isDM;
 
             Token().SetBindValue(View.HasLeaseControl, _hasLeaseControl);
 
-            // Load residents
+            // Step 5: Load residents
             _residents = snapshot.Residents
                 .Select(persona => new ResidentEntry(persona, ExtractDisplayName(persona)))
                 .OrderBy(r => r.DisplayName)
@@ -173,7 +195,8 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
 
             if (_hasLeaseControl)
             {
-                Token().SetBindValue(View.StatusMessage, $"Property loaded. {_residents.Count} resident(s).");
+                string role = isDM ? "DM" : (isTenant ? "Tenant" : "Owner");
+                Token().SetBindValue(View.StatusMessage, $"Property loaded as {role}. {_residents.Count} resident(s).");
             }
             else
             {
@@ -182,7 +205,8 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to load property data for player {PlayerName}", _player.PlayerName);
+            Log.Error(ex, "Failed to load property data for player {PlayerName} in area {AreaResRef}", 
+                _player.PlayerName, _player.ControlledCreature?.Area?.ResRef ?? "Unknown");
             await NwTask.SwitchToMainThread();
             Token().SetBindValue(View.StatusMessage, $"Error loading property: {ex.Message}");
         }

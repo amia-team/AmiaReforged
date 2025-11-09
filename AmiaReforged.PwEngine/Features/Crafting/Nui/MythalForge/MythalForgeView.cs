@@ -2,7 +2,9 @@
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.ChangeList;
 using AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge.SubViews.MythalCategory;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using Anvil;
 using Anvil.API;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Crafting.Nui.MythalForge;
 
@@ -43,6 +45,9 @@ public sealed class MythalForgeView : ScryView<MythalForgePresenter>
         CategoryView = new MythalCategoryView(Presenter);
         ActivePropertiesView = new ActivePropertiesView();
         ChangelistView = new ChangelistView(Presenter);
+
+        InjectionService injector = AnvilCore.GetService<InjectionService>()!;
+        injector.Inject(Presenter);
     }
 
     /// <summary>
