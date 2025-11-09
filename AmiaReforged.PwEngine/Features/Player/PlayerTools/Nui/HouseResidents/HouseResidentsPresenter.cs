@@ -46,7 +46,7 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(400f, 100f, 460f, 520f),
+            Geometry = new NuiRect(0f, 100f, 630f, 620f),
             Resizable = false
         };
     }
@@ -250,10 +250,10 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
         try
         {
             RentablePropertySnapshot? snapshot = await PropertyRepository.Value.GetSnapshotAsync(_currentPropertyId.Value);
-            
+
             // Switch back to main thread after async database operation
             await NwTask.SwitchToMainThread();
-            
+
             if (snapshot == null)
             {
                 Token().SetBindValue(View.StatusMessage, "Property not found.");
@@ -268,7 +268,7 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
             };
 
             await PropertyRepository.Value.PersistRentalAsync(updatedSnapshot);
-            
+
             // Switch back to main thread after async database operation
             await NwTask.SwitchToMainThread();
 
@@ -312,10 +312,10 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
         try
         {
             RentablePropertySnapshot? snapshot = await PropertyRepository.Value.GetSnapshotAsync(_currentPropertyId.Value);
-            
+
             // Switch back to main thread after async database operation
             await NwTask.SwitchToMainThread();
-            
+
             if (snapshot == null)
             {
                 Token().SetBindValue(View.StatusMessage, "Property not found.");
@@ -332,7 +332,7 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
             };
 
             await PropertyRepository.Value.PersistRentalAsync(updatedSnapshot);
-            
+
             // Switch back to main thread after async database operation
             await NwTask.SwitchToMainThread();
 
@@ -367,8 +367,8 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
     {
         // For now, just show the persona string
         // In the future, this could look up actual character names from the database
-        return persona.Type == PersonaType.Character 
-            ? $"Character ({persona.Value[..8]}...)" 
+        return persona.Type == PersonaType.Character
+            ? $"Character ({persona.Value[..8]}...)"
             : persona.ToString();
     }
 
