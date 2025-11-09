@@ -63,7 +63,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(320f, 80f, 590f, 820f)
+            Geometry = new NuiRect(320f, 80f, PlaceableToolView.WindowWidth, PlaceableToolView.WindowHeight)
         };
 
         Trace("InitBefore executed; window stub prepared.");

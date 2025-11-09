@@ -9,8 +9,10 @@ namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.PlaceableEditor;
 
 public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolWindow
 {
-    private const float WindowWidth = 520f;
-    private const float ContentWidth = WindowWidth - 16f;
+    public const float WindowWidth = 590f;
+    public const float WindowHeight = 820f;
+
+    private const float ContentWidth = WindowWidth - 100f;
     private const float SectionSpacing = 6f;
 
     public NuiButton RecoverButton = null!;

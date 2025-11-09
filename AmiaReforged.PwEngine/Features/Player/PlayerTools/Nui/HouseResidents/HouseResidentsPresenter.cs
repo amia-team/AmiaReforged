@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterIdentity;
+using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterIdentity.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties.Queries;
@@ -41,6 +43,7 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
     [Inject] private Lazy<IRentablePropertyRepository> PropertyRepository { get; init; } = null!;
     [Inject] private Lazy<RuntimeCharacterService> CharacterService { get; init; } = null!;
     [Inject] private Lazy<RegionIndex> RegionIndex { get; init; } = null!;
+    [Inject] private Lazy<FetchPlayerCharacterIdentityQueryHandler> PlayerIdentityQueryHandler { get; init; } = null!;
 
     public override NuiWindowToken Token() => _token;
 
@@ -205,7 +208,7 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to load property data for player {PlayerName} in area {AreaResRef}", 
+            Log.Error(ex, "Failed to load property data for player {PlayerName} in area {AreaResRef}",
                 _player.PlayerName, _player.ControlledCreature?.Area?.ResRef ?? "Unknown");
             await NwTask.SwitchToMainThread();
             Token().SetBindValue(View.StatusMessage, $"Error loading property: {ex.Message}");
@@ -387,13 +390,23 @@ public sealed class HouseResidentsPresenter : ScryPresenter<HouseResidentsView>
         }
     }
 
-    private static string ExtractDisplayName(PersonaId persona)
+    private string ExtractDisplayName(PersonaId persona)
     {
         // For now, just show the persona string
-        // In the future, this could look up actual character names from the database
-        return persona.Type == PersonaType.Character
-            ? $"Character ({persona.Value[..8]}...)"
-            : persona.ToString();
+
+        string displayName = "[INVALID RECORD]";
+        try
+        {
+            FetchPlayerCharacterIdentityQuery query = new(persona);
+            PlayerCharacterIdentity identity = PlayerIdentityQueryHandler.Value.HandleAsync(query).Result;
+            displayName = $"{identity.FirstName} {identity.LastName}".Trim();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Failed to fetch identity for {Persona}: {Error}", persona, ex.Message);
+        }
+
+        return displayName;
     }
 
     private sealed record ResidentEntry(PersonaId Persona, string DisplayName);
