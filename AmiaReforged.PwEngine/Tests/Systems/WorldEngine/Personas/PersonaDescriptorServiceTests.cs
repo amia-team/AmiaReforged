@@ -18,7 +18,7 @@ public class PersonaDescriptorServiceTests
     [Test]
     public void Describe_WithCharacterPersona_ReturnsOwnershipMetadata()
     {
-    PersonaRepositoryStub personas = PersonaRepositoryStub.Create();
+        PersonaRepositoryStub personas = PersonaRepositoryStub.Create();
         CharacterPersona character = PersonaTestHelpers.CreateCharacterPersona("Arduin");
         personas.Add(character);
 
@@ -48,7 +48,7 @@ public class PersonaDescriptorServiceTests
     [Test]
     public void DescribeMany_IgnoresMissingPersonas()
     {
-    PersonaRepositoryStub personas = PersonaRepositoryStub.Create();
+        PersonaRepositoryStub personas = PersonaRepositoryStub.Create();
         CharacterPersona character = PersonaTestHelpers.CreateCharacterPersona("Selune");
         personas.Add(character);
 
@@ -79,7 +79,7 @@ public class PersonaDescriptorServiceTests
     [Test]
     public void TryDescribe_WhenPersonaMissing_ReturnsFalse()
     {
-    PersonaDescriptorService service = new(PersonaRepositoryStub.Create(), new FakeCharacterRepository());
+        PersonaDescriptorService service = new(PersonaRepositoryStub.Create(), new FakeCharacterRepository());
 
         bool result = service.TryDescribe(PersonaId.FromSystem("unknown"), out PersonaDescriptor? descriptor);
 
@@ -117,7 +117,8 @@ public class PersonaDescriptorServiceTests
 
         public List<PersistedCharacter> GetCharactersByCdKey(string cdKey)
         {
-            return _characters.Values.Where(c => string.Equals(c.CdKey, cdKey, StringComparison.OrdinalIgnoreCase)).ToList();
+            return _characters.Values.Where(c => string.Equals(c.CdKey, cdKey, StringComparison.OrdinalIgnoreCase))
+                .ToList();
         }
 
         public void ChangeCharacterOwner(PersistedCharacter character, string cdKey)
@@ -140,6 +141,11 @@ public class PersonaDescriptorServiceTests
         public void SaveChanges()
         {
             // No persistence required for the fake implementation.
+        }
+
+        public PersistedCharacter? GetByPersonaId(PersonaId queryPersonaId)
+        {
+            return _characters.Values.FirstOrDefault(c => c.PersonaIdString == queryPersonaId.Value);
         }
     }
 }

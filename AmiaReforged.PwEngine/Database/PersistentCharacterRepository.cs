@@ -1,5 +1,6 @@
 using System;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Database;
@@ -82,6 +83,17 @@ public class PersistentCharacterRepository : IPersistentCharacterRepository
         using PwEngineContext context = _factory.CreateDbContext();
         context.SaveChanges();
     }
+
+    public PersistedCharacter? GetByPersonaId(PersonaId persona)
+    {
+        if (persona.Type != PersonaType.Character)
+        {
+            return null;
+        }
+
+        using PwEngineContext context = _factory.CreateDbContext();
+        return context.Characters.FirstOrDefault(c => c.PersonaIdString == persona.ToString());
+    }
 }
 
 public interface IPersistentCharacterRepository
@@ -94,4 +106,5 @@ public interface IPersistentCharacterRepository
     void ChangeCharacterOwner(PersistedCharacter character, string cdKey);
     void DeleteCharacter(PersistedCharacter character);
     void SaveChanges();
+    PersistedCharacter? GetByPersonaId(PersonaId queryPersonaId);
 }
