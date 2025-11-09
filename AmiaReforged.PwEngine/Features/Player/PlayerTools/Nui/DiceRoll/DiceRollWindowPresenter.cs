@@ -13,9 +13,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     private NuiWindowToken _token;
     private NuiWindow? _window;
 
-    private Dictionary<int, string> RollButtonIds;
-
-    private List<NuiButton> RollButtons;
+    private Dictionary<int, string> _rollButtonIds = new();
 
     public DiceRollWindowPresenter(DiceRollWindowView toolView, NwPlayer player)
     {
@@ -32,7 +30,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(0f, 100f, 271f, 400f),
+            Geometry = new NuiRect(0f, 100f, 630f, 460f),
             Resizable = false
         };
     }
@@ -87,14 +85,14 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
         ];
 
         if (buttonIds.Contains(eventData.ElementId))
-            Token().SetBindValue<List<NuiComboEntry>>(View.ButtonGroupEntries,
+            Token().SetBindValue(View.ButtonGroupEntries,
                 SetDiceRollMode(ModeFromButtonId(eventData.ElementId)));
 
         if (eventData.ElementId == View.GoButton.Id)
         {
             int selectedRoll = Token().GetBindValue(View.Selection);
 
-            DiceRollType rollType = DiceRollTypeChooser.FromString(RollButtonIds[selectedRoll]);
+            DiceRollType rollType = DiceRollTypeChooser.FromString(_rollButtonIds[selectedRoll]);
 
             IRollHandler? rollHandler = DiceRollManager.Value.GetRollHandler(rollType);
 
@@ -142,7 +140,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.ReportCharacterLevel, 4)
         ];
 
-        RollButtonIds = new Dictionary<int, string>
+        _rollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.ReportTouchAttackAc },
             { 1, DiceRollStringConstants.ReportFlatFootedAc },
@@ -168,7 +166,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.RollTouchAttackWis, 7)
         ];
 
-        RollButtonIds = new Dictionary<int, string>
+        _rollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.CounterBluffListen },
             { 1, DiceRollStringConstants.CounterBluffSpot },
@@ -195,7 +193,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.Charisma, 5)
         ];
 
-        RollButtonIds = new Dictionary<int, string>
+        _rollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.Strength },
             { 1, DiceRollStringConstants.Dexterity },
@@ -241,7 +239,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.UseMagicDevice, 26)
         ];
 
-        RollButtonIds = new Dictionary<int, string>
+        _rollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.AnimalEmpathy },
             { 1, DiceRollStringConstants.Appraise },
@@ -290,7 +288,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.D100, 8)
         ];
 
-        RollButtonIds = new Dictionary<int, string>
+        _rollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.D2 },
             { 1, DiceRollStringConstants.D3 },
@@ -315,7 +313,7 @@ public class DiceRollWindowPresenter : ScryPresenter<DiceRollWindowView>
             new(DiceRollStringConstants.Will, 2)
         ];
 
-        RollButtonIds = new Dictionary<int, string>
+        _rollButtonIds = new Dictionary<int, string>
         {
             { 0, DiceRollStringConstants.Fortitude },
             { 1, DiceRollStringConstants.Reflex },
