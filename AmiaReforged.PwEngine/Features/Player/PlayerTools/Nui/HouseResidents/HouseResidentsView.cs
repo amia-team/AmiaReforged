@@ -182,29 +182,29 @@ public sealed class HouseResidentsView : ScryView<HouseResidentsPresenter>, IToo
         };
     }
 
-    // public bool ShouldListForPlayer(NwPlayer player)
-    // {
-    //     NwArea? area = player.ControlledCreature?.Area;
-    //     if (area == null)
-    //     {
-    //         return false;
-    //     }
-    //
-    //     LocalVariableInt houseVar = area.GetObjectVariable<LocalVariableInt>("is_house");
-    //     return houseVar.HasValue && houseVar.Value == 1;
-    // }
-    //
-    // public string GetDisabledReason(NwPlayer player)
-    // {
-    //     NwArea? area = player.ControlledCreature?.Area;
-    //     if (area == null)
-    //         return "You are not in a valid area.";
-    //
-    //     if (ShouldListForPlayer(player) == false)
-    //         return "This area is not a house.";
-    //
-    //     return string.Empty;
-    // }
+    public bool ShouldListForPlayer(NwPlayer player)
+    {
+        NwArea? area = player.ControlledCreature?.Area;
+        if (area == null)
+        {
+            return false;
+        }
+
+        LocalVariableInt houseVar = area.GetObjectVariable<LocalVariableInt>("is_house");
+        return houseVar.HasValue && houseVar.Value == 1;
+    }
+
+    public string GetDisabledReason(NwPlayer player)
+    {
+        NwArea? area = player.ControlledCreature?.Area;
+        if (area == null)
+            return "You are not in a valid area.";
+
+        if (ShouldListForPlayer(player) == false)
+            return "This area is not a house.";
+
+        return string.Empty;
+    }
 
     public IScryPresenter ForPlayer(NwPlayer player) => Presenter;
 }
