@@ -36,14 +36,16 @@ public class JsonWritingService
         // Write all creature data to a JSON file
     }
 
+
     public void WriteOnlyEncounterCreatureData()
     {
-        IEnumerable<NwArea> areas = NwModule.Instance.Areas.Where(a => a.Tag != AreaToRest);
         if (_area == null) return;
 
         NwWaypoint? nwWaypoint = _area.FindObjectsOfTypeInArea<NwWaypoint>().FirstOrDefault();
 
         if (nwWaypoint == null) return;
+
+        HashSet<string> processedResRefs = [];
 
         foreach (NwArea area in NwModule.Instance.Areas)
         {
@@ -58,9 +60,9 @@ public class JsonWritingService
                     continue;
                 }
 
-                if (_encounterCreatures.ContainsKey(creatureResRef))
+                if (processedResRefs.Contains(creatureResRef))
                 {
-                    if(_encounterCreatures[creatureResRef].FoundInAreas.Contains(area.Name)) continue;
+                    if (_encounterCreatures[creatureResRef].FoundInAreas.Contains(area.Name)) continue;
 
                     Log.Info("Creature can also be found in: " + area.Name);
                     _encounterCreatures[creatureResRef].FoundInAreas.Add(area.Name);
@@ -71,10 +73,12 @@ public class JsonWritingService
                 NwCreature? creature = NwCreature.Create(creatureResRef, NwModule.Instance.StartingLocation);
 
                 if (creature == null) continue;
+
                 Log.Info("Created creature: " + creature.Name);
                 CreatureData creatureAsPlainObject = _mapper.FromCreature(creature);
                 creatureAsPlainObject.FoundInAreas.Add(area.Name);
                 _encounterCreatures.TryAdd(creatureResRef, creatureAsPlainObject);
+                processedResRefs.Add(creatureResRef);
 
                 creature.Destroy();
                 Log.Info("Destroyed creature: " + creature.Name);
@@ -86,6 +90,9 @@ public class JsonWritingService
         string toString = JsonConvert.SerializeObject(creatureDataList, Formatting.Indented);
         WriteToFile(toString, "encounters");
     }
+
+
+
 
     private void WriteToFile(string toString, string fileName)
     {

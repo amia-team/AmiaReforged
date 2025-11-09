@@ -209,23 +209,27 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         if (subscription.Persona != request.BuyerPersona)
         {
-            return PlayerStallPurchaseResult.Fail("We couldn't verify your stall session identity.", ColorConstants.Orange);
+            return PlayerStallPurchaseResult.Fail("We couldn't verify your stall session identity.",
+                ColorConstants.Orange);
         }
 
         if (!TryResolvePersonaGuid(request.BuyerPersona, out Guid personaGuid))
         {
-            return PlayerStallPurchaseResult.Fail("We couldn't verify your persona for that purchase.", ColorConstants.Orange);
+            return PlayerStallPurchaseResult.Fail("We couldn't verify your persona for that purchase.",
+                ColorConstants.Orange);
         }
 
         if (!_characters.TryGetPlayer(personaGuid, out NwPlayer? player) || player is null)
         {
-            return PlayerStallPurchaseResult.Fail("You must be logged in as that persona to make purchases.", ColorConstants.Orange);
+            return PlayerStallPurchaseResult.Fail("You must be logged in as that persona to make purchases.",
+                ColorConstants.Orange);
         }
 
         NwCreature? buyerCreature = await ResolveActiveCreatureAsync(player).ConfigureAwait(false);
         if (buyerCreature is null)
         {
-            return PlayerStallPurchaseResult.Fail("You must be possessing your character to make purchases.", ColorConstants.Orange);
+            return PlayerStallPurchaseResult.Fail("You must be possessing your character to make purchases.",
+                ColorConstants.Orange);
         }
 
         PlayerStall? stall = _shops.GetShopById(request.StallId);
@@ -236,7 +240,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         if (!IsStallOpen(stall))
         {
-            return PlayerStallPurchaseResult.Fail("This stall is currently closed for business.", ColorConstants.Orange);
+            return PlayerStallPurchaseResult.Fail("This stall is currently closed for business.",
+                ColorConstants.Orange);
         }
 
         StallProduct? product = _shops.GetProductById(request.StallId, request.ProductId);
@@ -256,9 +261,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             return PlayerStallPurchaseResult.Fail("Bulk purchases are not yet supported.", ColorConstants.Orange);
         }
 
-    int unitPrice = Math.Max(product.Price, 0);
-    int totalPrice = unitPrice * quantity;
-    bool productWillBeDepleted = product.Quantity - quantity <= 0;
+        int unitPrice = Math.Max(product.Price, 0);
+        int totalPrice = unitPrice * quantity;
+        bool productWillBeDepleted = product.Quantity - quantity <= 0;
 
         bool paymentCaptured = false;
 
@@ -284,7 +289,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                     await RefundGoldAsync(buyerCreature, totalPrice).ConfigureAwait(false);
                 }
 
-                return PlayerStallPurchaseResult.Fail("The stallkeeper cannot produce that item right now.", ColorConstants.Orange);
+                return PlayerStallPurchaseResult.Fail("The stallkeeper cannot produce that item right now.",
+                    ColorConstants.Orange);
             }
 
             DateTime now = DateTime.UtcNow;
@@ -343,18 +349,19 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             if (depositPortion > 0 && depositAccountId is Guid accountId)
             {
                 int attemptedDeposit = depositPortion;
-                bool depositSucceeded = await TryDepositToCoinhouseAccountAsync(stall, accountId, attemptedDeposit).ConfigureAwait(false);
+                bool depositSucceeded = await TryDepositToCoinhouseAccountAsync(stall, accountId, attemptedDeposit)
+                    .ConfigureAwait(false);
 
                 if (!depositSucceeded)
                 {
-                    bool escrowPersisted = _shops.UpdateShop(stall.Id, persisted =>
-                    {
-                        persisted.EscrowBalance += attemptedDeposit;
-                    });
+                    bool escrowPersisted = _shops.UpdateShop(stall.Id,
+                        persisted => { persisted.EscrowBalance += attemptedDeposit; });
 
                     if (!escrowPersisted)
                     {
-                        Log.Error("Failed to move stall proceeds into escrow after coinhouse deposit failure for stall {StallId}.", stall.Id);
+                        Log.Error(
+                            "Failed to move stall proceeds into escrow after coinhouse deposit failure for stall {StallId}.",
+                            stall.Id);
                     }
                     else
                     {
@@ -498,7 +505,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             _sellerSessions.TryGetValue(request.SessionId, out subscription);
         }
 
-        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.SellerPersona)
         {
             return PlayerStallSellerOperationResult.Fail(
                 "Your stall session is no longer valid.",
@@ -582,7 +590,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     /// <summary>
     /// Handles seller requests to change how stall rent is funded.
     /// </summary>
-    public async Task<PlayerStallSellerOperationResult> RequestUpdateRentSourceAsync(PlayerStallRentSourceRequest request)
+    public async Task<PlayerStallSellerOperationResult> RequestUpdateRentSourceAsync(
+        PlayerStallRentSourceRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -592,7 +601,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             _sellerSessions.TryGetValue(request.SessionId, out subscription);
         }
 
-        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.SellerPersona)
         {
             return PlayerStallSellerOperationResult.Fail(
                 "Your stall session is no longer valid.",
@@ -640,7 +650,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                     "This stall is not linked to a coinhouse; rent can only use stall earnings.",
                     ColorConstants.Orange);
 
-                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure)
+                    .ConfigureAwait(false);
                 return failure;
             }
 
@@ -655,7 +666,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                     "Open or join a coinhouse account in this settlement to enable automatic rent payments.",
                     ColorConstants.Orange);
 
-                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure)
+                    .ConfigureAwait(false);
                 return failure;
             }
 
@@ -726,7 +738,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     /// <summary>
     /// Handles seller requests to update whether stall earnings are retained in escrow.
     /// </summary>
-    public async Task<PlayerStallSellerOperationResult> RequestUpdateHoldEarningsAsync(PlayerStallHoldEarningsRequest request)
+    public async Task<PlayerStallSellerOperationResult> RequestUpdateHoldEarningsAsync(
+        PlayerStallHoldEarningsRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -736,7 +749,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             _sellerSessions.TryGetValue(request.SessionId, out subscription);
         }
 
-        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.SellerPersona)
         {
             return PlayerStallSellerOperationResult.Fail(
                 "Your stall session is no longer valid.",
@@ -817,7 +831,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                     "This stall is not linked to a coinhouse; profits must remain in escrow.",
                     ColorConstants.Orange);
 
-                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure)
+                    .ConfigureAwait(false);
                 return failure;
             }
 
@@ -832,7 +847,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                     "Open or join a coinhouse account in this settlement to automatically deposit profits.",
                     ColorConstants.Orange);
 
-                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+                await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure)
+                    .ConfigureAwait(false);
                 return failure;
             }
 
@@ -911,7 +927,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             _sellerSessions.TryGetValue(request.SessionId, out subscription);
         }
 
-        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.SellerPersona)
         {
             return PlayerStallSellerOperationResult.Fail(
                 "Your stall session is no longer valid.",
@@ -1036,7 +1053,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             return failure;
         }
 
-        bool wasPartial = data.TryGetValue("partial", out object? partialObject) && partialObject is bool partial && partial;
+        bool wasPartial = data.TryGetValue("partial", out object? partialObject) && partialObject is bool partial &&
+                          partial;
 
         PlayerStall? updatedStall = _shops.GetShopWithMembers(request.StallId);
         if (updatedStall is null)
@@ -1060,7 +1078,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             null).ConfigureAwait(false);
 
         string message = wasPartial
-            ? string.Format(CultureInfo.InvariantCulture, "Withdrew {0:n0} gp (limited to available stall earnings).", amount)
+            ? string.Format(CultureInfo.InvariantCulture, "Withdrew {0:n0} gp (limited to available stall earnings).",
+                amount)
             : string.Format(CultureInfo.InvariantCulture, "Withdrew {0:n0} gp from stall earnings.", amount);
 
         PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
@@ -1082,7 +1101,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     /// <summary>
     /// Handles seller requests to list an inventory item for sale.
     /// </summary>
-    public async Task<PlayerStallSellerOperationResult> RequestListInventoryItemAsync(PlayerStallSellerListItemRequest request)
+    public async Task<PlayerStallSellerOperationResult> RequestListInventoryItemAsync(
+        PlayerStallSellerListItemRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -1092,7 +1112,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             _sellerSessions.TryGetValue(request.SessionId, out subscription);
         }
 
-        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.SellerPersona)
         {
             return PlayerStallSellerOperationResult.Fail(
                 "Your stall session is no longer valid.",
@@ -1214,13 +1235,14 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             return failure;
         }
 
-        string displayName = string.IsNullOrWhiteSpace(item.Name) ? resRef : item.Name.Trim();
+
         string? description = string.IsNullOrWhiteSpace(item.Description) ? null : item.Description.Trim();
         int quantity = Math.Max(item.StackSize, 1);
         int? baseItemType = item.BaseItem is null ? null : (int)item.BaseItem.ItemType;
 
         // Capture original item name using rename service
         string? originalName = _renameService.GetOriginalName(item);
+        string displayName = string.IsNullOrWhiteSpace(originalName) ? item.Name : originalName.Trim();
 
         Json serializedItem = NWScript.ObjectToJson(item);
         string payload = serializedItem.Dump();
@@ -1234,7 +1256,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         ListStallProductRequest serviceRequest = new(
             request.StallId,
             resRef,
-            displayName,
+            originalName,
             description,
             request.Price,
             quantity,
@@ -1326,7 +1348,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     /// <summary>
     /// Handles seller requests to reclaim an existing listing.
     /// </summary>
-    public async Task<PlayerStallSellerOperationResult> RequestRetrieveProductAsync(PlayerStallSellerRetrieveProductRequest request)
+    public async Task<PlayerStallSellerOperationResult> RequestRetrieveProductAsync(
+        PlayerStallSellerRetrieveProductRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -1336,7 +1359,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             _sellerSessions.TryGetValue(request.SessionId, out subscription);
         }
 
-        if (subscription is null || subscription.StallId != request.StallId || subscription.Persona != request.SellerPersona)
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.SellerPersona)
         {
             return PlayerStallSellerOperationResult.Fail(
                 "Your stall session is no longer valid.",
@@ -1386,7 +1410,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         }
 
         PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
-        PlayerStallDomainResult<bool> domainResult = aggregate.TryReclaimProduct(request.SellerPersona.ToString(), product);
+        PlayerStallDomainResult<bool> domainResult =
+            aggregate.TryReclaimProduct(request.SellerPersona.ToString(), product);
         if (!domainResult.Success)
         {
             PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
@@ -1421,7 +1446,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         bool flagged = _shops.UpdateStallAndProduct(request.StallId, product.Id, (persistedStall, persistedProduct) =>
         {
             PlayerStallAggregate updateAggregate = PlayerStallAggregate.FromEntity(persistedStall);
-            PlayerStallDomainResult<bool> updateResult = updateAggregate.TryReclaimProduct(request.SellerPersona.ToString(), persistedProduct);
+            PlayerStallDomainResult<bool> updateResult =
+                updateAggregate.TryReclaimProduct(request.SellerPersona.ToString(), persistedProduct);
 
             if (!updateResult.Success)
             {
@@ -1454,19 +1480,21 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         product.IsActive = false;
 
-        NwItem? restoredItem = await StallProductRestorer.RestoreItemAsync(product, sellerCreature).ConfigureAwait(false);
+        NwItem? restoredItem =
+            await StallProductRestorer.RestoreItemAsync(product, sellerCreature).ConfigureAwait(false);
         if (restoredItem is null)
         {
-            bool reverted = _shops.UpdateStallAndProduct(request.StallId, product.Id, (persistedStall, persistedProduct) =>
-            {
-                if (persistedProduct.Id != product.Id || persistedProduct.StallId != request.StallId)
+            bool reverted = _shops.UpdateStallAndProduct(request.StallId, product.Id,
+                (persistedStall, persistedProduct) =>
                 {
-                    return false;
-                }
+                    if (persistedProduct.Id != product.Id || persistedProduct.StallId != request.StallId)
+                    {
+                        return false;
+                    }
 
-                persistedProduct.IsActive = true;
-                return true;
-            });
+                    persistedProduct.IsActive = true;
+                    return true;
+                });
 
             if (reverted)
             {
@@ -1526,7 +1554,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
             foreach (Guid sessionId in sessions)
             {
-                if (_buyerSessions.TryGetValue(sessionId, out BuyerSubscription? subscription) && subscription is not null)
+                if (_buyerSessions.TryGetValue(sessionId, out BuyerSubscription? subscription) &&
+                    subscription is not null)
                 {
                     callbacks.Add(subscription.Callbacks.OnSnapshot);
                 }
@@ -1775,7 +1804,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         return null;
     }
 
-    private static List<PlayerStallProductView> BuildProductViews(PlayerStall stall, IReadOnlyList<StallProduct> products)
+    private static List<PlayerStallProductView> BuildProductViews(PlayerStall stall,
+        IReadOnlyList<StallProduct> products)
     {
         bool stallOpen = IsStallOpen(stall);
         IEnumerable<StallProduct> ordered = products
@@ -1786,7 +1816,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         foreach (StallProduct product in ordered)
         {
-            bool soldOut = product.Quantity <= 0 || (product.SoldOutUtc.HasValue && product.SoldOutUtc.Value <= DateTime.UtcNow);
+            bool soldOut = product.Quantity <= 0 ||
+                           (product.SoldOutUtc.HasValue && product.SoldOutUtc.Value <= DateTime.UtcNow);
             bool purchasable = stallOpen && product.IsActive && !soldOut;
 
             string name = string.IsNullOrWhiteSpace(product.Name) ? product.ResRef : product.Name;
@@ -1818,7 +1849,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         foreach (StallProduct product in ordered)
         {
-            bool soldOut = product.Quantity <= 0 || (product.SoldOutUtc.HasValue && product.SoldOutUtc.Value <= DateTime.UtcNow);
+            bool soldOut = product.Quantity <= 0 ||
+                           (product.SoldOutUtc.HasValue && product.SoldOutUtc.Value <= DateTime.UtcNow);
 
             string displayName = string.IsNullOrWhiteSpace(product.Name) ? product.ResRef : product.Name;
             string? tooltip = string.IsNullOrWhiteSpace(product.Description) ? null : product.Description;
@@ -1844,7 +1876,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         IReadOnlyList<StallProduct> products,
         Guid? excludeSessionId = null)
     {
-        List<(PlayerStallSellerEventCallbacks Callbacks, PersonaId Persona)> targets = CollectSellerCallbacks(stallId, excludeSessionId);
+        List<(PlayerStallSellerEventCallbacks Callbacks, PersonaId Persona)> targets =
+            CollectSellerCallbacks(stallId, excludeSessionId);
 
         foreach ((PlayerStallSellerEventCallbacks callbacks, PersonaId persona) in targets)
         {
@@ -1881,8 +1914,10 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             NWScript.SetLocalString(item, PlayerStallItemLocals.ConsignorPersonaId, personaId);
         }
 
-        NWScript.SetLocalString(item, PlayerStallItemLocals.SourceStallId, stall.Id.ToString(CultureInfo.InvariantCulture));
-        NWScript.SetLocalString(item, PlayerStallItemLocals.SourceProductId, product.Id.ToString(CultureInfo.InvariantCulture));
+        NWScript.SetLocalString(item, PlayerStallItemLocals.SourceStallId,
+            stall.Id.ToString(CultureInfo.InvariantCulture));
+        NWScript.SetLocalString(item, PlayerStallItemLocals.SourceProductId,
+            product.Id.ToString(CultureInfo.InvariantCulture));
     }
 
     private List<(PlayerStallSellerEventCallbacks Callbacks, PersonaId Persona)> CollectSellerCallbacks(
@@ -1905,7 +1940,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                     continue;
                 }
 
-                if (_sellerSessions.TryGetValue(sessionId, out SellerSubscription? subscription) && subscription is not null)
+                if (_sellerSessions.TryGetValue(sessionId, out SellerSubscription? subscription) &&
+                    subscription is not null)
                 {
                     results.Add((subscription.Callbacks, subscription.Persona));
                 }
@@ -1948,7 +1984,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     /// <summary>
     /// Builds a buyer snapshot for the specified stall and persona without registering a live session.
     /// </summary>
-    public async Task<PlayerStallBuyerSnapshot?> BuildBuyerSnapshotForAsync(long stallId, PersonaId persona, NwPlayer player)
+    public async Task<PlayerStallBuyerSnapshot?> BuildBuyerSnapshotForAsync(long stallId, PersonaId persona,
+        NwPlayer player)
     {
         ArgumentNullException.ThrowIfNull(player);
 
@@ -1988,7 +2025,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         PlayerStallSellerContext context = new(persona, sellerName);
 
         List<PlayerStallSellerProductView> views = BuildSellerProductViews(products, canAdjustPrice: true);
-        IReadOnlyList<PlayerStallSellerInventoryItemView> inventory = await BuildInventoryItemsAsync(persona).ConfigureAwait(false);
+        IReadOnlyList<PlayerStallSellerInventoryItemView> inventory =
+            await BuildInventoryItemsAsync(persona).ConfigureAwait(false);
 
         bool rentFromCoinhouse = stall.CoinHouseAccountId.HasValue;
         bool rentToggleVisible = false;
@@ -2061,7 +2099,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             {
                 rentToggleVisible = true;
                 rentToggleEnabled = false;
-                rentToggleTooltip = "This stall is not linked to a coinhouse; rent will continue to use stall earnings.";
+                rentToggleTooltip =
+                    "This stall is not linked to a coinhouse; rent will continue to use stall earnings.";
             }
         }
         else if (rentFromCoinhouse)
@@ -2129,8 +2168,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             earningsRowVisible,
             withdrawEnabled,
             withdrawAllEnabled,
-        earningsTooltip,
-        ledgerEntries);
+            earningsTooltip,
+            ledgerEntries);
     }
 
     private IReadOnlyList<PlayerStallLedgerEntryView> BuildLedgerViews(long stallId)
@@ -2248,7 +2287,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
             if (account is null)
             {
-                Log.Warn("Coinhouse account {AccountId} not found while depositing {Amount} gp for stall {StallId}.", accountId, amount, stall.Id);
+                Log.Warn("Coinhouse account {AccountId} not found while depositing {Amount} gp for stall {StallId}.",
+                    accountId, amount, stall.Id);
                 return false;
             }
 
@@ -2265,7 +2305,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to deposit {Amount} gp from stall {StallId} into coinhouse account {AccountId}.", amount, stall.Id, accountId);
+            Log.Error(ex, "Failed to deposit {Amount} gp from stall {StallId} into coinhouse account {AccountId}.",
+                amount, stall.Id, accountId);
             return false;
         }
     }
@@ -2281,7 +2322,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         string raw = stall.SettlementTag.Trim();
 
-        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int settlementId) && settlementId > 0)
+        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int settlementId) &&
+            settlementId > 0)
         {
             try
             {
@@ -2293,12 +2335,14 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
                     return true;
                 }
 
-                Log.Debug("No coinhouse registered for settlement {SettlementId} while resolving stall {StallId}.", settlementId, stall.Id);
+                Log.Debug("No coinhouse registered for settlement {SettlementId} while resolving stall {StallId}.",
+                    settlementId, stall.Id);
                 return false;
             }
             catch (Exception ex)
             {
-                Log.Warn(ex, "Failed to resolve coinhouse for settlement {SettlementId} on stall {StallId}.", settlementId, stall.Id);
+                Log.Warn(ex, "Failed to resolve coinhouse for settlement {SettlementId} on stall {StallId}.",
+                    settlementId, stall.Id);
                 return false;
             }
         }
@@ -2406,5 +2450,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
     private sealed record BuyerSubscription(long StallId, PersonaId Persona, PlayerStallBuyerEventCallbacks Callbacks);
 
-    private sealed record SellerSubscription(long StallId, PersonaId Persona, PlayerStallSellerEventCallbacks Callbacks);
+    private sealed record SellerSubscription(
+        long StallId,
+        PersonaId Persona,
+        PlayerStallSellerEventCallbacks Callbacks);
 }
