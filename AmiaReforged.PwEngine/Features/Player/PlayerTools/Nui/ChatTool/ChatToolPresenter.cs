@@ -30,8 +30,8 @@ public class ChatToolPresenter : ScryPresenter<ChatToolView>
     {
         _window = new NuiWindow(View.RootLayout(), View.Title)
         {
-            Geometry = new NuiRect(500f, 100f, 430, 610f),
-            Resizable = true
+            Geometry = new NuiRect(0f, 100f, 630f, 650f),
+            Resizable = false
         };
     }
 
