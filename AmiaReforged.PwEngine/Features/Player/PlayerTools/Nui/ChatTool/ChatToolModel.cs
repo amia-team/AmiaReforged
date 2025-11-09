@@ -68,8 +68,20 @@ public partial class ChatToolModel(NwPlayer player)
     {
         bool isPlayer = creature == player.ControlledCreature;
         bool isOwnedByPlayer = player.LoginCreature != null && player.LoginCreature.Associates.Contains(creature);
+        bool isCustomNpc = IsCustomNpc(creature);
 
-        return isPlayer || isOwnedByPlayer;
+        return isPlayer || isOwnedByPlayer || isCustomNpc;
+    }
+
+    private bool IsCustomNpc(NwCreature creature)
+    {
+        NwItem? pcKey = player.ControlledCreature?.Inventory.Items.FirstOrDefault(item => item.Tag == "ds_pckey");
+
+        if (pcKey == null) return false;
+
+        string publicKey = pcKey.Name.Length >= 8 ? pcKey.Name.Substring(0, 8) : pcKey.Name;
+        string expectedTag = $"ds_npc_{publicKey}";
+        return creature.Tag == expectedTag;
     }
 
     [GeneratedRegex(pattern: "\\s+")]
