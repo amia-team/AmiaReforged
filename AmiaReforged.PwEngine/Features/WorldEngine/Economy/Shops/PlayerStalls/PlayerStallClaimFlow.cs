@@ -87,6 +87,7 @@ public sealed class PlayerStallClaimFlow
                     .ConfigureAwait(false);
                 return;
             }
+
             string areaResRef = placeable.Area?.ResRef ?? stall.AreaResRef;
             string? areaName = placeable.Area?.Name;
             string ownerDisplayName = ResolveOwnerDisplayName(player);
@@ -332,12 +333,12 @@ public sealed class PlayerStallClaimFlow
                 directOptionUpdate: directUpdate);
         }
 
-    return await CompleteClaimAsync(
-        player,
-        session,
-        stall,
-        RentalPaymentMethod.OutOfPocket,
-        holdEarningsInStall: true)
+        return await CompleteClaimAsync(
+                player,
+                session,
+                stall,
+                RentalPaymentMethod.OutOfPocket,
+                holdEarningsInStall: true)
             .ConfigureAwait(false);
     }
 
@@ -371,7 +372,8 @@ public sealed class PlayerStallClaimFlow
                 session.SettlementName,
                 visible: true,
                 enabled: false,
-                status: $"Open a coinhouse account in {DescribeSettlement(session.SettlementName)} to use this option.");
+                status:
+                $"Open a coinhouse account in {DescribeSettlement(session.SettlementName)} to use this option.");
 
             return RentStallSubmissionResult.Error(
                 "You do not have an active coinhouse account in this settlement.",
@@ -583,12 +585,13 @@ public sealed class PlayerStallClaimFlow
         return CreateDirectOptionModel(true, hasFunds, status);
     }
 
-    private async Task<(RentStallPaymentOptionViewModel? Option, CoinhouseTag? Tag, Guid? AccountId)> BuildCoinhouseOptionAsync(
-        PlayerStall stall,
-        PersonaId characterPersonaId,
-        GoldAmount rentCost,
-        string formattedRent,
-        string? settlementName)
+    private async Task<(RentStallPaymentOptionViewModel? Option, CoinhouseTag? Tag, Guid? AccountId)>
+        BuildCoinhouseOptionAsync(
+            PlayerStall stall,
+            PersonaId characterPersonaId,
+            GoldAmount rentCost,
+            string formattedRent,
+            string? settlementName)
     {
         CoinhouseTag tag;
         if (!TryResolveCoinhouseTag(stall, out tag))
@@ -606,7 +609,7 @@ public sealed class PlayerStallClaimFlow
             return (option, null, null);
         }
 
-    Guid accountId = PersonaAccountId.ForCoinhouse(characterPersonaId, tag);
+        Guid accountId = PersonaAccountId.ForCoinhouse(characterPersonaId, tag);
         CoinhouseAccountDto? account = await _coinhouses.GetAccountForAsync(accountId).ConfigureAwait(false);
 
         if (account is null)
@@ -796,7 +799,8 @@ public sealed class PlayerStallClaimFlow
     private static string ResolveStallDescription(PlayerStall stall, string? areaName)
     {
         string location = string.IsNullOrWhiteSpace(areaName) ? "the marketplace" : areaName;
-        return $"A vacant market stall located in {location}. Claiming the stall charges the first day's rent immediately.";
+        return
+            $"A vacant market stall located in {location}. Claiming the stall charges the first day's rent immediately.";
     }
 
     private static string? ResolveSettlementName(string? settlementTag, string? areaName)
@@ -834,7 +838,8 @@ public sealed class PlayerStallClaimFlow
         }
 
         string raw = stall.SettlementTag.Trim();
-        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int settlementId) && settlementId > 0)
+        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int settlementId) &&
+            settlementId > 0)
         {
             try
             {
@@ -842,7 +847,8 @@ public sealed class PlayerStallClaimFlow
                 CoinHouse? coinhouse = _coinhouses.GetSettlementCoinhouse(settlement);
                 if (coinhouse is null || string.IsNullOrWhiteSpace(coinhouse.Tag))
                 {
-                    Log.Warn("No coinhouse mapping found for settlement {SettlementId} when resolving stall {StallId}.", settlementId, stall.Id);
+                    Log.Warn("No coinhouse mapping found for settlement {SettlementId} when resolving stall {StallId}.",
+                        settlementId, stall.Id);
                     return false;
                 }
 
@@ -851,7 +857,8 @@ public sealed class PlayerStallClaimFlow
             }
             catch (Exception ex)
             {
-                Log.Warn(ex, "Failed to resolve coinhouse for settlement {SettlementId} on stall {StallId}.", settlementId, stall.Id);
+                Log.Warn(ex, "Failed to resolve coinhouse for settlement {SettlementId} on stall {StallId}.",
+                    settlementId, stall.Id);
                 return false;
             }
         }
