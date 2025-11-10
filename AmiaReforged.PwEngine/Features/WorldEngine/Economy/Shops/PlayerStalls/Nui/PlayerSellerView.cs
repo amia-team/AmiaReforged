@@ -122,7 +122,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                 Id = "player_stall_manage",
                 Height = 26f,
                 Enabled = ProductManageEnabled,
-                Tooltip = SelectedProductName
+                Tooltip = ProductTooltips
             }.Assign(out ManageButton))
             {
                 Width = 360f,
@@ -534,24 +534,6 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             Enabled = EarningsWithdrawAllEnabled,
                             Tooltip = EarningsTooltip
                         }.Assign(out WithdrawAllProfitsButton)
-                    ]
-                },
-                new NuiSpacer { Height = 6f, Visible = HoldEarningsVisible },
-                new NuiRow
-                {
-                    Visible = HoldEarningsVisible,
-                    Children =
-                    [
-                        new NuiSpacer { Width = 20f },
-                        new NuiSpacer { Width = 356f },
-                        new NuiCheck(HoldEarningsLabel, HoldEarningsChecked)
-                        {
-                            Id = HoldEarningsToggleId,
-                            Height = 20f,
-                            Width = 320f,
-                            Tooltip = HoldEarningsTooltip,
-                            Enabled = HoldEarningsEnabled
-                        }
                     ]
                 },
                 new NuiSpacer { Height = 12f },
