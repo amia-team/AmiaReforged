@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Gateways;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine;
 
@@ -9,6 +10,18 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine;
 /// </summary>
 public interface IWorldEngineFacade
 {
+    // === Cross-Cutting Gateways ===
+    // These are fundamental concerns that span multiple subsystems
+
+    /// <summary>
+    /// Access to persona identity and relationship operations.
+    /// Personas are a cross-cutting concern used throughout the world engine
+    /// for representing any actor (players, characters, organizations, etc.)
+    /// </summary>
+    IPersonaGateway Personas { get; }
+
+    // === Subsystems ===
+
     /// <summary>
     /// Access to economy-related operations (banking, transactions, shops, storage)
     /// </summary>

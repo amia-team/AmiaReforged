@@ -1,58 +1,26 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Queries;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.DTOs;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Queries;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Gateways;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 
 /// <summary>
-/// Provides access to economy-related operations including banking, transactions, and storage.
+/// Provides access to economy-related operations through specialized gateways.
+/// Each gateway focuses on a specific economic domain (banking, storage, shops, etc.).
 /// </summary>
 public interface IEconomySubsystem
 {
-    // === Bank Account Management ===
+    /// <summary>
+    /// Gets the banking gateway for coinhouse and gold transaction operations.
+    /// </summary>
+    IBankingGateway Banking { get; }
 
     /// <summary>
-    /// Opens a new coinhouse account for a persona.
+    /// Gets the storage gateway for item storage and capacity management.
     /// </summary>
-    Task<CommandResult> OpenCoinhouseAccountAsync(OpenCoinhouseAccountCommand command, CancellationToken ct = default);
+    IStorageGateway Storage { get; }
 
     /// <summary>
-    /// Gets coinhouse account details for a persona.
+    /// Gets the shop gateway for merchant and player stall operations.
     /// </summary>
-    Task<CoinhouseAccountQueryResult?> GetCoinhouseAccountAsync(GetCoinhouseAccountQuery query, CancellationToken ct = default);
-
-    /// <summary>
-    /// Gets all coinhouse balances for a persona.
-    /// </summary>
-    Task<IReadOnlyList<BalanceDto>> GetCoinhouseBalancesAsync(GetCoinhouseBalancesQuery query, CancellationToken ct = default);
-
-    /// <summary>
-    /// Checks eligibility for opening a coinhouse account.
-    /// </summary>
-    Task<CoinhouseAccountEligibilityResult> GetCoinhouseAccountEligibilityAsync(
-        GetCoinhouseAccountEligibilityQuery query, CancellationToken ct = default);
-
-    // === Gold Transactions ===
-
-    /// <summary>
-    /// Deposits gold into a coinhouse account.
-    /// </summary>
-    Task<CommandResult> DepositGoldAsync(DepositGoldCommand command, CancellationToken ct = default);
-
-    /// <summary>
-    /// Withdraws gold from a coinhouse account.
-    /// </summary>
-    Task<CommandResult> WithdrawGoldAsync(WithdrawGoldCommand command, CancellationToken ct = default);
-
-    /// <summary>
-    /// Gets the gold balance for a persona at a specific coinhouse.
-    /// </summary>
-    Task<int?> GetBalanceAsync(GetBalanceQuery query, CancellationToken ct = default);
-
-    // Note: Additional methods for shops, storage, and taxation can be added as needed
+    IShopGateway Shops { get; }
 }
 

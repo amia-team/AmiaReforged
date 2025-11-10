@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Gateways;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine;
@@ -11,6 +12,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine;
 public sealed class WorldEngineFacade : IWorldEngineFacade
 {
     public WorldEngineFacade(
+        IPersonaGateway personas,
         IEconomySubsystem economy,
         IOrganizationSubsystem organizations,
         ICharacterSubsystem characters,
@@ -21,6 +23,7 @@ public sealed class WorldEngineFacade : IWorldEngineFacade
         IItemSubsystem items,
         ICodexSubsystem codex)
     {
+        Personas = personas;
         Economy = economy;
         Organizations = organizations;
         Characters = characters;
@@ -32,6 +35,7 @@ public sealed class WorldEngineFacade : IWorldEngineFacade
         Codex = codex;
     }
 
+    public IPersonaGateway Personas { get; }
     public IEconomySubsystem Economy { get; }
     public IOrganizationSubsystem Organizations { get; }
     public ICharacterSubsystem Characters { get; }
