@@ -1,4 +1,5 @@
 ﻿using AmiaReforged.Core.Helpers;
+using Anvil.API;
 using NLog;
 
 namespace AmiaReforged.System.Webhooks;
@@ -27,7 +28,7 @@ public class WebhookSender
 
             using FormUrlEncodedContent postContent = new(postParams);
             await httpClient.PostAsync(_webhookUri, postContent);
-            await new NwTaskHelper().TrySwitchToMainThread();
+            await NwTask.SwitchToMainThread();
         }
         catch (Exception ex)
         {
