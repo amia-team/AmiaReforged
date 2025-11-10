@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
+using AmiaReforged.PwEngine.Features.NwObjectHelpers;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Services;
 using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
@@ -1237,6 +1238,25 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
 
         string? description = string.IsNullOrWhiteSpace(item.Description) ? null : item.Description.Trim();
+
+        // Append item properties to description
+        List<string> itemProperties = ItemPropertyHelper.ItemPropertyLabelsFor(item);
+        if (itemProperties.Count > 0)
+        {
+            StringBuilder descBuilder = new();
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                descBuilder.AppendLine(description);
+                descBuilder.AppendLine();
+            }
+            descBuilder.AppendLine("Properties:");
+            foreach (string property in itemProperties)
+            {
+                descBuilder.AppendLine($"  • {property}");
+            }
+            description = descBuilder.ToString().Trim();
+        }
+
         int quantity = Math.Max(item.StackSize, 1);
         int? baseItemType = item.BaseItem is null ? null : (int)item.BaseItem.ItemType;
 
