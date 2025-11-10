@@ -63,6 +63,13 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
         if (damageData.Target is not NwCreature targetCreature || !monk.IsReactionTypeHostile(targetCreature)
             || targetCreature.Location == null) return;
 
+        NwCreature[] allies = targetCreature.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
+            RadiusSize.Medium, true)
+            .Where(c => monk.IsReactionTypeFriendly(c) && c.HP < c.MaxHP)
+            .ToArray();
+
+        if (allies.Length == 0) return;
+
         int healDice = MonkUtils.GetKiFocus(monk) switch
         {
             KiFocus.KiFocus1 => 2,
@@ -76,15 +83,12 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
         Effect healPulseVfx = MonkUtils.ResizedVfx(MonkVfx.ImpPulseHolyChest, RadiusSize.Medium);
         targetCreature.ApplyEffect(EffectDuration.Instant, healPulseVfx);
 
-        foreach (NwCreature creature in targetCreature.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
-                     RadiusSize.Medium, true))
+        foreach (NwCreature ally in allies)
         {
-            if (!monk.IsReactionTypeFriendly(creature) || creature.HP >= creature.MaxHP) continue;
-
             int healAmount = Random.Shared.Roll(6, healDice);
 
-            creature.ApplyEffect(EffectDuration.Instant, healVfx);
-            creature.ApplyEffect(EffectDuration.Instant, Effect.Heal(healAmount));
+            ally.ApplyEffect(EffectDuration.Instant, healVfx);
+            ally.ApplyEffect(EffectDuration.Instant, Effect.Heal(healAmount));
         }
     }
 
