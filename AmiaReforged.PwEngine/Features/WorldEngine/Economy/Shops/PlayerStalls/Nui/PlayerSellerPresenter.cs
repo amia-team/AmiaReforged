@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls;
 using AmiaReforged.PwEngine.Features.WorldEngine.Time;
 using Anvil.API;
 using Anvil.API.Events;
@@ -64,7 +59,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     {
         _window = new NuiWindow(View.RootLayout(), _config.Title)
         {
-            Geometry = new NuiRect(90f, 70f, 920f, 920f),
+            Geometry = new NuiRect(90f, 70f, 850f, 770f),
             Resizable = false
         };
     }

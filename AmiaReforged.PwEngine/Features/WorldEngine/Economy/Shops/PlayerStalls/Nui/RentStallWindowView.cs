@@ -14,7 +14,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls.
 
 public sealed class RentStallWindowView : ScryView<RentStallWindowPresenter>
 {
-    private const float WindowW = 650f;
+    private const float WindowW = 635f;
     private const float WindowH = 650f;
     private const float HeaderW = 600f;
     private const float HeaderH = 100f;
@@ -296,7 +296,7 @@ public sealed class RentStallWindowPresenter : ScryPresenter<RentStallWindowView
     {
         _window = new NuiWindow(View.RootLayout(), _config.Title)
         {
-            Geometry = new NuiRect(0f, 0f, 650f, 650f),
+            Geometry = new NuiRect(0f, 0f, 635f, 650f),
             Resizable = false
         };
     }

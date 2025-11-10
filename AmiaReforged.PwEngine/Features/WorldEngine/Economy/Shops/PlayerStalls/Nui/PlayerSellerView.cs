@@ -8,13 +8,13 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls.
 
 public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
 {
-    private const float WindowW = 920f;
-    private const float WindowH = 920f;
+    private const float WindowW = 850f;
+    private const float WindowH = 770f;
     private const float HeaderW = 600f;
     private const float HeaderH = 100f;
     private const float HeaderTopPad = 0f;
-    private const float HeaderLeftPad = 5f;
-    private const float ContentWidth = WindowW - 40f; // 880f
+    private const float HeaderLeftPad = 110f;
+    private const float ContentWidth = WindowW - 40f;
 
     public readonly NuiBind<string> StallTitle = new("player_stall_seller_title");
     public readonly NuiBind<string> StallDescription = new("player_stall_seller_description");
@@ -94,7 +94,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public NuiButton InventorySelectButton = null!;
     public NuiButton InventoryListButton = null!;
     public NuiButton RetrieveProductButton = null!;
-    public NuiButton CloseButton = null!;
+    public NuiButtonImage CloseButton = null!;
     public NuiButton WithdrawProfitsButton = null!;
     public NuiButton WithdrawAllProfitsButton = null!;
     public NuiButtonImage ViewDescriptionButton = null!;
@@ -195,6 +195,27 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                     VerticalAlign = NuiVAlign.Middle,
                     ForegroundColor = new Color(30, 20, 12)
                 },
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiButtonImage("cc_scale")
+                        {
+                            Id = "player_stall_view_full_description",
+                            Visible = SelectedProductDescriptionVisible,
+                            Width = 30f,
+                            Height = 30f,
+                            Tooltip = "View Full Description"
+                        }.Assign(out ViewDescriptionButton),
+                        new NuiLabel("View Description")
+                        {
+                            Height = 30f,
+                            Width = 120f,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
                 new NuiLabel(SelectedProductStatus)
                 {
                     Height = 20f,
@@ -219,42 +240,12 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                     VerticalAlign = NuiVAlign.Middle,
                     ForegroundColor = new Color(30, 20, 12)
                 },
-                new NuiRow
-                {
-                    Children =
-                        [
-                            new NuiColumn
-                            {
-                                Children =
-                                [
-                                    new NuiSpacer { Height = 5f },
-                                    new NuiLabel(SelectedProductDescription)
-                                    {
-                                        Visible = SelectedProductDescriptionVisible,
-                                        Height = 20f,
-                                        Width = 165f,
-                                        HorizontalAlign = NuiHAlign.Left,
-                                        VerticalAlign = NuiVAlign.Top,
-                                        ForegroundColor = new Color(30, 20, 12)
-                                    }
-                                ]
-                            },
-                            new NuiButtonImage("cc_scale")
-                            {
-                                Id = "player_stall_view_full_description",
-                                Visible = SelectedProductDescriptionVisible,
-                                Width = 30f,
-                                Height = 30f,
-                                Tooltip = "View Full Description"
-                            }.Assign(out ViewDescriptionButton)
-                        ]
-                },
                 new NuiSpacer { Height = 6f },
                 new NuiRow
                 {
                     Children =
                     [
-                        new NuiLabel("New Price")
+                        new NuiLabel("New Price:")
                         {
                             Width = 90f,
                             HorizontalAlign = NuiHAlign.Left,
@@ -343,42 +334,29 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                     VerticalAlign = NuiVAlign.Middle,
                     ForegroundColor = new Color(30, 20, 12)
                 },
-                new NuiSpacer { Height = 6f, Visible = InventoryDetailVisible },
-                new NuiRow
+                new NuiLabel("Set Sale Price:")
                 {
+                    Width = 120f,
+                    Height = 18f,
                     Visible = InventoryDetailVisible,
-                    Children =
-                    [
-                        new NuiLabel("Price")
-                        {
-                            Width = 80f,
-                            HorizontalAlign = NuiHAlign.Left,
-                            VerticalAlign = NuiVAlign.Middle,
-                            ForegroundColor = new Color(30, 20, 12)
-                        },
-                        new NuiTextEdit(string.Empty, InventoryPriceInput, 9, false)
-                        {
-                            Width = 120f,
-                            Enabled = InventoryPriceEnabled
-                        }
-                    ]
+                    HorizontalAlign = NuiHAlign.Left,
+                    ForegroundColor = new Color(30, 20, 12)
                 },
-                new NuiSpacer { Height = 6f, Visible = InventoryDetailVisible },
-                new NuiRow
+                new NuiTextEdit(string.Empty, InventoryPriceInput, 9, false)
                 {
+                    Width = 120f,
+                    Height = 30f,
                     Visible = InventoryDetailVisible,
-                    Children =
-                    [
-                        new NuiSpacer(),
-                        new NuiButton("List Item")
-                        {
-                            Id = "player_stall_list_inventory_item",
-                            Height = 30f,
-                            Width = 140f,
-                            Enabled = InventoryListEnabled
-                        }.Assign(out InventoryListButton)
-                    ]
-                }
+                    Enabled = InventoryPriceEnabled
+                },
+                new NuiButton("List This Item")
+                {
+                        Id = "player_stall_list_inventory_item",
+                        Height = 30f,
+                        Width = 140f,
+                        Visible = InventoryDetailVisible,
+                        Enabled = InventoryListEnabled
+                }.Assign(out InventoryListButton)
             ]
         };
 
@@ -458,9 +436,9 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                                 {
                                     Width = 340f,
                                     RowHeight = 26f,
-                                    Height = 234f
+                                    Height = 250f
                                 },
-                                new NuiSpacer { Height = 6f },
+                                new NuiSpacer { Height = 3f },
                                 new NuiLabel("You have no active listings.")
                                 {
                                     Visible = ProductEmptyVisible,
@@ -475,25 +453,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                         detailColumn
                     ]
                 },
-                new NuiSpacer { Height = 6f, Visible = HoldEarningsVisible },
-                new NuiRow
-                {
-                    Visible = HoldEarningsVisible,
-                    Children =
-                    [
-                        new NuiSpacer { Width = 20f },
-                        new NuiSpacer { Width = 356f },
-                        new NuiCheck(HoldEarningsLabel, HoldEarningsChecked)
-                        {
-                            Id = HoldEarningsToggleId,
-                            Height = 20f,
-                            Width = 320f,
-                            Tooltip = HoldEarningsTooltip,
-                            Enabled = HoldEarningsEnabled
-                        }
-                    ]
-                },
-                new NuiSpacer { Height = 12f },
+                new NuiSpacer { Height = 15f },
                 new NuiRow
                 {
                     Children =
@@ -534,7 +494,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                         inventoryDetailColumn
                     ]
                 },
-                new NuiSpacer { Height = 12f },
+                new NuiSpacer { Height = 5f },
                 new NuiRow
                 {
                     Visible = EarningsRowVisible,
@@ -546,13 +506,13 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             Width = 170f,
                             HorizontalAlign = NuiHAlign.Left,
                             VerticalAlign = NuiVAlign.Middle,
-                            Tooltip = EarningsTooltip,
                             ForegroundColor = new Color(30, 20, 12)
                         },
                         new NuiSpacer { Width = 8f },
                         new NuiTextEdit(string.Empty, EarningsWithdrawInput, 9, false)
                         {
                             Width = 90f,
+                            Height = 30f,
                             Enabled = EarningsInputEnabled,
                             Tooltip = EarningsTooltip
                         },
@@ -574,6 +534,49 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             Enabled = EarningsWithdrawAllEnabled,
                             Tooltip = EarningsTooltip
                         }.Assign(out WithdrawAllProfitsButton)
+                    ]
+                },
+                new NuiSpacer { Height = 6f, Visible = HoldEarningsVisible },
+                new NuiRow
+                {
+                    Visible = HoldEarningsVisible,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiSpacer { Width = 356f },
+                        new NuiCheck(HoldEarningsLabel, HoldEarningsChecked)
+                        {
+                            Id = HoldEarningsToggleId,
+                            Height = 20f,
+                            Width = 320f,
+                            Tooltip = HoldEarningsTooltip,
+                            Enabled = HoldEarningsEnabled
+                        }
+                    ]
+                },
+                new NuiSpacer { Height = 12f },
+                new NuiRow
+                {
+                    Visible = RentToggleVisible,
+                    Children =
+                    [
+                        new NuiLabel(RentToggleStatus)
+                        {
+                            Height = 22f,
+                            Width = 260f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiSpacer { Width = 8f },
+                        new NuiButton(RentToggleLabel)
+                        {
+                            Id = "player_stall_toggle_rent",
+                            Height = 30f,
+                            Width = 200f,
+                            Enabled = RentToggleEnabled,
+                            Tooltip = RentToggleTooltip
+                        }.Assign(out RentToggleButton)
                     ]
                 },
                 new NuiSpacer { Height = 12f },
@@ -606,7 +609,6 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                         }
                     ]
                 },
-                new NuiSpacer { Height = 12f },
                 new NuiRow
                 {
                     Visible = FeedbackVisible,
@@ -617,7 +619,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                         {
                             Width = ContentWidth - 20f,
                             ForegroundColor = FeedbackColor,
-                            Height = 22f,
+                            Height = 15f,
                             HorizontalAlign = NuiHAlign.Left,
                             VerticalAlign = NuiVAlign.Middle
                         }
@@ -627,12 +629,12 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                 {
                     Children =
                     [
-                        new NuiSpacer(),
-                        new NuiButton("Close")
+                        new NuiSpacer { Width = 20f },
+                        new NuiButtonImage("ui_btn_cancel")
                         {
                             Id = "player_stall_seller_close",
-                            Height = 32f,
-                            Width = 140f
+                            Height = 38f,
+                            Width = 150f
                         }.Assign(out CloseButton)
                     ]
                 }

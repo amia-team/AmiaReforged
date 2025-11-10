@@ -6,7 +6,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls.
 
 public sealed class ProductDescriptionView : ScryView<ProductDescriptionPresenter>
 {
-    private const float WindowW = 520f;
+    private const float WindowW = 480f;
     private const float WindowH = 420f;
 
     public readonly NuiBind<string> ProductDescription = new("product_full_description");
@@ -79,8 +79,7 @@ public sealed class ProductDescriptionView : ScryView<ProductDescriptionPresente
                 {
                     Children =
                     {
-                        new NuiSpacer { Width = 20f },
-                        new NuiSpacer(),
+                        new NuiSpacer { Width = 150f },
                         CloseButton
                     }
                 }
@@ -111,7 +110,7 @@ public sealed class ProductDescriptionPresenter : ScryPresenter<ProductDescripti
     {
         _window = new NuiWindow(View.RootLayout(), "Product Description")
         {
-            Geometry = new NuiRect(200f, 150f, 520f, 420f),
+            Geometry = new NuiRect(200f, 150f, 480f, 420f),
             Resizable = false
         };
     }
@@ -144,10 +143,12 @@ public sealed class ProductDescriptionPresenter : ScryPresenter<ProductDescripti
         }
 
         Token().SetBindValue(View.ProductDescription, _description);
+        Token().OnNuiEvent += ProcessEvent;
     }
 
     public override void Close()
     {
+        Token().OnNuiEvent -= ProcessEvent;
         _token.Close();
     }
 }
