@@ -66,10 +66,10 @@ public static class MonkUtils
         {
             VfxType.ImpFrostL => 0.7f,
             VfxType.ImpAcidS or VfxType.ImpBlindDeafM => 1f,
-            VfxType.FnfLosEvil10 or VfxType.ImpPulseHoly => RadiusSize.Medium,
+            VfxType.FnfLosEvil10 => RadiusSize.Medium,
             VfxType.FnfElectricExplosion or MonkVfx.FnfFreezingSphere or MonkVfx.FnfVitriolicSphere
                 or VfxType.FnfMysticalExplosion => RadiusSize.Gargantuan,
-            VfxType.FnfHowlOdd or VfxType.FnfHowlMind or VfxType.FnfLosEvil30 => RadiusSize.Colossal,
+            VfxType.FnfHowlOdd or VfxType.FnfHowlMind or VfxType.FnfLosEvil30 or VfxType.FnfLosHoly30 => RadiusSize.Colossal,
             _ => RadiusSize.Large
         };
 
@@ -162,4 +162,16 @@ public static class MonkUtils
         monk.GetItemInSlot(InventorySlot.RightHand) is not null
         && monk.GetItemInSlot(InventorySlot.LeftHand)?.BaseItem.Category is
             BaseItemCategory.Torches;
+
+    public static double GetRandomDoubleInRange(double min, double max)
+    {
+        if (min > max)
+        {
+            return 0;
+        }
+
+        Random random = new();
+        double randomDouble = random.NextDouble();
+        return min + randomDouble * (max - min);
+    }
 }

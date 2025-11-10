@@ -1,3 +1,4 @@
+using AmiaReforged.Classes.Monk.Constants;
 using AmiaReforged.Classes.Monk.Techniques.Cast;
 using AmiaReforged.Classes.Monk.Techniques.Attack;
 using AmiaReforged.Classes.Monk.Types;
@@ -59,25 +60,32 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
     {
         StunningStrike.DoStunningStrike(damageData);
 
-        if (!monk.IsReactionTypeHostile((NwCreature)damageData.Target)) return;
+        if (damageData.Target is not NwCreature targetCreature || !monk.IsReactionTypeHostile(targetCreature)
+            || targetCreature.Location == null) return;
 
-        int healAmount = MonkUtils.GetKiFocus(monk) switch
+        int healDice = MonkUtils.GetKiFocus(monk) switch
         {
-            KiFocus.KiFocus1 => Random.Shared.Roll(6, 2),
-            KiFocus.KiFocus2 => Random.Shared.Roll(6, 3),
-            KiFocus.KiFocus3 => Random.Shared.Roll(6, 4),
-            _ => Random.Shared.Roll(6)
+            KiFocus.KiFocus1 => 2,
+            KiFocus.KiFocus2 => 3,
+            KiFocus.KiFocus3 => 4,
+            _ => 1
         };
 
         Effect healVfx = Effect.VisualEffect(VfxType.ImpHeadHeal, fScale: 0.7f);
 
-        // Find the most wounded ally to heal
-        NwCreature? mostWoundedAlly = monk.Location?.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Medium, true)
-            .Where(creature => monk.IsReactionTypeFriendly(creature) && creature.HP < creature.MaxHP)
-            .MaxBy(creature => creature.MaxHP - creature.HP);
+        Effect healPulseVfx = MonkUtils.ResizedVfx(MonkVfx.ImpPulseHolyChest, RadiusSize.Medium);
+        targetCreature.ApplyEffect(EffectDuration.Instant, healPulseVfx);
 
-        mostWoundedAlly?.ApplyEffect(EffectDuration.Instant, Effect.Heal(healAmount));
-        mostWoundedAlly?.ApplyEffect(EffectDuration.Instant, healVfx);
+        foreach (NwCreature creature in targetCreature.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere,
+                     RadiusSize.Medium, true))
+        {
+            if (!monk.IsReactionTypeFriendly(creature) || creature.HP >= creature.MaxHP) continue;
+
+            int healAmount = Random.Shared.Roll(6, healDice);
+
+            creature.ApplyEffect(EffectDuration.Instant, healVfx);
+            creature.ApplyEffect(EffectDuration.Instant, Effect.Heal(healAmount));
+        }
     }
 
     /// <summary>
@@ -145,8 +153,10 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
         Effect wholenessEffect = Effect.LinkEffects(Effect.Heal(healAmount),
             Effect.VisualEffect(VfxType.ImpHealingL, false, 0.7f));
 
+        Effect pulseVfx = MonkUtils.ResizedVfx(VfxType.FnfLosHoly30, RadiusSize.Large);
+
         ScriptCallbackHandle doPulse
-            = scriptHandleFactory.CreateUniqueHandler(_ => PulseHeal(monk, wholenessEffect));
+            = scriptHandleFactory.CreateUniqueHandler(_ => PulseHeal(monk, wholenessEffect, pulseVfx));
 
         Effect wholenessPulse = Effect.RunAction(doPulse, doPulse, doPulse, pulseInterval);
         wholenessPulse.Tag = WholenessPulseTag;
@@ -154,20 +164,28 @@ public sealed class SwingingCenser(ScriptHandleFactory scriptHandleFactory) : IA
         monk.ApplyEffect(EffectDuration.Temporary, wholenessPulse, duration);
     }
 
-    private static ScriptHandleResult PulseHeal(NwCreature monk, Effect wholenessEffect)
+    private static ScriptHandleResult PulseHeal(NwCreature monk, Effect wholenessEffect, Effect pulseVfx)
     {
         if (monk.IsDead || !monk.IsValid || monk.Location == null) return ScriptHandleResult.True;
 
-        monk.ApplyEffect(EffectDuration.Instant, MonkUtils.ResizedVfx(VfxType.ImpPulseHoly, RadiusSize.Large));
+        monk.ApplyEffect(EffectDuration.Instant, pulseVfx);
 
-        foreach (NwCreature creatureInShape in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large,false))
+        foreach (NwCreature creature in monk.Location.GetObjectsInShapeByType<NwCreature>(Shape.Sphere, RadiusSize.Large,false))
         {
-            if (!monk.IsReactionTypeFriendly(creatureInShape)) continue;
+            if (!monk.IsReactionTypeFriendly(creature)) continue;
 
-            creatureInShape.ApplyEffect(EffectDuration.Instant, wholenessEffect);
+            _ = ApplyWholenessEffect(creature, wholenessEffect);
         }
 
         return ScriptHandleResult.True;
+    }
+
+    private static async Task ApplyWholenessEffect(NwCreature creature, Effect wholenessEffect)
+    {
+        double randomDelay = MonkUtils.GetRandomDoubleInRange(0.4, 1.1);
+        await NwTask.Delay(TimeSpan.FromSeconds(randomDelay));
+
+        creature.ApplyEffect(EffectDuration.Instant, wholenessEffect);
     }
 
     /// <summary>

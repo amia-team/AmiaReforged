@@ -10,4 +10,5 @@ public static class MonkVfx
     public const VfxType ImpPulseFireChest = (VfxType)2536;
     public const VfxType ImpPulseAirChest = (VfxType)2537;
     public const VfxType ImpPulseEarthChest = (VfxType)2538;
+    public const VfxType ImpPulseHolyChest = (VfxType)2539;
 }
