@@ -16,6 +16,13 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls.
 
 public sealed class MarketReeveLockupView : ScryView<MarketReeveLockupPresenter>
 {
+    private const float WindowW = 580f;
+    private const float WindowH = 450f;
+    private const float HeaderW = 600f;
+    private const float HeaderH = 100f;
+    private const float HeaderTopPad = 0f;
+    private const float HeaderLeftPad = 5f;
+
     public readonly NuiBind<string> SummaryText = new("reeve_lockup_summary");
     public readonly NuiBind<int> ItemCount = new("reeve_lockup_item_count");
     public readonly NuiBind<string> ItemEntries = new("reeve_lockup_item_entries");
@@ -40,6 +47,24 @@ public sealed class MarketReeveLockupView : ScryView<MarketReeveLockupPresenter>
 
     public override NuiLayout RootLayout()
     {
+        NuiRow bgLayer = new NuiRow
+        {
+            Width = 0f, Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))]
+        };
+
+        NuiRow headerOverlay = new NuiRow
+        {
+            Width = 0f, Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))]
+        };
+
+        NuiSpacer headerSpacer = new NuiSpacer { Height = 85f };
+        NuiSpacer spacer6 = new NuiSpacer { Height = 6f };
+        NuiSpacer spacer8 = new NuiSpacer { Height = 8f };
+
         List<NuiListTemplateCell> itemTemplate =
         [
             new(new NuiLabel(ItemEntries)
@@ -48,7 +73,7 @@ public sealed class MarketReeveLockupView : ScryView<MarketReeveLockupPresenter>
                 VerticalAlign = NuiVAlign.Middle
             })
             {
-                Width = 420f
+                Width = 380f
             },
             new(new NuiButton("Withdraw")
             {
@@ -64,35 +89,66 @@ public sealed class MarketReeveLockupView : ScryView<MarketReeveLockupPresenter>
 
         NuiColumn root = new()
         {
-            Width = 560f,
+            Width = WindowW,
+            Height = WindowH,
             Children =
             [
-                new NuiLabel(SummaryText)
-                {
-                    Height = 24f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
-                },
-                new NuiSpacer { Height = 6f },
-                new NuiList(itemTemplate, ItemCount)
-                {
-                    RowHeight = 28f,
-                    Height = 300f
-                },
-                new NuiSpacer { Height = 8f },
-                new NuiLabel(FeedbackText)
-                {
-                    Visible = FeedbackVisible,
-                    ForegroundColor = FeedbackColor,
-                    Height = 22f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
-                },
-                new NuiSpacer { Height = 6f },
+                bgLayer,
+                headerOverlay,
+                headerSpacer,
+
                 new NuiRow
                 {
                     Children =
                     [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(SummaryText)
+                        {
+                            Width = 540f,
+                            Height = 24f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+                spacer6,
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiList(itemTemplate, ItemCount)
+                        {
+                            Width = 540f,
+                            RowHeight = 28f,
+                            Height = 300f
+                        }
+                    ]
+                },
+                spacer8,
+                new NuiRow
+                {
+                    Visible = FeedbackVisible,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(FeedbackText)
+                        {
+                            Width = 540f,
+                            ForegroundColor = FeedbackColor,
+                            Height = 22f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle
+                        }
+                    ]
+                },
+                spacer6,
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
                         new NuiButton("Withdraw All")
                         {
                             Id = "reeve_lockup_withdraw_all",

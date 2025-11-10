@@ -132,7 +132,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             return;
         }
 
-        if (eventData.ElementId == View.RentToggleButton.Id)
+        if (View.RentToggleButton != null && eventData.ElementId == View.RentToggleButton.Id)
         {
             _ = HandleRentToggleAsync();
             return;
@@ -165,6 +165,12 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         if (eventData.ElementId == View.InventoryListButton.Id)
         {
             _ = HandleListSelectedInventoryItemAsync();
+            return;
+        }
+
+        if (eventData.ElementId == View.ViewDescriptionButton.Id)
+        {
+            HandleViewFullDescription();
             return;
         }
 
@@ -940,6 +946,23 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         {
             await SetProcessingStateAsync(false).ConfigureAwait(false);
         }
+    }
+
+    private void HandleViewFullDescription()
+    {
+        if (_isClosing)
+        {
+            return;
+        }
+
+        PlayerStallSellerProductView? product = TryGetSelectedProduct();
+        if (product is null || string.IsNullOrWhiteSpace(product.Tooltip))
+        {
+            return;
+        }
+
+        ProductDescriptionPresenter descriptionPresenter = new(_player, product.Tooltip);
+        descriptionPresenter.Create();
     }
 
     private async Task HandleRetrieveSelectedProductAsync()

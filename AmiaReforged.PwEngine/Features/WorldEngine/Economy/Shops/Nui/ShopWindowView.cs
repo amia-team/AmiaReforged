@@ -9,6 +9,13 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.Nui;
 
 public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
 {
+    private const float WindowW = 630f;
+    private const float WindowH = 640f;
+    private const float HeaderW = 600f;
+    private const float HeaderH = 100f;
+    private const float HeaderTopPad = 0f;
+    private const float HeaderLeftPad = 5f;
+
     public readonly NuiBind<string> StoreTitle = new("shop_title");
     public readonly NuiBind<string> StoreDescription = new("shop_desc");
     public readonly NuiBind<int> ProductCount = new("shop_product_count");
@@ -39,6 +46,24 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
 
     public override NuiLayout RootLayout()
     {
+        NuiRow bgLayer = new NuiRow
+        {
+            Width = 0f, Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))]
+        };
+
+        NuiRow headerOverlay = new NuiRow
+        {
+            Width = 0f, Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))]
+        };
+
+        NuiSpacer headerSpacer = new NuiSpacer { Height = 85f };
+        NuiSpacer spacer6 = new NuiSpacer { Height = 6f };
+        NuiSpacer spacer8 = new NuiSpacer { Height = 8f };
+
         List<NuiListTemplateCell> productTemplate =
         [
             new(new NuiLabel(ProductEntries)
@@ -48,7 +73,7 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
                 Tooltip = ProductTooltips
             })
             {
-                Width = 430f
+                Width = 350f
             },
             new(new NuiButton("Buy")
             {
@@ -71,7 +96,7 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
                 VerticalAlign = NuiVAlign.Middle
             })
             {
-                Width = 360f
+                Width = 350f
             },
             new(new NuiButton("Sell")
             {
@@ -86,66 +111,135 @@ public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
             }
         ];
 
-        const float elementWidth = 500f;
+        const float listWidth = 500f;
 
         NuiColumn root = new()
         {
-            Width = 500f,
+            Width = WindowW,
+            Height = WindowH,
             Children =
             [
-                new NuiLabel(StoreTitle)
+                bgLayer,
+                headerOverlay,
+                headerSpacer,
+
+                new NuiRow
                 {
-                    Height = 26f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(StoreTitle)
+                        {
+                            Width = 500f,
+                            Height = 26f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
                 },
-                new NuiLabel(StoreDescription)
+                new NuiRow
                 {
-                    Height = 22f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(StoreDescription)
+                        {
+                            Width = 500f,
+                            Height = 22f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
                 },
-                new NuiSpacer { Height = 6f },
-                new NuiLabel("Available Goods")
+                spacer6,
+                new NuiRow
                 {
-                    Height = 20f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Available Goods")
+                        {
+                            Width = 500f,
+                            Height = 20f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
                 },
-                new NuiList(productTemplate, ProductCount)
+                new NuiRow
                 {
-                    Width = elementWidth,
-                    RowHeight = 28f,
-                    Height = 220f
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiList(productTemplate, ProductCount)
+                        {
+                            Width = listWidth,
+                            RowHeight = 28f,
+                            Height = 220f
+                        }
+                    ]
                 },
-                new NuiSpacer { Height = 6f },
-                new NuiLabel("Items You May Sell")
+                spacer6,
+                new NuiRow
                 {
-                    Height = 20f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Items You May Sell")
+                        {
+                            Width = 500f,
+                            Height = 20f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
                 },
-                new NuiList(inventoryTemplate, InventoryCount)
+                new NuiRow
                 {
-                    Width = elementWidth,
-                    RowHeight = 24f,
-                    Height = 160f
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiList(inventoryTemplate, InventoryCount)
+                        {
+                            Width = listWidth,
+                            RowHeight = 24f,
+                            Height = 160f
+                        }
+                    ]
                 },
-                new NuiSpacer { Height = 6f },
-                new NuiButton(IdentifyButtonLabel)
+                spacer6,
+                new NuiRow
                 {
-                    Id = "shop_identify_all",
-                    Height = 30f,
-                    Width = 160f,
-                    Enabled = IdentifyButtonEnabled
-                }.Assign(out IdentifyAllButton),
-                new NuiSpacer { Height = 8f },
-                new NuiButton("Leave Counter")
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiButton(IdentifyButtonLabel)
+                        {
+                            Id = "shop_identify_all",
+                            Height = 30f,
+                            Width = 160f,
+                            Enabled = IdentifyButtonEnabled
+                        }.Assign(out IdentifyAllButton)
+                    ]
+                },
+                spacer8,
+                new NuiRow
                 {
-                    Id = "shop_close",
-                    Height = 32f,
-                    Width = 140f
-                }.Assign(out CloseButton)
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiButton("Leave Counter")
+                        {
+                            Id = "shop_close",
+                            Height = 32f,
+                            Width = 140f
+                        }.Assign(out CloseButton)
+                    ]
+                }
             ]
         };
 

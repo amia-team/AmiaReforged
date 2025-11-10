@@ -61,7 +61,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
 
         _window = new NuiWindow(View.RootLayout(), title)
         {
-            Geometry = new NuiRect(60f, 80f, 620f, 640f),
+            Geometry = new NuiRect(60f, 80f, 6230f, 640f),
             Resizable = true
         };
     }

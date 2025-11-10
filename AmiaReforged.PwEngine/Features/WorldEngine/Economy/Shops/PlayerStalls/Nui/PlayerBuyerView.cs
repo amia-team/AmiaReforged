@@ -9,6 +9,13 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls.
 
 public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
 {
+    private const float WindowW = 630f;
+    private const float WindowH = 520f;
+    private const float HeaderW = 600f;
+    private const float HeaderH = 100f;
+    private const float HeaderTopPad = 0f;
+    private const float HeaderLeftPad = 5f;
+
     public readonly NuiBind<string> StallTitle = new("player_stall_title");
     public readonly NuiBind<string> StallDescription = new("player_stall_description");
     public readonly NuiBind<bool> StallDescriptionVisible = new("player_stall_description_visible");
@@ -39,6 +46,23 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
 
     public override NuiLayout RootLayout()
     {
+        NuiRow bgLayer = new NuiRow
+        {
+            Width = 0f, Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))]
+        };
+
+        NuiRow headerOverlay = new NuiRow
+        {
+            Width = 0f, Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))]
+        };
+
+        NuiSpacer headerSpacer = new NuiSpacer { Height = 90f };
+        NuiSpacer spacer6 = new NuiSpacer { Height = 6f };
+
         List<NuiListTemplateCell> productTemplate =
         [
             new(new NuiLabel(ProductEntries)
@@ -48,7 +72,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                 Tooltip = ProductTooltips
             })
             {
-                Width = 440f
+                Width = 400f
             },
             new(new NuiButton("Buy")
             {
@@ -65,65 +89,129 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
 
         NuiColumn root = new()
         {
-            Width = 560f,
+            Width = WindowW,
+            Height = WindowH,
             Children =
             [
-                new NuiLabel(StallTitle)
-                {
-                    Height = 28f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
-                },
-                new NuiLabel(StallDescription)
-                {
-                    Visible = StallDescriptionVisible,
-                    Height = 24f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
-                },
-                new NuiLabel(StallNotice)
-                {
-                    Visible = StallNoticeVisible,
-                    Height = 22f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle,
-                    ForegroundColor = ColorConstants.Orange
-                },
-                new NuiSpacer { Height = 8f },
-                new NuiLabel(GoldText)
-                {
-                    Height = 22f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
-                },
-                new NuiSpacer { Height = 6f },
-                new NuiLabel("Available Goods")
-                {
-                    Height = 20f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
-                },
-                new NuiList(productTemplate, ProductCount)
-                {
-                    Width = 540f,
-                    RowHeight = 26f,
-                    Height = 280f
-                },
-                new NuiSpacer { Height = 8f },
-                new NuiLabel(FeedbackText)
-                {
-                    Visible = FeedbackVisible,
-                    ForegroundColor = FeedbackColor,
-                    Height = 22f,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle
-                },
-                new NuiSpacer { Height = 6f },
+                bgLayer,
+                headerOverlay,
+                headerSpacer,
+
                 new NuiRow
                 {
                     Children =
                     [
-                        new NuiSpacer(),
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(StallTitle)
+                        {
+                            Width = 400f,
+                            Height = 28f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+                new NuiRow
+                {
+                    Visible = StallDescriptionVisible,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(StallDescription)
+                        {
+                            Width = 400f,
+                            Height = 24f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+                new NuiRow
+                {
+                    Visible = StallNoticeVisible,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(StallNotice)
+                        {
+                            Width = 400f,
+                            Height = 22f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = ColorConstants.Orange
+                        }
+                    ]
+                },
+                spacer6,
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(GoldText)
+                        {
+                            Width = 400f,
+                            Height = 22f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+                spacer6,
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Available Goods")
+                        {
+                            Width = 400f,
+                            Height = 20f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiList(productTemplate, ProductCount)
+                        {
+                            Width = 400f,
+                            RowHeight = 26f,
+                            Height = 280f
+                        }
+                    ]
+                },
+                spacer6,
+                new NuiRow
+                {
+                    Visible = FeedbackVisible,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(FeedbackText)
+                        {
+                            Width = 400f,
+                            ForegroundColor = FeedbackColor,
+                            Height = 22f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle
+                        }
+                    ]
+                },
+                spacer6,
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
                         new NuiButton("Leave Stall")
                         {
                             Id = "player_stall_leave",

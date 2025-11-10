@@ -14,6 +14,13 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops.PlayerStalls.
 
 public sealed class RentStallWindowView : ScryView<RentStallWindowPresenter>
 {
+    private const float WindowW = 650f;
+    private const float WindowH = 650f;
+    private const float HeaderW = 600f;
+    private const float HeaderH = 100f;
+    private const float HeaderTopPad = 0f;
+    private const float HeaderLeftPad = 5f;
+
     private readonly RentStallWindowConfig _config;
 
     public readonly NuiBind<string> StallName = new("rent_stall_name");
@@ -34,7 +41,7 @@ public sealed class RentStallWindowView : ScryView<RentStallWindowPresenter>
 
     public NuiButton DirectButton = null!;
     public NuiButton CoinhouseButton = null!;
-    public NuiButton CancelButton = null!;
+    public NuiButtonImage CloseButton = null!;
 
     public RentStallWindowView(NwPlayer player, RentStallWindowConfig config)
     {
@@ -49,20 +56,46 @@ public sealed class RentStallWindowView : ScryView<RentStallWindowPresenter>
 
     public override NuiLayout RootLayout()
     {
+        NuiRow bgLayer = new NuiRow
+        {
+            Width = 0f, Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_bg", new NuiRect(0f, 0f, WindowW, WindowH))]
+        };
+
+        NuiRow headerOverlay = new NuiRow
+        {
+            Width = 0f, Height = 0f,
+            Children = new List<NuiElement>(),
+            DrawList = [new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))]
+        };
+
+        NuiSpacer headerSpacer = new NuiSpacer { Height = 100f };
+        NuiSpacer spacer6 = new NuiSpacer { Height = 6f };
+        NuiSpacer spacer8 = new NuiSpacer { Height = 8f };
+
         NuiColumn root = new()
         {
+            Width = WindowW,
+            Height = WindowH,
             Children =
             [
+                bgLayer,
+                headerOverlay,
+                headerSpacer,
+
                 new NuiRow
                 {
                     Children =
                     [
+                        new NuiSpacer { Width = 20f },
                         new NuiLabel(StallName)
                         {
                             HorizontalAlign = NuiHAlign.Center,
                             VerticalAlign = NuiVAlign.Middle,
                             Height = 26f,
-                            Width = 400f
+                            Width = 380f,
+                            ForegroundColor = new Color(30, 20, 12)
                         }
                     ]
                 },
@@ -71,65 +104,101 @@ public sealed class RentStallWindowView : ScryView<RentStallWindowPresenter>
                     Visible = SettlementVisible,
                     Children =
                     [
+                        new NuiSpacer { Width = 20f },
                         new NuiLabel(SettlementName)
                         {
                             HorizontalAlign = NuiHAlign.Center,
                             VerticalAlign = NuiVAlign.Middle,
                             Height = 20f,
-                            Width = 400f
+                            Width = 380f,
+                            ForegroundColor = new Color(30, 20, 12)
                         }
                     ]
                 },
-                new NuiSpacer { Height = 6f },
-                new NuiGroup
+                spacer6,
+                new NuiRow
                 {
-                    Height = 110f,
-                    Element = new NuiText(StallDescription)
-                    {
-                        Scrollbars = NuiScrollbars.Y
-                    }
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiText(StallDescription)
+                        {
+                            Width = 380f,
+                            Height = 110f,
+                        }
+                    ]
                 },
-                new NuiSpacer { Height = 8f },
-                new NuiLabel(RentCostText)
+                spacer8,
+                new NuiRow
                 {
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle,
-                    Height = 20f
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(RentCostText)
+                        {
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            Height = 20f,
+                            Width = 380f,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
                 },
-                new NuiLabel(CountdownText)
+                new NuiRow
                 {
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle,
-                    Height = 20f
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(CountdownText)
+                        {
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            Height = 20f,
+                            Width = 380f,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
                 },
-                new NuiSpacer { Height = 8f },
+                spacer8,
                 new NuiRow
                 {
                     Visible = DirectOptionVisible,
                     Children =
                     [
-                        new NuiButton(_config.DirectPaymentOption?.ButtonLabel ?? "Pay from Carried Gold")
+                        new NuiSpacer { Width = 20f },
+                        new NuiButton(_config.DirectPaymentOption?.ButtonLabel ?? "Pay Out of Pocket")
                         {
                             Id = "rent_stall_pay_direct",
                             Width = 210f,
                             Height = 34f,
-                            Enabled = DirectOptionEnabled
+                            Enabled = DirectOptionEnabled,
+                            Tooltip = "Pay from gold you are carrying."
                         }.Assign(out DirectButton)
                     ]
                 },
-                new NuiLabel(DirectOptionStatus)
+                new NuiRow
                 {
                     Visible = DirectOptionVisible,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle,
-                    Height = 20f
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(DirectOptionStatus)
+                        {
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            Height = 20f,
+                            Width = 380f,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
                 },
-                new NuiSpacer { Height = 6f },
+                spacer6,
                 new NuiRow
                 {
                     Visible = CoinhouseOptionVisible,
                     Children =
                     [
+                        new NuiSpacer { Width = 20f },
                         new NuiButton(_config.CoinhousePaymentOption?.ButtonLabel ?? "Pay from Coinhouse")
                         {
                             Id = "rent_stall_pay_coinhouse",
@@ -139,35 +208,53 @@ public sealed class RentStallWindowView : ScryView<RentStallWindowPresenter>
                         }.Assign(out CoinhouseButton)
                     ]
                 },
-                new NuiLabel(CoinhouseOptionStatus)
+                new NuiRow
                 {
                     Visible = CoinhouseOptionVisible,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle,
-                    Height = 20f
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(CoinhouseOptionStatus)
+                        {
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            Height = 20f,
+                            Width = 450f,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
                 },
                 new NuiSpacer { Height = 12f },
                 new NuiRow
                 {
                     Children =
                     [
+                        new NuiSpacer { Width = 20f },
                         new NuiSpacer(),
-                        new NuiButton("Cancel")
+                        CloseButton = new NuiButtonImage("ui_btn_cancel")
                         {
                             Id = "rent_stall_cancel",
-                            Width = 120f,
-                            Height = 32f
-                        }.Assign(out CancelButton)
+                            Width = 150f,
+                            Height = 38f
+                        }
                     ]
                 },
-                new NuiSpacer { Height = 6f },
-                new NuiLabel(FeedbackText)
+                spacer6,
+                new NuiRow
                 {
                     Visible = FeedbackVisible,
-                    ForegroundColor = FeedbackColor,
-                    HorizontalAlign = NuiHAlign.Left,
-                    VerticalAlign = NuiVAlign.Middle,
-                    Height = 24f
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel(FeedbackText)
+                        {
+                            ForegroundColor = FeedbackColor,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            Height = 24f,
+                            Width = 380f
+                        }
+                    ]
                 }
             ]
         };
@@ -209,7 +296,7 @@ public sealed class RentStallWindowPresenter : ScryPresenter<RentStallWindowView
     {
         _window = new NuiWindow(View.RootLayout(), _config.Title)
         {
-            Geometry = new NuiRect(0f, 0f, 420f, 420f),
+            Geometry = new NuiRect(0f, 0f, 650f, 650f),
             Resizable = false
         };
     }
@@ -267,7 +354,7 @@ public sealed class RentStallWindowPresenter : ScryPresenter<RentStallWindowView
             return;
         }
 
-        if (eventData.ElementId == View.CancelButton.Id)
+        if (eventData.ElementId == View.CloseButton.Id)
         {
             _ = HandleCancelAsync();
         }

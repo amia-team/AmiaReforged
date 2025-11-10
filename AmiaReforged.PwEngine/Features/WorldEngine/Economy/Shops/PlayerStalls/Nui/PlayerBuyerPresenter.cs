@@ -42,7 +42,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 	{
 		_window = new NuiWindow(View.RootLayout(), _config.Title)
 		{
-			Geometry = new NuiRect(80f, 80f, 580f, 460f),
+			Geometry = new NuiRect(80f, 80f, 630f, 460f),
 			Resizable = false
 		};
 	}
@@ -166,15 +166,15 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 					: string.Empty;
 
 			string statusSuffix = string.IsNullOrWhiteSpace(status) ? string.Empty : " " + status;
-			
+
 			// Display original name if different from current name
 			string originalNameSuffix = string.Empty;
-			if (!string.IsNullOrWhiteSpace(product.OriginalName) && 
+			if (!string.IsNullOrWhiteSpace(product.OriginalName) &&
 			    !string.Equals(product.OriginalName, product.DisplayName, StringComparison.OrdinalIgnoreCase))
 			{
 				originalNameSuffix = string.Format(CultureInfo.InvariantCulture, " (Originally: {0})", product.OriginalName);
 			}
-			
+
 			string entry = string.Format(
 				CultureInfo.InvariantCulture,
 				"{0} - {1}{2}{3}",
