@@ -47,7 +47,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         IPlayerStallEventBroadcaster events,
         IPlayerStallInventoryCustodian inventoryCustodian,
         ICoinhouseRepository coinhouses
-        )
+    )
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _withdrawHandler = withdrawHandler ?? throw new ArgumentNullException(nameof(withdrawHandler));
@@ -113,8 +113,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
                 {
                     Log.Error(ex, "Unhandled stall rent renewal failure.");
                 }
-            }
-            while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false));
+            } while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false));
         }
         catch (TaskCanceledException)
         {
@@ -185,15 +184,18 @@ public sealed class PlayerStallRentRenewalService : IDisposable
             return;
         }
 
-        await HandleRentFailureAsync(refreshed, result.FailureReason ?? "Rent payment failed.", utcNow).ConfigureAwait(false);
+        await HandleRentFailureAsync(refreshed, result.FailureReason ?? "Rent payment failed.", utcNow)
+            .ConfigureAwait(false);
     }
 
-    private async Task<RentChargeResult> TryChargeAsync(PlayerStall stall, int rentAmount, DateTime utcNow, CancellationToken token)
+    private async Task<RentChargeResult> TryChargeAsync(PlayerStall stall, int rentAmount, DateTime utcNow,
+        CancellationToken token)
     {
         // Prefer coinhouse when configured, fallback to escrow when possible.
         if (stall.CoinHouseAccountId.HasValue)
         {
-            RentChargeResult coinhouse = await TryChargeCoinhouseAsync(stall, rentAmount, utcNow, token).ConfigureAwait(false);
+            RentChargeResult coinhouse =
+                await TryChargeCoinhouseAsync(stall, rentAmount, utcNow, token).ConfigureAwait(false);
             if (coinhouse.Success)
             {
                 return coinhouse;
@@ -216,7 +218,8 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         return RentChargeResult.Failed("Not enough stall earnings to cover rent.");
     }
 
-    private async Task<RentChargeResult> TryChargeCoinhouseAsync(PlayerStall stall, int rentAmount, DateTime utcNow, CancellationToken token)
+    private async Task<RentChargeResult> TryChargeCoinhouseAsync(PlayerStall stall, int rentAmount, DateTime utcNow,
+        CancellationToken token)
     {
         if (!stall.CoinHouseAccountId.HasValue)
         {
@@ -236,7 +239,8 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         CoinhouseTag coinhouseTag;
         string rawTag = stall.SettlementTag.Trim();
 
-        if (int.TryParse(rawTag, NumberStyles.Integer, CultureInfo.InvariantCulture, out int settlementId) && settlementId > 0)
+        if (int.TryParse(rawTag, NumberStyles.Integer, CultureInfo.InvariantCulture, out int settlementId) &&
+            settlementId > 0)
         {
             try
             {
@@ -244,7 +248,9 @@ public sealed class PlayerStallRentRenewalService : IDisposable
                 var coinhouse = _coinhouses.GetSettlementCoinhouse(settlement);
                 if (coinhouse is null || string.IsNullOrWhiteSpace(coinhouse.Tag))
                 {
-                    Log.Warn("No coinhouse mapped to settlement {SettlementId} while charging rent for stall {StallId}.", settlementId, stall.Id);
+                    Log.Warn(
+                        "No coinhouse mapped to settlement {SettlementId} while charging rent for stall {StallId}.",
+                        settlementId, stall.Id);
                     return RentChargeResult.Failed("Coinhouse configuration is missing for this stall.");
                 }
 
@@ -252,7 +258,8 @@ public sealed class PlayerStallRentRenewalService : IDisposable
             }
             catch (Exception ex)
             {
-                Log.Warn(ex, "Failed to resolve coinhouse for settlement {SettlementId} on stall {StallId}.", settlementId, stall.Id);
+                Log.Warn(ex, "Failed to resolve coinhouse for settlement {SettlementId} on stall {StallId}.",
+                    settlementId, stall.Id);
                 return RentChargeResult.Failed("Coinhouse configuration is invalid.");
             }
         }
@@ -276,7 +283,8 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         }
         catch (Exception ex)
         {
-            Log.Warn(ex, "Unable to parse owner persona '{PersonaId}' for stall {StallId}.", stall.OwnerPersonaId, stall.Id);
+            Log.Warn(ex, "Unable to parse owner persona '{PersonaId}' for stall {StallId}.", stall.OwnerPersonaId,
+                stall.Id);
             return RentChargeResult.Failed("Owner persona could not be resolved.");
         }
 
@@ -309,15 +317,22 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         {
             DateTime nextDue = CalculateNextDue(entity.NextRentDueUtc, utcNow);
 
-            if (source == RentChargeSource.StallEscrow)
+            switch (source)
             {
-                entity.EscrowBalance = Math.Max(0, entity.EscrowBalance - rentAmount);
+                case RentChargeSource.StallEscrow:
+                    entity.EscrowBalance = Math.Max(0, entity.EscrowBalance - rentAmount);
+                    break;
+                case RentChargeSource.CoinhouseAccount:
+
+                    break;
+                case RentChargeSource.None:
+                    break;
             }
 
             if (rentAmount > 0)
             {
                 entity.LifetimeNetEarnings -= rentAmount;
-                entity.LedgerEntries ??= new List<PlayerStallLedgerEntry>();
+
                 entity.LedgerEntries.Add(new PlayerStallLedgerEntry
                 {
                     StallId = entity.Id,
@@ -346,7 +361,8 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 
         await _events.BroadcastSellerRefreshAsync(stall.Id).ConfigureAwait(false);
 
-        await NotifyOwnerAsync(stall.OwnerCharacterId, BuildSuccessMessage(stall, rentAmount, source), ColorConstants.Orange).ConfigureAwait(false);
+        await NotifyOwnerAsync(stall.OwnerCharacterId, BuildSuccessMessage(stall, rentAmount, source),
+            ColorConstants.Orange).ConfigureAwait(false);
     }
 
     private async Task HandleRentFailureAsync(PlayerStall stall, string reason, DateTime utcNow)
@@ -475,7 +491,8 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         // Process refund if applicable
         if (refundAmount > 0 && ownerPersonaId is not null)
         {
-            await ProcessRefundAsync(ownerPersonaId, ownerCharacterId, coinhouseAccountId, settlementTag, refundAmount, stall, token)
+            await ProcessRefundAsync(ownerPersonaId, ownerCharacterId, coinhouseAccountId, settlementTag, refundAmount,
+                    stall, token)
                 .ConfigureAwait(false);
         }
 
@@ -573,7 +590,8 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 
             // Otherwise, hold with the market reeve (we already have ReeveLockupService for this)
             // For now, we'll just log this - the Market Reeve would need currency storage capability
-            Log.Info("Refund of {Amount} gp for persona {Persona} should be held by market reeve in settlement {Settlement}",
+            Log.Info(
+                "Refund of {Amount} gp for persona {Persona} should be held by market reeve in settlement {Settlement}",
                 refundAmount, persona, settlementTag ?? "unknown");
         }
         catch (Exception ex)
@@ -598,8 +616,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         do
         {
             nextDue = nextDue.Add(RentInterval);
-        }
-        while (nextDue <= utcNow);
+        } while (nextDue <= utcNow);
 
         return nextDue;
     }
@@ -645,13 +662,16 @@ public sealed class PlayerStallRentRenewalService : IDisposable
             _ => "system funds"
         };
 
-        return string.Format(CultureInfo.InvariantCulture, "Rent of {0:n0} gp for {1} was paid from {2}.", rentAmount, stallName, method);
+        return string.Format(CultureInfo.InvariantCulture, "Rent of {0:n0} gp for {1} was paid from {2}.", rentAmount,
+            stallName, method);
     }
 
-    private static string BuildFailureMessage(PlayerStall stall, string reason, RentFailureState state, DateTime utcNow, string? ownerPersonaId)
+    private static string BuildFailureMessage(PlayerStall stall, string reason, RentFailureState state, DateTime utcNow,
+        string? ownerPersonaId)
     {
         string stallName = BeautifyLabelOrDefault(stall.Tag, stall.Id);
-        string baseMessage = string.Format(CultureInfo.InvariantCulture, "Rent collection failed for {0}: {1}", stallName, reason);
+        string baseMessage = string.Format(CultureInfo.InvariantCulture, "Rent collection failed for {0}: {1}",
+            stallName, reason);
 
         return state switch
         {
@@ -734,16 +754,19 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         if (duration.TotalHours >= 1)
         {
             double hours = Math.Round(duration.TotalHours);
-            return string.Format(CultureInfo.InvariantCulture, "{0:n0} hour{1}", hours, Math.Abs(hours - 1d) < double.Epsilon ? string.Empty : "s");
+            return string.Format(CultureInfo.InvariantCulture, "{0:n0} hour{1}", hours,
+                Math.Abs(hours - 1d) < double.Epsilon ? string.Empty : "s");
         }
 
         if (duration.TotalMinutes >= 1)
         {
             double minutes = Math.Round(duration.TotalMinutes);
-            return string.Format(CultureInfo.InvariantCulture, "{0:n0} minute{1}", minutes, Math.Abs(minutes - 1d) < double.Epsilon ? string.Empty : "s");
+            return string.Format(CultureInfo.InvariantCulture, "{0:n0} minute{1}", minutes,
+                Math.Abs(minutes - 1d) < double.Epsilon ? string.Empty : "s");
         }
 
         double seconds = Math.Round(duration.TotalSeconds);
-        return string.Format(CultureInfo.InvariantCulture, "{0:n0} second{1}", seconds, Math.Abs(seconds - 1d) < double.Epsilon ? string.Empty : "s");
+        return string.Format(CultureInfo.InvariantCulture, "{0:n0} second{1}", seconds,
+            Math.Abs(seconds - 1d) < double.Epsilon ? string.Empty : "s");
     }
 }
