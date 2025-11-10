@@ -7,7 +7,7 @@ using NLog;
 
 namespace AmiaReforged.Core.Services;
 
-[ServiceBinding(typeof(InvasionService))]
+// [ServiceBinding(typeof(InvasionService))]
 public class InvasionService
 {
     private readonly DatabaseContextFactory _ctxFactory;
@@ -82,7 +82,7 @@ public class InvasionService
             Log.Error(e, "Error getting all invasion records");
         }
         await _nwTaskHelper.TrySwitchToMainThread();
-        return invasions; 
+        return invasions;
     }
 
     private async Task<List<InvasionRecord>> GetCertainInvasionRecord(Expression<Func<InvasionRecord, bool>> predicate)
@@ -119,7 +119,7 @@ public class InvasionService
         }
 
         await _nwTaskHelper.TrySwitchToMainThread();
-        
+
         return exists;
     }
 
