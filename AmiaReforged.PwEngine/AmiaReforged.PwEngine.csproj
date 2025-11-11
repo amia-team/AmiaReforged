@@ -71,6 +71,7 @@
       <None Remove="Features\WorldEngine\IMPLEMENTATION_COMPLETE.md" />
       <None Remove="Features\WorldEngine\HARVEST_PROGRESS_CACHING_FIX.md" />
       <None Remove="Features\WorldEngine\HARVESTING_COMPLETE_FINAL.md" />
+      <None Remove="Features\WorldEngine\GATEWAY_TO_FACADE_RENAME_COMPLETE.md" />
     </ItemGroup>
 
 
