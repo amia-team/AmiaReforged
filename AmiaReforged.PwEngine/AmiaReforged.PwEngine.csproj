@@ -56,24 +56,6 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
-    
-    <ItemGroup>
-      <None Remove="Features\WorldEngine\PHASE2_COMPLETE.md" />
-      <None Remove="Features\WorldEngine\MIGRATION_GUIDE_TRANSACTIONS.md" />
-      <None Remove="Features\WorldEngine\PHASE4_ORGANIZATIONS_EVENTS_COMPLETE.md" />
-      <None Remove="Features\WorldEngine\PHASE4_INTEGRATION_TESTING_COMPLETE.md" />
-      <None Remove="Features\WorldEngine\PHASE4_INDUSTRIES_EVENTS_COMPLETE.md" />
-      <None Remove="Features\WorldEngine\PHASE4_EVENT_BUS.md" />
-      <None Remove="Features\WorldEngine\PHASE3_4_HARVESTING_PROGRESS.md" />
-      <None Remove="Features\WorldEngine\PHASE3_4_FINAL_VERIFICATION.md" />
-      <None Remove="Features\WorldEngine\PHASE3_4_COMPLETE.md" />
-      <None Remove="Features\WorldEngine\ORGANIZATIONS_FIX_STATUS.md" />
-      <None Remove="Features\WorldEngine\NODE_DEFINITION_TAG_MATCHING_FIX.md" />
-      <None Remove="Features\WorldEngine\INTEGRATION_COMPLETE_ECONOMY_COMMAND.md" />
-      <None Remove="Features\WorldEngine\IMPLEMENTATION_COMPLETE.md" />
-      <None Remove="Features\WorldEngine\HARVEST_PROGRESS_CACHING_FIX.md" />
-      <None Remove="Features\WorldEngine\HARVESTING_COMPLETE_FINAL.md" />
-    </ItemGroup>
 
 
 </Project>
