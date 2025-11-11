@@ -189,7 +189,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
     private int _storageCapacity = 10;
 
     [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
-    [Inject] private Lazy<IBankStorageService> BankStorage { get; init; } = null!;
+    [Inject] private Lazy<IWorldEngineFacade> WorldEngine { get; init; } = null!;
     [Inject] private Lazy<IBankStorageItemBlacklist> StorageBlacklist { get; init; } = null!;
 
     public BankStorageWindowPresenter(BankStorageWindowView view, NwPlayer player, CoinhouseTag coinhouseTag, string bankDisplayName)
@@ -231,7 +231,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
     public override void ProcessEvent(ModuleEvents.OnNuiEvent obj)
     {
         Log.Info($"Storage window event: Type={obj.EventType}, ElementId={obj.ElementId}, ArrayIndex={obj.ArrayIndex}");
-        
+
         if (obj.EventType != NuiEventType.Click) return;
 
         switch (obj.ElementId)
@@ -269,9 +269,9 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             if (characterId == Guid.Empty) return;
 
             // Load stored items and capacity using facade service
-            _storedItems = await BankStorage.Value.GetStoredItemsAsync(_coinhouseTag, characterId, CancellationToken.None);
-            
-            GetStorageCapacityResult capacityInfo = await BankStorage.Value.GetStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
+            _storedItems = await WorldEngine.Value.Economy.Storage.GetStoredItemsAsync(_coinhouseTag, characterId, CancellationToken.None);
+
+            GetStorageCapacityResult capacityInfo = await WorldEngine.Value.Economy.Storage.GetStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
             _storageCapacity = capacityInfo.TotalCapacity;
 
             await NwTask.SwitchToMainThread();
@@ -332,7 +332,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             if (characterId == Guid.Empty) return;
 
             // Get current capacity
-            GetStorageCapacityResult capacityInfo = await BankStorage.Value.GetStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
+            GetStorageCapacityResult capacityInfo = await WorldEngine.Value.Economy.Storage.GetStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
 
             if (!capacityInfo.CanUpgrade)
             {
@@ -364,7 +364,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             controlledCreature.Gold -= deduction;
 
             // Upgrade storage using facade service
-            CommandResult result = await BankStorage.Value.UpgradeStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
+            CommandResult result = await WorldEngine.Value.Economy.Storage.UpgradeStorageCapacityAsync(_coinhouseTag, characterId, CancellationToken.None);
 
             if (result.Success)
             {
@@ -426,7 +426,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             string itemDescription = item.Description ?? "";
 
             // Store item using facade service
-            CommandResult result = await BankStorage.Value.StoreItemAsync(_coinhouseTag, characterId, itemName, itemDescription, itemData, CancellationToken.None);
+            CommandResult result = await WorldEngine.Value.Economy.Storage.StoreItemAsync(_coinhouseTag, characterId, itemName, itemDescription, itemData, CancellationToken.None);
 
             await NwTask.SwitchToMainThread();
 
@@ -464,7 +464,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             StoredItemDto storedItem = _storedItems[itemIndex];
 
             // Withdraw item using facade service
-            CommandResult result = await BankStorage.Value.WithdrawItemAsync(storedItem.ItemId, characterId, CancellationToken.None);
+            CommandResult result = await WorldEngine.Value.Economy.Storage.WithdrawItemAsync(storedItem.ItemId, characterId, CancellationToken.None);
 
             await NwTask.SwitchToMainThread();
 
@@ -472,7 +472,7 @@ public sealed class BankStorageWindowPresenter : ScryPresenter<BankStorageWindow
             {
                 byte[] itemData = (byte[])result.Data["ItemData"];
                 string itemName = (string)result.Data["ItemName"];
-                
+
                 // Deserialize and create item in player's inventory
                 NwItem? deserializedItem = NwItem.Deserialize(itemData);
 

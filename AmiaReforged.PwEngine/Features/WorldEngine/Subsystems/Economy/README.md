@@ -115,13 +115,13 @@ NPC shops and player stall management.
 ## Implementation Details
 
 The `Implementation/` folder contains:
-- Gateway implementations
+- Facade implementations
 - Command handlers (CQRS commands)
 - Query handlers (CQRS queries)
 - Domain models
 - Business logic
 
-**Do not reference these directly!** Always use the public gateways.
+**Do not reference these directly!** Always use the public facades.
 
 ## Testing
 

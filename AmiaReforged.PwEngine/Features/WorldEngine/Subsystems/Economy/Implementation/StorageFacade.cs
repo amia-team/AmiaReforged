@@ -1,5 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Facades;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Queries;
@@ -48,5 +49,55 @@ public sealed class StorageFacade : IStorageFacade
 
     public Task<CommandResult> UpgradeStorageCapacityAsync(UpgradeStorageCapacityCommand command, CancellationToken ct = default)
         => _upgradeCapacityHandler.HandleAsync(command, ct);
+
+    // === Convenience Overloads ===
+
+    public Task<CommandResult> StoreItemAsync(
+        CoinhouseTag coinhouseTag,
+        Guid characterId,
+        string itemName,
+        string itemDescription,
+        byte[] itemData,
+        CancellationToken ct = default)
+    {
+        var command = new StoreItemCommand(coinhouseTag, characterId, itemName, itemDescription, itemData);
+        return StoreItemAsync(command, ct);
+    }
+
+    public Task<CommandResult> WithdrawItemAsync(
+        long storedItemId,
+        Guid characterId,
+        CancellationToken ct = default)
+    {
+        var command = new WithdrawItemCommand(storedItemId, characterId);
+        return WithdrawItemAsync(command, ct);
+    }
+
+    public Task<List<StoredItemDto>> GetStoredItemsAsync(
+        CoinhouseTag coinhouseTag,
+        Guid characterId,
+        CancellationToken ct = default)
+    {
+        var query = new GetStoredItemsQuery(coinhouseTag, characterId);
+        return GetStoredItemsAsync(query, ct);
+    }
+
+    public Task<GetStorageCapacityResult> GetStorageCapacityAsync(
+        CoinhouseTag coinhouseTag,
+        Guid characterId,
+        CancellationToken ct = default)
+    {
+        var query = new GetStorageCapacityQuery(coinhouseTag, characterId);
+        return GetStorageCapacityAsync(query, ct);
+    }
+
+    public Task<CommandResult> UpgradeStorageCapacityAsync(
+        CoinhouseTag coinhouseTag,
+        Guid characterId,
+        CancellationToken ct = default)
+    {
+        var command = new UpgradeStorageCapacityCommand(coinhouseTag, characterId);
+        return UpgradeStorageCapacityAsync(command, ct);
+    }
 }
 
