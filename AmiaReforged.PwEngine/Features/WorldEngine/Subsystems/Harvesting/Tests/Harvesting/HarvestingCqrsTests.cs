@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Helpers;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
@@ -12,7 +13,6 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
-using AmiaReforged.PwEngine.Features.WorldEngine.Tests.Systems.WorldEngine.Helpers;
 using Anvil.API;
 using NUnit.Framework;
 

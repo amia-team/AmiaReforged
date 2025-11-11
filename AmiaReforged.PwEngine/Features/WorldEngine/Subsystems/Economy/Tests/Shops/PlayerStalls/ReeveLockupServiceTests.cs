@@ -47,7 +47,7 @@ public sealed class ReeveLockupServiceTests
         Assert.That(storedCount, Is.EqualTo(3));
 
         await using PwEngineContext verificationContext = factory.CreateDbContext();
-        List<Storage> storages = await verificationContext.Warehouses.ToListAsync();
+        List<Database.Entities.Storage> storages = await verificationContext.Warehouses.ToListAsync();
         List<StoredItem> items = await verificationContext.WarehouseItems.ToListAsync();
 
         Assert.That(storages, Has.Count.EqualTo(1));

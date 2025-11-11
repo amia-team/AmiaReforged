@@ -3,8 +3,8 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Comma
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Helpers;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
-using AmiaReforged.PwEngine.Features.WorldEngine.Tests.Systems.WorldEngine.Helpers;
 using NUnit.Framework;
 using OrgEntity = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations.Organization;
 

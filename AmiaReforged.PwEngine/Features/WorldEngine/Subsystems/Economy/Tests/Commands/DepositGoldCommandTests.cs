@@ -1,7 +1,7 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Helpers;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.Tests.Helpers.WorldEngine;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Tests.Commands;

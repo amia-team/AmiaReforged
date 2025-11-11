@@ -1,8 +1,8 @@
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Helpers;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
-using AmiaReforged.PwEngine.Features.WorldEngine.Tests.Systems.WorldEngine.Helpers;
 using NUnit.Framework;
 using OrgEntity = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations.Organization;
 

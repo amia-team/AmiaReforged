@@ -1,5 +1,5 @@
 using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Features.WorldEngine.Tests.Systems.WorldEngine.Helpers;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Helpers;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations.Tests;

@@ -1,9 +1,9 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
-using AmiaReforged.PwEngine.Features.WorldEngine.Tests.Helpers.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Helpers;
 using NUnit.Framework;
-using PersonaRepositoryStub = AmiaReforged.PwEngine.Features.WorldEngine.Tests.Systems.WorldEngine.Helpers.InMemoryPersonaRepository;
+using PersonaRepositoryStub = AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Helpers.InMemoryPersonaRepository;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Tests.Personas;
 
