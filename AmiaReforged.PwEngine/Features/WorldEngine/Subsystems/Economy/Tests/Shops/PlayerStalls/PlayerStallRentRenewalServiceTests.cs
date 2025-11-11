@@ -85,7 +85,7 @@ public class PlayerStallRentRenewalServiceTests
             _events.Object,
             _custodian.Object,
             _coinhouses.Object
-            );
+        );
     }
 
     [TearDown]
@@ -211,11 +211,13 @@ public class PlayerStallRentRenewalServiceTests
         // Verify notification was sent
         Assert.That(_capturedNotifications, Has.Count.EqualTo(1));
         Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Orange));
-        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()), Times.Once);
+        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()),
+            Times.Once);
         StringAssert.Contains("prorated refund", _capturedNotifications[0].Message);
 
         // Verify refund was attempted to coinhouse
-        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()), Times.Once);
+        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Test]

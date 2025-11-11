@@ -7,7 +7,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Co
 /// Command to provision resource nodes for an area based on its definition.
 /// This triggers the entire flow: generate nodes, spawn in-game, and persist state.
 /// </summary>
-public class ProvisionAreaNodesCommand : ICommand
+public class ProvisionAreaNodesCommand : ICommand, ICommandHandlerMarker
 {
     public AreaDefinition AreaDefinition { get; }
     public bool ForceRespawn { get; }
