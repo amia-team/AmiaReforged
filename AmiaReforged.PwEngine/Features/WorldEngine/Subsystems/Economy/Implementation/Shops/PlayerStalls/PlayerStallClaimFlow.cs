@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -33,8 +34,7 @@ public sealed class PlayerStallClaimFlow
     private readonly ICoinhouseRepository _coinhouses;
     private readonly IPlayerShopRepository _shops;
     private readonly ReeveLockupService _lockup;
-    private readonly ICommandHandler<ClaimPlayerStallCommand> _claimHandler;
-    private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
+    private readonly IWorldEngineFacade _worldEngine;
 
     private readonly ConcurrentDictionary<PersonaId, PendingClaimSession> _activeSessions = new();
 
@@ -43,15 +43,13 @@ public sealed class PlayerStallClaimFlow
         ICoinhouseRepository coinhouses,
         IPlayerShopRepository shops,
         ReeveLockupService lockup,
-        ICommandHandler<ClaimPlayerStallCommand> claimHandler,
-        ICommandHandler<WithdrawGoldCommand> withdrawHandler)
+        IWorldEngineFacade worldEngine)
     {
         _windowDirector = windowDirector ?? throw new ArgumentNullException(nameof(windowDirector));
         _coinhouses = coinhouses ?? throw new ArgumentNullException(nameof(coinhouses));
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _lockup = lockup ?? throw new ArgumentNullException(nameof(lockup));
-        _claimHandler = claimHandler ?? throw new ArgumentNullException(nameof(claimHandler));
-        _withdrawHandler = withdrawHandler ?? throw new ArgumentNullException(nameof(withdrawHandler));
+        _worldEngine = worldEngine ?? throw new ArgumentNullException(nameof(worldEngine));
     }
 
     public async Task BeginClaimAsync(
@@ -405,7 +403,7 @@ public sealed class PlayerStallClaimFlow
                 session.RentCost.Value,
                 reason);
 
-            withdrawalResult = await _withdrawHandler.HandleAsync(command).ConfigureAwait(false);
+            withdrawalResult = await _worldEngine.Economy.Banking.WithdrawGoldAsync(command).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -466,7 +464,7 @@ public sealed class PlayerStallClaimFlow
                 rentInterval: RentInterval,
                 leaseStartUtc: leaseStart);
 
-            CommandResult claimResult = await _claimHandler.HandleAsync(command).ConfigureAwait(false);
+            CommandResult claimResult = await _worldEngine.Economy.Shops.ClaimPlayerStallAsync(command).ConfigureAwait(false);
             if (!claimResult.Success)
             {
                 RentStallPaymentOptionViewModel? directUpdate = null;
