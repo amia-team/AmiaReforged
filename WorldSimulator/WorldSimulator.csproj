@@ -51,7 +51,6 @@
       <None Remove="TEST_PROGRESS.md" />
       <None Remove="INDEPENDENCE_REFACTORING.md" />
       <None Remove="DOCKER_DEPLOYMENT.md" />
-      <None Remove="AgentsInstructions.md" />
     </ItemGroup>
 
 </Project>
