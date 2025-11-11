@@ -1,5 +1,5 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Industries.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Events;
 using Anvil.Services;
 using NLog;
 

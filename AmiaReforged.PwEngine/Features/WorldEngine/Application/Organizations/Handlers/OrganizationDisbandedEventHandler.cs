@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
-using AmiaReforged.PwEngine.Features.WorldEngine.Organizations.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations.Events;
 using Anvil.Services;
 using NLog;
 

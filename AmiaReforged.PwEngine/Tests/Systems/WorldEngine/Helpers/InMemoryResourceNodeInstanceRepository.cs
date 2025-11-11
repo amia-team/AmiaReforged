@@ -1,5 +1,5 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes;
-using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 

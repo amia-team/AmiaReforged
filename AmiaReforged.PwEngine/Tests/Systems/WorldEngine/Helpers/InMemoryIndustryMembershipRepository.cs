@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 

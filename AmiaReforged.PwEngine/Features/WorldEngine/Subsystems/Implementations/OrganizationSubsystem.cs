@@ -1,9 +1,9 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Queries;
-using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;

@@ -1,6 +1,6 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Characters;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 

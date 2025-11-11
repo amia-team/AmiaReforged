@@ -8,7 +8,7 @@ using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.DungeonMaster.PlcEdit;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.WorldEngine.AreaPersistence;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.AreaPersistence;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

@@ -1,9 +1,9 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.UI.Banking;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

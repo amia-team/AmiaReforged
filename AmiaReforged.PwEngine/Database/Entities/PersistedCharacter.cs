@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using AmiaReforged.PwEngine.Database.Entities.Economy;
-using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 
 namespace AmiaReforged.PwEngine.Database.Entities;
 

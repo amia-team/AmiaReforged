@@ -1,11 +1,11 @@
 using AmiaReforged.PwEngine.Features.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.Codex.Domain.Events;
 using AmiaReforged.PwEngine.Features.Codex.Domain.ValueObjects;
-using AmiaReforged.PwEngine.Features.WorldEngine.Codex.Aggregates;
-using AmiaReforged.PwEngine.Features.WorldEngine.Codex.Application;
-using AmiaReforged.PwEngine.Features.WorldEngine.Codex.Entities;
-using AmiaReforged.PwEngine.Features.WorldEngine.Codex.Infrastructure;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Aggregates;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Application;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Infrastructure;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.Codex.Application;

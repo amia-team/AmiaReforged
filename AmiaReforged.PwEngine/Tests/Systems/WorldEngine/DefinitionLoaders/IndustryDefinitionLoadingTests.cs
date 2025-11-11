@@ -1,7 +1,7 @@
 using System;
 using System.IO;
-using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
 using Moq;
 using NUnit.Framework;
 

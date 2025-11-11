@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Features.Codex.Domain.Enums;
 using AmiaReforged.PwEngine.Features.Codex.Domain.ValueObjects;
-using AmiaReforged.PwEngine.Features.WorldEngine.Codex.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Codex.Entities;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.Codex.Entities;

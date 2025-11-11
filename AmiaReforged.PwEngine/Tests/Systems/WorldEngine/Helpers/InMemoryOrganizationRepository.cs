@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 

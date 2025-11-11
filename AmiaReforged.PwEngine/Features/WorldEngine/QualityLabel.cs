@@ -1,5 +1,5 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Harvesting;
-using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
 using Anvil.API;
 using NWN.Core;
 

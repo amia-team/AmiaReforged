@@ -1,5 +1,5 @@
 using System;
-using AmiaReforged.PwEngine.Features.WorldEngine.Time;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Time;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Time;

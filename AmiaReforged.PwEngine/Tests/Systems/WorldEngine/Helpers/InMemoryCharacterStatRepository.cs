@@ -1,5 +1,5 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Characters;
-using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 

@@ -1,11 +1,12 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Characters;
-using AmiaReforged.PwEngine.Features.WorldEngine.Characters.CharacterData;
-using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
-using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
-using AmiaReforged.PwEngine.Features.WorldEngine.Industries.Events;
-using AmiaReforged.PwEngine.Features.WorldEngine.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.CharacterData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.KnowledgeSubsystem;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using NUnit.Framework;
 
@@ -61,12 +62,12 @@ public class IndustriesEventFlowTests
 
         // Create test character with knowledge points
         TestCharacter testCharacter = new TestCharacter(
-            new Dictionary<Anvil.API.EquipmentSlots, AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData.ItemSnapshot>(),
+            new Dictionary<Anvil.API.EquipmentSlots, ItemSnapshot>(),
             new List<SkillData>(),
             CharacterId.From(_characterId),
             _knowledgeRepository,
             null!,
-            new List<AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData.ItemSnapshot>(),
+            new List<ItemSnapshot>(),
             999 // Lots of knowledge points
         );
         characterRepository.Add(testCharacter);

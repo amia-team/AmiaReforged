@@ -3,7 +3,7 @@ using AmiaReforged.Core.UserInterface;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.Spellbook.CreateSpellbook;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.Spellbook.OpenSpellbook;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
-using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using Anvil;
 using Anvil.API;
 using Anvil.API.Events;

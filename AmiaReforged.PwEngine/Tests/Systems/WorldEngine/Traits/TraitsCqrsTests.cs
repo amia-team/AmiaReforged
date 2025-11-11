@@ -1,11 +1,11 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
-using AmiaReforged.PwEngine.Features.WorldEngine.Traits;
-using AmiaReforged.PwEngine.Features.WorldEngine.Traits.Application;
-using AmiaReforged.PwEngine.Features.WorldEngine.Traits.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.Traits.Events;
-using AmiaReforged.PwEngine.Features.WorldEngine.Traits.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Application;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Queries;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Traits;

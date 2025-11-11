@@ -2,18 +2,19 @@ using System;
 using System.Linq;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
-using AmiaReforged.PwEngine.Features.WorldEngine.Organizations.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations.Events;
 using Anvil.Services;
+using Organization = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations.Organization;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
 
-using OrgEntity = AmiaReforged.PwEngine.Features.WorldEngine.Organizations.Organization;
+using OrgEntity = Organization;
 
 /// <summary>
 /// Command to create a new organization (also creates OrganizationPersona)

@@ -1,6 +1,6 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Traits;
-using AmiaReforged.PwEngine.Features.WorldEngine.Traits.Effects;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Effects;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.TraitSystem;

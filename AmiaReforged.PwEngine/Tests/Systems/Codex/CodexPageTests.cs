@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Characters;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters;
 using AmiaReforged.PwEngine.Tests.Systems.WorldEngine.Helpers;
 using NUnit.Framework;
 

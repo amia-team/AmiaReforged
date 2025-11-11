@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using AmiaReforged.PwEngine.Features.WorldEngine;
-using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Systems.WorldEngine.DefinitionLoaders;

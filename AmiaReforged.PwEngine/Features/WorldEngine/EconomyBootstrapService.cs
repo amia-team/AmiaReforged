@@ -1,7 +1,7 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
-using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes;
-using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.ResourceNodeData;
-using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.Services;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.ResourceNodeData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Services;
 using Anvil.Services;
 using NLog;
 

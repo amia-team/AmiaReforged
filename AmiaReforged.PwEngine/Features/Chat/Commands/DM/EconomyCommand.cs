@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.Services;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Services;
 using Anvil.API;
 using Anvil.Services;
 

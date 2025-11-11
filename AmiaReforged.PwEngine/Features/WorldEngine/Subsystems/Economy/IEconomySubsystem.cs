@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Gateways;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Facades;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy;
 
@@ -11,16 +11,16 @@ public interface IEconomySubsystem
     /// <summary>
     /// Gets the banking gateway for coinhouse and gold transaction operations.
     /// </summary>
-    IBankingGateway Banking { get; }
+    IBankingFacade Banking { get; }
 
     /// <summary>
     /// Gets the storage gateway for item storage and capacity management.
     /// </summary>
-    IStorageGateway Storage { get; }
+    IStorageFacade Storage { get; }
 
     /// <summary>
     /// Gets the shop gateway for merchant and player stall operations.
     /// </summary>
-    IShopGateway Shops { get; }
+    IShopFacade Shops { get; }
 }
 

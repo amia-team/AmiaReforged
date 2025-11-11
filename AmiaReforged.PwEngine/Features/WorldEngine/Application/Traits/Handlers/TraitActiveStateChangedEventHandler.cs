@@ -1,6 +1,6 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Traits;
-using AmiaReforged.PwEngine.Features.WorldEngine.Traits.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Events;
 using Anvil.Services;
 using NLog;
 

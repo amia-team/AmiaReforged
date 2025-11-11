@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine;
-using AmiaReforged.PwEngine.Features.WorldEngine.Items;
-using AmiaReforged.PwEngine.Features.WorldEngine.Items.ItemData;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Moq;
 using NUnit.Framework;
 

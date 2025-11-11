@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using AmiaReforged.PwEngine.Database.Entities;
-using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 
 using OrganizationEntity = AmiaReforged.PwEngine.Database.Entities.Organization;
-using DomainOrganization = AmiaReforged.PwEngine.Features.WorldEngine.Organizations.Organization;
+using DomainOrganization = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Organizations.Organization;
 
 namespace AmiaReforged.PwEngine.Database;
 
