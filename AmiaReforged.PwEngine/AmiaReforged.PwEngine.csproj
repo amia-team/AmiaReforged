@@ -60,6 +60,10 @@
       <None Remove="Features\WorldEngine\Subsystems\Economy\SHOPS_MIGRATION_COMPLETED.md" />
       <None Remove="Features\WorldEngine\HANDLER_MIGRATION_COMPLETE.md" />
       <None Remove="Features\WorldEngine\COMMAND_DISPATCH_IMPLEMENTATION_COMPLETE.md" />
+      <None Remove="Features\WorldEngine\XML_DOCUMENTATION_COMPLETE.md" />
+      <None Remove="Features\WorldEngine\Subsystems\Economy\XML_DOCUMENTATION_COMPLETE.md" />
+      <None Remove="Features\WorldEngine\Subsystems\Economy\RENT_SYSTEM_REFACTORING_COMPLETE.md" />
+      <None Remove="Features\WorldEngine\Subsystems\Economy\PLAYER_STALL_RENT_ANALYSIS.md" />
     </ItemGroup>
 
 
