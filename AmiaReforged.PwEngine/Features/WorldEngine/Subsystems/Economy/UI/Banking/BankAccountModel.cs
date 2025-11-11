@@ -1,7 +1,7 @@
 using System.Globalization;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Gateways;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Facades;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Access;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Queries;
@@ -19,11 +19,11 @@ public sealed class BankAccountModel
     private const int DefaultPersonalDeposit = 500;
     private const int DefaultOrganizationDeposit = 500;
 
-    private readonly IBankingGateway _banking;
+    private readonly IBankingFacade _banking;
     private readonly IBankAccessEvaluator _accessEvaluator;
 
     public BankAccountModel(
-        IBankingGateway banking,
+        IBankingFacade banking,
         IBankAccessEvaluator accessEvaluator)
     {
         _banking = banking;

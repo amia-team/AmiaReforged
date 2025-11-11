@@ -13,7 +13,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine;
 public sealed class WorldEngineFacade : IWorldEngineFacade
 {
     public WorldEngineFacade(
-        IPersonaGateway personas,
+        IPersonaFacade personas,
         IEconomySubsystem economy,
         IOrganizationSubsystem organizations,
         ICharacterSubsystem characters,
@@ -36,7 +36,7 @@ public sealed class WorldEngineFacade : IWorldEngineFacade
         Codex = codex;
     }
 
-    public IPersonaGateway Personas { get; }
+    public IPersonaFacade Personas { get; }
     public IEconomySubsystem Economy { get; }
     public IOrganizationSubsystem Organizations { get; }
     public ICharacterSubsystem Characters { get; }
