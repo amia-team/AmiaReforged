@@ -8,7 +8,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementati
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Transactions;
-using AmiaReforged.PwEngine.Tests.Helpers.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Tests.Helpers.WorldEngine;
 using Moq;
 using NUnit.Framework;
 

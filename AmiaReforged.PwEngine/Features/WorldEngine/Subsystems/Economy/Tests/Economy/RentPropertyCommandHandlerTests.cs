@@ -3,7 +3,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.ValueObjects;
-using AmiaReforged.PwEngine.Tests.Helpers.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Tests.Helpers.WorldEngine;
 using Moq;
 using NUnit.Framework;
 

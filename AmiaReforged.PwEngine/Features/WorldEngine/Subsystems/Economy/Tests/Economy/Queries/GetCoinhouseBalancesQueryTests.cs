@@ -4,7 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Accounts;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.DTOs;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Queries;
-using AmiaReforged.PwEngine.Tests.Helpers.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Tests.Helpers.WorldEngine;
 using Moq;
 using NUnit.Framework;
 

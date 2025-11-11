@@ -7,7 +7,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementati
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions;
-using AmiaReforged.PwEngine.Tests.Helpers.WorldEngine;
+using AmiaReforged.PwEngine.Features.WorldEngine.Tests.Helpers.WorldEngine;
 using Moq;
 using NUnit.Framework;
 
