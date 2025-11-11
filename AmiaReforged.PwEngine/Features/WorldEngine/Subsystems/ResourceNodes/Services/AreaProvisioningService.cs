@@ -15,15 +15,15 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Se
 public class AreaProvisioningService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    private readonly ICommandHandler<ProvisionAreaNodesCommand> _provisionHandler;
+    private readonly IWorldEngineFacade _worldEngine;
     private readonly IRegionRepository _regionRepository;
     private readonly HashSet<string> _provisionedAreas = new();
 
     public AreaProvisioningService(
-        ICommandHandler<ProvisionAreaNodesCommand> provisionHandler,
+        IWorldEngineFacade worldEngine,
         IRegionRepository regionRepository)
     {
-        _provisionHandler = provisionHandler;
+        _worldEngine = worldEngine;
         _regionRepository = regionRepository;
 
         // Schedule provisioning on the main game thread using Anvil's scheduler
@@ -73,7 +73,7 @@ public class AreaProvisioningService
         Log.Info($"Provisioning area {nwArea.Name} ({nwArea.ResRef}) with {areaDefinition.DefinitionTags.Count} resource types");
 
         ProvisionAreaNodesCommand command = new ProvisionAreaNodesCommand(areaDefinition);
-        CommandResult result = await _provisionHandler.HandleAsync(command);
+        CommandResult result = await _worldEngine.ExecuteAsync(command);
 
         if (result.Success)
         {
@@ -140,7 +140,7 @@ public class AreaProvisioningService
         }
 
         ProvisionAreaNodesCommand command = new ProvisionAreaNodesCommand(areaDefinition, forceRespawn);
-        CommandResult result = await _provisionHandler.HandleAsync(command);
+        CommandResult result = await _worldEngine.ExecuteAsync(command);
 
         if (result.Success && forceRespawn)
         {

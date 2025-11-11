@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -24,21 +25,18 @@ public sealed class PropertyRentPaymentFlow
     private readonly IRentablePropertyRepository _properties;
     private readonly IRentalPaymentCapabilityService _paymentCapabilities;
     private readonly WindowDirector _windowDirector;
-    private readonly ICommandHandler<PayRentCommand> _payRentHandler;
-    private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
+    private readonly IWorldEngineFacade _worldEngine;
 
     public PropertyRentPaymentFlow(
         IRentablePropertyRepository properties,
         IRentalPaymentCapabilityService paymentCapabilities,
         WindowDirector windowDirector,
-        ICommandHandler<PayRentCommand> payRentHandler,
-        ICommandHandler<WithdrawGoldCommand> withdrawHandler)
+        IWorldEngineFacade worldEngine)
     {
         _properties = properties;
         _paymentCapabilities = paymentCapabilities;
         _windowDirector = windowDirector;
-        _payRentHandler = payRentHandler;
-        _withdrawHandler = withdrawHandler;
+        _worldEngine = worldEngine;
     }
 
     internal async Task HandleRentPaymentRequestAsync(
@@ -90,7 +88,8 @@ public sealed class PropertyRentPaymentFlow
 
         string formattedRent = FormatGold(rentAmount.Value);
         string currentDueText = $"Current due date: {FormatDueDate(propertySnapshot.ActiveRental.NextPaymentDueDate)}";
-        string newDueText = $"After payment, next due: {FormatDueDate(propertySnapshot.ActiveRental.NextPaymentDueDate.AddMonths(1))}";
+        string newDueText =
+            $"After payment, next due: {FormatDueDate(propertySnapshot.ActiveRental.NextPaymentDueDate.AddMonths(1))}";
 
         PayRentPaymentOptionViewModel? directOption = BuildDirectOption(
             propertySnapshot.Definition.AllowsDirectRental,
@@ -194,7 +193,8 @@ public sealed class PropertyRentPaymentFlow
 
         if (availableGold < rentAmount)
         {
-            string message = $"You need {FormatGold(rentAmount.Value)} gold but only have {FormatGold(availableGold.Value)}.";
+            string message =
+                $"You need {FormatGold(rentAmount.Value)} gold but only have {FormatGold(availableGold.Value)}.";
 
             PayRentPaymentOptionViewModel directUpdate = CreateDirectOptionModel(
                 visible: true,
@@ -243,8 +243,9 @@ public sealed class PropertyRentPaymentFlow
         }
 
         GoldAmount rentAmount = property.Definition.MonthlyRent;
-        CoinhouseTag coinhouseTag = property.Definition.SettlementCoinhouseTag 
-            ?? throw new InvalidOperationException("Property has no settlement coinhouse configured");
+        CoinhouseTag coinhouseTag = property.Definition.SettlementCoinhouseTag
+                                    ?? throw new InvalidOperationException(
+                                        "Property has no settlement coinhouse configured");
 
         WithdrawGoldCommand withdrawCommand = WithdrawGoldCommand.Create(
             personaId,
@@ -252,7 +253,7 @@ public sealed class PropertyRentPaymentFlow
             rentAmount.Value,
             $"Rent payment for {property.Definition.InternalName}");
 
-        CommandResult withdrawalResult = await _withdrawHandler.HandleAsync(withdrawCommand).ConfigureAwait(false);
+        CommandResult withdrawalResult = await _worldEngine.ExecuteAsync(withdrawCommand).ConfigureAwait(false);
 
         if (!withdrawalResult.Success)
         {
@@ -286,7 +287,7 @@ public sealed class PropertyRentPaymentFlow
         try
         {
             PayRentCommand payCommand = new(property, personaId, method);
-            CommandResult result = await _payRentHandler.HandleAsync(payCommand).ConfigureAwait(false);
+            CommandResult result = await _worldEngine.ExecuteAsync(payCommand).ConfigureAwait(false);
 
             if (!result.Success)
             {

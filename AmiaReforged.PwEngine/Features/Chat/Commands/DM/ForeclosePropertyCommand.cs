@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties;
@@ -16,7 +17,7 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.DM;
 public class ForeclosePropertyCommand(
     RegionIndex regionIndex,
     IRentablePropertyRepository propertyRepository,
-    ICommandHandler<EvictPropertyCommand> evictCommandHandler) : IChatCommand
+    IWorldEngineFacade worldEngine) : IChatCommand
 {
     public string Command => "./foreclose";
 
@@ -103,7 +104,7 @@ public class ForeclosePropertyCommand(
 
         try
         {
-            CommandResult result = await evictCommandHandler.HandleAsync(
+            CommandResult result = await worldEngine.ExecuteAsync(
                 new EvictPropertyCommand(property),
                 CancellationToken.None).ConfigureAwait(false);
 

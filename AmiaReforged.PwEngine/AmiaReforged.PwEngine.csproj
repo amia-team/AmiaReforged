@@ -55,6 +55,12 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
+    
+    <ItemGroup>
+      <None Remove="Features\WorldEngine\Subsystems\Economy\SHOPS_MIGRATION_COMPLETED.md" />
+      <None Remove="Features\WorldEngine\HANDLER_MIGRATION_COMPLETE.md" />
+      <None Remove="Features\WorldEngine\COMMAND_DISPATCH_IMPLEMENTATION_COMPLETE.md" />
+    </ItemGroup>
 
 
 </Project>

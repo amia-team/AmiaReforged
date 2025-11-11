@@ -15,8 +15,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Tests.Sh
 public class PlayerStallRentRenewalServiceTests
 {
     private Mock<IPlayerShopRepository> _shops = null!;
-    private Mock<ICommandHandler<WithdrawGoldCommand>> _withdraw = null!;
-    private Mock<ICommandHandler<DepositGoldCommand>> _deposit = null!;
+    private Mock<IWorldEngineFacade> _worldEngine = null!;
     private Mock<IPlayerStallOwnerNotifier> _notifier = null!;
     private Mock<IPlayerStallEventBroadcaster> _events = null!;
     private Mock<IPlayerStallInventoryCustodian> _custodian = null!;
@@ -51,14 +50,6 @@ public class PlayerStallRentRenewalServiceTests
                 return true;
             });
 
-        _withdraw = new Mock<ICommandHandler<WithdrawGoldCommand>>(MockBehavior.Strict);
-        _withdraw.Setup(h => h.HandleAsync(It.IsAny<WithdrawGoldCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CommandResult.Ok());
-
-        _deposit = new Mock<ICommandHandler<DepositGoldCommand>>(MockBehavior.Strict);
-        _deposit.Setup(h => h.HandleAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CommandResult.Ok());
-
         _notifier = new Mock<IPlayerStallOwnerNotifier>(MockBehavior.Strict);
         _notifier
             .Setup(n => n.NotifyAsync(It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<Color>()))
@@ -73,17 +64,23 @@ public class PlayerStallRentRenewalServiceTests
             .Returns(Task.CompletedTask);
 
         _custodian = new Mock<IPlayerStallInventoryCustodian>(MockBehavior.Strict);
-        _custodian.Setup(c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()))
+        _custodian.Setup(c =>
+                c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         _coinhouses = new Mock<ICoinhouseRepository>(MockBehavior.Strict);
         _coinhouses.Setup(c => c.GetSettlementCoinhouse(It.IsAny<SettlementId>()))
             .Returns((CoinHouse?)null);
 
+        _worldEngine = new Mock<IWorldEngineFacade>(MockBehavior.Strict);
+        _worldEngine.Setup(w => w.ExecuteAsync(It.IsAny<WithdrawGoldCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CommandResult.Ok());
+        _worldEngine.Setup(w => w.ExecuteAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CommandResult.Ok());
+
         _service = new PlayerStallRentRenewalService(
             _shops.Object,
-            _withdraw.Object,
-            _deposit.Object,
+            _worldEngine.Object,
             _notifier.Object,
             _events.Object,
             _custodian.Object,
@@ -115,7 +112,9 @@ public class PlayerStallRentRenewalServiceTests
         Assert.That(color, Is.EqualTo(ColorConstants.Yellow));
         StringAssert.Contains("will suspend", message);
         _events.Verify(e => e.BroadcastSellerRefreshAsync(_stall.Id), Times.Once);
-    _custodian.Verify(c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()), Times.Never);
+        _custodian.Verify(
+            c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Test]
@@ -145,9 +144,10 @@ public class PlayerStallRentRenewalServiceTests
         Assert.That(_capturedNotifications, Has.Count.EqualTo(1));
         Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Red));
         StringAssert.Contains("now suspended", _capturedNotifications[0].Message);
-    StringAssert.Contains("market reeve", _capturedNotifications[0].Message);
-    StringAssert.Contains(originalOwnerPersonaId, _capturedNotifications[0].Message);
-    _custodian.Verify(c => c.TransferInventoryToMarketReeveAsync(_stall, It.IsAny<CancellationToken>()), Times.Once);
+        StringAssert.Contains("market reeve", _capturedNotifications[0].Message);
+        StringAssert.Contains(originalOwnerPersonaId, _capturedNotifications[0].Message);
+        _custodian.Verify(c => c.TransferInventoryToMarketReeveAsync(_stall, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Test]
@@ -176,8 +176,11 @@ public class PlayerStallRentRenewalServiceTests
         Assert.That(_capturedNotifications, Has.Count.EqualTo(1));
         Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Orange));
         StringAssert.Contains("Rent of", _capturedNotifications[0].Message);
-        _withdraw.Verify(w => w.HandleAsync(It.IsAny<WithdrawGoldCommand>(), It.IsAny<CancellationToken>()), Times.Once);
-    _custodian.Verify(c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()), Times.Never);
+        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<WithdrawGoldCommand>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        _custodian.Verify(
+            c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Test]
@@ -208,11 +211,11 @@ public class PlayerStallRentRenewalServiceTests
         // Verify notification was sent
         Assert.That(_capturedNotifications, Has.Count.EqualTo(1));
         Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Orange));
-        StringAssert.Contains("released due to", _capturedNotifications[0].Message);
+        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()), Times.Once);
         StringAssert.Contains("prorated refund", _capturedNotifications[0].Message);
 
         // Verify refund was attempted to coinhouse
-        _deposit.Verify(d => d.HandleAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()), Times.Once);
+        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]

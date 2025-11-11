@@ -26,8 +26,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     private static readonly TimeSpan EmptyStallReleaseThreshold = TimeSpan.FromHours(2);
 
     private readonly IPlayerShopRepository _shops;
-    private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
-    private readonly ICommandHandler<DepositGoldCommand> _depositHandler;
+    private readonly IWorldEngineFacade _worldEngine;
     private readonly IPlayerStallOwnerNotifier _notifier;
     private readonly IPlayerStallEventBroadcaster _events;
     private readonly IPlayerStallInventoryCustodian _inventoryCustodian;
@@ -38,8 +37,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 
     public PlayerStallRentRenewalService(
         IPlayerShopRepository shops,
-        ICommandHandler<WithdrawGoldCommand> withdrawHandler,
-        ICommandHandler<DepositGoldCommand> depositHandler,
+        IWorldEngineFacade worldEngine,
         IPlayerStallOwnerNotifier notifier,
         IPlayerStallEventBroadcaster events,
         IPlayerStallInventoryCustodian inventoryCustodian,
@@ -47,8 +45,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     )
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
-        _withdrawHandler = withdrawHandler ?? throw new ArgumentNullException(nameof(withdrawHandler));
-        _depositHandler = depositHandler ?? throw new ArgumentNullException(nameof(depositHandler));
+        _worldEngine = worldEngine ?? throw new ArgumentNullException(nameof(worldEngine));
         _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
         _events = events ?? throw new ArgumentNullException(nameof(events));
         _inventoryCustodian = inventoryCustodian ?? throw new ArgumentNullException(nameof(inventoryCustodian));
@@ -298,7 +295,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
             return RentChargeResult.Failed("Rent withdrawal request was invalid.");
         }
 
-        CommandResult result = await _withdrawHandler.HandleAsync(command, token).ConfigureAwait(false);
+        CommandResult result = await _worldEngine.ExecuteAsync(command, token).ConfigureAwait(false);
         if (!result.Success)
         {
             string message = result.ErrorMessage ?? "Coinhouse withdrawal failed.";
@@ -566,8 +563,8 @@ public sealed class PlayerStallRentRenewalService : IDisposable
                         refundAmount,
                         $"Prorated rent refund for stall {stall.Tag ?? stall.Id.ToString()}");
 
-                    CommandResult result = await _depositHandler
-                        .HandleAsync(depositCommand, token)
+                    CommandResult result = await _worldEngine
+                        .ExecuteAsync(depositCommand, token)
                         .ConfigureAwait(false);
 
                     if (result.Success)

@@ -4,6 +4,7 @@ using System.Linq;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using Anvil.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using NLog;
 
 namespace AmiaReforged.PwEngine.Database;
@@ -64,7 +65,7 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
     public void RemoveProductFromShop(long shopId, long productId)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
-        using var transaction = ctx.Database.BeginTransaction();
+        using IDbContextTransaction transaction = ctx.Database.BeginTransaction();
 
         try
         {
@@ -195,7 +196,7 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
     public bool UpdateShopWithMembers(long stallId, Action<PlayerStall> updateAction, IEnumerable<PlayerStallMember> members)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
-        using var transaction = ctx.Database.BeginTransaction();
+        using IDbContextTransaction transaction = ctx.Database.BeginTransaction();
 
         try
         {
@@ -253,7 +254,7 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
     public bool UpdateStallAndProduct(long stallId, long productId, Func<PlayerStall, StallProduct, bool> updateAction)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
-        using var transaction = ctx.Database.BeginTransaction();
+        using IDbContextTransaction transaction = ctx.Database.BeginTransaction();
 
         try
         {

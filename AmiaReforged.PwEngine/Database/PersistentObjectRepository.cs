@@ -16,7 +16,7 @@ public class PersistentObjectRepository(PwContextFactory factory) : IPersistentO
 
         try
         {
-            var existing = await context.PersistentObjects.FindAsync(obj.Id);
+            PersistentObject? existing = await context.PersistentObjects.FindAsync(obj.Id);
             if (existing == null)
             {
                 context.PersistentObjects.Add(obj);

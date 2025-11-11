@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
+using AmiaReforged.PwEngine.Features.WorldEngine;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
@@ -31,7 +32,7 @@ public sealed class PropertyRentFlow
     private readonly IRentablePropertyRepository _properties;
     private readonly IRentalPaymentCapabilityService _paymentCapabilities;
     private readonly WindowDirector _windowDirector;
-    private readonly ICommandHandler<WithdrawGoldCommand> _withdrawHandler;
+    private readonly IWorldEngineFacade _worldEngine;
 
     private readonly ConcurrentDictionary<PersonaId, PendingRentSession> _activeRentSessions = new();
 
@@ -39,12 +40,12 @@ public sealed class PropertyRentFlow
         IRentablePropertyRepository properties,
         IRentalPaymentCapabilityService paymentCapabilities,
         WindowDirector windowDirector,
-        ICommandHandler<WithdrawGoldCommand> withdrawHandler)
+        IWorldEngineFacade worldEngine)
     {
         _properties = properties;
         _paymentCapabilities = paymentCapabilities;
         _windowDirector = windowDirector;
-        _withdrawHandler = withdrawHandler;
+        _worldEngine = worldEngine;
     }
 
     internal async Task HandleVacantPropertyInteractionAsync(
@@ -331,7 +332,7 @@ public sealed class PropertyRentFlow
                 session.RentCost.Value,
                 reason);
 
-            withdrawalResult = await _withdrawHandler.HandleAsync(command).ConfigureAwait(false);
+            withdrawalResult = await _worldEngine.ExecuteAsync(command).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
