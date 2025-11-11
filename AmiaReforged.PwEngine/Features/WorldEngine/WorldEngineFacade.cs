@@ -45,31 +45,53 @@ public sealed class WorldEngineFacade : IWorldEngineFacade
         _queryDispatcher = queryDispatcher;
     }
 
+    /// <inheritdoc />
     public IPersonaGateway Personas { get; }
+
+    /// <inheritdoc />
     public IEconomySubsystem Economy { get; }
+
+    /// <inheritdoc />
     public IOrganizationSubsystem Organizations { get; }
+
+    /// <inheritdoc />
     public ICharacterSubsystem Characters { get; }
+
+    /// <inheritdoc />
     public IIndustrySubsystem Industries { get; }
+
+    /// <inheritdoc />
     public IHarvestingSubsystem Harvesting { get; }
+
+    /// <inheritdoc />
     public IRegionSubsystem Regions { get; }
+
+    /// <inheritdoc />
     public ITraitSubsystem Traits { get; }
+
+    /// <inheritdoc />
     public IItemSubsystem Items { get; }
+
+    /// <inheritdoc />
     public ICodexSubsystem Codex { get; }
 
     // === Centralized Dispatch Methods ===
 
+    /// <inheritdoc />
     public Task<CommandResult> ExecuteAsync<TCommand>(
         TCommand command,
         CancellationToken cancellationToken = default)
         where TCommand : ICommand
         => _commandDispatcher.DispatchAsync(command, cancellationToken);
 
+    /// <inheritdoc />
     public Task<TResult> QueryAsync<TQuery, TResult>(
         TQuery query,
         CancellationToken cancellationToken = default)
         where TQuery : IQuery<TResult>
         => _queryDispatcher.DispatchAsync<TQuery, TResult>(query, cancellationToken);
 
+    /// <inheritdoc />
     public Task<BatchCommandResult> ExecuteBatchAsync<TCommand>(
         IEnumerable<TCommand> commands,
         BatchExecutionOptions? options = null,

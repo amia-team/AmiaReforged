@@ -33,11 +33,17 @@ public sealed class QueryDispatcher : IQueryDispatcher
         }
     }
 
+    /// <summary>
+    /// Initializes the query dispatcher and pre-caches all query handler metadata.
+    /// Handlers are automatically discovered via Anvil DI using the marker interface pattern.
+    /// </summary>
+    /// <param name="queryHandlers">All query handlers discovered via IQueryHandlerMarker.</param>
     public QueryDispatcher(IEnumerable<IQueryHandlerMarker> queryHandlers)
     {
         DiscoverAndCacheHandlers(queryHandlers);
     }
 
+    /// <inheritdoc />
     public async Task<TResult> DispatchAsync<TQuery, TResult>(
         TQuery query,
         CancellationToken cancellationToken = default)

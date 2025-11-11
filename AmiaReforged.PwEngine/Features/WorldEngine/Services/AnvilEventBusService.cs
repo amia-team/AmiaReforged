@@ -6,6 +6,11 @@ using NLog;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Services;
 
+/// <summary>
+/// Event bus implementation using Anvil's dependency injection pattern.
+/// Automatically discovers and registers all event handlers via marker interface.
+/// Events are queued and processed asynchronously in the background.
+/// </summary>
 [ServiceBinding(typeof(IEventBus))]
 public class AnvilEventBusService : IEventBus
 {
@@ -15,7 +20,10 @@ public class AnvilEventBusService : IEventBus
     private readonly SemaphoreSlim _queueSignal = new(0);
     private bool _isProcessing;
 
-    // Cached handler invocation data
+    /// <summary>
+    /// Cached handler invocation data for performance optimization.
+    /// Stores handler instance, method info, and event type to avoid reflection at runtime.
+    /// </summary>
     private class HandlerInvocation
     {
         public object Handler { get; init; }
@@ -30,13 +38,30 @@ public class AnvilEventBusService : IEventBus
         }
     }
 
-    // Inject all event handlers via the marker interface
+    /// <summary>
+    /// Initializes the event bus by discovering and caching all event handlers.
+    /// Handlers are automatically injected via Anvil's dependency injection using the marker interface pattern.
+    /// </summary>
+    /// <param name="eventHandlers">All event handlers discovered via IEventHandlerMarker</param>
     public AnvilEventBusService(IEnumerable<IEventHandlerMarker> eventHandlers)
     {
         DiscoverAndCacheHandlers(eventHandlers);
         StartProcessing();
     }
 
+    /// <summary>
+    /// Publishes a domain event to the event bus for asynchronous processing.
+    /// The event is queued and will be processed by all registered handlers in the background.
+    /// </summary>
+    /// <typeparam name="TEvent">The type of domain event being published</typeparam>
+    /// <param name="event">The domain event instance to publish</param>
+    /// <param name="cancellationToken">Cancellation token (currently not used in async processing)</param>
+    /// <returns>A completed task (events are processed asynchronously in background)</returns>
+    /// <example>
+    /// <code>
+    /// await eventBus.PublishAsync(new OrderCreatedEvent { OrderId = orderId });
+    /// </code>
+    /// </example>
     public async Task PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken = default)
         where TEvent : IDomainEvent
     {
@@ -46,6 +71,13 @@ public class AnvilEventBusService : IEventBus
         await Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Subscribes a handler function to a specific event type.
+    /// NOTE: This method is not implemented. Use IEventHandler&lt;TEvent&gt; for automatic registration instead.
+    /// </summary>
+    /// <typeparam name="TEvent">The type of event to subscribe to</typeparam>
+    /// <param name="handler">The handler function to execute when the event is published</param>
+    /// <exception cref="NotImplementedException">Always thrown - use IEventHandler&lt;TEvent&gt; pattern instead</exception>
     public void Subscribe<TEvent>(Func<TEvent, CancellationToken, Task> handler) where TEvent : IDomainEvent
     {
         throw new NotImplementedException("Use IEventHandler<TEvent> for automatic handler registration");
@@ -153,6 +185,10 @@ public class AnvilEventBusService : IEventBus
         }
     }
 
+    /// <summary>
+    /// Stops the event processing loop gracefully.
+    /// No new events will be processed after this is called.
+    /// </summary>
     public void Stop()
     {
         _isProcessing = false;

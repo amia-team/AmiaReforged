@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.Commands;
 using Anvil.API;
 using Moq;
 using NUnit.Framework;
@@ -77,6 +78,85 @@ public class PlayerStallRentRenewalServiceTests
             .ReturnsAsync(CommandResult.Ok());
         _worldEngine.Setup(w => w.ExecuteAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommandResult.Ok());
+
+        // Set up PayStallRentCommand to actually modify the stall
+        _worldEngine.Setup(w => w.ExecuteAsync(It.IsAny<PayStallRentCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PayStallRentCommand cmd, CancellationToken ct) =>
+            {
+                // Simulate what the handler does
+                _shops.Object.UpdateShop(cmd.StallId, entity =>
+                {
+                    if (cmd.Source == RentChargeSource.StallEscrow)
+                    {
+                        entity.EscrowBalance = Math.Max(0, entity.EscrowBalance - cmd.RentAmount);
+                    }
+                    if (cmd.RentAmount > 0)
+                    {
+                        entity.LifetimeNetEarnings -= cmd.RentAmount;
+                        entity.LedgerEntries.Add(new PlayerStallLedgerEntry
+                        {
+                            StallId = entity.Id,
+                            EntryType = PlayerStallLedgerEntryType.RentPayment,
+                            Amount = -cmd.RentAmount,
+                            Description = $"Rent payment: {cmd.RentAmount} gp",
+                            OccurredUtc = cmd.PaymentTimestamp
+                        });
+                    }
+                    entity.LastRentPaidUtc = cmd.PaymentTimestamp;
+                    entity.NextRentDueUtc = entity.NextRentDueUtc.AddDays(1);
+                    entity.SuspendedUtc = null;
+                    entity.DeactivatedUtc = null;
+                    entity.IsActive = true;
+                });
+                return CommandResult.Ok();
+            });
+
+        // Set up SuspendStallForNonPaymentCommand to actually modify the stall
+        _worldEngine.Setup(w => w.ExecuteAsync(It.IsAny<SuspendStallForNonPaymentCommand>(), It.IsAny<CancellationToken>()))
+            .Returns<SuspendStallForNonPaymentCommand, CancellationToken>(async (cmd, ct) =>
+            {
+                bool shouldReleaseOwnership = false;
+
+                // Simulate what the handler does
+                _shops.Object.UpdateShop(cmd.StallId, entity =>
+                {
+                    if (entity.SuspendedUtc == null)
+                    {
+                        // First suspension - start grace period
+                        entity.SuspendedUtc = cmd.SuspensionTimestamp;
+                        entity.IsActive = true;
+                        entity.NextRentDueUtc = cmd.SuspensionTimestamp.Add(cmd.GracePeriod);
+                    }
+                    else if (cmd.SuspensionTimestamp >= entity.SuspendedUtc.Value.Add(cmd.GracePeriod))
+                    {
+                        // Grace period expired - release ownership
+                        shouldReleaseOwnership = true;
+                        entity.OwnerCharacterId = null;
+                        entity.OwnerPersonaId = null;
+                        entity.OwnerPlayerPersonaId = null;
+                        entity.OwnerDisplayName = null;
+                        entity.CoinHouseAccountId = null;
+                        entity.HoldEarningsInStall = false;
+                        entity.IsActive = false;
+                        entity.DeactivatedUtc ??= cmd.SuspensionTimestamp;
+                        entity.NextRentDueUtc = cmd.SuspensionTimestamp + TimeSpan.FromHours(1);
+                    }
+                    else
+                    {
+                        // Still in grace period
+                        entity.IsActive = true;
+                        entity.NextRentDueUtc = entity.SuspendedUtc.Value.Add(cmd.GracePeriod);
+                    }
+                });
+
+                // Transfer inventory when releasing ownership
+                if (shouldReleaseOwnership)
+                {
+                    await _custodian.Object.TransferInventoryToMarketReeveAsync(_stall, ct);
+                }
+
+                return CommandResult.Ok();
+            });
 
         _service = new PlayerStallRentRenewalService(
             _shops.Object,
@@ -176,7 +256,7 @@ public class PlayerStallRentRenewalServiceTests
         Assert.That(_capturedNotifications, Has.Count.EqualTo(1));
         Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Orange));
         StringAssert.Contains("Rent of", _capturedNotifications[0].Message);
-        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<WithdrawGoldCommand>(), It.IsAny<CancellationToken>()),
+        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<PayStallRentCommand>(), It.IsAny<CancellationToken>()),
             Times.Once);
         _custodian.Verify(
             c => c.TransferInventoryToMarketReeveAsync(It.IsAny<PlayerStall>(), It.IsAny<CancellationToken>()),

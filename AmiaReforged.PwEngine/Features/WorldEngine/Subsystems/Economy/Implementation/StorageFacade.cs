@@ -35,29 +35,36 @@ public sealed class StorageFacade : IStorageFacade
         _upgradeCapacityHandler = upgradeCapacityHandler;
     }
 
+    /// <inheritdoc />
     public Task<CommandResult> StoreItemAsync(StoreItemCommand command, CancellationToken ct = default)
         => _storeItemHandler.HandleAsync(command, ct);
 
+    /// <inheritdoc />
     public Task<CommandResult> WithdrawItemAsync(WithdrawItemCommand command, CancellationToken ct = default)
         => _withdrawItemHandler.HandleAsync(command, ct);
 
+    /// <inheritdoc />
     public Task<List<StoredItemDto>> GetStoredItemsAsync(GetStoredItemsQuery query, CancellationToken ct = default)
         => _getStoredItemsHandler.HandleAsync(query, ct);
 
+    /// <inheritdoc />
     public Task<GetStorageCapacityResult> GetStorageCapacityAsync(GetStorageCapacityQuery query, CancellationToken ct = default)
         => _getCapacityHandler.HandleAsync(query, ct);
 
+    /// <inheritdoc />
     public Task<CommandResult> UpgradeStorageCapacityAsync(UpgradeStorageCapacityCommand command, CancellationToken ct = default)
         => _upgradeCapacityHandler.HandleAsync(command, ct);
 
     // === Convenience Overloads ===
 
+    /// <inheritdoc />
     public Task<CommandResult> StoreItemAsync(
         CoinhouseTag coinhouseTag,
         Guid characterId,
         string itemName,
         string itemDescription,
         byte[] itemData,
+    /// <inheritdoc />
         CancellationToken ct = default)
     {
         StoreItemCommand command = new StoreItemCommand(coinhouseTag, characterId, itemName, itemDescription, itemData);
@@ -66,6 +73,7 @@ public sealed class StorageFacade : IStorageFacade
 
     public Task<CommandResult> WithdrawItemAsync(
         long storedItemId,
+    /// <inheritdoc />
         Guid characterId,
         CancellationToken ct = default)
     {
@@ -74,6 +82,7 @@ public sealed class StorageFacade : IStorageFacade
     }
 
     public Task<List<StoredItemDto>> GetStoredItemsAsync(
+    /// <inheritdoc />
         CoinhouseTag coinhouseTag,
         Guid characterId,
         CancellationToken ct = default)
@@ -82,6 +91,7 @@ public sealed class StorageFacade : IStorageFacade
         return GetStoredItemsAsync(query, ct);
     }
 
+    /// <inheritdoc />
     public Task<GetStorageCapacityResult> GetStorageCapacityAsync(
         CoinhouseTag coinhouseTag,
         Guid characterId,

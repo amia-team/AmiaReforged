@@ -26,12 +26,15 @@ public sealed class ShopFacade : IShopFacade
         _listProductHandler = listProductHandler;
     }
 
+    /// <inheritdoc />
     public Task<CommandResult> ClaimPlayerStallAsync(ClaimPlayerStallCommand command, CancellationToken ct = default)
         => _claimStallHandler.HandleAsync(command, ct);
 
+    /// <inheritdoc />
     public Task<CommandResult> ReleasePlayerStallAsync(ReleasePlayerStallCommand command, CancellationToken ct = default)
         => _releaseStallHandler.HandleAsync(command, ct);
 
+    /// <inheritdoc />
     public Task<CommandResult> ListStallProductAsync(ListStallProductCommand command, CancellationToken ct = default)
         => _listProductHandler.HandleAsync(command, ct);
 }

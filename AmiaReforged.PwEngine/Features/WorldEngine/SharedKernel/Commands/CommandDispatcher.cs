@@ -33,6 +33,13 @@ public sealed class CommandDispatcher : ICommandDispatcher
         }
     }
 
+    /// <summary>
+    /// Initializes the command dispatcher and pre-caches all command handler metadata.
+    /// Handlers are automatically discovered via Anvil DI using the marker interface pattern.
+    /// </summary>
+    /// <param name="commandHandlers">All command handlers discovered via ICommandHandlerMarker.</param>
+    /// <param name="eventBus">Event bus for publishing CommandExecutedEvent on successful commands.</param>
+    /// <exception cref="ArgumentNullException">Thrown if eventBus is null.</exception>
     public CommandDispatcher(
         IEnumerable<ICommandHandlerMarker> commandHandlers,
         IEventBus eventBus)
@@ -41,6 +48,7 @@ public sealed class CommandDispatcher : ICommandDispatcher
         DiscoverAndCacheHandlers(commandHandlers);
     }
 
+    /// <inheritdoc />
     public async Task<CommandResult> DispatchAsync<TCommand>(
         TCommand command,
         CancellationToken cancellationToken = default)
@@ -81,6 +89,7 @@ public sealed class CommandDispatcher : ICommandDispatcher
                 result.Success ? "Success" : $"Failed - {result.ErrorMessage}");
 
             return result;
+    /// <inheritdoc />
         }
         catch (Exception ex)
         {

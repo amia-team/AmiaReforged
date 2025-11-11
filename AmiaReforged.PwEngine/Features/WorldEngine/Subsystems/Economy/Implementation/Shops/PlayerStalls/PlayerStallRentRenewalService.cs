@@ -7,6 +7,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.Commands;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -307,52 +308,25 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 
     private async Task CompleteRentAsync(PlayerStall stall, int rentAmount, RentChargeSource source, DateTime utcNow)
     {
-        bool updated = _shops.UpdateShop(stall.Id, entity =>
+        // Use command pattern instead of direct repository access
+        PayStallRentCommand command = PayStallRentCommand.Create(
+            stall.Id,
+            rentAmount,
+            source,
+            utcNow);
+
+        CommandResult result = await _worldEngine.ExecuteAsync(command).ConfigureAwait(false);
+
+        if (!result.Success)
         {
-            DateTime nextDue = CalculateNextDue(entity.NextRentDueUtc, utcNow);
-
-            switch (source)
-            {
-                case RentChargeSource.StallEscrow:
-                    entity.EscrowBalance = Math.Max(0, entity.EscrowBalance - rentAmount);
-                    break;
-                case RentChargeSource.CoinhouseAccount:
-
-                    break;
-                case RentChargeSource.None:
-                    break;
-            }
-
-            if (rentAmount > 0)
-            {
-                entity.LifetimeNetEarnings -= rentAmount;
-
-                entity.LedgerEntries.Add(new PlayerStallLedgerEntry
-                {
-                    StallId = entity.Id,
-                    EntryType = PlayerStallLedgerEntryType.RentPayment,
-                    Amount = -rentAmount,
-                    Description = BuildLedgerDescription(source, rentAmount),
-                    OccurredUtc = utcNow,
-                    MetadataJson = BuildLedgerMetadata(source)
-                });
-            }
-
-            entity.LastRentPaidUtc = utcNow;
-            entity.NextRentDueUtc = nextDue;
-            entity.SuspendedUtc = null;
-            entity.DeactivatedUtc = null;
-            entity.IsActive = true;
-        });
-
-        if (!updated)
-        {
-            Log.Warn("Failed to persist rent payment for stall {StallId}.", stall.Id);
+            Log.Warn("Failed to persist rent payment for stall {StallId}: {Error}",
+                stall.Id, result.ErrorMessage);
             return;
         }
 
         Log.Info("Charged {Rent} gp rent for stall {StallId} via {Source}.", rentAmount, stall.Id, source);
 
+        // Notify UI and owner
         await _events.BroadcastSellerRefreshAsync(stall.Id).ConfigureAwait(false);
 
         await NotifyOwnerAsync(stall.OwnerCharacterId, BuildSuccessMessage(stall, rentAmount, source),
@@ -361,56 +335,43 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 
     private async Task HandleRentFailureAsync(PlayerStall stall, string reason, DateTime utcNow)
     {
-        RentFailureState state = RentFailureState.Unknown;
-        // Capture owner info before it gets cleared for the notification message
+        // Capture owner info before potential clearing
         Guid? ownerCharacterId = stall.OwnerCharacterId;
         string? ownerPersonaId = stall.OwnerPersonaId;
+        bool isFirstSuspension = stall.SuspendedUtc is null;
 
-        bool updated = _shops.UpdateShop(stall.Id, entity =>
+        // Determine if we're still in grace period or need to release
+        bool willRelease = false;
+        if (stall.SuspendedUtc.HasValue)
         {
-            if (entity.SuspendedUtc is null)
-            {
-                entity.SuspendedUtc = utcNow;
-                entity.IsActive = true;
-                entity.NextRentDueUtc = utcNow + GracePeriod;
-                state = RentFailureState.GracePeriodStarted;
-                return;
-            }
-
-            TimeSpan delinquentDuration = utcNow - entity.SuspendedUtc.Value;
-            if (delinquentDuration < GracePeriod)
-            {
-                entity.IsActive = true;
-                entity.NextRentDueUtc = entity.SuspendedUtc.Value + GracePeriod;
-                state = RentFailureState.GracePeriodContinues;
-                return;
-            }
-
-            // Release ownership when grace period expires so stall can be claimed by others
-            entity.OwnerCharacterId = null;
-            entity.OwnerPersonaId = null;
-            entity.OwnerPlayerPersonaId = null;
-            entity.OwnerDisplayName = null;
-            entity.CoinHouseAccountId = null;
-            entity.HoldEarningsInStall = false;
-            entity.IsActive = false;
-            entity.DeactivatedUtc ??= utcNow;
-            entity.NextRentDueUtc = utcNow + BillingInterval;
-            state = RentFailureState.Suspended;
-        });
-
-        if (!updated)
-        {
-            Log.Warn("Failed to persist rent failure state for stall {StallId}.", stall.Id);
+            TimeSpan delinquentDuration = utcNow - stall.SuspendedUtc.Value;
+            willRelease = delinquentDuration >= GracePeriod;
         }
-        else if (state == RentFailureState.Suspended)
+
+        // Use command pattern instead of direct repository access
+        SuspendStallForNonPaymentCommand command = SuspendStallForNonPaymentCommand.Create(
+            stall.Id,
+            reason,
+            utcNow,
+            GracePeriod);
+
+        CommandResult result = await _worldEngine.ExecuteAsync(command).ConfigureAwait(false);
+
+        if (!result.Success)
         {
-            await _inventoryCustodian.TransferInventoryToMarketReeveAsync(stall).ConfigureAwait(false);
+            Log.Warn("Failed to suspend stall {StallId}: {Error}", stall.Id, result.ErrorMessage);
+            return;
         }
 
         Log.Warn("Rent charge failed for stall {StallId}: {Reason}", stall.Id, reason);
 
+        // Notify UI
         await _events.BroadcastSellerRefreshAsync(stall.Id).ConfigureAwait(false);
+
+        // Notify owner
+        RentFailureState state = willRelease
+            ? RentFailureState.Suspended
+            : (isFirstSuspension ? RentFailureState.GracePeriodStarted : RentFailureState.GracePeriodContinues);
 
         string message = BuildFailureMessage(stall, reason, state, utcNow, ownerPersonaId);
         Color color = state == RentFailureState.Suspended ? ColorConstants.Red : ColorConstants.Yellow;
@@ -728,12 +689,6 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         public static RentChargeResult Failed(string reason) => new(false, RentChargeSource.None, reason);
     }
 
-    private enum RentChargeSource
-    {
-        None,
-        CoinhouseAccount,
-        StallEscrow
-    }
 
     private enum RentFailureState
     {

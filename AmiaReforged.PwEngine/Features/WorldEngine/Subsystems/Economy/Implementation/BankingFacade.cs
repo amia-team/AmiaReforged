@@ -43,25 +43,32 @@ public sealed class BankingFacade : IBankingFacade
         _getBalanceHandler = getBalanceHandler;
     }
 
+    /// <inheritdoc />
     public Task<CommandResult> OpenCoinhouseAccountAsync(OpenCoinhouseAccountCommand command, CancellationToken ct = default)
         => _openAccountHandler.HandleAsync(command, ct);
 
+    /// <inheritdoc />
     public Task<CoinhouseAccountQueryResult?> GetCoinhouseAccountAsync(GetCoinhouseAccountQuery query, CancellationToken ct = default)
         => _getAccountHandler.HandleAsync(query, ct);
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<BalanceDto>> GetCoinhouseBalancesAsync(GetCoinhouseBalancesQuery query, CancellationToken ct = default)
         => _getBalancesHandler.HandleAsync(query, ct);
 
+    /// <inheritdoc />
     public Task<CoinhouseAccountEligibilityResult> GetCoinhouseAccountEligibilityAsync(
         GetCoinhouseAccountEligibilityQuery query, CancellationToken ct = default)
         => _eligibilityHandler.HandleAsync(query, ct);
 
+    /// <inheritdoc />
     public Task<CommandResult> DepositGoldAsync(DepositGoldCommand command, CancellationToken ct = default)
         => _depositHandler.HandleAsync(command, ct);
 
+    /// <inheritdoc />
     public Task<CommandResult> WithdrawGoldAsync(WithdrawGoldCommand command, CancellationToken ct = default)
         => _withdrawHandler.HandleAsync(command, ct);
 
+    /// <inheritdoc />
     public Task<int?> GetBalanceAsync(GetBalanceQuery query, CancellationToken ct = default)
         => _getBalanceHandler.HandleAsync(query, ct);
 }
