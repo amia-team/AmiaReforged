@@ -5,7 +5,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Servic
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy;
 
 /// <summary>
 /// Responsible for loading previous economic states, such as the location of resource nodes.

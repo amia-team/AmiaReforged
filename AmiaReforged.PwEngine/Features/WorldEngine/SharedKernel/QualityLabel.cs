@@ -3,7 +3,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Resour
 using Anvil.API;
 using NWN.Core;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 public static class QualityLabel
 {

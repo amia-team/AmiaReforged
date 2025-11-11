@@ -1,6 +1,6 @@
 using NLog;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 public static class FileSystemConfig
 {

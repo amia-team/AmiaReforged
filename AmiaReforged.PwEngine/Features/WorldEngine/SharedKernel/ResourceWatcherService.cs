@@ -1,7 +1,7 @@
 using Anvil.Services;
 using NLog;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 [ServiceBinding(typeof(ResourceWatcherService))]
 public class ResourceWatcherService

@@ -4,7 +4,7 @@ using NLog;
 using NWN.Core.NWNX;
 using WorldConfiguration = AmiaReforged.PwEngine.Database.Entities.WorldConfiguration;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 [ServiceBinding(typeof(IWorldConfigProvider))]
 public class WorldEngineConfig : IWorldConfigProvider

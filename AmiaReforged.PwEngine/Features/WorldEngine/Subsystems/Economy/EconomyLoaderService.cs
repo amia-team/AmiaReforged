@@ -1,3 +1,4 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Industries;
@@ -8,7 +9,7 @@ using Anvil.Services;
 using NLog;
 using NWN.Core.NWNX;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy;
 
 [ServiceBinding(typeof(EconomyLoaderService))]
 public class EconomyLoaderService

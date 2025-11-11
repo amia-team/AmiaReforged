@@ -4,7 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementati
 using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 
-namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Tests.Storage;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Tests.StorageTests;
 
 [TestFixture]
 public class GetStorageCapacityQueryTests

@@ -1,4 +1,4 @@
-namespace AmiaReforged.PwEngine.Features.WorldEngine;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 
 public interface IDefinitionLoader
 {
