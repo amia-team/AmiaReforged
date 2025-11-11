@@ -9,6 +9,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Commands;
 
@@ -29,6 +30,7 @@ public record CreateOrganizationCommand : ICommand
 /// <summary>
 /// Handles creating new organizations
 /// </summary>
+[ServiceBinding(typeof(ICommandHandler<CreateOrganizationCommand>))]
 public class CreateOrganizationHandler : ICommandHandler<CreateOrganizationCommand>
 {
     private readonly IOrganizationRepository _organizationRepository;

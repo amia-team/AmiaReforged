@@ -11,6 +11,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Gateways;
 using Anvil.API;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks.Nui;
@@ -24,17 +25,14 @@ public sealed class BankAccountModel
     private const int DefaultPersonalDeposit = 500;
     private const int DefaultOrganizationDeposit = 500;
 
-    private readonly IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?> _accountQuery;
-    private readonly IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> _eligibilityQuery;
+    private readonly IBankingGateway _banking;
     private readonly IBankAccessEvaluator _accessEvaluator;
 
     public BankAccountModel(
-        IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?> accountQuery,
-        IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult> eligibilityQuery,
+        IBankingGateway banking,
         IBankAccessEvaluator accessEvaluator)
     {
-        _accountQuery = accountQuery;
-        _eligibilityQuery = eligibilityQuery;
+        _banking = banking;
         _accessEvaluator = accessEvaluator;
     }
 
@@ -128,8 +126,8 @@ public sealed class BankAccountModel
         SelectedShareType = (int)BankShareType.JointOwner;
 
         GetCoinhouseAccountQuery query = new(Persona, Coinhouse);
-        CoinhouseAccountQueryResult? result = await _accountQuery.HandleAsync(query, cancellationToken);
 
+        CoinhouseAccountQueryResult? result = await _banking.GetCoinhouseAccountAsync(query, cancellationToken);
         AccountExists = result?.AccountExists ?? false;
         AccountSummary = result?.Account;
         AccountHolders = result?.Holders ?? [];
@@ -184,7 +182,7 @@ public sealed class BankAccountModel
     {
         GetCoinhouseAccountEligibilityQuery eligibilityQuery = new(Persona, Coinhouse);
         CoinhouseAccountEligibilityResult eligibility =
-            await _eligibilityQuery.HandleAsync(eligibilityQuery, cancellationToken);
+            await _banking.GetCoinhouseAccountEligibilityAsync(eligibilityQuery, cancellationToken);
 
         Eligibility = eligibility;
 

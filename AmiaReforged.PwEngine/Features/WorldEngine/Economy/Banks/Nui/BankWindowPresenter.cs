@@ -13,6 +13,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
@@ -65,23 +66,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
 
     [Inject] private Lazy<Characters.Runtime.RuntimeCharacterService> CharacterService { get; init; } = null!;
 
-    [Inject]
-    private Lazy<IQueryHandler<GetCoinhouseAccountQuery, CoinhouseAccountQueryResult?>> AccountQueryHandler
-    {
-        get;
-        init;
-    } = null!;
-
-    [Inject]
-    private Lazy<IQueryHandler<GetCoinhouseAccountEligibilityQuery, CoinhouseAccountEligibilityResult>>
-        EligibilityQueryHandler { get; init; } = null!;
-
-    [Inject]
-    private Lazy<ICommandHandler<OpenCoinhouseAccountCommand>> OpenAccountCommandHandler { get; init; } = null!;
-
-    [Inject] private Lazy<ICommandHandler<DepositGoldCommand>> DepositCommandHandler { get; init; } = null!;
-
-    [Inject] private Lazy<ICommandHandler<WithdrawGoldCommand>> WithdrawCommandHandler { get; init; } = null!;
+    [Inject] private Lazy<IEconomySubsystem> Economy { get; init; } = null!;
 
     [Inject] private Lazy<IBankAccessEvaluator> BankAccessEvaluator { get; init; } = null!;
 
@@ -92,8 +77,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
     [Inject] private WindowDirector WindowDirector { get; init; } = null!;
 
     private BankAccountModel Model => _model ??= new BankAccountModel(
-        AccountQueryHandler.Value,
-        EligibilityQueryHandler.Value,
+        Economy.Value.Banking,
         BankAccessEvaluator.Value);
 
     public override BankWindowView View { get; }
@@ -103,8 +87,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
     public override void InitBefore()
     {
         _model ??= new BankAccountModel(
-            AccountQueryHandler.Value,
-            EligibilityQueryHandler.Value,
+            Economy.Value.Banking,
             BankAccessEvaluator.Value);
 
         _window = new NuiWindow(View.RootLayout(), _bankDisplayName)
@@ -426,7 +409,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
             CommandResult openResult;
             try
             {
-                openResult = await OpenAccountCommandHandler.Value.HandleAsync(command);
+                openResult = await Economy.Value.Banking.OpenCoinhouseAccountAsync(command);
             }
             catch (Exception ex)
             {
@@ -470,7 +453,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
                         deposit,
                         "Opening deposit");
 
-                    depositResult = await DepositCommandHandler.Value.HandleAsync(depositCommand);
+                    depositResult = await Economy.Value.Banking.DepositGoldAsync(depositCommand);
                 }
                 catch (Exception ex)
                 {
@@ -663,7 +646,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
         CommandResult result;
         try
         {
-            result = await OpenAccountCommandHandler.Value.HandleAsync(command);
+            result = await Economy.Value.Banking.OpenCoinhouseAccountAsync(command);
         }
         catch (Exception ex)
         {
@@ -902,7 +885,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
                     amount,
                     "Counter deposit");
 
-                result = await DepositCommandHandler.Value.HandleAsync(command);
+                result = await Economy.Value.Banking.DepositGoldAsync(command);
             }
             catch (Exception ex)
             {
@@ -1015,7 +998,7 @@ public sealed class BankWindowPresenter : ScryPresenter<BankWindowView>, IAutoCl
                 amount,
                 "Counter withdrawal");
 
-            result = await WithdrawCommandHandler.Value.HandleAsync(command);
+            result = await Economy.Value.Banking.WithdrawGoldAsync(command);
         }
         catch (Exception ex)
         {

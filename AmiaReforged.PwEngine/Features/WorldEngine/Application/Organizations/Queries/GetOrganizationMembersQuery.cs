@@ -2,6 +2,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Queries;
 
@@ -17,6 +18,7 @@ public record GetOrganizationMembersQuery : IQuery<List<OrganizationMember>>
 /// <summary>
 /// Handles retrieving organization members
 /// </summary>
+[ServiceBinding(typeof(IQueryHandler<GetOrganizationMembersQuery, List<OrganizationMember>>))]
 public class GetOrganizationMembersHandler : IQueryHandler<GetOrganizationMembersQuery, List<OrganizationMember>>
 {
     private readonly IOrganizationMemberRepository _memberRepository;
@@ -40,4 +42,3 @@ public class GetOrganizationMembersHandler : IQueryHandler<GetOrganizationMember
         return Task.FromResult(members);
     }
 }
-

@@ -4,6 +4,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Industries.Commands;
 
@@ -36,6 +37,7 @@ public record CraftItemCommand : ICommand
 /// <summary>
 /// Handles crafting items from recipes
 /// </summary>
+[ServiceBinding(typeof(ICommandHandler<CraftItemCommand>))]
 public class CraftItemHandler : ICommandHandler<CraftItemCommand>
 {
     private readonly IIndustryRepository _industryRepository;
@@ -55,7 +57,8 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
         _craftingProcessor = craftingProcessor;
     }
 
-    public async Task<CommandResult> HandleAsync(CraftItemCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> HandleAsync(CraftItemCommand command,
+        CancellationToken cancellationToken = default)
     {
         // Get industry and recipe
         Industry? industry = _industryRepository.GetByTag(command.IndustryTag);
@@ -67,12 +70,14 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
         Recipe? recipe = industry.Recipes.FirstOrDefault(r => r.RecipeId == command.RecipeId);
         if (recipe == null)
         {
-            return CommandResult.Fail($"Recipe '{command.RecipeId.Value}' not found in industry '{command.IndustryTag.Value}'");
+            return CommandResult.Fail(
+                $"Recipe '{command.RecipeId.Value}' not found in industry '{command.IndustryTag.Value}'");
         }
 
         // Check character membership
         List<IndustryMembership> memberships = _membershipRepository.All(command.CharacterId.Value);
-        IndustryMembership? membership = memberships.FirstOrDefault(m => m.IndustryTag.Value == command.IndustryTag.Value);
+        IndustryMembership? membership =
+            memberships.FirstOrDefault(m => m.IndustryTag.Value == command.IndustryTag.Value);
         if (membership == null)
         {
             return CommandResult.Fail($"Character is not a member of industry '{industry.Name}'");
@@ -81,7 +86,8 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
         // Check proficiency level
         if (membership.Level < recipe.RequiredProficiency)
         {
-            return CommandResult.Fail($"Insufficient proficiency. Required: {recipe.RequiredProficiency}, Current: {membership.Level}");
+            return CommandResult.Fail(
+                $"Insufficient proficiency. Required: {recipe.RequiredProficiency}, Current: {membership.Level}");
         }
 
         // Check required knowledge
@@ -96,7 +102,8 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
         }
 
         // Execute crafting process (industry-specific logic via processor)
-        CraftingResult craftingResult = await _craftingProcessor.ProcessCraftingAsync(command.CharacterId, recipe, command.Context);
+        CraftingResult craftingResult =
+            await _craftingProcessor.ProcessCraftingAsync(command.CharacterId, recipe, command.Context);
 
         if (!craftingResult.Success)
         {
@@ -125,15 +132,18 @@ public class CraftItemHandler : ICommandHandler<CraftItemCommand>
 /// </summary>
 public interface ICraftingProcessor
 {
-    Task<CraftingResult> ProcessCraftingAsync(CharacterId characterId, Recipe recipe, Dictionary<string, object> context);
+    Task<CraftingResult> ProcessCraftingAsync(CharacterId characterId, Recipe recipe,
+        Dictionary<string, object> context);
 }
 
 /// <summary>
 /// Default crafting processor for generic crafting
 /// </summary>
+[ServiceBinding(typeof(ICraftingProcessor))]
 public class DefaultCraftingProcessor : ICraftingProcessor
 {
-    public Task<CraftingResult> ProcessCraftingAsync(CharacterId characterId, Recipe recipe, Dictionary<string, object> context)
+    public Task<CraftingResult> ProcessCraftingAsync(CharacterId characterId, Recipe recipe,
+        Dictionary<string, object> context)
     {
         // Default implementation - assumes ingredients are available and consumes them
         // Real implementation would check inventory, consume ingredients, create products, etc.
@@ -150,4 +160,3 @@ public class DefaultCraftingProcessor : ICraftingProcessor
         return Task.FromResult(result);
     }
 }
-

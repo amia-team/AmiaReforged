@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Organizations;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Organizations.Queries;
 
@@ -15,6 +16,7 @@ public record GetOrganizationDetailsQuery : IQuery<IOrganization?>
 /// <summary>
 /// Handles retrieving organization details
 /// </summary>
+[ServiceBinding(typeof(IQueryHandler<GetOrganizationDetailsQuery, IOrganization?>))]
 public class GetOrganizationDetailsHandler : IQueryHandler<GetOrganizationDetailsQuery, IOrganization?>
 {
     private readonly IOrganizationRepository _organizationRepository;
@@ -32,4 +34,3 @@ public class GetOrganizationDetailsHandler : IQueryHandler<GetOrganizationDetail
         return Task.FromResult(organization);
     }
 }
-
