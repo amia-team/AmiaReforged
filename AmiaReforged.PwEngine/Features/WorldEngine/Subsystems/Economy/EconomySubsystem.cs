@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Facades;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Gateways;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy;
@@ -10,17 +10,18 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy;
 [ServiceBinding(typeof(IEconomySubsystem))]
 public sealed class EconomySubsystem : IEconomySubsystem
 {
-    public IBankingFacade Banking { get; }
-    public IStorageFacade Storage { get; }
-    public IShopFacade Shops { get; }
+    public IBankingGateway Banking { get; }
+    public IStorageGateway Storage { get; }
+    public IShopGateway Shops { get; }
 
     public EconomySubsystem(
-        IBankingFacade banking,
-        IStorageFacade storage,
-        IShopFacade shops)
+        IBankingGateway banking,
+        IStorageGateway storage,
+        IShopGateway shops)
     {
         Banking = banking;
         Storage = storage;
         Shops = shops;
     }
 }
+

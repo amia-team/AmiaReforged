@@ -11,7 +11,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine;
 /// </summary>
 public interface IWorldEngineFacade
 {
-    // === Cross-Cutting Facades ===
+    // === Cross-Cutting Gateways ===
     // These are fundamental concerns that span multiple subsystems
 
     /// <summary>
@@ -19,7 +19,7 @@ public interface IWorldEngineFacade
     /// Personas are a cross-cutting concern used throughout the world engine
     /// for representing any actor (players, characters, organizations, etc.)
     /// </summary>
-    IPersonaFacade Personas { get; }
+    IPersonaGateway Personas { get; }
 
     // === Subsystems ===
 
