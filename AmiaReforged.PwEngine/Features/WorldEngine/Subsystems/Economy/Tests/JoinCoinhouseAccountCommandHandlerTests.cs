@@ -48,7 +48,7 @@ public class JoinCoinhouseAccountCommandHandlerTests
             .Setup(r => r.Exists(requestor.Id))
             .Returns(true);
 
-        var command = new JoinCoinhouseAccountCommand(
+        JoinCoinhouseAccountCommand command = new JoinCoinhouseAccountCommand(
             Requestor: requestor.Id,
             AccountId: accountId,
             Coinhouse: coinhouse,
@@ -75,7 +75,7 @@ public class JoinCoinhouseAccountCommandHandlerTests
         CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag("TEST_BANK");
         Guid accountId = Guid.NewGuid();
 
-        var command = new JoinCoinhouseAccountCommand(
+        JoinCoinhouseAccountCommand command = new JoinCoinhouseAccountCommand(
             Requestor: invalidPersona,
             AccountId: accountId,
             Coinhouse: coinhouse,
@@ -102,7 +102,7 @@ public class JoinCoinhouseAccountCommandHandlerTests
         CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag("TEST_BANK");
         Guid accountId = Guid.NewGuid();
 
-        var existingAccount = new CoinhouseAccountDto
+        CoinhouseAccountDto existingAccount = new CoinhouseAccountDto
         {
             Id = accountId,
             Debit = 0,
@@ -137,7 +137,7 @@ public class JoinCoinhouseAccountCommandHandlerTests
             .Callback<CoinhouseAccountDto, CancellationToken>((acc, _) => capturedAccount = acc)
             .Returns(Task.CompletedTask);
 
-        var command = new JoinCoinhouseAccountCommand(
+        JoinCoinhouseAccountCommand command = new JoinCoinhouseAccountCommand(
             Requestor: requestor.Id,
             AccountId: accountId,
             Coinhouse: coinhouse,
@@ -167,7 +167,7 @@ public class JoinCoinhouseAccountCommandHandlerTests
         Guid accountId = Guid.NewGuid();
         Guid requestorGuid = Guid.Parse(requestor.Id.Value);
 
-        var existingAccount = new CoinhouseAccountDto
+        CoinhouseAccountDto existingAccount = new CoinhouseAccountDto
         {
             Id = accountId,
             Debit = 0,
@@ -196,7 +196,7 @@ public class JoinCoinhouseAccountCommandHandlerTests
             .Setup(r => r.Exists(requestor.Id))
             .Returns(true);
 
-        var command = new JoinCoinhouseAccountCommand(
+        JoinCoinhouseAccountCommand command = new JoinCoinhouseAccountCommand(
             Requestor: requestor.Id,
             AccountId: accountId,
             Coinhouse: coinhouse,
@@ -223,7 +223,7 @@ public class JoinCoinhouseAccountCommandHandlerTests
         CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag("TEST_BANK");
         Guid accountId = Guid.NewGuid();
 
-        var existingAccount = new CoinhouseAccountDto
+        CoinhouseAccountDto existingAccount = new CoinhouseAccountDto
         {
             Id = accountId,
             Debit = 0,
@@ -242,7 +242,7 @@ public class JoinCoinhouseAccountCommandHandlerTests
             .Setup(r => r.Exists(requestor.Id))
             .Returns(false); // Persona doesn't exist
 
-        var command = new JoinCoinhouseAccountCommand(
+        JoinCoinhouseAccountCommand command = new JoinCoinhouseAccountCommand(
             Requestor: requestor.Id,
             AccountId: accountId,
             Coinhouse: coinhouse,

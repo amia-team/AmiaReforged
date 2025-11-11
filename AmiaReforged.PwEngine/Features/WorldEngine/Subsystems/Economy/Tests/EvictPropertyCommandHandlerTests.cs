@@ -47,7 +47,7 @@ public class EvictPropertyCommandHandlerTests
         // Given a vacant property with no tenant
         PropertyId propertyId = PropertyId.New();
 
-        var propertyDefinition = new RentablePropertyDefinition(
+        RentablePropertyDefinition propertyDefinition = new RentablePropertyDefinition(
             Id: propertyId,
             InternalName: "test_house",
             Settlement: new SettlementTag("TestTown"),
@@ -60,7 +60,7 @@ public class EvictPropertyCommandHandlerTests
             MonthlyOwnershipTax: null
         );
 
-        var property = new RentablePropertySnapshot(
+        RentablePropertySnapshot property = new RentablePropertySnapshot(
             Definition: propertyDefinition,
             OccupancyStatus: PropertyOccupancyStatus.Vacant,
             CurrentTenant: null,
@@ -69,7 +69,7 @@ public class EvictPropertyCommandHandlerTests
             ActiveRental: null
         );
 
-        var command = new EvictPropertyCommand(Property: property);
+        EvictPropertyCommand command = new EvictPropertyCommand(Property: property);
 
         // When the command is executed
         CommandResult result = await _handler.HandleAsync(command);
@@ -88,7 +88,7 @@ public class EvictPropertyCommandHandlerTests
         // Use a government persona (not character) so ResolveCharacterId returns null = no notification = no NwTask call
         GovernmentPersona tenant = PersonaTestHelpers.CreateGovernmentPersona();
 
-        var propertyDefinition = new RentablePropertyDefinition(
+        RentablePropertyDefinition propertyDefinition = new RentablePropertyDefinition(
             Id: propertyId,
             InternalName: "test_house",
             Settlement: new SettlementTag("TestTown"),
@@ -101,7 +101,7 @@ public class EvictPropertyCommandHandlerTests
             MonthlyOwnershipTax: null
         );
 
-        var rental = new RentalAgreementSnapshot(
+        RentalAgreementSnapshot rental = new RentalAgreementSnapshot(
             Tenant: tenant.Id,
             StartDate: DateOnly.FromDateTime(DateTime.UtcNow),
             NextPaymentDueDate: DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1)),
@@ -110,7 +110,7 @@ public class EvictPropertyCommandHandlerTests
             LastOccupantSeenUtc: null
         );
 
-        var property = new RentablePropertySnapshot(
+        RentablePropertySnapshot property = new RentablePropertySnapshot(
             Definition: propertyDefinition,
             OccupancyStatus: PropertyOccupancyStatus.Rented,
             CurrentTenant: tenant.Id,
@@ -124,7 +124,7 @@ public class EvictPropertyCommandHandlerTests
         _mockObjectRepository.Setup(r => r.GetObjectsForArea(It.IsAny<string>()))
             .Returns(new List<PersistentObject>());
 
-        var command = new EvictPropertyCommand(Property: property);
+        EvictPropertyCommand command = new EvictPropertyCommand(Property: property);
 
         // When the command is executed
         CommandResult result = await _handler.HandleAsync(command);

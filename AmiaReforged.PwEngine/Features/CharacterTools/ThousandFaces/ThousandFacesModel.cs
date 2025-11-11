@@ -363,7 +363,7 @@ public sealed class ThousandFacesModel(NwPlayer player, PlayerNameOverrideServic
 
         // Use PlayerNameOverrideService to set the player name override
         // This changes the player name shown in chat, etc., but NOT the character name
-        var nameOverride = new PlayerNameOverride(tempName, player.PlayerName);
+        PlayerNameOverride nameOverride = new PlayerNameOverride(tempName, player.PlayerName);
 
         player.SendServerMessage($"Attempting to set temporary name to: {tempName}", ColorConstants.Cyan);
         RenamePlugin.SetPCNameOverride(player.LoginCreature, tempName);

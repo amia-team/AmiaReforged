@@ -36,7 +36,7 @@ public class PayRentCommandHandlerTests
         CharacterPersona tenant = PersonaTestHelpers.CreateCharacterPersona("Tenant");
         PropertyId propertyId = PropertyId.New();
 
-        var propertyDefinition = new RentablePropertyDefinition(
+        RentablePropertyDefinition propertyDefinition = new RentablePropertyDefinition(
             Id: propertyId,
             InternalName: "test_house",
             Settlement: new SettlementTag("TestTown"),
@@ -49,7 +49,7 @@ public class PayRentCommandHandlerTests
             MonthlyOwnershipTax: null
         );
 
-        var property = new RentablePropertySnapshot(
+        RentablePropertySnapshot property = new RentablePropertySnapshot(
             Definition: propertyDefinition,
             OccupancyStatus: PropertyOccupancyStatus.Vacant,
             CurrentTenant: null,
@@ -58,7 +58,7 @@ public class PayRentCommandHandlerTests
             ActiveRental: null
         );
 
-        var command = new PayRentCommand(
+        PayRentCommand command = new PayRentCommand(
             Property: property,
             Tenant: tenant.Id,
             PaymentMethod: RentalPaymentMethod.OutOfPocket
@@ -80,7 +80,7 @@ public class PayRentCommandHandlerTests
         CharacterPersona wrongTenant = PersonaTestHelpers.CreateCharacterPersona("WrongTenant");
         PropertyId propertyId = PropertyId.New();
 
-        var propertyDefinition = new RentablePropertyDefinition(
+        RentablePropertyDefinition propertyDefinition = new RentablePropertyDefinition(
             Id: propertyId,
             InternalName: "test_house",
             Settlement: new SettlementTag("TestTown"),
@@ -93,7 +93,7 @@ public class PayRentCommandHandlerTests
             MonthlyOwnershipTax: null
         );
 
-        var rental = new RentalAgreementSnapshot(
+        RentalAgreementSnapshot rental = new RentalAgreementSnapshot(
             Tenant: actualTenant.Id,
             StartDate: DateOnly.FromDateTime(DateTime.UtcNow),
             NextPaymentDueDate: DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1)),
@@ -102,7 +102,7 @@ public class PayRentCommandHandlerTests
             LastOccupantSeenUtc: null
         );
 
-        var property = new RentablePropertySnapshot(
+        RentablePropertySnapshot property = new RentablePropertySnapshot(
             Definition: propertyDefinition,
             OccupancyStatus: PropertyOccupancyStatus.Rented,
             CurrentTenant: actualTenant.Id,
@@ -111,7 +111,7 @@ public class PayRentCommandHandlerTests
             ActiveRental: rental
         );
 
-        var command = new PayRentCommand(
+        PayRentCommand command = new PayRentCommand(
             Property: property,
             Tenant: wrongTenant.Id,
             PaymentMethod: RentalPaymentMethod.OutOfPocket
@@ -134,7 +134,7 @@ public class PayRentCommandHandlerTests
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
         DateOnly nextDueDate = today.AddMonths(1);
 
-        var propertyDefinition = new RentablePropertyDefinition(
+        RentablePropertyDefinition propertyDefinition = new RentablePropertyDefinition(
             Id: propertyId,
             InternalName: "test_house",
             Settlement: new SettlementTag("TestTown"),
@@ -147,7 +147,7 @@ public class PayRentCommandHandlerTests
             MonthlyOwnershipTax: null
         );
 
-        var rental = new RentalAgreementSnapshot(
+        RentalAgreementSnapshot rental = new RentalAgreementSnapshot(
             Tenant: tenant.Id,
             StartDate: today,
             NextPaymentDueDate: nextDueDate,
@@ -156,7 +156,7 @@ public class PayRentCommandHandlerTests
             LastOccupantSeenUtc: null
         );
 
-        var property = new RentablePropertySnapshot(
+        RentablePropertySnapshot property = new RentablePropertySnapshot(
             Definition: propertyDefinition,
             OccupancyStatus: PropertyOccupancyStatus.Rented,
             CurrentTenant: tenant.Id,
@@ -165,7 +165,7 @@ public class PayRentCommandHandlerTests
             ActiveRental: rental
         );
 
-        var command = new PayRentCommand(
+        PayRentCommand command = new PayRentCommand(
             Property: property,
             Tenant: tenant.Id,
             PaymentMethod: RentalPaymentMethod.OutOfPocket

@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Queries;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +18,7 @@ public class GetStoredItemsQueryTests
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<PwEngineContext>()
+        DbContextOptions<PwEngineContext> options = new DbContextOptionsBuilder<PwEngineContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
@@ -38,7 +39,7 @@ public class GetStoredItemsQueryTests
     public async Task GetStoredItems_ReturnsEmptyListWhenNoItems()
     {
         // Arrange
-        var query = new GetStoredItemsQuery(_testBank, _testCharacterId);
+        GetStoredItemsQuery query = new GetStoredItemsQuery(_testBank, _testCharacterId);
 
         // Act
         List<StoredItemDto> result = await _handler.HandleAsync(query, CancellationToken.None);
@@ -51,7 +52,7 @@ public class GetStoredItemsQueryTests
     public async Task GetStoredItems_ReturnsAllItemsForCharacterAtBank()
     {
         // Arrange
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -62,7 +63,7 @@ public class GetStoredItemsQueryTests
         _context.Warehouses.Add(storage);
         await _context.SaveChangesAsync();
 
-        var items = new[]
+        StoredItem[] items = new[]
         {
             new Database.Entities.StoredItem
             {
@@ -84,7 +85,7 @@ public class GetStoredItemsQueryTests
         _context.WarehouseItems.AddRange(items);
         await _context.SaveChangesAsync();
 
-        var query = new GetStoredItemsQuery(_testBank, _testCharacterId);
+        GetStoredItemsQuery query = new GetStoredItemsQuery(_testBank, _testCharacterId);
 
         // Act
         List<StoredItemDto> result = await _handler.HandleAsync(query, CancellationToken.None);
@@ -99,10 +100,10 @@ public class GetStoredItemsQueryTests
     public async Task GetStoredItems_FiltersByBank()
     {
         // Arrange
-        var bank1 = new CoinhouseTag("cordor_bank");
-        var bank2 = new CoinhouseTag("barak_bank");
+        CoinhouseTag bank1 = new CoinhouseTag("cordor_bank");
+        CoinhouseTag bank2 = new CoinhouseTag("barak_bank");
 
-        var storage1 = new Database.Entities.Storage
+        Storage storage1 = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -110,7 +111,7 @@ public class GetStoredItemsQueryTests
             StorageType = "PersonalStorage",
             LocationKey = $"coinhouse:{bank1.Value}"
         };
-        var storage2 = new Database.Entities.Storage
+        Storage storage2 = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -139,7 +140,7 @@ public class GetStoredItemsQueryTests
         });
         await _context.SaveChangesAsync();
 
-        var query = new GetStoredItemsQuery(bank1, _testCharacterId);
+        GetStoredItemsQuery query = new GetStoredItemsQuery(bank1, _testCharacterId);
 
         // Act
         List<StoredItemDto> result = await _handler.HandleAsync(query, CancellationToken.None);
@@ -153,10 +154,10 @@ public class GetStoredItemsQueryTests
     public async Task GetStoredItems_FiltersByCharacter()
     {
         // Arrange
-        var character1 = Guid.NewGuid();
-        var character2 = Guid.NewGuid();
+        Guid character1 = Guid.NewGuid();
+        Guid character2 = Guid.NewGuid();
 
-        var storage1 = new Database.Entities.Storage
+        Storage storage1 = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = character1,
@@ -164,7 +165,7 @@ public class GetStoredItemsQueryTests
             StorageType = "PersonalStorage",
             LocationKey = $"coinhouse:{_testBank.Value}"
         };
-        var storage2 = new Database.Entities.Storage
+        Storage storage2 = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = character2,
@@ -193,7 +194,7 @@ public class GetStoredItemsQueryTests
         });
         await _context.SaveChangesAsync();
 
-        var query = new GetStoredItemsQuery(_testBank, character1);
+        GetStoredItemsQuery query = new GetStoredItemsQuery(_testBank, character1);
 
         // Act
         List<StoredItemDto> result = await _handler.HandleAsync(query, CancellationToken.None);
@@ -207,7 +208,7 @@ public class GetStoredItemsQueryTests
     public async Task GetStoredItems_IncludesItemDescription()
     {
         // Arrange
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -229,7 +230,7 @@ public class GetStoredItemsQueryTests
         });
         await _context.SaveChangesAsync();
 
-        var query = new GetStoredItemsQuery(_testBank, _testCharacterId);
+        GetStoredItemsQuery query = new GetStoredItemsQuery(_testBank, _testCharacterId);
 
         // Act
         List<StoredItemDto> result = await _handler.HandleAsync(query, CancellationToken.None);

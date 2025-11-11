@@ -841,7 +841,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         _currentCloak = creature.GetItemInSlot(InventorySlot.Cloak);
 
         // Revert weapon if backup exists and item is equipped
-        var weaponBackup = LoadWeaponBackupFromPcKey();
+        WeaponBackupData? weaponBackup = LoadWeaponBackupFromPcKey();
         if (_currentWeapon != null && _currentWeapon.IsValid && weaponBackup != null)
         {
             creature.RunUnequip(_currentWeapon);
@@ -868,7 +868,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
 
         // Revert boots if backup exists and item is equipped
-        var bootsBackup = LoadBootsBackupFromPcKey();
+        BootsBackupData? bootsBackup = LoadBootsBackupFromPcKey();
         if (_currentBoots != null && _currentBoots.IsValid && bootsBackup != null)
         {
             creature.RunUnequip(_currentBoots);
@@ -894,7 +894,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
 
         // Revert helmet if backup exists and item is equipped
-        var helmetBackup = LoadHelmetBackupFromPcKey();
+        HelmetBackupData? helmetBackup = LoadHelmetBackupFromPcKey();
         if (_currentHelmet != null && _currentHelmet.IsValid && helmetBackup != null)
         {
             uint copy = NWScript.CopyItemAndModify(_currentHelmet, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, helmetBackup.Appearance, 1);
@@ -925,7 +925,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         }
 
         // Revert cloak if backup exists and item is equipped
-        var cloakBackup = LoadCloakBackupFromPcKey();
+        CloakBackupData? cloakBackup = LoadCloakBackupFromPcKey();
         if (_currentCloak != null && _currentCloak.IsValid && cloakBackup != null)
         {
             uint copy = NWScript.CopyItemAndModify(_currentCloak, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0, cloakBackup.Appearance, 1);
@@ -1001,7 +1001,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     private void CopyWeaponAppearance(NwItem targetItem, NwCreature creature)
     {
-        var weaponBackup = LoadWeaponBackupFromPcKey();
+        WeaponBackupData? weaponBackup = LoadWeaponBackupFromPcKey();
         if (weaponBackup == null)
         {
             player.SendServerMessage("No weapon appearance backup found.", ColorConstants.Orange);
@@ -1054,7 +1054,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     private void CopyBootsAppearance(NwItem targetItem, NwCreature creature)
     {
-        var bootsBackup = LoadBootsBackupFromPcKey();
+        BootsBackupData? bootsBackup = LoadBootsBackupFromPcKey();
         if (bootsBackup == null)
         {
             player.SendServerMessage("No boots appearance backup found.", ColorConstants.Orange);
@@ -1097,7 +1097,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     private void CopyHelmetAppearance(NwItem targetItem, NwCreature creature)
     {
-        var helmetBackup = LoadHelmetBackupFromPcKey();
+        HelmetBackupData? helmetBackup = LoadHelmetBackupFromPcKey();
         if (helmetBackup == null)
         {
             player.SendServerMessage("No helmet appearance backup found.", ColorConstants.Orange);
@@ -1150,7 +1150,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
 
     private void CopyCloakAppearance(NwItem targetItem, NwCreature creature)
     {
-        var cloakBackup = LoadCloakBackupFromPcKey();
+        CloakBackupData? cloakBackup = LoadCloakBackupFromPcKey();
         if (cloakBackup == null)
         {
             player.SendServerMessage("No cloak appearance backup found.", ColorConstants.Orange);
@@ -1209,7 +1209,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         // Save weapon backup
         if (_currentWeapon != null && _currentWeapon.IsValid)
         {
-            var weaponBackup = WeaponBackupData.FromItem(_currentWeapon);
+            WeaponBackupData weaponBackup = WeaponBackupData.FromItem(_currentWeapon);
             string json = JsonConvert.SerializeObject(weaponBackup);
             NWScript.SetLocalString(pcKey, WeaponBackupKey, json);
         }
@@ -1217,7 +1217,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         // Save boots backup
         if (_currentBoots != null && _currentBoots.IsValid)
         {
-            var bootsBackup = BootsBackupData.FromItem(_currentBoots);
+            BootsBackupData bootsBackup = BootsBackupData.FromItem(_currentBoots);
             string json = JsonConvert.SerializeObject(bootsBackup);
             NWScript.SetLocalString(pcKey, BootsBackupKey, json);
         }
@@ -1225,7 +1225,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         // Save helmet backup
         if (_currentHelmet != null && _currentHelmet.IsValid)
         {
-            var helmetBackup = HelmetBackupData.FromItem(_currentHelmet);
+            HelmetBackupData helmetBackup = HelmetBackupData.FromItem(_currentHelmet);
             string json = JsonConvert.SerializeObject(helmetBackup);
             NWScript.SetLocalString(pcKey, HelmetBackupKey, json);
         }
@@ -1233,7 +1233,7 @@ public sealed class EquipmentCustomizationModel(NwPlayer player)
         // Save cloak backup
         if (_currentCloak != null && _currentCloak.IsValid)
         {
-            var cloakBackup = CloakBackupData.FromItem(_currentCloak);
+            CloakBackupData cloakBackup = CloakBackupData.FromItem(_currentCloak);
             string json = JsonConvert.SerializeObject(cloakBackup);
             NWScript.SetLocalString(pcKey, CloakBackupKey, json);
         }
@@ -1387,7 +1387,7 @@ public class HelmetBackupData
 
     public static HelmetBackupData FromItem(NwItem helmet)
     {
-        var data = new HelmetBackupData
+        HelmetBackupData data = new HelmetBackupData
         {
             Appearance = NWScript.GetItemAppearance(helmet, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0)
         };
@@ -1408,7 +1408,7 @@ public class CloakBackupData
 
     public static CloakBackupData FromItem(NwItem cloak)
     {
-        var data = new CloakBackupData
+        CloakBackupData data = new CloakBackupData
         {
             Appearance = NWScript.GetItemAppearance(cloak, NWScript.ITEM_APPR_TYPE_SIMPLE_MODEL, 0)
         };

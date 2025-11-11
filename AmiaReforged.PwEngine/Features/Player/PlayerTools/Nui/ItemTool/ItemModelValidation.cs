@@ -54,7 +54,7 @@ public static class ItemModelValidation
         }
 
         int maxModel = GetMaxModelIndex(item);
-        var validIndices = new List<int>();
+        List<int> validIndices = new List<int>();
 
         for (int i = 1; i <= maxModel; i++)
         {

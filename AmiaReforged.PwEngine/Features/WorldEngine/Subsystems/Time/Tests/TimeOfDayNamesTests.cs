@@ -12,7 +12,7 @@ public sealed class TimeOfDayNamesTests
     public void GetTimeOfDayName_DawnHours_ReturnsDawn(int hour, int minute, string expected)
     {
         // Arrange
-        var time = new TimeOnly(hour, minute);
+        TimeOnly time = new TimeOnly(hour, minute);
 
         // Act
         string result = TimeOfDayNames.GetTimeOfDayName(time);
@@ -29,7 +29,7 @@ public sealed class TimeOfDayNamesTests
     public void GetTimeOfDayName_MorningHours_ReturnsMorning(int hour, int minute, string expected)
     {
         // Arrange
-        var time = new TimeOnly(hour, minute);
+        TimeOnly time = new TimeOnly(hour, minute);
 
         // Act
         string result = TimeOfDayNames.GetTimeOfDayName(time);
@@ -45,7 +45,7 @@ public sealed class TimeOfDayNamesTests
     public void GetTimeOfDayName_NoonHours_ReturnsHighsun(int hour, int minute, string expected)
     {
         // Arrange
-        var time = new TimeOnly(hour, minute);
+        TimeOnly time = new TimeOnly(hour, minute);
 
         // Act
         string result = TimeOfDayNames.GetTimeOfDayName(time);
@@ -62,7 +62,7 @@ public sealed class TimeOfDayNamesTests
     public void GetTimeOfDayName_AfternoonHours_ReturnsAfternoon(int hour, int minute, string expected)
     {
         // Arrange
-        var time = new TimeOnly(hour, minute);
+        TimeOnly time = new TimeOnly(hour, minute);
 
         // Act
         string result = TimeOfDayNames.GetTimeOfDayName(time);
@@ -78,7 +78,7 @@ public sealed class TimeOfDayNamesTests
     public void GetTimeOfDayName_DuskHours_ReturnsDusk(int hour, int minute, string expected)
     {
         // Arrange
-        var time = new TimeOnly(hour, minute);
+        TimeOnly time = new TimeOnly(hour, minute);
 
         // Act
         string result = TimeOfDayNames.GetTimeOfDayName(time);
@@ -94,7 +94,7 @@ public sealed class TimeOfDayNamesTests
     public void GetTimeOfDayName_SunsetHours_ReturnsSunset(int hour, int minute, string expected)
     {
         // Arrange
-        var time = new TimeOnly(hour, minute);
+        TimeOnly time = new TimeOnly(hour, minute);
 
         // Act
         string result = TimeOfDayNames.GetTimeOfDayName(time);
@@ -111,7 +111,7 @@ public sealed class TimeOfDayNamesTests
     public void GetTimeOfDayName_EveningHours_ReturnsEvening(int hour, int minute, string expected)
     {
         // Arrange
-        var time = new TimeOnly(hour, minute);
+        TimeOnly time = new TimeOnly(hour, minute);
 
         // Act
         string result = TimeOfDayNames.GetTimeOfDayName(time);
@@ -127,7 +127,7 @@ public sealed class TimeOfDayNamesTests
     public void GetTimeOfDayName_MidnightHours_ReturnsMidnight(int hour, int minute, string expected)
     {
         // Arrange
-        var time = new TimeOnly(hour, minute);
+        TimeOnly time = new TimeOnly(hour, minute);
 
         // Act
         string result = TimeOfDayNames.GetTimeOfDayName(time);
@@ -144,7 +144,7 @@ public sealed class TimeOfDayNamesTests
     public void GetTimeOfDayName_MoondarkHours_ReturnsMoondark(int hour, int minute, string expected)
     {
         // Arrange
-        var time = new TimeOnly(hour, minute);
+        TimeOnly time = new TimeOnly(hour, minute);
 
         // Act
         string result = TimeOfDayNames.GetTimeOfDayName(time);
@@ -161,7 +161,7 @@ public sealed class TimeOfDayNamesTests
     public void GetTimeOfDayName_NightsEndHours_ReturnsNightsEnd(int hour, int minute, string expected)
     {
         // Arrange
-        var time = new TimeOnly(hour, minute);
+        TimeOnly time = new TimeOnly(hour, minute);
 
         // Act
         string result = TimeOfDayNames.GetTimeOfDayName(time);
@@ -174,7 +174,7 @@ public sealed class TimeOfDayNamesTests
     public void FormatTimeOfDay_WithIncludeTime_ReturnsNameAndTime()
     {
         // Arrange
-        var time = new TimeOnly(8, 30);
+        TimeOnly time = new TimeOnly(8, 30);
 
         // Act
         string result = TimeOfDayNames.FormatTimeOfDay(time, includeTime: true);
@@ -187,7 +187,7 @@ public sealed class TimeOfDayNamesTests
     public void FormatTimeOfDay_WithoutIncludeTime_ReturnsNameOnly()
     {
         // Arrange
-        var time = new TimeOnly(12, 0);
+        TimeOnly time = new TimeOnly(12, 0);
 
         // Act
         string result = TimeOfDayNames.FormatTimeOfDay(time, includeTime: false);
@@ -200,7 +200,7 @@ public sealed class TimeOfDayNamesTests
     public void FormatTimeOfDay_DefaultParameter_IncludesTime()
     {
         // Arrange
-        var time = new TimeOnly(18, 45);
+        TimeOnly time = new TimeOnly(18, 45);
 
         // Act
         string result = TimeOfDayNames.FormatTimeOfDay(time);
@@ -215,7 +215,7 @@ public sealed class TimeOfDayNamesTests
         // Arrange & Act & Assert - verify every hour has a valid name
         for (int hour = 0; hour < 24; hour++)
         {
-            var time = new TimeOnly(hour, 0);
+            TimeOnly time = new TimeOnly(hour, 0);
             string result = TimeOfDayNames.GetTimeOfDayName(time);
             
             Assert.That(result, Is.Not.Null);

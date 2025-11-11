@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Commands;
@@ -18,7 +19,7 @@ public class WithdrawItemCommandTests
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<PwEngineContext>()
+        DbContextOptions<PwEngineContext> options = new DbContextOptionsBuilder<PwEngineContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
@@ -39,7 +40,7 @@ public class WithdrawItemCommandTests
     public async Task WithdrawItem_ReturnsItemDataAndRemovesFromStorage()
     {
         // Arrange
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -51,7 +52,7 @@ public class WithdrawItemCommandTests
         await _context.SaveChangesAsync();
 
         byte[] expectedData = new byte[] { 1, 2, 3, 4, 5 };
-        var storedItem = new Database.Entities.StoredItem
+        StoredItem storedItem = new Database.Entities.StoredItem
         {
             ItemData = expectedData,
             Owner = _testCharacterId,
@@ -63,7 +64,7 @@ public class WithdrawItemCommandTests
         await _context.SaveChangesAsync();
 
         long itemId = storedItem.Id;
-        var command = new WithdrawItemCommand(itemId, _testCharacterId);
+        WithdrawItemCommand command = new WithdrawItemCommand(itemId, _testCharacterId);
 
         // Act
         CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);
@@ -74,7 +75,7 @@ public class WithdrawItemCommandTests
         Assert.That((string)result.Data["ItemName"], Is.EqualTo("Test Item"), "Should return item name");
 
         // Verify item was removed from storage
-        var remainingItem = await _context.WarehouseItems.FindAsync(itemId);
+        StoredItem? remainingItem = await _context.WarehouseItems.FindAsync(itemId);
         Assert.That(remainingItem, Is.Null, "Item should be removed from storage");
     }
 
@@ -83,7 +84,7 @@ public class WithdrawItemCommandTests
     {
         // Arrange
         long nonExistentItemId = 99999;
-        var command = new WithdrawItemCommand(nonExistentItemId, _testCharacterId);
+        WithdrawItemCommand command = new WithdrawItemCommand(nonExistentItemId, _testCharacterId);
 
         // Act
         CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);
@@ -97,7 +98,7 @@ public class WithdrawItemCommandTests
     public async Task WithdrawItem_FailsWhenCharacterDoesNotOwnItem()
     {
         // Arrange
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -108,7 +109,7 @@ public class WithdrawItemCommandTests
         _context.Warehouses.Add(storage);
         await _context.SaveChangesAsync();
 
-        var storedItem = new Database.Entities.StoredItem
+        StoredItem storedItem = new Database.Entities.StoredItem
         {
             ItemData = new byte[] { 1, 2, 3 },
             Owner = _testCharacterId,
@@ -121,7 +122,7 @@ public class WithdrawItemCommandTests
 
         long itemId = storedItem.Id;
         Guid otherCharacterId = Guid.NewGuid();
-        var command = new WithdrawItemCommand(itemId, otherCharacterId);
+        WithdrawItemCommand command = new WithdrawItemCommand(itemId, otherCharacterId);
 
         // Act
         CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);
@@ -131,7 +132,7 @@ public class WithdrawItemCommandTests
         Assert.That(result.ErrorMessage, Does.Contain("permission"), "Message should mention permission");
 
         // Verify item was not removed
-        var remainingItem = await _context.WarehouseItems.FindAsync(storedItem.Id);
+        StoredItem? remainingItem = await _context.WarehouseItems.FindAsync(storedItem.Id);
         Assert.That(remainingItem, Is.Not.Null, "Item should still exist in storage");
     }
 }

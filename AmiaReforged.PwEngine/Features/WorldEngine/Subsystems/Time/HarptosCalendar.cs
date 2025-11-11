@@ -79,7 +79,7 @@ internal static class HarptosCalendar
 
     private static ImmutableArray<HarptosCalendarSegment> BuildLeapSegments()
     {
-        var builder = ImmutableArray.CreateBuilder<HarptosCalendarSegment>(NonLeapSegments.Length + 1);
+        ImmutableArray<HarptosCalendarSegment>.Builder builder = ImmutableArray.CreateBuilder<HarptosCalendarSegment>(NonLeapSegments.Length + 1);
         foreach (HarptosCalendarSegment segment in NonLeapSegments)
         {
             builder.Add(segment);

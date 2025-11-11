@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Commands;
@@ -18,7 +19,7 @@ public class UpgradeStorageCapacityCommandTests
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<PwEngineContext>()
+        DbContextOptions<PwEngineContext> options = new DbContextOptionsBuilder<PwEngineContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
@@ -39,7 +40,7 @@ public class UpgradeStorageCapacityCommandTests
     public async Task UpgradeStorage_FirstUpgrade_Costs50k_AndIncreasesby10()
     {
         // Arrange
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -50,7 +51,7 @@ public class UpgradeStorageCapacityCommandTests
         _context.Warehouses.Add(storage);
         await _context.SaveChangesAsync();
 
-        var command = new UpgradeStorageCapacityCommand(_testBank, _testCharacterId);
+        UpgradeStorageCapacityCommand command = new UpgradeStorageCapacityCommand(_testBank, _testCharacterId);
 
         // Act
         CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);
@@ -61,7 +62,7 @@ public class UpgradeStorageCapacityCommandTests
         Assert.That((int)result.Data["NewCapacity"], Is.EqualTo(20), "Capacity should increase to 20");
 
         // Verify in database
-        var updatedStorage = await _context.Warehouses.FindAsync(storage.Id);
+        Storage? updatedStorage = await _context.Warehouses.FindAsync(storage.Id);
         Assert.That(updatedStorage!.Capacity, Is.EqualTo(20), "Database should reflect new capacity");
     }
 
@@ -69,7 +70,7 @@ public class UpgradeStorageCapacityCommandTests
     public async Task UpgradeStorage_SecondUpgrade_Costs150k()
     {
         // Arrange
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -80,7 +81,7 @@ public class UpgradeStorageCapacityCommandTests
         _context.Warehouses.Add(storage);
         await _context.SaveChangesAsync();
 
-        var command = new UpgradeStorageCapacityCommand(_testBank, _testCharacterId);
+        UpgradeStorageCapacityCommand command = new UpgradeStorageCapacityCommand(_testBank, _testCharacterId);
 
         // Act
         CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);
@@ -95,7 +96,7 @@ public class UpgradeStorageCapacityCommandTests
     public async Task UpgradeStorage_ThirdUpgrade_Costs250k()
     {
         // Arrange
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -106,7 +107,7 @@ public class UpgradeStorageCapacityCommandTests
         _context.Warehouses.Add(storage);
         await _context.SaveChangesAsync();
 
-        var command = new UpgradeStorageCapacityCommand(_testBank, _testCharacterId);
+        UpgradeStorageCapacityCommand command = new UpgradeStorageCapacityCommand(_testBank, _testCharacterId);
 
         // Act
         CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);
@@ -120,7 +121,7 @@ public class UpgradeStorageCapacityCommandTests
     public async Task UpgradeStorage_FailsAtMaximumCapacity()
     {
         // Arrange
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -131,7 +132,7 @@ public class UpgradeStorageCapacityCommandTests
         _context.Warehouses.Add(storage);
         await _context.SaveChangesAsync();
 
-        var command = new UpgradeStorageCapacityCommand(_testBank, _testCharacterId);
+        UpgradeStorageCapacityCommand command = new UpgradeStorageCapacityCommand(_testBank, _testCharacterId);
 
         // Act
         CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);
@@ -145,7 +146,7 @@ public class UpgradeStorageCapacityCommandTests
     public async Task UpgradeStorage_CreatesStorageIfNotExists()
     {
         // Arrange - No existing storage
-        var command = new UpgradeStorageCapacityCommand(_testBank, _testCharacterId);
+        UpgradeStorageCapacityCommand command = new UpgradeStorageCapacityCommand(_testBank, _testCharacterId);
 
         // Act
         CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);
@@ -155,7 +156,7 @@ public class UpgradeStorageCapacityCommandTests
         Assert.That((int)result.Data["NewCapacity"], Is.EqualTo(20), "Should start at 10 and upgrade to 20");
 
         // Verify storage was created
-        var storage = await _context.Warehouses
+        Storage? storage = await _context.Warehouses
             .FirstOrDefaultAsync(w => w.LocationKey == $"coinhouse:{_testBank.Value}"
                                      && w.OwnerId == _testCharacterId);
         Assert.That(storage, Is.Not.Null, "Storage should be created");
@@ -167,7 +168,7 @@ public class UpgradeStorageCapacityCommandTests
         // This test verifies the cost progression: 50k, 150k, 250k, 350k, etc.
         // Formula: 50k + (upgrade_number - 1) * 100k
 
-        var testCases = new[]
+        (int CurrentCapacity, int ExpectedCost)[] testCases = new[]
         {
             (CurrentCapacity: 10, ExpectedCost: 50_000),   // 1st upgrade
             (CurrentCapacity: 20, ExpectedCost: 150_000),  // 2nd upgrade
@@ -177,10 +178,10 @@ public class UpgradeStorageCapacityCommandTests
             (CurrentCapacity: 90, ExpectedCost: 850_000),  // 9th upgrade
         };
 
-        foreach (var (currentCapacity, expectedCost) in testCases)
+        foreach ((int currentCapacity, int expectedCost) in testCases)
         {
             // Arrange
-            var storage = new Database.Entities.Storage
+            Storage storage = new Database.Entities.Storage
             {
                 EngineId = Guid.NewGuid(),
                 OwnerId = Guid.NewGuid(),
@@ -191,7 +192,7 @@ public class UpgradeStorageCapacityCommandTests
             _context.Warehouses.Add(storage);
             await _context.SaveChangesAsync();
 
-            var command = new UpgradeStorageCapacityCommand(_testBank, storage.OwnerId!.Value);
+            UpgradeStorageCapacityCommand command = new UpgradeStorageCapacityCommand(_testBank, storage.OwnerId!.Value);
 
             // Act
             CommandResult result = await _handler.HandleAsync(command, CancellationToken.None);

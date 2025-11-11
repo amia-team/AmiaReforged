@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
@@ -241,7 +242,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
             try
             {
                 SettlementId settlement = SettlementId.Parse(settlementId);
-                var coinhouse = _coinhouses.GetSettlementCoinhouse(settlement);
+                CoinHouse? coinhouse = _coinhouses.GetSettlementCoinhouse(settlement);
                 if (coinhouse is null || string.IsNullOrWhiteSpace(coinhouse.Tag))
                 {
                     Log.Warn(

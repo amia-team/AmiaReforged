@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Commands;
@@ -18,7 +19,7 @@ public class StoreItemCommandTests
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<PwEngineContext>()
+        DbContextOptions<PwEngineContext> options = new DbContextOptionsBuilder<PwEngineContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
@@ -39,7 +40,7 @@ public class StoreItemCommandTests
     public async Task StoreItem_CreatesStorageAndStoresItem_WhenFirstItem()
     {
         // Arrange
-        var command = new StoreItemCommand(
+        StoreItemCommand command = new StoreItemCommand(
             _testBank,
             _testCharacterId,
             "Iron Sword",
@@ -55,7 +56,7 @@ public class StoreItemCommandTests
         Assert.That((int)result.Data["TotalCapacity"], Is.EqualTo(10), "Should have initial capacity of 10");
 
         // Verify storage was created
-        var storage = await _context.Warehouses
+        Storage? storage = await _context.Warehouses
             .FirstOrDefaultAsync(w => w.LocationKey == $"coinhouse:{_testBank.Value}"
                                      && w.OwnerId == _testCharacterId);
         Assert.That(storage, Is.Not.Null, "Storage should be created");
@@ -66,7 +67,7 @@ public class StoreItemCommandTests
     public async Task StoreItem_FailsWhenStorageIsFull()
     {
         // Arrange - Create storage with 10 capacity and fill it
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -91,7 +92,7 @@ public class StoreItemCommandTests
         }
         await _context.SaveChangesAsync();
 
-        var command = new StoreItemCommand(
+        StoreItemCommand command = new StoreItemCommand(
             _testBank,
             _testCharacterId,
             "Overflow Item",
@@ -111,7 +112,7 @@ public class StoreItemCommandTests
     {
         // Arrange
         string expectedDescription = "A legendary weapon forged in dragon fire";
-        var command = new StoreItemCommand(
+        StoreItemCommand command = new StoreItemCommand(
             _testBank,
             _testCharacterId,
             "Dragon Blade",
@@ -124,7 +125,7 @@ public class StoreItemCommandTests
         // Assert
         Assert.That(result.Success, Is.True);
 
-        var storedItem = await _context.WarehouseItems
+        StoredItem? storedItem = await _context.WarehouseItems
             .FirstOrDefaultAsync(i => i.Owner == _testCharacterId);
         Assert.That(storedItem, Is.Not.Null);
         Assert.That(storedItem!.Description, Is.EqualTo(expectedDescription));
@@ -134,20 +135,20 @@ public class StoreItemCommandTests
     public async Task StoreItem_IsBankSpecific()
     {
         // Arrange
-        var bank1 = new CoinhouseTag("cordor_bank");
-        var bank2 = new CoinhouseTag("barak_bank");
+        CoinhouseTag bank1 = new CoinhouseTag("cordor_bank");
+        CoinhouseTag bank2 = new CoinhouseTag("barak_bank");
 
-        var command1 = new StoreItemCommand(bank1, _testCharacterId, "Item 1", "Desc", new byte[] { 1 });
-        var command2 = new StoreItemCommand(bank2, _testCharacterId, "Item 2", "Desc", new byte[] { 2 });
+        StoreItemCommand command1 = new StoreItemCommand(bank1, _testCharacterId, "Item 1", "Desc", new byte[] { 1 });
+        StoreItemCommand command2 = new StoreItemCommand(bank2, _testCharacterId, "Item 2", "Desc", new byte[] { 2 });
 
         // Act
         await _handler.HandleAsync(command1, CancellationToken.None);
         await _handler.HandleAsync(command2, CancellationToken.None);
 
         // Assert
-        var storage1 = await _context.Warehouses
+        Storage? storage1 = await _context.Warehouses
             .FirstOrDefaultAsync(w => w.LocationKey == $"coinhouse:{bank1.Value}");
-        var storage2 = await _context.Warehouses
+        Storage? storage2 = await _context.Warehouses
             .FirstOrDefaultAsync(w => w.LocationKey == $"coinhouse:{bank2.Value}");
 
         Assert.That(storage1, Is.Not.Null, "Should create separate storage for bank 1");
@@ -159,20 +160,20 @@ public class StoreItemCommandTests
     public async Task StoreItem_IsCharacterSpecific()
     {
         // Arrange
-        var character1 = Guid.NewGuid();
-        var character2 = Guid.NewGuid();
+        Guid character1 = Guid.NewGuid();
+        Guid character2 = Guid.NewGuid();
 
-        var command1 = new StoreItemCommand(_testBank, character1, "Item 1", "Desc", new byte[] { 1 });
-        var command2 = new StoreItemCommand(_testBank, character2, "Item 2", "Desc", new byte[] { 2 });
+        StoreItemCommand command1 = new StoreItemCommand(_testBank, character1, "Item 1", "Desc", new byte[] { 1 });
+        StoreItemCommand command2 = new StoreItemCommand(_testBank, character2, "Item 2", "Desc", new byte[] { 2 });
 
         // Act
         await _handler.HandleAsync(command1, CancellationToken.None);
         await _handler.HandleAsync(command2, CancellationToken.None);
 
         // Assert
-        var storage1 = await _context.Warehouses
+        Storage? storage1 = await _context.Warehouses
             .FirstOrDefaultAsync(w => w.OwnerId == character1);
-        var storage2 = await _context.Warehouses
+        Storage? storage2 = await _context.Warehouses
             .FirstOrDefaultAsync(w => w.OwnerId == character2);
 
         Assert.That(storage1, Is.Not.Null, "Should create storage for character 1");

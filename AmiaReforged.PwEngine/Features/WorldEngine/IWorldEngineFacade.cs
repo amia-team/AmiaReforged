@@ -1,4 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Core.Personas;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy;
 
@@ -67,5 +69,46 @@ public interface IWorldEngineFacade
     /// Access to codex-related operations (knowledge management, lore)
     /// </summary>
     ICodexSubsystem Codex { get; }
+
+    // === Centralized Command/Query Dispatch ===
+
+    /// <summary>
+    /// Executes a command through the centralized dispatcher.
+    /// Automatically routes to the correct handler based on command type.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var command = new DepositGoldCommand(...);
+    /// var result = await worldEngine.ExecuteAsync(command);
+    /// </code>
+    /// </example>
+    Task<CommandResult> ExecuteAsync<TCommand>(
+        TCommand command,
+        CancellationToken cancellationToken = default)
+        where TCommand : ICommand;
+
+    /// <summary>
+    /// Executes a query through the centralized dispatcher.
+    /// Automatically routes to the correct handler based on query type.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var query = new GetStoredItemsQuery(...);
+    /// var items = await worldEngine.QueryAsync&lt;GetStoredItemsQuery, List&lt;StoredItemDto&gt;&gt;(query);
+    /// </code>
+    /// </example>
+    Task<TResult> QueryAsync<TQuery, TResult>(
+        TQuery query,
+        CancellationToken cancellationToken = default)
+        where TQuery : IQuery<TResult>;
+
+    /// <summary>
+    /// Executes multiple commands in a batch operation.
+    /// </summary>
+    Task<BatchCommandResult> ExecuteBatchAsync<TCommand>(
+        IEnumerable<TCommand> commands,
+        BatchExecutionOptions? options = null,
+        CancellationToken cancellationToken = default)
+        where TCommand : ICommand;
 }
 

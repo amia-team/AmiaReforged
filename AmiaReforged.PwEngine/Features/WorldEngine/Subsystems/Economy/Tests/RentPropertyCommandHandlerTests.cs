@@ -43,7 +43,7 @@ public class RentPropertyCommandHandlerTests
             .Setup(r => r.GetSnapshotAsync(propertyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((RentablePropertySnapshot?)null);
 
-        var command = new RentPropertyCommand(
+        RentPropertyCommand command = new RentPropertyCommand(
             Tenant: tenant.Id,
             PropertyId: propertyId,
             PaymentMethod: RentalPaymentMethod.OutOfPocket,
@@ -66,7 +66,7 @@ public class RentPropertyCommandHandlerTests
         CharacterPersona existingTenant = PersonaTestHelpers.CreateCharacterPersona("ExistingTenant");
         PropertyId propertyId = PropertyId.New();
 
-        var propertyDefinition = new RentablePropertyDefinition(
+        RentablePropertyDefinition propertyDefinition = new RentablePropertyDefinition(
             Id: propertyId,
             InternalName: "test_house",
             Settlement: new SettlementTag("TestTown"),
@@ -79,7 +79,7 @@ public class RentPropertyCommandHandlerTests
             MonthlyOwnershipTax: null
         );
 
-        var property = new RentablePropertySnapshot(
+        RentablePropertySnapshot property = new RentablePropertySnapshot(
             Definition: propertyDefinition,
             OccupancyStatus: PropertyOccupancyStatus.Rented,
             CurrentTenant: existingTenant.Id,
@@ -98,7 +98,7 @@ public class RentPropertyCommandHandlerTests
             .Setup(r => r.GetSnapshotAsync(propertyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(property);
 
-        var command = new RentPropertyCommand(
+        RentPropertyCommand command = new RentPropertyCommand(
             Tenant: tenant.Id,
             PropertyId: propertyId,
             PaymentMethod: RentalPaymentMethod.OutOfPocket,
@@ -120,7 +120,7 @@ public class RentPropertyCommandHandlerTests
         CharacterPersona tenant = PersonaTestHelpers.CreateCharacterPersona("Tenant");
         PropertyId propertyId = PropertyId.New();
 
-        var propertyDefinition = new RentablePropertyDefinition(
+        RentablePropertyDefinition propertyDefinition = new RentablePropertyDefinition(
             Id: propertyId,
             InternalName: "test_house",
             Settlement: new SettlementTag("TestTown"),
@@ -133,7 +133,7 @@ public class RentPropertyCommandHandlerTests
             MonthlyOwnershipTax: null
         );
 
-        var property = new RentablePropertySnapshot(
+        RentablePropertySnapshot property = new RentablePropertySnapshot(
             Definition: propertyDefinition,
             OccupancyStatus: PropertyOccupancyStatus.Vacant,
             CurrentTenant: null,
@@ -142,7 +142,7 @@ public class RentPropertyCommandHandlerTests
             ActiveRental: null
         );
 
-        var capabilities = new PaymentCapabilitySnapshot(
+        PaymentCapabilitySnapshot capabilities = new PaymentCapabilitySnapshot(
             HasSettlementCoinhouseAccount: false,
             HasSufficientDirectFunds: true
         );
@@ -161,7 +161,7 @@ public class RentPropertyCommandHandlerTests
             .Callback<RentablePropertySnapshot, CancellationToken>((prop, _) => capturedProperty = prop)
             .Returns(Task.CompletedTask);
 
-        var command = new RentPropertyCommand(
+        RentPropertyCommand command = new RentPropertyCommand(
             Tenant: tenant.Id,
             PropertyId: propertyId,
             PaymentMethod: RentalPaymentMethod.OutOfPocket,

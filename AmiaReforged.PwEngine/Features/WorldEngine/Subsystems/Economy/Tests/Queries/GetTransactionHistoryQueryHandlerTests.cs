@@ -30,10 +30,10 @@ public class GetTransactionHistoryQueryHandlerTests
     public async Task GetHistory_ValidPersona_ReturnsTransactions()
     {
         // Arrange
-        var fromPersona = PersonaId.FromCharacter(CharacterId.From(Guid.NewGuid()));
-        var toPersona = PersonaId.FromCharacter(CharacterId.From(Guid.NewGuid()));
+        PersonaId fromPersona = PersonaId.FromCharacter(CharacterId.From(Guid.NewGuid()));
+        PersonaId toPersona = PersonaId.FromCharacter(CharacterId.From(Guid.NewGuid()));
         
-        var transactions = new List<Transaction>
+        List<Transaction> transactions = new List<Transaction>
         {
             new() { 
                 Id = 1, 
@@ -57,10 +57,10 @@ public class GetTransactionHistoryQueryHandlerTests
             .Setup(r => r.GetHistoryAsync(_testPersonaId, 50, 0, It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactions);
 
-        var query = new GetTransactionHistoryQuery(_testPersonaId);
+        GetTransactionHistoryQuery query = new GetTransactionHistoryQuery(_testPersonaId);
 
         // Act
-        var result = await _handler.HandleAsync(query, CancellationToken.None);
+        IEnumerable<Transaction> result = await _handler.HandleAsync(query, CancellationToken.None);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -76,10 +76,10 @@ public class GetTransactionHistoryQueryHandlerTests
             .Setup(r => r.GetHistoryAsync(_testPersonaId, 50, 0, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Enumerable.Empty<Transaction>());
 
-        var query = new GetTransactionHistoryQuery(_testPersonaId);
+        GetTransactionHistoryQuery query = new GetTransactionHistoryQuery(_testPersonaId);
 
         // Act
-        var result = await _handler.HandleAsync(query, CancellationToken.None);
+        IEnumerable<Transaction> result = await _handler.HandleAsync(query, CancellationToken.None);
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -89,9 +89,9 @@ public class GetTransactionHistoryQueryHandlerTests
     public async Task GetHistory_WithCustomPageSize_UsesSpecifiedPageSize()
     {
         // Arrange
-        var fromPersona = PersonaId.FromCharacter(CharacterId.From(Guid.NewGuid()));
+        PersonaId fromPersona = PersonaId.FromCharacter(CharacterId.From(Guid.NewGuid()));
         
-        var transactions = new List<Transaction>
+        List<Transaction> transactions = new List<Transaction>
         {
             new() { 
                 Id = 1, 
@@ -107,10 +107,10 @@ public class GetTransactionHistoryQueryHandlerTests
             .Setup(r => r.GetHistoryAsync(_testPersonaId, 25, 0, It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactions);
 
-        var query = new GetTransactionHistoryQuery(_testPersonaId, PageSize: 25);
+        GetTransactionHistoryQuery query = new GetTransactionHistoryQuery(_testPersonaId, PageSize: 25);
 
         // Act
-        var result = await _handler.HandleAsync(query, CancellationToken.None);
+        IEnumerable<Transaction> result = await _handler.HandleAsync(query, CancellationToken.None);
 
         // Assert
         Assert.That(result.Count(), Is.EqualTo(1));
@@ -121,9 +121,9 @@ public class GetTransactionHistoryQueryHandlerTests
     public async Task GetHistory_WithPagination_RequestsCorrectPage()
     {
         // Arrange
-        var fromPersona = PersonaId.FromCharacter(CharacterId.From(Guid.NewGuid()));
+        PersonaId fromPersona = PersonaId.FromCharacter(CharacterId.From(Guid.NewGuid()));
         
-        var transactions = new List<Transaction>
+        List<Transaction> transactions = new List<Transaction>
         {
             new() { 
                 Id = 3, 
@@ -139,10 +139,10 @@ public class GetTransactionHistoryQueryHandlerTests
             .Setup(r => r.GetHistoryAsync(_testPersonaId, 50, 2, It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactions);
 
-        var query = new GetTransactionHistoryQuery(_testPersonaId, Page: 2);
+        GetTransactionHistoryQuery query = new GetTransactionHistoryQuery(_testPersonaId, Page: 2);
 
         // Act
-        var result = await _handler.HandleAsync(query, CancellationToken.None);
+        IEnumerable<Transaction> result = await _handler.HandleAsync(query, CancellationToken.None);
 
         // Assert
         Assert.That(result.Count(), Is.EqualTo(1));
@@ -153,10 +153,10 @@ public class GetTransactionHistoryQueryHandlerTests
     public void GetHistory_InvalidPageSize_ThrowsArgumentException()
     {
         // Arrange
-        var query = new GetTransactionHistoryQuery(_testPersonaId, PageSize: 0);
+        GetTransactionHistoryQuery query = new GetTransactionHistoryQuery(_testPersonaId, PageSize: 0);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
+        ArgumentException? ex = Assert.ThrowsAsync<ArgumentException>(async () =>
             await _handler.HandleAsync(query, CancellationToken.None));
 
         Assert.That(ex!.Message, Does.Contain("PageSize"));
@@ -166,10 +166,10 @@ public class GetTransactionHistoryQueryHandlerTests
     public void GetHistory_PageSizeTooLarge_ThrowsArgumentException()
     {
         // Arrange
-        var query = new GetTransactionHistoryQuery(_testPersonaId, PageSize: 2000);
+        GetTransactionHistoryQuery query = new GetTransactionHistoryQuery(_testPersonaId, PageSize: 2000);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
+        ArgumentException? ex = Assert.ThrowsAsync<ArgumentException>(async () =>
             await _handler.HandleAsync(query, CancellationToken.None));
 
         Assert.That(ex!.Message, Does.Contain("1000"));
@@ -179,10 +179,10 @@ public class GetTransactionHistoryQueryHandlerTests
     public void GetHistory_NegativePage_ThrowsArgumentException()
     {
         // Arrange
-        var query = new GetTransactionHistoryQuery(_testPersonaId, Page: -1);
+        GetTransactionHistoryQuery query = new GetTransactionHistoryQuery(_testPersonaId, Page: -1);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
+        ArgumentException? ex = Assert.ThrowsAsync<ArgumentException>(async () =>
             await _handler.HandleAsync(query, CancellationToken.None));
 
         Assert.That(ex!.Message, Does.Contain("Page"));

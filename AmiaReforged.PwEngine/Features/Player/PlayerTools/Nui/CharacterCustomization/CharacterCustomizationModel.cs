@@ -263,7 +263,7 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
 
     private int? GetArmorAcFromModel(int modelNumber)
     {
-        foreach (var kvp in TorsoModelsByAc)
+        foreach (KeyValuePair<int, HashSet<int>> kvp in TorsoModelsByAc)
         {
             if (kvp.Value.Contains(modelNumber))
             {
@@ -501,7 +501,7 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
 
     public void RevertChanges()
     {
-        var backupData = LoadBackupFromPcKey();
+        ArmorBackupData? backupData = LoadBackupFromPcKey();
         if (backupData == null)
         {
             player.SendServerMessage("No changes to revert.", ColorConstants.Orange);
@@ -617,7 +617,7 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
             ItemAppearanceArmorColor.Metal1, ItemAppearanceArmorColor.Metal2
         ];
 
-        foreach (var channel in colorChannels)
+        foreach (ItemAppearanceArmorColor channel in colorChannels)
         {
             int sourceColor = oldArmor.Appearance.GetArmorPieceColor(sourcePart, channel);
             oldArmor.Appearance.SetArmorPieceColor(targetPart, channel, (byte)sourceColor);
@@ -667,7 +667,7 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
         NwCreature? creature = player.ControlledCreature;
         if (creature == null) return;
 
-        var backupData = LoadBackupFromPcKey();
+        ArmorBackupData? backupData = LoadBackupFromPcKey();
         if (backupData == null)
         {
             player.SendServerMessage("No backup appearance found. Save changes first.", ColorConstants.Orange);
@@ -721,7 +721,7 @@ public sealed class CharacterCustomizationModel(NwPlayer player)
     {
         if (_currentArmor == null || !_currentArmor.IsValid) return;
 
-        var backupData = ArmorBackupData.FromItem(_currentArmor);
+        ArmorBackupData? backupData = ArmorBackupData.FromItem(_currentArmor);
         if (backupData == null) return;
 
         string json = JsonConvert.SerializeObject(backupData);
@@ -797,7 +797,7 @@ public class ArmorBackupData
     {
         if (!armor.IsValid) return null;
 
-        var data = new ArmorBackupData
+        ArmorBackupData data = new ArmorBackupData
         {
             ArmorResRef = armor.ResRef,
             ArmorName = armor.Name,
@@ -814,7 +814,7 @@ public class ArmorBackupData
             CreaturePart.RightHand, CreaturePart.LeftHand, CreaturePart.Robe
         ];
 
-        foreach (var part in allParts)
+        foreach (CreaturePart part in allParts)
         {
             data.ArmorModels[part.ToString()] = armor.Appearance.GetArmorModel(part);
         }
@@ -826,10 +826,10 @@ public class ArmorBackupData
             ItemAppearanceArmorColor.Metal1, ItemAppearanceArmorColor.Metal2
         ];
 
-        foreach (var part in allParts)
+        foreach (CreaturePart part in allParts)
         {
-            var partColors = new Dictionary<string, int>();
-            foreach (var channel in colorChannels)
+            Dictionary<string, int> partColors = new Dictionary<string, int>();
+            foreach (ItemAppearanceArmorColor channel in colorChannels)
             {
                 partColors[channel.ToString()] = armor.Appearance.GetArmorPieceColor(part, channel);
             }
@@ -847,22 +847,22 @@ public class ArmorBackupData
         int appliedModels = 0;
         int appliedColors = 0;
 
-        foreach (var kvp in ArmorModels)
+        foreach (KeyValuePair<string, int> kvp in ArmorModels)
         {
-            if (Enum.TryParse<CreaturePart>(kvp.Key, out var part))
+            if (Enum.TryParse<CreaturePart>(kvp.Key, out CreaturePart part))
             {
                 armor.Appearance.SetArmorModel(part, (byte)kvp.Value);
                 appliedModels++;
             }
         }
 
-        foreach (var partKvp in ArmorColors)
+        foreach (KeyValuePair<string, Dictionary<string, int>> partKvp in ArmorColors)
         {
-            if (Enum.TryParse<CreaturePart>(partKvp.Key, out var part))
+            if (Enum.TryParse<CreaturePart>(partKvp.Key, out CreaturePart part))
             {
-                foreach (var colorKvp in partKvp.Value)
+                foreach (KeyValuePair<string, int> colorKvp in partKvp.Value)
                 {
-                    if (Enum.TryParse<ItemAppearanceArmorColor>(colorKvp.Key, out var channel))
+                    if (Enum.TryParse<ItemAppearanceArmorColor>(colorKvp.Key, out ItemAppearanceArmorColor channel))
                     {
                         armor.Appearance.SetArmorPieceColor(part, channel, (byte)colorKvp.Value);
                         appliedColors++;

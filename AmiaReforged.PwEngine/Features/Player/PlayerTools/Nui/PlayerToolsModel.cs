@@ -68,7 +68,7 @@ public class PlayerToolsModel
         }
 
         // Sort by title
-        var sortedWindows = windowsWithStatus
+        List<(IToolWindow window, bool isEnabled, string disabledReason)> sortedWindows = windowsWithStatus
             .OrderBy(w => w.window.Title)
             .ToList();
 

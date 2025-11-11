@@ -2,10 +2,11 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 
 /// <summary>
 /// Handler for executing queries.
+/// Extends IQueryHandlerMarker for automatic discovery via Anvil DI.
 /// </summary>
 /// <typeparam name="TQuery">The query type to handle</typeparam>
 /// <typeparam name="TResult">The result type returned by the query</typeparam>
-public interface IQueryHandler<in TQuery, TResult> where TQuery : IQuery<TResult>
+public interface IQueryHandler<in TQuery, TResult> : IQueryHandlerMarker where TQuery : IQuery<TResult>
 {
     /// <summary>
     /// Executes the query asynchronously.

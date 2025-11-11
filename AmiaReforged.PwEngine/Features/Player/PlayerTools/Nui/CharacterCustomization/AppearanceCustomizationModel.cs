@@ -569,7 +569,7 @@ public sealed class AppearanceCustomizationModel(NwPlayer player)
 
     public void RevertChanges()
     {
-        var backupData = LoadBackupFromPcKey();
+        AppearanceBackupData? backupData = LoadBackupFromPcKey();
         if (backupData == null)
         {
             player.SendServerMessage("No changes to revert.", ColorConstants.Orange);
@@ -654,7 +654,7 @@ public sealed class AppearanceCustomizationModel(NwPlayer player)
 
     private void SaveBackupToPcKey()
     {
-        var backupData = new AppearanceBackupData
+        AppearanceBackupData backupData = new AppearanceBackupData
         {
             HeadModel = HeadModel,
             Scale = Scale,

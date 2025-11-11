@@ -60,7 +60,7 @@ public sealed class StorageFacade : IStorageFacade
         byte[] itemData,
         CancellationToken ct = default)
     {
-        var command = new StoreItemCommand(coinhouseTag, characterId, itemName, itemDescription, itemData);
+        StoreItemCommand command = new StoreItemCommand(coinhouseTag, characterId, itemName, itemDescription, itemData);
         return StoreItemAsync(command, ct);
     }
 
@@ -69,7 +69,7 @@ public sealed class StorageFacade : IStorageFacade
         Guid characterId,
         CancellationToken ct = default)
     {
-        var command = new WithdrawItemCommand(storedItemId, characterId);
+        WithdrawItemCommand command = new WithdrawItemCommand(storedItemId, characterId);
         return WithdrawItemAsync(command, ct);
     }
 
@@ -78,7 +78,7 @@ public sealed class StorageFacade : IStorageFacade
         Guid characterId,
         CancellationToken ct = default)
     {
-        var query = new GetStoredItemsQuery(coinhouseTag, characterId);
+        GetStoredItemsQuery query = new GetStoredItemsQuery(coinhouseTag, characterId);
         return GetStoredItemsAsync(query, ct);
     }
 
@@ -87,7 +87,7 @@ public sealed class StorageFacade : IStorageFacade
         Guid characterId,
         CancellationToken ct = default)
     {
-        var query = new GetStorageCapacityQuery(coinhouseTag, characterId);
+        GetStorageCapacityQuery query = new GetStorageCapacityQuery(coinhouseTag, characterId);
         return GetStorageCapacityAsync(query, ct);
     }
 
@@ -96,7 +96,7 @@ public sealed class StorageFacade : IStorageFacade
         Guid characterId,
         CancellationToken ct = default)
     {
-        var command = new UpgradeStorageCapacityCommand(coinhouseTag, characterId);
+        UpgradeStorageCapacityCommand command = new UpgradeStorageCapacityCommand(coinhouseTag, characterId);
         return UpgradeStorageCapacityAsync(command, ct);
     }
 }

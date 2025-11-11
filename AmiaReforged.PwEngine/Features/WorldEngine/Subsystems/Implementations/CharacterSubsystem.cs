@@ -37,7 +37,7 @@ public sealed class CharacterSubsystem : ICharacterSubsystem
 
     public Task<ICharacter?> GetCharacterAsync(CharacterId characterId, CancellationToken ct = default)
     {
-        var character = _characterRepository.GetById(characterId);
+        ICharacter? character = _characterRepository.GetById(characterId);
         return Task.FromResult(character);
     }
 
@@ -72,13 +72,13 @@ public sealed class CharacterSubsystem : ICharacterSubsystem
 
     public ICharacterKnowledgeContext GetKnowledgeContext(CharacterId characterId)
     {
-        var character = _characterRepository.GetById(characterId);
+        ICharacter? character = _characterRepository.GetById(characterId);
         return character ?? throw new InvalidOperationException($"Character {characterId} not found");
     }
 
     public ICharacterIndustryContext GetIndustryContext(CharacterId characterId)
     {
-        var character = _characterRepository.GetById(characterId);
+        ICharacter? character = _characterRepository.GetById(characterId);
         return character ?? throw new InvalidOperationException($"Character {characterId} not found");
     }
 }

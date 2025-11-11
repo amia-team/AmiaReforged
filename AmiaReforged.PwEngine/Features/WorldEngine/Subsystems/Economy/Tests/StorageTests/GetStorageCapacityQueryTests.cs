@@ -1,4 +1,5 @@
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Queries;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +18,7 @@ public class GetStorageCapacityQueryTests
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<PwEngineContext>()
+        DbContextOptions<PwEngineContext> options = new DbContextOptionsBuilder<PwEngineContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
@@ -38,7 +39,7 @@ public class GetStorageCapacityQueryTests
     public async Task GetStorageCapacity_ReturnsDefaultWhenNoStorage()
     {
         // Arrange
-        var query = new GetStorageCapacityQuery(_testBank, _testCharacterId);
+        GetStorageCapacityQuery query = new GetStorageCapacityQuery(_testBank, _testCharacterId);
 
         // Act
         GetStorageCapacityResult result = await _handler.HandleAsync(query, CancellationToken.None);
@@ -55,7 +56,7 @@ public class GetStorageCapacityQueryTests
     public async Task GetStorageCapacity_ReturnsCorrectUsageWithItems()
     {
         // Arrange
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -80,7 +81,7 @@ public class GetStorageCapacityQueryTests
         }
         await _context.SaveChangesAsync();
 
-        var query = new GetStorageCapacityQuery(_testBank, _testCharacterId);
+        GetStorageCapacityQuery query = new GetStorageCapacityQuery(_testBank, _testCharacterId);
 
         // Act
         GetStorageCapacityResult result = await _handler.HandleAsync(query, CancellationToken.None);
@@ -95,7 +96,7 @@ public class GetStorageCapacityQueryTests
     public async Task GetStorageCapacity_IndicatesCannotUpgradeAtMax()
     {
         // Arrange
-        var storage = new Database.Entities.Storage
+        Storage storage = new Database.Entities.Storage
         {
             EngineId = Guid.NewGuid(),
             OwnerId = _testCharacterId,
@@ -106,7 +107,7 @@ public class GetStorageCapacityQueryTests
         _context.Warehouses.Add(storage);
         await _context.SaveChangesAsync();
 
-        var query = new GetStorageCapacityQuery(_testBank, _testCharacterId);
+        GetStorageCapacityQuery query = new GetStorageCapacityQuery(_testBank, _testCharacterId);
 
         // Act
         GetStorageCapacityResult result = await _handler.HandleAsync(query, CancellationToken.None);
@@ -121,7 +122,7 @@ public class GetStorageCapacityQueryTests
     public async Task GetStorageCapacity_ShowsCorrectUpgradeCosts()
     {
         // Test various capacity levels and their upgrade costs
-        var testCases = new[]
+        (int Capacity, int ExpectedCost)[] testCases = new[]
         {
             (Capacity: 10, ExpectedCost: 50_000),   // First upgrade
             (Capacity: 20, ExpectedCost: 150_000),  // Second upgrade
@@ -129,10 +130,10 @@ public class GetStorageCapacityQueryTests
             (Capacity: 90, ExpectedCost: 850_000),  // Ninth upgrade
         };
 
-        foreach (var (capacity, expectedCost) in testCases)
+        foreach ((int capacity, int expectedCost) in testCases)
         {
             // Arrange
-            var storage = new Database.Entities.Storage
+            Storage storage = new Database.Entities.Storage
             {
                 EngineId = Guid.NewGuid(),
                 OwnerId = Guid.NewGuid(),
@@ -143,7 +144,7 @@ public class GetStorageCapacityQueryTests
             _context.Warehouses.Add(storage);
             await _context.SaveChangesAsync();
 
-            var query = new GetStorageCapacityQuery(_testBank, storage.OwnerId!.Value);
+            GetStorageCapacityQuery query = new GetStorageCapacityQuery(_testBank, storage.OwnerId!.Value);
 
             // Act
             GetStorageCapacityResult result = await _handler.HandleAsync(query, CancellationToken.None);
@@ -159,13 +160,13 @@ public class GetStorageCapacityQueryTests
     public async Task GetStorageCapacity_IsIsolatedByBankAndCharacter()
     {
         // Arrange
-        var bank1 = new CoinhouseTag("cordor_bank");
-        var bank2 = new CoinhouseTag("barak_bank");
-        var character1 = Guid.NewGuid();
-        var character2 = Guid.NewGuid();
+        CoinhouseTag bank1 = new CoinhouseTag("cordor_bank");
+        CoinhouseTag bank2 = new CoinhouseTag("barak_bank");
+        Guid character1 = Guid.NewGuid();
+        Guid character2 = Guid.NewGuid();
 
         // Create different storage for different combinations
-        var storages = new[]
+        Storage[] storages = new[]
         {
             new Database.Entities.Storage
             {
@@ -196,17 +197,17 @@ public class GetStorageCapacityQueryTests
         await _context.SaveChangesAsync();
 
         // Act & Assert - Character 1 at Bank 1
-        var query1 = new GetStorageCapacityQuery(bank1, character1);
+        GetStorageCapacityQuery query1 = new GetStorageCapacityQuery(bank1, character1);
         GetStorageCapacityResult result1 = await _handler.HandleAsync(query1, CancellationToken.None);
         Assert.That(result1.TotalCapacity, Is.EqualTo(30), "Character 1 at Bank 1 should have 30");
 
         // Act & Assert - Character 1 at Bank 2
-        var query2 = new GetStorageCapacityQuery(bank2, character1);
+        GetStorageCapacityQuery query2 = new GetStorageCapacityQuery(bank2, character1);
         GetStorageCapacityResult result2 = await _handler.HandleAsync(query2, CancellationToken.None);
         Assert.That(result2.TotalCapacity, Is.EqualTo(40), "Character 1 at Bank 2 should have 40");
 
         // Act & Assert - Character 2 at Bank 1
-        var query3 = new GetStorageCapacityQuery(bank1, character2);
+        GetStorageCapacityQuery query3 = new GetStorageCapacityQuery(bank1, character2);
         GetStorageCapacityResult result3 = await _handler.HandleAsync(query3, CancellationToken.None);
         Assert.That(result3.TotalCapacity, Is.EqualTo(50), "Character 2 at Bank 1 should have 50");
     }

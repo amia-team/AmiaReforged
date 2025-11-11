@@ -45,7 +45,7 @@ public class OpenCoinhouseAccountCommandHandlerTests
             .Setup(r => r.GetByTagAsync(coinhouse, It.IsAny<CancellationToken>()))
             .ReturnsAsync((CoinhouseDto?)null);
 
-        var command = new OpenCoinhouseAccountCommand(
+        OpenCoinhouseAccountCommand command = new OpenCoinhouseAccountCommand(
             Requestor: character.Id,
             AccountPersona: character.Id,
             Coinhouse: coinhouse
@@ -67,7 +67,7 @@ public class OpenCoinhouseAccountCommandHandlerTests
         CharacterPersona other = PersonaTestHelpers.CreateCharacterPersona("Other");
         CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag("TEST_BANK");
 
-        var coinhouseDto = new CoinhouseDto
+        CoinhouseDto coinhouseDto = new CoinhouseDto
         {
             Id = 1L,
             Tag = coinhouse,
@@ -84,7 +84,7 @@ public class OpenCoinhouseAccountCommandHandlerTests
             .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((CoinhouseAccountDto?)null);
 
-        var command = new OpenCoinhouseAccountCommand(
+        OpenCoinhouseAccountCommand command = new OpenCoinhouseAccountCommand(
             Requestor: requestor.Id,
             AccountPersona: other.Id,
             Coinhouse: coinhouse
@@ -105,7 +105,7 @@ public class OpenCoinhouseAccountCommandHandlerTests
         CharacterPersona character = PersonaTestHelpers.CreateCharacterPersona("TestCharacter");
         CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag("TEST_BANK");
 
-        var coinhouseDto = new CoinhouseDto
+        CoinhouseDto coinhouseDto = new CoinhouseDto
         {
             Id = 1L,
             Tag = coinhouse,
@@ -128,7 +128,7 @@ public class OpenCoinhouseAccountCommandHandlerTests
             .Callback<CoinhouseAccountDto, CancellationToken>((acc, _) => capturedAccount = acc)
             .Returns(Task.CompletedTask);
 
-        var command = new OpenCoinhouseAccountCommand(
+        OpenCoinhouseAccountCommand command = new OpenCoinhouseAccountCommand(
             Requestor: character.Id,
             AccountPersona: character.Id,
             Coinhouse: coinhouse,
@@ -153,7 +153,7 @@ public class OpenCoinhouseAccountCommandHandlerTests
         CharacterPersona character = PersonaTestHelpers.CreateCharacterPersona("TestCharacter");
         CoinhouseTag coinhouse = EconomyTestHelpers.CreateCoinhouseTag("TEST_BANK");
 
-        var coinhouseDto = new CoinhouseDto
+        CoinhouseDto coinhouseDto = new CoinhouseDto
         {
             Id = 1L,
             Tag = coinhouse,
@@ -162,7 +162,7 @@ public class OpenCoinhouseAccountCommandHandlerTests
             Persona = PersonaId.FromCoinhouse(coinhouse)
         };
 
-        var existingAccount = new CoinhouseAccountDto
+        CoinhouseAccountDto existingAccount = new CoinhouseAccountDto
         {
             Id = Guid.NewGuid(),
             Debit = 0,
@@ -181,7 +181,7 @@ public class OpenCoinhouseAccountCommandHandlerTests
             .Setup(r => r.GetAccountForAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingAccount);
 
-        var command = new OpenCoinhouseAccountCommand(
+        OpenCoinhouseAccountCommand command = new OpenCoinhouseAccountCommand(
             Requestor: character.Id,
             AccountPersona: character.Id,
             Coinhouse: coinhouse

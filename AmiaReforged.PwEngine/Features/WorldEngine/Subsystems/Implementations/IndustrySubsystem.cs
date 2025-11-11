@@ -29,7 +29,7 @@ public sealed class IndustrySubsystem : IIndustrySubsystem
 
     public Task<Industry?> GetIndustryAsync(IndustryTag industryTag, CancellationToken ct = default)
     {
-        var industry = _industryRepository.GetByTag(industryTag);
+        Industry? industry = _industryRepository.GetByTag(industryTag);
         return Task.FromResult(industry);
     }
 
