@@ -1,6 +1,6 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.ValueObjects;
 
 namespace AmiaReforged.PwEngine.Tests.Helpers.WorldEngine;
 

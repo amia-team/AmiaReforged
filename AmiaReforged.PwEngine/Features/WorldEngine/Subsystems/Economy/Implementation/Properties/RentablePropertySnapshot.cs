@@ -1,0 +1,14 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties;
+
+/// <summary>
+/// Current runtime state of a property including rental or ownership data.
+/// </summary>
+public sealed record RentablePropertySnapshot(
+    RentablePropertyDefinition Definition,
+    PropertyOccupancyStatus OccupancyStatus,
+    PersonaId? CurrentTenant,
+    PersonaId? CurrentOwner,
+    IReadOnlyCollection<PersonaId> Residents,
+    RentalAgreementSnapshot? ActiveRental);

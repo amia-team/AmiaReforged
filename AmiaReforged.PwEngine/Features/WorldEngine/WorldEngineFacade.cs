@@ -1,5 +1,6 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.Core.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Gateways;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine;

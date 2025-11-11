@@ -1,4 +1,4 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Tests.Features.WorldEngine.Economy.Storage;

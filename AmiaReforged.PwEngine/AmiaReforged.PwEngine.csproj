@@ -38,7 +38,6 @@
         <Folder Include="Resources\WorldEngine\Industries\" />
         <Folder Include="Features\MiniGame\LiarsDice\Nui\" />
         <Folder Include="Features\MiniGame\LiarsDice\Tests\" />
-        <Folder Include="Tests\Systems\WorldEngine\Economy\ValueObjects\" />
     </ItemGroup>
 
     <ItemGroup>

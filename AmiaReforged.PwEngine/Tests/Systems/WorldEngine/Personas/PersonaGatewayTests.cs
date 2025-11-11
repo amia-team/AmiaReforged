@@ -1,9 +1,8 @@
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
+using AmiaReforged.PwEngine.Features.WorldEngine.Core.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Gateways;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations.Gateways;
 using Moq;
 using NUnit.Framework;
 

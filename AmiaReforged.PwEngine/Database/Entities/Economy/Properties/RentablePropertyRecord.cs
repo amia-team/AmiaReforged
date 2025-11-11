@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties;
 
 namespace AmiaReforged.PwEngine.Database.Entities.Economy.Properties;
 

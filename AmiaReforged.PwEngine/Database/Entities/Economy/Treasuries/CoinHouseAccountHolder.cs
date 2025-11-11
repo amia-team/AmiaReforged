@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Accounts;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Accounts;
 
 namespace AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 

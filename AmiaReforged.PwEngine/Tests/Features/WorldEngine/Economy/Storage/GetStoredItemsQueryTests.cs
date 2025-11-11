@@ -1,7 +1,7 @@
 using AmiaReforged.PwEngine.Database;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Storage.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Queries;
 using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 

@@ -1,5 +1,5 @@
 using System;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops;
 using Anvil.API;
 using Anvil.Services;
 

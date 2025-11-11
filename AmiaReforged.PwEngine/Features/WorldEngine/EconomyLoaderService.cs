@@ -1,9 +1,9 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Banks;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.Industries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.ResourceNodes.Services;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops;
 using Anvil.Services;
 using NLog;
 using NWN.Core.NWNX;

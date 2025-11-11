@@ -1,10 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
 using AmiaReforged.PwEngine.Features.WorldEngine.Characters.Runtime;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties;
 using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;

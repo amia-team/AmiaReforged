@@ -1,8 +1,8 @@
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties;
-using AmiaReforged.PwEngine.Features.WorldEngine.Economy.Properties.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.Regions;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties.Commands;
 using Anvil.API;
 using Anvil.Services;
 
