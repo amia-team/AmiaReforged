@@ -128,12 +128,12 @@ public class PayRentCommandHandlerTests
     [Test]
     public async Task PayRent_SuccessfulPayment_AdvancesDueDate()
     {
-        // Given a valid rental with payment due soon (within prepayment limit)
+        // Given a valid rental with payment due in current month
         CharacterPersona tenant = PersonaTestHelpers.CreateCharacterPersona("Tenant");
         PropertyId propertyId = PropertyId.New();
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
-        // Set due date to today so payment will advance it to today + 1 month (within limit)
-        DateOnly nextDueDate = today;
+        // Set due date to end of current month so payment is allowed
+        DateOnly nextDueDate = new DateOnly(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
 
         RentablePropertyDefinition propertyDefinition = new RentablePropertyDefinition(
             Id: propertyId,
@@ -192,11 +192,11 @@ public class PayRentCommandHandlerTests
     [Test]
     public async Task PayRent_ExcessivePrepayment_Fails()
     {
-        // Given a rental where rent is already paid 1 month ahead
+        // Given a rental where rent is not due yet (due next month)
         CharacterPersona tenant = PersonaTestHelpers.CreateCharacterPersona("Tenant");
         PropertyId propertyId = PropertyId.New();
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
-        // Due date is already 1 month in the future (max allowed)
+        // Due date is next month - payment should be rejected as too early
         DateOnly nextDueDate = today.AddMonths(1);
 
         RentablePropertyDefinition propertyDefinition = new RentablePropertyDefinition(
@@ -239,9 +239,9 @@ public class PayRentCommandHandlerTests
         // When the command is executed
         CommandResult result = await _handler.HandleAsync(command);
 
-        // Then it should fail due to excessive prepayment
-        Assert.That(result.Success, Is.False, "Should fail when trying to pay beyond 1 month advance");
-        Assert.That(result.ErrorMessage, Does.Contain("advance").IgnoreCase, "Error should mention advance payment");
+        // Then it should fail due to payment being too early
+        Assert.That(result.Success, Is.False, "Should fail when trying to pay before the month rent is due");
+        Assert.That(result.ErrorMessage, Does.Contain("not due yet").IgnoreCase, "Error should mention payment not being due yet");
 
         // And the property should NOT be persisted
         _mockPropertyRepository.Verify(

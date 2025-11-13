@@ -43,8 +43,8 @@ public sealed class PropertyRentalPolicy
     }
 
     /// <summary>
-    /// Validates that a rent payment won't result in excessive prepayment.
-    /// Players can only pay up to 1 month in advance (current month + next month max).
+    /// Validates that a rent payment is allowed.
+    /// Players can only pay rent during the month it's actually due or if it's overdue.
     /// </summary>
     public RentalDecision ValidateRentPayment(RentablePropertySnapshot property, DateOnly currentDate)
     {
@@ -54,19 +54,23 @@ public sealed class PropertyRentalPolicy
                 "This property has no active rental agreement.");
         }
 
-        // Calculate what the new due date would be after payment
-        DateOnly nextDueDate = CalculateNextDueDate(property.ActiveRental.NextPaymentDueDate);
+        DateOnly dueDate = property.ActiveRental.NextPaymentDueDate;
 
-        // Check if payment would advance rent beyond 1 month from current date
-        DateOnly maxAllowedDueDate = CalculateNextDueDate(currentDate);
+        // Payment is allowed if:
+        // 1. We're in the same month and year as the due date (payment month has arrived)
+        // 2. We're past the due date (overdue - always allow catch-up payments)
 
-        if (nextDueDate > maxAllowedDueDate)
+        bool isInDueMonth = currentDate.Year == dueDate.Year && currentDate.Month == dueDate.Month;
+        bool isOverdue = currentDate > dueDate;
+
+        if (isInDueMonth || isOverdue)
         {
-            return RentalDecision.Denied(RentalDecisionReason.ExcessivePrepayment,
-                $"You can only pay rent up to 1 month in advance. Your next payment is not due until {property.ActiveRental.NextPaymentDueDate:yyyy-MM-dd}.");
+            return RentalDecision.Allowed();
         }
 
-        return RentalDecision.Allowed();
+        // Payment is too early (trying to prepay for a future month)
+        return RentalDecision.Denied(RentalDecisionReason.ExcessivePrepayment,
+            $"Rent payment is not due yet. Your next payment is due on {dueDate:yyyy-MM-dd}.");
     }
 
     public DateOnly CalculateNextDueDate(DateOnly startDate) => startDate.AddMonths(1);
