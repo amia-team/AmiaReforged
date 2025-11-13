@@ -13,6 +13,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Application;
 
 [ServiceBinding(typeof(ICommandHandler<HarvestResourceCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class HarvestResourceCommandHandler(
     IResourceNodeInstanceRepository nodeRepository,
     ICharacterRepository characterRepository,

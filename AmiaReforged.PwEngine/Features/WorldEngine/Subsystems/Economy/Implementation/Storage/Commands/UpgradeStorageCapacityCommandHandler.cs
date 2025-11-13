@@ -7,6 +7,7 @@ using NLog;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Commands;
 
 [ServiceBinding(typeof(ICommandHandler<UpgradeStorageCapacityCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class UpgradeStorageCapacityCommandHandler : ICommandHandler<UpgradeStorageCapacityCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

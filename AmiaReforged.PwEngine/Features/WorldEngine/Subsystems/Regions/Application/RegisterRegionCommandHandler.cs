@@ -7,6 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Regions.Application;
 
 [ServiceBinding(typeof(ICommandHandler<RegisterRegionCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class RegisterRegionCommandHandler(
     IRegionRepository repository,
     IEventBus eventBus) : ICommandHandler<RegisterRegionCommand>

@@ -9,6 +9,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Application;
 
 [ServiceBinding(typeof(ICommandHandler<ClearAreaNodesCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class ClearAreaNodesCommandHandler(
     IResourceNodeInstanceRepository nodeRepository,
     IEventBus eventBus) : ICommandHandler<ClearAreaNodesCommand>

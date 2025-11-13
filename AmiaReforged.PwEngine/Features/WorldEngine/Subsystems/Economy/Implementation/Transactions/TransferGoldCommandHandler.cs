@@ -14,6 +14,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// Balance management is handled by wallet/coinhouse services.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<TransferGoldCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class TransferGoldCommandHandler : ICommandHandler<TransferGoldCommand>
 {
     private readonly ITransactionRepository _repository;

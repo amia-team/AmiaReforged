@@ -7,6 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Application;
 
 [ServiceBinding(typeof(ICommandHandler<ConfirmTraitsCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class ConfirmTraitsCommandHandler(
     ICharacterTraitRepository characterTraitRepository,
     ITraitRepository traitRepository,

@@ -9,6 +9,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Application;
 
 [ServiceBinding(typeof(ICommandHandler<RegisterNodeCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class RegisterNodeCommandHandler(
     IResourceNodeInstanceRepository nodeRepository,
     IResourceNodeDefinitionRepository definitionRepository,

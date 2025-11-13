@@ -8,6 +8,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// Handles rent payment requests by updating the rental agreement's next due date.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<PayRentCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public sealed class PayRentCommandHandler : ICommandHandler<PayRentCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

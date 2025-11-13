@@ -7,6 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Application;
 
 [ServiceBinding(typeof(ICommandHandler<UnlockTraitCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class UnlockTraitCommandHandler(
     ITraitRepository traitRepository,
     IEventBus eventBus) : ICommandHandler<UnlockTraitCommand>

@@ -16,6 +16,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// Suspends the stall and grants a grace period, or releases ownership if grace expired.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<SuspendStallForNonPaymentCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public sealed class SuspendStallForNonPaymentCommandHandler : ICommandHandler<SuspendStallForNonPaymentCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

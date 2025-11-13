@@ -13,6 +13,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// Handles creation of coinhouse accounts initiated from the banking UI.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<OpenCoinhouseAccountCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public sealed class OpenCoinhouseAccountCommandHandler : ICommandHandler<OpenCoinhouseAccountCommand>
 {
     private readonly ICoinhouseRepository _coinhouses;

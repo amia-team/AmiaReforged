@@ -16,6 +16,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// and clearing property state.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<EvictPropertyCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public sealed class EvictPropertyCommandHandler : ICommandHandler<EvictPropertyCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

@@ -8,6 +8,7 @@ using NLog;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Commands;
 
 [ServiceBinding(typeof(ICommandHandler<StoreItemCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class StoreItemCommandHandler : ICommandHandler<StoreItemCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

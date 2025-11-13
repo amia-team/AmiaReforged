@@ -8,6 +8,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// Handles listing an item for sale on a player stall.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<ListStallProductCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public sealed class ListStallProductCommandHandler : ICommandHandler<ListStallProductCommand>
 {
     private readonly IPlayerStallService _stallService;

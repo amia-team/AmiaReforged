@@ -16,6 +16,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// Records the rent payment, updates the stall state, and publishes domain events.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<PayStallRentCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public sealed class PayStallRentCommandHandler : ICommandHandler<PayStallRentCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

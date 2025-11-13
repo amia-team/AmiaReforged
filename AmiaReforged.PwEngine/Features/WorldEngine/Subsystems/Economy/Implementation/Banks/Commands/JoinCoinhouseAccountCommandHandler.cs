@@ -7,6 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Banks.Commands;
 
 [ServiceBinding(typeof(ICommandHandler<JoinCoinhouseAccountCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class JoinCoinhouseAccountCommandHandler(IPersonaRepository personas, ICoinhouseRepository coinhouses)
     : ICommandHandler<JoinCoinhouseAccountCommand>
 {

@@ -17,6 +17,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// records the transaction, and publishes a GoldWithdrawnEvent.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<WithdrawGoldCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class WithdrawGoldCommandHandler : ICommandHandler<WithdrawGoldCommand>
 {
     private readonly ICoinhouseRepository _coinhouses;

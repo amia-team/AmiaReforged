@@ -9,6 +9,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting.Application;
 
 [ServiceBinding(typeof(ICommandHandler<DestroyNodeCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class DestroyNodeCommandHandler(
     IResourceNodeInstanceRepository nodeRepository,
     IEventBus eventBus) : ICommandHandler<DestroyNodeCommand>

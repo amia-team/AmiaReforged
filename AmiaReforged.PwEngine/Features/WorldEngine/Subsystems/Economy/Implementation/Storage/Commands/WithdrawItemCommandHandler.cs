@@ -8,6 +8,7 @@ using NLog;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Storage.Commands;
 
 [ServiceBinding(typeof(ICommandHandler<WithdrawItemCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class WithdrawItemCommandHandler : ICommandHandler<WithdrawItemCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

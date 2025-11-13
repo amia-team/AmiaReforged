@@ -17,6 +17,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// and publishes a GoldDepositedEvent.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<DepositGoldCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class DepositGoldCommandHandler : ICommandHandler<DepositGoldCommand>
 {
     private readonly ICoinhouseRepository _coinhouses;

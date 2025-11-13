@@ -14,6 +14,7 @@ using NWN.Core;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ResourceNodes.Application;
 
 [ServiceBinding(typeof(ICommandHandler<ProvisionAreaNodesCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class ProvisionAreaNodesCommandHandler : ICommandHandler<ProvisionAreaNodesCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();

@@ -8,6 +8,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// Handles releasing a stall from its current owner back to the system pool.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<ReleasePlayerStallCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public sealed class ReleasePlayerStallCommandHandler : ICommandHandler<ReleasePlayerStallCommand>
 {
     private readonly IPlayerStallService _stallService;

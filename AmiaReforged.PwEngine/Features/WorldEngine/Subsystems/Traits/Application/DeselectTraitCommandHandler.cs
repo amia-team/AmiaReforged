@@ -7,6 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Application;
 
 [ServiceBinding(typeof(ICommandHandler<DeselectTraitCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class DeselectTraitCommandHandler(
     ICharacterTraitRepository characterTraitRepository,
     IEventBus eventBus) : ICommandHandler<DeselectTraitCommand>

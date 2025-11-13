@@ -7,6 +7,7 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Traits.Application;
 
 [ServiceBinding(typeof(ICommandHandler<SetTraitActiveCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class SetTraitActiveCommandHandler(
     ICharacterTraitRepository characterTraitRepository,
     IEventBus eventBus) : ICommandHandler<SetTraitActiveCommand>
@@ -44,6 +45,7 @@ public class SetTraitActiveCommandHandler(
 
 
 [ServiceBinding(typeof(ICommandHandler<SelectTraitCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public class SelectTraitCommandHandler(
     ICharacterTraitRepository characterTraitRepository,
     ITraitRepository traitRepository,

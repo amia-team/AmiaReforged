@@ -8,6 +8,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 /// Handles requests to claim ownership of a player stall.
 /// </summary>
 [ServiceBinding(typeof(ICommandHandler<ClaimPlayerStallCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
 public sealed class ClaimPlayerStallCommandHandler : ICommandHandler<ClaimPlayerStallCommand>
 {
     private readonly IPlayerStallService _stallService;
