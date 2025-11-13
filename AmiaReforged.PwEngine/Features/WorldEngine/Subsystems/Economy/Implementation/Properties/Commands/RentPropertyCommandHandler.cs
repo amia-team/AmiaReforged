@@ -1,11 +1,14 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties.Commands;
 
 /// <summary>
 /// Handles rental requests by delegating business decisions to the property rental policy.
 /// </summary>
-public sealed class RentPropertyCommandHandler
+[ServiceBinding(typeof(ICommandHandler<RentPropertyCommand>))]
+[ServiceBinding(typeof(ICommandHandlerMarker))]
+public sealed class RentPropertyCommandHandler : ICommandHandler<RentPropertyCommand>
 {
     private readonly IRentablePropertyRepository _propertyRepository;
     private readonly IRentalPaymentCapabilityService _capabilityService;
@@ -37,7 +40,7 @@ public sealed class RentPropertyCommandHandler
         PaymentCapabilitySnapshot capabilities =
             await _capabilityService.EvaluateAsync(request, property, cancellationToken);
 
-        RentalDecision decision = _policy.Evaluate(request, property, capabilities);
+        RentalDecision decision = await _policy.EvaluateAsync(request, property, capabilities, cancellationToken);
         if (!decision.Success)
         {
             return CommandResult.Fail(decision.Message ?? Describe(decision.Reason));
@@ -74,6 +77,8 @@ public sealed class RentPropertyCommandHandler
             "You need an active coinhouse account in this settlement to rent via bank account.",
         RentalDecisionReason.InsufficientDirectFunds =>
             "You do not have enough gold on hand to rent this property.",
+        RentalDecisionReason.TenantAlreadyHasActiveRental =>
+            "You already have an active rental. You can only rent one property at a time.",
         _ => "Unable to process the property rental request."
     };
 }

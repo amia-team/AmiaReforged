@@ -10,5 +10,7 @@ public enum RentalDecisionReason
     PaymentMethodNotAllowed,
     SettlementCoinhouseRequired,
     CoinhouseAccountRequired,
-    InsufficientDirectFunds
+    InsufficientDirectFunds,
+    TenantAlreadyHasActiveRental,
+    ExcessivePrepayment
 }

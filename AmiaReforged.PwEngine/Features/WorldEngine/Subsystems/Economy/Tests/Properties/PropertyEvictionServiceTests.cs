@@ -36,7 +36,7 @@ public class PropertyEvictionServiceTests
             .Setup(h => h.HandleAsync(It.IsAny<EvictPropertyCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CommandResult.Ok());
 
-        _policy = new PropertyRentalPolicy();
+        _policy = new PropertyRentalPolicy(_repository.Object);
 
         _service = new PropertyEvictionService(
             _repository.Object,

@@ -24,7 +24,6 @@ public sealed class PropertyRentFlow
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     private static readonly TimeSpan RentalConfirmationTimeout = TimeSpan.FromSeconds(60);
-    private static readonly PropertyRentalPolicy RentalPolicy = new();
     private static readonly GoldAmount HouseSize1Rent = GoldAmount.Parse(50_000);
     private static readonly GoldAmount HouseSize2Rent = GoldAmount.Parse(120_000);
     private static readonly GoldAmount HouseSize3Rent = GoldAmount.Parse(300_000);
@@ -33,6 +32,7 @@ public sealed class PropertyRentFlow
     private readonly IRentalPaymentCapabilityService _paymentCapabilities;
     private readonly WindowDirector _windowDirector;
     private readonly IWorldEngineFacade _worldEngine;
+    private readonly PropertyRentalPolicy _rentalPolicy;
 
     private readonly ConcurrentDictionary<PersonaId, PendingRentSession> _activeRentSessions = new();
 
@@ -40,12 +40,14 @@ public sealed class PropertyRentFlow
         IRentablePropertyRepository properties,
         IRentalPaymentCapabilityService paymentCapabilities,
         WindowDirector windowDirector,
-        IWorldEngineFacade worldEngine)
+        IWorldEngineFacade worldEngine,
+        PropertyRentalPolicy rentalPolicy)
     {
         _properties = properties;
         _paymentCapabilities = paymentCapabilities;
         _windowDirector = windowDirector;
         _worldEngine = worldEngine;
+        _rentalPolicy = rentalPolicy;
     }
 
     internal async Task HandleVacantPropertyInteractionAsync(
@@ -377,7 +379,7 @@ public sealed class PropertyRentFlow
         try
         {
             DateOnly startDate = DateOnly.FromDateTime(DateTime.UtcNow);
-            DateOnly nextDueDate = RentalPolicy.CalculateNextDueDate(startDate);
+            DateOnly nextDueDate = _rentalPolicy.CalculateNextDueDate(startDate);
 
             RentablePropertyDefinition updatedDefinition = snapshot.Definition with
             {

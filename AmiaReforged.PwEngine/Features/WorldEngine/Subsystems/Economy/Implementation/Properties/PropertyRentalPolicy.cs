@@ -8,13 +8,30 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 [ServiceBinding(typeof(PropertyRentalPolicy))]
 public sealed class PropertyRentalPolicy
 {
-    public RentalDecision Evaluate(RentPropertyRequest request, RentablePropertySnapshot property,
-        PaymentCapabilitySnapshot capabilities)
+    private readonly IRentablePropertyRepository _propertyRepository;
+
+    public PropertyRentalPolicy(IRentablePropertyRepository propertyRepository)
+    {
+        _propertyRepository = propertyRepository;
+    }
+
+    public async Task<RentalDecision> EvaluateAsync(RentPropertyRequest request, RentablePropertySnapshot property,
+        PaymentCapabilitySnapshot capabilities, CancellationToken cancellationToken = default)
     {
         if (property.OccupancyStatus != PropertyOccupancyStatus.Vacant)
         {
             return RentalDecision.Denied(RentalDecisionReason.PropertyUnavailable,
                 "The property is not currently available for rent.");
+        }
+
+        // Check if tenant already has an active rental
+        List<RentablePropertySnapshot> existingRentals =
+            await _propertyRepository.GetPropertiesRentedByTenantAsync(request.Tenant, cancellationToken);
+
+        if (existingRentals.Any())
+        {
+            return RentalDecision.Denied(RentalDecisionReason.TenantAlreadyHasActiveRental,
+                "You already have an active rental. You can only rent one property at a time.");
         }
 
         return request.PaymentMethod switch
@@ -23,6 +40,33 @@ public sealed class PropertyRentalPolicy
             RentalPaymentMethod.OutOfPocket => EvaluateDirectRental(property, capabilities),
             _ => RentalDecision.Denied(RentalDecisionReason.PaymentMethodNotAllowed, "Unsupported payment method.")
         };
+    }
+
+    /// <summary>
+    /// Validates that a rent payment won't result in excessive prepayment.
+    /// Players can only pay up to 1 month in advance (current month + next month max).
+    /// </summary>
+    public RentalDecision ValidateRentPayment(RentablePropertySnapshot property, DateOnly currentDate)
+    {
+        if (property.ActiveRental is null)
+        {
+            return RentalDecision.Denied(RentalDecisionReason.PropertyUnavailable,
+                "This property has no active rental agreement.");
+        }
+
+        // Calculate what the new due date would be after payment
+        DateOnly nextDueDate = CalculateNextDueDate(property.ActiveRental.NextPaymentDueDate);
+
+        // Check if payment would advance rent beyond 1 month from current date
+        DateOnly maxAllowedDueDate = CalculateNextDueDate(currentDate);
+
+        if (nextDueDate > maxAllowedDueDate)
+        {
+            return RentalDecision.Denied(RentalDecisionReason.ExcessivePrepayment,
+                $"You can only pay rent up to 1 month in advance. Your next payment is not due until {property.ActiveRental.NextPaymentDueDate:yyyy-MM-dd}.");
+        }
+
+        return RentalDecision.Allowed();
     }
 
     public DateOnly CalculateNextDueDate(DateOnly startDate) => startDate.AddMonths(1);

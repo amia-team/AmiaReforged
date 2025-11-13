@@ -12,7 +12,7 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 public sealed class PayRentCommandHandler : ICommandHandler<PayRentCommand>
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    
+
     private readonly IRentablePropertyRepository _propertyRepository;
     private readonly PropertyRentalPolicy _policy;
 
@@ -36,6 +36,16 @@ public sealed class PayRentCommandHandler : ICommandHandler<PayRentCommand>
         if (!property.ActiveRental.Tenant.Equals(command.Tenant))
         {
             return CommandResult.Fail("You are not the tenant of this property.");
+        }
+
+        // Validate that payment won't result in excessive prepayment
+        DateOnly currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        RentalDecision prepaymentDecision = _policy.ValidateRentPayment(property, currentDate);
+
+        if (!prepaymentDecision.Success)
+        {
+            return CommandResult.Fail(prepaymentDecision.Message
+                ?? "You cannot pay rent that far in advance. Maximum of 1 month advance payment allowed.");
         }
 
         // Calculate the new due date (advance by one month from current due date)

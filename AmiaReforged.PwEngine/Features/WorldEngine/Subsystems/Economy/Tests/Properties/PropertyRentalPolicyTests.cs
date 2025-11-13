@@ -3,6 +3,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.ValueObjects;
+using Moq;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Tests.Properties;
@@ -10,60 +11,72 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Tests.Pr
 [TestFixture]
 public class PropertyRentalPolicyTests
 {
-    private readonly PropertyRentalPolicy _policy = new();
+    private PropertyRentalPolicy _policy = null!;
+    private Mock<IRentablePropertyRepository> _repositoryMock = null!;
     private readonly PersonaId _tenant = PersonaId.FromCharacter(CharacterId.New());
 
+    [SetUp]
+    public void SetUp()
+    {
+        _repositoryMock = new Mock<IRentablePropertyRepository>();
+        _policy = new PropertyRentalPolicy(_repositoryMock.Object);
+
+        // By default, return empty list (no existing rentals)
+        _repositoryMock.Setup(r => r.GetPropertiesRentedByTenantAsync(It.IsAny<PersonaId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<RentablePropertySnapshot>());
+    }
+
     [Test]
-    public void Evaluate_ReturnsFailure_WhenPropertyNotVacant()
+    public async Task Evaluate_ReturnsFailure_WhenPropertyNotVacant()
     {
         RentablePropertySnapshot property = CreateSnapshot(status: PropertyOccupancyStatus.Rented);
         RentPropertyRequest request = new(_tenant, property.Definition.Id, RentalPaymentMethod.OutOfPocket,
             DateOnly.FromDateTime(DateTime.UtcNow));
         PaymentCapabilitySnapshot capabilities = new(true, true);
 
-        RentalDecision decision = _policy.Evaluate(request, property, capabilities);
+        RentalDecision decision = await _policy.EvaluateAsync(request, property, capabilities);
 
         Assert.That(decision.Success, Is.False);
         Assert.That(decision.Reason, Is.EqualTo(RentalDecisionReason.PropertyUnavailable));
     }
 
     [Test]
-    public void Evaluate_DeniesCoinhouse_WhenAccountMissing()
+    public async Task Evaluate_DeniesCoinhouse_WhenAccountMissing()
     {
         RentablePropertySnapshot property = CreateSnapshot(allowsCoinhouse: true, status: PropertyOccupancyStatus.Vacant);
         RentPropertyRequest request = new(_tenant, property.Definition.Id, RentalPaymentMethod.CoinhouseAccount,
             DateOnly.FromDateTime(DateTime.UtcNow));
         PaymentCapabilitySnapshot capabilities = new(false, true);
 
-        RentalDecision decision = _policy.Evaluate(request, property, capabilities);
+        RentalDecision decision = await _policy.EvaluateAsync(request, property, capabilities);
 
         Assert.That(decision.Success, Is.False);
         Assert.That(decision.Reason, Is.EqualTo(RentalDecisionReason.CoinhouseAccountRequired));
     }
 
     [Test]
-    public void Evaluate_AllowsCoinhouse_WhenRequirementsMet()
+    public async Task Evaluate_AllowsCoinhouse_WhenRequirementsMet()
     {
         RentablePropertySnapshot property = CreateSnapshot(allowsCoinhouse: true, status: PropertyOccupancyStatus.Vacant);
         RentPropertyRequest request = new(_tenant, property.Definition.Id, RentalPaymentMethod.CoinhouseAccount,
             DateOnly.FromDateTime(DateTime.UtcNow));
         PaymentCapabilitySnapshot capabilities = new(true, false);
 
-        RentalDecision decision = _policy.Evaluate(request, property, capabilities);
+        RentalDecision decision = await _policy.EvaluateAsync(request, property, capabilities);
 
         Assert.That(decision.Success, Is.True);
         Assert.That(decision.Reason, Is.EqualTo(RentalDecisionReason.None));
     }
 
     [Test]
-    public void Evaluate_DeniesDirect_WhenInsufficientFunds()
+    public async Task Evaluate_DeniesDirect_WhenInsufficientFunds()
     {
         RentablePropertySnapshot property = CreateSnapshot(allowsDirect: true, status: PropertyOccupancyStatus.Vacant);
         RentPropertyRequest request = new(_tenant, property.Definition.Id, RentalPaymentMethod.OutOfPocket,
             DateOnly.FromDateTime(DateTime.UtcNow));
         PaymentCapabilitySnapshot capabilities = new(true, false);
 
-        RentalDecision decision = _policy.Evaluate(request, property, capabilities);
+        RentalDecision decision = await _policy.EvaluateAsync(request, property, capabilities);
 
         Assert.That(decision.Success, Is.False);
         Assert.That(decision.Reason, Is.EqualTo(RentalDecisionReason.InsufficientDirectFunds));

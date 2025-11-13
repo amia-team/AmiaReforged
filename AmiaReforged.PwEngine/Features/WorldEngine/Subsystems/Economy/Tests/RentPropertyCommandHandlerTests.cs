@@ -25,7 +25,13 @@ public class RentPropertyCommandHandlerTests
     {
         _mockPropertyRepository = new Mock<IRentablePropertyRepository>();
         _mockCapabilityService = new Mock<IRentalPaymentCapabilityService>();
-        _policy = new PropertyRentalPolicy();
+
+        // Setup default: no existing rentals
+        _mockPropertyRepository
+            .Setup(r => r.GetPropertiesRentedByTenantAsync(It.IsAny<PersonaId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<RentablePropertySnapshot>());
+
+        _policy = new PropertyRentalPolicy(_mockPropertyRepository.Object);
         _handler = new RentPropertyCommandHandler(
             _mockPropertyRepository.Object,
             _mockCapabilityService.Object,

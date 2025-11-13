@@ -119,6 +119,31 @@ public sealed class PersistentRentablePropertyRepository(IDbContextFactory<PwEng
         }
     }
 
+    public async Task<List<RentablePropertySnapshot>> GetPropertiesRentedByTenantAsync(
+        PersonaId tenantId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await using PwEngineContext ctx = factory.CreateDbContext();
+            string tenantString = tenantId.ToString();
+
+            List<RentablePropertyRecord> entities = await ctx.RentableProperties
+                .Include(p => p.Residents)
+                .AsNoTracking()
+                .Where(p => p.CurrentTenantPersona == tenantString
+                            && p.OccupancyStatus == PropertyOccupancyStatus.Rented)
+                .ToListAsync(cancellationToken);
+
+            return entities.Select(ToSnapshot).ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load properties rented by tenant {TenantId}", tenantId);
+            throw;
+        }
+    }
+
     private static RentablePropertySnapshot ToSnapshot(RentablePropertyRecord entity)
     {
         RentablePropertyDefinition definition = new(

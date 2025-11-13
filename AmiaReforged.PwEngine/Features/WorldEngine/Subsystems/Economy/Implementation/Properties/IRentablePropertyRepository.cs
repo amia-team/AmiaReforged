@@ -1,3 +1,5 @@
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
+
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Properties;
 
 /// <summary>
@@ -12,4 +14,9 @@ public interface IRentablePropertyRepository
     Task PersistRentalAsync(RentablePropertySnapshot snapshot, CancellationToken cancellationToken = default);
 
     Task<List<RentablePropertySnapshot>> GetAllPropertiesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all properties currently rented by the specified tenant.
+    /// </summary>
+    Task<List<RentablePropertySnapshot>> GetPropertiesRentedByTenantAsync(PersonaId tenantId, CancellationToken cancellationToken = default);
 }
