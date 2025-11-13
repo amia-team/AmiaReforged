@@ -14,19 +14,18 @@ public class CommandDispatcherBehavior
 {
     // Test doubles
     private Mock<IEventBus> _eventBusMock = null!;
+    private TestCommandHandler _testHandler = null!;
     private CommandDispatcher _dispatcher = null!;
 
     [SetUp]
     public void SetUp()
     {
         _eventBusMock = new Mock<IEventBus>();
+        _testHandler = new TestCommandHandler();
 
-        // Reset static test handler state before each test
-        TestCommandHandler.Reset();
-
-        // Create dispatcher with reflection-based discovery
-        // It will automatically discover handlers in its own assembly (including TestCommandHandler)
-        _dispatcher = new CommandDispatcher(_eventBusMock.Object);
+        // Create dispatcher with test handler
+        List<ICommandHandlerMarker> handlers = new List<ICommandHandlerMarker> { _testHandler };
+        _dispatcher = new CommandDispatcher(handlers, _eventBusMock.Object);
     }
 
     // === Successful Command Execution ===
@@ -42,8 +41,8 @@ public class CommandDispatcherBehavior
 
         // Then: The handler was invoked successfully
         Assert.That(result.Success, Is.True);
-        Assert.That(TestCommandHandler.LastHandledCommand, Is.EqualTo(command));
-        Assert.That(TestCommandHandler.TimesHandled, Is.EqualTo(1));
+        Assert.That(_testHandler.LastHandledCommand, Is.EqualTo(command));
+        Assert.That(_testHandler.TimesHandled, Is.EqualTo(1));
     }
 
     [Test]
@@ -77,7 +76,7 @@ public class CommandDispatcherBehavior
         await _dispatcher.DispatchAsync(command3);
 
         // Then: Handler was invoked three times
-        Assert.That(TestCommandHandler.TimesHandled, Is.EqualTo(3));
+        Assert.That(_testHandler.TimesHandled, Is.EqualTo(3));
     }
 
     // === Failed Command Execution ===
@@ -118,11 +117,13 @@ public class CommandDispatcherBehavior
     [Test]
     public async Task GivenUnregisteredCommand_WhenDispatched_ThenFailureResultIndicatesMissingHandler()
     {
-        // Given: A command with no registered handler (UnhandledCommand has no handler in the assembly)
+        // Given: A command with no registered handler
         UnhandledCommand command = new UnhandledCommand { Data = "orphaned" };
+        List<ICommandHandlerMarker> emptyHandlers = new List<ICommandHandlerMarker>();
+        CommandDispatcher emptyDispatcher = new CommandDispatcher(emptyHandlers, _eventBusMock.Object);
 
         // When: The command is dispatched
-        CommandResult result = await _dispatcher.DispatchAsync(command);
+        CommandResult result = await emptyDispatcher.DispatchAsync(command);
 
         // Then: Result indicates no handler was found
         Assert.That(result.Success, Is.False);
@@ -151,7 +152,7 @@ public class CommandDispatcherBehavior
         Assert.That(batchResult.SuccessCount, Is.EqualTo(3));
         Assert.That(batchResult.FailedCount, Is.EqualTo(0));
         Assert.That(batchResult.AllSucceeded, Is.True);
-        Assert.That(TestCommandHandler.TimesHandled, Is.EqualTo(3));
+        Assert.That(_testHandler.TimesHandled, Is.EqualTo(3));
     }
 
     [Test]
@@ -173,7 +174,7 @@ public class CommandDispatcherBehavior
         Assert.That(batchResult.SuccessCount, Is.EqualTo(1));
         Assert.That(batchResult.FailedCount, Is.EqualTo(1));
         Assert.That(batchResult.AllSucceeded, Is.False);
-        Assert.That(TestCommandHandler.TimesHandled, Is.EqualTo(2)); // Only first two were attempted
+        Assert.That(_testHandler.TimesHandled, Is.EqualTo(2)); // Only first two were attempted
     }
 
     [Test]
@@ -196,7 +197,7 @@ public class CommandDispatcherBehavior
         Assert.That(batchResult.SuccessCount, Is.EqualTo(2));
         Assert.That(batchResult.FailedCount, Is.EqualTo(1));
         Assert.That(batchResult.AnyFailed, Is.True);
-        Assert.That(TestCommandHandler.TimesHandled, Is.EqualTo(3)); // All three were attempted
+        Assert.That(_testHandler.TimesHandled, Is.EqualTo(3)); // All three were attempted
     }
 
     // === Cancellation ===
@@ -220,7 +221,7 @@ public class CommandDispatcherBehavior
         // Then: No commands were executed and result indicates cancellation
         Assert.That(batchResult.Cancelled, Is.True);
         Assert.That(batchResult.Results, Is.Empty);
-        Assert.That(TestCommandHandler.TimesHandled, Is.EqualTo(0));
+        Assert.That(_testHandler.TimesHandled, Is.EqualTo(0));
     }
 
     // === Value Object Behavior ===
@@ -277,15 +278,8 @@ public class CommandDispatcherBehavior
 
     private sealed class TestCommandHandler : ICommandHandler<TestCommand>
     {
-        // Use static state to track invocations across instances created by Activator
-        public static TestCommand? LastHandledCommand { get; private set; }
-        public static int TimesHandled { get; private set; }
-
-        public static void Reset()
-        {
-            LastHandledCommand = null;
-            TimesHandled = 0;
-        }
+        public TestCommand? LastHandledCommand { get; private set; }
+        public int TimesHandled { get; private set; }
 
         public Task<CommandResult> HandleAsync(TestCommand command, CancellationToken cancellationToken = default)
         {
