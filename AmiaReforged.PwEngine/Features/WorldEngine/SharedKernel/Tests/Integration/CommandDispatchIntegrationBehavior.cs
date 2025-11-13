@@ -20,9 +20,8 @@ public class CommandDispatchIntegrationBehavior
     {
         // Given: A complete system with all components
         Mock<IEventBus> eventBusMock = new Mock<IEventBus>();
-        DepositGoldCommandHandler depositHandler = new DepositGoldCommandHandler();
-        List<ICommandHandlerMarker> handlers = new List<ICommandHandlerMarker> { depositHandler };
-        CommandDispatcher dispatcher = new CommandDispatcher(handlers, eventBusMock.Object);
+        // CommandDispatcher now uses reflection-based discovery
+        CommandDispatcher dispatcher = new CommandDispatcher(eventBusMock.Object);
 
         DepositGoldCommand command = new DepositGoldCommand
         {
@@ -54,10 +53,8 @@ public class CommandDispatchIntegrationBehavior
     {
         // Given: A system with multiple command types
         Mock<IEventBus> eventBusMock = new Mock<IEventBus>();
-        DepositGoldCommandHandler depositHandler = new DepositGoldCommandHandler();
-        WithdrawGoldCommandHandler withdrawHandler = new WithdrawGoldCommandHandler();
-        List<ICommandHandlerMarker> handlers = new List<ICommandHandlerMarker> { depositHandler, withdrawHandler };
-        CommandDispatcher dispatcher = new CommandDispatcher(handlers, eventBusMock.Object);
+        // CommandDispatcher now uses reflection-based discovery
+        CommandDispatcher dispatcher = new CommandDispatcher(eventBusMock.Object);
 
         DepositGoldCommand depositCommand = new DepositGoldCommand
         {
@@ -124,9 +121,7 @@ public class CommandDispatchIntegrationBehavior
     {
         // Given: A system and multiple commands
         Mock<IEventBus> eventBusMock = new Mock<IEventBus>();
-        DepositGoldCommandHandler handler = new DepositGoldCommandHandler();
-        List<ICommandHandlerMarker> handlers = new List<ICommandHandlerMarker> { handler };
-        CommandDispatcher dispatcher = new CommandDispatcher(handlers, eventBusMock.Object);
+        CommandDispatcher dispatcher = new CommandDispatcher(eventBusMock.Object);
 
         DepositGoldCommand[] commands = new[]
         {
@@ -157,9 +152,7 @@ public class CommandDispatchIntegrationBehavior
     {
         // Given: A system with validation
         Mock<IEventBus> eventBusMock = new Mock<IEventBus>();
-        WithdrawGoldCommandHandler handler = new WithdrawGoldCommandHandler();
-        List<ICommandHandlerMarker> handlers = new List<ICommandHandlerMarker> { handler };
-        CommandDispatcher dispatcher = new CommandDispatcher(handlers, eventBusMock.Object);
+        CommandDispatcher dispatcher = new CommandDispatcher(eventBusMock.Object);
 
         WithdrawGoldCommand command = new WithdrawGoldCommand
         {
