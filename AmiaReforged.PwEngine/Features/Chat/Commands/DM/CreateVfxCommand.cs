@@ -9,6 +9,8 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.DM;
 public class CreateVfxCommand : IChatCommand
 {
     public string Command => "./createvfx";
+    public string Description => "Create visual effects on objects/creatures";
+    public string AllowedRoles => "DM";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

@@ -9,6 +9,9 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.DM;
 public class DmTools(WindowDirector director) : IChatCommand
 {
     public string Command => "./dmtools";
+    public string Description => "Opens DM tools window";
+    public string AllowedRoles => "DM";
+
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (!caller.IsDM) return Task.CompletedTask;

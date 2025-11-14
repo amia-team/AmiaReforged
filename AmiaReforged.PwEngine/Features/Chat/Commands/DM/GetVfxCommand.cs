@@ -9,6 +9,8 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.DM;
 public class GetVfxCommand : IChatCommand
 {
     public string Command => "./getvfx";
+    public string Description => "Get visual effects on targeted object";
+    public string AllowedRoles => "DM";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Chat.Commands.Reset;
@@ -7,6 +7,8 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.Reset;
 public class ResetTime : IChatCommand
 {
     public string Command => "./uptime";
+    public string Description => "Display server uptime";
+    public string AllowedRoles => "All";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

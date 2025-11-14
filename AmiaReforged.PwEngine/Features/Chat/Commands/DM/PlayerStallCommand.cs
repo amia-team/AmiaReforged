@@ -44,6 +44,8 @@ public class PlayerStallCommand : IChatCommand
     }
 
     public string Command => "./playerstall";
+    public string Description => "Manage player stalls (list/view/suspend)";
+    public string AllowedRoles => "DM";
 
     public async Task ExecuteCommand(NwPlayer caller, string[] args)
     {

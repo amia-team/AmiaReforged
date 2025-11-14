@@ -9,6 +9,8 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.DM;
 public class RemoveVfxCommand : IChatCommand
 {
     public string Command => "./removevfx";
+    public string Description => "Remove visual effects from targeted object";
+    public string AllowedRoles => "DM";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

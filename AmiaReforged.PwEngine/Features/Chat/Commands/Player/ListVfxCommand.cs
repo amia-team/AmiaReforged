@@ -7,6 +7,9 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.Player;
 public class ListVfxCommand : IChatCommand
 {
     public string Command => "./listvfx";
+    public string Description => "List visual effects by type or search term";
+    public string AllowedRoles => "Player";
+
     private const string UsageMessage
         = "Available inputs for ./listvfx are:" +
           "\n'duration' for duration type visuals" +

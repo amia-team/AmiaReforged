@@ -12,6 +12,8 @@ public class DumpCreatures : IChatCommand
     [Inject] private JsonWritingService? JsonWritingService { get; set; }
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     public string Command => "./dumpcreatures";
+    public string Description => "Dump creature data to JSON file";
+    public string AllowedRoles => "DM";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -11,6 +11,8 @@ public class ResetMinutesCommand : IChatCommand
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
     public string Command => "./resetminutes";
+    public string Description => "Set minutes until server reset";
+    public string AllowedRoles => "DM";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.Services;
 using NWN.Core;
 
@@ -8,6 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.Reset;
 public class ServerPanel : IChatCommand
 {
     public string Command { get; } = "./serverpanel";
+    public string Description => "Server control panel (not yet implemented)";
+    public string AllowedRoles => "DM";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

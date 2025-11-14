@@ -5,9 +5,11 @@ using Anvil.Services;
 namespace AmiaReforged.PwEngine.Features.Chat.Commands.DM;
 
 [ServiceBinding(typeof(IChatCommand))]
-public class EconomyCommand(ResourceNodeInstanceSetupService nodeSetup) : IChatCommand
+public class EconomyCommand : IChatCommand
 {
     public string Command => "./economy";
+    public string Description => "Manage economy system (banks, properties, stalls)";
+    public string AllowedRoles => "DM";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

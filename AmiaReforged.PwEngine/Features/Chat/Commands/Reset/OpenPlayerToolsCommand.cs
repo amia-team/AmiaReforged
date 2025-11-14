@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.Chat.Commands.Reset;
@@ -6,8 +6,9 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.Reset;
 [ServiceBinding(typeof(IChatCommand))]
 public class OpenPlayerToolsCommand : IChatCommand
 {
-
     public string Command { get; } = "./playertools";
+    public string Description => "Deprecated - Use Player Tools feat instead";
+    public string AllowedRoles => "Player";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

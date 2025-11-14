@@ -20,6 +20,8 @@ public class ForeclosePropertyCommand(
     IWorldEngineFacade worldEngine) : IChatCommand
 {
     public string Command => "./foreclose";
+    public string Description => "Foreclose a property by settlement ID and POI resref";
+    public string AllowedRoles => "DM";
 
     public async Task ExecuteCommand(NwPlayer caller, string[] args)
     {

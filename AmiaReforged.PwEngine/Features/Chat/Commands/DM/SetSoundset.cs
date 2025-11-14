@@ -8,6 +8,8 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.DM;
 public class SetSoundset : IChatCommand
 {
     public string Command => "./setsoundset";
+    public string Description => "Set soundset ID for targeted creature";
+    public string AllowedRoles => "DM";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

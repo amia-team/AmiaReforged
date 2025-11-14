@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.Services;
 using NLog;
 using NWN.Core;
@@ -17,6 +17,8 @@ public class Shutdown : IChatCommand
     }
 
     public string Command => "./shutdown";
+    public string Description => "Shutdown the server";
+    public string AllowedRoles => "DM";
 
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {

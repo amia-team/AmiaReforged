@@ -1,4 +1,4 @@
-﻿using Anvil.API;
+﻿﻿using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 
@@ -8,6 +8,9 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.Player;
 public class LabelItemCommand : IChatCommand
 {
     public string Command => "./labelitem";
+    public string Description => "Label items with custom text and colors";
+    public string AllowedRoles => "Player";
+
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         if (args.Length < 1)
