@@ -66,7 +66,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
         NuiRow headerOverlay = new NuiRow
         {
             Width = 0f, Height = 0f,
-            Children = new List<NuiElement>(),
+            Children = [],
             DrawList = [new NuiDrawListImage("ui_header", new NuiRect(HeaderLeftPad, HeaderTopPad, HeaderW, HeaderH))]
         };
 
@@ -106,30 +106,6 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
             {
                 Children =
                 [
-                    new NuiSpacer { Height = 8f },
-                    new NuiLabel("Item Preview")
-                    {
-                        Height = 25f,
-                        HorizontalAlign = NuiHAlign.Center,
-                        VerticalAlign = NuiVAlign.Middle,
-                        ForegroundColor = new Color(30, 20, 12)
-                    },
-                    new NuiSpacer { Height = 8f },
-                    new NuiRow
-                    {
-                        Visible = PreviewPlaceholderVisible,
-                        Children =
-                        [
-                            new NuiLabel("Select an item to view details")
-                            {
-                                Width = 260f,
-                                Height = 200f,
-                                HorizontalAlign = NuiHAlign.Center,
-                                VerticalAlign = NuiVAlign.Middle,
-                                ForegroundColor = new Color(80, 80, 80)
-                            }
-                        ]
-                    },
                     new NuiColumn
                     {
                         Visible = PreviewVisible,
@@ -138,7 +114,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                             new NuiLabel(PreviewItemName)
                             {
                                 Width = 260f,
-                                Height = 28f,
+                                Height = 10f,
                                 HorizontalAlign = NuiHAlign.Left,
                                 VerticalAlign = NuiVAlign.Middle,
                                 ForegroundColor = new Color(30, 20, 12)
@@ -147,7 +123,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                             new NuiLabel(PreviewItemCost)
                             {
                                 Width = 260f,
-                                Height = 22f,
+                                Height = 10f,
                                 HorizontalAlign = NuiHAlign.Left,
                                 VerticalAlign = NuiVAlign.Middle,
                                 ForegroundColor = new Color(30, 20, 12)
@@ -156,7 +132,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                             new NuiLabel("Description:")
                             {
                                 Width = 260f,
-                                Height = 20f,
+                                Height = 10f,
                                 HorizontalAlign = NuiHAlign.Left,
                                 VerticalAlign = NuiVAlign.Middle,
                                 ForegroundColor = new Color(30, 20, 12),
@@ -168,15 +144,6 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                                 Height = 100f,
                                 Scrollbars = NuiScrollbars.Auto,
                                 Visible = PreviewDescriptionVisible
-                            },
-                            new NuiLabel("No description available.")
-                            {
-                                Width = 260f,
-                                Height = 40f,
-                                HorizontalAlign = NuiHAlign.Left,
-                                VerticalAlign = NuiVAlign.Top,
-                                ForegroundColor = new Color(80, 80, 80),
-                                Visible = PreviewNoDescriptionVisible
                             },
                             new NuiSpacer { Height = 12f },
                             new NuiButton("Purchase Item")

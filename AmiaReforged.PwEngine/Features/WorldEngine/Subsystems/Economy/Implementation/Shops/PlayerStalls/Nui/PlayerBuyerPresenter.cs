@@ -185,13 +185,14 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 			string entry = string.Format(
 				CultureInfo.InvariantCulture,
-				"{0}{1}{2}",
+				"{0} - {1}{2}{3}",
 				product.DisplayName,
+				FormatPrice(product.Price),
 				statusSuffix,
 				originalNameSuffix);
 
 			entries.Add(entry);
-			tooltips.Add(string.IsNullOrWhiteSpace(product.Tooltip) ? string.Empty : product.Tooltip!);
+			tooltips.Add($"{product.Price.ToString()} gp");
 			enabled.Add(true); // Always allow selecting to see preview
 		}
 
