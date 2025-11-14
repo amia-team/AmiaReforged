@@ -101,11 +101,12 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
         {
             Id = "player_stall_preview_group",
             Border = true,
-            Scrollbars = NuiScrollbars.None,
+            Scrollbars = NuiScrollbars.Auto,
             Layout = new NuiColumn
             {
                 Children =
                 [
+                    new NuiSpacer { Height = 8f },
                     new NuiLabel("Item Preview")
                     {
                         Height = 25f,
@@ -121,6 +122,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                         [
                             new NuiLabel("Select an item to view details")
                             {
+                                Width = 260f,
                                 Height = 200f,
                                 HorizontalAlign = NuiHAlign.Center,
                                 VerticalAlign = NuiVAlign.Middle,
@@ -135,6 +137,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                         [
                             new NuiLabel(PreviewItemName)
                             {
+                                Width = 260f,
                                 Height = 28f,
                                 HorizontalAlign = NuiHAlign.Left,
                                 VerticalAlign = NuiVAlign.Middle,
@@ -143,6 +146,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                             new NuiSpacer { Height = 6f },
                             new NuiLabel(PreviewItemCost)
                             {
+                                Width = 260f,
                                 Height = 22f,
                                 HorizontalAlign = NuiHAlign.Left,
                                 VerticalAlign = NuiVAlign.Middle,
@@ -151,6 +155,7 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                             new NuiSpacer { Height = 12f },
                             new NuiLabel("Description:")
                             {
+                                Width = 260f,
                                 Height = 20f,
                                 HorizontalAlign = NuiHAlign.Left,
                                 VerticalAlign = NuiVAlign.Middle,
@@ -159,13 +164,15 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                             },
                             new NuiText(PreviewItemDescription)
                             {
-                                Height = 120f,
+                                Width = 260f,
+                                Height = 100f,
                                 Scrollbars = NuiScrollbars.Auto,
                                 Visible = PreviewDescriptionVisible
                             },
                             new NuiLabel("No description available.")
                             {
-                                Height = 60f,
+                                Width = 260f,
+                                Height = 40f,
                                 HorizontalAlign = NuiHAlign.Left,
                                 VerticalAlign = NuiVAlign.Top,
                                 ForegroundColor = new Color(80, 80, 80),
@@ -175,9 +182,11 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                             new NuiButton("Purchase Item")
                             {
                                 Id = "player_stall_buy_from_preview",
+                                Width = 260f,
                                 Height = 35f,
                                 Enabled = PreviewBuyEnabled
-                            }.Assign(out BuyFromPreviewButton)
+                            }.Assign(out BuyFromPreviewButton),
+                            new NuiSpacer { Height = 8f }
                         ]
                     }
                 ]

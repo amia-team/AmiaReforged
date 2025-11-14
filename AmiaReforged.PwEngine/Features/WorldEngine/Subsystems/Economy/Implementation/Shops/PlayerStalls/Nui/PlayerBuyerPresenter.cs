@@ -294,12 +294,16 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 	{
 		if (rowIndex < 0 || rowIndex >= _productRows.Count)
 		{
+			Log.Warn("Invalid row index {RowIndex} for product selection (count: {Count})", rowIndex, _productRows.Count);
 			return;
 		}
 
 		_selectedProductIndex = rowIndex;
 		ProductRow row = _productRows[rowIndex];
 		PlayerStallProductView product = row.Product;
+
+		Log.Debug("Selected product: {ProductName} (ID: {ProductId}, Purchasable: {CanPurchase})",
+			product.DisplayName, product.ProductId, row.CanPurchase);
 
 		// Show preview panel
 		Token().SetBindValue(View.PreviewVisible, true);
@@ -313,6 +317,9 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		Token().SetBindValue(View.PreviewDescriptionVisible, hasDescription);
 		Token().SetBindValue(View.PreviewNoDescriptionVisible, !hasDescription);
 		Token().SetBindValue(View.PreviewItemDescription, hasDescription ? product.Tooltip! : string.Empty);
+
+		Log.Debug("Preview set - HasDescription: {HasDescription}, Description: {Description}",
+			hasDescription, hasDescription ? product.Tooltip : "(none)");
 
 		// Enable buy button only if purchasable
 		Token().SetBindValue(View.PreviewBuyEnabled, row.CanPurchase);
