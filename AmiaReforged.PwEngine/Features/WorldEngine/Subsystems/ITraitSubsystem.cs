@@ -105,4 +105,3 @@ public enum TraitCategory
     Curse,
     Blessing
 }
-

@@ -8,8 +8,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 
 public sealed class ShopWindowView : ScryView<ShopWindowPresenter>
 {
-    private const float WindowW = 630f;
-    private const float WindowH = 640f;
+    public const float WindowW = 630f;
+    public const float WindowH = 640f;
     private const float HeaderW = 600f;
     private const float HeaderH = 100f;
     private const float HeaderTopPad = 0f;

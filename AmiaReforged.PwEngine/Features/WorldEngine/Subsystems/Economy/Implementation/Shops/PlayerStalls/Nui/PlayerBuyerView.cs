@@ -8,9 +8,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 
 public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
 {
-    private const float WindowW = 630f;
+    private const float WindowW = 950f;
     private const float WindowH = 520f;
-    private const float HeaderW = 600f;
+    private const float HeaderW = 900f;
     private const float HeaderH = 100f;
     private const float HeaderTopPad = 0f;
     private const float HeaderLeftPad = 5f;
@@ -28,9 +28,20 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
     public readonly NuiBind<int> ProductCount = new("player_stall_product_count");
     public readonly NuiBind<string> ProductEntries = new("player_stall_product_entries");
     public readonly NuiBind<string> ProductTooltips = new("player_stall_product_tooltips");
-    public readonly NuiBind<bool> ProductPurchasable = new("player_stall_product_enabled");
+    public readonly NuiBind<bool> ProductSelectable = new("player_stall_product_selectable");
 
-    public NuiButton BuyButton = null!;
+    // Preview bindings
+    public readonly NuiBind<bool> PreviewVisible = new("player_stall_preview_visible");
+    public readonly NuiBind<bool> PreviewPlaceholderVisible = new("player_stall_preview_placeholder_visible");
+    public readonly NuiBind<string> PreviewItemName = new("player_stall_preview_item_name");
+    public readonly NuiBind<string> PreviewItemDescription = new("player_stall_preview_item_description");
+    public readonly NuiBind<bool> PreviewDescriptionVisible = new("player_stall_preview_description_visible");
+    public readonly NuiBind<bool> PreviewNoDescriptionVisible = new("player_stall_preview_no_description_visible");
+    public readonly NuiBind<string> PreviewItemCost = new("player_stall_preview_item_cost");
+    public readonly NuiBind<bool> PreviewBuyEnabled = new("player_stall_preview_buy_enabled");
+
+    public NuiButton SelectButton = null!;
+    public NuiButton BuyFromPreviewButton = null!;
     public NuiButton LeaveButton = null!;
 
     public PlayerBuyerView(NwPlayer player, PlayerStallBuyerWindowConfig config)
@@ -71,20 +82,107 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                 Tooltip = ProductTooltips
             })
             {
-                Width = 400f
+                Width = 280f
             },
-            new(new NuiButton("Buy")
+            new(new NuiButton("Select")
             {
-                Id = "player_stall_buy",
+                Id = "player_stall_select",
                 Height = 26f,
-                Width = 90f,
-                Enabled = ProductPurchasable
-            }.Assign(out BuyButton))
+                Width = 70f,
+                Enabled = ProductSelectable
+            }.Assign(out SelectButton))
             {
-                Width = 100f,
+                Width = 80f,
                 VariableSize = false
             }
         ];
+
+        NuiGroup previewGroup = new()
+        {
+            Id = "player_stall_preview_group",
+            Border = true,
+            Scrollbars = NuiScrollbars.None,
+            Layout = new NuiColumn
+            {
+                Children =
+                [
+                    new NuiLabel("Item Preview")
+                    {
+                        Height = 25f,
+                        HorizontalAlign = NuiHAlign.Center,
+                        VerticalAlign = NuiVAlign.Middle,
+                        ForegroundColor = new Color(30, 20, 12)
+                    },
+                    new NuiSpacer { Height = 8f },
+                    new NuiRow
+                    {
+                        Visible = PreviewPlaceholderVisible,
+                        Children =
+                        [
+                            new NuiLabel("Select an item to view details")
+                            {
+                                Height = 200f,
+                                HorizontalAlign = NuiHAlign.Center,
+                                VerticalAlign = NuiVAlign.Middle,
+                                ForegroundColor = new Color(80, 80, 80)
+                            }
+                        ]
+                    },
+                    new NuiColumn
+                    {
+                        Visible = PreviewVisible,
+                        Children =
+                        [
+                            new NuiLabel(PreviewItemName)
+                            {
+                                Height = 28f,
+                                HorizontalAlign = NuiHAlign.Left,
+                                VerticalAlign = NuiVAlign.Middle,
+                                ForegroundColor = new Color(30, 20, 12)
+                            },
+                            new NuiSpacer { Height = 6f },
+                            new NuiLabel(PreviewItemCost)
+                            {
+                                Height = 22f,
+                                HorizontalAlign = NuiHAlign.Left,
+                                VerticalAlign = NuiVAlign.Middle,
+                                ForegroundColor = new Color(30, 20, 12)
+                            },
+                            new NuiSpacer { Height = 12f },
+                            new NuiLabel("Description:")
+                            {
+                                Height = 20f,
+                                HorizontalAlign = NuiHAlign.Left,
+                                VerticalAlign = NuiVAlign.Middle,
+                                ForegroundColor = new Color(30, 20, 12),
+                                Visible = PreviewDescriptionVisible
+                            },
+                            new NuiText(PreviewItemDescription)
+                            {
+                                Height = 120f,
+                                Scrollbars = NuiScrollbars.Auto,
+                                Visible = PreviewDescriptionVisible
+                            },
+                            new NuiLabel("No description available.")
+                            {
+                                Height = 60f,
+                                HorizontalAlign = NuiHAlign.Left,
+                                VerticalAlign = NuiVAlign.Top,
+                                ForegroundColor = new Color(80, 80, 80),
+                                Visible = PreviewNoDescriptionVisible
+                            },
+                            new NuiSpacer { Height = 12f },
+                            new NuiButton("Purchase Item")
+                            {
+                                Id = "player_stall_buy_from_preview",
+                                Height = 35f,
+                                Enabled = PreviewBuyEnabled
+                            }.Assign(out BuyFromPreviewButton)
+                        ]
+                    }
+                ]
+            }
+        };
 
         NuiColumn root = new()
         {
@@ -180,12 +278,28 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
                     Children =
                     [
                         new NuiSpacer { Width = 20f },
-                        new NuiList(productTemplate, ProductCount)
+                        new NuiColumn
                         {
-                            Width = 400f,
-                            RowHeight = 26f,
-                            Height = 280f
-                        }
+                            Width = 380f,
+                            Children =
+                            [
+                                new NuiList(productTemplate, ProductCount)
+                                {
+                                    RowHeight = 26f,
+                                    Height = 280f
+                                }
+                            ]
+                        },
+                        new NuiSpacer { Width = 10f },
+                        new NuiColumn
+                        {
+                            Width = 280f,
+                            Children =
+                            [
+                                previewGroup
+                            ]
+                        },
+                        new NuiSpacer { Width = 20f }
                     ]
                 },
                 spacer6,
@@ -225,3 +339,4 @@ public sealed class PlayerBuyerView : ScryView<PlayerBuyerPresenter>
         return root;
     }
 }
+

@@ -20,6 +20,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 	private Guid? _sessionId;
 	private bool _isProcessing;
 	private bool _isClosing;
+	private int _selectedProductIndex = -1;
 
 	public PlayerBuyerPresenter(PlayerBuyerView view, NwPlayer player, PlayerStallBuyerWindowConfig config)
 	{
@@ -38,7 +39,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 	{
 		_window = new NuiWindow(View.RootLayout(), _config.Title)
 		{
-			Geometry = new NuiRect(80f, 80f, 630f, 460f),
+			Geometry = new NuiRect(80f, 80f, 950f, 520f),
 			Resizable = false
 		};
 	}
@@ -81,10 +82,16 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 			return;
 		}
 
-		if (eventData.ElementId == View.BuyButton.Id)
+		if (eventData.ElementId == View.SelectButton.Id)
 		{
 			int rowIndex = eventData.ArrayIndex;
-			_ = HandlePurchaseAsync(rowIndex);
+			HandleSelectProduct(rowIndex);
+			return;
+		}
+
+		if (eventData.ElementId == View.BuyFromPreviewButton.Id)
+		{
+			_ = HandlePurchaseAsync(_selectedProductIndex);
 			return;
 		}
 
@@ -131,6 +138,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		await NwTask.SwitchToMainThread();
 
 		_productRows.Clear();
+		_selectedProductIndex = -1;
 
 		Token().SetBindValue(View.StallTitle, snapshot.Summary.StallName);
 
@@ -146,6 +154,10 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 		ApplyFeedback(snapshot.FeedbackVisible, snapshot.FeedbackMessage, snapshot.FeedbackColor ?? ColorConstants.White);
 
+		// Initialize preview as hidden
+		Token().SetBindValue(View.PreviewVisible, false);
+		Token().SetBindValue(View.PreviewPlaceholderVisible, true);
+
 	List<string> entries = new(snapshot.Products.Count);
 	List<string> tooltips = new(snapshot.Products.Count);
 	List<bool> enabled = new(snapshot.Products.Count);
@@ -153,7 +165,7 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		foreach (PlayerStallProductView product in snapshot.Products)
 		{
 			bool canPurchase = product.IsPurchasable && !product.IsSoldOut;
-			_productRows.Add(new ProductRow(product.ProductId, canPurchase));
+			_productRows.Add(new ProductRow(product.ProductId, canPurchase, product));
 
 			string status = product.IsSoldOut
 				? "(Sold out)"
@@ -173,20 +185,19 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 
 			string entry = string.Format(
 				CultureInfo.InvariantCulture,
-				"{0} - {1}{2}{3}",
+				"{0}{1}{2}",
 				product.DisplayName,
-				FormatPrice(product.Price),
 				statusSuffix,
 				originalNameSuffix);
 
 			entries.Add(entry);
 			tooltips.Add(string.IsNullOrWhiteSpace(product.Tooltip) ? string.Empty : product.Tooltip!);
-			enabled.Add(canPurchase);
+			enabled.Add(true); // Always allow selecting to see preview
 		}
 
 		Token().SetBindValues(View.ProductEntries, entries);
 		Token().SetBindValues(View.ProductTooltips, tooltips);
-		Token().SetBindValues(View.ProductPurchasable, enabled);
+		Token().SetBindValues(View.ProductSelectable, enabled);
 		Token().SetBindValue(View.ProductCount, entries.Count);
 	}
 
@@ -279,5 +290,33 @@ public sealed class PlayerBuyerPresenter : ScryPresenter<PlayerBuyerView>, IAuto
 		return string.Format(CultureInfo.InvariantCulture, "{0:n0} gp", Math.Max(0, amount));
 	}
 
-	private sealed record ProductRow(long ProductId, bool CanPurchase);
+	private void HandleSelectProduct(int rowIndex)
+	{
+		if (rowIndex < 0 || rowIndex >= _productRows.Count)
+		{
+			return;
+		}
+
+		_selectedProductIndex = rowIndex;
+		ProductRow row = _productRows[rowIndex];
+		PlayerStallProductView product = row.Product;
+
+		// Show preview panel
+		Token().SetBindValue(View.PreviewVisible, true);
+		Token().SetBindValue(View.PreviewPlaceholderVisible, false);
+
+		// Set preview content
+		Token().SetBindValue(View.PreviewItemName, product.DisplayName);
+		Token().SetBindValue(View.PreviewItemCost, string.Format(CultureInfo.InvariantCulture, "Cost: {0}", FormatPrice(product.Price)));
+
+		bool hasDescription = !string.IsNullOrWhiteSpace(product.Tooltip);
+		Token().SetBindValue(View.PreviewDescriptionVisible, hasDescription);
+		Token().SetBindValue(View.PreviewNoDescriptionVisible, !hasDescription);
+		Token().SetBindValue(View.PreviewItemDescription, hasDescription ? product.Tooltip! : string.Empty);
+
+		// Enable buy button only if purchasable
+		Token().SetBindValue(View.PreviewBuyEnabled, row.CanPurchase);
+	}
+
+	private sealed record ProductRow(long ProductId, bool CanPurchase, PlayerStallProductView Product);
 }
