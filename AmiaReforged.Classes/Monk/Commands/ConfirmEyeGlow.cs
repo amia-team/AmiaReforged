@@ -9,6 +9,9 @@ public class ConfirmEyeGlow : IChatCommand
 {
     private const string MonkEyeGlowTag = "monk_eye_glow";
     public string Command => "./confirmeyeglow";
+    public string Description => "Apply the eye glow visual effect to your character.";
+    public string AllowedRoles => "Player";
+
     public Task ExecuteCommand(NwPlayer caller, string[] args)
     {
         NwCreature? monk = caller.ControlledCreature;

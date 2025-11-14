@@ -7,6 +7,13 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.DM;
 [ServiceBinding(typeof(IChatCommand))]
 public class EconomyCommand : IChatCommand
 {
+    private readonly ResourceNodeInstanceSetupService _nodeSetup;
+
+    public EconomyCommand(ResourceNodeInstanceSetupService nodeSetup)
+    {
+        _nodeSetup = nodeSetup;
+    }
+
     public string Command => "./economy";
     public string Description => "Manage economy system (banks, properties, stalls)";
     public string AllowedRoles => "DM";
@@ -44,14 +51,14 @@ public class EconomyCommand : IChatCommand
     private void HandleDestroy(NwPlayer caller)
     {
         caller.SendServerMessage("Clearing all resource nodes...");
-        nodeSetup.ClearOldNodes();
+        _nodeSetup.ClearOldNodes();
         caller.SendServerMessage("✓ Resource nodes cleared");
     }
 
     private void HandleInit(NwPlayer caller)
     {
         caller.SendServerMessage("Initializing resource node economy...");
-        nodeSetup.DoSetup();
+        _nodeSetup.DoSetup();
         caller.SendServerMessage("✓ Economy initialization complete");
     }
 }
