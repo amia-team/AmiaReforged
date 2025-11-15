@@ -324,6 +324,7 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
 
         return ctx.PlayerStalls
             .Include(s => s.Members)
+            .Include(s => s.LedgerEntries)
             .SingleOrDefault(s => s.Id == stallId);
     }
 

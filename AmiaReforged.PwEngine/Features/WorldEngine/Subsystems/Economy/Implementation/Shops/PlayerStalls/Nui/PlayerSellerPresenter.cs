@@ -44,7 +44,9 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private string _holdToggleTooltip = string.Empty;
     private string _holdToggleLabel = "Hold profits in stall escrow";
     private int _escrowBalance;
-        private int _currentPeriodGrossProfits;
+    private int _currentPeriodGrossProfits;
+    private string _grossProfitsText = string.Empty;
+    private string _availableFundsText = string.Empty;
     private bool _earningsVisible;
     private bool _withdrawEnabled;
     private bool _withdrawAllEnabled;
@@ -252,6 +254,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             : snapshot.HoldEarningsToggleLabel!;
         _escrowBalance = Math.Max(0, snapshot.EscrowBalance);
         _currentPeriodGrossProfits = Math.Max(0, snapshot.CurrentPeriodGrossProfits);
+        _grossProfitsText = FormatPrice(_currentPeriodGrossProfits);
+        _availableFundsText = FormatPrice(_escrowBalance);
         _earningsVisible = snapshot.EarningsRowVisible;
         _withdrawEnabled = snapshot.WithdrawEnabled;
         _withdrawAllEnabled = snapshot.WithdrawAllEnabled;
@@ -1116,6 +1120,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private void ApplyEarningsBindings()
     {
         Token().SetBindValue(View.EarningsRowVisible, _earningsVisible);
+        Token().SetBindValue(View.GrossProfitsText, _grossProfitsText);
+        Token().SetBindValue(View.AvailableFundsText, _availableFundsText);
         Token().SetBindValue(View.EarningsBalanceText, FormatEarningsBalance(_escrowBalance, _currentPeriodGrossProfits));
         Token().SetBindValue(View.EarningsTooltip,
             string.IsNullOrWhiteSpace(_earningsTooltip) ? string.Empty : _earningsTooltip);

@@ -36,6 +36,8 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<string> HoldEarningsTooltip = new("player_stall_seller_hold_earnings_tooltip");
 
     public readonly NuiBind<bool> EarningsRowVisible = new("player_stall_seller_earnings_visible");
+    public readonly NuiBind<string> GrossProfitsText = new("player_stall_seller_gross_profits");
+    public readonly NuiBind<string> AvailableFundsText = new("player_stall_seller_available_funds");
     public readonly NuiBind<string> EarningsBalanceText = new("player_stall_seller_earnings_balance");
     public readonly NuiBind<string> EarningsTooltip = new("player_stall_seller_earnings_tooltip");
     public readonly NuiBind<string> EarningsWithdrawInput = new("player_stall_seller_earnings_withdraw_input");
@@ -548,6 +550,54 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             Enabled = EarningsWithdrawAllEnabled,
                             Tooltip = EarningsTooltip
                         }.Assign(out WithdrawAllProfitsButton),
+                    ]
+                },
+                new NuiRow
+                {
+                    Visible = EarningsRowVisible,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Gross Profits:")
+                        {
+                            Width = 170f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiSpacer { Width = 8f },
+                        new NuiLabel(GrossProfitsText)
+                        {
+                            Width = 90f,
+                            Height = 30f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
+                    ]
+                },
+                new NuiRow
+                {
+                    Visible = EarningsRowVisible,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Available Funds:")
+                        {
+                            Width = 170f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiSpacer { Width = 8f },
+                        new NuiLabel(AvailableFundsText)
+                        {
+                            Width = 90f,
+                            Height = 30f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        }
                     ]
                 },
                 new NuiSpacer { Height = 6f, Visible = HoldEarningsVisible },
