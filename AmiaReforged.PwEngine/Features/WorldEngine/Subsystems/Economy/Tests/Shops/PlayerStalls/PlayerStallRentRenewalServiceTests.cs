@@ -365,4 +365,192 @@ public class PlayerStallRentRenewalServiceTests
             IsActive = true
         };
     }
+
+    #region Rent Deposit Integration Tests
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenEscrowHasDeposit_PaysRentFromEscrow()
+    {
+        // Stall has deposit in escrow but no Coinhouse account
+        _stall.EscrowBalance = 5000; // Includes deposit
+        _stall.DailyRent = 1000;
+        _stall.CoinHouseAccountId = null;
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddMinutes(-5);
+        int initialBalance = _stall.EscrowBalance;
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify rent was paid from escrow
+        Assert.That(_stall.EscrowBalance, Is.EqualTo(initialBalance - _stall.DailyRent));
+        Assert.That(_stall.IsActive, Is.True);
+        Assert.That(_stall.SuspendedUtc, Is.Null);
+        Assert.That(_stall.LastRentPaidUtc, Is.Not.Null);
+
+        // Verify PayStallRentCommand was called with escrow source
+        _worldEngine.Verify(w => w.ExecuteAsync(
+            It.Is<PayStallRentCommand>(cmd =>
+                cmd.StallId == _stall.Id &&
+                cmd.Source == RentChargeSource.StallEscrow &&
+                cmd.RentAmount == _stall.DailyRent),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenBothCoinhouseAndEscrow_PrefersCoinhouse()
+    {
+        // Stall has both Coinhouse account and escrow balance
+        _stall.CoinHouseAccountId = Guid.NewGuid();
+        _stall.EscrowBalance = 5000;
+        _stall.DailyRent = 1000;
+        _stall.SettlementTag = "market_square";
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddMinutes(-5);
+        int initialEscrowBalance = _stall.EscrowBalance;
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify rent was paid from Coinhouse, not escrow
+        Assert.That(_stall.EscrowBalance, Is.EqualTo(initialEscrowBalance),
+            "Escrow should not be touched when Coinhouse is available");
+        Assert.That(_stall.IsActive, Is.True);
+        Assert.That(_stall.SuspendedUtc, Is.Null);
+
+        // Verify withdraw from Coinhouse was attempted (not escrow)
+        _worldEngine.Verify(w => w.ExecuteAsync(
+            It.Is<WithdrawGoldCommand>(cmd => cmd.Amount.Value == _stall.DailyRent),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenOnlyPartialEscrowDeposit_FailsAndStartsGracePeriod()
+    {
+        // Escrow has a deposit but not enough to cover rent
+        _stall.EscrowBalance = 500; // Not enough for 1000 gp rent
+        _stall.DailyRent = 1000;
+        _stall.CoinHouseAccountId = null;
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddMinutes(-5);
+        int initialBalance = _stall.EscrowBalance;
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify rent payment failed and grace period started
+        Assert.That(_stall.EscrowBalance, Is.EqualTo(initialBalance),
+            "Escrow should not be touched for insufficient partial payment");
+        Assert.That(_stall.SuspendedUtc, Is.Not.Null);
+        Assert.That(_stall.IsActive, Is.True,
+            "Stall should remain active during grace period");
+
+        // Verify warning notification was sent
+        Assert.That(_capturedNotifications, Has.Count.EqualTo(1));
+        Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Yellow));
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenMultipleDeposits_AccumulatesForRentPayment()
+    {
+        // Multiple deposits have accumulated in escrow
+        _stall.EscrowBalance = 15000; // From multiple deposits
+        _stall.DailyRent = 2500;
+        _stall.CoinHouseAccountId = null;
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddMinutes(-5);
+
+        // Pay rent multiple times to simulate multiple cycles
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+        Assert.That(_stall.EscrowBalance, Is.EqualTo(12500));
+
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddMinutes(-5);
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+        Assert.That(_stall.EscrowBalance, Is.EqualTo(10000));
+
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddMinutes(-5);
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+        Assert.That(_stall.EscrowBalance, Is.EqualTo(7500));
+
+        // All payments should have succeeded
+        Assert.That(_stall.IsActive, Is.True);
+        Assert.That(_stall.SuspendedUtc, Is.Null);
+        _worldEngine.Verify(w => w.ExecuteAsync(
+            It.IsAny<PayStallRentCommand>(),
+            It.IsAny<CancellationToken>()),
+            Times.Exactly(3));
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenDepositExactlyCoversRent_PaysAndEscrowBecomesZero()
+    {
+        // Escrow has exactly enough to cover one rent payment
+        _stall.EscrowBalance = 1000;
+        _stall.DailyRent = 1000;
+        _stall.CoinHouseAccountId = null;
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddMinutes(-5);
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify exact payment
+        Assert.That(_stall.EscrowBalance, Is.EqualTo(0));
+        Assert.That(_stall.IsActive, Is.True);
+        Assert.That(_stall.SuspendedUtc, Is.Null);
+
+        _worldEngine.Verify(w => w.ExecuteAsync(
+            It.Is<PayStallRentCommand>(cmd =>
+                cmd.Source == RentChargeSource.StallEscrow &&
+                cmd.RentAmount == 1000),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenDepositAndSales_CombinedEscrowPaysRent()
+    {
+        // Escrow contains both deposits and sales earnings
+        _stall.EscrowBalance = 8000; // Mixed from sales and deposits
+        _stall.DailyRent = 2000;
+        _stall.CoinHouseAccountId = null;
+        _stall.HoldEarningsInStall = true; // Sales go to escrow
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddMinutes(-5);
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify rent paid from combined escrow (doesn't matter the source)
+        Assert.That(_stall.EscrowBalance, Is.EqualTo(6000));
+        Assert.That(_stall.IsActive, Is.True);
+        Assert.That(_stall.SuspendedUtc, Is.Null);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenCoinhouseFailsButEscrowAvailable_FallsBackToEscrow()
+    {
+        // Coinhouse withdrawal fails, but escrow has funds
+        _stall.CoinHouseAccountId = Guid.NewGuid();
+        _stall.EscrowBalance = 5000;
+        _stall.DailyRent = 1000;
+        _stall.SettlementTag = "market_square";
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddMinutes(-5);
+
+        // Simulate Coinhouse withdrawal failure
+        _worldEngine
+            .Setup(w => w.ExecuteAsync(It.IsAny<WithdrawGoldCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CommandResult.Fail("Insufficient funds in Coinhouse"));
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify fallback to escrow
+        Assert.That(_stall.EscrowBalance, Is.EqualTo(4000),
+            "Should have fallen back to escrow after Coinhouse failure");
+        Assert.That(_stall.IsActive, Is.True);
+        Assert.That(_stall.SuspendedUtc, Is.Null);
+
+        // Verify both attempts were made
+        _worldEngine.Verify(w => w.ExecuteAsync(
+            It.IsAny<WithdrawGoldCommand>(),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
+        _worldEngine.Verify(w => w.ExecuteAsync(
+            It.Is<PayStallRentCommand>(cmd => cmd.Source == RentChargeSource.StallEscrow),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    #endregion
 }

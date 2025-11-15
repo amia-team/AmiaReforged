@@ -329,6 +329,55 @@ public sealed class PlayerStallAggregate
         }, sanitizedAmount, wasPartial));
     }
 
+    public PlayerStallDomainResult<PlayerStallDeposit> TryDepositToEscrow(
+        string requestorPersonaId,
+        int amount)
+    {
+        if (string.IsNullOrWhiteSpace(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<PlayerStallDeposit>.Fail(
+                PlayerStallError.Unauthorized,
+                "A persona is required to deposit to stall escrow.");
+        }
+
+        if (!_snapshot.IsActive)
+        {
+            return PlayerStallDomainResult<PlayerStallDeposit>.Fail(
+                PlayerStallError.StallInactive,
+                "This stall is not currently active.");
+        }
+
+        if (!HasCollectionPrivileges(requestorPersonaId))
+        {
+            return PlayerStallDomainResult<PlayerStallDeposit>.Fail(
+                PlayerStallError.Unauthorized,
+                "You do not have permission to manage this stall's escrow.");
+        }
+
+        if (amount <= 0)
+        {
+            return PlayerStallDomainResult<PlayerStallDeposit>.Fail(
+                PlayerStallError.InvalidDepositAmount,
+                "Deposit amount must be greater than zero.");
+        }
+
+        // Sanity check: prevent extremely large deposits (more than 100 days of rent)
+        int maxDeposit = _snapshot.DailyRent > 0 ? _snapshot.DailyRent * 100 : int.MaxValue;
+        if (amount > maxDeposit)
+        {
+            return PlayerStallDomainResult<PlayerStallDeposit>.Fail(
+                PlayerStallError.DepositAmountTooLarge,
+                $"Deposit amount cannot exceed {maxDeposit:N0} gp (100 days of rent).");
+        }
+
+        int sanitizedAmount = amount;
+
+        return PlayerStallDomainResult<PlayerStallDeposit>.Ok(new PlayerStallDeposit(stall =>
+        {
+            stall.EscrowBalance = Math.Max(0, stall.EscrowBalance) + sanitizedAmount;
+        }, sanitizedAmount));
+    }
+
     private bool HasInventoryPrivileges(string personaId)
     {
         if (string.IsNullOrWhiteSpace(personaId))
@@ -403,6 +452,7 @@ public sealed class PlayerStallAggregate
     string? OwnerPlayerPersonaId,
         bool IsActive,
         int EscrowBalance,
+        int DailyRent,
         bool HoldEarningsInStall,
         IReadOnlyDictionary<string, bool> InventoryPermissions,
         IReadOnlyDictionary<string, bool> CollectionPermissions,
@@ -421,6 +471,7 @@ public sealed class PlayerStallAggregate
                 stall.OwnerPlayerPersonaId,
                 stall.IsActive,
                 Math.Max(0, stall.EscrowBalance),
+                Math.Max(0, stall.DailyRent),
                 stall.HoldEarningsInStall,
                 inventory,
                 collection,
@@ -490,3 +541,5 @@ public sealed class PlayerStallAggregate
 }
 
 public sealed record PlayerStallWithdrawal(Action<PlayerStall> Apply, int Amount, bool WasPartial);
+
+public sealed record PlayerStallDeposit(Action<PlayerStall> Apply, int Amount);

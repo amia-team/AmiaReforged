@@ -22,5 +22,7 @@ public enum PlayerStallError
     CoinhouseUnavailable,
     CoinhouseAccountMissing,
     InvalidWithdrawalAmount,
-    InsufficientEscrow
+    InsufficientEscrow,
+    InvalidDepositAmount,
+    DepositAmountTooLarge
 }

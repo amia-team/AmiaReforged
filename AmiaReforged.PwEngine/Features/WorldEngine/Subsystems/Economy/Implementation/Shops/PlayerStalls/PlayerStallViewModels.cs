@@ -163,6 +163,8 @@ public sealed record PlayerStallSellerSnapshot(
     bool WithdrawEnabled = false,
     bool WithdrawAllEnabled = false,
     string? EarningsTooltip = null,
+    bool DepositEnabled = false,
+    string? DepositTooltip = null,
     IReadOnlyList<PlayerStallLedgerEntryView>? LedgerEntries = null);
 
 /// <summary>
@@ -241,6 +243,16 @@ public sealed record PlayerStallSellerRetrieveProductRequest(
     long StallId,
     PersonaId SellerPersona,
     long ProductId);
+
+/// <summary>
+/// Request raised by the seller UI to deposit gold into the stall's escrow for rent payment.
+/// </summary>
+public sealed record PlayerStallDepositRequest(
+    Guid SessionId,
+    long StallId,
+    PersonaId DepositorPersona,
+    string DepositorDisplayName,
+    int DepositAmount);
 
 /// <summary>
 /// Payment option details shown when a player claims a stall.

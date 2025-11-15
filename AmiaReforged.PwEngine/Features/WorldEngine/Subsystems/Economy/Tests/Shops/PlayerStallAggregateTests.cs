@@ -273,4 +273,203 @@ public class PlayerStallAggregateTests
             AddedUtc = DateTime.UtcNow
         };
     }
+
+    #region TryDepositToEscrow Tests
+
+    [Test]
+    public void TryDepositToEscrow_WhenOwnerWithValidAmount_ReturnsSuccess()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.DailyRent = 1000;
+        stall.EscrowBalance = 5000;
+        stall.IsActive = true;
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<PlayerStallDeposit> result = aggregate.TryDepositToEscrow(ownerPersona, 2500);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Payload, Is.Not.Null);
+        Assert.That(result.Payload!.Amount, Is.EqualTo(2500));
+
+        PlayerStall persisted = CreateStall();
+        persisted.EscrowBalance = 5000;
+        result.Payload.Apply(persisted);
+
+        Assert.That(persisted.EscrowBalance, Is.EqualTo(7500));
+    }
+
+    [Test]
+    public void TryDepositToEscrow_WhenMemberWithCollectionPrivileges_ReturnsSuccess()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        string memberPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.DailyRent = 500;
+        stall.EscrowBalance = 1000;
+        stall.IsActive = true;
+        stall.Members = new List<PlayerStallMember>
+        {
+            new PlayerStallMember
+            {
+                StallId = stall.Id,
+                PersonaId = memberPersona,
+                DisplayName = "Trusted Member",
+                CanManageInventory = false,
+                CanConfigureSettings = false,
+                CanCollectEarnings = true,
+                AddedByPersonaId = ownerPersona,
+                AddedUtc = DateTime.UtcNow
+            }
+        };
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<PlayerStallDeposit> result = aggregate.TryDepositToEscrow(memberPersona, 1500);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Payload!.Amount, Is.EqualTo(1500));
+    }
+
+    [Test]
+    public void TryDepositToEscrow_WhenUnauthorized_ReturnsFailure()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.DailyRent = 1000;
+        stall.IsActive = true;
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<PlayerStallDeposit> result =
+            aggregate.TryDepositToEscrow("Character:unauthorized", 1000);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.Unauthorized));
+    }
+
+    [Test]
+    public void TryDepositToEscrow_WhenStallInactive_ReturnsFailure()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.DailyRent = 1000;
+        stall.IsActive = false;
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<PlayerStallDeposit> result = aggregate.TryDepositToEscrow(ownerPersona, 2000);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.StallInactive));
+    }
+
+    [Test]
+    public void TryDepositToEscrow_WhenAmountZero_ReturnsFailure()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.DailyRent = 1000;
+        stall.IsActive = true;
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<PlayerStallDeposit> result = aggregate.TryDepositToEscrow(ownerPersona, 0);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.InvalidDepositAmount));
+    }
+
+    [Test]
+    public void TryDepositToEscrow_WhenAmountNegative_ReturnsFailure()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.DailyRent = 1000;
+        stall.IsActive = true;
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<PlayerStallDeposit> result = aggregate.TryDepositToEscrow(ownerPersona, -500);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.InvalidDepositAmount));
+    }
+
+    [Test]
+    public void TryDepositToEscrow_WhenAmountExceeds100DaysRent_ReturnsFailure()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.DailyRent = 1000;
+        stall.IsActive = true;
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        int maxDeposit = 1000 * 100; // 100 days
+        int tooLarge = maxDeposit + 1;
+
+        PlayerStallDomainResult<PlayerStallDeposit> result = aggregate.TryDepositToEscrow(ownerPersona, tooLarge);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.DepositAmountTooLarge));
+    }
+
+    [Test]
+    public void TryDepositToEscrow_WhenAmountExactly100DaysRent_ReturnsSuccess()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.DailyRent = 1000;
+        stall.EscrowBalance = 0;
+        stall.IsActive = true;
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        int maxDeposit = 1000 * 100; // Exactly 100 days
+
+        PlayerStallDomainResult<PlayerStallDeposit> result = aggregate.TryDepositToEscrow(ownerPersona, maxDeposit);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Payload!.Amount, Is.EqualTo(maxDeposit));
+    }
+
+    [Test]
+    public void TryDepositToEscrow_WhenPersonaIdEmpty_ReturnsFailure()
+    {
+        PlayerStall stall = CreateStall();
+        stall.DailyRent = 1000;
+        stall.IsActive = true;
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<PlayerStallDeposit> result = aggregate.TryDepositToEscrow("", 1000);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PlayerStallError.Unauthorized));
+    }
+
+    [Test]
+    public void TryDepositToEscrow_WhenDepositAddsToExistingBalance_ReturnsCorrectTotal()
+    {
+        PlayerStall stall = CreateStall();
+        string ownerPersona = $"Character:{Guid.NewGuid()}";
+        stall.OwnerPersonaId = ownerPersona;
+        stall.DailyRent = 500;
+        stall.EscrowBalance = 12000;
+        stall.IsActive = true;
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+
+        PlayerStallDomainResult<PlayerStallDeposit> result = aggregate.TryDepositToEscrow(ownerPersona, 8000);
+
+        Assert.That(result.Success, Is.True);
+
+        PlayerStall persisted = CreateStall();
+        persisted.EscrowBalance = 12000;
+        result.Payload!.Apply(persisted);
+
+        Assert.That(persisted.EscrowBalance, Is.EqualTo(20000));
+    }
+
+    #endregion
 }

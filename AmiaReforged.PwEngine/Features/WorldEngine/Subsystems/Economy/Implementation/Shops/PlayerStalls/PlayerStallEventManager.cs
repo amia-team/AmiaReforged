@@ -6,10 +6,12 @@ using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.NwObjectHelpers;
 using AmiaReforged.PwEngine.Features.Player.PlayerTools.Services;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.ValueObjects;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Accounts;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.Commands;
 using Anvil.API;
 using Anvil.Services;
 using NLog;
@@ -32,6 +34,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     private readonly IPlayerStallService _stallService;
     private readonly ICoinhouseRepository _coinhouses;
     private readonly IRenameItemService _renameService;
+    private readonly IWorldEngineFacade _worldEngine;
     private readonly Dictionary<Guid, BuyerSubscription> _buyerSessions = new();
     private readonly Dictionary<long, HashSet<Guid>> _stallBuyers = new();
     private readonly Dictionary<Guid, SellerSubscription> _sellerSessions = new();
@@ -43,13 +46,15 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         RuntimeCharacterService characters,
         IPlayerStallService stallService,
         ICoinhouseRepository coinhouses,
-        IRenameItemService renameService)
+        IRenameItemService renameService,
+        IWorldEngineFacade worldEngine)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _characters = characters ?? throw new ArgumentNullException(nameof(characters));
         _stallService = stallService ?? throw new ArgumentNullException(nameof(stallService));
         _coinhouses = coinhouses ?? throw new ArgumentNullException(nameof(coinhouses));
         _renameService = renameService ?? throw new ArgumentNullException(nameof(renameService));
+        _worldEngine = worldEngine ?? throw new ArgumentNullException(nameof(worldEngine));
     }
 
     /// <summary>
@@ -1095,6 +1100,174 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
     }
 
     /// <summary>
+    /// Handles seller requests to deposit gold into stall escrow for rent payment.
+    /// </summary>
+    public async Task<PlayerStallSellerOperationResult> RequestDepositRentAsync(PlayerStallDepositRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        SellerSubscription? subscription;
+        lock (_syncRoot)
+        {
+            _sellerSessions.TryGetValue(request.SessionId, out subscription);
+        }
+
+        if (subscription is null || subscription.StallId != request.StallId ||
+            subscription.Persona != request.DepositorPersona)
+        {
+            return PlayerStallSellerOperationResult.Fail(
+                "Your stall session is no longer valid.",
+                ColorConstants.Orange);
+        }
+
+        if (!TryResolvePersonaGuid(request.DepositorPersona, out Guid personaGuid))
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "We couldn't verify your persona for that action.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (!_characters.TryGetPlayer(personaGuid, out NwPlayer? player) || player is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be logged in as that persona to manage the stall.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        NwCreature? depositorCreature = await ResolveActiveCreatureAsync(player).ConfigureAwait(false);
+        if (depositorCreature is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "You must be possessing your character to deposit rent.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        if (request.DepositAmount <= 0)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "Deposit amount must be greater than zero.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        // Check if player has enough gold
+        int playerGold = (int)Math.Min(depositorCreature.Gold, int.MaxValue);
+        if (playerGold < request.DepositAmount)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                $"You only have {playerGold:N0} gp, but tried to deposit {request.DepositAmount:N0} gp.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        PlayerStall? stall = _shops.GetShopWithMembers(request.StallId);
+        if (stall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        // Validate with domain aggregate
+        PlayerStallAggregate aggregate = PlayerStallAggregate.FromEntity(stall);
+        string personaId = request.DepositorPersona.ToString();
+        PlayerStallDomainResult<PlayerStallDeposit> domainResult =
+            aggregate.TryDepositToEscrow(personaId, request.DepositAmount);
+
+        if (!domainResult.Success)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                domainResult.ErrorMessage ?? "Deposit validation failed.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        // Deduct gold from player
+        depositorCreature.Gold -= (uint)request.DepositAmount;
+
+        // Execute deposit command
+        DepositStallRentCommand command = DepositStallRentCommand.Create(
+            request.StallId,
+            request.DepositAmount,
+            personaId,
+            request.DepositorDisplayName,
+            DateTime.UtcNow);
+
+        CommandResult commandResult = await _worldEngine.ExecuteAsync(command).ConfigureAwait(false);
+
+        if (!commandResult.Success)
+        {
+            // Refund the gold if command failed
+            depositorCreature.Gold += (uint)request.DepositAmount;
+
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                commandResult.ErrorMessage ?? "Failed to record deposit.",
+                ColorConstants.Red);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        // Refresh stall data
+        PlayerStall? updatedStall = _shops.GetShopWithMembers(request.StallId);
+        if (updatedStall is null)
+        {
+            PlayerStallSellerOperationResult failure = PlayerStallSellerOperationResult.Fail(
+                "This stall is no longer available.",
+                ColorConstants.Orange);
+
+            await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, failure).ConfigureAwait(false);
+            return failure;
+        }
+
+        List<StallProduct> products = _shops.ProductsForShop(request.StallId) ?? new List<StallProduct>();
+
+        PlayerStallSellerSnapshot snapshot = await BuildSellerSnapshotAsync(
+            updatedStall,
+            products,
+            request.DepositorPersona,
+            null).ConfigureAwait(false);
+
+        string message = string.Format(CultureInfo.InvariantCulture,
+            "Deposited {0:N0} gp to stall escrow. New balance: {1:N0} gp.",
+            request.DepositAmount,
+            updatedStall.EscrowBalance);
+
+        PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
+            snapshot,
+            message,
+            ColorConstants.Lime);
+
+        await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);
+
+        await PublishSellerSnapshotsAsync(
+            request.StallId,
+            updatedStall,
+            products,
+            request.SessionId).ConfigureAwait(false);
+
+        return result;
+    }
+
+    /// <summary>
     /// Handles seller requests to list an inventory item for sale.
     /// </summary>
     public async Task<PlayerStallSellerOperationResult> RequestListInventoryItemAsync(
@@ -1337,16 +1510,13 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             updatedProducts,
             request.SellerPersona,
             newProductId).ConfigureAwait(false);
-
-        string message = string.Format(
-            CultureInfo.InvariantCulture,
-            "Listed {0} for {1:n0} gp.",
-            displayName,
-            request.Price);
-
         PlayerStallSellerOperationResult result = PlayerStallSellerOperationResult.Ok(
             snapshot,
-            message,
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "Listed {0} for {1:n0} gp.",
+                displayName,
+                request.Price),
             ColorConstants.Lime);
 
         await PublishSellerOperationAsync(subscription.Callbacks.OnOperationResult, result).ConfigureAwait(false);
@@ -2161,6 +2331,13 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         IReadOnlyList<PlayerStallLedgerEntryView> ledgerEntries = BuildLedgerViews(stall.Id);
 
+        bool depositEnabled = canCollect && stall.IsActive;
+        string? depositTooltip = !canCollect
+            ? "You do not have permission to deposit to this stall's escrow."
+            : !stall.IsActive
+                ? "This stall is not currently active."
+                : "Deposit gold into stall escrow for rent payment.";
+
         return new PlayerStallSellerSnapshot(
             summary,
             context,
@@ -2184,6 +2361,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             withdrawEnabled,
             withdrawAllEnabled,
             earningsTooltip,
+            depositEnabled,
+            depositTooltip,
             ledgerEntries);
     }
 
