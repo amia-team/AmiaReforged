@@ -44,6 +44,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private string _holdToggleTooltip = string.Empty;
     private string _holdToggleLabel = "Hold profits in stall escrow";
     private int _escrowBalance;
+        private int _currentPeriodGrossProfits;
     private bool _earningsVisible;
     private bool _withdrawEnabled;
     private bool _withdrawAllEnabled;
@@ -250,6 +251,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
             ? "Hold profits in stall escrow"
             : snapshot.HoldEarningsToggleLabel!;
         _escrowBalance = Math.Max(0, snapshot.EscrowBalance);
+        _currentPeriodGrossProfits = Math.Max(0, snapshot.CurrentPeriodGrossProfits);
         _earningsVisible = snapshot.EarningsRowVisible;
         _withdrawEnabled = snapshot.WithdrawEnabled;
         _withdrawAllEnabled = snapshot.WithdrawAllEnabled;
@@ -1114,7 +1116,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private void ApplyEarningsBindings()
     {
         Token().SetBindValue(View.EarningsRowVisible, _earningsVisible);
-        Token().SetBindValue(View.EarningsBalanceText, FormatEarningsBalance(_escrowBalance));
+        Token().SetBindValue(View.EarningsBalanceText, FormatEarningsBalance(_escrowBalance, _currentPeriodGrossProfits));
         Token().SetBindValue(View.EarningsTooltip,
             string.IsNullOrWhiteSpace(_earningsTooltip) ? string.Empty : _earningsTooltip);
         Token().SetBindValue(View.EarningsWithdrawEnabled, _withdrawEnabled && !_isProcessing);
@@ -1209,9 +1211,12 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         return string.Format(CultureInfo.InvariantCulture, "{0} [{1}]", label, state);
     }
 
-    private static string FormatEarningsBalance(int amount)
+    private static string FormatEarningsBalance(int escrowBalance, int grossProfits)
     {
-        return string.Format(CultureInfo.InvariantCulture, "Available: {0:n0} gp", Math.Max(0, amount));
+        return string.Format(CultureInfo.InvariantCulture,
+            "Gross: {0:n0} gp | Available: {1:n0} gp",
+            Math.Max(0, grossProfits),
+            Math.Max(0, escrowBalance));
     }
 
     private static string FormatPrice(int price)

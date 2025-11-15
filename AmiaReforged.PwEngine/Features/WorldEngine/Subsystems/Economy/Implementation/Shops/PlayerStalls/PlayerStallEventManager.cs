@@ -2331,6 +2331,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
         IReadOnlyList<PlayerStallLedgerEntryView> ledgerEntries = BuildLedgerViews(stall.Id);
 
+        // Calculate gross profits for the current rental period
+        int currentPeriodGrossProfits = CalculateCurrentPeriodGrossProfits(stall);
+
         bool depositEnabled = canCollect && stall.IsActive;
         string? depositTooltip = !canCollect
             ? "You do not have permission to deposit to this stall's escrow."
@@ -2357,6 +2360,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             holdToggleTooltip,
             holdToggleLabel,
             escrowBalance,
+            currentPeriodGrossProfits,
             earningsRowVisible,
             withdrawEnabled,
             withdrawAllEnabled,
@@ -2364,6 +2368,30 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             depositEnabled,
             depositTooltip,
             ledgerEntries);
+    }
+
+    private int CalculateCurrentPeriodGrossProfits(PlayerStall stall)
+    {
+        // Determine the start of the current rental period
+        DateTime periodStart = stall.LastRentPaidUtc ?? stall.LeaseStartUtc;
+
+        // Sum all sales ledger entries since the period start
+        if (stall.LedgerEntries == null || stall.LedgerEntries.Count == 0)
+        {
+            return 0;
+        }
+
+        int grossProfits = 0;
+        foreach (PlayerStallLedgerEntry entry in stall.LedgerEntries)
+        {
+            if (entry.EntryType == PlayerStallLedgerEntryType.SaleGross &&
+                entry.OccurredUtc >= periodStart)
+            {
+                grossProfits += Math.Max(0, entry.Amount);
+            }
+        }
+
+        return grossProfits;
     }
 
     private IReadOnlyList<PlayerStallLedgerEntryView> BuildLedgerViews(long stallId)

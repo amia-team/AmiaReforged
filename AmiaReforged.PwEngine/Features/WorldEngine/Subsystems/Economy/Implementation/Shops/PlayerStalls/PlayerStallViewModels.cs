@@ -159,6 +159,7 @@ public sealed record PlayerStallSellerSnapshot(
     string? HoldEarningsToggleTooltip = null,
     string? HoldEarningsToggleLabel = null,
     int EscrowBalance = 0,
+    int CurrentPeriodGrossProfits = 0,
     bool EarningsRowVisible = false,
     bool WithdrawEnabled = false,
     bool WithdrawAllEnabled = false,
