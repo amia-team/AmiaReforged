@@ -3,10 +3,12 @@ using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Characters.Runtime;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.Commands;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.Events;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.Nui;
 using Anvil.API;
 using Anvil.Services;
@@ -28,19 +30,25 @@ public class PlayerStallCommand : IChatCommand
     private readonly PlayerStallEventManager _eventManager;
     private readonly RuntimeCharacterService _characters;
     private readonly ICommandDispatcher _commandDispatcher;
+    private readonly IPlayerStallInventoryCustodian _inventoryCustodian;
+    private readonly IEventBus _eventBus;
 
     public PlayerStallCommand(
         IPlayerShopRepository shops,
         WindowDirector windowDirector,
         PlayerStallEventManager eventManager,
         RuntimeCharacterService characters,
-        ICommandDispatcher commandDispatcher)
+        ICommandDispatcher commandDispatcher,
+        IPlayerStallInventoryCustodian inventoryCustodian,
+        IEventBus eventBus)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _windowDirector = windowDirector ?? throw new ArgumentNullException(nameof(windowDirector));
         _eventManager = eventManager ?? throw new ArgumentNullException(nameof(eventManager));
         _characters = characters ?? throw new ArgumentNullException(nameof(characters));
         _commandDispatcher = commandDispatcher ?? throw new ArgumentNullException(nameof(commandDispatcher));
+        _inventoryCustodian = inventoryCustodian ?? throw new ArgumentNullException(nameof(inventoryCustodian));
+        _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
     }
 
     public string Command => "./playerstall";
@@ -202,30 +210,96 @@ public class PlayerStallCommand : IChatCommand
 
         try
         {
-            // Create the suspension command
-            SuspendStallForNonPaymentCommand command = SuspendStallForNonPaymentCommand.Create(
-                stallId: stall.Id,
-                reason: $"Administrative suspension by DM {caller.PlayerName}",
-                timestamp: DateTime.UtcNow,
-                gracePeriod: TimeSpan.FromHours(24)); // Give a 24-hour grace period
+            // Capture ownership info before clearing
+            Guid? formerOwnerId = stall.OwnerCharacterId;
+            string? formerPersonaId = stall.OwnerPersonaId;
+            string formerOwnerName = stall.OwnerDisplayName ?? "Unknown";
+            DateTime now = DateTime.UtcNow;
 
-            // Dispatch the command
-            CommandResult result = await _commandDispatcher.DispatchAsync(command);
+            // Check if stall has items before transfer
+            List<StallProduct>? products = _shops.ProductsForShop(stall.Id);
+            int productCount = products?.Count ?? 0;
 
-            if (result.Success)
+            Log.Info($"DM suspension: Stall {stall.Id} has {productCount} products. Owner: {stall.OwnerPersonaId ?? "null"}");
+
+            if (productCount > 0)
             {
-                caller.SendServerMessage($"Stall '{stall.Tag}' has been suspended. Items will be moved to the Market Reeve.", ColorConstants.Lime);
-                Log.Info($"DM {caller.PlayerName} suspended stall {stall.Id} (Tag: {stall.Tag})");
+                caller.SendServerMessage($"Stall has {productCount} product listing(s). Transferring to Market Reeve...", ColorConstants.Cyan);
             }
-            else
+
+            // Transfer inventory to market reeve custody FIRST (off main thread is OK)
+            bool transferSuccess = false;
+            string? transferError = null;
+
+            try
             {
-                caller.SendServerMessage($"Failed to suspend stall: {result.ErrorMessage ?? "Unknown error"}", ColorConstants.Red);
-                Log.Error($"Failed to suspend stall {stall.Id} via DM command: {result.ErrorMessage}");
+                await _inventoryCustodian.TransferInventoryToMarketReeveAsync(stall, CancellationToken.None)
+                    .ConfigureAwait(false);
+                transferSuccess = true;
             }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to transfer inventory for stall {StallId} during DM suspension", stall.Id);
+                transferError = ex.Message;
+            }
+
+            // Immediately clear ownership and deactivate stall
+            bool updated = _shops.UpdateShop(stall.Id, entity =>
+            {
+                entity.OwnerCharacterId = null;
+                entity.OwnerPersonaId = null;
+                entity.OwnerPlayerPersonaId = null;
+                entity.OwnerDisplayName = null;
+                entity.CoinHouseAccountId = null;
+                entity.HoldEarningsInStall = false;
+                entity.SuspendedUtc = now;
+                entity.DeactivatedUtc = now;
+                entity.IsActive = false;
+                entity.NextRentDueUtc = now + TimeSpan.FromHours(1);
+            });
+
+            if (!updated)
+            {
+                await NwTask.SwitchToMainThread();
+                caller.SendServerMessage($"Failed to update stall '{stall.Tag}' in database.", ColorConstants.Red);
+                Log.Error($"Failed to update stall {stall.Id} during DM suspension");
+                return;
+            }
+
+            // Publish ownership released event
+            StallOwnershipReleasedEvent releaseEvent = new StallOwnershipReleasedEvent
+            {
+                StallId = stall.Id,
+                FormerOwnerId = formerOwnerId,
+                FormerPersonaId = formerPersonaId,
+                Reason = $"Administrative suspension by DM {caller.PlayerName}"
+            };
+
+            await _eventBus.PublishAsync(releaseEvent, CancellationToken.None).ConfigureAwait(false);
+
+            // Notify UI to refresh
+            await _eventManager.BroadcastSellerRefreshAsync(stall.Id).ConfigureAwait(false);
+
+            // Switch to main thread for NWN operations
+            await NwTask.SwitchToMainThread();
+
+            if (transferSuccess)
+            {
+                caller.SendServerMessage($"Stall inventory has been transferred to the Market Reeve.", ColorConstants.Lime);
+            }
+            else if (transferError != null)
+            {
+                caller.SendServerMessage($"Warning: Failed to transfer some inventory items: {transferError}", ColorConstants.Yellow);
+            }
+
+            caller.SendServerMessage($"Stall '{stall.Tag}' has been suspended and {formerOwnerName} has been evicted.", ColorConstants.Lime);
+            Log.Info($"DM {caller.PlayerName} suspended stall {stall.Id} (Tag: {stall.Tag}), evicted owner {formerOwnerName}");
         }
         catch (Exception ex)
         {
             Log.Error(ex, $"Error suspending stall {stall.Id} via DM command");
+
+            await NwTask.SwitchToMainThread();
             caller.SendServerMessage($"An error occurred while suspending the stall: {ex.Message}", ColorConstants.Red);
         }
     }

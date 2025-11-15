@@ -76,7 +76,9 @@ public sealed class ReeveLockupService
                 {
                     ItemData = product.ItemData.ToArray(),
                     Owner = ownerGuid,
-                    WarehouseId = storage.Id
+                    WarehouseId = storage.Id,
+                    Name = product.Name,
+                    Description = product.Description
                 };
 
                 await context.WarehouseItems.AddAsync(entry, cancellationToken).ConfigureAwait(false);
@@ -190,8 +192,13 @@ public sealed class ReeveLockupService
 
         foreach (StoredItem item in items)
         {
-            (string label, string? resRef) = ExtractItemMetadata(item.ItemData);
-            summaries.Add(new ReeveLockupItemSummary(item.Id, label, resRef));
+            // Use the stored name if available, otherwise fall back to "Stored Item"
+            string displayName = !string.IsNullOrWhiteSpace(item.Name) ? item.Name : "Stored Item";
+
+            // Still extract resref from JSON as fallback since it's not stored separately in StoredItem
+            (_, string? resRef) = ExtractItemMetadata(item.ItemData);
+
+            summaries.Add(new ReeveLockupItemSummary(item.Id, displayName, resRef));
         }
 
         return summaries;
@@ -345,6 +352,10 @@ public sealed class ReeveLockupService
         };
 
         await context.Warehouses.AddAsync(storage, cancellationToken).ConfigureAwait(false);
+
+        // Save immediately to generate the ID that will be used as foreign key by WarehouseItems
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
         return storage;
     }
 
