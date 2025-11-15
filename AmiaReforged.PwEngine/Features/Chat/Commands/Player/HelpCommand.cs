@@ -9,9 +9,9 @@ namespace AmiaReforged.PwEngine.Features.Chat.Commands.Player;
 [ServiceBinding(typeof(IChatCommand))]
 public class HelpCommand : IChatCommand
 {
-    private readonly IEnumerable<IChatCommand> _commands;
+    private readonly Lazy<IEnumerable<IChatCommand>> _commands;
 
-    public HelpCommand(IEnumerable<IChatCommand> commands)
+    public HelpCommand(Lazy<IEnumerable<IChatCommand>> commands)
     {
         _commands = commands;
     }
@@ -27,7 +27,7 @@ public class HelpCommand : IChatCommand
         bool isDm = caller.IsDM;
 
         // Get all commands available to this user
-        List<IChatCommand> availableCommands = _commands
+        List<IChatCommand> availableCommands = _commands.Value
             .Where(cmd => cmd.AllowedRoles == "All" ||
                          (isDm && cmd.AllowedRoles == "DM") ||
                          (!isDm && cmd.AllowedRoles == "Player"))
