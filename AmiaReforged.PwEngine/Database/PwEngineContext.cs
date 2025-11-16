@@ -48,6 +48,7 @@ public class PwEngineContext : DbContext
     public DbSet<ShopVaultItem> ShopVaultItems { get; set; } = null!;
 
     public DbSet<CoinHouse> CoinHouses { get; set; } = null!;
+    public DbSet<Vault> Vaults { get; set; } = null!;
 
     public DbSet<Organization> Organizations { get; set; } = null!;
     public DbSet<OrganizationMemberRecord> OrganizationMembers { get; set; } = null!;
@@ -139,5 +140,6 @@ public class PwEngineContext : DbContext
         modelBuilder.ApplyConfiguration(new StallProductConfiguration());
         modelBuilder.ApplyConfiguration(new StallTransactionConfiguration());
         modelBuilder.ApplyConfiguration(new PlayerPersonaRecordConfiguration());
+        modelBuilder.ApplyConfiguration(new VaultConfiguration());
     }
 }

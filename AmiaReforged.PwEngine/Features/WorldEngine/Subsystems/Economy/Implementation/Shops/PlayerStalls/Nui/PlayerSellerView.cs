@@ -45,6 +45,10 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public readonly NuiBind<bool> EarningsWithdrawEnabled = new("player_stall_seller_earnings_withdraw_enabled");
     public readonly NuiBind<bool> EarningsWithdrawAllEnabled = new("player_stall_seller_earnings_withdraw_all_enabled");
 
+    public readonly NuiBind<string> DepositInput = new("player_stall_seller_deposit_input");
+    public readonly NuiBind<bool> DepositEnabled = new("player_stall_seller_deposit_enabled");
+    public readonly NuiBind<string> DepositTooltip = new("player_stall_seller_deposit_tooltip");
+
     public readonly NuiBind<int> LedgerCount = new("player_stall_seller_ledger_count");
     public readonly NuiBind<string> LedgerTimestampEntries = new("player_stall_seller_ledger_timestamps");
     public readonly NuiBind<string> LedgerAmountEntries = new("player_stall_seller_ledger_amounts");
@@ -99,6 +103,7 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
     public NuiButtonImage CloseButton = null!;
     public NuiButton WithdrawProfitsButton = null!;
     public NuiButton WithdrawAllProfitsButton = null!;
+    public NuiButton DepositButton = null!;
     public NuiButtonImage ViewDescriptionButton = null!;
 
     public const string HoldEarningsToggleId = "player_stall_hold_earnings_toggle";
@@ -598,6 +603,38 @@ public sealed class PlayerSellerView : ScryView<PlayerSellerPresenter>
                             VerticalAlign = NuiVAlign.Middle,
                             ForegroundColor = new Color(30, 20, 12)
                         }
+                    ]
+                },
+                new NuiRow
+                {
+                    Visible = EarningsRowVisible,
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
+                        new NuiLabel("Deposit to Escrow:")
+                        {
+                            Width = 170f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiSpacer { Width = 8f },
+                        new NuiTextEdit(string.Empty, DepositInput, 9, false)
+                        {
+                            Width = 90f,
+                            Height = 30f,
+                            Enabled = DepositEnabled,
+                            Tooltip = DepositTooltip
+                        },
+                        new NuiSpacer { Width = 6f },
+                        new NuiButton("Deposit")
+                        {
+                            Id = "player_stall_deposit_rent",
+                            Height = 30f,
+                            Width = 110f,
+                            Enabled = DepositEnabled,
+                            Tooltip = DepositTooltip
+                        }.Assign(out DepositButton)
                     ]
                 },
                 new NuiSpacer { Height = 6f, Visible = HoldEarningsVisible },

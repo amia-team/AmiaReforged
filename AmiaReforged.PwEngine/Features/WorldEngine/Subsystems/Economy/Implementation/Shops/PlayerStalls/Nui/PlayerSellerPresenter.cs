@@ -51,6 +51,9 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
     private bool _withdrawEnabled;
     private bool _withdrawAllEnabled;
     private string _earningsTooltip = string.Empty;
+    private string _depositInput = string.Empty;
+    private bool _depositEnabled;
+    private string _depositTooltip = string.Empty;
     private PlayerStallSellerOperationResult? _lastOperationResult;
 
     [Inject] private PlayerStallEventManager EventManager { get; init; } = null!;
@@ -145,6 +148,12 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         if (eventData.ElementId == View.WithdrawAllProfitsButton.Id)
         {
             _ = HandleWithdrawProfitsAsync(true);
+            return;
+        }
+
+        if (eventData.ElementId == View.DepositButton.Id)
+        {
+            _ = HandleDepositAsync();
             return;
         }
 
@@ -260,6 +269,8 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         _withdrawEnabled = snapshot.WithdrawEnabled;
         _withdrawAllEnabled = snapshot.WithdrawAllEnabled;
         _earningsTooltip = snapshot.EarningsTooltip ?? string.Empty;
+        _depositEnabled = snapshot.DepositEnabled;
+        _depositTooltip = snapshot.DepositTooltip ?? string.Empty;
 
         ApplyFeedback(snapshot.FeedbackVisible, snapshot.FeedbackMessage,
             snapshot.FeedbackColor ?? ColorConstants.White);
@@ -267,6 +278,7 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         ApplyHoldEarningsBindings();
         ApplyEarningsBindings();
         Token().SetBindValue(View.EarningsWithdrawInput, string.Empty);
+        Token().SetBindValue(View.DepositInput, string.Empty);
 
         List<string> entries = new(snapshot.Products.Count);
         List<string> tooltips = new(snapshot.Products.Count);
@@ -711,6 +723,76 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
 
             await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
                 "We couldn't withdraw stall earnings.",
+                ColorConstants.Red)). ConfigureAwait(false);
+        }
+        finally
+        {
+            await SetProcessingStateAsync(false).ConfigureAwait(false);
+        }
+    }
+
+    private async Task HandleDepositAsync()
+    {
+        if (_isClosing || _isProcessing)
+        {
+            return;
+        }
+
+        if (_sessionId is not Guid sessionId)
+        {
+            return;
+        }
+
+        if (!_depositEnabled)
+        {
+            if (!string.IsNullOrWhiteSpace(_depositTooltip))
+            {
+                await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                    _depositTooltip,
+                    ColorConstants.Orange)).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
+        string? rawAmount = Token().GetBindValue(View.DepositInput);
+        if (!TryParseWithdrawalAmount(rawAmount, out int depositAmount))
+        {
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "Enter a valid deposit amount greater than zero.",
+                ColorConstants.Orange)).ConfigureAwait(false);
+            return;
+        }
+
+        await SetProcessingStateAsync(true).ConfigureAwait(false);
+
+        try
+        {
+            PlayerStallDepositRequest request = new(
+                sessionId,
+                _config.StallId,
+                _config.SellerPersona,
+                _player.ControlledCreature?.Name ?? _player.LoginCreature?.Name ?? "Unknown",
+                depositAmount);
+
+            PlayerStallSellerOperationResult result = await EventManager
+                .RequestDepositRentAsync(request)
+                .ConfigureAwait(false);
+
+            await HandleOperationResultAsync(result).ConfigureAwait(false);
+
+            if (result.Success)
+            {
+                await NwTask.SwitchToMainThread();
+                Token().SetBindValue(View.DepositInput, string.Empty);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error while depositing stall earnings for stall {StallId}.", _config.StallId);
+
+            await HandleOperationResultAsync(PlayerStallSellerOperationResult.Fail(
+                "We couldn't deposit stall earnings.",
                 ColorConstants.Red)).ConfigureAwait(false);
         }
         finally
@@ -1128,6 +1210,9 @@ public sealed class PlayerSellerPresenter : ScryPresenter<PlayerSellerView>, IAu
         Token().SetBindValue(View.EarningsWithdrawEnabled, _withdrawEnabled && !_isProcessing);
         Token().SetBindValue(View.EarningsWithdrawAllEnabled, _withdrawAllEnabled && !_isProcessing);
         Token().SetBindValue(View.EarningsInputEnabled, _withdrawEnabled && !_isProcessing);
+        Token().SetBindValue(View.DepositEnabled, _depositEnabled && !_isProcessing);
+        Token().SetBindValue(View.DepositTooltip,
+            string.IsNullOrWhiteSpace(_depositTooltip) ? string.Empty : _depositTooltip);
     }
 
     private void NotifyError(string message)

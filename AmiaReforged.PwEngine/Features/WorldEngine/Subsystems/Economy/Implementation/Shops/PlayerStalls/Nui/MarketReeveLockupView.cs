@@ -25,9 +25,12 @@ public sealed class MarketReeveLockupView : ScryView<MarketReeveLockupPresenter>
     public readonly NuiBind<string> FeedbackText = new("reeve_lockup_feedback_text");
     public readonly NuiBind<bool> FeedbackVisible = new("reeve_lockup_feedback_visible");
     public readonly NuiBind<Color> FeedbackColor = new("reeve_lockup_feedback_color");
+    public readonly NuiBind<string> HeldFundsText = new("reeve_lockup_funds_text");
+    public readonly NuiBind<bool> WithdrawFundsEnabled = new("reeve_lockup_withdraw_funds_enabled");
 
     public NuiButton WithdrawButton = null!;
     public NuiButton WithdrawAllButton = null!;
+    public NuiButton WithdrawFundsButton = null!;
     public NuiButton CloseButton = null!;
 
     public MarketReeveLockupView(NwPlayer player, MarketReeveLockupWindowConfig config)
@@ -113,6 +116,30 @@ public sealed class MarketReeveLockupView : ScryView<MarketReeveLockupPresenter>
                     Children =
                     [
                         new NuiSpacer { Width = 20f },
+                        new NuiLabel(HeldFundsText)
+                        {
+                            Width = 350f,
+                            Height = 22f,
+                            HorizontalAlign = NuiHAlign.Left,
+                            VerticalAlign = NuiVAlign.Middle,
+                            ForegroundColor = new Color(30, 20, 12)
+                        },
+                        new NuiSpacer(),
+                        new NuiButton("Withdraw Funds")
+                        {
+                            Id = "reeve_lockup_withdraw_funds",
+                            Enabled = WithdrawFundsEnabled,
+                            Width = 150f,
+                            Height = 24f
+                        }.Assign(out WithdrawFundsButton)
+                    ]
+                },
+                spacer6,
+                new NuiRow
+                {
+                    Children =
+                    [
+                        new NuiSpacer { Width = 20f },
                         new NuiList(itemTemplate, ItemCount)
                         {
                             Width = 540f,
@@ -179,6 +206,10 @@ public sealed class MarketReeveLockupPresenter : ScryPresenter<MarketReeveLockup
     private NuiWindow? _window;
     private bool _isProcessing;
     private bool _isClosing;
+    private int _heldFunds;
+
+    [Inject] private ReeveFundsService Funds { get; init; } = null!;
+    [Inject] private ReeveLockupService Lockup { get; init; } = null!;
 
     public MarketReeveLockupPresenter(MarketReeveLockupView view, NwPlayer player, MarketReeveLockupWindowConfig config)
     {
@@ -190,8 +221,6 @@ public sealed class MarketReeveLockupPresenter : ScryPresenter<MarketReeveLockup
     public override MarketReeveLockupView View { get; }
 
     public override NuiWindowToken Token() => _token;
-
-    [Inject] private ReeveLockupService Lockup { get; init; } = null!;
 
     public override void InitBefore()
     {
@@ -243,6 +272,12 @@ public sealed class MarketReeveLockupPresenter : ScryPresenter<MarketReeveLockup
             return;
         }
 
+        if (eventData.ElementId == View.WithdrawFundsButton.Id)
+        {
+            _ = WithdrawFundsAsync();
+            return;
+        }
+
         if (eventData.ElementId == View.CloseButton.Id)
         {
             Close();
@@ -272,6 +307,12 @@ public sealed class MarketReeveLockupPresenter : ScryPresenter<MarketReeveLockup
     {
         await NwTask.SwitchToMainThread();
 
+        // Load held funds from service
+        _heldFunds = await Funds.GetHeldFundsAsync(_config.Persona, _config.AreaResRef);
+        string fundsText = _heldFunds > 0
+            ? string.Format(CultureInfo.InvariantCulture, "Held Funds: {0:n0} gp", _heldFunds)
+            : "Held Funds: none";
+
         int count = _rows.Count;
         string summary = count == 0
             ? "The market reeve is not holding any items for you right now."
@@ -279,6 +320,8 @@ public sealed class MarketReeveLockupPresenter : ScryPresenter<MarketReeveLockup
 
         List<string> entries = _rows.Select(BuildDisplayText).ToList();
 
+        Token().SetBindValue(View.HeldFundsText, fundsText);
+        Token().SetBindValue(View.WithdrawFundsEnabled, _heldFunds > 0 && !_isProcessing);
         Token().SetBindValue(View.SummaryText, summary);
         Token().SetBindValues(View.ItemEntries, entries);
         Token().SetBindValue(View.ItemCount, entries.Count);
@@ -403,6 +446,59 @@ public sealed class MarketReeveLockupPresenter : ScryPresenter<MarketReeveLockup
             Log.Error(ex, "Failed to release all stored items for player {PlayerName}.", _player.PlayerName);
             await ShowFeedbackAsync("We couldn't retrieve your stored items right now.", ColorConstants.Red)
                 .ConfigureAwait(false);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task WithdrawFundsAsync()
+    {
+        if (_isProcessing || _isClosing || _heldFunds <= 0)
+        {
+            return;
+        }
+
+        await NwTask.SwitchToMainThread();
+        NwCreature? recipient = ResolveRecipient();
+        if (recipient is null)
+        {
+            await ShowFeedbackAsync("You must be possessing your character to receive funds.", ColorConstants.Orange)
+                .ConfigureAwait(false);
+            return;
+        }
+
+        _isProcessing = true;
+        try
+        {
+            int granted = await Funds.ReleaseHeldFundsAsync(
+                _config.Persona,
+                _config.AreaResRef,
+                0,
+                async amt =>
+                {
+                    await NwTask.SwitchToMainThread();
+                    uint add = (uint)Math.Max(0, amt);
+                    ulong sum = (ulong)recipient.Gold + add;
+                    recipient.Gold = sum > uint.MaxValue ? uint.MaxValue : (uint)sum;
+                    return true;
+                });
+
+            if (granted <= 0)
+            {
+                await ShowFeedbackAsync("We couldn't release your held funds right now.", ColorConstants.Red)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                await ShowFeedbackAsync(
+                        string.Format(CultureInfo.InvariantCulture, "Released {0:n0} gp.", granted),
+                        ColorConstants.Lime)
+                    .ConfigureAwait(false);
+            }
+
+            await RefreshAsync().ConfigureAwait(false);
         }
         finally
         {
