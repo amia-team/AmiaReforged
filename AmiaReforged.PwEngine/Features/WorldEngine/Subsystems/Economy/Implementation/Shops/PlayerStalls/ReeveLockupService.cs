@@ -55,8 +55,7 @@ public sealed class ReeveLockupService
 
         await using PwEngineContext context = _contextFactory.CreateDbContext();
 
-        Database.Entities.Storage storage = await EnsureStorageAsync(context, stall.AreaResRef, cancellationToken).ConfigureAwait(false);
-
+        Database.Entities.Storage? storage = null;
         int storedCount = 0;
 
         foreach (StallProduct product in products)
@@ -67,6 +66,9 @@ public sealed class ReeveLockupService
             {
                 continue;
             }
+
+            // Lazy-create storage only when we have valid items to store
+            storage ??= await EnsureStorageAsync(context, stall.AreaResRef, cancellationToken).ConfigureAwait(false);
 
             int quantity = Math.Max(1, product.Quantity);
 
@@ -192,11 +194,13 @@ public sealed class ReeveLockupService
 
         foreach (StoredItem item in items)
         {
-            // Use the stored name if available, otherwise fall back to "Stored Item"
-            string displayName = !string.IsNullOrWhiteSpace(item.Name) ? item.Name : "Stored Item";
+            // Extract metadata from JSON payload for display
+            (string jsonName, string? resRef) = ExtractItemMetadata(item.ItemData);
 
-            // Still extract resref from JSON as fallback since it's not stored separately in StoredItem
-            (_, string? resRef) = ExtractItemMetadata(item.ItemData);
+            // Use JSON name if available, otherwise fall back to stored Name, then "Stored Item"
+            string displayName = !string.IsNullOrWhiteSpace(jsonName) && jsonName != "Stored Item"
+                ? jsonName
+                : (!string.IsNullOrWhiteSpace(item.Name) ? item.Name : "Stored Item");
 
             summaries.Add(new ReeveLockupItemSummary(item.Id, displayName, resRef));
         }

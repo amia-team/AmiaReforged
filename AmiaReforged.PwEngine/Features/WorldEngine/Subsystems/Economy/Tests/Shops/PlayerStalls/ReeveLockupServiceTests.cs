@@ -74,7 +74,11 @@ public sealed class ReeveLockupServiceTests
             Id = 77,
             Tag = "stall_missing_persona",
             AreaResRef = "ar_market",
-            OwnerPersonaId = null
+            OwnerPersonaId = null,
+            Inventory = new List<StallProduct>(),
+            Members = new List<PlayerStallMember>(),
+            LedgerEntries = new List<PlayerStallLedgerEntry>(),
+            Transactions = new List<StallTransaction>()
         };
 
         StallProduct product = new()
