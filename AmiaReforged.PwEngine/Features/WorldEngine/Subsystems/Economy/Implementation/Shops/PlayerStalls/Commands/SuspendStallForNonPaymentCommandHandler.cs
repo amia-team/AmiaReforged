@@ -5,6 +5,7 @@ using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Events;
+using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls.Events;
 using Anvil.Services;
 using NLog;
@@ -24,15 +25,18 @@ public sealed class SuspendStallForNonPaymentCommandHandler : ICommandHandler<Su
     private readonly IPlayerShopRepository _shops;
     private readonly IEventBus _eventBus;
     private readonly IPlayerStallInventoryCustodian _inventoryCustodian;
+    private readonly IReeveFundsService _reeveFunds;
 
     public SuspendStallForNonPaymentCommandHandler(
         IPlayerShopRepository shops,
         IEventBus eventBus,
-        IPlayerStallInventoryCustodian inventoryCustodian)
+        IPlayerStallInventoryCustodian inventoryCustodian,
+        IReeveFundsService reeveFunds)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         _inventoryCustodian = inventoryCustodian ?? throw new ArgumentNullException(nameof(inventoryCustodian));
+        _reeveFunds = reeveFunds ?? throw new ArgumentNullException(nameof(reeveFunds));
     }
 
     public async Task<CommandResult> HandleAsync(
@@ -47,9 +51,11 @@ public sealed class SuspendStallForNonPaymentCommandHandler : ICommandHandler<Su
                 return CommandResult.Fail($"Stall {command.StallId} not found");
             }
 
-            // Capture ownership info before potential clearing
+            // Capture ownership and escrow info before potential clearing
             Guid? formerOwnerId = stall.OwnerCharacterId;
             string? formerPersonaId = stall.OwnerPersonaId;
+            string areaResRef = stall.AreaResRef;
+            int escrowBalance = stall.EscrowBalance;
             bool isFirstSuspension = stall.SuspendedUtc is null;
             bool shouldRelease = false;
 
@@ -81,6 +87,7 @@ public sealed class SuspendStallForNonPaymentCommandHandler : ICommandHandler<Su
                 entity.OwnerDisplayName = null;
                 entity.CoinHouseAccountId = null;
                 entity.HoldEarningsInStall = false;
+                entity.EscrowBalance = 0; // Zero out escrow (will deposit to vault)
                 entity.IsActive = false;
                 entity.DeactivatedUtc ??= command.SuspensionTimestamp;
                 entity.NextRentDueUtc = command.SuspensionTimestamp + TimeSpan.FromHours(1);
@@ -93,6 +100,36 @@ public sealed class SuspendStallForNonPaymentCommandHandler : ICommandHandler<Su
 
             if (shouldRelease)
             {
+                // Deposit escrow to vault before clearing inventory
+                if (escrowBalance > 0 && !string.IsNullOrWhiteSpace(formerPersonaId))
+                {
+                    try
+                    {
+                        PersonaId persona = PersonaId.Parse(formerPersonaId);
+                        CommandResult vaultResult = await _reeveFunds.DepositHeldFundsAsync(
+                            persona,
+                            areaResRef,
+                            escrowBalance,
+                            $"Stall {command.StallId} eviction escrow",
+                            cancellationToken).ConfigureAwait(false);
+
+                        if (vaultResult.Success)
+                        {
+                            Log.Info("Deposited {Amount} gp escrow to vault for evicted stall {StallId} owner {Persona}",
+                                escrowBalance, command.StallId, persona);
+                        }
+                        else
+                        {
+                            Log.Warn("Failed to deposit escrow to vault for stall {StallId}: {Error}",
+                                command.StallId, vaultResult.ErrorMessage);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Error depositing escrow to vault for stall {StallId}", command.StallId);
+                    }
+                }
+
                 // Transfer inventory to market reeve custody
                 try
                 {

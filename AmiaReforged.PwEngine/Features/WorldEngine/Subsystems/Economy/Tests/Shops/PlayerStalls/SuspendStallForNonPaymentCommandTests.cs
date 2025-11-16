@@ -25,6 +25,7 @@ public class SuspendStallForNonPaymentCommandTests
     private Mock<IPlayerShopRepository> _shopRepo = null!;
     private Mock<IEventBus> _eventBus = null!;
     private Mock<IPlayerStallInventoryCustodian> _inventoryCustodian = null!;
+    private Mock<IReeveFundsService> _reeveFunds = null!;
     private SuspendStallForNonPaymentCommandHandler _handler = null!;
     private PlayerStall _testStall = null!;
 
@@ -34,6 +35,7 @@ public class SuspendStallForNonPaymentCommandTests
         _shopRepo = new Mock<IPlayerShopRepository>(MockBehavior.Strict);
         _eventBus = new Mock<IEventBus>(MockBehavior.Strict);
         _inventoryCustodian = new Mock<IPlayerStallInventoryCustodian>(MockBehavior.Strict);
+        _reeveFunds = new Mock<IReeveFundsService>(MockBehavior.Strict);
 
         _testStall = new PlayerStall
         {
@@ -42,8 +44,8 @@ public class SuspendStallForNonPaymentCommandTests
             AreaResRef = "test_area",
             SettlementTag = "1",
             OwnerCharacterId = Guid.NewGuid(),
-            OwnerPersonaId = Guid.NewGuid().ToString(),
-            OwnerPlayerPersonaId = Guid.NewGuid().ToString(),
+            OwnerPersonaId = $"Character:{Guid.NewGuid()}", // Use proper PersonaId format
+            OwnerPlayerPersonaId = $"Player:{Guid.NewGuid()}",
             OwnerDisplayName = "Test Owner",
             DailyRent = 100,
             EscrowBalance = 50, // Not enough for rent
@@ -57,7 +59,8 @@ public class SuspendStallForNonPaymentCommandTests
         _handler = new SuspendStallForNonPaymentCommandHandler(
             _shopRepo.Object,
             _eventBus.Object,
-            _inventoryCustodian.Object);
+            _inventoryCustodian.Object,
+            _reeveFunds.Object);
     }
 
     #region Command Creation Tests
@@ -300,6 +303,89 @@ public class SuspendStallForNonPaymentCommandTests
         // Assert
         Assert.That(result.Success, Is.False);
         Assert.That(result.ErrorMessage, Does.Contain("Failed to update"));
+    }
+
+    #endregion
+
+    #region Vault Deposit Tests
+
+    [Test]
+    public async Task HandleAsync_AfterGracePeriod_DepositsEscrowToVault()
+    {
+        // Arrange
+        _testStall.SuspendedUtc = DateTime.UtcNow.AddHours(-2);
+        _testStall.EscrowBalance = 500; // Has escrow to deposit
+
+        SuspendStallForNonPaymentCommand command = SuspendStallForNonPaymentCommand.Create(
+            _testStall.Id, "Grace period expired", DateTime.UtcNow, TimeSpan.FromHours(1));
+
+        _shopRepo.Setup(r => r.GetShopById(_testStall.Id)).Returns(_testStall);
+
+        _shopRepo.Setup(r => r.UpdateShop(_testStall.Id, It.IsAny<Action<PlayerStall>>()))
+            .Callback<long, Action<PlayerStall>>((id, action) => action(_testStall))
+            .Returns(true);
+
+        _reeveFunds.Setup(r => r.DepositHeldFundsAsync(
+                It.IsAny<SharedKernel.Personas.PersonaId>(),
+                _testStall.AreaResRef,
+                500,
+                It.Is<string>(s => s.Contains("eviction escrow")),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CommandResult.Ok());
+
+        _inventoryCustodian.Setup(c => c.TransferInventoryToMarketReeveAsync(_testStall, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _eventBus.Setup(e => e.PublishAsync(It.IsAny<StallOwnershipReleasedEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        CommandResult result = await _handler.HandleAsync(command);
+
+        // Assert
+        Assert.That(result.Success, Is.True);
+        Assert.That(_testStall.EscrowBalance, Is.EqualTo(0)); // Escrow cleared
+        _reeveFunds.Verify(r => r.DepositHeldFundsAsync(
+            It.IsAny<SharedKernel.Personas.PersonaId>(),
+            _testStall.AreaResRef,
+            500,
+            It.Is<string>(s => s.Contains("eviction escrow")),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task HandleAsync_AfterGracePeriod_WithZeroEscrow_DoesNotDepositToVault()
+    {
+        // Arrange
+        _testStall.SuspendedUtc = DateTime.UtcNow.AddHours(-2);
+        _testStall.EscrowBalance = 0; // No escrow
+
+        SuspendStallForNonPaymentCommand command = SuspendStallForNonPaymentCommand.Create(
+            _testStall.Id, "Grace period expired", DateTime.UtcNow, TimeSpan.FromHours(1));
+
+        _shopRepo.Setup(r => r.GetShopById(_testStall.Id)).Returns(_testStall);
+
+        _shopRepo.Setup(r => r.UpdateShop(_testStall.Id, It.IsAny<Action<PlayerStall>>()))
+            .Callback<long, Action<PlayerStall>>((id, action) => action(_testStall))
+            .Returns(true);
+
+        _inventoryCustodian.Setup(c => c.TransferInventoryToMarketReeveAsync(_testStall, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _eventBus.Setup(e => e.PublishAsync(It.IsAny<StallOwnershipReleasedEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        CommandResult result = await _handler.HandleAsync(command);
+
+        // Assert
+        Assert.That(result.Success, Is.True);
+        _reeveFunds.Verify(r => r.DepositHeldFundsAsync(
+            It.IsAny<SharedKernel.Personas.PersonaId>(),
+            It.IsAny<string>(),
+            It.IsAny<int>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     #endregion
