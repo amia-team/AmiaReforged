@@ -7,6 +7,7 @@ namespace AmiaReforged.Classes.Spells.Invocations.Pact;
 
 public class PrimordialGust
 {
+    private static readonly string[] SummonResRefs = ["wlkelemental", "wlkelementalwat", "wlkelementalstea"];
     public void CastPrimordialGust(uint nwnObjectId)
     {
         // Declaring variables for the damage part of the spell
@@ -67,7 +68,7 @@ public class PrimordialGust
                 continue;
             }
 
-            if (GetResRef(currentTarget) == "wlkelemental")
+            if (SummonResRefs.Contains(GetResRef(currentTarget)))
             {
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectVisualEffect(VFX_IMP_HEAD_FIRE), currentTarget);
                 ApplyEffectToObject(DURATION_TYPE_INSTANT, EffectHeal(damage), currentTarget);
@@ -121,9 +122,8 @@ public class PrimordialGust
         NwCreature? warlock = caster.ToNwObject() as NwCreature;
         if (warlock == null) return;
 
-        string[] summonResRefs = ["wlkelemental", "wlkelementalwat", "wlkelementalstea"];
         _ = SummonUtility.SummonManyDifferent(warlock, VFX_FNF_SUMMON_MONSTER_1, VFX_FNF_SUMMON_MONSTER_1, summonDuration, summonCount,
-            summonResRefs, location, 0.5f, 2f, 0.8f, 1.8f);
+            SummonResRefs, location, 0.5f, 2f, 0.8f, 1.8f);
 
         DelayCommand(1.9f, () => SummonUtility.SetSummonsFacing(summonCount, location));
 
