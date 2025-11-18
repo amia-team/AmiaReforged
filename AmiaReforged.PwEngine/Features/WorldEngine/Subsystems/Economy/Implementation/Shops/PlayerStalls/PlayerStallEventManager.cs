@@ -317,6 +317,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
                 persistedStall.LifetimeGrossSales += totalPrice;
                 persistedStall.LifetimeNetEarnings += totalPrice;
+                persistedStall.CurrentTenureGrossSales += totalPrice;
+                persistedStall.CurrentTenureNetEarnings += totalPrice;
 
                 if (persistedStall.HoldEarningsInStall || !persistedStall.CoinHouseAccountId.HasValue)
                 {
@@ -383,6 +385,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
             stall.LifetimeGrossSales += totalPrice;
             stall.LifetimeNetEarnings += totalPrice;
+            stall.CurrentTenureGrossSales += totalPrice;
+            stall.CurrentTenureNetEarnings += totalPrice;
 
             StallTransaction transaction = new()
             {
@@ -402,6 +406,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
             PlayerStallLedgerEntry saleLedgerEntry = BuildSaleLedgerEntry(
                 stall.Id,
+                stall.OwnerCharacterId,
+                stall.OwnerPersonaId,
                 product,
                 transaction,
                 request.BuyerPersona,
@@ -2329,7 +2335,7 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
             earningsTooltip = "No earnings are currently available to withdraw.";
         }
 
-        IReadOnlyList<PlayerStallLedgerEntryView> ledgerEntries = BuildLedgerViews(stall.Id);
+        IReadOnlyList<PlayerStallLedgerEntryView> ledgerEntries = BuildLedgerViews(stall.Id, stall.OwnerCharacterId);
 
         // Calculate gross profits for the current rental period
         int currentPeriodGrossProfits = CalculateCurrentPeriodGrossProfits(stall);
@@ -2385,7 +2391,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         foreach (PlayerStallLedgerEntry entry in stall.LedgerEntries)
         {
             if (entry.EntryType == PlayerStallLedgerEntryType.SaleGross &&
-                entry.OccurredUtc >= periodStart)
+                entry.OccurredUtc >= periodStart &&
+                entry.OwnerCharacterId == stall.OwnerCharacterId)
             {
                 grossProfits += Math.Max(0, entry.Amount);
             }
@@ -2394,9 +2401,9 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         return grossProfits;
     }
 
-    private IReadOnlyList<PlayerStallLedgerEntryView> BuildLedgerViews(long stallId)
+    private IReadOnlyList<PlayerStallLedgerEntryView> BuildLedgerViews(long stallId, Guid? ownerCharacterId)
     {
-        IReadOnlyList<PlayerStallLedgerEntry> entries = _shops.GetLedgerEntries(stallId, LedgerEntryLimit);
+        IReadOnlyList<PlayerStallLedgerEntry> entries = _shops.GetLedgerEntries(stallId, ownerCharacterId, LedgerEntryLimit);
         if (entries.Count == 0)
         {
             return Array.Empty<PlayerStallLedgerEntryView>();
@@ -2424,6 +2431,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
 
     private static PlayerStallLedgerEntry BuildSaleLedgerEntry(
         long stallId,
+        Guid? ownerCharacterId,
+        string? ownerPersonaId,
         StallProduct product,
         StallTransaction transaction,
         PersonaId buyerPersona,
@@ -2484,6 +2493,8 @@ public sealed class PlayerStallEventManager : IPlayerStallEventBroadcaster
         return new PlayerStallLedgerEntry
         {
             StallId = stallId,
+            OwnerCharacterId = ownerCharacterId,
+            OwnerPersonaId = ownerPersonaId,
             EntryType = PlayerStallLedgerEntryType.SaleGross,
             Amount = Math.Max(0, totalPrice),
             Currency = "gp",

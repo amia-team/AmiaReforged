@@ -94,9 +94,12 @@ public class PlayerStallRentRenewalServiceTests
                     if (cmd.RentAmount > 0)
                     {
                         entity.LifetimeNetEarnings -= cmd.RentAmount;
+                        entity.CurrentTenureNetEarnings -= cmd.RentAmount;
                         entity.LedgerEntries.Add(new PlayerStallLedgerEntry
                         {
                             StallId = entity.Id,
+                            OwnerCharacterId = entity.OwnerCharacterId,
+                            OwnerPersonaId = entity.OwnerPersonaId,
                             EntryType = PlayerStallLedgerEntryType.RentPayment,
                             Amount = -cmd.RentAmount,
                             Description = $"Rent payment: {cmd.RentAmount} gp",

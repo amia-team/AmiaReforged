@@ -387,7 +387,7 @@ public sealed class PlayerStallService : IPlayerStallService
                 "Failed to persist stall earnings withdrawal."));
         }
 
-        RecordWithdrawalLedgerEntry(request, withdrawal);
+        RecordWithdrawalLedgerEntry(stall, request, withdrawal);
 
         IReadOnlyDictionary<string, object> data = new Dictionary<string, object>
         {
@@ -450,11 +450,13 @@ public sealed class PlayerStallService : IPlayerStallService
         return false;
     }
 
-    private void RecordWithdrawalLedgerEntry(WithdrawStallEarningsRequest request, PlayerStallWithdrawal withdrawal)
+    private void RecordWithdrawalLedgerEntry(PlayerStall stall, WithdrawStallEarningsRequest request, PlayerStallWithdrawal withdrawal)
     {
         PlayerStallLedgerEntry entry = new()
         {
             StallId = request.StallId,
+            OwnerCharacterId = stall.OwnerCharacterId,
+            OwnerPersonaId = stall.OwnerPersonaId,
             EntryType = PlayerStallLedgerEntryType.Withdrawal,
             Amount = -Math.Max(0, withdrawal.Amount),
             Currency = "gp",

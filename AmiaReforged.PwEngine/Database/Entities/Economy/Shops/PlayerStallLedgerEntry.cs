@@ -14,6 +14,19 @@ public class PlayerStallLedgerEntry
     [ForeignKey(nameof(StallId))]
     public PlayerStall? Stall { get; set; }
 
+    /// <summary>
+    /// The owner character ID at the time this ledger entry was created.
+    /// Used to filter ledger entries by owner tenure.
+    /// </summary>
+    public Guid? OwnerCharacterId { get; set; }
+
+    /// <summary>
+    /// The owner persona ID at the time this ledger entry was created.
+    /// Provides additional context for persona-level tracking.
+    /// </summary>
+    [MaxLength(256)]
+    public string? OwnerPersonaId { get; set; }
+
     public PlayerStallLedgerEntryType EntryType { get; set; }
 
     /// <summary>

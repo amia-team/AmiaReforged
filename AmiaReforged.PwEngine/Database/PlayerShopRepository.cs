@@ -160,6 +160,9 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
             shop.OwnerDisplayName = null;
             shop.CoinHouseAccountId = null;
             shop.HoldEarningsInStall = false;
+            // Reset current tenure tracking for new owner
+            shop.CurrentTenureGrossSales = 0;
+            shop.CurrentTenureNetEarnings = 0;
             ctx.SaveChanges();
         }
         catch (Exception e)
@@ -389,13 +392,21 @@ public class PlayerShopRepository(PwContextFactory factory) : IPlayerShopReposit
         }
     }
 
-    public IReadOnlyList<PlayerStallLedgerEntry> GetLedgerEntries(long stallId, int maxEntries)
+    public IReadOnlyList<PlayerStallLedgerEntry> GetLedgerEntries(long stallId, Guid? ownerCharacterId, int maxEntries)
     {
         using PwEngineContext ctx = factory.CreateDbContext();
 
         IQueryable<PlayerStallLedgerEntry> query = ctx.PlayerStallLedgerEntries
             .AsNoTracking()
-            .Where(entry => entry.StallId == stallId)
+            .Where(entry => entry.StallId == stallId);
+
+        // Filter by owner if specified
+        if (ownerCharacterId.HasValue)
+        {
+            query = query.Where(entry => entry.OwnerCharacterId == ownerCharacterId.Value);
+        }
+
+        query = query
             .OrderByDescending(entry => entry.OccurredUtc)
             .ThenByDescending(entry => entry.Id);
 
@@ -462,6 +473,6 @@ public interface IPlayerShopRepository
     List<StallTransaction>? TransactionsForShop(long shopId);
     List<StallTransaction>? TransactionsForStallWhenOwnedBy(long shopId, Guid ownerId);
     void SaveTransaction(StallTransaction transaction);
-    IReadOnlyList<PlayerStallLedgerEntry> GetLedgerEntries(long stallId, int maxEntries);
+    IReadOnlyList<PlayerStallLedgerEntry> GetLedgerEntries(long stallId, Guid? ownerCharacterId, int maxEntries);
     void AddLedgerEntry(PlayerStallLedgerEntry entry);
 }

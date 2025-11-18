@@ -62,12 +62,26 @@ public class PlayerStall
     public int EscrowBalance { get; set; }
 
     /// <summary>
-    /// Lifetime gross sales attributed to this stall.
+    /// Gross sales for the CURRENT owner's tenure only.
+    /// Resets when ownership changes.
+    /// </summary>
+    public int CurrentTenureGrossSales { get; set; }
+
+    /// <summary>
+    /// Net earnings for the CURRENT owner's tenure only.
+    /// Resets when ownership changes.
+    /// </summary>
+    public int CurrentTenureNetEarnings { get; set; }
+
+    /// <summary>
+    /// Lifetime gross sales attributed to this stall across all owners.
+    /// For historical/administrative tracking only.
     /// </summary>
     public int LifetimeGrossSales { get; set; }
 
     /// <summary>
-    /// Lifetime net earnings after rent and fees.
+    /// Lifetime net earnings after rent and fees across all owners.
+    /// For historical/administrative tracking only.
     /// </summary>
     public int LifetimeNetEarnings { get; set; }
 
