@@ -309,6 +309,10 @@ public sealed class MarketReeveLockupPresenter : ScryPresenter<MarketReeveLockup
 
         // Load held funds from service
         _heldFunds = await Funds.GetHeldFundsAsync(_config.Persona, _config.AreaResRef);
+
+        // Ensure we're back on main thread after async database operation
+        await NwTask.SwitchToMainThread();
+
         string fundsText = _heldFunds > 0
             ? string.Format(CultureInfo.InvariantCulture, "Held Funds: {0:n0} gp", _heldFunds)
             : "Held Funds: none";

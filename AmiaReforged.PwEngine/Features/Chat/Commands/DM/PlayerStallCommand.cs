@@ -32,6 +32,7 @@ public class PlayerStallCommand : IChatCommand
     private readonly ICommandDispatcher _commandDispatcher;
     private readonly IPlayerStallInventoryCustodian _inventoryCustodian;
     private readonly IEventBus _eventBus;
+    private readonly IReeveFundsService _reeveFunds;
 
     public PlayerStallCommand(
         IPlayerShopRepository shops,
@@ -40,7 +41,8 @@ public class PlayerStallCommand : IChatCommand
         RuntimeCharacterService characters,
         ICommandDispatcher commandDispatcher,
         IPlayerStallInventoryCustodian inventoryCustodian,
-        IEventBus eventBus)
+        IEventBus eventBus,
+        IReeveFundsService reeveFunds)
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
         _windowDirector = windowDirector ?? throw new ArgumentNullException(nameof(windowDirector));
@@ -49,6 +51,7 @@ public class PlayerStallCommand : IChatCommand
         _commandDispatcher = commandDispatcher ?? throw new ArgumentNullException(nameof(commandDispatcher));
         _inventoryCustodian = inventoryCustodian ?? throw new ArgumentNullException(nameof(inventoryCustodian));
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        _reeveFunds = reeveFunds ?? throw new ArgumentNullException(nameof(reeveFunds));
     }
 
     public string Command => "./playerstall";
@@ -210,21 +213,28 @@ public class PlayerStallCommand : IChatCommand
 
         try
         {
-            // Capture ownership info before clearing
+            // Capture ownership info and escrow BEFORE clearing
             Guid? formerOwnerId = stall.OwnerCharacterId;
             string? formerPersonaId = stall.OwnerPersonaId;
             string formerOwnerName = stall.OwnerDisplayName ?? "Unknown";
+            int escrowBalance = stall.EscrowBalance;  // Capture escrow BEFORE clearing
+            string? areaResRef = stall.AreaResRef;     // Capture area BEFORE clearing
             DateTime now = DateTime.UtcNow;
 
             // Check if stall has items before transfer
             List<StallProduct>? products = _shops.ProductsForShop(stall.Id);
             int productCount = products?.Count ?? 0;
 
-            Log.Info($"DM suspension: Stall {stall.Id} has {productCount} products. Owner: {stall.OwnerPersonaId ?? "null"}");
+            Log.Info($"DM suspension: Stall {stall.Id} has {productCount} products and {escrowBalance} gp escrow. Owner: {stall.OwnerPersonaId ?? "null"}");
 
             if (productCount > 0)
             {
                 caller.SendServerMessage($"Stall has {productCount} product listing(s). Transferring to Market Reeve...", ColorConstants.Cyan);
+            }
+
+            if (escrowBalance > 0)
+            {
+                caller.SendServerMessage($"Stall has {escrowBalance} gp in escrow. Transferring to Market Reeve vault...", ColorConstants.Cyan);
             }
 
             // Transfer inventory to market reeve custody FIRST (off main thread is OK)
@@ -243,7 +253,43 @@ public class PlayerStallCommand : IChatCommand
                 transferError = ex.Message;
             }
 
-            // Immediately clear ownership and deactivate stall
+            // Deposit escrow to vault BEFORE clearing ownership
+            bool escrowSuccess = false;
+            string? escrowError = null;
+
+            if (escrowBalance > 0 && !string.IsNullOrWhiteSpace(formerPersonaId))
+            {
+                try
+                {
+                    PersonaId persona = PersonaId.Parse(formerPersonaId);
+                    CommandResult vaultResult = await _reeveFunds.DepositHeldFundsAsync(
+                        persona,
+                        areaResRef,
+                        escrowBalance,
+                        $"Stall {stall.Id} DM suspension escrow",
+                        CancellationToken.None).ConfigureAwait(false);
+
+                    if (vaultResult.Success)
+                    {
+                        Log.Info("Deposited {Amount} gp escrow to vault for DM-suspended stall {StallId} owner {Persona}",
+                            escrowBalance, stall.Id, persona);
+                        escrowSuccess = true;
+                    }
+                    else
+                    {
+                        Log.Warn("Failed to deposit escrow to vault for stall {StallId}: {Error}",
+                            stall.Id, vaultResult.ErrorMessage);
+                        escrowError = vaultResult.ErrorMessage;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Error depositing escrow to vault for stall {StallId}", stall.Id);
+                    escrowError = ex.Message;
+                }
+            }
+
+            // Clear ownership and deactivate stall
             bool updated = _shops.UpdateShop(stall.Id, entity =>
             {
                 entity.OwnerCharacterId = null;
@@ -252,6 +298,9 @@ public class PlayerStallCommand : IChatCommand
                 entity.OwnerDisplayName = null;
                 entity.CoinHouseAccountId = null;
                 entity.HoldEarningsInStall = false;
+                entity.EscrowBalance = 0;  // Zero out escrow (already deposited to vault)
+                entity.CurrentTenureGrossSales = 0;
+                entity.CurrentTenureNetEarnings = 0;
                 entity.SuspendedUtc = now;
                 entity.DeactivatedUtc = now;
                 entity.IsActive = false;
@@ -290,6 +339,18 @@ public class PlayerStallCommand : IChatCommand
             else if (transferError != null)
             {
                 caller.SendServerMessage($"Warning: Failed to transfer some inventory items: {transferError}", ColorConstants.Yellow);
+            }
+
+            if (escrowBalance > 0)
+            {
+                if (escrowSuccess)
+                {
+                    caller.SendServerMessage($"Escrow balance of {escrowBalance} gp has been transferred to the Market Reeve vault.", ColorConstants.Lime);
+                }
+                else if (escrowError != null)
+                {
+                    caller.SendServerMessage($"Warning: Failed to transfer escrow to vault: {escrowError}", ColorConstants.Yellow);
+                }
             }
 
             caller.SendServerMessage($"Stall '{stall.Tag}' has been suspended and {formerOwnerName} has been evicted.", ColorConstants.Lime);
@@ -368,4 +429,3 @@ public class PlayerStallCommand : IChatCommand
         player.SendServerMessage($"Opening seller view for stall: {stall.Tag}", ColorConstants.Cyan);
     }
 }
-
