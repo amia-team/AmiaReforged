@@ -38,7 +38,7 @@ public class DepositStallRentCommandTests
     [Test]
     public void Create_WithZeroStallId_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositStallRentCommand.Create(
                 0,
                 1000,
@@ -53,7 +53,7 @@ public class DepositStallRentCommandTests
     [Test]
     public void Create_WithNegativeStallId_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositStallRentCommand.Create(
                 -1,
                 1000,
@@ -68,7 +68,7 @@ public class DepositStallRentCommandTests
     [Test]
     public void Create_WithZeroDepositAmount_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositStallRentCommand.Create(
                 42,
                 0,
@@ -83,7 +83,7 @@ public class DepositStallRentCommandTests
     [Test]
     public void Create_WithNegativeDepositAmount_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositStallRentCommand.Create(
                 42,
                 -500,
@@ -98,7 +98,7 @@ public class DepositStallRentCommandTests
     [Test]
     public void Create_WithNullDepositorPersonaId_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositStallRentCommand.Create(
                 42,
                 1000,
@@ -113,7 +113,7 @@ public class DepositStallRentCommandTests
     [Test]
     public void Create_WithEmptyDepositorPersonaId_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositStallRentCommand.Create(
                 42,
                 1000,
@@ -128,7 +128,7 @@ public class DepositStallRentCommandTests
     [Test]
     public void Create_WithWhitespaceDepositorPersonaId_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositStallRentCommand.Create(
                 42,
                 1000,
@@ -143,7 +143,7 @@ public class DepositStallRentCommandTests
     [Test]
     public void Create_WithNullDepositorDisplayName_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositStallRentCommand.Create(
                 42,
                 1000,
@@ -158,7 +158,7 @@ public class DepositStallRentCommandTests
     [Test]
     public void Create_WithEmptyDepositorDisplayName_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositStallRentCommand.Create(
                 42,
                 1000,
@@ -173,7 +173,7 @@ public class DepositStallRentCommandTests
     [Test]
     public void Create_WithWhitespaceDepositorDisplayName_ThrowsArgumentException()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        ArgumentException? ex = Assert.Throws<ArgumentException>(() =>
             DepositStallRentCommand.Create(
                 42,
                 1000,

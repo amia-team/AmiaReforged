@@ -1,77 +1,51 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Treasuries;
 using NUnit.Framework;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Tests.Shops.PlayerStalls;
 
-public class FakeCommandDispatcher : ICommandDispatcher
+public class FakeVaultRepository : IVaultRepository
 {
     private readonly Dictionary<(Guid, string), int> _balances = new();
 
-    public Task<CommandResult> DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default) where TCommand : ICommand
+    public Task<Vault> GetOrCreateAsync(Guid ownerCharacterId, string areaResRef, CancellationToken ct = default)
     {
-        if (command is DepositToVaultCommand deposit)
+        (Guid ownerCharacterId, string areaResRef) key = (ownerCharacterId, areaResRef);
+        Vault vault = new Vault
         {
-            var key = (deposit.Owner.Value, deposit.AreaResRef);
-            _balances[key] = _balances.GetValueOrDefault(key, 0) + deposit.Amount;
-            return Task.FromResult(CommandResult.OkWith("newBalance", _balances[key]));
-        }
-
-        if (command is WithdrawFromVaultCommand withdraw)
-        {
-            var key = (withdraw.Owner.Value, withdraw.AreaResRef);
-            int bal = _balances.GetValueOrDefault(key, 0);
-            int take = Math.Min(bal, withdraw.RequestedAmount);
-            _balances[key] = bal - take;
-            return Task.FromResult(take > 0
-                ? CommandResult.OkWith("withdrawnAmount", take)
-                : CommandResult.Fail("No funds available"));
-        }
-
-        return Task.FromResult(CommandResult.Ok());
+            OwnerCharacterId = ownerCharacterId,
+            AreaResRef = areaResRef,
+            Balance = _balances.GetValueOrDefault(key, 0),
+        };
+        return Task.FromResult(vault);
     }
 
-    public Task<BatchCommandResult> DispatchBatchAsync<TCommand>(IEnumerable<TCommand> commands, BatchExecutionOptions? options = null, CancellationToken cancellationToken = default) where TCommand : ICommand
+    public Task<int> GetBalanceAsync(Guid ownerCharacterId, string areaResRef, CancellationToken ct = default)
     {
-        // Not used in these tests
-        return Task.FromResult(new BatchCommandResult
-        {
-            Results = Array.Empty<CommandResult>(),
-            TotalCount = 0,
-            SuccessCount = 0,
-            FailedCount = 0
-        });
+        (Guid ownerCharacterId, string areaResRef) key = (ownerCharacterId, areaResRef);
+        return Task.FromResult(_balances.GetValueOrDefault(key, 0));
     }
 
-    public Dictionary<(Guid, string), int> GetBalances() => _balances;
-}
-
-public class FakeQueryDispatcher : IQueryDispatcher
-{
-    private readonly FakeCommandDispatcher _commands;
-
-    public FakeQueryDispatcher(FakeCommandDispatcher commands)
+    public Task<int> DepositAsync(Guid ownerCharacterId, string areaResRef, int amount, CancellationToken ct = default)
     {
-        _commands = commands;
+        (Guid ownerCharacterId, string areaResRef) key = (ownerCharacterId, areaResRef);
+        _balances[key] = _balances.GetValueOrDefault(key, 0) + amount;
+        return Task.FromResult(amount);
     }
 
-    public Task<TResult> DispatchAsync<TQuery, TResult>(TQuery query, CancellationToken cancellationToken = default) where TQuery : IQuery<TResult>
+    public Task<int> WithdrawAsync(Guid ownerCharacterId, string areaResRef, int amount, CancellationToken ct = default)
     {
-        if (query is GetVaultBalanceQuery balanceQuery)
-        {
-            int balance = _commands.GetBalances().GetValueOrDefault((balanceQuery.Owner.Value, balanceQuery.AreaResRef), 0);
-            return Task.FromResult((TResult)(object)balance);
-        }
-
-        return Task.FromResult(default(TResult)!);
+        (Guid ownerCharacterId, string areaResRef) key = (ownerCharacterId, areaResRef);
+        int balance = _balances.GetValueOrDefault(key, 0);
+        int withdrawn = Math.Min(balance, amount);
+        _balances[key] = balance - withdrawn;
+        return Task.FromResult(withdrawn);
     }
 }
 
@@ -81,9 +55,8 @@ public class ReeveFundsServiceTests
     [Test]
     public async Task GetHeldFundsAsync_ReturnsZero_WhenEmpty()
     {
-        var commands = new FakeCommandDispatcher();
-        var queries = new FakeQueryDispatcher(commands);
-        var svc = new ReeveFundsService(commands, queries);
+        FakeVaultRepository vaultRepo = new FakeVaultRepository();
+        ReeveFundsService svc = new ReeveFundsService(vaultRepo);
 
         int bal = await svc.GetHeldFundsAsync(PersonaId.FromCharacter(CharacterId.New()), "area1");
         Assert.That(bal, Is.EqualTo(0));
@@ -92,10 +65,9 @@ public class ReeveFundsServiceTests
     [Test]
     public async Task ReleaseHeldFundsAsync_WithdrawsAll_WhenRequestedZero()
     {
-        var commands = new FakeCommandDispatcher();
-        var queries = new FakeQueryDispatcher(commands);
-        var svc = new ReeveFundsService(commands, queries);
-        var persona = PersonaId.FromCharacter(CharacterId.New());
+        FakeVaultRepository vaultRepo = new FakeVaultRepository();
+        ReeveFundsService svc = new ReeveFundsService(vaultRepo);
+        PersonaId persona = PersonaId.FromCharacter(CharacterId.New());
 
         // Deposit funds first
         await svc.DepositHeldFundsAsync(persona, "area1", 120, "test deposit");
@@ -107,10 +79,9 @@ public class ReeveFundsServiceTests
     [Test]
     public async Task ReleaseHeldFundsAsync_RollsBack_WhenGrantFails()
     {
-        var commands = new FakeCommandDispatcher();
-        var queries = new FakeQueryDispatcher(commands);
-        var svc = new ReeveFundsService(commands, queries);
-        var persona = PersonaId.FromCharacter(CharacterId.New());
+        FakeVaultRepository vaultRepo = new FakeVaultRepository();
+        ReeveFundsService svc = new ReeveFundsService(vaultRepo);
+        PersonaId persona = PersonaId.FromCharacter(CharacterId.New());
 
         // Deposit funds first
         await svc.DepositHeldFundsAsync(persona, "area1", 60, "test deposit");

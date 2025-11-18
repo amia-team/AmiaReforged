@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AmiaReforged.PwEngine.Database;
+using AmiaReforged.PwEngine.Database.Entities.Economy.Treasuries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Treasuries;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -43,7 +44,7 @@ public class VaultRepositoryTests
     {
         Guid owner = Guid.NewGuid();
         string area = "test_area";
-        var vault = await _repo.GetOrCreateAsync(owner, area);
+        Vault vault = await _repo.GetOrCreateAsync(owner, area);
         Assert.That(vault.Id, Is.GreaterThan(0));
         Assert.That(vault.OwnerCharacterId, Is.EqualTo(owner));
         Assert.That(vault.AreaResRef, Is.EqualTo(area));

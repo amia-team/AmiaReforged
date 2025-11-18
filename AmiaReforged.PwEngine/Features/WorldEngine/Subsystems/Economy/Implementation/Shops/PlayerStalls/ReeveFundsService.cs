@@ -1,12 +1,6 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Personas;
-using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Commands;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Treasuries;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops.PlayerStalls;
@@ -15,29 +9,26 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implemen
 [ServiceBinding(typeof(ReeveFundsService))]
 public sealed class ReeveFundsService : IReeveFundsService
 {
-    private readonly ICommandDispatcher _commands;
-    private readonly IQueryDispatcher _queries;
+    private readonly IVaultRepository _vaultRepository;
 
-    public ReeveFundsService(ICommandDispatcher commands, IQueryDispatcher queries)
+    public ReeveFundsService(IVaultRepository vaultRepository)
     {
-        _commands = commands ?? throw new ArgumentNullException(nameof(commands));
-        _queries = queries ?? throw new ArgumentNullException(nameof(queries));
+        _vaultRepository = vaultRepository ?? throw new ArgumentNullException(nameof(vaultRepository));
     }
 
     public async Task<int> GetHeldFundsAsync(PersonaId persona, string? areaResRef, CancellationToken ct = default)
     {
-        CharacterId owner = CharacterId.From(PersonaId.ToGuid(persona));
+        Guid owner = PersonaId.ToGuid(persona);
         string area = areaResRef ?? string.Empty;
 
-        GetVaultBalanceQuery query = new(owner, area);
-        return await _queries.DispatchAsync<GetVaultBalanceQuery, int>(query, ct);
+        return await _vaultRepository.GetBalanceAsync(owner, area, ct);
     }
 
     public async Task<int> ReleaseHeldFundsAsync(PersonaId persona, string? areaResRef, int requestedAmount,
         Func<int, Task<bool>> grantToPlayerAsync,
         CancellationToken ct = default)
     {
-        CharacterId owner = CharacterId.From(PersonaId.ToGuid(persona));
+        Guid owner = PersonaId.ToGuid(persona);
         string area = areaResRef ?? string.Empty;
 
         // Determine amount to withdraw (0 = all)
@@ -51,33 +42,19 @@ public sealed class ReeveFundsService : IReeveFundsService
         }
 
         // Withdraw from vault
-        WithdrawFromVaultCommand withdrawCmd = WithdrawFromVaultCommand.Create(
-            owner,
-            area,
-            amount,
-            "Market reeve funds release");
+        int withdrawn = await _vaultRepository.WithdrawAsync(owner, area, amount, ct);
 
-        CommandResult withdrawResult = await _commands.DispatchAsync(withdrawCmd, ct);
-
-        if (!withdrawResult.Success || withdrawResult.Data == null)
+        if (withdrawn <= 0)
         {
             return 0;
         }
-
-        int withdrawn = (int)withdrawResult.Data["withdrawnAmount"];
 
         // Grant to player
         bool granted = await grantToPlayerAsync(withdrawn);
         if (!granted)
         {
             // Rollback: re-deposit to vault
-            DepositToVaultCommand depositCmd = DepositToVaultCommand.Create(
-                owner,
-                area,
-                withdrawn,
-                "Market reeve funds release rollback");
-
-            await _commands.DispatchAsync(depositCmd, ct);
+            await _vaultRepository.DepositAsync(owner, area, withdrawn, ct);
             return 0;
         }
 
@@ -94,10 +71,23 @@ public sealed class ReeveFundsService : IReeveFundsService
         string reason,
         CancellationToken ct = default)
     {
-        CharacterId owner = CharacterId.From(PersonaId.ToGuid(persona));
+        Guid owner = PersonaId.ToGuid(persona);
         string area = areaResRef ?? string.Empty;
 
-        DepositToVaultCommand cmd = DepositToVaultCommand.Create(owner, area, amount, reason);
-        return await _commands.DispatchAsync(cmd, ct);
+        try
+        {
+            int deposited = await _vaultRepository.DepositAsync(owner, area, amount, ct);
+
+            if (deposited > 0)
+            {
+                return CommandResult.Ok();
+            }
+
+            return CommandResult.Fail($"Failed to deposit {amount} to vault. No amount was deposited.");
+        }
+        catch (Exception ex)
+        {
+            return CommandResult.Fail($"Failed to deposit {amount} to vault: {ex.Message}");
+        }
     }
 }
