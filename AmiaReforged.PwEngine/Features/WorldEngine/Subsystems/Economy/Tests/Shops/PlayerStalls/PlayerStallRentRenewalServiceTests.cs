@@ -21,6 +21,7 @@ public class PlayerStallRentRenewalServiceTests
     private Mock<IPlayerStallEventBroadcaster> _events = null!;
     private Mock<IPlayerStallInventoryCustodian> _custodian = null!;
     private Mock<ICoinhouseRepository> _coinhouses = null!;
+    private Mock<IReeveFundsService> _reeveFunds = null!;
     private PlayerStallRentRenewalService _service = null!;
     private PlayerStall _stall = null!;
     private List<PlayerStall> _allShops = null!;
@@ -158,13 +159,23 @@ public class PlayerStallRentRenewalServiceTests
                 return CommandResult.Ok();
             });
 
+        _reeveFunds = new Mock<IReeveFundsService>(MockBehavior.Strict);
+        _reeveFunds.Setup(r => r.DepositHeldFundsAsync(
+                It.IsAny<SharedKernel.Personas.PersonaId>(),
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CommandResult.Ok());
+
         _service = new PlayerStallRentRenewalService(
             _shops.Object,
             _worldEngine.Object,
             _notifier.Object,
             _events.Object,
             _custodian.Object,
-            _coinhouses.Object
+            _coinhouses.Object,
+            _reeveFunds.Object
         );
     }
 
@@ -291,13 +302,15 @@ public class PlayerStallRentRenewalServiceTests
         // Verify notification was sent
         Assert.That(_capturedNotifications, Has.Count.EqualTo(1));
         Assert.That(_capturedNotifications[0].Color, Is.EqualTo(ColorConstants.Orange));
-        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()),
-            Times.Once);
         StringAssert.Contains("prorated refund", _capturedNotifications[0].Message);
 
-        // Verify refund was attempted to coinhouse
-        _worldEngine.Verify(w => w.ExecuteAsync(It.IsAny<DepositGoldCommand>(), It.IsAny<CancellationToken>()),
-            Times.Once);
+        // Verify refund was deposited to vault (prioritized over coinhouse)
+        _reeveFunds.Verify(r => r.DepositHeldFundsAsync(
+            It.IsAny<SharedKernel.Personas.PersonaId>(),
+            _stall.AreaResRef,
+            It.IsAny<int>(),
+            It.Is<string>(s => s.Contains("refund")),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -550,6 +563,192 @@ public class PlayerStallRentRenewalServiceTests
             It.Is<PayStallRentCommand>(cmd => cmd.Source == RentChargeSource.StallEscrow),
             It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    #endregion
+
+    #region Vault Deposit Tests for Refunds
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenEmptyStall_DepositsRefundToVaultFirst()
+    {
+        // Set up empty stall for automatic release with refund
+        _stall.UpdatedUtc = DateTime.UtcNow.AddHours(-3);
+        _stall.Inventory.Clear();
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddHours(20); // Significant time remaining
+        _stall.DailyRent = 100;
+        _stall.CoinHouseAccountId = Guid.NewGuid();
+        _stall.SettlementTag = "market_square";
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify vault deposit was attempted first (priority over coinhouse)
+        _reeveFunds.Verify(r => r.DepositHeldFundsAsync(
+            It.IsAny<SharedKernel.Personas.PersonaId>(),
+            _stall.AreaResRef,
+            It.IsAny<int>(),
+            It.Is<string>(s => s.Contains("refund")),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // Verify coinhouse was NOT attempted (vault succeeded)
+        _worldEngine.Verify(w => w.ExecuteAsync(
+            It.IsAny<DepositGoldCommand>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenVaultDepositFails_FallsBackToCoinhouse()
+    {
+        // Set up empty stall
+        _stall.UpdatedUtc = DateTime.UtcNow.AddHours(-3);
+        _stall.Inventory.Clear();
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddHours(20);
+        _stall.DailyRent = 100;
+        _stall.CoinHouseAccountId = Guid.NewGuid();
+        _stall.SettlementTag = "market_square";
+
+        // Simulate vault deposit failure
+        _reeveFunds.Setup(r => r.DepositHeldFundsAsync(
+                It.IsAny<SharedKernel.Personas.PersonaId>(),
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CommandResult.Fail("Vault service unavailable"));
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify vault was attempted first
+        _reeveFunds.Verify(r => r.DepositHeldFundsAsync(
+            It.IsAny<SharedKernel.Personas.PersonaId>(),
+            It.IsAny<string>(),
+            It.IsAny<int>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // Verify fallback to coinhouse
+        _worldEngine.Verify(w => w.ExecuteAsync(
+            It.IsAny<DepositGoldCommand>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenBothVaultAndCoinhouseFail_StillReleasesStall()
+    {
+        // Set up empty stall
+        _stall.UpdatedUtc = DateTime.UtcNow.AddHours(-3);
+        _stall.Inventory.Clear();
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddHours(20);
+        _stall.CoinHouseAccountId = Guid.NewGuid();
+        _stall.SettlementTag = "market_square";
+
+        // Simulate both vault and coinhouse failures
+        _reeveFunds.Setup(r => r.DepositHeldFundsAsync(
+                It.IsAny<SharedKernel.Personas.PersonaId>(),
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CommandResult.Fail("Vault failure"));
+
+        _worldEngine.Setup(w => w.ExecuteAsync(
+                It.IsAny<DepositGoldCommand>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CommandResult.Fail("Coinhouse failure"));
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify stall was still released despite refund failures
+        Assert.That(_stall.OwnerCharacterId, Is.Null);
+        Assert.That(_stall.IsActive, Is.False);
+
+        // Verify both methods were attempted
+        _reeveFunds.Verify(r => r.DepositHeldFundsAsync(
+            It.IsAny<SharedKernel.Personas.PersonaId>(),
+            It.IsAny<string>(),
+            It.IsAny<int>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        _worldEngine.Verify(w => w.ExecuteAsync(
+            It.IsAny<DepositGoldCommand>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenNoCoinhouseAccount_OnlyAttemptsVault()
+    {
+        // Set up empty stall without coinhouse
+        _stall.UpdatedUtc = DateTime.UtcNow.AddHours(-3);
+        _stall.Inventory.Clear();
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddHours(20);
+        _stall.CoinHouseAccountId = null; // No coinhouse
+        _stall.SettlementTag = null;
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify only vault was attempted
+        _reeveFunds.Verify(r => r.DepositHeldFundsAsync(
+            It.IsAny<SharedKernel.Personas.PersonaId>(),
+            It.IsAny<string>(),
+            It.IsAny<int>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // Coinhouse should never be attempted
+        _worldEngine.Verify(w => w.ExecuteAsync(
+            It.IsAny<DepositGoldCommand>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_WhenZeroRefund_DoesNotAttemptDeposit()
+    {
+        // Set up stall with no time remaining (zero refund)
+        _stall.UpdatedUtc = DateTime.UtcNow.AddHours(-3);
+        _stall.Inventory.Clear();
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddMinutes(-5); // Past due, no refund
+        _stall.DailyRent = 100;
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify no vault deposit attempted (zero refund)
+        _reeveFunds.Verify(r => r.DepositHeldFundsAsync(
+            It.IsAny<SharedKernel.Personas.PersonaId>(),
+            It.IsAny<string>(),
+            It.IsAny<int>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+
+        // Verify stall was still released
+        Assert.That(_stall.OwnerCharacterId, Is.Null);
+    }
+
+    [Test]
+    public async Task RunSingleCycleAsync_RefundAmount_IsProportionalToTimeRemaining()
+    {
+        // Set up stall with specific time remaining
+        _stall.UpdatedUtc = DateTime.UtcNow.AddHours(-3);
+        _stall.Inventory.Clear();
+        _stall.NextRentDueUtc = DateTime.UtcNow.AddHours(12); // Exactly half of 24 hour period
+        _stall.DailyRent = 1000;
+        int capturedAmount = 0;
+
+        _reeveFunds.Setup(r => r.DepositHeldFundsAsync(
+                It.IsAny<SharedKernel.Personas.PersonaId>(),
+                It.IsAny<string>(),
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<SharedKernel.Personas.PersonaId, string, int, string, CancellationToken>(
+                (p, a, amt, r, ct) => capturedAmount = amt)
+            .ReturnsAsync(CommandResult.Ok());
+
+        await _service.RunSingleCycleAsync(CancellationToken.None);
+
+        // Verify refund is approximately half of daily rent (12 hours out of 24)
+        Assert.That(capturedAmount, Is.InRange(480, 520),
+            "Refund should be approximately 500 gp (half of 1000 gp for 12 hours)");
     }
 
     #endregion

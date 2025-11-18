@@ -32,6 +32,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
     private readonly IPlayerStallEventBroadcaster _events;
     private readonly IPlayerStallInventoryCustodian _inventoryCustodian;
     private readonly ICoinhouseRepository _coinhouses;
+    private readonly IReeveFundsService _reeveFunds;
 
     private readonly CancellationTokenSource _cts = new();
     private readonly Task _runner;
@@ -42,7 +43,8 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         IPlayerStallOwnerNotifier notifier,
         IPlayerStallEventBroadcaster events,
         IPlayerStallInventoryCustodian inventoryCustodian,
-        ICoinhouseRepository coinhouses
+        ICoinhouseRepository coinhouses,
+        IReeveFundsService reeveFunds
     )
     {
         _shops = shops ?? throw new ArgumentNullException(nameof(shops));
@@ -51,6 +53,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
         _events = events ?? throw new ArgumentNullException(nameof(events));
         _inventoryCustodian = inventoryCustodian ?? throw new ArgumentNullException(nameof(inventoryCustodian));
         _coinhouses = coinhouses ?? throw new ArgumentNullException(nameof(coinhouses));
+        _reeveFunds = reeveFunds ?? throw new ArgumentNullException(nameof(reeveFunds));
 
         _runner = Task.Run(() => RunAsync(_cts.Token));
     }
@@ -512,7 +515,31 @@ public sealed class PlayerStallRentRenewalService : IDisposable
                 return;
             }
 
-            // If they have a coinhouse account in this settlement, deposit there
+            // Prioritize vault deposit over coinhouse
+            try
+            {
+                CommandResult vaultResult = await _reeveFunds.DepositHeldFundsAsync(
+                    persona,
+                    stall.AreaResRef,
+                    refundAmount,
+                    $"Prorated rent refund for stall {stall.Tag ?? stall.Id.ToString()}",
+                    token).ConfigureAwait(false);
+
+                if (vaultResult.Success)
+                {
+                    Log.Info("Deposited {Amount} gp refund to vault for persona {Persona} in area {Area}",
+                        refundAmount, persona, stall.AreaResRef);
+                    return;
+                }
+
+                Log.Warn("Failed to deposit refund to vault: {Error}", vaultResult.ErrorMessage ?? "Unknown error");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex, "Error depositing refund to vault for persona {Persona}", persona);
+            }
+
+            // Fallback to coinhouse if vault deposit failed
             if (coinhouseAccountId.HasValue && !string.IsNullOrWhiteSpace(settlementTag))
             {
                 try
@@ -530,7 +557,7 @@ public sealed class PlayerStallRentRenewalService : IDisposable
 
                     if (result.Success)
                     {
-                        Log.Info("Deposited {Amount} gp refund to coinhouse for persona {Persona}",
+                        Log.Info("Deposited {Amount} gp refund to coinhouse for persona {Persona} (vault failed)",
                             refundAmount, persona);
                         return;
                     }
@@ -543,11 +570,9 @@ public sealed class PlayerStallRentRenewalService : IDisposable
                 }
             }
 
-            // Otherwise, hold with the market reeve (we already have ReeveLockupService for this)
-            // For now, we'll just log this - the Market Reeve would need currency storage capability
-            Log.Info(
-                "Refund of {Amount} gp for persona {Persona} should be held by market reeve in settlement {Settlement}",
-                refundAmount, persona, settlementTag ?? "unknown");
+            // If both methods failed, log the error
+            Log.Error("Failed to deposit refund of {Amount} gp for persona {Persona} to both vault and coinhouse",
+                refundAmount, persona);
         }
         catch (Exception ex)
         {
