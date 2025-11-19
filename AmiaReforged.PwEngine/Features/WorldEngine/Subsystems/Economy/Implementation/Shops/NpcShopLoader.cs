@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.Services;
 
@@ -10,10 +11,12 @@ public sealed class NpcShopLoader : IDefinitionLoader
 {
     private readonly List<FileLoadResult> _failures = new();
     private readonly INpcShopRepository _repository;
+    private readonly IItemDefinitionRepository _itemDefinitions; // new dependency
 
-    public NpcShopLoader(INpcShopRepository repository)
+    public NpcShopLoader(INpcShopRepository repository, IItemDefinitionRepository itemDefinitions)
     {
         _repository = repository;
+        _itemDefinitions = itemDefinitions;
     }
 
     public void Load()
@@ -169,10 +172,11 @@ public sealed class NpcShopLoader : IDefinitionLoader
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(product.Name))
+            var blueprint = _itemDefinitions.GetByTag(product.ResRef);
+            if (string.IsNullOrWhiteSpace(product.Name) && blueprint is null)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' must define a Name.", fileName));
+                    $"Product '{product.ResRef}' must define a Name or have a matching blueprint.", fileName));
                 return false;
             }
 

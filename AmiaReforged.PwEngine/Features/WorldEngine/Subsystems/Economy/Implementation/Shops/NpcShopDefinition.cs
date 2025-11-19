@@ -16,7 +16,7 @@ public sealed record NpcShopDefinition(
 
 public sealed record NpcShopProductDefinition(
     string ResRef,
-    string Name,
+    string? Name, // Made optional for blueprint fallback
     string? Description,
     int Price,
     int InitialStock,

@@ -9,40 +9,11 @@
   },
   "Products": [
     {
-      "ResRef": "furniturespawn",
-      "Name": "Packed Table",
-      "Description": "A nice little table",
+      "ResRef": "blueprint_furniture_table",
       "Price": 125,
       "InitialStock": 12,
       "MaxStock": 20,
-      "RestockAmount": 3,
-      "BaseItemType": 74,
-      "LocalVariables": [
-        {
-          "Name": "is_plc",
-          "Type": "Int",
-          "Value": 1
-        },
-        {
-          "Name": "plc_resref",
-          "Type": "String",
-          "Value": "ds_spear"
-        },
-        {
-          "Name": "plc_name",
-          "Type": "String",
-          "Value": "Packed Table"
-        },
-        {
-          "Name": "plc_appearance",
-          "Type": "Int",
-          "Value": 12
-        }
-      ],
-      "Appearance": {
-        "ModelType": 0,
-        "SimpleModelNumber": 12
-      }
+      "RestockAmount": 3
     }
   ],
   "AcceptCategories": [
