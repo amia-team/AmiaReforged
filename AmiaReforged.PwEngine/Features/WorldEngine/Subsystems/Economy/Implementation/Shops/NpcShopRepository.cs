@@ -4,6 +4,7 @@ using System.Text.Json;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.Services;
 using NLog;
 
@@ -455,8 +456,12 @@ public sealed class NpcShopRepository : INpcShopRepository
             int sortOrder = 0;
             foreach (NpcShopProductDefinition product in definition.Products)
             {
-                // Get name from blueprint if not specified in product definition
+                // Get blueprint by ItemTag (stored in product.ResRef from JSON)
                 var blueprint = _itemDefinitions.GetByTag(product.ResRef);
+
+                // Get actual NWN ResRef from blueprint, or fall back to product.ResRef if no blueprint
+                string nwnResRef = blueprint?.ResRef ?? product.ResRef;
+
                 string displayName = string.IsNullOrWhiteSpace(product.Name)
                     ? (blueprint?.Name ?? product.ResRef)
                     : product.Name.Trim();
@@ -468,9 +473,41 @@ public sealed class NpcShopRepository : INpcShopRepository
                 int maxStock = Math.Max(0, product.MaxStock);
                 int initialStock = Math.Clamp(product.InitialStock, 0, maxStock == 0 ? int.MaxValue : maxStock);
 
+                // Merge blueprint locals with shop-specific locals (shop locals override)
+                List<JsonLocalVariableDefinition> mergedLocals = new();
+                if (blueprint?.LocalVariables != null)
+                {
+                    mergedLocals.AddRange(blueprint.LocalVariables);
+                }
+                if (product.LocalVariables != null)
+                {
+                    // Shop locals override blueprint locals by name
+                    foreach (var shopLocal in product.LocalVariables)
+                    {
+                        int existingIndex = mergedLocals.FindIndex(l => l.Name == shopLocal.Name);
+                        if (existingIndex >= 0)
+                        {
+                            mergedLocals[existingIndex] = shopLocal;
+                        }
+                        else
+                        {
+                            mergedLocals.Add(shopLocal);
+                        }
+                    }
+                }
+
+                // Convert blueprint appearance to shop appearance type if needed
+                SimpleModelAppearanceDefinition? shopAppearance = product.Appearance;
+                if (shopAppearance == null && blueprint?.Appearance != null)
+                {
+                    shopAppearance = new SimpleModelAppearanceDefinition(
+                        blueprint.Appearance.ModelType,
+                        blueprint.Appearance.SimpleModelNumber);
+                }
+
                 ShopProductRecord productRecord = new()
                 {
-                    ResRef = product.ResRef,
+                    ResRef = nwnResRef, // Store actual NWN ResRef, not ItemTag
                     DisplayName = displayName,
                     Description = description,
                     Price = product.Price,
@@ -480,8 +517,8 @@ public sealed class NpcShopRepository : INpcShopRepository
                     SortOrder = sortOrder++,
                     BaseItemType = product.BaseItemType,
                     IsPlayerManaged = false,
-                    LocalVariablesJson = SerializeOrNull(product.LocalVariables, jsonOptions),
-                    AppearanceJson = SerializeOrNull(product.Appearance, jsonOptions)
+                    LocalVariablesJson = SerializeOrNull(mergedLocals.Count > 0 ? mergedLocals : null, jsonOptions),
+                    AppearanceJson = SerializeOrNull(shopAppearance, jsonOptions)
                 };
 
                 record.Products.Add(productRecord);
