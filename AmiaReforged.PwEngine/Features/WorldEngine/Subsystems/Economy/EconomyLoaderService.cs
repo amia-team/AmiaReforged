@@ -18,6 +18,7 @@ public class EconomyLoaderService
 
     private readonly ResourceDefinitionLoadingService _resourceLoader;
     private readonly ItemDefinitionLoadingService _itemLoader;
+    private readonly ItemBlueprintLoadingService _blueprintLoader;
     private readonly IndustryDefinitionLoadingService _industryLoader;
     private readonly RegionDefinitionLoadingService _regionLoader;
     private readonly NpcShopLoader _shopLoader;
@@ -25,6 +26,7 @@ public class EconomyLoaderService
 
     public EconomyLoaderService(ResourceDefinitionLoadingService resourceLoader,
         ItemDefinitionLoadingService itemLoader,
+        ItemBlueprintLoadingService blueprintLoader,
         IndustryDefinitionLoadingService industryLoader,
         RegionDefinitionLoadingService regionLoader,
         NpcShopLoader shopLoader,
@@ -37,6 +39,7 @@ public class EconomyLoaderService
 
         _resourceLoader = resourceLoader;
         _itemLoader = itemLoader;
+        _blueprintLoader = blueprintLoader;
         _industryLoader = industryLoader;
         _regionLoader = regionLoader;
         _shopLoader = shopLoader;
@@ -63,6 +66,7 @@ public class EconomyLoaderService
     {
         _industryLoader.Load();
         _itemLoader.Load();
+        _blueprintLoader.Load();
         _resourceLoader.Load();
         _regionLoader.Load();
         _shopLoader.Load();
@@ -70,6 +74,7 @@ public class EconomyLoaderService
 
         LogErrors(_industryLoader.Failures());
         LogErrors(_itemLoader.Failures());
+        LogErrors(_blueprintLoader.Failures());
         LogErrors(_resourceLoader.Failures());
         LogErrors(_regionLoader.Failures());
         LogErrors(_shopLoader.Failures());

@@ -1,0 +1,12 @@
+{
+  "ResRef": "book_poet01",
+  "ItemTag": "blueprint_poetry_book",
+  "Name": "Collected Poems, Volume I",
+  "Description": "A curated anthology of lyrical works.",
+  "Materials": ["Gem"],
+  "JobSystemType": "ResourceGem",
+  "BaseItemType": 74,
+  "Appearance": { "ModelType": 0, "SimpleModelNumber": 12 },
+  "BaseValue": 25,
+  "WeightIncreaseConstant": -1
+}
