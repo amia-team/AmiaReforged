@@ -63,7 +63,7 @@ public class CoinhouseLoader(ICoinhouseRepository coinhouses, IRegionRepository 
             }
             catch (Exception ex)
             {
-                _failures.Add(new FileLoadResult(ResultType.Fail, ex.Message, fileName));
+                _failures.Add(new FileLoadResult(ResultType.Fail, ex.Message, fileName, ex));
             }
         }
     }

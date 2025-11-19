@@ -427,7 +427,7 @@ public sealed class NpcShopRepository : INpcShopRepository
         }
     }
 
-    private static ShopRecord BuildRecordFromDefinition(NpcShopDefinition definition, JsonSerializerOptions jsonOptions)
+    private ShopRecord BuildRecordFromDefinition(NpcShopDefinition definition, JsonSerializerOptions jsonOptions)
     {
         string canonicalDefinition = JsonSerializer.Serialize(definition, jsonOptions);
         string hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonicalDefinition))).ToLowerInvariant();
@@ -455,10 +455,16 @@ public sealed class NpcShopRepository : INpcShopRepository
             int sortOrder = 0;
             foreach (NpcShopProductDefinition product in definition.Products)
             {
-                string displayName = product.Name.Trim();
+                // Get name from blueprint if not specified in product definition
+                var blueprint = _itemDefinitions.GetByTag(product.ResRef);
+                string displayName = string.IsNullOrWhiteSpace(product.Name)
+                    ? (blueprint?.Name ?? product.ResRef)
+                    : product.Name.Trim();
+
                 string? description = string.IsNullOrWhiteSpace(product.Description)
-                    ? null
+                    ? blueprint?.Description
                     : product.Description.Trim();
+
                 int maxStock = Math.Max(0, product.MaxStock);
                 int initialStock = Math.Clamp(product.InitialStock, 0, maxStock == 0 ? int.MaxValue : maxStock);
 

@@ -64,29 +64,95 @@ public class EconomyLoaderService
 
     private void LoadDefinitions()
     {
-        _industryLoader.Load();
-        _itemLoader.Load();
-        _blueprintLoader.Load();
-        _resourceLoader.Load();
-        _regionLoader.Load();
-        _shopLoader.Load();
-        _coinhouseLoader.Load();
+        Log.Info("=== Starting WorldEngine Economy Definition Loading ===");
+        DateTime startTime = DateTime.UtcNow;
 
-        LogErrors(_industryLoader.Failures());
-        LogErrors(_itemLoader.Failures());
-        LogErrors(_blueprintLoader.Failures());
-        LogErrors(_resourceLoader.Failures());
-        LogErrors(_regionLoader.Failures());
-        LogErrors(_shopLoader.Failures());
-        LogErrors(_coinhouseLoader.Failures());
+        Log.Info("Loading Industries...");
+        _industryLoader.Load();
+        LogLoadResults("Industries", _industryLoader.Failures());
+
+        Log.Info("Loading Item Definitions...");
+        _itemLoader.Load();
+        LogLoadResults("Item Definitions", _itemLoader.Failures());
+
+        Log.Info("Loading Item Blueprints...");
+        _blueprintLoader.Load();
+        LogLoadResults("Item Blueprints", _blueprintLoader.Failures());
+
+        Log.Info("Loading Resources...");
+        _resourceLoader.Load();
+        LogLoadResults("Resources", _resourceLoader.Failures());
+
+        Log.Info("Loading Regions...");
+        _regionLoader.Load();
+        LogLoadResults("Regions", _regionLoader.Failures());
+
+        Log.Info("Loading NPC Shops...");
+        _shopLoader.Load();
+        LogLoadResults("NPC Shops", _shopLoader.Failures());
+
+        Log.Info("Loading Coinhouses...");
+        _coinhouseLoader.Load();
+        LogLoadResults("Coinhouses", _coinhouseLoader.Failures());
+
+        TimeSpan elapsed = DateTime.UtcNow - startTime;
+        Log.Info($"=== Economy Definition Loading Complete in {elapsed.TotalMilliseconds:F0}ms ===");
     }
 
-    private static void LogErrors(List<FileLoadResult> failures)
+    private static void LogLoadResults(string loaderName, List<FileLoadResult> failures)
     {
-        foreach (FileLoadResult fileLoadResult in failures)
+        if (failures.Count == 0)
         {
-            Log.Error($"Failed to load file {fileLoadResult.FileName}:");
-            Log.Error(fileLoadResult.Message);
+            Log.Info($"  ✓ {loaderName} loaded successfully");
+            return;
+        }
+
+        Log.Error($"  ✗ {loaderName} had {failures.Count} failure(s):");
+        foreach (FileLoadResult failure in failures)
+        {
+            Log.Error($"    • File: {failure.FileName}");
+            Log.Error($"      Error: {failure.Message}");
+
+            if (failure.Type == ResultType.Fail)
+            {
+                Log.Error($"      Type: FAILURE - This file was not loaded");
+            }
+
+            if (failure.Exception != null)
+            {
+                Log.Error($"      Exception Type: {failure.Exception.GetType().FullName}");
+                Log.Error($"      Stack Trace:");
+
+                // Log each line of the stack trace with proper indentation
+                string? stackTrace = failure.Exception.StackTrace;
+                if (!string.IsNullOrEmpty(stackTrace))
+                {
+                    string[] lines = stackTrace.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string line in lines)
+                    {
+                        Log.Error($"        {line.Trim()}");
+                    }
+                }
+
+                // Log inner exceptions if present
+                Exception? innerEx = failure.Exception.InnerException;
+                int depth = 1;
+                while (innerEx != null && depth <= 3) // Limit to 3 levels deep
+                {
+                    Log.Error($"      Inner Exception [{depth}]: {innerEx.GetType().FullName}");
+                    Log.Error($"        Message: {innerEx.Message}");
+                    if (!string.IsNullOrEmpty(innerEx.StackTrace))
+                    {
+                        string[] innerLines = innerEx.StackTrace.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (string line in innerLines.Take(5)) // First 5 lines only
+                        {
+                            Log.Error($"          {line.Trim()}");
+                        }
+                    }
+                    innerEx = innerEx.InnerException;
+                    depth++;
+                }
+            }
         }
     }
 }

@@ -49,7 +49,7 @@ public sealed class ItemBlueprintLoadingService(IItemDefinitionRepository defini
             }
             catch (Exception ex)
             {
-                _failures.Add(new FileLoadResult(ResultType.Fail, ex.Message, fileName));
+                _failures.Add(new FileLoadResult(ResultType.Fail, ex.Message, fileName, ex));
             }
         }
     }
