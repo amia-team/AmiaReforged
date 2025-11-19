@@ -1,6 +1,6 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 
-public sealed record GetItemDefinitionByResrefQuery(string Resref) : IQuery<ItemDefinition?>;
+namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Queries;
 
-
+public sealed record GetItemDefinitionByResrefQuery(string Resref) : IQuery<AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ItemDefinition?>;

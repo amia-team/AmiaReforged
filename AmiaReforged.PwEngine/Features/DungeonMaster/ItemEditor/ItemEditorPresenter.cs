@@ -182,7 +182,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
                 if (_tagModalToken.HasValue)
                     return;
 
-                ItemData? snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
+                ItemDataRecord? snap = _model.SelectedItem != null ? ItemDataFactory.From(_model.SelectedItem) : null;
                 Token().SetBindValue(View.EditTagBuffer, snap?.Tag ?? "");
                 NuiWindow w = View.BuildEditTagModal();
                 if (_player.TryCreateNuiWindow(w, out NuiWindowToken modalToken))
@@ -328,7 +328,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
         }
 
         // Snapshot from the live item
-        ItemData snapshot = ItemDataFactory.From(item);
+        ItemDataRecord snapshot = ItemDataFactory.From(item);
 
         Token().SetBindValue(View.Name, snapshot.Name);
         Token().SetBindValue(View.Description, snapshot.Description);
@@ -428,7 +428,7 @@ public sealed class ItemEditorPresenter : ScryPresenter<ItemEditorView>
             foreach ((string key, LocalVariableData data) in _vars)
                 varsDict[key] = data;
 
-            ItemData dataPacket = new ItemData(name, desc, tag, varsDict);
+            ItemDataRecord dataPacket = new ItemDataRecord(name, desc, tag, varsDict);
 
             _model.Update(dataPacket);
 

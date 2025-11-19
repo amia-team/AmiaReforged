@@ -79,7 +79,7 @@ internal sealed class ItemEditorModel
         if (d.HasValue) d.Delete();
     }
 
-    public void Update(ItemData data)
+    public void Update(ItemDataRecord data)
     {
         if (SelectedItem is null) return;
         if (ItemDataFactory.From(SelectedItem) == data) return;

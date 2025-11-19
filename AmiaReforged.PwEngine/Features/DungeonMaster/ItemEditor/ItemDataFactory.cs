@@ -4,7 +4,7 @@ namespace AmiaReforged.PwEngine.Features.DungeonMaster.ItemEditor;
 
 internal static class ItemDataFactory
 {
-    public static ItemData From(NwItem item)
+    public static ItemDataRecord From(NwItem item)
     {
         Dictionary<string, LocalVariableData> vars = new();
 
@@ -54,7 +54,7 @@ internal static class ItemDataFactory
             }
         }
 
-        return new ItemData(
+        return new ItemDataRecord(
             item.Name,
             item.Description,
             item.Tag,
