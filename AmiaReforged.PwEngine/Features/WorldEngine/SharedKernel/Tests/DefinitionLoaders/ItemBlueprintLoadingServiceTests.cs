@@ -12,7 +12,7 @@ public class ItemBlueprintLoadingServiceTests
         string tempRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(Path.Combine(tempRoot, "Items", "Blueprints"));
         string filePath = Path.Combine(tempRoot, "Items", "Blueprints", "sample.json");
-        File.WriteAllText(filePath, "{\n  \"ResRef\": \"btest01\",\n  \"ItemTag\": \"blueprint_test_item\",\n  \"Name\": \"Test Item\",\n  \"Description\": \"Desc\",\n  \"Materials\": [\"Ore\"],\n  \"JobSystemType\": \"ResourceOre\",\n  \"BaseItemType\": 74,\n  \"Appearance\": { \"ModelType\": 0, \"SimpleModelNumber\": 1 },\n  \"BaseValue\": 5,\n  \"WeightIncreaseConstant\": -1\n}\n");
+        File.WriteAllText(filePath, "{\n  \"ResRef\": \"btest01\",\n  \"ItemTag\": \"blueprint_test_item\",\n  \"Name\": \"Test Item\",\n  \"Description\": \"Desc\",\n  \"Materials\": [\"Gem\"],\n  \"JobSystemType\": \"ResourceOre\",\n  \"BaseItemType\": 74,\n  \"Appearance\": { \"ModelType\": 0, \"SimpleModelNumber\": 1 },\n  \"BaseValue\": 5,\n  \"WeightIncreaseConstant\": -1\n}\n");
 
         Environment.SetEnvironmentVariable("RESOURCE_PATH", tempRoot);
         InMemoryItemDefinitionRepository repo = new();
@@ -44,7 +44,7 @@ public class ItemBlueprintLoadingServiceTests
         string tempRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         string bpDir = Path.Combine(tempRoot, "Items", "Blueprints");
         Directory.CreateDirectory(bpDir);
-        string invalidJson = "{\n  \"ResRef\": \"thisresrefiswaytoolongfornwn\",\n  \"ItemTag\": \"bp_invalid\",\n  \"Name\": \"Invalid\",\n  \"Description\": \"Desc\",\n  \"Materials\": [\"Ore\"],\n  \"JobSystemType\": \"ResourceOre\",\n  \"BaseItemType\": 74,\n  \"Appearance\": { \"ModelType\": 0, \"SimpleModelNumber\": 1 },\n  \"BaseValue\": 5,\n  \"WeightIncreaseConstant\": -1\n}\n";
+        string invalidJson = "{\n  \"ResRef\": \"thisresrefiswaytoolongfornwn\",\n  \"ItemTag\": \"bp_invalid\",\n  \"Name\": \"Invalid\",\n  \"Description\": \"Desc\",\n  \"Materials\": [\"Gem\"],\n  \"JobSystemType\": \"ResourceOre\",\n  \"BaseItemType\": 74,\n  \"Appearance\": { \"ModelType\": 0, \"SimpleModelNumber\": 1 },\n  \"BaseValue\": 5,\n  \"WeightIncreaseConstant\": -1\n}\n";
         File.WriteAllText(Path.Combine(bpDir, "invalid.json"), invalidJson);
         Environment.SetEnvironmentVariable("RESOURCE_PATH", tempRoot);
         InMemoryItemDefinitionRepository repo = new();
@@ -54,4 +54,3 @@ public class ItemBlueprintLoadingServiceTests
         Assert.That(repo.GetByTag("bp_invalid"), Is.Null);
     }
 }
-
