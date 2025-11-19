@@ -39,6 +39,7 @@
         <Folder Include="Resources\WorldEngine\Industries\" />
         <Folder Include="Features\MiniGame\LiarsDice\Nui\" />
         <Folder Include="Features\MiniGame\LiarsDice\Tests\" />
+        <Folder Include="Resources\WorldEngine\Items\Blueprints\" />
     </ItemGroup>
 
     <ItemGroup>
@@ -48,6 +49,9 @@
     <ItemGroup>
         <Compile Remove="Systems\Player\AmiaPlayer.cs" />
         <Compile Remove="Tests\Systems\WorldEngine\Economy\ValueObjects\GoldAmountTests.cs" />
+        <Compile Remove="Features\WorldEngine\Subsystems\Items\ItemData\ItemBlueprintDefinition.cs" />
+        <Compile Remove="Features\WorldEngine\Subsystems\Items\ItemData\ItemBlueprint.cs" />
+        <Compile Remove="Features\WorldEngine\Subsystems\Items\ItemBlueprintRepository.cs" />
     </ItemGroup>
     
     <ItemGroup Condition="'$(Configuration)' == 'Debug'">
@@ -65,6 +69,7 @@
       <None Remove="Features\WorldEngine\Subsystems\Economy\RENT_SYSTEM_REFACTORING_COMPLETE.md" />
       <None Remove="Features\WorldEngine\Subsystems\Economy\PLAYER_STALL_RENT_ANALYSIS.md" />
       <None Remove="Features\WorldEngine\Subsystems\Economy\Tests\Shops\PlayerStalls\DEPOSIT_TESTS_COMPLETE.md" />
+      <None Remove="Resources\WorldEngine\Items\Blueprints\blueprint_packed_furniture.json" />
     </ItemGroup>
 
 

@@ -3,24 +3,30 @@ using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 
 /// <summary>
-/// Provides access to item-related operations including item definitions and properties.
+/// Provides access to item-related operations including item definitions (blueprints) and properties.
 /// </summary>
 public interface IItemSubsystem
 {
     // === Item Definition Management ===
+    // ItemDefinition represents a concrete, reusable item blueprint that can be referenced by tag or resref.
 
     /// <summary>
-    /// Gets an item definition by resref.
+    /// Gets an item definition (blueprint) by resref.
     /// </summary>
     Task<ItemDefinition?> GetItemDefinitionAsync(string resref, CancellationToken ct = default);
 
     /// <summary>
-    /// Gets all item definitions.
+    /// Gets an item definition (blueprint) by blueprint tag.
+    /// </summary>
+    Task<ItemDefinition?> GetItemDefinitionByTagAsync(string tag, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets all item definitions (blueprints).
     /// </summary>
     Task<List<ItemDefinition>> GetAllItemDefinitionsAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Searches for item definitions by name or tag.
+    /// Searches for item definitions (blueprints) by name or tag.
     /// </summary>
     Task<List<ItemDefinition>> SearchItemDefinitionsAsync(
         string searchTerm,
@@ -46,14 +52,14 @@ public interface IItemSubsystem
     // === Item Categories ===
 
     /// <summary>
-    /// Gets items by category.
+    /// Gets items (blueprints) by category.
     /// </summary>
     Task<List<ItemDefinition>> GetItemsByCategoryAsync(
         ItemCategory category,
         CancellationToken ct = default);
 
     /// <summary>
-    /// Gets items by tags (e.g., "weapon", "magical", "rare").
+    /// Gets items (blueprints) by tags (e.g., "weapon", "magical", "rare").
     /// </summary>
     Task<List<ItemDefinition>> GetItemsByTagsAsync(
         List<string> tags,
@@ -61,7 +67,7 @@ public interface IItemSubsystem
 }
 
 /// <summary>
-/// Represents an item definition.
+/// Represents an item definition (WorldEngine-level item blueprint).
 /// </summary>
 public record ItemDefinition(
     string Resref,
@@ -90,4 +96,3 @@ public enum ItemCategory
     Jewelry,
     Clothing
 }
-
