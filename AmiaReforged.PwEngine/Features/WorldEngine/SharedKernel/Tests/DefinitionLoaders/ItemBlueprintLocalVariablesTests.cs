@@ -20,7 +20,7 @@ public class ItemBlueprintLocalVariablesTests
         ItemBlueprintLoadingService loader = new(repo);
         loader.Load();
         Assert.That(loader.Failures(), Is.Empty);
-        ItemDefinition? def = repo.GetByTag("bp_valid_locals");
+        ItemBlueprint? def = repo.GetByTag("bp_valid_locals");
         Assert.That(def, Is.Not.Null);
         Assert.That(def!.LocalVariables, Is.Not.Null);
         Assert.That(def!.LocalVariables!.Count, Is.EqualTo(2));
@@ -44,4 +44,3 @@ public class ItemBlueprintLocalVariablesTests
         Assert.That(repo.GetByTag("bp_invalid_locals"), Is.Null);
     }
 }
-

@@ -2,8 +2,8 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 
 public interface IItemDefinitionRepository
 {
-    void AddItemDefinition(ItemData.ItemDefinition definition);
-    ItemData.ItemDefinition? GetByTag(string harvestOutputItemDefinitionTag);
-    ItemData.ItemDefinition? GetByResRef(string resRef);
-    List<ItemData.ItemDefinition> AllItems();
+    void AddItemDefinition(ItemData.ItemBlueprint definition);
+    ItemData.ItemBlueprint? GetByTag(string harvestOutputItemDefinitionTag);
+    ItemData.ItemBlueprint? GetByResRef(string resRef);
+    List<ItemData.ItemBlueprint> AllItems();
 }

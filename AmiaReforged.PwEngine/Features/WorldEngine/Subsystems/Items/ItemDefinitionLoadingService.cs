@@ -35,8 +35,8 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository items) : IDe
             try
             {
                 string json = File.ReadAllText(file);
-                ItemData.ItemDefinition? definition =
-                    JsonSerializer.Deserialize<ItemData.ItemDefinition>(json);
+                ItemData.ItemBlueprint? definition =
+                    JsonSerializer.Deserialize<ItemData.ItemBlueprint>(json);
 
                 if (definition == null)
                 {
@@ -60,7 +60,7 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository items) : IDe
     }
 
     [SuppressMessage("ReSharper", "ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract")]
-    private static bool TryValidate(ItemData.ItemDefinition definition, out string? error)
+    private static bool TryValidate(ItemData.ItemBlueprint definition, out string? error)
     {
         if (definition.ResRef.Length > 16)
         {
@@ -95,7 +95,7 @@ public class ItemDefinitionLoadingService(IItemDefinitionRepository items) : IDe
         return _failures;
     }
 
-    public List<ItemData.ItemDefinition> Definitions()
+    public List<ItemData.ItemBlueprint> Definitions()
     {
         return items.AllItems();
     }

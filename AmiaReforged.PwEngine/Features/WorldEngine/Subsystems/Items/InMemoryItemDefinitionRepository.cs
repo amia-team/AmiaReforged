@@ -5,9 +5,9 @@ namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 [ServiceBinding(typeof(IItemDefinitionRepository))]
 public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
 {
-    private readonly Dictionary<string, ItemData.ItemDefinition> _itemDefinitions = new();
+    private readonly Dictionary<string, ItemData.ItemBlueprint> _itemDefinitions = new();
 
-    public void AddItemDefinition(ItemData.ItemDefinition definition)
+    public void AddItemDefinition(ItemData.ItemBlueprint definition)
     {
         bool added = _itemDefinitions.TryAdd(definition.ItemTag, definition);
 
@@ -17,18 +17,18 @@ public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
         }
     }
 
-    public ItemData.ItemDefinition? GetByTag(string harvestOutputItemDefinitionTag)
+    public ItemData.ItemBlueprint? GetByTag(string harvestOutputItemDefinitionTag)
     {
         return _itemDefinitions.GetValueOrDefault(harvestOutputItemDefinitionTag);
     }
 
-    public ItemData.ItemDefinition? GetByResRef(string resRef)
+    public ItemData.ItemBlueprint? GetByResRef(string resRef)
     {
         if (string.IsNullOrWhiteSpace(resRef)) return null;
         return _itemDefinitions.Values.FirstOrDefault(d => string.Equals(d.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
     }
 
-    public List<ItemData.ItemDefinition> AllItems()
+    public List<ItemData.ItemBlueprint> AllItems()
     {
         return _itemDefinitions.Values.ToList();
     }

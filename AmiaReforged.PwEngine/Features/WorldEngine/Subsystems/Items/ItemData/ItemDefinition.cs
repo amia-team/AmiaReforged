@@ -2,7 +2,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 
-public record ItemDefinition(
+public record ItemBlueprint(
     string ResRef,
     string ItemTag,
     string Name,

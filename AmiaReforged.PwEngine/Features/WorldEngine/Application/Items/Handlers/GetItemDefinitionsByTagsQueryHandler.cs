@@ -1,17 +1,14 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
-using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.Services;
-using System.Linq;
 
-using InternalItemDefinition = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData.ItemDefinition;
-using PublicItemDefinition = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ItemDefinition;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Handlers;
 
-[ServiceBinding(typeof(IQueryHandler<GetItemDefinitionsByTagsQuery, List<PublicItemDefinition>>))]
-public sealed class GetItemDefinitionsByTagsQueryHandler : IQueryHandler<GetItemDefinitionsByTagsQuery, List<PublicItemDefinition>>
+[ServiceBinding(typeof(IQueryHandler<GetItemDefinitionsByTagsQuery, List<ItemBlueprint>>))]
+public sealed class GetItemDefinitionsByTagsQueryHandler : IQueryHandler<GetItemDefinitionsByTagsQuery, List<ItemBlueprint>>
 {
     private readonly IItemDefinitionRepository _repository;
 
@@ -20,20 +17,17 @@ public sealed class GetItemDefinitionsByTagsQueryHandler : IQueryHandler<GetItem
         _repository = repository;
     }
 
-    public Task<List<PublicItemDefinition>> HandleAsync(GetItemDefinitionsByTagsQuery query, CancellationToken cancellationToken = default)
+    public Task<List<ItemBlueprint>> HandleAsync(GetItemDefinitionsByTagsQuery query, CancellationToken cancellationToken = default)
     {
         if (query.Tags.Count == 0)
         {
-            return Task.FromResult(new List<PublicItemDefinition>());
+            return Task.FromResult(new List<ItemBlueprint>());
         }
 
         HashSet<string> tagSet = new(query.Tags, StringComparer.OrdinalIgnoreCase);
 
-        List<PublicItemDefinition> results = _repository.AllItems()
+        List<ItemBlueprint> results = _repository.AllItems()
             .Where(d => tagSet.Contains(d.ItemTag))
-            .Select(static (InternalItemDefinition d) => ItemDefinitionMapper.Map(d))
-            .Where(d => d is not null)
-            .Select(d => d!)
             .ToList();
 
         return Task.FromResult(results);

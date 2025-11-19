@@ -31,7 +31,7 @@ public sealed class ItemBlueprintLoadingService(IItemDefinitionRepository defini
             try
             {
                 string json = File.ReadAllText(filePath);
-                Items.ItemData.ItemDefinition? blueprint = JsonSerializer.Deserialize<Items.ItemData.ItemDefinition>(json);
+                Items.ItemData.ItemBlueprint? blueprint = JsonSerializer.Deserialize<Items.ItemData.ItemBlueprint>(json);
                 if (blueprint is null)
                 {
                     _failures.Add(new FileLoadResult(ResultType.Fail, "Failed to deserialize blueprint", fileName));
@@ -54,7 +54,7 @@ public sealed class ItemBlueprintLoadingService(IItemDefinitionRepository defini
         }
     }
 
-    private static bool TryValidate(Items.ItemData.ItemDefinition def, out string? error)
+    private static bool TryValidate(Items.ItemData.ItemBlueprint def, out string? error)
     {
         if (def.ResRef.Length > 16)
         {

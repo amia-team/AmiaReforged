@@ -39,7 +39,7 @@ public class ResourceHarvestedEventHandler(
         // Create each harvested item
         foreach (HarvestedItem harvestedItem in evt.Items)
         {
-            Items.ItemData.ItemDefinition? itemDefinition = itemDefinitionRepository.GetByTag(harvestedItem.ItemTag);
+            Items.ItemData.ItemBlueprint? itemDefinition = itemDefinitionRepository.GetByTag(harvestedItem.ItemTag);
             if (itemDefinition == null)
             {
                 Log.Warn($"Item definition '{harvestedItem.ItemTag}' not found");
@@ -59,4 +59,3 @@ public class ResourceHarvestedEventHandler(
         }
     }
 }
-

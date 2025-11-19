@@ -1,6 +1,7 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Commands;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Queries;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.Services;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Implementations;
@@ -18,24 +19,24 @@ public sealed class ItemSubsystem : IItemSubsystem
         _queries = queries;
     }
 
-    public Task<ItemDefinition?> GetItemDefinitionByTagAsync(string tag, CancellationToken ct = default)
+    public Task<ItemBlueprint?> GetItemDefinitionByTagAsync(string tag, CancellationToken ct = default)
     {
-        return _queries.DispatchAsync<GetItemDefinitionByTagQuery, ItemDefinition?>(new GetItemDefinitionByTagQuery(tag), ct);
+        return _queries.DispatchAsync<GetItemDefinitionByTagQuery, ItemBlueprint?>(new GetItemDefinitionByTagQuery(tag), ct);
     }
 
-    public Task<ItemDefinition?> GetItemDefinitionAsync(string resref, CancellationToken ct = default)
+    public Task<ItemBlueprint?> GetItemDefinitionAsync(string resref, CancellationToken ct = default)
     {
-        return _queries.DispatchAsync<GetItemDefinitionByResrefQuery, ItemDefinition?>(new GetItemDefinitionByResrefQuery(resref), ct);
+        return _queries.DispatchAsync<GetItemDefinitionByResrefQuery, ItemBlueprint?>(new GetItemDefinitionByResrefQuery(resref), ct);
     }
 
-    public Task<List<ItemDefinition>> GetAllItemDefinitionsAsync(CancellationToken ct = default)
+    public Task<List<ItemBlueprint>> GetAllItemDefinitionsAsync(CancellationToken ct = default)
     {
-        return _queries.DispatchAsync<GetAllItemDefinitionsQuery, List<ItemDefinition>>(new GetAllItemDefinitionsQuery(), ct);
+        return _queries.DispatchAsync<GetAllItemDefinitionsQuery, List<ItemBlueprint>>(new GetAllItemDefinitionsQuery(), ct);
     }
 
-    public Task<List<ItemDefinition>> SearchItemDefinitionsAsync(string searchTerm, CancellationToken ct = default)
+    public Task<List<ItemBlueprint>> SearchItemDefinitionsAsync(string searchTerm, CancellationToken ct = default)
     {
-        return _queries.DispatchAsync<SearchItemDefinitionsQuery, List<ItemDefinition>>(new SearchItemDefinitionsQuery(searchTerm), ct);
+        return _queries.DispatchAsync<SearchItemDefinitionsQuery, List<ItemBlueprint>>(new SearchItemDefinitionsQuery(searchTerm), ct);
     }
 
     public Task<Dictionary<string, object>> GetItemPropertiesAsync(string resref, CancellationToken ct = default)
@@ -50,13 +51,13 @@ public sealed class ItemSubsystem : IItemSubsystem
         return Task.FromResult(CommandResult.Fail("Not yet implemented"));
     }
 
-    public Task<List<ItemDefinition>> GetItemsByCategoryAsync(ItemCategory category, CancellationToken ct = default)
+    public Task<List<ItemBlueprint>> GetItemsByCategoryAsync(ItemCategory category, CancellationToken ct = default)
     {
-        return _queries.DispatchAsync<GetItemDefinitionsByCategoryQuery, List<ItemDefinition>>(new GetItemDefinitionsByCategoryQuery(category), ct);
+        return _queries.DispatchAsync<GetItemDefinitionsByCategoryQuery, List<ItemBlueprint>>(new GetItemDefinitionsByCategoryQuery(category), ct);
     }
 
-    public Task<List<ItemDefinition>> GetItemsByTagsAsync(List<string> tags, CancellationToken ct = default)
+    public Task<List<ItemBlueprint>> GetItemsByTagsAsync(List<string> tags, CancellationToken ct = default)
     {
-        return _queries.DispatchAsync<GetItemDefinitionsByTagsQuery, List<ItemDefinition>>(new GetItemDefinitionsByTagsQuery(tags), ct);
+        return _queries.DispatchAsync<GetItemDefinitionsByTagsQuery, List<ItemBlueprint>>(new GetItemDefinitionsByTagsQuery(tags), ct);
     }
 }

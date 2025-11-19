@@ -5,7 +5,7 @@ using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Harvesting;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using NUnit.Framework;
-using ItemBlueprint = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData.ItemDefinition;
+using ItemBlueprint = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData.ItemBlueprint;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Tests.Shops;
 

@@ -1,15 +1,14 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.Services;
 
-using InternalItemDefinition = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData.ItemDefinition;
-using PublicItemDefinition = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ItemDefinition;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Handlers;
 
-[ServiceBinding(typeof(IQueryHandler<GetItemDefinitionByTagQuery, PublicItemDefinition?>))]
-public sealed class GetItemDefinitionByTagQueryHandler : IQueryHandler<GetItemDefinitionByTagQuery, PublicItemDefinition?>
+[ServiceBinding(typeof(IQueryHandler<GetItemDefinitionByTagQuery, ItemBlueprint?>))]
+public sealed class GetItemDefinitionByTagQueryHandler : IQueryHandler<GetItemDefinitionByTagQuery, ItemBlueprint?>
 {
     private readonly IItemDefinitionRepository _repository;
 
@@ -18,10 +17,9 @@ public sealed class GetItemDefinitionByTagQueryHandler : IQueryHandler<GetItemDe
         _repository = repository;
     }
 
-    public Task<PublicItemDefinition?> HandleAsync(GetItemDefinitionByTagQuery query, CancellationToken cancellationToken = default)
+    public Task<ItemBlueprint?> HandleAsync(GetItemDefinitionByTagQuery query, CancellationToken cancellationToken = default)
     {
-        InternalItemDefinition? internalDef = _repository.GetByTag(query.Tag);
-        PublicItemDefinition? result = ItemDefinitionMapper.Map(internalDef);
-        return Task.FromResult(result);
+        ItemBlueprint? internalDef = _repository.GetByTag(query.Tag);
+        return Task.FromResult(internalDef);
     }
 }

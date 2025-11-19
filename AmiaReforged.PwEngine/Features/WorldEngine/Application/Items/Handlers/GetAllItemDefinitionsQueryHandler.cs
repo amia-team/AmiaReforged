@@ -1,15 +1,15 @@
 using AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.SharedKernel.Queries;
 using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 using Anvil.Services;
 using System.Linq;
-using InternalItemDefinition = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData.ItemDefinition;
-using PublicItemDefinition = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.ItemDefinition;
+using ItemBlueprint = AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData.ItemBlueprint;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Application.Items.Handlers;
 
-[ServiceBinding(typeof(IQueryHandler<GetAllItemDefinitionsQuery, List<PublicItemDefinition>>))]
-public sealed class GetAllItemDefinitionsQueryHandler : IQueryHandler<GetAllItemDefinitionsQuery, List<PublicItemDefinition>>
+[ServiceBinding(typeof(IQueryHandler<GetAllItemDefinitionsQuery, List<ItemBlueprint>>))]
+public sealed class GetAllItemDefinitionsQueryHandler : IQueryHandler<GetAllItemDefinitionsQuery, List<ItemBlueprint>>
 {
     private readonly IItemDefinitionRepository _repository;
 
@@ -18,14 +18,9 @@ public sealed class GetAllItemDefinitionsQueryHandler : IQueryHandler<GetAllItem
         _repository = repository;
     }
 
-    public Task<List<PublicItemDefinition>> HandleAsync(GetAllItemDefinitionsQuery query, CancellationToken cancellationToken = default)
+    public Task<List<ItemBlueprint>> HandleAsync(GetAllItemDefinitionsQuery query, CancellationToken cancellationToken = default)
     {
-        List<PublicItemDefinition> results = _repository.AllItems()
-            .Select(static (InternalItemDefinition d) => ItemDefinitionMapper.Map(d))
-            .Where(d => d is not null)
-            .Select(d => d!)
-            .ToList();
-
+        List<ItemBlueprint> results = _repository.AllItems();
         return Task.FromResult(results);
     }
 }
