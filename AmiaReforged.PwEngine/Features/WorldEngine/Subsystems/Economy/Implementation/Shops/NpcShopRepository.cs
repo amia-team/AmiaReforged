@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
 using Anvil.Services;
 using NLog;
 
@@ -19,6 +20,7 @@ public sealed class NpcShopRepository : INpcShopRepository
     private readonly Dictionary<string, string> _shopkeeperToShop = new(StringComparer.OrdinalIgnoreCase);
     private readonly IShopItemBlacklist _blacklist;
     private readonly IShopPersistenceRepository _persistence;
+    private readonly IItemDefinitionRepository _itemDefinitions;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -27,10 +29,11 @@ public sealed class NpcShopRepository : INpcShopRepository
 
     private readonly object _sync = new();
 
-    public NpcShopRepository(IShopItemBlacklist blacklist, IShopPersistenceRepository persistence)
+    public NpcShopRepository(IShopItemBlacklist blacklist, IShopPersistenceRepository persistence, IItemDefinitionRepository itemDefinitions)
     {
         _blacklist = blacklist;
         _persistence = persistence;
+        _itemDefinitions = itemDefinitions;
         Reload();
     }
 
@@ -398,7 +401,7 @@ public sealed class NpcShopRepository : INpcShopRepository
     {
         try
         {
-            NpcShop shop = new(record, _blacklist);
+            NpcShop shop = new(record, _blacklist, _itemDefinitions);
             _shops[shop.Tag] = shop;
 
             if (!string.IsNullOrWhiteSpace(shop.ShopkeeperTag))

@@ -16,8 +16,8 @@ public class NpcShopBlueprintMergeTests
     {
         InMemoryItemDefinitionRepository repo = new();
         ItemBlueprint blueprint = new(
-            ResRef: "bp_resref_01",
-            ItemTag: "bp_tag_01",
+            ResRef: "bp_resref_01", // NWN physical template
+            ItemTag: "bp_tag_01", // Domain identifier
             Name: "Blueprint Item",
             Description: "Desc",
             Materials: new[] { MaterialEnum.Gem },
@@ -34,7 +34,7 @@ public class NpcShopBlueprintMergeTests
         ShopProductRecord productRecord = new()
         {
             Id = 1,
-            ResRef = "bp_resref_01",
+            ResRef = "bp_tag_01", // References blueprint by ItemTag (domain identifier)
             DisplayName = "Display",
             Price = 10,
             CurrentStock = 1,
@@ -55,8 +55,8 @@ public class NpcShopBlueprintMergeTests
     {
         InMemoryItemDefinitionRepository repo = new();
         ItemBlueprint blueprint = new(
-            ResRef: "bp_resref_02",
-            ItemTag: "bp_tag_02",
+            ResRef: "bp_resref_02", // NWN physical template
+            ItemTag: "bp_tag_02", // Domain identifier
             Name: "Blueprint Item",
             Description: "Desc",
             Materials: new[] { MaterialEnum.Gem },
@@ -79,7 +79,7 @@ public class NpcShopBlueprintMergeTests
         ShopProductRecord productRecord = new()
         {
             Id = 2,
-            ResRef = "bp_resref_02",
+            ResRef = "bp_tag_02", // References blueprint by ItemTag (domain identifier)
             DisplayName = "Display",
             Price = 10,
             CurrentStock = 1,
