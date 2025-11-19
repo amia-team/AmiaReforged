@@ -1,5 +1,7 @@
 using System.Text.Json;
 using AmiaReforged.PwEngine.Database.Entities.Economy.Shops;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops;
 
@@ -19,9 +21,11 @@ public sealed class NpcShop
     private readonly Dictionary<int, List<NpcShopProduct>> _productsByBaseItemType = new();
     private readonly HashSet<int> _acceptedBaseItemTypes = new();
     private readonly List<NpcShopProduct> _products = new();
+    private readonly IItemDefinitionRepository? _itemDefinitions;
 
-    public NpcShop(ShopRecord record, IShopItemBlacklist? blacklist = null)
+    public NpcShop(ShopRecord record, IShopItemBlacklist? blacklist = null, IItemDefinitionRepository? itemDefinitions = null)
     {
+        _itemDefinitions = itemDefinitions;
         ArgumentNullException.ThrowIfNull(record);
 
         if (string.IsNullOrWhiteSpace(record.Tag))
@@ -87,6 +91,25 @@ public sealed class NpcShop
                 }
 
                 IReadOnlyList<NpcShopLocalVariable> locals = BuildLocalVariables(productRecord.LocalVariablesJson);
+                // Merge blueprint locals if available
+                if (_itemDefinitions != null)
+                {
+                    var blueprint = _itemDefinitions.GetByResRef(productRecord.ResRef);
+                    if (blueprint?.LocalVariables is { Count: > 0 })
+                    {
+                        // Blueprint locals first, then override with product locals by name.
+                        Dictionary<string, NpcShopLocalVariable> merged = new(StringComparer.OrdinalIgnoreCase);
+                        foreach (var bpLocal in blueprint.LocalVariables)
+                        {
+                            try { merged[bpLocal.Name] = NpcShopLocalVariable.FromDefinition(bpLocal); } catch { /* ignore invalid blueprint local already validated */ }
+                        }
+                        foreach (var shopLocal in locals)
+                        {
+                            merged[shopLocal.Name] = shopLocal; // override
+                        }
+                        locals = merged.Values.ToList();
+                    }
+                }
                 SimpleModelAppearance? appearance = BuildAppearance(productRecord.AppearanceJson);
                 string displayName = string.IsNullOrWhiteSpace(productRecord.DisplayName)
                     ? productRecord.ResRef
@@ -213,6 +236,24 @@ public sealed class NpcShop
             }
 
             IReadOnlyList<NpcShopLocalVariable> locals = BuildLocalVariables(record.LocalVariablesJson);
+            // Merge blueprint locals if available
+            if (_itemDefinitions != null)
+            {
+                var blueprint = _itemDefinitions.GetByResRef(record.ResRef);
+                if (blueprint?.LocalVariables is { Count: > 0 })
+                {
+                    Dictionary<string, NpcShopLocalVariable> merged = new(StringComparer.OrdinalIgnoreCase);
+                    foreach (var bpLocal in blueprint.LocalVariables)
+                    {
+                        try { merged[bpLocal.Name] = NpcShopLocalVariable.FromDefinition(bpLocal); } catch { }
+                    }
+                    foreach (var shopLocal in locals)
+                    {
+                        merged[shopLocal.Name] = shopLocal;
+                    }
+                    locals = merged.Values.ToList();
+                }
+            }
             SimpleModelAppearance? appearance = BuildAppearance(record.AppearanceJson);
             string displayName = string.IsNullOrWhiteSpace(record.DisplayName)
                 ? record.ResRef

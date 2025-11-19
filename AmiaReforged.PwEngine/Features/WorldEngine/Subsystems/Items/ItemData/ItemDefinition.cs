@@ -11,5 +11,6 @@ public record ItemDefinition(
     JobSystemItemType JobSystemType,
     int BaseItemType,
     AppearanceData Appearance,
+    IReadOnlyList<JsonLocalVariableDefinition>? LocalVariables = null,
     int BaseValue = 1,
     int WeightIncreaseConstant = -1);

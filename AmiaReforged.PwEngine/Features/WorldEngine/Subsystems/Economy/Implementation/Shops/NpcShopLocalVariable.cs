@@ -1,4 +1,5 @@
 using System.Text.Json;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops;
 

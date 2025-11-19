@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Items.ItemData;
 
 namespace AmiaReforged.PwEngine.Features.WorldEngine.Subsystems.Economy.Implementation.Shops;
 
@@ -28,18 +29,5 @@ public sealed record NpcShopProductDefinition(
 public sealed record NpcShopRestockDefinition(
     [property: JsonPropertyName("MinMinutes")] int MinMinutes,
     [property: JsonPropertyName("MaxMinutes")] int MaxMinutes);
-
-public sealed record JsonLocalVariableDefinition(
-    string Name,
-    JsonLocalVariableType Type,
-    JsonElement Value);
-
-[JsonConverter(typeof(JsonStringEnumConverter))]
-public enum JsonLocalVariableType
-{
-    Int,
-    String,
-    Json
-}
 
 public sealed record SimpleModelAppearanceDefinition(int ModelType, int? SimpleModelNumber);

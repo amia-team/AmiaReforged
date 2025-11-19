@@ -22,6 +22,12 @@ public class InMemoryItemDefinitionRepository : IItemDefinitionRepository
         return _itemDefinitions.GetValueOrDefault(harvestOutputItemDefinitionTag);
     }
 
+    public ItemData.ItemDefinition? GetByResRef(string resRef)
+    {
+        if (string.IsNullOrWhiteSpace(resRef)) return null;
+        return _itemDefinitions.Values.FirstOrDefault(d => string.Equals(d.ResRef, resRef, StringComparison.OrdinalIgnoreCase));
+    }
+
     public List<ItemData.ItemDefinition> AllItems()
     {
         return _itemDefinitions.Values.ToList();

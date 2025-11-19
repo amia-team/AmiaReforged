@@ -76,10 +76,44 @@ public sealed class ItemBlueprintLoadingService(IItemDefinitionRepository defini
             error = "Appearance must not be null.";
             return false;
         }
+        if (def.LocalVariables is { Count: > 0 })
+        {
+            foreach (var local in def.LocalVariables)
+            {
+                if (string.IsNullOrWhiteSpace(local.Name))
+                {
+                    error = "Local variable name must not be empty.";
+                    return false;
+                }
+                switch (local.Type)
+                {
+                    case ItemData.JsonLocalVariableType.Int:
+                        if (local.Value.ValueKind != System.Text.Json.JsonValueKind.Number)
+                        {
+                            error = $"Local variable '{local.Name}' expected number.";
+                            return false;
+                        }
+                        break;
+                    case ItemData.JsonLocalVariableType.String:
+                        if (local.Value.ValueKind != System.Text.Json.JsonValueKind.String)
+                        {
+                            error = $"Local variable '{local.Name}' expected string.";
+                            return false;
+                        }
+                        break;
+                    case ItemData.JsonLocalVariableType.Json:
+                        if (local.Value.ValueKind == System.Text.Json.JsonValueKind.Undefined)
+                        {
+                            error = $"Local variable '{local.Name}' JSON value undefined.";
+                            return false;
+                        }
+                        break;
+                }
+            }
+        }
         error = null;
         return true;
     }
 
     public List<FileLoadResult> Failures() => _failures;
 }
-
