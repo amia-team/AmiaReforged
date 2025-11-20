@@ -47,6 +47,13 @@
           "Description": "A cozy prototype cottage featuring a single room and a tidy hearth."
         },
         {
+          "ResRef": "zwrld_testhaus2",
+          "Tag": "zwrld_testhaus2",
+          "Name": "Medium Test House",
+          "Type": "House",
+          "Description": "A nice prototype house with spaghetti in its pockets."
+        },
+        {
           "ResRef": "zwrldset_tstshop",
           "Tag": "zwrldset_tstshop",
           "Name": "Poetry Store",

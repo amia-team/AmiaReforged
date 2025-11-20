@@ -51,17 +51,18 @@ public sealed class PropertyRentFlow
     }
 
     internal async Task HandleVacantPropertyInteractionAsync(
-        NwDoor door,
+        NwPlaceable sign,
+        NwDoor? door,
         NwPlayer player,
         PersonaId personaId,
         PropertyId propertyId,
         RentablePropertySnapshot propertySnapshot,
         RentOfferPresentation presentation)
     {
-        GoldAmount? configuredRent = await ResolveDoorRentAsync(door).ConfigureAwait(false);
+        GoldAmount? configuredRent = await ResolveSignRentAsync(sign).ConfigureAwait(false);
         if (configuredRent is null)
         {
-            Log.Warn("Door {DoorTag} is missing a valid house_size local variable for rental pricing.", door.Tag);
+            Log.Warn("Sign {SignTag} is missing a valid house_size local variable for rental pricing.", sign.Tag);
             await PlayerHouseService.ShowFloatingTextAsync(player,
                 "This property is not configured for rental yet. Please notify a DM.").ConfigureAwait(false);
             return;
@@ -431,7 +432,18 @@ public sealed class PropertyRentFlow
 
             await PlayerHouseService.ShowFloatingTextAsync(player, "You have rented this property!")
                 .ConfigureAwait(false);
-            await PlayerHouseService.UnlockDoorAsync(session.Door).ConfigureAwait(false);
+
+            if (session.Door is not null)
+            {
+                await PlayerHouseService.UnlockDoorAsync(session.Door).ConfigureAwait(false);
+            }
+            else
+            {
+                await PlayerHouseService.SendServerMessageAsync(player,
+                        "You can now access this property through its door.",
+                        ColorConstants.Orange)
+                    .ConfigureAwait(false);
+            }
 
             return RentPropertySubmissionResult.SuccessResult(
                 "Rental completed successfully.",
@@ -490,6 +502,30 @@ public sealed class PropertyRentFlow
         }
 
         LocalVariableInt sizeVariable = door.GetObjectVariable<LocalVariableInt>("house_size");
+        if (!sizeVariable.HasValue)
+        {
+            return null;
+        }
+
+        return sizeVariable.Value switch
+        {
+            1 => HouseSize1Rent,
+            2 => HouseSize2Rent,
+            3 => HouseSize3Rent,
+            _ => null
+        };
+    }
+
+    private static async Task<GoldAmount?> ResolveSignRentAsync(NwPlaceable sign)
+    {
+        await NwTask.SwitchToMainThread();
+
+        if (!sign.IsValid)
+        {
+            return null;
+        }
+
+        LocalVariableInt sizeVariable = sign.GetObjectVariable<LocalVariableInt>("house_size");
         if (!sizeVariable.HasValue)
         {
             return null;
@@ -707,7 +743,7 @@ public sealed class PropertyRentFlow
     private sealed record PendingRentSession(
         PropertyId PropertyId,
         GoldAmount RentCost,
-        NwDoor Door,
+        NwDoor? Door,
         DateTimeOffset CreatedAt,
         string PropertyDisplayName,
         string? PropertyDescription,

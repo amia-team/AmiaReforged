@@ -17,7 +17,7 @@ public class PlayerHouseService
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    private const string HouseDoorTag = "db_house_door";
+    private const string IsHouseDoorVariable = "is_house_door";
     private const string HouseSignTag = "house_sign";
     private const string TargetAreaTagLocalString = "target_area_tag";
 
@@ -50,15 +50,25 @@ public class PlayerHouseService
 
     private void BindHouseDoors()
     {
-        IEnumerable<NwDoor> doors = NwObject.FindObjectsWithTag<NwDoor>(HouseDoorTag);
-
-        foreach (NwDoor door in doors)
+        // Search all doors in the module for the "is_house_door" local variable
+        foreach (NwArea area in NwModule.Instance.Areas)
         {
-            if (_registeredDoorIds.Add(door.ObjectId))
+            foreach (NwDoor door in area.Objects.OfType<NwDoor>())
             {
-                door.OnFailToOpen += HandlePlayerInteraction;
+                LocalVariableInt isHouseDoor = door.GetObjectVariable<LocalVariableInt>(IsHouseDoorVariable);
+
+                if (isHouseDoor.HasValue && isHouseDoor.Value > 0)
+                {
+                    if (_registeredDoorIds.Add(door.ObjectId))
+                    {
+                        door.OnFailToOpen += HandlePlayerInteraction;
+                        Log.Debug("Registered house door: {DoorTag} in area {AreaTag}", door.Tag, area.Tag);
+                    }
+                }
             }
         }
+
+        Log.Info("Registered {Count} house doors", _registeredDoorIds.Count);
     }
 
     private void BindHouseSigns()
@@ -286,18 +296,12 @@ public class PlayerHouseService
                 }
 
                 // STATE 4: Player has no rental and house is vacant -> Present rental option
-                // Find the associated door to pass to the rental flow
+                // Try to find the associated door (optional - only needed for unlocking after rental)
                 NwDoor? door = FindHouseDoorForArea(targetAreaTag);
-                if (door is null)
-                {
-                    Log.Warn("Could not find door for area {AreaTag} when attempting to rent from sign.", targetAreaTag);
-                    await ShowFloatingTextAsync(player,
-                        "The door for this property could not be located. Please notify a DM.");
-                    return;
-                }
 
                 PropertyRentFlow.RentOfferPresentation presentation = ResolvePropertyPresentation(metadata);
                 await _rentFlow.HandleVacantPropertyInteractionAsync(
+                        sign: obj.Placeable,
                         door: door,
                         player,
                         personaId,
@@ -430,15 +434,22 @@ public class PlayerHouseService
 
     private static NwDoor? FindHouseDoorForArea(string targetAreaTag)
     {
-        IEnumerable<NwDoor> doors = NwObject.FindObjectsWithTag<NwDoor>(HouseDoorTag);
-
-        foreach (NwDoor door in doors)
+        // Search all doors in all areas for house doors with matching target area
+        foreach (NwArea area in NwModule.Instance.Areas)
         {
-            string? doorTargetArea = door.GetObjectVariable<LocalVariableString>(TargetAreaTagLocalString).Value;
-            if (!string.IsNullOrWhiteSpace(doorTargetArea) &&
-                string.Equals(doorTargetArea, targetAreaTag, StringComparison.OrdinalIgnoreCase))
+            foreach (NwDoor door in area.Objects.OfType<NwDoor>())
             {
-                return door;
+                LocalVariableInt isHouseDoor = door.GetObjectVariable<LocalVariableInt>(IsHouseDoorVariable);
+
+                if (isHouseDoor.HasValue && isHouseDoor.Value > 0)
+                {
+                    string? doorTargetArea = door.GetObjectVariable<LocalVariableString>(TargetAreaTagLocalString).Value;
+                    if (!string.IsNullOrWhiteSpace(doorTargetArea) &&
+                        string.Equals(doorTargetArea, targetAreaTag, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return door;
+                    }
+                }
             }
         }
 
@@ -466,19 +477,15 @@ public class PlayerHouseService
                         displayName = poi.Name;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(poi.Description))
-                    {
-                        description = poi.Description;
-                    }
+                    description ??= poi.Description;
                 }
             }
         }
         catch (Exception ex)
         {
-            Log.Warn(ex, "Failed to resolve place-of-interest data for housing area {AreaTag}.", metadata.AreaTag);
+            Log.Error(ex, "Error resolving property presentation for metadata {Metadata}", metadata);
         }
 
-        settlementName ??= metadata.Settlement.Value;
         return new PropertyRentFlow.RentOfferPresentation(displayName, description, settlementName);
     }
 
