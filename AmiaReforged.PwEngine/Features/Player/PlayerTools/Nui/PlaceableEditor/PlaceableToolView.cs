@@ -16,6 +16,7 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
     private const float SectionSpacing = 6f;
 
     public NuiButton RecoverButton = null!;
+    public NuiButton RecoverAllButton = null!;
 
     public PlaceableToolView(NwPlayer player)
     {
@@ -115,6 +116,12 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                     Height = 32f,
                     Enabled = SelectionAvailable
                 }.Assign(out RecoverButton),
+                new NuiSpacer { Height = SectionSpacing },
+                new NuiButton("Recover All in Area")
+                {
+                    Id = "btn_recover_all",
+                    Height = 32f
+                }.Assign(out RecoverAllButton),
                 new NuiSpacer { Height = SectionSpacing },
                 new NuiLabel(StatusMessage)
                 {

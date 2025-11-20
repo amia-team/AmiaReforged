@@ -64,6 +64,27 @@ public class PersistentObjectRepository(PwContextFactory factory) : IPersistentO
         }
     }
 
+    public List<PersistentObject> GetPlaceablesForCharacterInArea(Guid characterId, string areaResRef)
+    {
+        using PwEngineContext context = factory.CreateDbContext();
+
+        try
+        {
+            return context.PersistentObjects
+                .Include(po => po.Location)
+                .Where(po => po.Type == (int)Anvil.API.ObjectTypes.Placeable
+                             && po.CharacterId == characterId
+                             && po.Location != null
+                             && po.Location.AreaResRef == areaResRef)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            return [];
+        }
+    }
+
     public async Task DeleteObject(long id)
     {
         await using PwEngineContext context = factory.CreateDbContext();
@@ -152,6 +173,7 @@ public interface IPersistentObjectRepository
     Task<PersistentObject?> GetObject(long id);
 
     List<PersistentObject> GetObjectsForArea(string areaResRef);
+    List<PersistentObject> GetPlaceablesForCharacterInArea(Guid characterId, string areaResRef);
     bool AreaHasPersistentObjects(string areaResRef);
     Task<bool> SaveChanges();
 }

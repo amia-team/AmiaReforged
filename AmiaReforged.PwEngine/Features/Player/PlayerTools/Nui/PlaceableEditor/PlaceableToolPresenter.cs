@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using AmiaReforged.Core.UserInterface;
+using AmiaReforged.PwEngine.Database;
 using AmiaReforged.PwEngine.Database.Entities;
 using AmiaReforged.PwEngine.Features.DungeonMaster.PlcEdit;
 using AmiaReforged.PwEngine.Features.WindowingSystem.Scry;
@@ -49,6 +50,9 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     private static readonly TimeSpan LiveApplyThrottle = TimeSpan.FromMilliseconds(50);
     private DateTime _lastApplyAt = DateTime.MinValue;
 
+    private bool _recoverAllConfirmationPending;
+    private DateTime _recoverAllConfirmationExpiry;
+
     public PlaceableToolPresenter(PlaceableToolView view, NwPlayer player)
     {
         View = view;
@@ -59,6 +63,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     public override PlaceableToolView View { get; }
 
     [Inject] private Lazy<PlaceablePersistenceService> PersistenceService { get; init; } = null!;
+    [Inject] private Lazy<IPersistentObjectRepository> ObjectRepository { get; init; } = null!;
 
     public override NuiWindowToken Token() => _token;
 
@@ -120,6 +125,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
                 _lastSelection.RemoveEffect(selectionEffect);
             }
         }
+
 
         _blueprints.Clear();
         _pendingSpawn = null;
@@ -194,6 +200,13 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         {
             Trace("HandleClick dispatching RecoverSelectedPlaceable().");
             RecoverSelectedPlaceable();
+            return;
+        }
+
+        if (eventData.ElementId == View.RecoverAllButton.Id)
+        {
+            Trace("HandleClick dispatching RecoverAllPlaceablesInArea().");
+            HandleRecoverAllClick();
         }
     }
 
@@ -467,6 +480,200 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             Token().SetBindValue(View.StatusMessage, $"Recovered '{placeable.Name}'.");
             UpdateSelection(null);
         });
+    }
+
+    private void HandleRecoverAllClick()
+    {
+        // Check if confirmation is still valid (within 10 seconds)
+        if (_recoverAllConfirmationPending && DateTime.UtcNow < _recoverAllConfirmationExpiry)
+        {
+            // Confirmed - proceed with recovery
+            _recoverAllConfirmationPending = false;
+            RecoverAllPlaceablesInArea();
+            return;
+        }
+
+        // Show confirmation dialog
+        ShowRecoverAllConfirmation();
+    }
+
+    private void ShowRecoverAllConfirmation()
+    {
+        NwCreature? creature = _player.ControlledCreature;
+        if (creature?.Area == null)
+        {
+            Token().SetBindValue(View.StatusMessage, "Unable to determine your current area.");
+            return;
+        }
+
+        Guid characterId = PcKeyUtils.GetPcKey(_player);
+        if (characterId == Guid.Empty)
+        {
+            Token().SetBindValue(View.StatusMessage, "Unable to determine your character ID.");
+            return;
+        }
+
+        string areaResRef = creature.Area.ResRef;
+
+        // Query how many placeables the player has in this area
+        List<PersistentObject> placeables = ObjectRepository.Value.GetPlaceablesForCharacterInArea(characterId, areaResRef);
+
+        if (placeables.Count == 0)
+        {
+            Token().SetBindValue(View.StatusMessage, $"You have no placeables in this area.");
+            _player.SendServerMessage("You have no placeables in this area to recover.", ColorConstants.Orange);
+            return;
+        }
+
+        // Set confirmation state
+        _recoverAllConfirmationPending = true;
+        _recoverAllConfirmationExpiry = DateTime.UtcNow.AddSeconds(10);
+
+        Token().SetBindValue(View.StatusMessage,
+            $"Found {placeables.Count} placeable(s) to recover. Click again within 10 seconds to confirm.");
+        _player.SendServerMessage(
+            $"Found {placeables.Count} placeable(s) in this area. Click 'Recover All in Area' again within 10 seconds to confirm recovery.",
+            ColorConstants.Yellow);
+    }
+
+    private void RecoverAllPlaceablesInArea()
+    {
+        NwCreature? creature = _player.ControlledCreature;
+        if (creature?.Area == null)
+        {
+            Token().SetBindValue(View.StatusMessage, "Unable to determine your current area.");
+            return;
+        }
+
+        Guid characterId = PcKeyUtils.GetPcKey(_player);
+        if (characterId == Guid.Empty)
+        {
+            Token().SetBindValue(View.StatusMessage, "Unable to determine your character ID.");
+            return;
+        }
+
+        string areaResRef = creature.Area.ResRef;
+        Token().SetBindValue(View.StatusMessage, "Recovering all placeables in area...");
+
+        _ = NwTask.Run(async () =>
+        {
+            int recoveredCount = 0;
+            int skippedNoData = 0;
+            int skippedNoFit = 0;
+            int failedCount = 0;
+
+            List<PersistentObject> placeables = ObjectRepository.Value.GetPlaceablesForCharacterInArea(characterId, areaResRef);
+
+            await NwTask.SwitchToMainThread();
+
+            if (placeables.Count == 0)
+            {
+                if (Token().Player.IsValid)
+                {
+                    Token().SetBindValue(View.StatusMessage, "No placeables found to recover.");
+                }
+                return;
+            }
+
+            foreach (PersistentObject persistentObject in placeables)
+            {
+                try
+                {
+                    await NwTask.SwitchToMainThread();
+
+                    // Check if there's source item data
+                    if (persistentObject.SourceItemData == null || persistentObject.SourceItemData.Length == 0)
+                    {
+                        Log.Warn($"Placeable {persistentObject.Id} has no source item data, skipping recovery.");
+                        skippedNoData++;
+                        continue;
+                    }
+
+                    // Deserialize the item at a safe location
+                    NwItem? item = NwItem.Deserialize(persistentObject.SourceItemData);
+                    if (item == null)
+                    {
+                        Log.Error($"Failed to deserialize item for placeable {persistentObject.Id}");
+                        failedCount++;
+                        continue;
+                    }
+
+                    // Move item to starting location temporarily
+                    item.Location = NwModule.Instance.StartingLocation;
+
+                    // Check if it fits in player's inventory
+                    if (!_player.LoginCreature.Inventory.CheckFit(item))
+                    {
+                        Log.Info($"Item from placeable {persistentObject.Id} does not fit in player inventory, destroying.");
+                        item.Destroy();
+                        skippedNoFit++;
+                        continue;
+                    }
+
+                    // Acquire the item
+                    _player.LoginCreature.AcquireItem(item);
+
+                    // Delete from database
+                    await ObjectRepository.Value.DeleteObject(persistentObject.Id);
+
+                    // Find and destroy the in-game placeable
+                    await NwTask.SwitchToMainThread();
+                    NwPlaceable? inGamePlaceable = FindPlaceableByDatabaseId(creature.Area, persistentObject.Id);
+                    if (inGamePlaceable != null && inGamePlaceable.IsValid)
+                    {
+                        inGamePlaceable.Destroy();
+                    }
+
+                    recoveredCount++;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, $"Failed to recover placeable {persistentObject.Id}");
+                    failedCount++;
+                }
+            }
+
+            await NwTask.SwitchToMainThread();
+
+            if (!Token().Player.IsValid)
+            {
+                return;
+            }
+
+            // Clear confirmation state
+            _recoverAllConfirmationPending = false;
+
+            // Clear selection if any placeables were recovered
+            if (recoveredCount > 0)
+            {
+                UpdateSelection(null);
+            }
+
+            // Build detailed status message
+            string statusMessage = $"Recovery complete: {recoveredCount} recovered";
+            if (skippedNoFit > 0) statusMessage += $", {skippedNoFit} skipped (no space)";
+            if (skippedNoData > 0) statusMessage += $", {skippedNoData} skipped (no data)";
+            if (failedCount > 0) statusMessage += $", {failedCount} failed";
+
+            Token().SetBindValue(View.StatusMessage, statusMessage);
+            _player.SendServerMessage(statusMessage, ColorConstants.Green);
+        });
+    }
+
+    private NwPlaceable? FindPlaceableByDatabaseId(NwArea area, long databaseId)
+    {
+        const string DatabaseIdLocalInt = "db_id";
+
+        foreach (NwPlaceable placeable in area.FindObjectsOfTypeInArea<NwPlaceable>())
+        {
+            LocalVariableInt dbIdVar = placeable.GetObjectVariable<LocalVariableInt>(DatabaseIdLocalInt);
+            if (dbIdVar.HasValue && dbIdVar.Value == databaseId)
+            {
+                return placeable;
+            }
+        }
+
+        return null;
     }
 
     private void HandleWatch(ModuleEvents.OnNuiEvent eventData)
