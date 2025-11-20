@@ -244,7 +244,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         Location? location = targetData.TargetObject switch
         {
             NwGameObject gameObject => gameObject.Location,
-            _ => Location.Create(area, targetData.TargetPosition, _player.ControlledCreature?.Location?.Rotation ?? 0f)
+            _ => Location.Create(area, targetData.TargetPosition, 0f)
         };
 
         Trace($"HandleSpawnTarget resolved location area={area.Name} position={location?.Position ?? Vector3.Zero}.");

@@ -105,8 +105,6 @@ public sealed class PlaceableToolView : ScryView<PlaceableToolPresenter>, IToolW
                 new NuiSpacer { Height = SectionSpacing },
                 BuildBlueprintList(),
                 new NuiSpacer { Height = SectionSpacing },
-                BuildSelectionSummary(),
-                new NuiSpacer { Height = SectionSpacing },
                 BuildTransformSection(),
                 new NuiSpacer { Height = SectionSpacing },
                 BuildActionRow(),
