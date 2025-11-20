@@ -13,6 +13,7 @@ using Anvil.API;
 using Anvil.API.Events;
 using Anvil.Services;
 using NLog;
+using NWN.Core;
 using Action = System.Action;
 
 namespace AmiaReforged.PwEngine.Features.Player.PlayerTools.Nui.PlaceableEditor;
@@ -25,9 +26,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
     private const string CharacterIdLocalString = "character_id";
     private const string SourceItemDataLocalString = "source_item_data";
 
+    private const string SelectionVfxTag = "plc_selection_vfx";
+
     private readonly NwPlayer _player;
     private readonly PlaceableToolModel _model;
-    private List<PlaceableBlueprint> _blueprints = new();
+    private List<PlaceableBlueprint> _blueprints = [];
 
     private NuiWindowToken _token;
     private NuiWindow? _window;
@@ -109,6 +112,15 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
     public override void Close()
     {
+        if (_lastSelection != null && _lastSelection.IsValid)
+        {
+            Effect? selectionEffect = _lastSelection.ActiveEffects.FirstOrDefault(e => e.Tag == SelectionVfxTag);
+            if (selectionEffect != null)
+            {
+                _lastSelection.RemoveEffect(selectionEffect);
+            }
+        }
+
         _blueprints.Clear();
         _pendingSpawn = null;
         _lastSelection = null;
@@ -129,8 +141,8 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         Token().SetBindValue(View.SelectedName, "No placeable selected");
         Token().SetBindValue(View.SelectedLocation, string.Empty);
         Token().SetBindValue(View.BlueprintCount, 0);
-        Token().SetBindValues(View.BlueprintNames, Array.Empty<string>());
-        Token().SetBindValues(View.BlueprintResRefs, Array.Empty<string>());
+        Token().SetBindValues(View.BlueprintNames, []);
+        Token().SetBindValues(View.BlueprintResRefs, []);
 
         ResetEditFields();
 
@@ -337,14 +349,23 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
         }
 
         Trace($"HandleSelectTarget succeeded; updating selection to {placeable.Name}.");
+
         UpdateSelection(placeable);
         Token().SetBindValue(View.StatusMessage, $"Selected '{placeable.Name}'.");
     }
 
     private void UpdateSelection(NwPlaceable? placeable)
     {
-        _lastSelection = placeable;
+        if (_lastSelection is not null)
+        {
+            Effect? selectionEffect = _lastSelection.ActiveEffects.FirstOrDefault(e => e.Tag == SelectionVfxTag);
+            if (selectionEffect is not null)
+            {
+                _lastSelection.RemoveEffect(selectionEffect);
+            }
+        }
 
+        _lastSelection = placeable;
         Trace(placeable == null
             ? "UpdateSelection(null) invoked; disabling watchers and clearing binds."
             : $"UpdateSelection({placeable.Name}) invoked; placeable valid={placeable.IsValid}");
@@ -360,6 +381,11 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             _selectionEditable = false;
             return;
         }
+        Effect vfx = Effect.VisualEffect(VfxType.DurProtectionEvilMinor, false, 2f);
+        vfx.Tag = SelectionVfxTag;
+        vfx.DurationType = EffectDuration.Permanent;
+
+        NWScript.ApplyEffectToObject(NWScript.DURATION_TYPE_PERMANENT, vfx, placeable);
 
         ToggleBindWatch(false);
 
@@ -1122,7 +1148,7 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
             }
 
             float value = Token().GetBindValue(numeric);
-            WithWatchBlacklist(new[] { text.Key },
+            WithWatchBlacklist([text.Key],
                 () => Token().SetBindValue(text, value.ToString(CultureInfo.InvariantCulture)));
         }
 
@@ -1153,12 +1179,12 @@ public sealed class PlaceableToolPresenter : ScryPresenter<PlaceableToolView>
 
             if (!string.Equals(raw, sanitized, StringComparison.Ordinal))
             {
-                WithWatchBlacklist(new[] { text.Key }, () => Token().SetBindValue(text, sanitized));
+                WithWatchBlacklist([text.Key], () => Token().SetBindValue(text, sanitized));
             }
 
             if (float.TryParse(sanitized, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
             {
-                WithWatchBlacklist(new[] { numeric.Key }, () => Token().SetBindValue(numeric, value));
+                WithWatchBlacklist([numeric.Key], () => Token().SetBindValue(numeric, value));
             }
 
             return true;
