@@ -99,12 +99,11 @@ public class ResourceWatcherService
 
         string fullPath = e.FullPath;
 
-        // Handle deleted files
+        // Handle deleted files - queue for processing but don't modify hashes yet
         if (e.ChangeType == WatcherChangeTypes.Deleted)
         {
             lock (_debounceLock)
             {
-                _fileHashes.Remove(fullPath);
                 _pendingChanges.Add(fullPath);
                 ResetDebounceTimer();
             }
@@ -123,48 +122,11 @@ public class ResourceWatcherService
         }
 
         // For Created/Changed events, check if content actually changed
-        try
+        // Don't block the FileSystemWatcher thread - just queue the change
+        lock (_debounceLock)
         {
-            // Wait a moment for file to be fully written
-            Thread.Sleep(50);
-
-            if (!File.Exists(fullPath))
-            {
-                return; // File was deleted before we could read it
-            }
-
-            string newHash = ComputeFileHash(fullPath);
-
-            lock (_debounceLock)
-            {
-                bool hasChanged = !_fileHashes.TryGetValue(fullPath, out string? oldHash) || oldHash != newHash;
-
-                if (hasChanged)
-                {
-                    _fileHashes[fullPath] = newHash;
-                    _pendingChanges.Add(fullPath);
-                    ResetDebounceTimer();
-                    Log.Debug($"File content changed: {e.Name} (Hash: {newHash[..8]}...)");
-                }
-                else
-                {
-                    Log.Debug($"File modified but content unchanged: {e.Name}");
-                }
-            }
-        }
-        catch (IOException ioEx)
-        {
-            Log.Debug(ioEx, $"IO error reading file (may still be writing): {e.Name}");
-            // File might still be being written, schedule a retry via debounce
-            lock (_debounceLock)
-            {
-                _pendingChanges.Add(fullPath);
-                ResetDebounceTimer();
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Warn(ex, $"Failed to hash file: {e.Name}");
+            _pendingChanges.Add(fullPath);
+            ResetDebounceTimer();
         }
     }
 
@@ -176,7 +138,7 @@ public class ResourceWatcherService
 
     private void OnDebounceElapsed(object? state)
     {
-        List<string> changedFiles;
+        List<string> pendingFiles;
 
         lock (_debounceLock)
         {
@@ -185,15 +147,82 @@ public class ResourceWatcherService
                 return;
             }
 
-            changedFiles = new List<string>(_pendingChanges);
+            pendingFiles = new List<string>(_pendingChanges);
             _pendingChanges.Clear();
         }
 
-        Log.Info($"Debounced file changes detected: {changedFiles.Count} file(s) changed");
+        // Check which files actually changed content (outside the lock)
+        List<string> actuallyChangedFiles = new();
+
+        foreach (string filePath in pendingFiles)
+        {
+            try
+            {
+                // Check if file was deleted
+                if (!File.Exists(filePath))
+                {
+                    bool wasTracked;
+                    lock (_debounceLock)
+                    {
+                        wasTracked = _fileHashes.Remove(filePath);
+                    }
+                    // Report deletion if file was tracked OR if it's in our watch directory
+                    // (FileSystemWatcher only fires events for files it's watching)
+                    actuallyChangedFiles.Add(filePath);
+                    Log.Debug($"File deleted: {Path.GetFileName(filePath)} (was tracked: {wasTracked})");
+                    continue;
+                }
+
+                // Compute hash for existing files
+                string newHash = ComputeFileHash(filePath);
+                bool hasChanged;
+
+                lock (_debounceLock)
+                {
+                    hasChanged = !_fileHashes.TryGetValue(filePath, out string? oldHash) || oldHash != newHash;
+                    if (hasChanged)
+                    {
+                        _fileHashes[filePath] = newHash;
+                    }
+                }
+
+                if (hasChanged)
+                {
+                    actuallyChangedFiles.Add(filePath);
+                    Log.Debug($"File content changed: {Path.GetFileName(filePath)} (Hash: {newHash[..8]}...)");
+                }
+                else
+                {
+                    Log.Debug($"File modified but content unchanged: {Path.GetFileName(filePath)}");
+                }
+            }
+            catch (IOException ioEx)
+            {
+                Log.Debug(ioEx, $"IO error reading file (may still be writing): {Path.GetFileName(filePath)}");
+                // File might still be being written, reschedule
+                lock (_debounceLock)
+                {
+                    _pendingChanges.Add(filePath);
+                    ResetDebounceTimer();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(ex, $"Failed to process file change: {Path.GetFileName(filePath)}");
+            }
+        }
+
+        if (actuallyChangedFiles.Count == 0)
+        {
+            Log.Debug("No actual content changes detected after debounce");
+            return;
+        }
+
+        Log.Info($"Debounced file changes detected: {actuallyChangedFiles.Count} file(s) changed");
 
         // Fire a single consolidated event
         // Use the first file path as representative for the event args
-        string firstFile = changedFiles[0];
+        string firstFile = actuallyChangedFiles[0];
         FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.Changed,
             Path.GetDirectoryName(firstFile) ?? string.Empty,
             Path.GetFileName(firstFile));
