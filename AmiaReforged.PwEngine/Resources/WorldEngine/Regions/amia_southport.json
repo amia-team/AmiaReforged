@@ -1,0 +1,50 @@
+{
+  "Tag": "amia_southport",
+  "Name": "Southport",
+  "Areas": [
+    {
+      "ResRef": "cordor_east",
+      "DefinitionTags": [
+      ],
+      "LinkedSettlement": 35,
+      "Environment": {
+        "Climate": "Temperate",
+        "SoilQuality": "Good",
+        "MineralQualityRange": {
+          "Min": "BelowAverage",
+          "Max": "Excellent"
+        }
+      },
+      "PlacesOfInterest": [
+        {
+          "ResRef": "sp_coinhouse",
+          "Tag": "southport_bank",
+          "Name": "Southport Counting House",
+          "Type": "Bank",
+          "Description": "A grand financial institution where merchants and adventurers alike can store their wealth and conduct business transactions."
+        },
+        {
+          "ResRef": "sp_e_house1",
+          "Tag": "southport_east_house1",
+          "Name": "Harborside",
+          "Type": "House",
+          "Description": "A cozy harbor-side hovel with a fireplace."
+        },
+        {
+          "ResRef": "sp_e_house2",
+          "Tag": "southport_east_house2",
+          "Name": "Sea Breeze",
+          "Type": "House",
+          "Description": "A well built sea-side townhome."
+        },
+        {
+          "ResRef": "sp_e_house3",
+          "Tag": "southport_east_house3",
+          "Name": "Beacon's Rest",
+          "Type": "House",
+          "Description": "A newer style home built right near the city beacon."
+        }
+      ]
+    }
+  ]
+}

@@ -525,6 +525,14 @@ public sealed class PropertyRentFlow
             return null;
         }
 
+        // Check for custom monthly rent override first
+        LocalVariableInt monthlyRentVariable = sign.GetObjectVariable<LocalVariableInt>("monthly_rent");
+        if (monthlyRentVariable.HasValue && monthlyRentVariable.Value > 0)
+        {
+            return GoldAmount.Parse(monthlyRentVariable.Value);
+        }
+
+        // Fall back to house_size if no custom rent set
         LocalVariableInt sizeVariable = sign.GetObjectVariable<LocalVariableInt>("house_size");
         if (!sizeVariable.HasValue)
         {
