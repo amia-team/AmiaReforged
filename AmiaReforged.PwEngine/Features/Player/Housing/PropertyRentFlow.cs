@@ -693,6 +693,15 @@ public sealed class PropertyRentFlow
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Gets all properties currently rented by the specified tenant.
+    /// Used to enforce the one-property-per-player rule.
+    /// </summary>
+    public async Task<List<RentablePropertySnapshot>> GetPropertiesRentedByTenantAsync(PersonaId tenantId)
+    {
+        return await _properties.GetPropertiesRentedByTenantAsync(tenantId).ConfigureAwait(false);
+    }
+
     internal sealed record RentOfferPresentation(string DisplayName, string? Description, string? SettlementName);
 
     private sealed record PendingRentSession(

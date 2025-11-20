@@ -153,23 +153,10 @@ public class PlayerHouseService
                 return;
             }
 
+            // Door now only handles access - rental interactions happen at the sign
             if (CanPlayerAccess(personaId, snapshot))
             {
                 await UnlockDoorAsync(obj.Door);
-                return;
-            }
-
-            if (snapshot.OccupancyStatus == PropertyOccupancyStatus.Vacant)
-            {
-                PropertyRentFlow.RentOfferPresentation presentation = ResolvePropertyPresentation(metadata);
-                await _rentFlow.HandleVacantPropertyInteractionAsync(
-                        door: obj.Door,
-                        player,
-                        personaId,
-                        propertyId,
-                        snapshot,
-                        presentation)
-                    .ConfigureAwait(false);
                 return;
             }
 
@@ -256,7 +243,15 @@ public class PlayerHouseService
                 return;
             }
 
-            // Check if this property has an active rental and the player is the tenant
+            // STATE 1: House is owned/rented by someone else -> Do nothing
+            if (snapshot.OccupancyStatus != PropertyOccupancyStatus.Vacant &&
+                !CanPlayerAccess(personaId, snapshot))
+            {
+                // Silent - no message shown per requirements
+                return;
+            }
+
+            // STATE 2: House is owned/rented by the player -> Show rent payment option
             if (snapshot.OccupancyStatus == PropertyOccupancyStatus.Rented &&
                 snapshot.ActiveRental is not null &&
                 snapshot.ActiveRental.Tenant.Equals(personaId))
@@ -275,9 +270,46 @@ public class PlayerHouseService
                 return;
             }
 
-            // Player is not the tenant
-            await ShowFloatingTextAsync(player,
-                "You can only pay rent for properties you are currently renting.");
+            // STATE 3 & 4: House is vacant
+            if (snapshot.OccupancyStatus == PropertyOccupancyStatus.Vacant)
+            {
+                // Check if player already has an active rental elsewhere
+                List<RentablePropertySnapshot> existingRentals =
+                    await _rentFlow.GetPropertiesRentedByTenantAsync(personaId).ConfigureAwait(false);
+
+                // STATE 3: Player already owns a house -> Refuse access
+                if (existingRentals.Any())
+                {
+                    await ShowFloatingTextAsync(player,
+                        "You already have an active rental. You can only rent one property at a time.");
+                    return;
+                }
+
+                // STATE 4: Player has no rental and house is vacant -> Present rental option
+                // Find the associated door to pass to the rental flow
+                NwDoor? door = FindHouseDoorForArea(targetAreaTag);
+                if (door is null)
+                {
+                    Log.Warn("Could not find door for area {AreaTag} when attempting to rent from sign.", targetAreaTag);
+                    await ShowFloatingTextAsync(player,
+                        "The door for this property could not be located. Please notify a DM.");
+                    return;
+                }
+
+                PropertyRentFlow.RentOfferPresentation presentation = ResolvePropertyPresentation(metadata);
+                await _rentFlow.HandleVacantPropertyInteractionAsync(
+                        door: door,
+                        player,
+                        personaId,
+                        propertyId,
+                        snapshot,
+                        presentation)
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            // Fallback
+            await ShowFloatingTextAsync(player, "You cannot interact with this property at this time.");
         }
         catch (Exception ex)
         {
@@ -394,6 +426,23 @@ public class PlayerHouseService
     {
         return NwModule.Instance.Areas
             .FirstOrDefault(area => string.Equals(area.Tag, areaTag, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static NwDoor? FindHouseDoorForArea(string targetAreaTag)
+    {
+        IEnumerable<NwDoor> doors = NwObject.FindObjectsWithTag<NwDoor>(HouseDoorTag);
+
+        foreach (NwDoor door in doors)
+        {
+            string? doorTargetArea = door.GetObjectVariable<LocalVariableString>(TargetAreaTagLocalString).Value;
+            if (!string.IsNullOrWhiteSpace(doorTargetArea) &&
+                string.Equals(doorTargetArea, targetAreaTag, StringComparison.OrdinalIgnoreCase))
+            {
+                return door;
+            }
+        }
+
+        return null;
     }
 
     private PropertyRentFlow.RentOfferPresentation ResolvePropertyPresentation(PropertyAreaMetadata metadata)
