@@ -605,7 +605,6 @@ namespace AmiaReforged.PwEngine.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ShopId", "ResRef")
-                        .IsUnique()
                         .HasDatabaseName("npc_shop_products_shop_resref_idx");
 
                     b.ToTable("npc_shop_products", (string)null);
