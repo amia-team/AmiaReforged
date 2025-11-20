@@ -20,5 +20,6 @@ public enum JobSystemItemType
     ResourceBrick = 12,
     ResourceIngot = 13,
     ResourceGem = 14,
-    ResourcePlant = 16
+    ResourcePlant = 16,
+    Furniture = 17,
 }

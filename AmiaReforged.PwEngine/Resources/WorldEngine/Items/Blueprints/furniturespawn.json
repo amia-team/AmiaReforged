@@ -3,16 +3,36 @@
   "ItemTag": "blueprint_furniture_table",
   "Name": "Racked Bable",
   "Description": "A nice little table",
-  "Materials": ["Gem"],
-  "JobSystemType": "ResourceGem",
+  "Materials": [
+    "Gem"
+  ],
+  "JobSystemType": "Furniture",
   "BaseItemType": 74,
-  "Appearance": { "ModelType": 0, "SimpleModelNumber": 12 },
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 12
+  },
   "BaseValue": 125,
   "LocalVariables": [
-    { "Name": "is_plc", "Type": "Int", "Value": 1 },
-    { "Name": "plc_resref", "Type": "String", "Value": "ds_spear" },
-    { "Name": "plc_name", "Type": "String", "Value": "Packed Table" },
-    { "Name": "plc_appearance", "Type": "Int", "Value": 12 }
+    {
+      "Name": "is_plc",
+      "Type": "Int",
+      "Value": 1
+    },
+    {
+      "Name": "plc_resref",
+      "Type": "String",
+      "Value": "ds_spear"
+    },
+    {
+      "Name": "plc_name",
+      "Type": "String",
+      "Value": "Packed Table"
+    },
+    {
+      "Name": "plc_appearance",
+      "Type": "Int",
+      "Value": 12
+    }
   ]
 }
-
