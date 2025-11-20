@@ -1,0 +1,38 @@
+{
+  "ResRef": "furniturespawn",
+  "ItemTag": "mirror_ornate_tall",
+  "Name": "Ornate Mirror, Tall",
+  "Description": "A small round mirror, perfect for checking your reflection before heading out.",
+  "Materials": [
+    "Bronze"
+  ],
+  "JobSystemType": "Furniture",
+  "BaseItemType": 74,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 16637
+  },
+  "BaseValue": 400,
+  "LocalVariables": [
+    {
+      "Name": "is_plc",
+      "Type": "Int",
+      "Value": 1
+    },
+    {
+      "Name": "plc_resref",
+      "Type": "String",
+      "Value": "ds_spear"
+    },
+    {
+      "Name": "plc_name",
+      "Type": "String",
+      "Value": "Packed Table"
+    },
+    {
+      "Name": "plc_appearance",
+      "Type": "Int",
+      "Value": 12
+    }
+  ]
+}

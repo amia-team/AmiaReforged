@@ -38,7 +38,7 @@ internal sealed class PlaceableToolModel
                 continue;
             }
 
-            string displayName = ResolveDisplayName(item);
+            string displayName = item.Name;
             int appearance = ResolveAppearance(item);
 
             results.Add(new PlaceableBlueprint(item, resrefVar.Value!, displayName, appearance));

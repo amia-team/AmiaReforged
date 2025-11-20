@@ -1,18 +1,18 @@
 {
   "ResRef": "furniturespawn",
-  "ItemTag": "blueprint_furniture_table",
-  "Name": "Racked Bable",
-  "Description": "A nice little table",
+  "ItemTag": "mirror_round_small",
+  "Name": "Round Mirror, Small",
+  "Description": "A small round mirror, perfect placing on a desk or table.",
   "Materials": [
-    "Gem"
+    "Bronze"
   ],
   "JobSystemType": "Furniture",
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,
-    "SimpleModelNumber": 12
+    "SimpleModelNumber": 16641
   },
-  "BaseValue": 125,
+  "BaseValue": 400,
   "LocalVariables": [
     {
       "Name": "is_plc",

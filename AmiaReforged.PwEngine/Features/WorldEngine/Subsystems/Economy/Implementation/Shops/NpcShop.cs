@@ -17,7 +17,8 @@ public sealed class NpcShop
         PropertyNameCaseInsensitive = true
     };
 
-    private readonly Dictionary<string, NpcShopProduct> _productsByResref = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<long, NpcShopProduct> _productsById = new();
+    private readonly Dictionary<string, List<NpcShopProduct>> _productsByResref = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, List<NpcShopProduct>> _productsByBaseItemType = new();
     private readonly HashSet<int> _acceptedBaseItemTypes = [];
     private readonly List<NpcShopProduct> _products = [];
@@ -139,7 +140,15 @@ public sealed class NpcShop
                     appearance);
 
                 _products.Add(product);
-                _productsByResref[product.ResRef] = product;
+                _productsById[product.Id] = product;
+
+                // ResRef now maps to a list to support multiple templates with the same base ResRef
+                if (!_productsByResref.TryGetValue(product.ResRef, out List<NpcShopProduct>? resrefList))
+                {
+                    resrefList = [];
+                    _productsByResref[product.ResRef] = resrefList;
+                }
+                resrefList.Add(product);
 
                 if (productRecord.BaseItemType is int baseItemType)
                 {
@@ -213,7 +222,27 @@ public sealed class NpcShop
             return null;
         }
 
-        return _productsByResref.TryGetValue(resRef, out NpcShopProduct? product) ? product : null;
+        // Return first product with matching ResRef (for backward compatibility)
+        return _productsByResref.TryGetValue(resRef, out List<NpcShopProduct>? products) && products.Count > 0
+            ? products[0]
+            : null;
+    }
+
+    public NpcShopProduct? FindProductById(long productId)
+    {
+        return _productsById.TryGetValue(productId, out NpcShopProduct? product) ? product : null;
+    }
+
+    public IReadOnlyList<NpcShopProduct> FindProductsByResRef(string resRef)
+    {
+        if (string.IsNullOrWhiteSpace(resRef))
+        {
+            return Array.Empty<NpcShopProduct>();
+        }
+
+        return _productsByResref.TryGetValue(resRef, out List<NpcShopProduct>? products)
+            ? products
+            : Array.Empty<NpcShopProduct>();
     }
 
     public IReadOnlyList<NpcShopProduct> FindProductsByBaseItemType(int baseItemType)
@@ -234,7 +263,8 @@ public sealed class NpcShop
 
         lock (SyncRoot)
         {
-            if (_productsByResref.TryGetValue(record.ResRef, out NpcShopProduct? existing))
+            // Check by ID first for existing products
+            if (_productsById.TryGetValue(record.Id, out NpcShopProduct? existing))
             {
                 existing.SetCurrentStock(record.CurrentStock);
                 return existing;
@@ -288,7 +318,15 @@ public sealed class NpcShop
                 appearance);
 
             _products.Add(product);
-            _productsByResref[product.ResRef] = product;
+            _productsById[product.Id] = product;
+
+            // Add to ResRef list
+            if (!_productsByResref.TryGetValue(product.ResRef, out List<NpcShopProduct>? resrefList))
+            {
+                resrefList = [];
+                _productsByResref[product.ResRef] = resrefList;
+            }
+            resrefList.Add(product);
 
             if (record.BaseItemType is int baseItemType)
             {

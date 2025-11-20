@@ -283,7 +283,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
             return;
         }
 
-        if (!ShopRepository.Value.TryConsumeProduct(_shop.Tag, product.ResRef, 1, out ConsignedItemData? consignedItem))
+        if (!ShopRepository.Value.TryConsumeProduct(_shop.Tag, product.Id, 1, out ConsignedItemData? consignedItem))
         {
             await NotifyAsync("Another customer just claimed the last one.", ColorConstants.Orange, refresh: true);
             return;
@@ -292,7 +292,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
         NwCreature? buyer = ResolveActiveBuyer();
         if (buyer is null)
         {
-            ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1, consignedItem);
+            ShopRepository.Value.ReturnProduct(_shop.Tag, product.Id, 1, consignedItem);
             await NotifyAsync("You must be possessing your character to make a purchase.", ColorConstants.Orange);
             return;
         }
@@ -305,7 +305,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
             bool paymentTaken = await TryWithdrawGoldAsync(buyer, salePrice);
             if (!paymentTaken)
             {
-                ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1, consignedItem);
+                ShopRepository.Value.ReturnProduct(_shop.Tag, product.Id, 1, consignedItem);
                 await NotifyAsync("You cannot afford that purchase.", ColorConstants.Orange, refresh: true);
                 return;
             }
@@ -324,7 +324,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
                     paymentCaptured = false;
                 }
 
-                ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1, consignedItem);
+                ShopRepository.Value.ReturnProduct(_shop.Tag, product.Id, 1, consignedItem);
                 await NotifyAsync("The merchant cannot produce that item right now.", ColorConstants.Orange,
                     refresh: true);
                 return;
@@ -341,7 +341,7 @@ public sealed class ShopWindowPresenter : ScryPresenter<ShopWindowView>, IAutoCl
                 await RefundGoldAsync(buyer, salePrice);
             }
 
-            ShopRepository.Value.ReturnProduct(_shop.Tag, product.ResRef, 1, consignedItem);
+            ShopRepository.Value.ReturnProduct(_shop.Tag, product.Id, 1, consignedItem);
             Log.Error(ex,
                 "Failed to fulfill item purchase for player {PlayerName} in shop {ShopTag} (item {ResRef}).",
                 _player.PlayerName,

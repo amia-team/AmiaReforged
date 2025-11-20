@@ -1,0 +1,38 @@
+{
+  "ResRef": "furniturespawn",
+  "ItemTag": "mirror_ornate_round_dragon",
+  "Name": "Ornate Mirror, Dragon",
+  "Description": "A small round mirror, with an ornate dragon design eating its own tail. Perfect for checking your reflection before heading out.",
+  "Materials": [
+    "Bronze"
+  ],
+  "JobSystemType": "Furniture",
+  "BaseItemType": 74,
+  "Appearance": {
+    "ModelType": 0,
+    "SimpleModelNumber": 16639
+  },
+  "BaseValue": 400,
+  "LocalVariables": [
+    {
+      "Name": "is_plc",
+      "Type": "Int",
+      "Value": 1
+    },
+    {
+      "Name": "plc_resref",
+      "Type": "String",
+      "Value": "ds_spear"
+    },
+    {
+      "Name": "plc_name",
+      "Type": "String",
+      "Value": "Packed Table"
+    },
+    {
+      "Name": "plc_appearance",
+      "Type": "Int",
+      "Value": 12
+    }
+  ]
+}

@@ -14,6 +14,20 @@
       "InitialStock": 12,
       "MaxStock": 20,
       "RestockAmount": 3
+    },
+    {
+      "ResRef": "mirror_ornate_round",
+      "Price": 400,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 2
+    },
+    {
+      "ResRef": "mirror_ornate_tall",
+      "Price": 400,
+      "InitialStock": 5,
+      "MaxStock": 10,
+      "RestockAmount": 2
     }
   ],
   "AcceptCategories": [

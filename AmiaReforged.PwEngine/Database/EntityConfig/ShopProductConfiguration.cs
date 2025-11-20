@@ -71,8 +71,8 @@ public class ShopProductConfiguration : IEntityTypeConfiguration<ShopProductReco
             .HasColumnName("updated_at")
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+        // Non-unique index for query performance - multiple templates can share the same ResRef
         builder.HasIndex(p => new { p.ShopId, p.ResRef })
-            .IsUnique()
             .HasDatabaseName("npc_shop_products_shop_resref_idx");
     }
 }

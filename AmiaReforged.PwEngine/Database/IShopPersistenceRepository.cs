@@ -25,13 +25,13 @@ public interface IShopPersistenceRepository
 
     Task<bool> TryConsumeStockAsync(
         long shopId,
-        string resRef,
+        long productId,
         int quantity,
         CancellationToken cancellationToken = default);
 
     Task ReturnStockAsync(
         long shopId,
-        string resRef,
+        long productId,
         int quantity,
         CancellationToken cancellationToken = default);
 

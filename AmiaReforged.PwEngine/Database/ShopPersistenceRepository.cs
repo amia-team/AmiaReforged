@@ -103,7 +103,7 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
 
     public async Task<bool> TryConsumeStockAsync(
         long shopId,
-        string resRef,
+        long productId,
         int quantity,
         CancellationToken cancellationToken = default)
     {
@@ -115,7 +115,7 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
         await using PwEngineContext ctx = contextFactory.CreateDbContext();
 
         ShopProductRecord? product = await ctx.ShopProducts
-            .FirstOrDefaultAsync(p => p.ShopId == shopId && p.ResRef == resRef, cancellationToken);
+            .FirstOrDefaultAsync(p => p.ShopId == shopId && p.Id == productId, cancellationToken);
 
         if (product is null)
         {
@@ -136,7 +136,7 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
 
     public async Task ReturnStockAsync(
         long shopId,
-        string resRef,
+        long productId,
         int quantity,
         CancellationToken cancellationToken = default)
     {
@@ -148,7 +148,7 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
         await using PwEngineContext ctx = contextFactory.CreateDbContext();
 
         ShopProductRecord? product = await ctx.ShopProducts
-            .FirstOrDefaultAsync(p => p.ShopId == shopId && p.ResRef == resRef, cancellationToken);
+            .FirstOrDefaultAsync(p => p.ShopId == shopId && p.Id == productId, cancellationToken);
 
         if (product is null)
         {
@@ -342,12 +342,21 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
 
     private static void SyncProducts(ShopRecord existing, IReadOnlyCollection<ShopProductRecord> incoming)
     {
-        Dictionary<string, ShopProductRecord> existingByResRef = existing.Products
-            .ToDictionary(p => p.ResRef, StringComparer.OrdinalIgnoreCase);
+        // Use composite key to match products: ResRef + LocalVariablesJson + AppearanceJson + BaseItemType
+        // This allows multiple templates with the same base ResRef to coexist
+        Dictionary<string, ShopProductRecord> existingByCompositeKey = existing.Products
+            .ToDictionary(p => BuildProductCompositeKey(p.ResRef, p.LocalVariablesJson, p.AppearanceJson, p.BaseItemType),
+                StringComparer.OrdinalIgnoreCase);
 
         foreach (ShopProductRecord incomingProduct in incoming)
         {
-            if (existingByResRef.TryGetValue(incomingProduct.ResRef, out ShopProductRecord? record))
+            string compositeKey = BuildProductCompositeKey(
+                incomingProduct.ResRef,
+                incomingProduct.LocalVariablesJson,
+                incomingProduct.AppearanceJson,
+                incomingProduct.BaseItemType);
+
+            if (existingByCompositeKey.TryGetValue(compositeKey, out ShopProductRecord? record))
             {
                 record.DisplayName = incomingProduct.DisplayName;
                 record.Description = incomingProduct.Description;
@@ -382,5 +391,11 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
                 });
             }
         }
+    }
+
+    private static string BuildProductCompositeKey(string resRef, string? localsJson, string? appearanceJson, int? baseItemType)
+    {
+        // Create a composite key that uniquely identifies a product template
+        return $"{resRef}|{localsJson ?? ""}|{appearanceJson ?? ""}|{baseItemType?.ToString() ?? ""}";
     }
 }

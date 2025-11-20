@@ -117,7 +117,7 @@ public sealed class NpcShopRepository : INpcShopRepository
         }
     }
 
-    public bool TryConsumeProduct(string shopTag, string productResRef, int quantity, out ConsignedItemData? consumedItem)
+    public bool TryConsumeProduct(string shopTag, long productId, int quantity, out ConsignedItemData? consumedItem)
     {
         consumedItem = null;
 
@@ -136,7 +136,7 @@ public sealed class NpcShopRepository : INpcShopRepository
 
         lock (shop.SyncRoot)
         {
-            NpcShopProduct? product = shop.FindProduct(productResRef);
+            NpcShopProduct? product = shop.FindProductById(productId);
             if (product is null)
             {
                 return false;
@@ -149,7 +149,7 @@ public sealed class NpcShopRepository : INpcShopRepository
 
             try
             {
-                bool persisted = _persistence.TryConsumeStockAsync(shop.Id, product.ResRef, quantity, CancellationToken.None)
+                bool persisted = _persistence.TryConsumeStockAsync(shop.Id, product.Id, quantity, CancellationToken.None)
                     .GetAwaiter()
                     .GetResult();
 
@@ -168,7 +168,7 @@ public sealed class NpcShopRepository : INpcShopRepository
                     if (vaultItem is null)
                     {
                         product.ReturnToStock(quantity);
-                        _persistence.ReturnStockAsync(shop.Id, product.ResRef, quantity, CancellationToken.None)
+                        _persistence.ReturnStockAsync(shop.Id, product.Id, quantity, CancellationToken.None)
                             .GetAwaiter()
                             .GetResult();
                         return false;
@@ -181,7 +181,7 @@ public sealed class NpcShopRepository : INpcShopRepository
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to persist stock consumption for shop {Tag} product {ResRef}.", shop.Tag, product.ResRef);
+                Log.Error(ex, "Failed to persist stock consumption for shop {Tag} product {Id}.", shop.Tag, product.Id);
                 product.ReturnToStock(quantity);
                 return false;
             }
@@ -197,7 +197,7 @@ public sealed class NpcShopRepository : INpcShopRepository
         return true;
     }
 
-    public void ReturnProduct(string shopTag, string productResRef, int quantity, ConsignedItemData? consignedItem = null)
+    public void ReturnProduct(string shopTag, long productId, int quantity, ConsignedItemData? consignedItem = null)
     {
         if (quantity <= 0)
         {
@@ -209,11 +209,11 @@ public sealed class NpcShopRepository : INpcShopRepository
             return;
         }
 
-        bool updated = false;
+        bool updated;
 
         lock (shop.SyncRoot)
         {
-            NpcShopProduct? product = shop.FindProduct(productResRef);
+            NpcShopProduct? product = shop.FindProductById(productId);
             if (product is null)
             {
                 return;
@@ -224,7 +224,7 @@ public sealed class NpcShopRepository : INpcShopRepository
 
             try
             {
-                _persistence.ReturnStockAsync(shop.Id, product.ResRef, quantity, CancellationToken.None)
+                _persistence.ReturnStockAsync(shop.Id, product.Id, quantity, CancellationToken.None)
                     .GetAwaiter()
                     .GetResult();
 
@@ -243,7 +243,7 @@ public sealed class NpcShopRepository : INpcShopRepository
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to persist stock return for shop {Tag} product {ResRef}.", shop.Tag, product.ResRef);
+                Log.Error(ex, "Failed to persist stock return for shop {Tag} product {Id}.", shop.Tag, product.Id);
             }
         }
 
@@ -355,14 +355,14 @@ public sealed class NpcShopRepository : INpcShopRepository
 
                 try
                 {
-                    _persistence.ReturnStockAsync(shop.Id, product.ResRef, added, CancellationToken.None)
+                    _persistence.ReturnStockAsync(shop.Id, product.Id, added, CancellationToken.None)
                         .GetAwaiter()
                         .GetResult();
                     updated = true;
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Failed to persist restock for shop {Tag} product {ResRef}.", shop.Tag, product.ResRef);
+                    Log.Error(ex, "Failed to persist restock for shop {Tag} product {Id}.", shop.Tag, product.Id);
                 }
             }
         }
