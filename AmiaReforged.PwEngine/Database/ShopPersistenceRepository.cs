@@ -342,22 +342,27 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
 
     private static void SyncProducts(ShopRecord existing, IReadOnlyCollection<ShopProductRecord> incoming)
     {
-        // Use composite key to match products: ResRef + LocalVariablesJson + AppearanceJson + BaseItemType
-        // This allows multiple templates with the same base ResRef to coexist
-        Dictionary<string, ShopProductRecord> existingByCompositeKey = existing.Products
-            .ToDictionary(p => BuildProductCompositeKey(p.ResRef, p.LocalVariablesJson, p.AppearanceJson, p.BaseItemType),
-                StringComparer.OrdinalIgnoreCase);
+        // Use ItemTag to match products - this is the blueprint domain identifier
+        // For products without ItemTag (player-managed), keep the first occurrence
+        Dictionary<string, ShopProductRecord> existingByItemTag = existing.Products
+            .Where(p => !string.IsNullOrEmpty(p.ItemTag))
+            .GroupBy(p => p.ItemTag!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        // Track products without ItemTag separately (legacy/player-managed)
+        List<ShopProductRecord> existingWithoutTag = existing.Products
+            .Where(p => string.IsNullOrEmpty(p.ItemTag))
+            .ToList();
 
         foreach (ShopProductRecord incomingProduct in incoming)
         {
-            string compositeKey = BuildProductCompositeKey(
-                incomingProduct.ResRef,
-                incomingProduct.LocalVariablesJson,
-                incomingProduct.AppearanceJson,
-                incomingProduct.BaseItemType);
-
-            if (existingByCompositeKey.TryGetValue(compositeKey, out ShopProductRecord? record))
+            // Try to match by ItemTag if present
+            if (!string.IsNullOrEmpty(incomingProduct.ItemTag) &&
+                existingByItemTag.TryGetValue(incomingProduct.ItemTag, out ShopProductRecord? record))
             {
+                // Update existing product with new definition
+                record.ItemTag = incomingProduct.ItemTag;
+                record.ResRef = incomingProduct.ResRef; // May have changed in blueprint
                 record.DisplayName = incomingProduct.DisplayName;
                 record.Description = incomingProduct.Description;
                 record.Price = incomingProduct.Price;
@@ -372,8 +377,10 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
             }
             else
             {
+                // Add new product
                 existing.Products.Add(new ShopProductRecord
                 {
+                    ItemTag = incomingProduct.ItemTag,
                     ResRef = incomingProduct.ResRef,
                     DisplayName = incomingProduct.DisplayName,
                     Description = incomingProduct.Description,
@@ -391,11 +398,5 @@ public sealed class ShopPersistenceRepository(PwContextFactory contextFactory) :
                 });
             }
         }
-    }
-
-    private static string BuildProductCompositeKey(string resRef, string? localsJson, string? appearanceJson, int? baseItemType)
-    {
-        // Create a composite key that uniquely identifies a product template
-        return $"{resRef}|{localsJson ?? ""}|{appearanceJson ?? ""}|{baseItemType?.ToString() ?? ""}";
     }
 }

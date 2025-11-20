@@ -19,6 +19,10 @@ public class ShopProductConfiguration : IEntityTypeConfiguration<ShopProductReco
             .IsRequired()
             .HasMaxLength(64);
 
+        builder.Property(p => p.ItemTag)
+            .HasColumnName("item_tag")
+            .HasMaxLength(64);
+
         builder.Property(p => p.DisplayName)
             .HasColumnName("display_name")
             .IsRequired()
@@ -74,5 +78,9 @@ public class ShopProductConfiguration : IEntityTypeConfiguration<ShopProductReco
         // Non-unique index for query performance - multiple templates can share the same ResRef
         builder.HasIndex(p => new { p.ShopId, p.ResRef })
             .HasDatabaseName("npc_shop_products_shop_resref_idx");
+
+        // Index on ItemTag for efficient sync operations by blueprint identifier
+        builder.HasIndex(p => new { p.ShopId, p.ItemTag })
+            .HasDatabaseName("npc_shop_products_shop_itemtag_idx");
     }
 }

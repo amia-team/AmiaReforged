@@ -10,7 +10,7 @@
   "BaseItemType": 74,
   "Appearance": {
     "ModelType": 0,
-    "SimpleModelNumber": 16640
+    "SimpleModelNumber": 12
   },
   "BaseValue": 400,
   "LocalVariables": [
@@ -32,7 +32,7 @@
     {
       "Name": "plc_appearance",
       "Type": "Int",
-      "Value": 12
+      "Value": 16640
     }
   ]
 }

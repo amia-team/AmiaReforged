@@ -16,6 +16,9 @@ public class ShopProductRecord
     [MaxLength(64)]
     public required string ResRef { get; set; }
 
+    [MaxLength(64)]
+    public string? ItemTag { get; set; }
+
     [MaxLength(255)]
     public required string DisplayName { get; set; }
 

@@ -15,7 +15,7 @@ public sealed record NpcShopDefinition(
     int MarkupPercent = 0);
 
 public sealed record NpcShopProductDefinition(
-    string ResRef,
+    string ItemTag, // Blueprint domain identifier (formerly ResRef field in JSON)
     string? Name, // Made optional for blueprint fallback
     string? Description,
     int Price,

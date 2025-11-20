@@ -2,9 +2,9 @@
   "ResRef": "furniturespawn",
   "ItemTag": "blueprint_furniture_table",
   "Name": "Packed Table",
-  "Description": "A table that has been designed using a special mortise and tenon joint, allowing it to be easily disassembled and packed for transport. Made from oak, this table is sturdy and durable, perfect for any workspace.",
+  "Description": "A table that has been designed using a special mortise and tenon joint, allowing it to be easily disassembled and packed for transport.",
   "Materials": [
-    "Wood_Oak"
+    "WoodOak"
   ],
   "JobSystemType": "Furniture",
   "BaseItemType": 74,

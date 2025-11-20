@@ -9,6 +9,13 @@ public sealed class ItemBlueprintLoadingService(IItemDefinitionRepository defini
 {
     private readonly List<FileLoadResult> _failures = new();
 
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true
+    };
+
     public void Load()
     {
         string? resourcePath = Environment.GetEnvironmentVariable("RESOURCE_PATH");
@@ -31,7 +38,7 @@ public sealed class ItemBlueprintLoadingService(IItemDefinitionRepository defini
             try
             {
                 string json = File.ReadAllText(filePath);
-                Items.ItemData.ItemBlueprint? blueprint = JsonSerializer.Deserialize<Items.ItemData.ItemBlueprint>(json);
+                Items.ItemData.ItemBlueprint? blueprint = JsonSerializer.Deserialize<Items.ItemData.ItemBlueprint>(json, JsonOptions);
                 if (blueprint is null)
                 {
                     _failures.Add(new FileLoadResult(ResultType.Fail, "Failed to deserialize blueprint", fileName));

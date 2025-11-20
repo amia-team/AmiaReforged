@@ -456,14 +456,14 @@ public sealed class NpcShopRepository : INpcShopRepository
             int sortOrder = 0;
             foreach (NpcShopProductDefinition product in definition.Products)
             {
-                // Get blueprint by ItemTag (stored in product.ResRef from JSON)
-                var blueprint = _itemDefinitions.GetByTag(product.ResRef);
+                // Get blueprint by ItemTag (domain identifier)
+                var blueprint = _itemDefinitions.GetByTag(product.ItemTag);
 
-                // Get actual NWN ResRef from blueprint, or fall back to product.ResRef if no blueprint
-                string nwnResRef = blueprint?.ResRef ?? product.ResRef;
+                // Get actual NWN ResRef from blueprint, or fall back to ItemTag if no blueprint
+                string nwnResRef = blueprint?.ResRef ?? product.ItemTag;
 
                 string displayName = string.IsNullOrWhiteSpace(product.Name)
-                    ? (blueprint?.Name ?? product.ResRef)
+                    ? (blueprint?.Name ?? product.ItemTag)
                     : product.Name.Trim();
 
                 string? description = string.IsNullOrWhiteSpace(product.Description)
@@ -507,7 +507,8 @@ public sealed class NpcShopRepository : INpcShopRepository
 
                 ShopProductRecord productRecord = new()
                 {
-                    ResRef = nwnResRef, // Store actual NWN ResRef, not ItemTag
+                    ItemTag = product.ItemTag, // Store blueprint domain identifier
+                    ResRef = nwnResRef, // Store actual NWN ResRef from blueprint
                     DisplayName = displayName,
                     Description = description,
                     Price = product.Price,

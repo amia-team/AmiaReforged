@@ -166,24 +166,24 @@ public sealed class NpcShopLoader : IDefinitionLoader
 
         foreach (NpcShopProductDefinition product in definition.Products)
         {
-            if (string.IsNullOrWhiteSpace(product.ResRef))
+            if (string.IsNullOrWhiteSpace(product.ItemTag))
             {
-                _failures.Add(new FileLoadResult(ResultType.Fail, "Product ResRef must not be empty.", fileName));
+                _failures.Add(new FileLoadResult(ResultType.Fail, "Product ItemTag must not be empty.", fileName));
                 return false;
             }
 
-            var blueprint = _itemDefinitions.GetByTag(product.ResRef);
+            var blueprint = _itemDefinitions.GetByTag(product.ItemTag);
             if (string.IsNullOrWhiteSpace(product.Name) && blueprint is null)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' must define a Name or have a matching blueprint.", fileName));
+                    $"Product '{product.ItemTag}' must define a Name or have a matching blueprint.", fileName));
                 return false;
             }
 
             if (product.Price < 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' has a negative price.", fileName));
+                    $"Product '{product.ItemTag}' has a negative price.", fileName));
                 return false;
             }
 
@@ -192,49 +192,49 @@ public sealed class NpcShopLoader : IDefinitionLoader
             if (!allowsPlayerStock && product.MaxStock <= 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' must have MaxStock greater than zero.", fileName));
+                    $"Product '{product.ItemTag}' must have MaxStock greater than zero.", fileName));
                 return false;
             }
 
             if (allowsPlayerStock && product.MaxStock < 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' must not define a negative MaxStock.", fileName));
+                    $"Product '{product.ItemTag}' must not define a negative MaxStock.", fileName));
                 return false;
             }
 
             if (!allowsPlayerStock && product.RestockAmount <= 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' must have RestockAmount greater than zero.", fileName));
+                    $"Product '{product.ItemTag}' must have RestockAmount greater than zero.", fileName));
                 return false;
             }
 
             if (allowsPlayerStock && product.RestockAmount < 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' must not define a negative RestockAmount.", fileName));
+                    $"Product '{product.ItemTag}' must not define a negative RestockAmount.", fileName));
                 return false;
             }
 
             if (product.InitialStock < 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' must not have a negative InitialStock.", fileName));
+                    $"Product '{product.ItemTag}' must not have a negative InitialStock.", fileName));
                 return false;
             }
 
             if (product.MaxStock > 0 && product.InitialStock > product.MaxStock)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' has InitialStock greater than MaxStock.", fileName));
+                    $"Product '{product.ItemTag}' has InitialStock greater than MaxStock.", fileName));
                 return false;
             }
 
             if (product.BaseItemType is < 0)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' defines an invalid BaseItemType; expected non-negative integer.", fileName));
+                    $"Product '{product.ItemTag}' defines an invalid BaseItemType; expected non-negative integer.", fileName));
                 return false;
             }
 
@@ -266,14 +266,14 @@ public sealed class NpcShopLoader : IDefinitionLoader
             if (string.IsNullOrWhiteSpace(local.Name))
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' defines a local variable with an empty name.", fileName));
+                    $"Product '{product.ItemTag}' defines a local variable with an empty name.", fileName));
                 return false;
             }
 
             if (!names.Add(local.Name))
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Product '{product.ResRef}' defines duplicate local variable '{local.Name}'.", fileName));
+                    $"Product '{product.ItemTag}' defines duplicate local variable '{local.Name}'.", fileName));
                 return false;
             }
 
@@ -284,7 +284,7 @@ public sealed class NpcShopLoader : IDefinitionLoader
             catch (Exception ex)
             {
                 _failures.Add(new FileLoadResult(ResultType.Fail,
-                    $"Local variable '{local.Name}' for product '{product.ResRef}' is invalid: {ex.Message}", fileName));
+                    $"Local variable '{local.Name}' for product '{product.ItemTag}' is invalid: {ex.Message}", fileName));
                 return false;
             }
         }
@@ -307,7 +307,7 @@ public sealed class NpcShopLoader : IDefinitionLoader
         catch (Exception ex)
         {
             _failures.Add(new FileLoadResult(ResultType.Fail,
-                $"Appearance for product '{product.ResRef}' is invalid: {ex.Message}", fileName));
+                $"Appearance for product '{product.ItemTag}' is invalid: {ex.Message}", fileName));
             return false;
         }
     }
