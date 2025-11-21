@@ -17,7 +17,7 @@
       },
       "PlacesOfInterest": [
         {
-          "ResRef": "sp_coinhouse",
+          "ResRef": "sp_east_int_bank",
           "Tag": "southport_bank",
           "Name": "Southport Counting House",
           "Type": "Bank",
