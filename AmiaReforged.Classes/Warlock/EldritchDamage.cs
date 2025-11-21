@@ -1,7 +1,7 @@
 ﻿using NWN.Core.NWNX;
 using static NWN.Core.NWScript;
 
-namespace AmiaReforged.Classes.Warlock.Types.Shapes;
+namespace AmiaReforged.Classes.Warlock;
 
 /// <summary>
 ///     Static class responsible for calculating damage done by Eldritch blasts.
@@ -12,13 +12,17 @@ public static class EldritchDamage
     {
         int warlockLevels = GetLevelByClass(57, caster);
         int chaMod = GetAbilityModifier(ABILITY_CHARISMA, caster);
-        // At most 25% extra damage at your capstone
-        int damageBonus = (int)(warlockLevels == 30 ? Math.Min(25, chaMod * 1.5) : chaMod);
-        if (warlockLevels / 2 < chaMod && warlockLevels < 30) damageBonus = warlockLevels / 2;
-        int damageDice = d2(warlockLevels) + d6(ExtraDieFromFeats(caster));
-        damageDice += damageDice * damageBonus / 100;
+        int damageBonus = (int)(warlockLevels == 30 ? chaMod * 1.5 : chaMod);
+        int epicBlastBonus = 5 * ExtraDieFromFeats(caster);
+        int damageDice = d2(warlockLevels) + epicBlastBonus;
+
+        int chaBonusDamage = damageBonus * damageBonus / 100;
         int extraDamageFromEldritchMaster = GetHasFeat(1298, caster) == TRUE ? (int)(damageDice * 0.25) : 0;
-        return damageDice + extraDamageFromEldritchMaster;
+
+        damageDice += chaBonusDamage;
+        damageDice += extraDamageFromEldritchMaster;
+
+        return damageDice;
     }
 
     private static int ExtraDieFromFeats(uint caster)
