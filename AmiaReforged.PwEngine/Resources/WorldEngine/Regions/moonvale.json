@@ -24,55 +24,18 @@
           "Description": "A quaint banking hall where the residents of Moonvale can store their wealth and conduct business transactions."
         },
         {
-          "ResRef": "sp_e_house1",
-          "Tag": "southport_east_house1",
+          "ResRef": "mp_house_1",
+          "Tag": "moonpier_house1",
           "Name": "Harborside",
           "Type": "House",
           "Description": "A cozy harbor-side hovel with a fireplace."
         },
         {
-          "ResRef": "sp_e_house2",
-          "Tag": "southport_east_house2",
+          "ResRef": "mp_house_2",
+          "Tag": "moonpier_house2",
           "Name": "Sea Breeze",
           "Type": "House",
           "Description": "A well built sea-side townhome."
-        },
-        {
-          "ResRef": "sp_e_house3",
-          "Tag": "southport_east_house3",
-          "Name": "Beacon's Rest",
-          "Type": "House",
-          "Description": "A newer style home built right near the city beacon."
-        }
-      ]
-    },
-    {
-      "ResRef": "cordor_central",
-      "DefinitionTags": [
-      ],
-      "LinkedSettlement": 35,
-      "Environment": {
-        "Climate": "Temperate",
-        "SoilQuality": "Good",
-        "MineralQualityRange": {
-          "Min": "BelowAverage",
-          "Max": "Excellent"
-        }
-      },
-      "PlacesOfInterest": [
-        {
-          "ResRef": "sp_c_house1",
-          "Tag": "southport_central_house1",
-          "Name": "Bridgeway",
-          "Type": "House",
-          "Description": "A sturdy manor built on the connecting bridge between the two halves of Southport."
-        },
-        {
-          "ResRef": "sp_c_house2",
-          "Tag": "southport_central_house2",
-          "Name": "Thespian's Rest",
-          "Type": "House",
-          "Description": "A small apartment built specifically for the actors and performers of Southport's theater district."
         }
       ]
     }
