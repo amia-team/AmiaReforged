@@ -77,7 +77,9 @@ public class CasterLevelOverrideService
 
     private void DoCasterLevelOverride(NwCreature casterCreature)
     {
-        if (_casterLevelOverridesApplied[casterCreature]) return;
+        // Check if override was already applied (avoid reapplying)
+        if (_casterLevelOverridesApplied.TryGetValue(casterCreature, out bool applied) && applied) return;
+
         // Find all prestige classes that have caster level modifiers
         List<(ClassType classType, int level)> prestigeClasses = [];
         foreach (CreatureClassInfo charClass in casterCreature.Classes)
